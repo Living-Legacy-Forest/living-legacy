@@ -1,0 +1,20 @@
+# Build + tooling output
+dist/
+.astro/
+node_modules/
+playwright-report/
+test-results/
+
+# Lock files
+package-lock.json
+pnpm-lock.yaml
+yarn.lock
+
+# Generated
+scripts/cloudinary-map.json
+
+# Cloudflare's wrangler parser rejects Prettier's trailing commas
+wrangler.jsonc
+
+# Spec files — Prettier+Astro mis-parses prose angle brackets
+docs/superpowers/specs/

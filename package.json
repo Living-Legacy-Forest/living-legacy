@@ -1,0 +1,57 @@
+{
+  "name": "living-legacy",
+  "type": "module",
+  "version": "0.0.1",
+  "engines": {
+    "node": ">=22.12.0"
+  },
+  "scripts": {
+    "dev": "astro dev",
+    "prebuild": "node scripts/generate-redirects.mjs",
+    "build": "astro build",
+    "preview": "astro preview",
+    "lint": "eslint .",
+    "lint:fix": "eslint . --fix",
+    "format": "prettier --write .",
+    "format:check": "prettier --check .",
+    "type-check": "astro check",
+    "cloudinary:upload": "node scripts/upload-to-cloudinary.mjs",
+    "cloudinary:dry": "node scripts/upload-to-cloudinary.mjs --dry-run",
+    "studio:dev": "sanity dev",
+    "studio:deploy": "sanity deploy",
+    "prepare": "husky"
+  },
+  "dependencies": {
+    "@astrojs/cloudflare": "^12.6.13",
+    "@astrojs/rss": "^4.0.18",
+    "@portabletext/to-html": "^5.0.2",
+    "@sanity/astro": "^3.4.0",
+    "@sanity/client": "^7.17.0",
+    "@sentry/astro": "^10.52.0",
+    "@sentry/cloudflare": "^10.52.0",
+    "@tailwindcss/vite": "^4.2.1",
+    "astro": "^5.18.1",
+    "embla-carousel": "^8.6.0",
+    "lucide-astro": "^0.556.0",
+    "motion": "^12.38.0",
+    "sanity": "^5.25.0",
+    "tailwindcss": "^4.2.1"
+  },
+  "devDependencies": {
+    "@astrojs/check": "^0.9.7",
+    "@astrojs/sitemap": "^3.7.2",
+    "@commitlint/cli": "^20.5.2",
+    "@commitlint/config-conventional": "^20.5.0",
+    "@typescript-eslint/eslint-plugin": "^8.57.0",
+    "@typescript-eslint/parser": "^8.57.0",
+    "cloudinary": "^2.10.0",
+    "eslint": "^9.39.4",
+    "eslint-plugin-astro": "^1.6.0",
+    "eslint-plugin-jsx-a11y": "^6.10.2",
+    "husky": "^9.0.0",
+    "prettier": "^3.8.1",
+    "prettier-plugin-astro": "^0.14.1",
+    "prettier-plugin-tailwindcss": "^0.8.0",
+    "typescript": "^5.9.3"
+  }
+}

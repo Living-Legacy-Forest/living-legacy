@@ -1,0 +1,15 @@
+language: 'en'
+
+reviews:
+  auto_review:
+    enabled: true
+    drafts: false
+  poem: false
+  path_filters:
+    - '!pnpm-lock.yaml'
+    - '!dist/**'
+    - '!.cloudflare/**'
+    - '!.claude/**'
+    - '!docs/**'
+    - '!public/**'
+    - '!**/*.md'

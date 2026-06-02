@@ -1,0 +1,42 @@
+version: 2
+updates:
+  - package-ecosystem: npm
+    directory: /
+    schedule:
+      interval: weekly
+      day: monday
+      time: '09:00'
+      timezone: Australia/Melbourne
+    open-pull-requests-limit: 5
+    groups:
+      astro-ecosystem:
+        patterns:
+          - 'astro'
+          - '@astrojs/*'
+      sanity:
+        patterns:
+          - 'sanity'
+          - '@sanity/*'
+      tailwind:
+        patterns:
+          - 'tailwindcss'
+          - '@tailwindcss/*'
+      lucide:
+        patterns:
+          - 'lucide-astro'
+    ignore:
+      - dependency-name: 'astro'
+        update-types: ['version-update:semver-major']
+      - dependency-name: 'sanity'
+        update-types: ['version-update:semver-major']
+      - dependency-name: 'tailwindcss'
+        update-types: ['version-update:semver-major']
+
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: weekly
+      day: monday
+      time: '09:00'
+      timezone: Australia/Melbourne
+    open-pull-requests-limit: 3

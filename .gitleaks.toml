@@ -1,9 +1,10 @@
 title = "Living Legacy Forest gitleaks config"
 
-[allowlist]
-  description = "Known public identifiers — not secrets"
-  regexes = [
-    # Add your Sanity project ID, HubSpot portal ID, Cloudinary cloud name here
-    # once they are known. Example:
-    # "\\byour-sanity-project-id\\b",
-  ]
+# Add an [allowlist] block once you have known public identifiers (Sanity project ID,
+# HubSpot portal ID, Cloudinary cloud name). Example:
+#
+# [allowlist]
+#   description = "Known public identifiers — not secrets"
+#   regexes = [
+#     "\\byour-sanity-project-id\\b",
+#   ]

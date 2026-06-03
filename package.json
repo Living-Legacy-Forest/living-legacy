@@ -27,7 +27,7 @@
     "@portabletext/to-html": "^5.0.2",
     "@sanity/astro": "^3.4.0",
     "@sanity/client": "^7.17.0",
-    "@sentry/astro": "^10.52.0",
+    "@sentry/astro": "^10.56.0",
     "@sentry/cloudflare": "^10.52.0",
     "@tailwindcss/vite": "^4.2.1",
     "astro": "^5.18.1",

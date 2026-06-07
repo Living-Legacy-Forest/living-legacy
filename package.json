@@ -34,7 +34,7 @@
     "embla-carousel": "^8.6.0",
     "lucide-astro": "^0.556.0",
     "motion": "^12.38.0",
-    "sanity": "^5.25.0",
+    "sanity": "^5.30.0",
     "tailwindcss": "^4.2.1"
   },
   "devDependencies": {

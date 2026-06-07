@@ -22,7 +22,7 @@
     "prepare": "husky"
   },
   "dependencies": {
-    "@astrojs/cloudflare": "^12.6.13",
+    "@astrojs/cloudflare": "^13.6.1",
     "@astrojs/rss": "^4.0.18",
     "@portabletext/to-html": "^5.0.2",
     "@sanity/astro": "^3.4.0",

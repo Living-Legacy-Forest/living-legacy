@@ -6,15 +6,15 @@ A reference for the technical stack, third-party services, conventions, and buil
 
 ## 1. Overview
 
-|                     |                                               |
-| ------------------- | --------------------------------------------- |
-| **Site**            | https://livinglegacyforest.com.au             |
-| **Repo**            | github.com/Living-Legacy-Forest/living-legacy |
-| **Default branch**  | `master`                                      |
-| **Staging branch**  | `preview`                                     |
-| **Maintainer**      | Sister Creatives                              |
+|                     |                                                                                   |
+| ------------------- | --------------------------------------------------------------------------------- |
+| **Site**            | https://livinglegacyforest.com.au                                                 |
+| **Repo**            | github.com/Living-Legacy-Forest/living-legacy                                     |
+| **Default branch**  | `master`                                                                          |
+| **Branching**       | Trunk-based; PRs target `master`                                                  |
+| **Maintainer**      | Sister Creatives                                                                  |
 | **Node**            | `>=22.13.0` (pinned to `22.23.1` via `.node-version`; pnpm 11 requires `>=22.13`) |
-| **Package manager** | `pnpm`                                        |
+| **Package manager** | `pnpm`                                                                            |
 
 ---
 
@@ -75,7 +75,7 @@ Server vars are read through `astro:env/server`, which resolves from the **Worke
 
 - Feature branches off `master`.
 - Each push gets a Cloudflare preview URL (Workers preview versions).
-- PR target is `preview` for QA; `preview` → `master` once approved.
+- Trunk-based: PRs target `master` directly.
 - Conventional Commits enforced via `commitlint`.
 
 ---
@@ -96,7 +96,7 @@ There is no publish webhook and no scheduled rebuild. Pages render on demand and
 
 ## 6. CI/CD
 
-- **`ci.yml`**: gitleaks → install → audit → type-check → build → commitlint. Runs on push to `master`.
+- **`ci.yml`**: gitleaks → install → audit → type-check → build → commitlint. Runs on pull requests targeting `master` and on push to `master`.
 - **`dependabot.yml`**: weekly grouped dependency updates (astro, sanity, tailwind, lucide). Major version bumps require manual review.
 
 ---
@@ -136,4 +136,4 @@ PostHog covers both product analytics and error tracking (it replaced Sentry).
 | `PUBLIC_POSTHOG_KEY`  | client  | Project API key (`phc_...`), write-only. Also read by the Worker. |
 | `PUBLIC_POSTHOG_HOST` | client  | Defaults to `https://us.i.posthog.com`.                           |
 
-Both are inlined at build time, so they must be set in Cloudflare Pages for **Production and Preview** before a build, not just at runtime.
+Both are inlined into the client bundle at build time, so they must be set as **build** variables (Workers Builds, or the local environment when deploying with `wrangler deploy`). Setting them as Worker runtime secrets has no effect.

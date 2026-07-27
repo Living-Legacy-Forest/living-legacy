@@ -9,6 +9,8 @@ on:
 
 permissions:
   contents: read
+  # commitlint reads the PR's commit list via the API on pull_request events.
+  pull-requests: read
 
 concurrency:
   group: ci-${{ github.workflow }}-${{ github.ref }}

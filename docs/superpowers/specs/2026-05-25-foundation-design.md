@@ -15,7 +15,7 @@ A fresh Astro project scaffolded via `pnpm create astro@latest`, then layered wi
 |---|---|
 | **Framework** | Astro 7.x (`output: 'server'`) |
 | **Adapter** | `@astrojs/cloudflare` v14 (Cloudflare Workers) |
-| **Node** | `22.12.0` (pinned via `.node-version`) |
+| **Node** | `22.23.1` (pinned via `.node-version`; pnpm 11 requires `>=22.13`) |
 | **Package manager** | `pnpm` |
 | **Default branch** | `master` |
 | **Staging branch** | `preview` |
@@ -80,7 +80,7 @@ living-legacy/
   .coderabbit.yaml
   .env.example
   .gitleaks.toml
-  .node-version               ← 22.12.0
+  .node-version               ← 22.23.1
   .prettierignore
   .prettierrc
   astro.config.mjs

@@ -13,7 +13,7 @@ A reference for the technical stack, third-party services, conventions, and buil
 | **Default branch**  | `master`                                      |
 | **Staging branch**  | `preview`                                     |
 | **Maintainer**      | Sister Creatives                              |
-| **Node**            | `>=22.12.0` (pinned via `.node-version`)      |
+| **Node**            | `>=22.13.0` (pinned to `22.23.1` via `.node-version`; pnpm 11 requires `>=22.13`) |
 | **Package manager** | `pnpm`                                        |
 
 ---

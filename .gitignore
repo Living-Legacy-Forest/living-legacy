@@ -26,6 +26,9 @@ pnpm-debug.log*
 # Cloudflare
 .wrangler/
 .cloudflare/
+# local Workers runtime vars (wrangler dev)
+.dev.vars
+.dev.vars.*
 
 # Environment
 .env.local

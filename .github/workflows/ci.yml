@@ -30,9 +30,8 @@ jobs:
           ./gitleaks detect --source . --config .gitleaks.toml --redact
 
       - name: Setup pnpm
+        # Version comes from the "packageManager" field in package.json.
         uses: pnpm/action-setup@v4
-        with:
-          version: 10.32.1
 
       - name: Setup Node
         uses: actions/setup-node@v4

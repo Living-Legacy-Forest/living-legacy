@@ -1,1 +1,124 @@
+@import '@fontsource-variable/fraunces';
+@import '@fontsource-variable/instrument-sans';
 @import 'tailwindcss';
+
+@theme {
+  /* Warm paper and forest ink. Nothing clinical, nothing funereal. */
+  --color-paper: #f6f2e9;
+  --color-paper-deep: #ece5d6;
+  --color-ink: #17231c;
+  --color-ink-soft: #4b5b51;
+  --color-moss: #4a6f4f;
+  --color-moss-deep: #2c4633;
+  --color-bark: #7d6b54;
+  --color-sun: #d8c493;
+
+  --font-display: 'Fraunces Variable', ui-serif, Georgia, serif;
+  --font-body: 'Instrument Sans Variable', ui-sans-serif, system-ui, sans-serif;
+
+  --ease-grow: cubic-bezier(0.22, 0.61, 0.36, 1);
+}
+
+@layer base {
+  html {
+    scroll-behavior: smooth;
+  }
+
+  body {
+    background-color: var(--color-paper);
+    color: var(--color-ink);
+    font-family: var(--font-body);
+    font-synthesis-weight: none;
+    -webkit-font-smoothing: antialiased;
+    text-rendering: optimizeLegibility;
+  }
+
+  /* Fraunces carries a soft, slightly organic cut at display sizes. */
+  h1,
+  h2,
+  h3 {
+    font-family: var(--font-display);
+    font-variation-settings:
+      'SOFT' 40,
+      'WONK' 1;
+    font-weight: 400;
+    letter-spacing: -0.02em;
+    line-height: 1.05;
+    text-wrap: balance;
+  }
+
+  p {
+    text-wrap: pretty;
+  }
+
+  ::selection {
+    background-color: var(--color-moss);
+    color: var(--color-paper);
+  }
+
+  :focus-visible {
+    outline: 2px solid var(--color-moss);
+    outline-offset: 3px;
+  }
+}
+
+@utility eyebrow {
+  font-size: 0.75rem;
+  font-weight: 500;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--color-bark);
+}
+
+/* Paper grain, kept faint so it reads as texture rather than noise. */
+@utility grain-layer {
+  position: fixed;
+  inset: 0;
+  z-index: 50;
+  pointer-events: none;
+  opacity: 0.04;
+  mix-blend-mode: multiply;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='3'/%3E%3C/filter%3E%3Crect width='160' height='160' filter='url(%23n)'/%3E%3C/svg%3E");
+}
+
+/* One orchestrated page load: elements rise as if growing in. */
+@keyframes rise {
+  from {
+    opacity: 0;
+    transform: translateY(1.25rem);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+@utility rise {
+  animation: rise 1s var(--ease-grow) both;
+}
+
+/* Growth rings drawing themselves, outermost last. Each ring settles at its
+   own opacity (--o) rather than a shared value. */
+@keyframes draw-ring {
+  from {
+    stroke-dashoffset: var(--len);
+    opacity: 0;
+  }
+  to {
+    stroke-dashoffset: 0;
+    opacity: var(--o);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}

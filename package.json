@@ -37,7 +37,7 @@
     "motion": "^12.38.0",
     "posthog-js": "^1.407.2",
     "posthog-node": "^5.46.1",
-    "sanity": "^5.25.0",
+    "sanity": "^5.31.1",
     "tailwindcss": "^4.3.3"
   },
   "devDependencies": {

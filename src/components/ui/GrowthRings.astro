@@ -1,0 +1,58 @@
+---
+/**
+ * Growth rings, drawn as slightly irregular concentric ellipses.
+ *
+ * Decorative: the rings carry the idea the site is about, a life measured in
+ * seasons of growth rather than a date on a stone. Hidden from assistive tech.
+ */
+interface Props {
+  class?: string;
+}
+
+const { class: className = '' } = Astro.props;
+
+const RING_COUNT = 16;
+
+// Ramanujan's approximation, so each ring can draw itself over its own length.
+const perimeter = (a: number, b: number) =>
+  Math.PI * (3 * (a + b) - Math.sqrt((3 * a + b) * (a + 3 * b)));
+
+// Deterministic wobble: rings tighten and loosen the way real seasons do.
+const rings = Array.from({ length: RING_COUNT }, (_, i) => {
+  const t = (i + 1) / RING_COUNT;
+  const base = 22 + Math.pow(t, 0.92) * 296;
+  const wobble = Math.sin(i * 2.399) * 5.5;
+  const rx = base + wobble;
+  const ry = base * 0.9 - wobble * 0.7;
+
+  return {
+    rx,
+    ry,
+    rotate: Math.sin(i * 1.11) * 7,
+    len: perimeter(rx, ry),
+    // A few dense years read darker, as they do in real timber.
+    width: i % 5 === 2 ? 1.9 : 1,
+    opacity: 0.16 + (1 - t) * 0.3,
+    delay: 0.15 + i * 0.075,
+  };
+});
+---
+
+<svg class={className} viewBox="-340 -340 680 680" fill="none" aria-hidden="true" focusable="false">
+  {
+    rings.map((ring) => (
+      <ellipse
+        cx="0"
+        cy="0"
+        rx={ring.rx.toFixed(2)}
+        ry={ring.ry.toFixed(2)}
+        transform={`rotate(${ring.rotate.toFixed(2)})`}
+        stroke="currentColor"
+        stroke-width={ring.width}
+        stroke-dasharray={ring.len.toFixed(2)}
+        style={`--len:${ring.len.toFixed(2)}; --o:${ring.opacity.toFixed(3)}; animation: draw-ring 2.4s var(--ease-grow) ${ring.delay.toFixed(2)}s both;`}
+      />
+    ))
+  }
+  <circle cx="0" cy="0" r="4" fill="currentColor" opacity="0.5"></circle>
+</svg>

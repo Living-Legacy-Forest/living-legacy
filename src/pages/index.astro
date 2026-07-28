@@ -1,9 +1,179 @@
 ---
 import BaseLayout from '@/layouts/BaseLayout.astro';
+import GrowthRings from '@/components/ui/GrowthRings.astro';
+
+const steps = [
+  {
+    title: 'Choose a forest',
+    body: 'Each forest has its own setting and its own species. You choose where the tree will stand.',
+  },
+  {
+    title: 'Prepare the ashes',
+    body: 'Cremated ashes are not, on their own, a medium a young tree can grow in. The Living Legacy Formula prepares them so they can be.',
+  },
+  {
+    title: 'Plant and tend',
+    body: 'The tree is planted in the forest and cared for as it grows. The forest is the memorial, and it keeps growing.',
+  },
+];
+
+const forests = [
+  {
+    name: 'Mornington Green',
+    place: 'Somerville, Victoria',
+    href: 'https://morningtongreen.com.au',
+  },
+  {
+    name: 'Living Legacy Wellington Dam',
+    place: 'Near Collie, Western Australia',
+    href: 'https://livinglegacywellingtondam.org.au',
+  },
+];
+
+const description =
+  'Living Legacy Forest turns cremated ashes into the soil of a living tree, using a formula patented in Australia and the United States.';
 ---
 
-<BaseLayout title="Living Legacy Forest">
-  <main>
-    <h1>Living Legacy Forest</h1>
+<BaseLayout title="Living Legacy Forest" description={description}>
+  <div class="grain-layer"></div>
+
+  <header class="mx-auto flex max-w-6xl items-center justify-between px-6 py-8 sm:px-10">
+    <a href="/" class="font-display text-lg tracking-tight" aria-label="Living Legacy Forest home">
+      Living Legacy <span class="text-moss">Forest</span>
+    </a>
+    <a href="#forests" class="eyebrow hover:text-moss-deep transition-colors duration-300">
+      The forests
+    </a>
+  </header>
+
+  <main class="mx-auto max-w-6xl px-6 sm:px-10">
+    <!-- Hero. The rings bleed off the right edge so the composition is not centred. -->
+    <section class="relative isolate grid gap-16 pt-12 pb-28 lg:grid-cols-12 lg:pt-24 lg:pb-40">
+      <div
+        class="text-moss pointer-events-none absolute -top-24 -right-64 -z-10 hidden w-[46rem] lg:block"
+        aria-hidden="true"
+      >
+        <GrowthRings class="h-auto w-full" />
+      </div>
+
+      <div class="lg:col-span-7">
+        <p class="eyebrow rise" style="animation-delay:.05s">Memorial forests in Australia</p>
+
+        <h1 class="rise mt-7 text-[clamp(2.75rem,7vw,5.25rem)]" style="animation-delay:.15s">
+          A life returned<br />to the forest.
+        </h1>
+
+        <p
+          class="rise text-ink-soft mt-8 max-w-xl text-lg leading-relaxed sm:text-xl"
+          style="animation-delay:.28s"
+        >
+          Ashes become the soil of a living tree, prepared with the Living Legacy Formula. Not a
+          headstone and not a cemetery. A forest that goes on growing.
+        </p>
+
+        <div
+          class="rise mt-11 flex flex-wrap items-center gap-x-8 gap-y-4"
+          style="animation-delay:.4s"
+        >
+          <a
+            href="#forests"
+            class="group bg-ink text-paper hover:bg-moss-deep inline-flex items-center gap-3 rounded-full px-7 py-3.5 text-sm font-medium transition-colors duration-300"
+          >
+            Find a forest
+            <span
+              class="transition-transform duration-300 ease-[var(--ease-grow)] group-hover:translate-x-1"
+              aria-hidden="true">&rarr;</span
+            >
+          </a>
+          <a
+            href="#how"
+            class="text-ink-soft decoration-bark/40 hover:text-moss-deep text-sm font-medium underline underline-offset-4 transition-colors duration-300"
+          >
+            How it works
+          </a>
+        </div>
+      </div>
+    </section>
+
+    <!-- The idea, given room to be read slowly. -->
+    <section class="border-bark/20 border-t py-24 lg:py-32">
+      <div class="grid gap-10 lg:grid-cols-12">
+        <p class="eyebrow lg:col-span-3">The idea</p>
+        <h2 class="text-[clamp(1.75rem,3.2vw,2.75rem)] leading-[1.15] lg:col-span-9">
+          A tree is a slow thing. It keeps a record of every season it has lived through, and it
+          holds that record for far longer than we do.
+        </h2>
+      </div>
+    </section>
+
+    <!-- Process. Numbered, sparse, ruled. -->
+    <section id="how" class="border-bark/20 scroll-mt-24 border-t py-24 lg:py-32">
+      <p class="eyebrow">How it works</p>
+      <ol class="bg-bark/20 mt-14 grid gap-px overflow-hidden rounded-lg md:grid-cols-3">
+        {
+          steps.map((step, i) => (
+            <li class="bg-paper p-8 lg:p-10">
+              <span class="font-display text-moss/70 text-4xl">
+                {String(i + 1).padStart(2, '0')}
+              </span>
+              <h3 class="mt-6 text-2xl">{step.title}</h3>
+              <p class="text-ink-soft mt-3 leading-relaxed">{step.body}</p>
+            </li>
+          ))
+        }
+      </ol>
+      <p class="text-bark mt-10 max-w-2xl text-sm leading-relaxed">
+        The Living Legacy Formula is patented in Australia (2016358312) and the United States
+        (10,946,421).
+      </p>
+    </section>
+
+    <!-- The forests. Each is its own brand with its own site. -->
+    <section id="forests" class="border-bark/20 scroll-mt-24 border-t py-24 lg:py-32">
+      <div class="grid gap-10 lg:grid-cols-12">
+        <p class="eyebrow lg:col-span-3">The forests</p>
+        <div class="lg:col-span-9">
+          <ul class="bg-bark/20 grid gap-px overflow-hidden rounded-lg sm:grid-cols-2">
+            {
+              forests.map((forest) => (
+                <li class="group bg-paper">
+                  <a
+                    href={forest.href}
+                    class="hover:bg-paper-deep flex h-full flex-col justify-between gap-16 p-8 transition-colors duration-500 lg:p-10"
+                  >
+                    <div>
+                      <h3 class="text-2xl">{forest.name}</h3>
+                      <p class="text-ink-soft mt-2">{forest.place}</p>
+                    </div>
+                    <span class="eyebrow group-hover:text-moss-deep inline-flex items-center gap-2 transition-colors duration-300">
+                      Visit site
+                      <span
+                        class="transition-transform duration-300 ease-[var(--ease-grow)] group-hover:translate-x-1"
+                        aria-hidden="true"
+                      >
+                        &rarr;
+                      </span>
+                    </span>
+                  </a>
+                </li>
+              ))
+            }
+          </ul>
+        </div>
+      </div>
+    </section>
   </main>
+
+  <footer class="border-bark/20 border-t">
+    <div
+      class="text-bark mx-auto flex max-w-6xl flex-col gap-6 px-6 py-12 text-sm sm:flex-row sm:items-end sm:justify-between sm:px-10"
+    >
+      <div>
+        <p class="font-display text-ink text-base">Living Legacy Forest</p>
+        <p class="mt-2">Forest Conservation Australia Pty Ltd</p>
+        <p>ABN 59 639 330 617</p>
+      </div>
+      <p>&copy; {new Date().getFullYear()}</p>
+    </div>
+  </footer>
 </BaseLayout>

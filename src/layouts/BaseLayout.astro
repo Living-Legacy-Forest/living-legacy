@@ -1,10 +1,12 @@
 ---
 import '@/styles/global.css';
 import PostHog from '@/components/analytics/PostHog.astro';
+import { isIndexableHost } from '@/lib/seo';
 
 interface Props {
   title: string;
   description?: string;
+  /** Force the robots meta on. Left unset, it follows the request host. */
   noindex?: boolean;
   canonical?: string;
 }
@@ -12,9 +14,13 @@ interface Props {
 const {
   title,
   description = 'Living Legacy Forest',
-  noindex = false,
+  noindex,
   canonical = new URL(Astro.url.pathname, Astro.site).toString(),
 } = Astro.props;
+
+// Anything that is not the production domain is blocked, so preview and
+// workers.dev URLs cannot be indexed. A page may still opt in explicitly.
+const blockIndexing = noindex ?? !isIndexableHost(Astro.url.host);
 ---
 
 <!doctype html>
@@ -24,7 +30,7 @@ const {
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>{title}</title>
     {description && <meta name="description" content={description} />}
-    {noindex && <meta name="robots" content="noindex, nofollow" />}
+    {blockIndexing && <meta name="robots" content="noindex, nofollow" />}
     <link rel="canonical" href={canonical} />
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <meta name="theme-color" content="#f6f2e9" />

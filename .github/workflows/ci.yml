@@ -30,8 +30,13 @@ jobs:
 
       - name: Secret scanning (gitleaks)
         run: |
-          curl -sSfL https://github.com/gitleaks/gitleaks/releases/download/v8.27.2/gitleaks_8.27.2_linux_x64.tar.gz | tar -xz
-          ./gitleaks detect --source . --config .gitleaks.toml --redact
+          # Extract outside the checkout: the tarball ships its own README.md and
+          # LICENSE, which otherwise overwrite the repo's files and get scanned,
+          # linted and format-checked by the steps below.
+          mkdir -p "$RUNNER_TEMP/gitleaks"
+          curl -sSfL https://github.com/gitleaks/gitleaks/releases/download/v8.27.2/gitleaks_8.27.2_linux_x64.tar.gz \
+            | tar -xz -C "$RUNNER_TEMP/gitleaks"
+          "$RUNNER_TEMP/gitleaks/gitleaks" detect --source . --config .gitleaks.toml --redact
 
       - name: Setup pnpm
         # Version comes from the "packageManager" field in package.json.

@@ -8,6 +8,12 @@ updates:
       time: '09:00'
       timezone: Australia/Melbourne
     open-pull-requests-limit: 5
+    # Wait until a release is 2 days old before proposing it. pnpm rejects
+    # anything published within 24 hours (minimumReleaseAge in
+    # pnpm-workspace.yaml), so without this Dependabot opens PRs that CI cannot
+    # possibly pass until the packages age out.
+    cooldown:
+      default-days: 2
     groups:
       astro-ecosystem:
         patterns:

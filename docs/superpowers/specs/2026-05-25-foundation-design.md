@@ -13,9 +13,9 @@ A fresh Astro project scaffolded via `pnpm create astro@latest`, then layered wi
 
 | | |
 |---|---|
-| **Framework** | Astro 5.x |
-| **Adapter** | `@astrojs/cloudflare` (Cloudflare Pages) |
-| **Node** | `22.12.0` (pinned via `.node-version`) |
+| **Framework** | Astro 7.x (`output: 'server'`) |
+| **Adapter** | `@astrojs/cloudflare` v14 (Cloudflare Workers) |
+| **Node** | `22.23.1` (pinned via `.node-version`; pnpm 11 requires `>=22.13`) |
 | **Package manager** | `pnpm` |
 | **Default branch** | `master` |
 | **Staging branch** | `preview` |
@@ -26,14 +26,14 @@ A fresh Astro project scaffolded via `pnpm create astro@latest`, then layered wi
 
 | Layer | Technology |
 |---|---|
-| Framework | Astro 5.x |
-| Adapter | `@astrojs/cloudflare` |
+| Framework | Astro 7.x |
+| Adapter | `@astrojs/cloudflare` v14 |
 | Language | TypeScript (strict) |
 | Styling | Tailwind CSS 4.x (Vite plugin) |
 | CMS | Sanity (`@sanity/astro` + `@sanity/client`) |
 | Asset CDN | Cloudinary (upload tooling) |
-| Hosting | Cloudflare Pages (Workers runtime) |
-| Error monitoring | Sentry (`@sentry/astro` + `@sentry/cloudflare`) |
+| Hosting | Cloudflare Workers (static assets) |
+| Analytics + error tracking | PostHog (`posthog-js` + `posthog-node`) |
 | Animation | Motion One (`motion`) |
 | Icons | `lucide-astro` |
 | Rich text | `@portabletext/to-html` |
@@ -47,12 +47,11 @@ living-legacy/
   .github/
     workflows/
       ci.yml                  ← build + type-check + commitlint + gitleaks
-      scheduled-rebuild.yml   ← hourly Cloudflare deploy hook trigger
     dependabot.yml            ← weekly grouped dependency updates
   .husky/
     commit-msg                ← commitlint hook
   public/
-    _redirects                ← Cloudflare Pages redirects stub
+    _redirects                ← Cloudflare redirects stub
   scripts/
     generate-redirects.mjs    ← stub (populate as needed)
   src/
@@ -65,11 +64,11 @@ living-legacy/
     layouts/
       BaseLayout.astro        ← <head>, header, footer, theme bootstrap
     lib/
-      sanity.ts               ← Sanity client config
+      sanity.ts               ← request-time Sanity client (useCdn: false)
+      analytics/              ← PostHog client + server modules
+    middleware.ts             ← reports SSR failures to PostHog
     pages/
       index.astro             ← placeholder home page
-      api/
-        sanity-webhook.ts     ← triggers Cloudflare deploy hook on Sanity publish
     styles/
       global.css              ← Tailwind entry point (@import "tailwindcss")
     types/                    ← shared TypeScript types
@@ -81,7 +80,7 @@ living-legacy/
   .coderabbit.yaml
   .env.example
   .gitleaks.toml
-  .node-version               ← 22.12.0
+  .node-version               ← 22.23.1
   .prettierignore
   .prettierrc
   astro.config.mjs
@@ -90,8 +89,6 @@ living-legacy/
   package.json
   sanity.cli.ts
   sanity.config.ts
-  sentry.client.config.js
-  sentry.server.config.js
   tsconfig.json
   wrangler.jsonc
   TECH_SPEC.md
@@ -101,8 +98,7 @@ living-legacy/
 
 ## 4. Rendering Strategy
 
-- **Static by default** — all pages pre-rendered at build time.
-- **SSR opt-in** — `/api/*` routes use Cloudflare Workers runtime.
+- **On-demand rendering** — `output: 'server'`; every route renders per request on the Workers runtime. Nothing is pre-rendered, so Sanity edits are live without a rebuild.
 - **Prefetch on hover** — `prefetchAll: false`, `defaultStrategy: 'hover'`.
 - **Image service** — `imageService: 'compile'` via Cloudflare adapter.
 
@@ -115,7 +111,7 @@ living-legacy/
 - Dataset: `production`.
 - Hosted studio: `living-legacy.sanity.studio`.
 - Embedded studio bundled with the site app.
-- Webhook at `/api/sanity-webhook` triggers Cloudflare deploy hook on content publish.
+- No publish webhook — pages query Sanity at request time with `useCdn: false`, so published edits appear on the next request.
 - No schemas scaffolded — config wired, schemas defined when content model is known.
 
 ### Cloudinary
@@ -123,10 +119,10 @@ living-legacy/
 - Upload script (`scripts/upload-to-cloudinary.mjs`) stubbed and ready.
 - Env vars templated in `.env.example`.
 
-### Sentry
-- New project `living-legacy` under org `sister-creatives`.
-- `sentry.client.config.js` + `sentry.server.config.js` wired.
-- Source maps uploaded only during production builds (`NODE_ENV === 'production'`).
+### PostHog
+- Project API key set as `PUBLIC_POSTHOG_KEY`; host defaults to `https://us.i.posthog.com`.
+- `src/lib/analytics/posthog-client.ts` (browser: analytics + `capture_exceptions`) and `src/lib/analytics/posthog-server.ts` (Workers: `captureServerException`).
+- Loaded from `BaseLayout` via `src/components/analytics/PostHog.astro`, which skips the bundle entirely when no key is configured.
 
 ### HubSpot
 - `PUBLIC_HUBSPOT_PORTAL_ID` env var templated (same portal as mornington-green unless updated).
@@ -156,9 +152,8 @@ All vars defined in `.env.example` and validated via Astro's `env.schema` in `as
 | `CLOUDINARY_CLOUD_NAME` | server | secret | |
 | `EVENTBRITE_API_KEY` | server | secret | Optional |
 | `EVENTBRITE_ORG_ID` | server | secret | Optional |
-| `CLOUDFLARE_DEPLOY_HOOK` | server | secret | Used by sanity webhook + scheduled rebuild |
-| `SANITY_WEBHOOK_SECRET` | server | secret | Optional |
-| `SENTRY_AUTH_TOKEN` | server | secret | Build-time only, source map upload |
+| `PUBLIC_POSTHOG_KEY` | client | public | Project API key; blank disables PostHog |
+| `PUBLIC_POSTHOG_HOST` | client | public | Defaults to `https://us.i.posthog.com` |
 
 ---
 
@@ -184,8 +179,6 @@ All vars defined in `.env.example` and validated via Astro's `env.schema` in `as
 6. `pnpm type-check`
 7. `pnpm build`
 8. Commitlint via `wagoid/commitlint-github-action@v6`
-
-**`scheduled-rebuild.yml`** — hourly cron, POSTs to `CLOUDFLARE_DEPLOY_HOOK` (keeps static pages fresh with Sanity content changes).
 
 **`dependabot.yml`** — weekly on Mondays at 09:00 Melbourne time:
 - Groups: `astro-ecosystem`, `sanity`, `tailwind`, `lucide`
@@ -214,8 +207,8 @@ All vars defined in `.env.example` and validated via Astro's `env.schema` in `as
 
 ## 9. Deployment
 
-- **Hosting:** Cloudflare Pages
+- **Hosting:** Cloudflare Workers with static assets (Pages support was removed in adapter v14)
 - **Build command:** `pnpm build`
-- **Build output:** `dist/`
-- **Wrangler config:** `name: "living-legacy"`, `compatibility_date: "2026-05-25"`
+- **Build output:** `dist/` — `server/` is the Worker, `client/` is served via the `ASSETS` binding
+- **Wrangler config:** `name: "living-legacy"`, `main: "@astrojs/cloudflare/entrypoints/server"`, `compatibility_date: "2026-05-25"`, `compatibility_flags: ["nodejs_compat"]`
 - **Sanity studio:** deployed separately via `pnpm studio:deploy` → `living-legacy.sanity.studio`

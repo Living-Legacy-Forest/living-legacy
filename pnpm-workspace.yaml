@@ -1,0 +1,17 @@
+# pnpm settings. The pnpm version itself is pinned by "packageManager" in
+# package.json, which both local dev and CI resolve from — so this file is the
+# single source of truth for overrides.
+
+overrides:
+  # GHSA-23hp-3jrh-7fpw (critical): node-tar decompression DoS. Reaches us only
+  # through @sanity/cli (studio tooling), never the deployed Worker, but the CI
+  # audit gate fails on it.
+  tar: '>=7.5.19'
+
+# Build scripts have never run for these and the build is verified working
+# without them, so this records the status quo rather than changing behaviour.
+allowBuilds:
+  core-js: false
+  esbuild: false
+  sharp: false
+  workerd: false

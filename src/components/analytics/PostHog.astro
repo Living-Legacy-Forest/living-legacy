@@ -1,0 +1,14 @@
+---
+/**
+ * PostHog — product analytics + client-side error tracking.
+ *
+ * The init module is only loaded when PUBLIC_POSTHOG_KEY is set, so local dev
+ * and unconfigured preview builds ship no analytics bundle at all.
+ */
+---
+
+<script>
+  if (import.meta.env.PUBLIC_POSTHOG_KEY) {
+    import('@/lib/analytics/posthog-client');
+  }
+</script>

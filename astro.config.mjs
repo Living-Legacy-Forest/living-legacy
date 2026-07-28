@@ -3,24 +3,18 @@ import cloudflare from '@astrojs/cloudflare';
 import sanity from '@sanity/astro';
 import sitemap from '@astrojs/sitemap';
 import tailwindcss from '@tailwindcss/vite';
-import sentry from '@sentry/astro';
 
 export default defineConfig({
   site: 'https://livinglegacyforest.com.au',
+  // Every route renders on demand so published Sanity content appears
+  // immediately, with no rebuild step.
+  output: 'server',
   adapter: cloudflare({ imageService: 'compile' }),
   prefetch: {
     prefetchAll: false,
     defaultStrategy: 'hover',
   },
   integrations: [
-    sentry({
-      org: 'sister-creatives',
-      project: 'living-legacy',
-      authToken: process.env.SENTRY_AUTH_TOKEN,
-      sourceMapsUploadOptions: {
-        enabled: process.env.NODE_ENV === 'production',
-      },
-    }),
     sanity({
       projectId: process.env.SANITY_PROJECT_ID ?? 'placeholder',
       dataset: 'production',
@@ -63,6 +57,16 @@ export default defineConfig({
         access: 'public',
         optional: true,
       }),
+      PUBLIC_POSTHOG_KEY: envField.string({
+        context: 'client',
+        access: 'public',
+        optional: true,
+      }),
+      PUBLIC_POSTHOG_HOST: envField.string({
+        context: 'client',
+        access: 'public',
+        default: 'https://us.i.posthog.com',
+      }),
       PUBLIC_CLOUDINARY_CLOUD_NAME: envField.string({
         context: 'client',
         access: 'public',
@@ -84,16 +88,6 @@ export default defineConfig({
         optional: true,
       }),
       EVENTBRITE_ORG_ID: envField.string({
-        context: 'server',
-        access: 'secret',
-        optional: true,
-      }),
-      CLOUDFLARE_DEPLOY_HOOK: envField.string({
-        context: 'server',
-        access: 'secret',
-        optional: true,
-      }),
-      SANITY_WEBHOOK_SECRET: envField.string({
         context: 'server',
         access: 'secret',
         optional: true,

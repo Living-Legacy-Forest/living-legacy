@@ -3,10 +3,14 @@ name: CI
 on:
   push:
     branches: [master]
+  pull_request:
+    branches: [master]
   workflow_dispatch:
 
 permissions:
   contents: read
+  # commitlint reads the PR's commit list via the API on pull_request events.
+  pull-requests: read
 
 concurrency:
   group: ci-${{ github.workflow }}-${{ github.ref }}
@@ -30,9 +34,8 @@ jobs:
           ./gitleaks detect --source . --config .gitleaks.toml --redact
 
       - name: Setup pnpm
+        # Version comes from the "packageManager" field in package.json.
         uses: pnpm/action-setup@v4
-        with:
-          version: 10.32.1
 
       - name: Setup Node
         uses: actions/setup-node@v4
@@ -54,3 +57,8 @@ jobs:
 
       - name: Lint commits
         uses: wagoid/commitlint-github-action@v6
+        with:
+          # The action defaults to commitlint.config.mjs; this repo uses .cjs.
+          # Without this it silently falls back to a preset that cannot parse
+          # breaking-change headers such as "feat!: ...".
+          configFile: ./commitlint.config.cjs

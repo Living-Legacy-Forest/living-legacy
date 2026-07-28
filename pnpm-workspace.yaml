@@ -8,6 +8,13 @@ overrides:
   # audit gate fails on it.
   tar: '>=7.5.19'
 
+# Refuse packages published within the last 24 hours, so a compromised release
+# has time to be caught and pulled before it can reach us. This is pnpm 11's
+# default, stated explicitly so the behaviour is intentional and survives any
+# change to that default. Dependabot's cooldown in .github/dependabot.yml is set
+# above this window so the two do not contradict each other.
+minimumReleaseAge: 1440
+
 # Build scripts have never run for these and the build is verified working
 # without them, so this records the status quo rather than changing behaviour.
 allowBuilds:

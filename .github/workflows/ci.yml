@@ -18,7 +18,7 @@ concurrency:
 
 jobs:
   verify:
-    name: Build + type-check + commitlint
+    name: Verify (secrets, audit, types, lint, format, build, commits)
     runs-on: ubuntu-latest
     timeout-minutes: 10
 
@@ -51,6 +51,12 @@ jobs:
 
       - name: Type-check
         run: pnpm type-check
+
+      - name: Lint
+        run: pnpm lint
+
+      - name: Format check
+        run: pnpm format:check
 
       - name: Build
         run: pnpm build

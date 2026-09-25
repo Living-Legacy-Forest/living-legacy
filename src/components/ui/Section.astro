@@ -1,0 +1,35 @@
+---
+/**
+ * The ruled section with eyebrow pattern repeated down the home page: a top
+ * rule, generous vertical padding, and an eyebrow label. `layout="split"`
+ * (the default) puts the eyebrow in a left rail with the content in the
+ * remaining nine columns, as in "The idea" and "The forests". `layout="stacked"`
+ * puts the eyebrow directly above full-width content, as in "How it works".
+ */
+interface Props {
+  eyebrow?: string;
+  id?: string;
+  class?: string;
+  layout?: 'split' | 'stacked';
+}
+
+const { eyebrow, id, class: className = '', layout = 'split' } = Astro.props;
+---
+
+<section id={id} class:list={['border-bark/20 scroll-mt-24 border-t py-24 lg:py-32', className]}>
+  {
+    layout === 'split' ? (
+      <div class="grid gap-10 lg:grid-cols-12">
+        {eyebrow && <p class="eyebrow lg:col-span-3">{eyebrow}</p>}
+        <div class="lg:col-span-9">
+          <slot />
+        </div>
+      </div>
+    ) : (
+      <>
+        {eyebrow && <p class="eyebrow">{eyebrow}</p>}
+        <slot />
+      </>
+    )
+  }
+</section>

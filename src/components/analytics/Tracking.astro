@@ -1,0 +1,32 @@
+---
+import { isIndexableHost } from '@/lib/seo';
+import Gtm from './tracking/Gtm.astro';
+import MetaPixel from './tracking/MetaPixel.astro';
+import Gtag from './tracking/Gtag.astro';
+
+/**
+ * Marketing tags carried over from the live site: Google Tag Manager, the
+ * Meta pixel, and gtag.js (Google Analytics and Google Ads share the one
+ * loader). Each renders only when its id is configured, and none of them
+ * render at all unless the request host is the indexable production host, so
+ * local dev and preview deploys never pollute live data.
+ *
+ * The actual script markup lives in ./tracking/*.astro rather than inline
+ * here: prettier-plugin-astro cannot format a <script> containing an object
+ * literal when it's nested inside a `{condition && (...)}` expression, so
+ * each tag is its own always-rendered component and the conditionals below
+ * only ever wrap a component tag, never raw script text.
+ */
+const gtmId = import.meta.env.PUBLIC_GTM_ID;
+const metaPixelId = import.meta.env.PUBLIC_META_PIXEL_ID;
+const gaIds = (import.meta.env.PUBLIC_GA_MEASUREMENT_ID ?? '')
+  .split(',')
+  .map((id: string) => id.trim())
+  .filter(Boolean);
+
+const enabled = isIndexableHost(Astro.url.host);
+---
+
+{enabled && gtmId && <Gtm gtmId={gtmId} />}
+{enabled && metaPixelId && <MetaPixel pixelId={metaPixelId} />}
+{enabled && gaIds.length > 0 && <Gtag ids={gaIds} />}

@@ -1,0 +1,37 @@
+---
+/**
+ * A brand image painted in the current text colour.
+ *
+ * The logo files are white artwork, drawn for dark backgrounds, while this site
+ * sits on paper. Using each file as a CSS mask over `currentColor` lets the
+ * same artwork take any theme colour with no recolouring of the source.
+ */
+import { getImage } from 'astro:assets';
+import type { ImageMetadata } from 'astro';
+
+interface Props {
+  src: ImageMetadata;
+  /** Rendered height; width follows the artwork's aspect ratio. */
+  height: string;
+  /** Accessible name. Leave empty for decorative use beside a text label. */
+  label?: string;
+  class?: string;
+}
+
+const { src, height, label = '', class: className = '' } = Astro.props;
+const image = await getImage({ src, width: Math.min(src.width, 480), format: 'webp' });
+const style = [
+  `height:${height}`,
+  `aspect-ratio:${src.width} / ${src.height}`,
+  `-webkit-mask:url("${image.src}") center / contain no-repeat`,
+  `mask:url("${image.src}") center / contain no-repeat`,
+  'background-color:currentColor',
+].join(';');
+---
+
+<span
+  class:list={['inline-block shrink-0', className]}
+  style={style}
+  role={label ? 'img' : undefined}
+  aria-label={label || undefined}
+  aria-hidden={label ? undefined : 'true'}></span>

@@ -1,0 +1,33 @@
+---
+// Register interest in an upcoming location. Carries the live page's short
+// intro and its form (live/out/locations__register-your-interest-for-
+// locations-throughout-australia.txt). Option labels for "Which part of
+// Australia are you located in" are copied exactly from the live form's
+// rendered <select>, including "Other".
+//
+// "Other location" is shown, and made required, only once "Other" is
+// selected; see UpcomingLocationForm.tsx.
+import BaseLayout from '@/layouts/BaseLayout.astro';
+import { Card, CardContent } from '@/components/ui/card';
+import { UpcomingLocationForm } from '@/components/forms/UpcomingLocationForm';
+
+const title = 'Register your interest for locations throughout Australia | Living Legacy Forest';
+const description =
+  'Living Legacy Forest is coming to new locations across Australia. Register your interest and let us know which area you would like to see us in.';
+---
+
+<BaseLayout title={title} description={description}>
+  <div class="mx-auto max-w-2xl px-6 py-20 sm:px-10 lg:py-28">
+    <p class="eyebrow">Upcoming locations</p>
+    <h1 class="display-title mt-4">Register your interest for locations throughout Australia</h1>
+    <p class="lead mt-5">
+      Please fill out the form below to let us know your area of interest and location.
+    </p>
+
+    <Card className="mt-10 p-2 sm:p-4">
+      <CardContent className="px-4 sm:px-6">
+        <UpcomingLocationForm client:visible />
+      </CardContent>
+    </Card>
+  </div>
+</BaseLayout>

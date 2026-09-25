@@ -1,0 +1,50 @@
+---
+/**
+ * Pre-plan photo carousel. Live has 20 slides, the 20th repeating slide 2,
+ * so this rebuild drops the duplicate and carries 19 (see
+ * src/assets/README.md, "Not downloaded"). The carousel itself is a shadcn
+ * Carousel island (PreplanPhotosCarousel.tsx); images are optimised here
+ * with getImage() since the React island cannot use astro:assets.
+ */
+import { getImage } from 'astro:assets';
+import PreplanPhotosCarousel from './PreplanPhotosCarousel';
+
+const carouselModules = import.meta.glob<{ default: ImageMetadata }>(
+  '../../../assets/home/carousel-*.{webp,jpg}',
+  { eager: true }
+);
+
+const photos = await Promise.all(
+  Object.keys(carouselModules)
+    .sort()
+    .map(async (key, i) => {
+      const meta = carouselModules[key]!.default;
+      const optimized = await getImage({ src: meta, width: 640 });
+      const height = Math.round(640 * (meta.height / meta.width));
+
+      return {
+        src: optimized.src,
+        width: 640,
+        height,
+        alt: `Living Legacy Forest tree-planting day, photo ${i + 1} of 19`,
+      };
+    })
+);
+---
+
+<section class="border-bark/20 scroll-mt-24 border-t py-24 lg:py-32">
+  <div class="grid gap-6 lg:grid-cols-12 lg:items-end lg:gap-10">
+    <div class="lg:col-span-8">
+      <p class="eyebrow">Pre-plan or planning for someone else?</p>
+      <h2 class="section-title mt-4">
+        We've helped thousands of Australians create lasting legacies.
+      </h2>
+      <p class="lead mt-6 max-w-2xl">
+        Choose to be part of your own tree-planting day now, or consider a memorial tree for the
+        ashes of loved ones, the perfect opportunity to honour their memory in nature.
+      </p>
+    </div>
+  </div>
+
+  <PreplanPhotosCarousel photos={photos} client:visible />
+</section>

@@ -1,0 +1,50 @@
+---
+import { Image } from 'astro:assets';
+import { ArrowRight } from 'lucide-astro';
+import { buttonVariants } from '@/components/ui/button';
+import { cn } from '@/lib/utils';
+import photo1 from '@/assets/home/media-teaser-1.jpg';
+import photo2 from '@/assets/home/media-teaser-2.jpg';
+import photo3 from '@/assets/home/media-teaser-3.jpg';
+import photo4 from '@/assets/home/media-teaser-4.jpg';
+
+const photos = [
+  { image: photo1, alt: 'Living Legacy Forest media feature' },
+  { image: photo2, alt: 'Living Legacy Forest media coverage' },
+  { image: photo3, alt: 'Living Legacy Forest press feature' },
+  { image: photo4, alt: 'Living Legacy Forest media highlight' },
+] as const;
+---
+
+<section class="border-bark/20 scroll-mt-24 border-t py-24 lg:py-32">
+  <div class="grid items-center gap-14 lg:grid-cols-12 lg:gap-10">
+    <div class="grid grid-cols-2 gap-4 lg:col-span-6">
+      {
+        photos.map((photo, i) => (
+          <Image
+            src={photo.image}
+            alt={photo.alt}
+            width={480}
+            loading="lazy"
+            class:list={['aspect-square w-full rounded-xl object-cover', i % 2 === 1 && 'mt-8']}
+          />
+        ))
+      }
+    </div>
+
+    <div class="lg:col-span-6">
+      <p class="eyebrow">Latest coverage and highlights</p>
+      <h2 class="section-title mt-4">In the media</h2>
+      <p class="lead mt-6">
+        We have been featured in various renowned media outlets. From exclusive interviews to
+        in-depth reviews, the coverage about us reflects our dedication and innovation. Stay updated
+        with the latest news and discover how we continue to grow and make a positive impact in the
+        industry.
+      </p>
+      <a href="/about/in-the-media/" class={cn(buttonVariants({ variant: 'link' }), 'mt-8')}>
+        Read more
+        <ArrowRight data-icon="inline-end" aria-hidden="true" />
+      </a>
+    </div>
+  </div>
+</section>

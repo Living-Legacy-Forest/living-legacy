@@ -1,0 +1,330 @@
+---
+/**
+ * Locations in Australia.
+ *
+ * One list and one map, rather than the live site's cards followed by a map
+ * that repeated them. Each map pin is a shadcn HoverCard (LocationsMap.tsx,
+ * a React island), and hovering or focusing a pin or its list entry lights
+ * up the other, so the map reads as a key to the list instead of a second
+ * copy of it.
+ *
+ * Marker positions are percentages of the map image (a square, transparent
+ * silhouette), placed on each site's real town. Images for the React island
+ * are optimised here with getImage(), since islands cannot use astro:assets.
+ */
+import { Image, getImage } from 'astro:assets';
+import { Phone, ArrowRight } from 'lucide-astro';
+import { buttonVariants } from '@/components/ui/button';
+import { CardDescription } from '@/components/ui/card';
+import { Separator } from '@/components/ui/separator';
+import { cn } from '@/lib/utils';
+import LocationsMap from './LocationsMap';
+import mapImage from '@/assets/home/locations-map.png';
+import wellingtonDamPhoto from '@/assets/home/location-wellington-dam.png';
+import morningtonGreenPhoto from '@/assets/home/location-mornington-green.png';
+import centennialParkPhoto from '@/assets/home/location-centennial-park.jpg';
+import metropolitanPhoto from '@/assets/home/location-metropolitan-memorial-parks.jpg';
+
+const locations = [
+  {
+    key: 'wellington-dam',
+    group: 'own',
+    label: 'Living Legacy Forest',
+    name: 'Wellington Dam',
+    body: 'Join the community creating a creek front forest for the native quokka and black cockatoo in Perth, Western Australia. Choose from trees that stand tall among giants growing over 30 metres.',
+    address: '1 Wellington Dam Rd, Worsley WA 6225',
+    phone: '0427 096 944',
+    tel: 'tel:0427096944',
+    href: 'https://livinglegacywellingtondam.org.au/',
+    photo: wellingtonDamPhoto,
+    marker: { x: 8, y: 63, align: 'start' as const },
+  },
+  {
+    key: 'mornington-green',
+    group: 'own',
+    label: 'Living Legacy Garden',
+    name: 'Mornington Green',
+    body: 'Our first protected Living Legacy Garden, located on the Mornington Peninsula in Melbourne, Australia. Choose from a selection of blossoming European trees.',
+    address: '125 Tyabb-Tooradin Rd, Somerville VIC 3912',
+    phone: '+61 3 9059 4959',
+    tel: 'tel:+61390594959',
+    href: 'https://morningtongreen.com.au/',
+    photo: morningtonGreenPhoto,
+    marker: { x: 76, y: 79, align: 'end' as const },
+  },
+  {
+    key: 'centennial-park',
+    group: 'partner',
+    label: 'Partner location',
+    name: 'Centennial Park Adelaide',
+    body: 'The Living Legacy Forever Flowers Garden is a new sustainable memorial option available for the first time in South Australia, exclusively at Centennial Park.',
+    address: '760 Goodwood Rd, Pasadena SA 5042',
+    phone: '+61 8 8276 6011',
+    tel: 'tel:+61882766011',
+    href: 'https://www.centennialpark.org/living-legacy-forever-flowers/',
+    photo: centennialParkPhoto,
+    marker: { x: 63, y: 70, align: 'center' as const },
+  },
+  {
+    key: 'metropolitan',
+    group: 'partner',
+    label: 'Partner location',
+    name: 'Metropolitan Memorial Parks',
+    body: 'Established under NSW legislation as a for-purpose self-funding business, entrusted to manage Crown reserves and provide interment services to the community.',
+    address: 'Cnr Delhi and Plassey Roads, North Ryde NSW 2113',
+    phone: '1300 389 888',
+    tel: 'tel:1300389888',
+    href: 'https://www.metropolitanmemorialparks.com.au/resource-hub/living-legacy-trees-a-sustainable-memorial',
+    photo: metropolitanPhoto,
+    marker: { x: 92, y: 64, align: 'end' as const },
+  },
+];
+
+const groups = [
+  { title: 'Our sites', items: locations.filter((l) => l.group === 'own') },
+  { title: 'Partner locations', items: locations.filter((l) => l.group === 'partner') },
+];
+
+const optimizedMap = await getImage({ src: mapImage, width: 720 });
+
+const mapPins = await Promise.all(
+  locations.map(async (location) => {
+    const photo = await getImage({ src: location.photo, width: 144 });
+    return {
+      key: location.key,
+      label: location.label,
+      name: location.name,
+      address: location.address,
+      phone: location.phone,
+      tel: location.tel,
+      href: location.href,
+      photoSrc: photo.src,
+      photoWidth: 144,
+      photoHeight: Math.round(144 * (location.photo.height / location.photo.width)),
+      marker: location.marker,
+    };
+  })
+);
+---
+
+<section
+  id="location-section"
+  class="border-bark/20 scroll-mt-24 border-t py-24 lg:py-32"
+  aria-labelledby="location-section-heading"
+  data-locations
+>
+  <div class="max-w-2xl">
+    <p class="eyebrow">Where to find us</p>
+    <h2 id="location-section-heading" class="section-title mt-4">Locations in Australia</h2>
+    <p class="lead mt-6">
+      Two Living Legacy sites of our own, and two partners offering Living Legacy trees in their
+      memorial parks.
+    </p>
+  </div>
+
+  <div class="mt-14 grid gap-12 lg:mt-20 lg:grid-cols-12 lg:gap-16">
+    <!-- The map. Sticky beside the list on wide screens; above it, smaller, on phones. -->
+    <div class="lg:col-span-6">
+      <div class="lg:sticky lg:top-28">
+        <LocationsMap
+          mapSrc={optimizedMap.src}
+          mapWidth={720}
+          mapHeight={Math.round(720 * (mapImage.height / mapImage.width))}
+          locations={mapPins}
+          client:visible
+        />
+      </div>
+    </div>
+
+    <!-- The list, grouped: the sites Living Legacy runs, then the partners. -->
+    <div class="space-y-14 lg:col-span-6">
+      {
+        groups.map((group) => (
+          <div>
+            <h3 class="eyebrow font-body">{group.title}</h3>
+            <Separator className="mt-4" />
+            <ol class="divide-bark/20 divide-y">
+              {group.items.map((location) => (
+                <li
+                  id={`location-${location.key}`}
+                  class="location-item scroll-mt-28 py-8"
+                  data-location-item={location.key}
+                >
+                  <div class="flex gap-5">
+                    <Image
+                      src={location.photo}
+                      alt=""
+                      width={160}
+                      loading="lazy"
+                      class="location-item__photo h-20 w-20 shrink-0 rounded-lg object-cover transition-shadow duration-300 sm:h-24 sm:w-24"
+                    />
+
+                    <div class="min-w-0 flex-1">
+                      {location.group === 'own' && <p class="eyebrow">{location.label}</p>}
+                      <h4 class="card-title [p+&]:mt-1">{location.name}</h4>
+                      <CardDescription className="mt-3">{location.body}</CardDescription>
+
+                      <dl class="text-ink-soft mt-5 grid gap-2 text-sm">
+                        <div>
+                          <dt class="sr-only">Address</dt>
+                          <dd>{location.address}</dd>
+                        </div>
+                        <div>
+                          <dt class="sr-only">Phone</dt>
+                          <dd>
+                            <a
+                              href={location.tel}
+                              class="text-moss-deep hover:text-ink inline-flex items-center gap-2 font-medium transition-colors duration-300"
+                            >
+                              <Phone class="h-4 w-4" aria-hidden="true" />
+                              {location.phone}
+                            </a>
+                          </dd>
+                        </div>
+                      </dl>
+
+                      <a
+                        href={location.href}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        class={cn(buttonVariants({ variant: 'link' }), 'mt-6')}
+                      >
+                        Visit site
+                        <span class="sr-only">for {location.name} (opens in a new tab)</span>
+                        <ArrowRight data-icon="inline-end" aria-hidden="true" />
+                      </a>
+                    </div>
+                  </div>
+                </li>
+              ))}
+            </ol>
+          </div>
+        ))
+      }
+    </div>
+  </div>
+</section>
+
+<style>
+  /* The marker and pin are rendered by the LocationsMap island (React), not
+     by this .astro template, so Astro's own CSS scoping never reaches them:
+     these rules are wrapped in :global() rather than styling nothing. Only
+     the list's .location-item / .location-item__photo (rendered here) keep
+     Astro's scoping normally. */
+
+  /* The marker box is anchored at the pin's point, which sits on the town. */
+  :global(.location-marker) {
+    position: absolute;
+    width: 0;
+    height: 0;
+  }
+
+  :global(.location-marker:is(:hover, :focus-within, .is-active)) {
+    z-index: 20;
+  }
+
+  /* Lucide's pin, filled with paper so it reads against the forest photo. */
+  :global(.location-marker__pin) {
+    position: absolute;
+    left: 0;
+    bottom: -0.15rem;
+    translate: -50% 0;
+    display: block;
+    border-radius: 9999px;
+    color: var(--color-moss-deep);
+    filter: drop-shadow(0 6px 8px rgb(23 35 28 / 0.45));
+    transform-origin: 50% 100%;
+    transition: scale 0.3s var(--ease-grow);
+  }
+
+  :global(.location-marker__pin svg) {
+    display: block;
+    fill: var(--color-paper);
+    transition:
+      fill 0.3s var(--ease-grow),
+      color 0.3s var(--ease-grow);
+  }
+
+  :global(.location-marker:is(:hover, :focus-within, .is-active) .location-marker__pin) {
+    color: var(--color-paper);
+    scale: 1.15;
+  }
+
+  :global(.location-marker:is(:hover, :focus-within, .is-active) .location-marker__pin svg) {
+    fill: var(--color-moss-deep);
+  }
+
+  /* A slow ring at the pin's point, like a growth ring spreading. */
+  :global(.location-marker::after) {
+    content: '';
+    position: absolute;
+    left: 0;
+    top: 0;
+    width: 0.75rem;
+    height: 0.75rem;
+    translate: -50% -50%;
+    border-radius: 9999px;
+    border: 1px solid var(--color-paper);
+    opacity: 0;
+    animation: marker-ring 3.2s var(--ease-grow) infinite;
+    pointer-events: none;
+  }
+
+  .location-item.is-active .location-item__photo {
+    box-shadow:
+      0 0 0 2px var(--color-paper),
+      0 0 0 3.5px var(--color-moss-deep);
+  }
+
+  @keyframes marker-ring {
+    0% {
+      opacity: 0.8;
+      scale: 0.6;
+    }
+    70%,
+    100% {
+      opacity: 0;
+      scale: 2.4;
+    }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    :global(.location-marker::after) {
+      animation: none;
+    }
+  }
+</style>
+
+<script>
+  // Link each marker to its list entry: pointing at or focusing either one
+  // lights up both. Purely an enhancement; the list stands on its own. The
+  // map's pins live inside a React island, but by the time this script runs
+  // their server-rendered markup (with the same data attributes) is already
+  // in the document, so a plain DOM query reaches both sides.
+  function initLocations() {
+    const root = document.querySelector<HTMLElement>('[data-locations]');
+    if (!root || root.dataset.bound === 'true') return;
+    root.dataset.bound = 'true';
+
+    const markers = root.querySelectorAll<HTMLElement>('[data-location-marker]');
+    const items = root.querySelectorAll<HTMLElement>('[data-location-item]');
+
+    const setActive = (key: string | null) => {
+      markers.forEach((el) => el.classList.toggle('is-active', el.dataset.locationMarker === key));
+      items.forEach((el) => el.classList.toggle('is-active', el.dataset.locationItem === key));
+    };
+
+    const bind = (el: HTMLElement, key: string | undefined) => {
+      if (!key) return;
+      el.addEventListener('pointerenter', () => setActive(key));
+      el.addEventListener('pointerleave', () => setActive(null));
+      el.addEventListener('focusin', () => setActive(key));
+      el.addEventListener('focusout', () => setActive(null));
+    };
+
+    markers.forEach((el) => bind(el, el.dataset.locationMarker));
+    items.forEach((el) => bind(el, el.dataset.locationItem));
+  }
+
+  initLocations();
+</script>

@@ -1,0 +1,26 @@
+---
+/**
+ * gtag.js loader, shared by Google Analytics and Google Ads (one script tag,
+ * one `dataLayer`, a `config` call per id). Split out for the same reason as
+ * Gtm.astro: this renders unconditionally, and the parent decides whether to
+ * include it.
+ */
+interface Props {
+  ids: string[];
+}
+
+const { ids } = Astro.props;
+const firstId = ids[0];
+---
+
+<script is:inline async src={`https://www.googletagmanager.com/gtag/js?id=${firstId}`}></script>
+<script define:vars={{ ids }}>
+  window.dataLayer = window.dataLayer || [];
+  function gtag() {
+    dataLayer.push(arguments);
+  }
+  gtag('js', new Date());
+  ids.forEach(function (id) {
+    gtag('config', id);
+  });
+</script>

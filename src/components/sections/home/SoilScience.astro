@@ -1,0 +1,168 @@
+---
+/**
+ * The soil science, drawn as a cross-section.
+ *
+ * Above ground: the copy beside the tree. The tree stands on the soil band,
+ * which carries the roots and the four steps, since those four steps are what
+ * happens down there. The root drawing is white
+ * line art made for a dark ground, which is why the band is dark.
+ */
+import { Image } from 'astro:assets';
+import { CardDescription } from '@/components/ui/card';
+import dnaIcon from '@/assets/home/soil-science-header.png';
+import tree from '@/assets/home/soil-science-tree-illustration-2.png';
+import roots from '@/assets/home/soil-science-root.png';
+import stepDevelopment from '@/assets/home/soil-development-illustration.png';
+import stepRevitalisation from '@/assets/home/soil-revitalisation-illustration.png';
+import stepRootIntegration from '@/assets/home/root-integration-illustration.png';
+import stepIntelligenceExchange from '@/assets/home/intelligence-exchange-illustration.png';
+
+const steps = [
+  {
+    title: 'Soil development',
+    body: 'Replacing harmful fertilisers with biological ones to create a sustainable growth foundation.',
+    icon: stepDevelopment,
+  },
+  {
+    title: 'Soil revitalisation',
+    body: 'Using specially formulated biology and paramagnetic rocks to boost microbial activity and nutrient availability, transforming ashes into a growth medium.',
+    icon: stepRevitalisation,
+  },
+  {
+    title: 'Root integration',
+    body: 'Embedding the ash-soil mix under tree roots for seamless nutrient absorption, helping the tree grow and be perpetuated through its thousands of seeds and seedlings.',
+    icon: stepRootIntegration,
+  },
+  {
+    title: 'Intelligence exchange',
+    body: 'Harnessing biological processes to convert ashes into nutrients through soil-microbe-root synergy.',
+    icon: stepIntelligenceExchange,
+  },
+] as const;
+---
+
+<section
+  class="border-bark/20 scroll-mt-24 border-t pt-24 pb-24 lg:pt-32 lg:pb-32"
+  aria-labelledby="soil-science-heading"
+>
+  <!-- Above ground -->
+  <div class="grid items-end gap-10 lg:grid-cols-12 lg:gap-8">
+    <div class="pb-2 lg:col-span-6 lg:pb-16">
+      <div class="flex items-center gap-3">
+        <Image src={dnaIcon} alt="" width={64} loading="lazy" class="h-9 w-auto" />
+        <p class="eyebrow">The science</p>
+      </div>
+      <h2 id="soil-science-heading" class="section-title mt-4">The soil science</h2>
+      <p class="font-display text-ink-soft mt-4 text-xl leading-snug">
+        The science behind our patented ash treatment process.
+      </p>
+      <p class="lead mt-6 max-w-xl">
+        At Living Legacy, we've developed a unique, scientifically backed 4-step process to
+        transform cremated ashes into a living part of the natural world. This process ensures that
+        your ashes are not only returned to the earth but become a vital part of a tree's growth,
+        creating a lasting and meaningful connection. Through careful and precise steps, we infuse
+        the ashes into the tree, allowing your legacy to live on through its roots, trunk, and
+        branches.
+      </p>
+    </div>
+
+    <!-- The roots hang from the tree's own box, so they meet the trunk at every
+         width. Measured from the artwork: the trunk's base is centred at 47.7%
+         of the tree image, and the root drawing's stem at 53.6% of its own
+         width. At 40% of the tree's width, the roots start at
+         47.7% - 0.536 x 40% = 26.26%. -->
+    <div class="relative z-20 lg:col-span-6">
+      <div class="relative mx-auto w-full max-w-xl lg:max-w-none">
+        <Image
+          src={tree}
+          alt="A tree in full leaf, half in autumn colour and half green"
+          widths={[480, 720, 1000]}
+          sizes="(min-width: 1024px) 560px, 100vw"
+          loading="lazy"
+          class="relative block h-auto w-full"
+        />
+        <Image
+          src={roots}
+          alt=""
+          width={600}
+          loading="lazy"
+          aria-hidden="true"
+          class="soil-roots absolute top-[calc(100%-1px)] left-[26.26%] h-auto w-[40%] opacity-60"
+        />
+      </div>
+    </div>
+  </div>
+
+  <!-- Below ground -->
+  <div
+    class="soil-band text-paper relative overflow-hidden rounded-3xl px-6 pt-[min(22%,8.5rem)] pb-12 sm:px-10 lg:px-14 lg:pb-16"
+  >
+    <p class="eyebrow text-sun/80">Beneath the tree, in four steps</p>
+
+    <ol class="mt-8 grid gap-10 sm:grid-cols-2 lg:grid-cols-4 lg:gap-8">
+      {
+        steps.map((step, i) => (
+          <li class="border-paper/15 relative border-t pt-6 lg:border-t-0 lg:border-l lg:pt-0 lg:pl-6 lg:first:border-l-0 lg:first:pl-0">
+            <div class="flex items-center gap-4">
+              <Image
+                src={step.icon}
+                alt=""
+                width={144}
+                loading="lazy"
+                class="h-16 w-16 shrink-0 object-contain opacity-90"
+              />
+              <span class="font-display text-sun text-3xl leading-none" aria-hidden="true">
+                {String(i + 1).padStart(2, '0')}
+              </span>
+            </div>
+            <h3 class="card-title text-paper mt-6">{step.title}</h3>
+            <CardDescription className="text-paper/70 mt-3">{step.body}</CardDescription>
+          </li>
+        ))
+      }
+    </ol>
+  </div>
+</section>
+
+<style>
+  /* Soil: moss at the surface, darkening with depth, with a faint mottle so it
+     reads as earth rather than a flat panel. */
+  .soil-band {
+    background:
+      radial-gradient(60% 40% at 70% 0%, rgb(255 255 255 / 0.06), transparent 70%),
+      radial-gradient(3px 3px at 20% 30%, rgb(216 196 147 / 0.18), transparent 60%),
+      radial-gradient(2px 2px at 60% 55%, rgb(216 196 147 / 0.14), transparent 60%),
+      radial-gradient(2px 2px at 85% 80%, rgb(216 196 147 / 0.12), transparent 60%),
+      linear-gradient(180deg, var(--color-moss-deep) 0%, var(--color-ink) 100%);
+    background-size:
+      auto,
+      140px 140px,
+      110px 110px,
+      170px 170px,
+      auto;
+  }
+
+  /* The roots draw down from the trunk as the section scrolls into view. */
+  @media (prefers-reduced-motion: no-preference) {
+    .soil-roots {
+      clip-path: inset(0 0 100% 0);
+      animation: roots-grow 1.6s var(--ease-grow) forwards;
+      animation-timeline: view();
+      animation-range: entry 10% cover 40%;
+    }
+
+    @keyframes roots-grow {
+      to {
+        clip-path: inset(0 0 0 0);
+      }
+    }
+  }
+
+  /* Without scroll-driven animation support, just show the roots. */
+  @supports not (animation-timeline: view()) {
+    .soil-roots {
+      clip-path: none !important;
+      animation: none !important;
+    }
+  }
+</style>

@@ -1,0 +1,96 @@
+---
+import BrandImage from '@/components/ui/BrandImage.astro';
+import { Card, CardHeader, CardContent } from '@/components/ui/card';
+import scheduleCallIcon from '@/assets/home/action-schedule-call-icon.png';
+import bookTourIcon from '@/assets/home/action-book-tour-icon.png';
+import openDaysIcon from '@/assets/home/action-open-days-icon.png';
+import { UPCOMING_LOCATIONS_HREF } from './constants';
+
+const tiles = [
+  {
+    title: 'Schedule a call',
+    icon: scheduleCallIcon,
+    links: [
+      {
+        label: 'Wellington Dam, Bunbury WA',
+        href: 'https://livinglegacywellingtondam.org.au/schedule-a-call',
+      },
+      {
+        label: 'Mornington Green, Melbourne VIC',
+        href: 'https://morningtongreen.com.au/talk-to-a-legacy-planner-form/',
+      },
+    ],
+  },
+  {
+    title: 'Book a tour',
+    icon: bookTourIcon,
+    links: [
+      {
+        label: 'Wellington Dam, Bunbury WA',
+        href: 'https://livinglegacywellingtondam.org.au/book-a-tour/',
+      },
+      {
+        label: 'Mornington Green, Melbourne VIC',
+        href: 'https://morningtongreen.com.au/opendays/',
+      },
+    ],
+  },
+  {
+    title: 'Open days',
+    icon: openDaysIcon,
+    links: [
+      {
+        label: 'Wellington Dam, Bunbury WA',
+        href: 'https://livinglegacywellingtondam.org.au/open-days',
+      },
+      {
+        label: 'Mornington Green, Melbourne VIC',
+        href: 'https://morningtongreen.com.au/opendays/',
+      },
+    ],
+  },
+] as const;
+---
+
+<section class="pb-24 lg:pb-32" aria-label="Talk to us or visit">
+  <ul class="bg-bark/20 grid gap-px overflow-hidden rounded-lg sm:grid-cols-3">
+    {
+      tiles.map((tile) => (
+        <li>
+          <Card className="gap-6 rounded-none bg-paper ring-0">
+            <CardHeader className="gap-6">
+              <BrandImage src={tile.icon} height="2.25rem" class="text-moss" />
+              <h3 class="card-title">{tile.title}</h3>
+            </CardHeader>
+            <CardContent>
+              <ul class="space-y-2">
+                {tile.links.map((link) => (
+                  <li>
+                    <a
+                      href={link.href}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      class="text-ink-soft decoration-bark/40 hover:text-moss-deep hover:decoration-moss text-base underline underline-offset-4 transition-colors duration-200"
+                    >
+                      {link.label}
+                    </a>
+                  </li>
+                ))}
+              </ul>
+            </CardContent>
+          </Card>
+        </li>
+      ))
+    }
+  </ul>
+
+  <p class="lead mt-10 text-center">
+    Curious about bringing Living Legacy to your area?{' '}
+    <a
+      href={UPCOMING_LOCATIONS_HREF}
+      class="text-moss-deep decoration-moss/40 hover:decoration-moss font-medium underline underline-offset-4 transition-colors duration-200"
+    >
+      Fill out the form here.
+    </a>
+  </p>
+</section>

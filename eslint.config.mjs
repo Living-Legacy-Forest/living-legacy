@@ -51,4 +51,35 @@ export default [
       'jsx-a11y/anchor-has-content': 'error',
     },
   },
+
+  // React islands and shadcn components.
+  {
+    files: ['**/*.tsx'],
+    plugins: {
+      '@typescript-eslint': tseslint,
+      'jsx-a11y': jsxA11y,
+    },
+    languageOptions: {
+      parser: tsParser,
+      parserOptions: { ecmaFeatures: { jsx: true } },
+    },
+    rules: {
+      ...jsxA11y.flatConfigs.recommended.rules,
+      // Base UI passes an element through `render={<a href=... />}` and the
+      // text as children, and shadcn wrappers spread props onto the element.
+      // These two rules only see the bare element, so they misfire on every
+      // such link and label. Content and association are real at runtime.
+      'jsx-a11y/anchor-has-content': 'off',
+      'jsx-a11y/label-has-associated-control': 'off',
+      '@typescript-eslint/no-explicit-any': 'warn',
+      '@typescript-eslint/no-unused-vars': [
+        'error',
+        { argsIgnorePattern: '^_', varsIgnorePattern: '^_', caughtErrorsIgnorePattern: '^_$|^e$' },
+      ],
+      'no-console': ['warn', { allow: ['error', 'warn'] }],
+      'prefer-const': 'error',
+      eqeqeq: ['error', 'always'],
+      'no-var': 'error',
+    },
+  },
 ];

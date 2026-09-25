@@ -1,0 +1,290 @@
+---
+// Renders a post body. `@portabletext/to-html` does the walk; the components
+// below map Sanity's block/mark/object types onto this site's own markup, and
+// the styling underneath uses the paper/moss/bark tokens from global.css
+// rather than any framework's defaults.
+import { toHTML, type PortableTextComponents } from '@portabletext/to-html';
+
+import { slugify } from '@/lib/blog';
+import { imageDimensions, imageUrl } from '@/lib/sanity';
+
+interface Props {
+  content: unknown[];
+}
+
+const { content } = Astro.props;
+
+interface PtSpan {
+  text?: string;
+}
+interface PtBlock {
+  _type: string;
+  style?: string;
+  children?: PtSpan[];
+}
+
+function esc(str: string): string {
+  return str
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;');
+}
+
+function headingId(value: unknown): string {
+  const block = value as PtBlock | undefined;
+  return slugify((block?.children ?? []).map((c) => c.text ?? '').join(''));
+}
+
+const components: Partial<PortableTextComponents> = {
+  block: {
+    // Ids here must match extractH2Headings in src/lib/blog.ts, which is what
+    // the table of contents links to.
+    h2: ({ children, value }) => `<h2 id="${headingId(value)}">${children}</h2>`,
+    h3: ({ children, value }) => `<h3 id="${headingId(value)}">${children}</h3>`,
+  },
+  marks: {
+    link: ({ children, value }) => {
+      const v = value as { href?: string; target?: boolean } | undefined;
+      const href = (v?.href ?? '').trim();
+      // Only http(s), mailto, tel and on-site links become anchors. Anything
+      // else (javascript:, data:) renders as plain text, as the library's own
+      // default link serialiser does.
+      if (!/^(https?:|mailto:|tel:|\/|#)/i.test(href)) return children ?? '';
+      // External links open in a new tab unless the editor says otherwise.
+      // rel="noopener" is not optional on target=_blank: without it the
+      // opened page gets a handle back to this one via window.opener.
+      const openInNew = v?.target ?? href.startsWith('http');
+      const rel = openInNew ? ' target="_blank" rel="noopener noreferrer"' : '';
+      return `<a href="${esc(href)}"${rel} class="pt-link">${children}</a>`;
+    },
+    underline: ({ children }) => `<span class="pt-underline">${children}</span>`,
+    'strike-through': ({ children }) => `<del>${children}</del>`,
+  },
+  types: {
+    image: ({ value }) => {
+      const v = value as { asset?: { _ref?: string }; alt?: string; caption?: string } | undefined;
+      const ref = v?.asset?._ref;
+      const url = imageUrl(v, { width: 1400, fit: 'max' });
+      if (!url) return '';
+      const dim = imageDimensions(ref);
+      // width/height come from the asset id itself, so the browser reserves
+      // the right box before the image arrives rather than shifting the
+      // article down when it lands.
+      const size = dim ? ` width="${dim.width}" height="${dim.height}"` : '';
+      const caption = v?.caption;
+      return `<figure class="pt-figure">
+        <img src="${url}" alt="${esc(v?.alt ?? '')}"${size} loading="lazy" decoding="async" class="pt-img" />
+        ${caption ? `<figcaption class="pt-caption">${esc(caption)}</figcaption>` : ''}
+      </figure>`;
+    },
+    table: ({ value }) => {
+      const v = value as { hasHeader?: boolean; rows?: { cells?: string }[] } | undefined;
+      const rows = v?.rows ?? [];
+      if (!rows.length) return '';
+      const hasHeader = v?.hasHeader ?? true;
+
+      const parseRow = (cells: unknown): string[] =>
+        typeof cells === 'string'
+          ? cells
+              .split('|')
+              .map((c) => c.trim())
+              .filter(Boolean)
+          : [];
+
+      let thead = '';
+      let bodyRows = rows;
+      if (hasHeader && rows[0]) {
+        thead = `<thead><tr>${parseRow(rows[0].cells)
+          .map((c) => `<th scope="col">${esc(c)}</th>`)
+          .join('')}</tr></thead>`;
+        bodyRows = rows.slice(1);
+      }
+      const tbody = bodyRows.length
+        ? `<tbody>${bodyRows
+            .map(
+              (row) =>
+                `<tr>${parseRow(row.cells)
+                  .map((c) => `<td>${esc(c)}</td>`)
+                  .join('')}</tr>`
+            )
+            .join('')}</tbody>`
+        : '';
+      // The wrapper scrolls on its own so a wide table never makes the page
+      // scroll sideways.
+      return `<div class="pt-table-wrap"><table class="pt-table">${thead}${tbody}</table></div>`;
+    },
+    youtube: ({ value }) => {
+      const url = (value as { url?: string } | undefined)?.url ?? '';
+      const id = url.match(/(?:v=|youtu\.be\/|embed\/|shorts\/)([A-Za-z0-9_-]{11})/)?.[1];
+      if (!id) return '';
+      // youtube-nocookie: no tracking cookie is set unless someone actually
+      // plays it.
+      return `<div class="pt-video"><iframe src="https://www.youtube-nocookie.com/embed/${id}" title="YouTube video" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen loading="lazy"></iframe></div>`;
+    },
+  },
+};
+
+const html = toHTML(content as Parameters<typeof toHTML>[0], { components });
+---
+
+<div class="pt" set:html={html} />
+
+<style>
+  .pt :global(h2),
+  .pt :global(h3),
+  .pt :global(h4) {
+    font-family: var(--font-display);
+    font-weight: 400;
+    color: var(--color-ink);
+    text-wrap: balance;
+    scroll-margin-top: 6rem;
+  }
+  .pt :global(h2) {
+    font-size: var(--text-2xl);
+    line-height: var(--text-2xl--line-height);
+    margin-top: 2.5rem;
+    margin-bottom: 0.75rem;
+  }
+  .pt :global(h3) {
+    font-size: var(--text-xl);
+    line-height: var(--text-xl--line-height);
+    margin-top: 2rem;
+    margin-bottom: 0.5rem;
+  }
+  .pt :global(h4) {
+    font-size: var(--text-lg);
+    line-height: var(--text-lg--line-height);
+    margin-top: 1.5rem;
+    margin-bottom: 0.5rem;
+  }
+  .pt :global(h2:first-child),
+  .pt :global(h3:first-child) {
+    margin-top: 0;
+  }
+
+  .pt :global(p) {
+    color: var(--color-ink);
+    font-size: var(--text-base);
+    line-height: var(--text-base--line-height);
+    margin-bottom: 1.25rem;
+    text-wrap: pretty;
+  }
+
+  .pt :global(ul),
+  .pt :global(ol) {
+    color: var(--color-ink);
+    padding-left: 1.5rem;
+    margin-bottom: 1.25rem;
+    font-size: var(--text-base);
+    line-height: var(--text-base--line-height);
+  }
+  .pt :global(ul) {
+    list-style-type: disc;
+  }
+  .pt :global(ol) {
+    list-style-type: decimal;
+  }
+  .pt :global(li) {
+    margin-bottom: 0.375rem;
+  }
+  .pt :global(li::marker) {
+    color: var(--color-moss);
+  }
+
+  .pt :global(blockquote) {
+    border-left: 2px solid var(--color-moss);
+    padding: 0.25rem 0 0.25rem 1.25rem;
+    margin: 2rem 0;
+    font-family: var(--font-display);
+    font-size: var(--text-lg);
+    line-height: var(--text-lg--line-height);
+    color: var(--color-ink);
+  }
+  .pt :global(blockquote p) {
+    margin-bottom: 0;
+    color: inherit;
+  }
+
+  .pt :global(strong) {
+    font-weight: 600;
+    color: var(--color-ink);
+  }
+  .pt :global(.pt-underline) {
+    text-decoration: underline;
+    text-underline-offset: 3px;
+  }
+
+  .pt :global(.pt-link) {
+    color: var(--color-moss-deep);
+    text-decoration: underline;
+    text-underline-offset: 3px;
+    transition: opacity 0.2s;
+  }
+  .pt :global(.pt-link:hover) {
+    opacity: 0.75;
+  }
+
+  .pt :global(.pt-figure) {
+    margin: 2rem 0;
+  }
+  .pt :global(.pt-img) {
+    width: 100%;
+    height: auto;
+    display: block;
+    border-radius: 0.75rem;
+  }
+  .pt :global(.pt-caption) {
+    margin-top: 0.625rem;
+    font-size: var(--text-xs);
+    color: var(--color-bark);
+    text-align: center;
+  }
+
+  .pt :global(.pt-table-wrap) {
+    overflow-x: auto;
+    margin: 2rem 0;
+    border: 1px solid color-mix(in oklab, var(--color-bark) 30%, transparent);
+    border-radius: 0.75rem;
+  }
+  .pt :global(table) {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: var(--text-base);
+    line-height: var(--text-base--line-height);
+  }
+  .pt :global(th) {
+    background-color: var(--color-paper-deep);
+    color: var(--color-ink);
+    font-weight: 600;
+    text-align: left;
+    padding: 0.75rem 1rem;
+    border-bottom: 1px solid color-mix(in oklab, var(--color-bark) 30%, transparent);
+    white-space: nowrap;
+  }
+  .pt :global(td) {
+    color: var(--color-ink);
+    padding: 0.75rem 1rem;
+    border-bottom: 1px solid color-mix(in oklab, var(--color-bark) 20%, transparent);
+    vertical-align: top;
+  }
+  .pt :global(tbody tr:last-child td) {
+    border-bottom: none;
+  }
+
+  .pt :global(.pt-video) {
+    position: relative;
+    padding-bottom: 56.25%;
+    height: 0;
+    margin: 2rem 0;
+    border-radius: 0.75rem;
+    overflow: hidden;
+  }
+  .pt :global(.pt-video iframe) {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    border: 0;
+  }
+</style>

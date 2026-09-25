@@ -1,26 +1,43 @@
 ---
 import '@/styles/global.css';
 import PostHog from '@/components/analytics/PostHog.astro';
+import Tracking from '@/components/analytics/Tracking.astro';
+import Header from '@/components/layout/Header.astro';
+import Footer from '@/components/layout/Footer.astro';
+import { Toaster } from '@/components/ui/sonner';
 import { isIndexableHost } from '@/lib/seo';
 
 interface Props {
   title: string;
   description?: string;
-  /** Force the robots meta on. Left unset, it follows the request host. */
+  /** Force the robots meta on. Non-production hosts are always blocked regardless. */
   noindex?: boolean;
   canonical?: string;
+  /** Absolute URL for og:image / twitter:image. Omitted when not given. */
+  ogImage?: string;
+  /** Skips Header and Footer — for the 404 page and anything else that draws its own chrome. */
+  bare?: boolean;
+}
+
+/** Every canonical URL on the site ends with a trailing slash, matching the live URLs. */
+function withTrailingSlash(pathname: string): string {
+  return pathname.endsWith('/') ? pathname : `${pathname}/`;
 }
 
 const {
   title,
   description = 'Living Legacy Forest',
   noindex,
-  canonical = new URL(Astro.url.pathname, Astro.site).toString(),
+  canonical = new URL(withTrailingSlash(Astro.url.pathname), Astro.site).toString(),
+  ogImage,
+  bare = false,
 } = Astro.props;
 
-// Anything that is not the production domain is blocked, so preview and
-// workers.dev URLs cannot be indexed. A page may still opt in explicitly.
-const blockIndexing = noindex ?? !isIndexableHost(Astro.url.host);
+// Anything that is not the production domain is always blocked, so preview and
+// workers.dev URLs cannot be indexed. `noindex` can only add a block, never lift
+// it: pages pass `noindex={page > 1}`, and a plain `false` must not switch off
+// the host check.
+const blockIndexing = noindex === true || !isIndexableHost(Astro.url.host);
 ---
 
 <!doctype html>
@@ -39,10 +56,25 @@ const blockIndexing = noindex ?? !isIndexableHost(Astro.url.host);
     <meta property="og:title" content={title} />
     {description && <meta property="og:description" content={description} />}
     <meta property="og:url" content={canonical} />
+    {ogImage && <meta property="og:image" content={ogImage} />}
     <meta name="twitter:card" content="summary_large_image" />
+    {ogImage && <meta name="twitter:image" content={ogImage} />}
     <PostHog />
   </head>
   <body>
-    <slot />
+    <a
+      href="#main"
+      class="focus:bg-ink focus:text-paper sr-only focus:not-sr-only focus:fixed focus:top-4 focus:left-4 focus:z-50 focus:rounded-full focus:px-5 focus:py-2.5 focus:text-sm focus:font-medium"
+    >
+      Skip to content
+    </a>
+    <Tracking />
+    <div class="grain-layer"></div>
+    {!bare && <Header />}
+    <main id="main">
+      <slot />
+    </main>
+    {!bare && <Footer />}
+    <Toaster client:idle />
   </body>
 </html>

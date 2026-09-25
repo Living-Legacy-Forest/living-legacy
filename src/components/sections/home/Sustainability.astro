@@ -1,0 +1,45 @@
+---
+import { Image } from 'astro:assets';
+import { ArrowRight } from 'lucide-astro';
+import { buttonVariants } from '@/components/ui/button';
+import icon from '@/assets/home/sustainability-icon.webp';
+import photo from '@/assets/home/sustainability-photo.webp';
+import { FLODESK_HREF } from './constants';
+---
+
+<section class="border-bark/20 scroll-mt-24 border-t py-24 lg:py-32">
+  <div class="grid items-center gap-14 lg:grid-cols-12 lg:gap-10">
+    <div class="lg:col-span-5">
+      <Image src={icon} alt="" width={44} loading="lazy" class="h-10 w-auto" aria-hidden="true" />
+      <p class="eyebrow mt-6">For the planet</p>
+      <h2 class="section-title mt-4">Sustainability</h2>
+      <p class="lead mt-6">
+        Our unique, scientifically proven process infuses cremated ashes into the tree, transforming
+        them into essential micronutrients that nourish and help it grow. Instead of remaining
+        static, the ashes become a part of the tree, creating a lasting, living connection. This
+        process allows you to literally become one with nature, as your life continues through the
+        growth and vitality of the tree, contributing to a sustainable ecosystem for generations to
+        come.
+      </p>
+      <a
+        href={FLODESK_HREF}
+        target="_blank"
+        rel="noopener noreferrer"
+        class:list={[buttonVariants(), 'mt-8']}
+      >
+        Get more info
+        <ArrowRight data-icon="inline-end" aria-hidden="true" />
+      </a>
+    </div>
+
+    <div class="lg:col-span-7">
+      <Image
+        src={photo}
+        alt="Living Legacy Forest promoting sustainability through tree planting and environmental conservation"
+        width={900}
+        loading="lazy"
+        class="aspect-[4/3] w-full rounded-2xl object-cover"
+      />
+    </div>
+  </div>
+</section>

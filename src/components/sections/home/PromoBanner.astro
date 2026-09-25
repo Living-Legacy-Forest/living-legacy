@@ -1,0 +1,57 @@
+---
+/**
+ * Upcoming-locations promotion.
+ *
+ * The artwork carries its own headline and button, so on wide screens it is
+ * shown whole as a single link. On phones that baked-in text would be too
+ * small to read, so the image crops to the blossom trees on its right and the
+ * same message is set as real text over it.
+ */
+import { Image } from 'astro:assets';
+import { ArrowRight } from 'lucide-astro';
+import { buttonVariants } from '@/components/ui/button';
+import { cn } from '@/lib/utils';
+import bannerImage from '@/assets/home/upcoming-locations-banner.webp';
+import { UPCOMING_LOCATIONS_HREF } from './constants';
+---
+
+<section class="pb-20 lg:pb-28" aria-label="New locations">
+  <a
+    href={UPCOMING_LOCATIONS_HREF}
+    class="group relative block overflow-hidden rounded-3xl"
+    aria-label="New locations coming to Queensland and New South Wales. Register your interest."
+  >
+    <Image
+      src={bannerImage}
+      alt=""
+      widths={[480, 800, 1200, 1600]}
+      sizes="(min-width: 1152px) 1072px, 100vw"
+      loading="lazy"
+      class="aspect-[4/5] h-auto w-full object-cover object-[86%_50%] transition-transform duration-500 ease-[var(--ease-grow)] group-hover:scale-[1.015] sm:aspect-[1600/639]"
+    />
+
+    <!-- Phones: real text over the cropped image. The link's accessible name
+         comes from aria-label above, so this is visual only. -->
+    <span
+      aria-hidden="true"
+      class="from-ink/85 via-ink/40 absolute inset-0 flex flex-col justify-end bg-gradient-to-t to-transparent p-7 sm:hidden"
+    >
+      <span class="eyebrow text-sun">Coming soon</span>
+      <span class="font-display text-paper mt-3 text-3xl leading-tight">
+        New locations coming to Queensland and New South Wales
+      </span>
+      <span class="text-paper/80 mt-3 text-base leading-relaxed">
+        Register your interest to be among the first to hear when we open new locations.
+      </span>
+      <span
+        class={cn(
+          buttonVariants({ variant: 'link' }),
+          'text-paper decoration-paper/40 hover:text-paper/80 mt-6'
+        )}
+      >
+        Register your interest
+        <ArrowRight data-icon="inline-end" aria-hidden="true" />
+      </span>
+    </span>
+  </a>
+</section>

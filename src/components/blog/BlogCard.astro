@@ -1,0 +1,80 @@
+---
+// One post on the index, an archive, or the related-posts strip.
+//
+// The whole card is not a link: the title is, stretched over the card with an
+// ::after so the click target covers everything while the accessibility tree
+// only announces one sensible link, not one wrapping the image, the category
+// and the date as one long run. The category badge sits above the stretched
+// overlay (relative z-10) so it stays independently clickable.
+//
+// CardTitle (src/components/ui/card.tsx) renders a <div>, not a heading, and
+// has no render/asChild prop to become one. Its classes are reproduced here
+// directly on a real <h3> so post titles keep their place in the outline.
+import { Card, CardHeader, CardFooter, CardDescription } from '@/components/ui/card';
+import { Badge } from '@/components/ui/badge';
+import { formatBlogDate } from '@/lib/blog';
+import { imageUrl } from '@/lib/sanity';
+import type { SanityBlogPost } from '@/types';
+
+interface Props {
+  post: SanityBlogPost;
+}
+
+const { post } = Astro.props;
+const { title, slug, excerpt, publishedAt, featuredImage, category, readingTime } = post;
+
+const imgSrc = imageUrl(featuredImage, { width: 800, height: 534, fit: 'crop' });
+---
+
+<article class="group">
+  <Card size="sm" className="relative pt-0">
+    {
+      /* Rendered only when there is an image: an empty frame reads as one that
+        failed to load rather than as a card that never had one. */
+    }
+    {
+      imgSrc && (
+        <div class="bg-paper-deep aspect-[3/2] w-full overflow-hidden">
+          <img
+            src={imgSrc}
+            alt={featuredImage?.alt ?? ''}
+            width="800"
+            height="534"
+            loading="lazy"
+            decoding="async"
+            class="size-full object-cover transition-transform duration-500 ease-[var(--ease-grow)] group-hover:scale-[1.03] motion-reduce:transition-none motion-reduce:group-hover:scale-100"
+          />
+        </div>
+      )
+    }
+
+    <CardHeader className="gap-2">
+      {
+        category && (
+          <a href={`/blog/category/${category.slug.current}/`} class="relative z-10 w-fit">
+            <Badge variant="outline" className="hover:border-moss hover:text-moss-deep">
+              {category.title}
+            </Badge>
+          </a>
+        )
+      }
+
+      <h3 class="font-heading text-lg leading-snug font-normal tracking-tight text-balance">
+        <a
+          href={`/blog/${slug.current}/`}
+          class="hover:text-moss-deep transition-colors duration-300 after:absolute after:inset-0 after:content-['']"
+        >
+          {title}
+        </a>
+      </h3>
+
+      {excerpt && <CardDescription className="line-clamp-3 text-pretty">{excerpt}</CardDescription>}
+    </CardHeader>
+
+    <CardFooter className="text-bark flex-wrap gap-x-2 text-base">
+      <time datetime={publishedAt}>{formatBlogDate(publishedAt)}</time>
+      {readingTime && <span aria-hidden="true">&middot;</span>}
+      {readingTime && <span>{readingTime} min read</span>}
+    </CardFooter>
+  </Card>
+</article>

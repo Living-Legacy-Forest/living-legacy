@@ -1,0 +1,131 @@
+---
+// A single post: table of contents and a call to action flank the article
+// from lg, related posts sit underneath. A missing or unpublished slug
+// rewrites to /404 rather than rendering an empty article.
+import BaseLayout from '@/layouts/BaseLayout.astro';
+import BlogCTA from '@/components/blog/BlogCTA.astro';
+import BlogHero from '@/components/blog/BlogHero.astro';
+import BlogToc from '@/components/blog/BlogToc.astro';
+import PortableText from '@/components/blog/PortableText.astro';
+import RelatedPosts from '@/components/blog/RelatedPosts.astro';
+import { Badge } from '@/components/ui/badge';
+import { Separator } from '@/components/ui/separator';
+import { extractH2Headings } from '@/lib/blog';
+import { getBlogPostBySlug, getRelatedBlogPosts, imageUrl } from '@/lib/sanity';
+import type { SanityBlogPost } from '@/types';
+
+export const prerender = false;
+
+const { slug } = Astro.params;
+const post = slug ? await getBlogPostBySlug(slug) : null;
+
+// getBlogPostBySlug soft-fails to null on a Sanity error too, so a CMS
+// outage reads as "not found" for the moment it lasts rather than a 500.
+if (!post) {
+  return Astro.rewrite('/404');
+}
+
+const shareUrl = new URL(Astro.url.pathname, Astro.site ?? Astro.url).toString();
+const headings = extractH2Headings(post.body);
+
+let related: SanityBlogPost[] = [];
+try {
+  related = await getRelatedBlogPosts(post._id, post.category?._id, 3);
+} catch {
+  related = [];
+}
+
+const seoTitle = post.seoTitle ?? post.title;
+const seoDescription = post.seoDescription ?? post.excerpt ?? '';
+
+// 1200x630 is the size social platforms crop to anyway, so they are not each
+// downloading a full-resolution original.
+const ogImage = imageUrl(post.featuredImage, { width: 1200, height: 630, fit: 'crop' });
+
+const jsonLd = {
+  '@context': 'https://schema.org',
+  '@type': 'BlogPosting',
+  headline: post.title,
+  datePublished: post.publishedAt,
+  dateModified: post.updatedAt ?? post._updatedAt ?? post.publishedAt,
+  mainEntityOfPage: { '@type': 'WebPage', '@id': shareUrl },
+  ...(seoDescription ? { description: seoDescription } : {}),
+  ...(ogImage ? { image: [ogImage] } : {}),
+  ...(post.author ? { author: { '@type': 'Person', name: post.author.name } } : {}),
+  publisher: {
+    '@type': 'Organization',
+    name: 'Living Legacy Forest',
+    url: 'https://livinglegacyforest.com.au',
+  },
+};
+
+const breadcrumbLd = {
+  '@context': 'https://schema.org',
+  '@type': 'BreadcrumbList',
+  itemListElement: [
+    { '@type': 'ListItem', position: 1, name: 'Home', item: new URL('/', Astro.site).toString() },
+    {
+      '@type': 'ListItem',
+      position: 2,
+      name: 'Blog',
+      item: new URL('/blog/', Astro.site).toString(),
+    },
+    { '@type': 'ListItem', position: 3, name: post.title, item: shareUrl },
+  ],
+};
+
+// `<` cannot appear unescaped inside a script body: a title or excerpt that
+// happens to contain "</script>" would otherwise terminate the tag early.
+const toJsonLd = (value: unknown) => JSON.stringify(value).replace(/</g, '\\u003c');
+---
+
+<BaseLayout
+  title={`${seoTitle} | Living Legacy Forest`}
+  description={seoDescription}
+  canonical={shareUrl}
+  ogImage={ogImage}
+>
+  <script type="application/ld+json" is:inline set:html={toJsonLd(jsonLd)} />
+  <script type="application/ld+json" is:inline set:html={toJsonLd(breadcrumbLd)} />
+
+  <div>
+    <BlogHero post={post} shareUrl={shareUrl} />
+
+    <div class="mx-auto max-w-6xl px-6 pt-4 pb-20 sm:px-10 md:pb-28">
+      <div class="lg:grid lg:grid-cols-[12rem_minmax(0,1fr)_16rem] lg:items-start lg:gap-10">
+        <div class="hidden lg:sticky lg:top-10 lg:block">
+          <BlogToc headings={headings} />
+        </div>
+
+        <article class="mx-auto w-full max-w-[68ch]">
+          <PortableText content={post.body ?? []} />
+
+          {
+            post.tags && post.tags.length > 0 && (
+              <>
+                <Separator className="mt-10" />
+                <div class="mt-8 flex flex-wrap items-center gap-2">
+                  {post.tags.map((tag) => (
+                    <a href={`/blog/tag/${tag.slug.current}/`}>
+                      <Badge variant="secondary" className="hover:bg-sun/40">
+                        #{tag.title}
+                      </Badge>
+                    </a>
+                  ))}
+                </div>
+              </>
+            )
+          }
+        </article>
+
+        <div class="mt-14 lg:mt-0">
+          <div class="lg:sticky lg:top-10">
+            <BlogCTA />
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <RelatedPosts posts={related} />
+  </div>
+</BaseLayout>

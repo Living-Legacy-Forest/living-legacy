@@ -1,0 +1,40 @@
+---
+// Table of contents, built from the article's own H2s. Ids match the ones
+// PortableText.astro assigns, via the same slugify() call.
+import { buttonVariants } from '@/components/ui/button';
+import { Separator } from '@/components/ui/separator';
+import type { BlogHeading } from '@/lib/blog';
+import { cn } from '@/lib/utils';
+
+interface Props {
+  headings: BlogHeading[];
+}
+
+const { headings } = Astro.props;
+---
+
+{
+  headings.length > 1 && (
+    <nav aria-label="Table of contents" class="flex gap-5">
+      <Separator orientation="vertical" />
+      <div class="flex flex-col gap-4">
+        <p class="eyebrow">In this article</p>
+        <ol class="flex flex-col gap-2.5">
+          {headings.map((h) => (
+            <li>
+              <a
+                href={`#${h.id}`}
+                class={cn(
+                  buttonVariants({ variant: 'link' }),
+                  'text-ink-soft line-clamp-2 justify-start'
+                )}
+              >
+                {h.text}
+              </a>
+            </li>
+          ))}
+        </ol>
+      </div>
+    </nav>
+  )
+}

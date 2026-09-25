@@ -1,0 +1,71 @@
+---
+/**
+ * "Become a Living Legacy": the pitch, a link to the Flodesk info form, and
+ * the process video. Autoplay is applied by script rather than the HTML
+ * attribute, so a visitor who prefers reduced motion gets the poster frame
+ * instead of a moving video (see the inline script below).
+ */
+import { Image } from 'astro:assets';
+import { ArrowRight } from 'lucide-astro';
+import { buttonVariants } from '@/components/ui/button';
+import icon from '@/assets/home/become-legacy-icon.png';
+import { FLODESK_HREF } from './constants';
+---
+
+<section class="border-bark/20 scroll-mt-24 border-t py-24 lg:py-32">
+  <div class="grid items-center gap-14 lg:grid-cols-12 lg:gap-10">
+    <div class="lg:col-span-5">
+      <Image src={icon} alt="" width={48} loading="lazy" class="h-10 w-auto" aria-hidden="true" />
+      <p class="eyebrow mt-6">Become a Living Legacy</p>
+      <h2 class="section-title mt-4">Change the way we leave the world</h2>
+      <p class="lead mt-6">
+        Welcome to Living Legacy, where we transform grief into growth by bringing communities
+        together to create memorial forests and gardens. Through a unique, scientifically proven
+        process, cremated ashes are converted into nutrients that help trees thrive, allowing a
+        person's legacy to live on in nature. This connection not only honours the memory of loved
+        ones but empowers individuals to heal, creating a lasting legacy of love and hope for future
+        generations.
+      </p>
+      <a
+        href={FLODESK_HREF}
+        target="_blank"
+        rel="noopener noreferrer"
+        class:list={[buttonVariants(), 'mt-8']}
+      >
+        Get more info
+        <ArrowRight data-icon="inline-end" aria-hidden="true" />
+      </a>
+    </div>
+
+    <div class="lg:col-span-7">
+      <video
+        class="aspect-video w-full rounded-2xl object-cover"
+        muted
+        loop
+        playsinline
+        preload="metadata"
+        poster="/media/living-legacy-poster.webp"
+        data-autoplay-video
+      >
+        <source src="/media/living-legacy.webm" type="video/webm" />
+        <source src="/media/living-legacy.mp4" type="video/mp4" />
+      </video>
+    </div>
+  </div>
+</section>
+
+<script>
+  // Autoplay only when the visitor has not asked for reduced motion. The
+  // `autoplay` HTML attribute is deliberately left off so the video never
+  // starts before this check runs.
+  const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+  if (!prefersReducedMotion) {
+    document.querySelectorAll<HTMLVideoElement>('[data-autoplay-video]').forEach((video) => {
+      video.play().catch(() => {
+        // Autoplay can still be blocked by the browser; the poster frame
+        // remains visible, which is an acceptable fallback.
+      });
+    });
+  }
+</script>

@@ -1,0 +1,144 @@
+---
+// Blog index, page one. /blog/page/[page].astro handles page two onwards so
+// each page is a real, bookmarkable URL rather than a query string.
+import BaseLayout from '@/layouts/BaseLayout.astro';
+import BlogCard from '@/components/blog/BlogCard.astro';
+import BlogPagination from '@/components/blog/BlogPagination.astro';
+import {
+  Breadcrumb,
+  BreadcrumbItem,
+  BreadcrumbLink,
+  BreadcrumbList,
+  BreadcrumbPage,
+  BreadcrumbSeparator,
+} from '@/components/ui/breadcrumb';
+import { buttonVariants } from '@/components/ui/button';
+import { Separator } from '@/components/ui/separator';
+import { formatBlogDate } from '@/lib/blog';
+import { getBlogPage } from '@/lib/sanity';
+import { imageUrl } from '@/lib/sanity';
+
+export const prerender = false;
+
+const { posts, pageCount } = await getBlogPage(1);
+
+// The featured lead only makes sense with a grid behind it: on a thin blog a
+// single wide card above one or two small ones reads as a layout that broke,
+// not as emphasis.
+const showFeatured = posts.length > 3;
+const featured = showFeatured ? (posts.find((p) => p.isFeatured) ?? posts[0]) : null;
+const rest = featured ? posts.filter((p) => p._id !== featured._id) : posts;
+const featuredImgSrc = featured
+  ? imageUrl(featured.featuredImage, { width: 1200, height: 800, fit: 'crop' })
+  : null;
+
+const description =
+  'Stories, insights, and reflections on nature, healing, remembrance, and the powerful connection between life and the forest.';
+---
+
+<BaseLayout
+  title="Blog | Living Legacy Forest"
+  description={description}
+  canonical={new URL('/blog/', Astro.site).toString()}
+>
+  <div class="mx-auto max-w-6xl px-6 py-16 sm:px-10 md:py-24">
+    <header class="flex max-w-2xl flex-col gap-4">
+      <Breadcrumb>
+        <BreadcrumbList>
+          <BreadcrumbItem>
+            <BreadcrumbLink href="/">Home</BreadcrumbLink>
+          </BreadcrumbItem>
+          <BreadcrumbSeparator />
+          <BreadcrumbItem>
+            <BreadcrumbPage>Blog</BreadcrumbPage>
+          </BreadcrumbItem>
+        </BreadcrumbList>
+      </Breadcrumb>
+      <h1 class="display-title text-balance">Living Legacy Forest blog</h1>
+      <p class="lead max-w-2xl">{description}</p>
+    </header>
+
+    <Separator className="mt-14 md:mt-16" />
+    <div class="pt-14 md:pt-16">
+      {
+        posts.length === 0 ? (
+          <div class="flex max-w-xl flex-col items-start gap-5">
+            <h2 class="text-xl text-balance">Nothing published yet</h2>
+            <p class="text-ink-soft leading-relaxed text-pretty">
+              The first posts are on their way. In the meantime, get in touch with any question
+              about a Living Legacy.
+            </p>
+            <a href="/contact/" class={buttonVariants({ variant: 'default' })}>
+              Get in touch
+            </a>
+          </div>
+        ) : (
+          <div class="flex flex-col gap-16 md:gap-20">
+            {featured && (
+              <article
+                class:list={[
+                  'group relative grid gap-8 md:items-center md:gap-12',
+                  featuredImgSrc && 'md:grid-cols-2',
+                ]}
+              >
+                {featuredImgSrc && (
+                  <div class="bg-paper-deep aspect-[3/2] w-full overflow-hidden rounded-lg">
+                    <img
+                      src={featuredImgSrc}
+                      alt={featured.featuredImage?.alt ?? ''}
+                      width="1200"
+                      height="800"
+                      fetchpriority="high"
+                      class="size-full object-cover transition-transform duration-500 ease-[var(--ease-grow)] group-hover:scale-[1.03] motion-reduce:transition-none motion-reduce:group-hover:scale-100"
+                    />
+                  </div>
+                )}
+
+                <div class:list={['flex flex-col gap-3', !featuredImgSrc && 'max-w-3xl']}>
+                  <div class="text-bark flex flex-wrap items-center gap-x-2 text-base">
+                    {featured.category && (
+                      <span class="text-moss-deep font-medium">{featured.category.title}</span>
+                    )}
+                    {featured.category && <span aria-hidden="true">&middot;</span>}
+                    <time datetime={featured.publishedAt}>
+                      {formatBlogDate(featured.publishedAt)}
+                    </time>
+                    {featured.readingTime && <span aria-hidden="true">&middot;</span>}
+                    {featured.readingTime && <span>{featured.readingTime} min read</span>}
+                  </div>
+
+                  <h2 class="text-2xl leading-snug text-balance md:text-3xl">
+                    <a
+                      href={`/blog/${featured.slug.current}/`}
+                      class="group-hover:text-moss-deep transition-colors duration-300 after:absolute after:inset-0 after:content-['']"
+                    >
+                      {featured.title}
+                    </a>
+                  </h2>
+
+                  {featured.excerpt && (
+                    <p class="text-ink-soft leading-relaxed text-pretty">{featured.excerpt}</p>
+                  )}
+                </div>
+              </article>
+            )}
+
+            {rest.length > 0 && (
+              <div class="grid gap-x-8 gap-y-14 sm:grid-cols-2 lg:grid-cols-3">
+                {rest.map((post) => (
+                  <BlogCard post={post} />
+                ))}
+              </div>
+            )}
+
+            <BlogPagination
+              page={1}
+              pageCount={pageCount}
+              buildHref={(p) => (p <= 1 ? '/blog/' : `/blog/page/${p}/`)}
+            />
+          </div>
+        )
+      }
+    </div>
+  </div>
+</BaseLayout>

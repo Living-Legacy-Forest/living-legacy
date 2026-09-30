@@ -1,0 +1,198 @@
+---
+// Our partners. Carries the live page's hero, four partner cards, three
+// benefit cards, the become-a-partner form (kept at id="become-a-partner-form"
+// so /our-partners/#become-a-partner-form keeps working) and the eight-image
+// gallery (live/out/our-partners.txt).
+//
+// One punctuation fix beyond house style: live's hero paragraph reads
+// "...memorial option a meaningful resting place..." with what was clearly a
+// dash lost somewhere between WordPress and the crawl. A colon is used in
+// its place rather than an em or en dash, which house style forbids.
+import { Image } from 'astro:assets';
+import { ArrowRight } from 'lucide-astro';
+import BaseLayout from '@/layouts/BaseLayout.astro';
+import { Card, CardContent } from '@/components/ui/card';
+import { Separator } from '@/components/ui/separator';
+import { buttonVariants } from '@/components/ui/button';
+import { PartnerForm } from '@/components/forms/PartnerForm';
+
+import heroPhoto from '@/assets/partners/hero-photo.png';
+import newsTheSenior from '@/assets/media/news-the-senior.webp';
+import morningtonGreenLogo from '@/assets/partners/mornington-green-logo.webp';
+import morningtonGreenTeam from '@/assets/partners/mornington-green-team.jpg';
+import wellingtonDamLogo from '@/assets/partners/wellington-dam-logo.webp';
+import wellingtonDamTeam from '@/assets/partners/wellington-dam-team.webp';
+import metropolitanLogo from '@/assets/partners/metropolitan-memorial-parks-logo.svg';
+import metropolitanView from '@/assets/partners/metropolitan-memorial-parks-view.webp';
+import centennialParkLogo from '@/assets/partners/centennial-park-logo.webp';
+import centennialParkInterment from '@/assets/partners/centennial-park-interment.webp';
+import benefitElevateIcon from '@/assets/partners/benefit-elevate-brand-icon.webp';
+import galleryMediaFeature from '@/assets/partners/gallery-media-feature.webp';
+import galleryWellingtonTreeSection from '@/assets/partners/gallery-wellington-dam-tree-section.webp';
+import galleryWellingtonView from '@/assets/partners/gallery-wellington-dam-view.webp';
+import newsDailyMail from '@/assets/media/news-daily-mail.webp';
+
+const partners = [
+  { name: 'Mornington Green', photo: morningtonGreenTeam, logo: morningtonGreenLogo },
+  { name: 'Wellington Dam', photo: wellingtonDamTeam, logo: wellingtonDamLogo },
+  { name: 'Metropolitan Memorial Park', photo: metropolitanView, logo: metropolitanLogo },
+  { name: 'Centennial Park', photo: centennialParkInterment, logo: centennialParkLogo },
+];
+
+const benefits = [
+  {
+    title: 'Elevate your brand',
+    body: 'Associate with a unique initiative blending remembrance and sustainability, showcasing innovation and responsibility to a conscious audience.',
+    image: benefitElevateIcon,
+  },
+  {
+    title: 'Connect and engage',
+    body: 'Access unique opportunities within our locations and community programs, building meaningful connections with families and extending your reach, especially for funeral directors.',
+    image: morningtonGreenTeam,
+  },
+  {
+    title: 'Make a real impact',
+    body: 'Directly contribute to global reforestation and social empowerment through our partnerships, providing compelling stories for your brand.',
+    image: newsTheSenior,
+  },
+];
+
+const galleryImages = [
+  wellingtonDamTeam,
+  metropolitanView,
+  morningtonGreenTeam,
+  centennialParkInterment,
+  galleryMediaFeature,
+  newsDailyMail,
+  galleryWellingtonTreeSection,
+  galleryWellingtonView,
+];
+
+const title = 'Our partners | Living Legacy Forest';
+const description =
+  "As a proud Living Legacy Forest partner, we're committed to transforming traditional memorial practices into living, lasting legacies. By planting trees in dedicated memorial forests, we honour life in a meaningful and environmentally sustainable way.";
+---
+
+<BaseLayout title={title} description={description}>
+  <!-- Hero -->
+  <section class="relative overflow-hidden">
+    <div class="absolute inset-0">
+      <Image src={heroPhoto} alt="" width={1600} class="h-full w-full object-cover" />
+      <div class="bg-ink/70 absolute inset-0"></div>
+    </div>
+    <div class="relative mx-auto max-w-6xl px-6 py-28 sm:px-10 lg:py-40">
+      <p class="eyebrow text-paper/80">Join our mission</p>
+      <h1 class="display-title text-paper mt-4 max-w-2xl">Partner with Living Legacy</h1>
+      <p class="text-paper/85 lead mt-6 max-w-xl">
+        Be a leader of industry. Partner with us to offer your clients an affordable, eco-friendly
+        memorial option: a meaningful resting place that reflects care, value, and lasting legacy.
+      </p>
+      <a href="#become-a-partner-form" class:list={[buttonVariants(), 'mt-9']}>
+        Become a partner
+        <ArrowRight data-icon="inline-end" aria-hidden="true" />
+      </a>
+    </div>
+  </section>
+
+  <div class="mx-auto max-w-6xl px-6 sm:px-10">
+    <!-- Our partners -->
+    <section class="py-24 lg:py-32">
+      <Separator className="mb-24 lg:mb-32" />
+      <p class="eyebrow">Our network</p>
+      <h2 class="section-title mt-4">Our partners</h2>
+
+      <div class="border-bark/20 mt-10 aspect-[21/9] overflow-hidden rounded-2xl border">
+        <Image src={newsTheSenior} alt="" width={1200} class="h-full w-full object-cover" />
+      </div>
+
+      <div class="mt-10 grid gap-6 sm:grid-cols-2">
+        {
+          partners.map((partner) => (
+            <Card className="gap-0 overflow-hidden py-0">
+              <Image
+                src={partner.photo}
+                alt=""
+                width={500}
+                class="aspect-[4/3] w-full object-cover"
+              />
+              <CardContent className="flex items-center gap-4 py-6">
+                <Image
+                  src={partner.logo}
+                  alt={`${partner.name} logo`}
+                  width={56}
+                  class="h-10 w-auto object-contain"
+                />
+                <h3 class="card-title">{partner.name}</h3>
+              </CardContent>
+            </Card>
+          ))
+        }
+      </div>
+    </section>
+
+    <!-- Benefits -->
+    <section class="py-24 lg:py-32">
+      <Separator className="mb-24 lg:mb-32" />
+      <p class="eyebrow">Why partner with us</p>
+      <h2 class="section-title mt-4 max-w-2xl">
+        What benefits you will gain as a Living Legacy partner
+      </h2>
+
+      <div class="mt-12 grid gap-8 md:grid-cols-3">
+        {
+          benefits.map((benefit) => (
+            <div class="flex flex-col gap-5">
+              <div class="border-bark/20 aspect-[4/3] overflow-hidden rounded-2xl border">
+                <Image src={benefit.image} alt="" width={480} class="h-full w-full object-cover" />
+              </div>
+              <h3 class="card-title">{benefit.title}</h3>
+              <p class="card-body">{benefit.body}</p>
+            </div>
+          ))
+        }
+      </div>
+    </section>
+
+    <!-- Become a partner -->
+    <section id="become-a-partner-form" class="scroll-mt-24 py-24 lg:py-32">
+      <Separator className="mb-24 lg:mb-32" />
+      <div class="grid gap-12 lg:grid-cols-12">
+        <div class="lg:col-span-5">
+          <p class="eyebrow">Get involved</p>
+          <h2 class="section-title mt-4">Become a partner with Living Legacy Forest</h2>
+          <p class="lead mt-6">
+            Join us in preserving nature and supporting environmental sustainability through a
+            meaningful partnership. Fill out the form to start your journey with us and help protect
+            endangered wildlife, create memorials, or plant trees to leave a legacy for future
+            generations.
+          </p>
+        </div>
+
+        <div class="lg:col-span-7">
+          <Card className="p-2 sm:p-4">
+            <CardContent className="px-4 sm:px-6">
+              <PartnerForm client:visible />
+            </CardContent>
+          </Card>
+        </div>
+      </div>
+    </section>
+
+    <!-- Gallery -->
+    <section class="py-24 lg:py-32">
+      <Separator className="mb-24 lg:mb-32" />
+      <p class="eyebrow">In the forests</p>
+      <h2 class="section-title mt-4">A look at our partner sites</h2>
+
+      <div class="mt-10 grid grid-cols-2 gap-4 sm:grid-cols-4">
+        {
+          galleryImages.map((image) => (
+            <div class="aspect-square overflow-hidden rounded-xl">
+              <Image src={image} alt="" width={320} class="h-full w-full object-cover" />
+            </div>
+          ))
+        }
+      </div>
+    </section>
+  </div>
+</BaseLayout>

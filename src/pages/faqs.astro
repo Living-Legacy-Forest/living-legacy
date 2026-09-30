@@ -1,0 +1,341 @@
+---
+// FAQs. All 8 live groups and every Q&A, carried from live/out/faqs.txt.
+// Group ids match the live anchors exactly, so old #fragment links keep
+// landing on the right group: general-questions, the-process, protection,
+// pricing, tree-selection, sustainability, locations, family-sharing.
+//
+// Each answer is authored as one or more paragraphs of trusted, static
+// HTML (a handful carry an inline link to a sister site's own booking
+// form), and a plain-text version is derived from that HTML for the
+// FAQPage JSON-LD, since structured data wants text, not markup. Questions
+// render as a shadcn Accordion per group (FaqAccordion.tsx); answers stay
+// in the server-rendered HTML via hiddenUntilFound.
+import BaseLayout from '@/layouts/BaseLayout.astro';
+import { buttonVariants } from '@/components/ui/button';
+import { FaqAccordion, type FaqGroup } from '@/components/sections/faqs/FaqAccordion';
+
+const LINK_CLASS = 'text-moss-deep underline underline-offset-2 hover:text-ink';
+const mgSchedule = `<a href="https://morningtongreen.com.au/talk-to-a-legacy-planner-form/" class="${LINK_CLASS}">schedule a call with the Mornington Green team</a>`;
+const wdSchedule = `<a href="https://livinglegacywellingtondam.org.au/schedule-a-call/" class="${LINK_CLASS}">schedule a call with the Wellington Dam team</a>`;
+const mgTour = `<a href="https://morningtongreen.com.au/book-a-tour/" class="${LINK_CLASS}">the Mornington Green team</a>`;
+const wdTour = `<a href="https://livinglegacywellingtondam.org.au/book-a-tour/" class="${LINK_CLASS}">the Wellington Dam team</a>`;
+
+interface FaqGroupWithNav extends FaqGroup {
+  navLabel: string;
+}
+
+const groups: FaqGroupWithNav[] = [
+  {
+    id: 'general-questions',
+    navLabel: 'General questions',
+    heading: 'General questions',
+    items: [
+      {
+        q: 'What is a Living Legacy Tree?',
+        a: [
+          'A Living Legacy Tree is a memorial tree grown from the ashes of a loved one, turning remembrance into something living and seasonal. Each tree becomes a real place to visit, sit under, and feel close. Both Mornington Green in Victoria and Wellington Dam in Western Australia follow the same patented ash infusion process.',
+        ],
+      },
+      {
+        q: 'How does the ash infusion process work?',
+        a: [
+          'Cremated ashes have a pH of around 12 and a high salt content, which is harmful to soil and tree roots. The patented Living Legacy formula balances these levels and transforms the ashes into micronutrients that living soil microbes can exchange with the tree. The ceremony is carried out by trained horticulturists and can be shared with family at the planting site.',
+        ],
+      },
+      {
+        q: 'Why are untreated ashes harmful to trees?',
+        a: [
+          'Untreated cremated remains have a pH of 12 and contain around two cups of salt, which suppresses photosynthesis and kills most seedlings. Independent laboratory tests found that 90% of trees planted directly into untreated ashes died from toxic shock. The Living Legacy treatment shifts the composition so roots can thrive rather than grow around a hardened clump.',
+        ],
+      },
+    ],
+  },
+  {
+    id: 'the-process',
+    navLabel: 'The process',
+    heading: 'The process',
+    items: [
+      {
+        q: 'Can a tree be pre-planned?',
+        a: [
+          'Yes. Most families choose to pre-plan, selecting and planting a tree while still alive so it can grow into a living family heirloom. This takes the weight of these decisions off loved ones later and lets families visit their tree together for years before it holds any ashes.',
+          `To walk through the process, families can ${mgSchedule} or ${wdSchedule}.`,
+        ],
+      },
+      {
+        q: 'Is a funeral director still required?',
+        a: [
+          "Not necessarily. If cremation has already taken place, the legacy planners coordinate the ash treatment, plaque, certification, and planting ceremony directly. If cremation has not yet occurred, a family's own funeral director can be used, or the team can arrange cremation through a trusted local provider.",
+        ],
+      },
+      {
+        q: 'Can the family hold a ceremony?',
+        a: [
+          'Yes. The planting itself usually becomes the ceremony, with family gathering to water the treated ashes into the soil around the sapling. The moment can be as quiet or as full of ritual as feels right.',
+        ],
+      },
+      {
+        q: 'Do older ashes still work?',
+        a: [
+          'Yes. The Living Legacy process has been proven to work with cremated ashes dating back to the 1960s. There is no expiry on the memorial.',
+        ],
+      },
+    ],
+  },
+  {
+    id: 'protection',
+    navLabel: 'Protection and care',
+    heading: 'Protection and care',
+    items: [
+      {
+        q: 'Are the trees protected?',
+        a: [
+          'Yes. Mornington Green is protected by a conservation agreement with Mornington Peninsula Shire Council that prevents the land from being developed or logged. Wellington Dam is protected by a conservation covenant policed by the WA Department of Biodiversity, Conservation and Attractions, which legally prevents the trees from ever being cut down. Both sites are safeguarded in perpetuity.',
+        ],
+      },
+      {
+        q: 'What happens if a tree does not survive?',
+        a: [
+          'If a tree fails to thrive, it is replaced at no cost and replanted in the same reserved location. At Mornington Green, a single reapplication of the living formula reactivates the soil so a new sapling can take root, and mulch or seedlings from the original tree are used where possible. At Wellington Dam, replacement is handled directly by the forest manager.',
+        ],
+      },
+      {
+        q: 'What happens in the event of a fire?',
+        a: [
+          'Mornington Green sits on low-risk land around 300m from Western Port Bay, with over 4km of fully integrated sprinkler systems and enough dam and bore water to deliver more than 20 litres to every tree daily. Wellington Dam is managed within a protected conservation forest with its own fire response plan. Both sites were chosen specifically for their low fire risk.',
+        ],
+      },
+      {
+        q: 'What happens if the company is sold or closes?',
+        a: [
+          'The land at each site is protected independently of the business. Mornington Green is cared for by an associated not-for-profit landcare partner whose sole responsibility is the land itself. Wellington Dam is managed by Legacy Conservation Forest, a registered public charity with a board of directors, forest manager, staff, and volunteers.',
+        ],
+      },
+      {
+        q: 'Is the purchase protected under Australian Consumer Law?',
+        a: [
+          'Yes. Forest Conservation Australia Pty Ltd (ABN 59 639 330 617) operates under the Australian Consumer Law and applies additional warranties on top of those statutory protections. Every purchase at Mornington Green and Wellington Dam is covered.',
+        ],
+      },
+      {
+        q: 'Who cares for the tree long term?',
+        a: [
+          'Certified horticulturists maintain every tree at Mornington Green in perpetuity. Wellington Dam is cared for by a dedicated forest manager, staff, and volunteers under Legacy Conservation Forest. Both teams care for the trees long after the family has said goodbye.',
+        ],
+      },
+    ],
+  },
+  {
+    id: 'pricing',
+    navLabel: 'Pricing and packages',
+    heading: 'Pricing and packages',
+    items: [
+      {
+        q: 'Mornington Green pricing',
+        a: [
+          'Founders packages at Mornington Green in Victoria start from around $8,000 including GST. Final pricing depends on tree type, garden location, and chosen inclusions.',
+          `For a tailored quote, families can ${mgSchedule}.`,
+        ],
+      },
+      {
+        q: 'Wellington Dam pricing',
+        a: [
+          'Packages at Wellington Dam in Western Australia start from around $4,950 including GST and come in two clear options: a Legacy Tree for one person, or a Love Tree for two. Both include the ash treatment, a tree-side ceremony, a marker, and a permanent place in the protected forest.',
+          `To walk through what is included, families can ${wdSchedule}.`,
+        ],
+      },
+      {
+        q: 'How does this compare to a traditional funeral?',
+        a: [
+          'According to ASIC, the average spend on a funeral in Australia is around $19,000 once professional fees, headstones, rights of interment, and grave liners are combined. A Living Legacy Tree starts at less than half that cost, and in some cases closer to a quarter, while removing the need for many of those separate charges.',
+        ],
+      },
+      {
+        q: 'Will the family need to pay again later?',
+        a: [
+          'No. Both sites include long-term care in the original package, so there are no renewal fees, maintenance invoices, or upkeep charges over the years. Unlike a grave that needs ongoing upkeep, the forest naturally matures.',
+        ],
+      },
+    ],
+  },
+  {
+    id: 'tree-selection',
+    navLabel: 'Tree selection',
+    heading: 'Tree selection',
+    items: [
+      {
+        q: 'Tree options at Mornington Green',
+        a: [
+          'Mornington Green offers a broad curated range of around 26 tree varieties, from flowering ornamentals to strong natives, so each tree can reflect a personality or a meaningful season. Many families choose a tree that blooms on a birthday, anniversary, or other significant day, bringing flowers back year after year.',
+          `To explore the full list, families can ${mgSchedule}.`,
+        ],
+      },
+      {
+        q: 'Tree options at Wellington Dam',
+        a: [
+          "Wellington Dam offers a focused selection of native species, chosen specifically for their role in restoring the surrounding conservation forest and supporting local wildlife, including endangered Quokkas and Carnaby's black cockatoos. These trees grow over 40 metres tall and live for hundreds of years.",
+          `To learn which native species suits best, families can ${wdSchedule}.`,
+        ],
+      },
+      {
+        q: 'Can another type of tree be chosen?',
+        a: [
+          'Yes. Selection differs by site: Mornington Green offers around 26 curated varieties suited to a landscaped garden, while Wellington Dam offers a focused selection of native species suited to a conservation forest.',
+          `To see which options are currently available, families can ${mgSchedule} or ${wdSchedule}.`,
+        ],
+      },
+    ],
+  },
+  {
+    id: 'sustainability',
+    navLabel: 'Sustainability',
+    heading: 'Sustainability and environmental impact',
+    items: [
+      {
+        q: 'What is the carbon impact compared to a traditional funeral?',
+        a: [
+          "Research from Adelaide's Centennial Park found that cremation produces around 160kg of CO2, almost four times more than a burial, though long-term grave maintenance eventually generates even more carbon. Planting a single tree is generally enough to offset the carbon impact of a cremation. Every Living Legacy Tree goes further by triggering an additional 400 offset trees planted in high-need habitats.",
+        ],
+      },
+      {
+        q: 'How is this different from a biodegradable urn?',
+        a: [
+          'A biodegradable urn breaks down, but the ashes inside do not. The remains stay toxic for years, forming a salty clump that roots grow around at best, or die in at worst. A Living Legacy Tree works the other way around, transforming the ashes into living nutrients that feed the tree rather than resist it.',
+        ],
+      },
+      {
+        q: 'Is scattering ashes in nature harmful?',
+        a: [
+          'Yes, more often than people realise. Scattered ashes carry the same high pH and salt levels that damage soil biology and suppress plant growth in the very places chosen for their beauty. The Living Legacy treatment offers a way to honour a loved one in nature without harming it.',
+        ],
+      },
+    ],
+  },
+  {
+    id: 'locations',
+    navLabel: 'Locations and experience',
+    heading: 'Locations and experience',
+    items: [
+      {
+        q: 'What is the difference between a garden memorial and a forest memorial?',
+        a: [
+          'A garden memorial, as found at Mornington Green in Victoria, is a landscaped and curated space designed for quiet visits, reflection, and multiple generations of family. A forest memorial, as found at Wellington Dam in Western Australia, is a working conservation forest where every tree contributes to native habitat and wildlife.',
+          'Both honour life fully. One leans into beauty and presence, the other into ecological legacy.',
+        ],
+      },
+      {
+        q: 'How is site access guaranteed?',
+        a: [
+          'Access is protected by law, not just policy. Wellington Dam is held under a conservation covenant policed by the WA Department of Biodiversity, Conservation and Attractions, with legal penalties for breach. Mornington Green is held under a conservation agreement with council. The land cannot be developed, logged, or resold at either site.',
+        ],
+      },
+      {
+        q: 'Can the sites be visited?',
+        a: [
+          'Yes. Both sites are open across most of the year, with some conditions on public holidays. Guided tours are available by appointment only.',
+          `Tours can be booked through ${mgTour} or ${wdTour}.`,
+        ],
+      },
+    ],
+  },
+  {
+    id: 'family-sharing',
+    navLabel: 'Family and sharing',
+    heading: 'Family and sharing options',
+    items: [
+      {
+        q: 'How many people can share one tree?',
+        a: [
+          'At Mornington Green, one tree can hold the legacy of multiple family members over time, with ashes added at different moments to create a true multigenerational memorial. At Wellington Dam, trees are offered in two package options: a Legacy Tree for one person, or a Love Tree for two people.',
+          `To plan sharing across the family, families can ${mgSchedule} or ${wdSchedule}.`,
+        ],
+      },
+      {
+        q: 'Can a tree become a multigenerational family tree?',
+        a: [
+          'Yes, particularly at Mornington Green. The LL Thrive formula can be infused into the soil at the base of the same tree at different times across the years, so the tree grows into a living heirloom passed down through generations.',
+          `To plan a family tree, families can ${mgSchedule}.`,
+        ],
+      },
+      {
+        q: 'Can pets be included?',
+        a: [
+          'Yes at both sites. At Mornington Green, pets can be added to a family tree alongside loved ones. At Wellington Dam, pet ashes and pet memorials can be placed with any tree, and a free pet ashes infusion is currently offered with new Legacy Trees.',
+          `To discuss the options, families can ${mgSchedule} or ${wdSchedule}.`,
+        ],
+      },
+    ],
+  },
+];
+
+const stripTags = (html: string) => html.replace(/<[^>]+>/g, '');
+
+const faqJsonLd = {
+  '@context': 'https://schema.org',
+  '@type': 'FAQPage',
+  mainEntity: groups.flatMap((group) =>
+    group.items.map((item) => ({
+      '@type': 'Question',
+      name: item.q,
+      acceptedAnswer: {
+        '@type': 'Answer',
+        text: item.a.map(stripTags).join(' '),
+      },
+    }))
+  ),
+};
+
+const title = 'Frequently asked questions | Living Legacy Forest';
+const description =
+  'Find answers to common questions about Living Legacy Forest, our process of turning ashes into living memorial trees, eco-friendly memorial options, and how it works across Australia.';
+---
+
+<BaseLayout title={title} description={description}>
+  <script type="application/ld+json" set:html={JSON.stringify(faqJsonLd)} is:inline />
+
+  <div class="mx-auto max-w-6xl px-6 py-20 sm:px-10 lg:py-28">
+    <p class="eyebrow">Support</p>
+    <h1 class="display-title mt-4">Frequently asked questions</h1>
+    <p class="lead mt-6 max-w-2xl">
+      Answers to the questions families ask most about turning ashes into a living memorial tree,
+      across both Mornington Green and Wellington Dam.
+    </p>
+
+    <div class="mt-16 grid gap-12 lg:grid-cols-12 lg:gap-10">
+      <nav aria-label="FAQ groups" class="lg:col-span-3">
+        <ul
+          class="border-bark/20 flex gap-2 overflow-x-auto border-b pb-3 lg:sticky lg:top-24 lg:flex-col lg:gap-1 lg:border-b-0 lg:pb-0"
+        >
+          {
+            groups.map((group) => (
+              <li class="shrink-0">
+                <a
+                  href={`#${group.id}`}
+                  class:list={[
+                    buttonVariants({ variant: 'ghost', size: 'sm' }),
+                    'w-full justify-start whitespace-nowrap lg:whitespace-normal',
+                  ]}
+                >
+                  {group.navLabel}
+                </a>
+              </li>
+            ))
+          }
+        </ul>
+      </nav>
+
+      <div class="flex flex-col gap-16 lg:col-span-9">
+        {
+          groups.map((group) => (
+            <section id={group.id} class="scroll-mt-24">
+              <h2 class="section-title">{group.heading}</h2>
+              <div class="mt-6">
+                <FaqAccordion client:visible group={group} />
+              </div>
+            </section>
+          ))
+        }
+      </div>
+    </div>
+  </div>
+</BaseLayout>

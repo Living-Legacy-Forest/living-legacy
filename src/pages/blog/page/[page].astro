@@ -1,0 +1,75 @@
+---
+// Page two onwards of the blog index. Page one lives at /blog/ itself, so a
+// request for /blog/page/1/ redirects there rather than serving a second
+// address for the same content.
+import BaseLayout from '@/layouts/BaseLayout.astro';
+import BlogCard from '@/components/blog/BlogCard.astro';
+import BlogPagination from '@/components/blog/BlogPagination.astro';
+import {
+  Breadcrumb,
+  BreadcrumbItem,
+  BreadcrumbLink,
+  BreadcrumbList,
+  BreadcrumbPage,
+  BreadcrumbSeparator,
+} from '@/components/ui/breadcrumb';
+import { Separator } from '@/components/ui/separator';
+import { getBlogPage } from '@/lib/sanity';
+
+export const prerender = false;
+
+const requested = Number.parseInt(Astro.params.page ?? '', 10);
+
+if (!Number.isInteger(requested) || requested < 1) {
+  return Astro.rewrite('/404');
+}
+
+if (requested === 1) {
+  return Astro.redirect('/blog/', 301);
+}
+
+const { posts, pageCount } = await getBlogPage(requested);
+
+if (pageCount > 0 && requested > pageCount) {
+  return Astro.rewrite('/404');
+}
+
+const description =
+  'Stories, insights, and reflections on nature, healing, remembrance, and the powerful connection between life and the forest.';
+---
+
+<BaseLayout
+  title={`Blog, page ${requested} | Living Legacy Forest`}
+  description={description}
+  noindex
+>
+  <div class="mx-auto max-w-6xl px-6 py-16 sm:px-10 md:py-24">
+    <header class="flex max-w-2xl flex-col gap-4">
+      <Breadcrumb>
+        <BreadcrumbList>
+          <BreadcrumbItem>
+            <BreadcrumbLink href="/">Home</BreadcrumbLink>
+          </BreadcrumbItem>
+          <BreadcrumbSeparator />
+          <BreadcrumbItem>
+            <BreadcrumbPage>Blog</BreadcrumbPage>
+          </BreadcrumbItem>
+        </BreadcrumbList>
+      </Breadcrumb>
+      <h1 class="display-title text-balance">Living Legacy Forest blog</h1>
+    </header>
+
+    <Separator className="mt-14 md:mt-16" />
+    <div class="flex flex-col gap-16 pt-14 md:gap-20 md:pt-16">
+      <div class="grid gap-x-8 gap-y-14 sm:grid-cols-2 lg:grid-cols-3">
+        {posts.map((post) => <BlogCard post={post} />)}
+      </div>
+
+      <BlogPagination
+        page={requested}
+        pageCount={pageCount}
+        buildHref={(p) => (p <= 1 ? '/blog/' : `/blog/page/${p}/`)}
+      />
+    </div>
+  </div>
+</BaseLayout>

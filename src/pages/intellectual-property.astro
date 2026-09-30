@@ -1,0 +1,58 @@
+---
+// Intellectual property. Live carries a single short block: the patents
+// list and a trademark line, the same text also shown in the footer's
+// patents dialog (see Footer.astro). Reproduced here as a page of its own
+// so the same information has a permanent, linkable address.
+//
+// Typo fixed per house style: "United State of America" -> "United States
+// of America". Facts (patent numbers, jurisdictions) are unchanged.
+import BaseLayout from '@/layouts/BaseLayout.astro';
+import { Card, CardContent } from '@/components/ui/card';
+import { Badge } from '@/components/ui/badge';
+import { Separator } from '@/components/ui/separator';
+
+const title = 'Intellectual property | Living Legacy Forest';
+const description =
+  "The patents protecting Living Legacy Forest's ash treatment process, and our trademark notice.";
+
+const patents = [
+  { jurisdiction: 'United States of America', number: '10,946,421' },
+  { jurisdiction: 'United Kingdom', number: 'GB2561476' },
+  { jurisdiction: 'Australia', number: '2016358312' },
+];
+---
+
+<BaseLayout title={title} description={description}>
+  <div class="mx-auto max-w-3xl px-6 py-20 sm:px-10 lg:py-28">
+    <p class="eyebrow">Legal</p>
+    <h1 class="display-title mt-4">Intellectual property</h1>
+
+    <div class="mt-10">
+      <Separator className="mb-10" />
+      <h2 class="section-title">
+        Living Legacy's soil treatment process is protected by the following patents
+      </h2>
+      <p class="lead mt-4">
+        Living Legacy Forest's proprietary ash transformation technology is protected under:
+      </p>
+
+      <Card className="mt-6">
+        <CardContent className="divide-border flex flex-col divide-y">
+          {
+            patents.map((patent) => (
+              <div class="flex flex-wrap items-center justify-between gap-3 py-4 first:pt-0 last:pb-0">
+                <span class="text-ink font-medium">{patent.jurisdiction}</span>
+                <Badge variant="secondary">Patent No. {patent.number}</Badge>
+              </div>
+            ))
+          }
+        </CardContent>
+      </Card>
+
+      <p class="card-body mt-8">
+        All brand names and logos are registered trademarks. Unauthorised use is strictly prohibited
+        and will be legally enforced.
+      </p>
+    </div>
+  </div>
+</BaseLayout>

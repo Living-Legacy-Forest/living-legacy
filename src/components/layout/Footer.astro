@@ -1,0 +1,144 @@
+---
+import { Facebook, Instagram, Youtube } from 'lucide-astro';
+import BrandImage from '@/components/ui/BrandImage.astro';
+import PatentsDialog from '@/components/layout/PatentsDialog';
+import { Separator } from '@/components/ui/separator';
+import { buttonVariants } from '@/components/ui/button';
+import logoWordmark from '@/assets/brand/logo-wordmark.png';
+
+const exploreLinks = [
+  { label: 'Home', href: '/' },
+  { label: 'About', href: '/#about-section' },
+  { label: 'Locations', href: '/#location-section' },
+  { label: 'Contact', href: '/contact/' },
+  { label: 'FAQs', href: '/faqs/' },
+];
+
+const mediaLinks = [
+  { label: 'In the media', href: '/about/in-the-media/' },
+  { label: 'Blog', href: '/blog/' },
+  { label: 'Our partners', href: '/our-partners/' },
+];
+
+const socialLinks = [
+  { label: 'Facebook', href: 'https://www.facebook.com/livinglegacyforest/', icon: Facebook },
+  { label: 'Instagram', href: 'https://www.instagram.com/living_legacy_forest/', icon: Instagram },
+  {
+    label: 'YouTube',
+    href: 'https://www.youtube.com/channel/UCA3aDohvY5Y8Hr2oviiH-gw',
+    icon: Youtube,
+  },
+];
+
+const legalLinks = [
+  { label: 'Privacy', href: '/privacy/' },
+  { label: 'Terms', href: '/terms-and-conditions/' },
+  { label: 'Intellectual property', href: '/intellectual-property/' },
+];
+
+const year = new Date().getFullYear();
+---
+
+<footer class="border-bark/20 border-t">
+  <div class="mx-auto max-w-6xl px-6 py-16 sm:px-10 lg:py-20">
+    <div class="grid gap-12 lg:grid-cols-12 lg:gap-8">
+      <div class="lg:col-span-4">
+        <a href="/" aria-label="Living Legacy Forest home">
+          <BrandImage
+            src={logoWordmark}
+            height="1.75rem"
+            label="Living Legacy Forest"
+            class="text-moss-deep"
+          />
+        </a>
+        <p class="text-ink-soft mt-5 max-w-sm leading-relaxed">
+          Welcome to Living Legacy, where we transform grief into growth by bringing communities
+          together to create memorial forests and gardens.
+        </p>
+        <ul class="mt-6 flex items-center gap-3">
+          {
+            socialLinks.map((social) => (
+              <li>
+                <a
+                  href={social.href}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  aria-label={social.label}
+                  class={buttonVariants({ variant: 'outline', size: 'icon' })}
+                >
+                  <social.icon aria-hidden="true" />
+                </a>
+              </li>
+            ))
+          }
+        </ul>
+      </div>
+
+      <nav aria-label="Explore us" class="lg:col-span-2">
+        <p class="eyebrow">Explore us</p>
+        <ul class="mt-5 space-y-3">
+          {
+            exploreLinks.map((link) => (
+              <li>
+                <a
+                  href={link.href}
+                  class="text-ink-soft hover:text-moss-deep transition-colors duration-300"
+                >
+                  {link.label}
+                </a>
+              </li>
+            ))
+          }
+        </ul>
+      </nav>
+
+      <nav aria-label="Media and community" class="lg:col-span-3">
+        <p class="eyebrow">Media and community</p>
+        <ul class="mt-5 space-y-3">
+          {
+            mediaLinks.map((link) => (
+              <li>
+                <a
+                  href={link.href}
+                  class="text-ink-soft hover:text-moss-deep transition-colors duration-300"
+                >
+                  {link.label}
+                </a>
+              </li>
+            ))
+          }
+        </ul>
+      </nav>
+
+      <div class="lg:col-span-3">
+        <p class="eyebrow">Find us</p>
+        <p class="text-ink-soft mt-5 leading-relaxed">4/349 Collins St, Melbourne VIC 3000</p>
+      </div>
+    </div>
+
+    <Separator className="mt-14" />
+
+    <div
+      class="text-bark flex flex-col gap-4 pt-8 text-xs sm:flex-row sm:items-center sm:justify-between"
+    >
+      <div class="space-y-1">
+        <p>Forest Conservation Australia Pty Ltd, ABN 59 639 330 617</p>
+        <p>
+          Living Legacy Forest &copy; {year}.
+          <PatentsDialog client:idle />
+        </p>
+      </div>
+      <ul class="flex flex-wrap gap-x-6 gap-y-2">
+        {
+          legalLinks.map((link) => (
+            <li>
+              <a href={link.href} class="hover:text-moss-deep transition-colors duration-300">
+                {link.label}
+              </a>
+            </li>
+          ))
+        }
+      </ul>
+    </div>
+  </div>
+</footer>

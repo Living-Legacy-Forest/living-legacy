@@ -1,0 +1,90 @@
+---
+// Author archive. Paginated via ?page=, same pattern as the other archives.
+import BaseLayout from '@/layouts/BaseLayout.astro';
+import BlogCard from '@/components/blog/BlogCard.astro';
+import BlogPagination from '@/components/blog/BlogPagination.astro';
+import {
+  Breadcrumb,
+  BreadcrumbItem,
+  BreadcrumbLink,
+  BreadcrumbList,
+  BreadcrumbPage,
+  BreadcrumbSeparator,
+} from '@/components/ui/breadcrumb';
+import { Separator } from '@/components/ui/separator';
+import { getAuthorBySlug, getPostsByAuthor } from '@/lib/sanity';
+
+export const prerender = false;
+
+const { slug } = Astro.params;
+const author = slug ? await getAuthorBySlug(slug) : null;
+
+if (!author) {
+  return Astro.rewrite('/404');
+}
+
+const requestedPage = Number.parseInt(Astro.url.searchParams.get('page') ?? '1', 10);
+const page = Number.isInteger(requestedPage) && requestedPage > 0 ? requestedPage : 1;
+
+const { posts, total, pageCount } = await getPostsByAuthor(author.slug.current, page);
+
+if (pageCount > 0 && page > pageCount) {
+  return Astro.rewrite('/404');
+}
+
+const canonicalPath = `/blog/author/${author.slug.current}/`;
+const description =
+  author.bio ||
+  `${total} ${total === 1 ? 'post' : 'posts'} by ${author.name} on the Living Legacy Forest blog.`;
+---
+
+<BaseLayout
+  title={`${author.name} | Living Legacy Forest blog`}
+  description={description}
+  canonical={new URL(canonicalPath, Astro.site).toString()}
+  noindex={page > 1}
+>
+  <div class="mx-auto max-w-6xl px-6 py-16 sm:px-10 md:py-24">
+    <header class="flex max-w-2xl flex-col gap-4">
+      <Breadcrumb>
+        <BreadcrumbList>
+          <BreadcrumbItem>
+            <BreadcrumbLink href="/">Home</BreadcrumbLink>
+          </BreadcrumbItem>
+          <BreadcrumbSeparator />
+          <BreadcrumbItem>
+            <BreadcrumbLink href="/blog/">Blog</BreadcrumbLink>
+          </BreadcrumbItem>
+          <BreadcrumbSeparator />
+          <BreadcrumbItem>
+            <BreadcrumbPage>{author.name}</BreadcrumbPage>
+          </BreadcrumbItem>
+        </BreadcrumbList>
+      </Breadcrumb>
+      <h1 class="display-title text-balance">{author.name}</h1>
+      {author.role && <p class="text-bark text-base font-medium">{author.role}</p>}
+      {author.bio && <p class="text-ink-soft text-lg leading-relaxed">{author.bio}</p>}
+    </header>
+
+    <Separator className="mt-14 md:mt-16" />
+    <div class="flex flex-col gap-16 pt-14 md:gap-20 md:pt-16">
+      {
+        posts.length === 0 ? (
+          <p class="text-ink-soft">Nothing published by this author yet.</p>
+        ) : (
+          <div class="grid gap-x-8 gap-y-14 sm:grid-cols-2 lg:grid-cols-3">
+            {posts.map((post) => (
+              <BlogCard post={post} />
+            ))}
+          </div>
+        )
+      }
+
+      <BlogPagination
+        page={page}
+        pageCount={pageCount}
+        buildHref={(p) => (p <= 1 ? canonicalPath : `${canonicalPath}?page=${p}`)}
+      />
+    </div>
+  </div>
+</BaseLayout>

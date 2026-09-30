@@ -1,0 +1,39 @@
+---
+import BrandImage from '@/components/ui/BrandImage.astro';
+import DesktopNav from '@/components/layout/DesktopNav';
+import MobileNav from '@/components/layout/MobileNav';
+import logoMark from '@/assets/brand/logo-mark.webp';
+import logoWordmark from '@/assets/brand/logo-wordmark.png';
+import { UPCOMING_LOCATIONS_HREF } from '@/components/layout/nav-links';
+---
+
+<div class="bg-moss-deep text-paper">
+  <p
+    class="mx-auto flex max-w-6xl flex-wrap items-center justify-center gap-x-3 gap-y-1 px-6 py-2.5 text-center sm:px-10"
+  >
+    <span>New locations coming to Queensland and New South Wales</span>
+    <a
+      href={UPCOMING_LOCATIONS_HREF}
+      class="hover:text-sun font-medium underline underline-offset-4 transition-colors duration-300"
+    >
+      Register interest
+    </a>
+  </p>
+</div>
+
+<header class="border-bark/20 bg-paper/95 sticky top-0 z-40 border-b backdrop-blur">
+  <div class="mx-auto flex max-w-6xl items-center justify-between gap-6 px-6 py-5 sm:px-10">
+    <a href="/" class="flex items-center gap-3" aria-label="Living Legacy Forest home">
+      <BrandImage src={logoMark} height="2.25rem" class="text-moss-deep" />
+      <BrandImage
+        src={logoWordmark}
+        height="1.5rem"
+        label="Living Legacy Forest"
+        class="text-moss-deep hidden sm:inline-block"
+      />
+    </a>
+
+    <DesktopNav client:load />
+    <MobileNav client:load />
+  </div>
+</header>

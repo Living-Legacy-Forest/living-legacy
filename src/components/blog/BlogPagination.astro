@@ -1,0 +1,90 @@
+---
+// Pagination for the blog index and the taxonomy archives.
+//
+// Real links, so they are crawlable, middle-clickable and work with no
+// JavaScript. rel="prev"/"next" tells a crawler these are one sequence rather
+// than a set of near-duplicate pages. `buildHref` is supplied by the caller
+// so this one component serves both the index's path-based pages
+// (/blog/page/2/) and an archive's query-string ones (?page=2).
+import {
+  Pagination,
+  PaginationContent,
+  PaginationEllipsis,
+  PaginationItem,
+  PaginationLink,
+  PaginationNext,
+  PaginationPrevious,
+} from '@/components/ui/pagination';
+
+interface Props {
+  page: number;
+  pageCount: number;
+  buildHref: (page: number) => string;
+}
+
+const { page, pageCount, buildHref } = Astro.props;
+
+/** Five around the current page, clamped to the ends, with gaps marked. */
+function pageWindow(): Array<number | 'gap'> {
+  if (pageCount <= 7) return Array.from({ length: pageCount }, (_, i) => i + 1);
+
+  const pages = new Set<number>([1, pageCount, page]);
+  for (const offset of [-1, 1]) {
+    const n = page + offset;
+    if (n > 1 && n < pageCount) pages.add(n);
+  }
+  if (page <= 3) for (const n of [2, 3, 4]) if (n < pageCount) pages.add(n);
+  if (page >= pageCount - 2)
+    for (const n of [pageCount - 1, pageCount - 2, pageCount - 3]) if (n > 1) pages.add(n);
+
+  const sorted = [...pages].sort((a, b) => a - b);
+  const out: Array<number | 'gap'> = [];
+  let previous = 0;
+  for (const n of sorted) {
+    if (previous && n - previous > 1) out.push('gap');
+    out.push(n);
+    previous = n;
+  }
+  return out;
+}
+
+const items = pageWindow();
+---
+
+{
+  pageCount > 1 && (
+    <Pagination aria-label="Blog pages">
+      <PaginationContent>
+        {page > 1 && (
+          <PaginationItem>
+            <PaginationPrevious href={buildHref(page - 1)} rel="prev" />
+          </PaginationItem>
+        )}
+
+        {items.map((item) =>
+          item === 'gap' ? (
+            <PaginationItem>
+              <PaginationEllipsis />
+            </PaginationItem>
+          ) : (
+            <PaginationItem>
+              <PaginationLink
+                href={buildHref(item)}
+                isActive={item === page}
+                aria-label={`Page ${item}`}
+              >
+                {item}
+              </PaginationLink>
+            </PaginationItem>
+          )
+        )}
+
+        {page < pageCount && (
+          <PaginationItem>
+            <PaginationNext href={buildHref(page + 1)} rel="next" />
+          </PaginationItem>
+        )}
+      </PaginationContent>
+    </Pagination>
+  )
+}

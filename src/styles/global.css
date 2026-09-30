@@ -1,6 +1,10 @@
 @import '@fontsource-variable/fraunces';
 @import '@fontsource-variable/instrument-sans';
 @import 'tailwindcss';
+@import 'tw-animate-css';
+@import 'shadcn/tailwind.css';
+
+@custom-variant dark (&:is(.dark *));
 
 @theme {
   /* Warm paper and forest ink. Nothing clinical, nothing funereal. */
@@ -16,18 +20,112 @@
   --font-display: 'Fraunces Variable', ui-serif, Georgia, serif;
   --font-body: 'Instrument Sans Variable', ui-sans-serif, system-ui, sans-serif;
 
-  --ease-grow: cubic-bezier(0.22, 0.61, 0.36, 1);
+  /* A strong ease-out: movement starts at once and settles softly. */
+  --ease-grow: cubic-bezier(0.23, 1, 0.32, 1);
+
+  /*
+   * Golden-ratio type scale.
+   *
+   * Every size is 1rem x phi^(n/2), phi = 1.618. Each step is sqrt(phi),
+   * about 1.272, so every second step is a full golden ratio:
+   *
+   *   xs 0.786  base 1  lg 1.272  xl 1.618  2xl 2.058  3xl 2.618
+   *   4xl 3.33  5xl 4.236  6xl 5.388
+   *
+   * `sm` is deliberately the same as `base`. The site has no 14px tier: small
+   * interface text (buttons, inputs, menus) sits on the 1rem step, which is
+   * also the size that stops iOS zooming into a focused field. Body line
+   * height is phi itself; headings tighten as they grow.
+   */
+  --text-xs: 0.786rem;
+  --text-xs--line-height: 1.5;
+  --text-sm: 1rem;
+  --text-sm--line-height: 1.618;
+  --text-base: 1rem;
+  --text-base--line-height: 1.618;
+  --text-lg: 1.272rem;
+  --text-lg--line-height: 1.5;
+  --text-xl: 1.618rem;
+  --text-xl--line-height: 1.3;
+  --text-2xl: 2.058rem;
+  --text-2xl--line-height: 1.2;
+  --text-3xl: 2.618rem;
+  --text-3xl--line-height: 1.15;
+  --text-4xl: 3.33rem;
+  --text-4xl--line-height: 1.1;
+  --text-5xl: 4.236rem;
+  --text-5xl--line-height: 1.05;
+  --text-6xl: 5.388rem;
+  --text-6xl--line-height: 1.02;
+}
+
+/* shadcn's semantic tokens, all drawn from the palette above. */
+@theme inline {
+  --font-sans: var(--font-body);
+  --font-heading: var(--font-display);
+  --color-ring: var(--ring);
+  --color-input: var(--input);
+  --color-border: var(--border);
+  --color-destructive: var(--destructive);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-accent: var(--accent);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-muted: var(--muted);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-secondary: var(--secondary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-primary: var(--primary);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-popover: var(--popover);
+  --color-card-foreground: var(--card-foreground);
+  --color-card: var(--card);
+  --color-foreground: var(--foreground);
+  --color-background: var(--background);
+  --radius-sm: calc(var(--radius) * 0.6);
+  --radius-md: calc(var(--radius) * 0.8);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) * 1.4);
+  --radius-2xl: calc(var(--radius) * 1.8);
+  --radius-3xl: calc(var(--radius) * 2.2);
+  --radius-4xl: calc(var(--radius) * 2.6);
+}
+
+:root {
+  --background: var(--color-paper);
+  --foreground: var(--color-ink);
+  --card: var(--color-paper);
+  --card-foreground: var(--color-ink);
+  --popover: var(--color-paper);
+  --popover-foreground: var(--color-ink);
+  --primary: var(--color-ink);
+  --primary-foreground: var(--color-paper);
+  --secondary: var(--color-paper-deep);
+  --secondary-foreground: var(--color-ink);
+  --muted: var(--color-paper-deep);
+  --muted-foreground: var(--color-ink-soft);
+  --accent: var(--color-paper-deep);
+  --accent-foreground: var(--color-moss-deep);
+  --destructive: oklch(0.52 0.16 30);
+  --border: color-mix(in oklab, var(--color-bark) 22%, transparent);
+  --input: color-mix(in oklab, var(--color-bark) 35%, transparent);
+  --ring: var(--color-moss);
+  --radius: 0.75rem;
 }
 
 @layer base {
+  * {
+    @apply border-border outline-ring/50;
+  }
+
   html {
     scroll-behavior: smooth;
+    @apply font-sans;
   }
 
   body {
-    background-color: var(--color-paper);
-    color: var(--color-ink);
-    font-family: var(--font-body);
+    @apply bg-background text-foreground;
+    font-size: var(--text-base);
+    line-height: var(--text-base--line-height);
     font-synthesis-weight: none;
     -webkit-font-smoothing: antialiased;
     text-rendering: optimizeLegibility;
@@ -36,14 +134,15 @@
   /* Fraunces carries a soft, slightly organic cut at display sizes. */
   h1,
   h2,
-  h3 {
+  h3,
+  h4 {
     font-family: var(--font-display);
     font-variation-settings:
       'SOFT' 40,
       'WONK' 1;
     font-weight: 400;
     letter-spacing: -0.02em;
-    line-height: 1.05;
+    line-height: 1.1;
     text-wrap: balance;
   }
 
@@ -60,14 +159,68 @@
     outline: 2px solid var(--color-moss);
     outline-offset: 3px;
   }
+
+  button:not(:disabled),
+  [role='button']:not(:disabled) {
+    cursor: pointer;
+  }
 }
 
+/* Roles on the golden scale. Every section uses these rather than choosing
+   its own sizes, so the whole site lines up. */
+
+/* The page's one headline: 2.618rem on a phone, up to 4.236rem. */
+@utility display-title {
+  font-size: clamp(var(--text-3xl), 1.6rem + 3.4vw, var(--text-5xl));
+  line-height: 1.05;
+}
+
+/* Every section's h2: 2.058rem on a phone, up to 2.618rem. */
+@utility section-title {
+  font-size: clamp(var(--text-2xl), 1.7rem + 1vw, var(--text-3xl));
+  line-height: 1.15;
+}
+
+/* A short label above a heading. Sentence case: capitals everywhere read as
+   shouting, and the house style is sentence case throughout. */
 @utility eyebrow {
-  font-size: 0.75rem;
+  font-size: var(--text-base);
+  line-height: 1.4;
   font-weight: 500;
-  letter-spacing: 0.18em;
-  text-transform: uppercase;
   color: var(--color-bark);
+}
+
+/* The paragraph that introduces a section: 1rem on a phone, 1.272rem wide. */
+@utility lead {
+  font-size: clamp(var(--text-base), 0.9rem + 0.5vw, var(--text-lg));
+  line-height: 1.618;
+  color: var(--color-ink-soft);
+}
+
+/* Headings inside cards, steps and list items. */
+@utility card-title {
+  font-family: var(--font-display);
+  font-size: var(--text-lg);
+  line-height: 1.3;
+}
+
+/* Body copy inside cards, steps and list items. */
+@utility card-body {
+  font-size: var(--text-base);
+  line-height: 1.618;
+  color: var(--color-ink-soft);
+}
+
+/* Press feedback for anything clickable that looks like a button: a small,
+   quick scale so the page feels like it heard the tap. */
+@utility press {
+  transition-property: transform, background-color, border-color, color;
+  transition-duration: 160ms;
+  transition-timing-function: var(--ease-grow);
+
+  &:active {
+    transform: scale(0.97);
+  }
 }
 
 /* Paper grain, kept faint so it reads as texture rather than noise. */
@@ -94,7 +247,7 @@
 }
 
 @utility rise {
-  animation: rise 1s var(--ease-grow) both;
+  animation: rise 0.9s var(--ease-grow) both;
 }
 
 /* Growth rings drawing themselves, outermost last. Each ring settles at its

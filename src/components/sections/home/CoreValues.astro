@@ -1,0 +1,67 @@
+---
+/** The six core value cards, with the live site's icons. */
+import { Image } from 'astro:assets';
+import { Card, CardHeader, CardContent, CardDescription } from '@/components/ui/card';
+import iconConnecting from '@/assets/home/value-connecting-generations.png';
+import iconScience from '@/assets/home/value-science-innovation.png';
+import iconSustainability from '@/assets/home/value-sustainability.png';
+import iconEarth from '@/assets/home/value-earths-wisdom.png';
+import iconCommunity from '@/assets/home/value-community-empowerment.png';
+import iconGrowth from '@/assets/home/value-growth-in-nature.png';
+
+const values = [
+  {
+    title: 'Connecting generations',
+    body: 'Our protected spaces honour the family thread, connecting past, present, and future generations, and deepening our sense of belonging to family, community, and the earth.',
+    icon: iconConnecting,
+  },
+  {
+    title: 'Science and innovation',
+    body: 'We have perfected an organic treatment that detoxifies and unlocks hidden nutrients from human ashes so they can return to nature in a sustainable, eco-friendly way.',
+    icon: iconScience,
+  },
+  {
+    title: 'Sustainability',
+    body: 'Each tree planted is a lasting contribution to the planet. We ensure a greener future, creating a living testament to our commitment to the earth and the generations to come.',
+    icon: iconSustainability,
+  },
+  {
+    title: "Earth's wisdom",
+    body: "We honour the Earth's timeless wisdom, embracing the interconnectedness of all life. By nurturing the earth, we learn from nature's resilience, balance, and cycles, committing to live in harmony with the planet.",
+    icon: iconEarth,
+  },
+  {
+    title: 'Community empowerment',
+    body: 'Our protected spaces provide a sanctuary for healing, where communities can process love, loss, and grief, fostering connection and transforming pain into a lasting legacy of love and growth.',
+    icon: iconCommunity,
+  },
+  {
+    title: 'Growth in nature',
+    body: 'Like nature, individuals find healing through the cycles of grief in the Living Legacy. By connecting with the land, people draw strength and renewal, turning grief into personal growth and a lasting legacy.',
+    icon: iconGrowth,
+  },
+] as const;
+---
+
+<section class="border-bark/20 scroll-mt-24 border-t py-24 lg:py-32">
+  <p class="eyebrow">What we stand for</p>
+  <h2 class="section-title mt-4 max-w-2xl">Our Living Legacy core values</h2>
+
+  <ul class="bg-bark/20 mt-14 grid gap-px overflow-hidden rounded-lg sm:grid-cols-2 lg:grid-cols-3">
+    {
+      values.map((value) => (
+        <li>
+          <Card className="gap-6 rounded-none bg-paper ring-0">
+            <CardHeader className="gap-6">
+              <Image src={value.icon} alt="" width={44} loading="lazy" class="h-10 w-auto" />
+              <h3 class="card-title">{value.title}</h3>
+            </CardHeader>
+            <CardContent>
+              <CardDescription>{value.body}</CardDescription>
+            </CardContent>
+          </Card>
+        </li>
+      ))
+    }
+  </ul>
+</section>

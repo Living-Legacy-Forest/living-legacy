@@ -1,0 +1,17 @@
+---
+/**
+ * The small caps label used above a heading or section ("The idea", "How it
+ * works"). Thin wrapper around the `eyebrow` utility in global.css so the
+ * class name doesn't have to be repeated at every call site.
+ */
+interface Props {
+  class?: string;
+  as?: 'p' | 'span';
+}
+
+const { class: className = '', as: Tag = 'p' } = Astro.props;
+---
+
+<Tag class:list={['eyebrow', className]}>
+  <slot />
+</Tag>

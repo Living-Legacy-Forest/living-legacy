@@ -1,0 +1,52 @@
+---
+/**
+ * The legacy quote. Logo mark and a pair of stump illustrations frame a
+ * short quotation, live's `id="about-section"` kept so old links resolve.
+ */
+import BrandImage from '@/components/ui/BrandImage.astro';
+import { Separator } from '@/components/ui/separator';
+import logoMark from '@/assets/home/legacy-quote-logo-mark.png';
+import stumpLeft from '@/assets/home/legacy-quote-stump-left.png';
+import stumpRight from '@/assets/home/legacy-quote-stump-right.png';
+---
+
+<section
+  id="about-section"
+  class="border-bark/20 scroll-mt-24 border-t py-24 lg:py-32"
+  aria-labelledby="about-section-heading"
+>
+  <div class="relative mx-auto max-w-3xl text-center">
+    <div
+      class="pointer-events-none absolute -top-16 -left-10 hidden w-24 opacity-70 sm:block lg:-left-20 lg:w-32"
+      aria-hidden="true"
+    >
+      <BrandImage src={stumpLeft} height="auto" class="text-bark block w-full" />
+    </div>
+    <div
+      class="pointer-events-none absolute -top-16 -right-10 hidden w-24 opacity-70 sm:block lg:-right-20 lg:w-32"
+      aria-hidden="true"
+    >
+      <BrandImage src={stumpRight} height="auto" class="text-bark block w-full" />
+    </div>
+
+    <BrandImage
+      src={logoMark}
+      height="3rem"
+      label="Living Legacy Forest"
+      class="text-moss mx-auto block w-fit"
+    />
+
+    <h2 id="about-section-heading" class="section-title rise mt-8">
+      "Every life has the potential to create beauty, inspire connection, and leave a lasting
+      legacy."
+    </h2>
+
+    <Separator className="bg-bark/30 mx-auto mt-10 w-16" />
+
+    <p class="lead mt-10">
+      Through Living Legacy, we honour that potential by transforming ashes into living memorials,
+      trees that grow, evolve, and carry a person's spirit forward, fostering a deeper connection to
+      nature, community, and future generations.
+    </p>
+  </div>
+</section>

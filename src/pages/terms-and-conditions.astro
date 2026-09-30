@@ -1,0 +1,76 @@
+---
+// Terms and conditions. Live content here is not the site's terms at all:
+// it is a standalone 2018 event page for a Wellington Dam "conservation
+// zone" plot sale, kept live at this URL ever since (see
+// docs/superpowers/specs/2026-09-24-live-site-rebuild.md §2, which flags it
+// for client review). Carried rather than rewritten, since the client owns
+// the decision on what belongs at this URL long term.
+//
+// The customer waiver PDF link on live (181127-customer-waiver-for-
+// conservation-zone) resolves with a 301 to a real PDF; downloaded to
+// public/documents/customer-waiver-for-conservation-zone.pdf and linked
+// directly rather than through the old redirect.
+//
+// Dropped as noise rather than content: live repeats the waiver PDF link
+// and the "Purchase your plot" button a second time each further down the
+// page, an about:blank map iframe with nothing to embed, a Facebook/
+// Twitter/LinkedIn share widget with no working share targets without its
+// original plugin, and a page-specific 2018 mini footer (address,
+// copyright, social links) that would sit directly above this site's real,
+// current footer and only contradict it.
+import { Image } from 'astro:assets';
+import BaseLayout from '@/layouts/BaseLayout.astro';
+import { buttonVariants } from '@/components/ui/button';
+import { Separator } from '@/components/ui/separator';
+import logoAnimation from '@/assets/terms/logo-animation.gif';
+import waiverPhoto from '@/assets/terms/waiver-photo.jpg';
+
+const title = 'Terms and conditions | Living Legacy Forest';
+const description =
+  'Terms and conditions and the customer waiver for the Wellington Dam Memorial Forest conservation zone.';
+
+const WAIVER_PDF_HREF = '/documents/customer-waiver-for-conservation-zone.pdf';
+const PURCHASE_PLOT_HREF = 'https://livinglegacyforest.com/wellington-legacy-sanctuary-event/';
+---
+
+<BaseLayout title={title} description={description}>
+  <div class="mx-auto max-w-3xl px-6 py-20 sm:px-10 lg:py-28">
+    <img src={logoAnimation.src} alt="" width="120" height="120" class="mb-6 h-24 w-24" />
+
+    <p class="eyebrow">Wellington Dam memorial sanctuary event</p>
+    <h1 class="display-title mt-4">Terms and conditions</h1>
+
+    <p class="lead mt-6">
+      All customers must agree to the standard terms and conditions and waiver to take part in this
+      memorial sanctuary event. By purchasing your plot you agree to be bound by these terms and
+      conditions.
+    </p>
+
+    <div class="mt-8 flex flex-wrap gap-4">
+      <a href={PURCHASE_PLOT_HREF} class={buttonVariants()}>Purchase your plot</a>
+      <a
+        href={WAIVER_PDF_HREF}
+        target="_blank"
+        rel="noopener noreferrer"
+        class={buttonVariants({ variant: 'outline' })}
+      >
+        Customer waiver PDF download
+      </a>
+    </div>
+
+    <div class="border-bark/20 mt-10 overflow-hidden rounded-2xl border">
+      <Image src={waiverPhoto} alt="" width={900} class="h-full w-full object-cover" />
+    </div>
+
+    <div class="mt-16">
+      <Separator className="mb-12" />
+      <p class="eyebrow">Information</p>
+      <h2 class="section-title mt-4">Wellington Dam Memorial Forest</h2>
+
+      <div class="mt-6 flex flex-col gap-1">
+        <h3 class="text-ink font-medium">1 Wellington Dam Rd</h3>
+        <p class="text-ink-soft">1 Wellington Dam Road, Worsley, Western Australia, Australia</p>
+      </div>
+    </div>
+  </div>
+</BaseLayout>

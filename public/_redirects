@@ -1,1 +1,8 @@
-# Cloudflare Pages redirect rules — add entries as needed
+# Legacy redirects are implemented in src/lib/redirects.ts, consumed by
+# src/middleware.ts, not here.
+#
+# On Cloudflare Workers, @astrojs/cloudflare v14 routes every request through
+# the Worker (there is no separate static-asset tier that falls through to a
+# file like this one first), so a rule here would never run ahead of the
+# Worker's own routing. Keeping the redirect map in middleware means dev,
+# preview and production all resolve legacy URLs the same way.

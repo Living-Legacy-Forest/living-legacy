@@ -1,0 +1,34 @@
+---
+/**
+ * Google Tag Manager loader + no-JS fallback. Split out from Tracking.astro
+ * because prettier-plugin-astro cannot format a <script> containing an object
+ * literal when it's nested inside a `{condition && (...)}` expression; this
+ * component instead renders unconditionally, and the parent decides whether
+ * to include it at all.
+ */
+interface Props {
+  gtmId: string;
+}
+
+const { gtmId } = Astro.props;
+---
+
+<script define:vars={{ gtmId }}>
+  window.dataLayer = window.dataLayer || [];
+  window.dataLayer.push({ 'gtm.start': Date.now(), event: 'gtm.js' });
+
+  const script = document.createElement('script');
+  script.async = true;
+  script.src = 'https://www.googletagmanager.com/gtm.js?id=' + gtmId;
+
+  const firstScript = document.getElementsByTagName('script')[0];
+  firstScript.parentNode?.insertBefore(script, firstScript);
+</script>
+<noscript>
+  <iframe
+    src={`https://www.googletagmanager.com/ns.html?id=${gtmId}`}
+    height="0"
+    width="0"
+    style="display:none;visibility:hidden"
+    title="Google Tag Manager"></iframe>
+</noscript>

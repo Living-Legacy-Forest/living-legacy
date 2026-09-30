@@ -1,0 +1,52 @@
+---
+// Register interest. Live embeds a LeadConnector (GoHighLevel) form inline,
+// form id 7ra4NiPGM9jNSI5MPY9A, "Register Your Interest". Kept as the same
+// embed rather than rebuilt as a native form: it is a third-party CRM form
+// we do not own the fields of, and re-hosting it would drift from whatever
+// the client edits on their end.
+//
+// The data-* attributes are carried from the live iframe
+// (live/register-interest.html) so LeadConnector's embed script still finds
+// what it expects. `loading="lazy"` on the iframe itself does the deferring
+// live does with a "rocket lazyload" plugin trick; no such plugin runs
+// here, so the widget's real src is used directly rather than about:blank.
+import BaseLayout from '@/layouts/BaseLayout.astro';
+import { Card } from '@/components/ui/card';
+
+const title = 'Register interest | Living Legacy Forest';
+const description =
+  'Register your interest in a Living Legacy Tree and a member of our team will be in touch.';
+---
+
+<BaseLayout title={title} description={description}>
+  <div class="mx-auto max-w-3xl px-6 py-20 sm:px-10 lg:py-28">
+    <p class="eyebrow">Get in touch</p>
+    <h1 class="display-title mt-4">Register your interest</h1>
+    <p class="lead mt-5 max-w-xl">
+      Fill out the form below and a member of the Living Legacy team will be in touch.
+    </p>
+
+    <Card className="bg-paper-deep/30 mt-10 p-2 sm:p-4">
+      <iframe
+        src="https://api.leadconnectorhq.com/widget/form/7ra4NiPGM9jNSI5MPY9A"
+        style="width:100%;height:100%;border:none;border-radius:4px"
+        id="inline-7ra4NiPGM9jNSI5MPY9A"
+        data-layout="{'id':'INLINE'}"
+        data-trigger-type="alwaysShow"
+        data-trigger-value=""
+        data-activation-type="alwaysActivated"
+        data-activation-value=""
+        data-deactivation-type="neverDeactivate"
+        data-deactivation-value=""
+        data-form-name="Register Your Interest"
+        data-height="1082"
+        data-layout-iframe-id="inline-7ra4NiPGM9jNSI5MPY9A"
+        data-form-id="7ra4NiPGM9jNSI5MPY9A"
+        title="Register your interest"
+        loading="lazy"
+        height="1082"></iframe>
+    </Card>
+  </div>
+
+  <script src="https://link.msgsndr.com/js/form_embed.js" defer is:inline></script>
+</BaseLayout>

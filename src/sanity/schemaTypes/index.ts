@@ -1,3 +1,8 @@
 import type { SchemaTypeDefinition } from 'sanity';
 
-export const schemaTypes: SchemaTypeDefinition[] = [];
+import { author } from './author';
+import { blog } from './blog';
+import { category } from './category';
+import { tag } from './tag';
+
+export const schemaTypes: SchemaTypeDefinition[] = [blog, author, category, tag];

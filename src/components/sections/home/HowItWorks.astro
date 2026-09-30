@@ -1,0 +1,60 @@
+---
+import { Image } from 'astro:assets';
+import { Card, CardContent, CardDescription } from '@/components/ui/card';
+import step1 from '@/assets/home/how-it-works-step-1.png';
+import step2 from '@/assets/home/how-it-works-step-2.png';
+import step3 from '@/assets/home/how-it-works-step-3.png';
+
+const steps = [
+  { title: 'Choose your tree', body: 'Choose your tree and find your location.', icon: step1 },
+  { title: 'Book your ceremony', body: 'Book your tree planting ceremony.', icon: step2 },
+  { title: 'Visit your tree', body: 'Visit your location and watch your tree grow.', icon: step3 },
+] as const;
+---
+
+<section
+  id="how-it-works-section"
+  class="border-bark/20 scroll-mt-24 border-t py-24 lg:py-32"
+  aria-labelledby="how-it-works-heading"
+>
+  <div class="max-w-2xl">
+    <p class="eyebrow">How it works</p>
+    <h2 id="how-it-works-heading" class="section-title mt-4">
+      3 steps to create your Living Legacy
+    </h2>
+    <p class="lead mt-6">
+      Living Legacy Tribute Trees provide a beautiful, environmentally conscientious way to return
+      one's ashes to the earth as a sustainable alternative to gravestones. Your loved one is set
+      free and returned to the earth, to continue the circle of life. Their life is truly
+      perpetuated through their memorial tree.
+    </p>
+  </div>
+
+  <ol class="mt-14 flex flex-col items-stretch gap-6 sm:flex-row">
+    {
+      steps.map((step, i) => (
+        <>
+          <li class="flex-1">
+            <Card className="h-full bg-paper-deep ring-0">
+              <CardContent className="flex flex-col gap-6">
+                <Image
+                  src={step.icon}
+                  alt={step.title}
+                  width={64}
+                  loading="lazy"
+                  class="h-14 w-auto"
+                />
+                <CardDescription>{step.body}</CardDescription>
+              </CardContent>
+            </Card>
+          </li>
+          {i < steps.length - 1 && (
+            <li class="text-moss hidden shrink-0 self-center sm:block" aria-hidden="true">
+              &rarr;
+            </li>
+          )}
+        </>
+      ))
+    }
+  </ol>
+</section>

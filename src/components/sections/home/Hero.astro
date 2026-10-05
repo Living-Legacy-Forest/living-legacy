@@ -6,7 +6,8 @@
  * below (PromoBanner), not part of the hero.
  */
 import { Image } from 'astro:assets';
-import { ArrowRight } from 'lucide-astro';
+import HugeIcon from '@/components/ui/HugeIcon.astro';
+import { ArrowRight02Icon } from '@hugeicons/core-free-icons';
 import GrowthRings from '@/components/ui/GrowthRings.astro';
 import { buttonVariants } from '@/components/ui/button';
 import familyAtTree from '@/assets/home/carousel-01.webp';
@@ -34,7 +35,7 @@ import wateringSapling from '@/assets/home/carousel-08.webp';
     >
       <a href="#location-section" class={buttonVariants()}>
         Find a location
-        <ArrowRight data-icon="inline-end" aria-hidden="true" />
+        <HugeIcon icon={ArrowRight02Icon} data-icon="inline-end" aria-hidden="true" />
       </a>
       <a
         href="#how-it-works-section"

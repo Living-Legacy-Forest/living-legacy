@@ -13,7 +13,8 @@
  * are optimised here with getImage(), since islands cannot use astro:assets.
  */
 import { Image, getImage } from 'astro:assets';
-import { Phone, ArrowRight } from 'lucide-astro';
+import HugeIcon from '@/components/ui/HugeIcon.astro';
+import { Call02Icon, ArrowRight02Icon } from '@hugeicons/core-free-icons';
 import { buttonVariants } from '@/components/ui/button';
 import { CardDescription } from '@/components/ui/card';
 import { Separator } from '@/components/ui/separator';
@@ -176,7 +177,7 @@ const mapPins = await Promise.all(
                               href={location.tel}
                               class="text-moss-deep hover:text-ink inline-flex items-center gap-2 font-medium transition-colors duration-300"
                             >
-                              <Phone class="h-4 w-4" aria-hidden="true" />
+                              <HugeIcon icon={Call02Icon} class="h-4 w-4" aria-hidden="true" />
                               {location.phone}
                             </a>
                           </dd>
@@ -191,7 +192,11 @@ const mapPins = await Promise.all(
                       >
                         Visit site
                         <span class="sr-only">for {location.name} (opens in a new tab)</span>
-                        <ArrowRight data-icon="inline-end" aria-hidden="true" />
+                        <HugeIcon
+                          icon={ArrowRight02Icon}
+                          data-icon="inline-end"
+                          aria-hidden="true"
+                        />
                       </a>
                     </div>
                   </div>
@@ -223,7 +228,7 @@ const mapPins = await Promise.all(
     z-index: 20;
   }
 
-  /* Lucide's pin, filled with paper so it reads against the forest photo. */
+  /* The location pin, filled with paper so it reads against the forest photo. */
   :global(.location-marker__pin) {
     position: absolute;
     left: 0;

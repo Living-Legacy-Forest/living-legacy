@@ -6,7 +6,8 @@
  * instead of a moving video (see the inline script below).
  */
 import { Image } from 'astro:assets';
-import { ArrowRight } from 'lucide-astro';
+import HugeIcon from '@/components/ui/HugeIcon.astro';
+import { ArrowRight02Icon } from '@hugeicons/core-free-icons';
 import { buttonVariants } from '@/components/ui/button';
 import icon from '@/assets/home/become-legacy-icon.png';
 import { FLODESK_HREF } from './constants';
@@ -33,7 +34,7 @@ import { FLODESK_HREF } from './constants';
         class:list={[buttonVariants(), 'mt-8']}
       >
         Get more info
-        <ArrowRight data-icon="inline-end" aria-hidden="true" />
+        <HugeIcon icon={ArrowRight02Icon} data-icon="inline-end" aria-hidden="true" />
       </a>
     </div>
 

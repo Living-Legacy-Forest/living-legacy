@@ -1,5 +1,6 @@
 ---
-import { Facebook, Instagram, Youtube } from 'lucide-astro';
+import HugeIcon from '@/components/ui/HugeIcon.astro';
+import { Facebook01Icon, InstagramIcon, YoutubeIcon } from '@hugeicons/core-free-icons';
 import BrandImage from '@/components/ui/BrandImage.astro';
 import PatentsDialog from '@/components/layout/PatentsDialog';
 import { Separator } from '@/components/ui/separator';
@@ -21,12 +22,16 @@ const mediaLinks = [
 ];
 
 const socialLinks = [
-  { label: 'Facebook', href: 'https://www.facebook.com/livinglegacyforest/', icon: Facebook },
-  { label: 'Instagram', href: 'https://www.instagram.com/living_legacy_forest/', icon: Instagram },
+  { label: 'Facebook', href: 'https://www.facebook.com/livinglegacyforest/', icon: Facebook01Icon },
+  {
+    label: 'Instagram',
+    href: 'https://www.instagram.com/living_legacy_forest/',
+    icon: InstagramIcon,
+  },
   {
     label: 'YouTube',
     href: 'https://www.youtube.com/channel/UCA3aDohvY5Y8Hr2oviiH-gw',
-    icon: Youtube,
+    icon: YoutubeIcon,
   },
 ];
 
@@ -66,7 +71,7 @@ const year = new Date().getFullYear();
                   aria-label={social.label}
                   class={buttonVariants({ variant: 'outline', size: 'icon' })}
                 >
-                  <social.icon aria-hidden="true" />
+                  <HugeIcon icon={social.icon} aria-hidden="true" />
                 </a>
               </li>
             ))

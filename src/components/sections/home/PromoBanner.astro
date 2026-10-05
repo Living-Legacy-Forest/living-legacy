@@ -8,7 +8,8 @@
  * same message is set as real text over it.
  */
 import { Image } from 'astro:assets';
-import { ArrowRight } from 'lucide-astro';
+import HugeIcon from '@/components/ui/HugeIcon.astro';
+import { ArrowRight02Icon } from '@hugeicons/core-free-icons';
 import { buttonVariants } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 import bannerImage from '@/assets/home/upcoming-locations-banner.webp';
@@ -50,7 +51,7 @@ import { UPCOMING_LOCATIONS_HREF } from './constants';
         )}
       >
         Register your interest
-        <ArrowRight data-icon="inline-end" aria-hidden="true" />
+        <HugeIcon icon={ArrowRight02Icon} data-icon="inline-end" aria-hidden="true" />
       </span>
     </span>
   </a>

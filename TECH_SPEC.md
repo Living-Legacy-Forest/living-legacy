@@ -30,7 +30,7 @@ A reference for the technical stack, third-party services, conventions, and buil
 | Asset CDN | Cloudinary (upload tooling)             |
 | Hosting   | Cloudflare Workers (static assets)      |
 | Animation | Motion One (`motion`)                   |
-| Icons     | `lucide-astro`                          |
+| Icons     | `@hugeicons/core-free-icons`            |
 | Rich text | `@portabletext/to-html`                 |
 | Analytics | PostHog (`posthog-js` + `posthog-node`) |
 
@@ -98,7 +98,7 @@ There is no publish webhook and no scheduled rebuild. Pages render on demand and
 
 - **`ci.yml`**: gitleaks → install → audit → type-check → lint → format check → build → commitlint. Runs on pull requests targeting `master` and on push to `master`.
 - **Supply chain**: pnpm refuses packages published within the last 24 hours (`minimumReleaseAge` in `pnpm-workspace.yaml`). Dependabot's `cooldown` is set to 2 days so it never proposes an update CI would reject.
-- **`dependabot.yml`**: weekly grouped dependency updates (astro, sanity, tailwind, lucide). Major version bumps require manual review.
+- **`dependabot.yml`**: weekly grouped dependency updates (astro, sanity, tailwind, hugeicons). Major version bumps require manual review.
 
 ---
 

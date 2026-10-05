@@ -37,12 +37,17 @@ const steps = [
           <li class="flex-1">
             <Card className="h-full bg-paper-deep ring-0">
               <CardContent className="flex flex-col gap-6">
+                {/* self-start: CardContent is a flex column, which would
+                    otherwise stretch the badge to the card's full width while
+                    h-14 holds its height, squashing it flat. No width prop:
+                    the artwork is only 82 by 106, so it goes out at full size
+                    rather than being shrunk and then scaled back up on retina
+                    screens. */}
                 <Image
                   src={step.icon}
                   alt={step.title}
-                  width={64}
                   loading="lazy"
-                  class="h-14 w-auto"
+                  class="h-14 w-auto self-start"
                 />
                 <CardDescription>{step.body}</CardDescription>
               </CardContent>

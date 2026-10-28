@@ -1,0 +1,150 @@
+name: Deploy CMS
+
+# Trunk-based flow for the CMS Worker:
+#   - Pull request to master: upload a preview version (isolated URL, does not
+#     touch the live Worker) and comment the link on the PR.
+#   - Push to master: run remote D1 migrations, then deploy to the staging env.
+# Both only run once the Cloudflare secrets exist; until then the jobs skip so
+# they never block a merge.
+
+on:
+  push:
+    branches: [master]
+    paths:
+      - 'apps/cms/**'
+      - 'packages/**'
+      - '.github/workflows/deploy.yml'
+  pull_request:
+    branches: [master]
+    paths:
+      - 'apps/cms/**'
+      - 'packages/**'
+      - '.github/workflows/deploy.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pull-requests: write # the preview job comments the version URL on the PR
+
+concurrency:
+  group: deploy-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  ENVIRONMENT: staging
+
+jobs:
+  # Secrets cannot be read in a job-level `if`, so surface whether Cloudflare is
+  # configured as an output the deploy jobs can gate on.
+  config:
+    name: Check Cloudflare config
+    runs-on: ubuntu-latest
+    outputs:
+      enabled: ${{ steps.check.outputs.enabled }}
+    steps:
+      - id: check
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+        run: |
+          if [ -n "$CLOUDFLARE_API_TOKEN" ]; then
+            echo "enabled=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "enabled=false" >> "$GITHUB_OUTPUT"
+            echo "::notice::CLOUDFLARE_API_TOKEN is not set; skipping deploy. Add the Cloudflare secrets to enable it."
+          fi
+
+  preview:
+    name: Preview (PR)
+    needs: config
+    if: github.event_name == 'pull_request' && needs.config.outputs.enabled == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version-file: package.json
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .node-version
+
+      - name: Install (frozen lockfile)
+        run: bun install --frozen-lockfile
+
+      - name: Build
+        run: bun run --filter @llf/cms build
+
+      - name: Upload preview version
+        id: upload
+        uses: cloudflare/wrangler-action@v3
+        with:
+          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          workingDirectory: apps/cms
+          command: versions upload --env ${{ env.ENVIRONMENT }}
+
+      - name: Comment preview URL
+        if: steps.upload.outputs.deployment-url != ''
+        uses: thollander/actions-comment-pull-request@v3
+        with:
+          comment-tag: cms-preview
+          message: |
+            ### CMS preview deployed
+
+            A preview version was uploaded for this PR:
+
+            ${{ steps.upload.outputs.deployment-url }}
+
+            This is isolated and does not affect the live staging Worker.
+
+  deploy:
+    name: Deploy (staging)
+    needs: config
+    if: github.event_name != 'pull_request' && needs.config.outputs.enabled == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version-file: package.json
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .node-version
+
+      - name: Install (frozen lockfile)
+        run: bun install --frozen-lockfile
+
+      - name: Build
+        run: bun run --filter @llf/cms build
+
+      - name: Apply D1 migrations (remote)
+        uses: cloudflare/wrangler-action@v3
+        with:
+          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          workingDirectory: apps/cms
+          command: d1 migrations apply DB --env ${{ env.ENVIRONMENT }} --remote
+
+      - name: Deploy
+        uses: cloudflare/wrangler-action@v3
+        with:
+          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          workingDirectory: apps/cms
+          command: deploy --env ${{ env.ENVIRONMENT }}
+          # Pushed to the Worker as encrypted secrets, read from the job env below.
+          secrets: |
+            BETTER_AUTH_SECRET
+            GOOGLE_CLIENT_ID
+            GOOGLE_CLIENT_SECRET
+            BOOTSTRAP_ADMIN_EMAILS
+        env:
+          BETTER_AUTH_SECRET: ${{ secrets.BETTER_AUTH_SECRET }}
+          GOOGLE_CLIENT_ID: ${{ secrets.GOOGLE_CLIENT_ID }}
+          GOOGLE_CLIENT_SECRET: ${{ secrets.GOOGLE_CLIENT_SECRET }}
+          BOOTSTRAP_ADMIN_EMAILS: ${{ secrets.BOOTSTRAP_ADMIN_EMAILS }}

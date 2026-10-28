@@ -30,10 +30,12 @@
           "migrations_dir": "../../packages/db/migrations"
         }
       ],
-      "r2_buckets": [{ "binding": "MEDIA", "bucket_name": "llf-media-staging" }],
-      // The CMS hostname is still an open decision (spec section 13). Set
-      // "vars": { "BETTER_AUTH_URL": "https://<host>" } here before deploying.
-      "vars": {}
+      // R2 is deferred until the bucket is created; media uploads are disabled
+      // on staging until a `"r2_buckets"` binding for MEDIA is added back here.
+      // The CMS hostname is still an open decision (spec section 13). Until a
+      // custom domain is set, auth runs against the Worker's own *.workers.dev
+      // URL; replace this with "https://<host>" once a domain is chosen.
+      "vars": { "BETTER_AUTH_URL": "https://llf-cms-staging.workers.dev" }
     }
   }
 }

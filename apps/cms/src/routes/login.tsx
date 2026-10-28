@@ -1,6 +1,7 @@
 import { createFileRoute, redirect } from '@tanstack/react-router';
 import { Check, TreeDeciduous } from 'lucide-react';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
+import { toast } from 'sonner';
 import { z } from 'zod';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -26,6 +27,14 @@ function LoginPage() {
   const { error } = Route.useSearch();
   const { google } = Route.useLoaderData();
 
+  useEffect(() => {
+    if (error) {
+      toast.error(errorMessages[error] ?? 'Sign-in failed. Please try again.', {
+        id: 'login-error',
+      });
+    }
+  }, [error]);
+
   return (
     <main className="bg-background flex min-h-svh items-center justify-center px-6 py-16">
       <div className="w-full max-w-sm">
@@ -42,15 +51,6 @@ function LoginPage() {
         </header>
 
         <div className="mt-8">
-          {error && (
-            <p
-              role="alert"
-              className="bg-destructive/10 text-destructive mb-4 rounded-lg px-3 py-2 text-sm"
-            >
-              {errorMessages[error] ?? 'Sign-in failed. Please try again.'}
-            </p>
-          )}
-
           {google && (
             <>
               <GoogleSignIn />
@@ -73,18 +73,20 @@ function MagicLinkForm() {
   const [email, setEmail] = useState('');
   const [pending, setPending] = useState(false);
   const [sent, setSent] = useState(false);
-  const [failed, setFailed] = useState(false);
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     setPending(true);
-    setFailed(false);
     const { error } = await authClient.signIn.magicLink({ email, callbackURL: '/' });
     setPending(false);
-    // On success we always show the same message, whether or not a link was
-    // actually sent, so the page never reveals who has access.
-    if (error) setFailed(true);
-    else setSent(true);
+    if (error) {
+      toast.error('Something went wrong. Please try again.');
+      return;
+    }
+    // Same outcome for everyone, whether or not a link was actually sent, so the
+    // page never reveals who has access.
+    toast.success('Check your email for a sign-in link.');
+    setSent(true);
   }
 
   if (sent) {
@@ -118,14 +120,8 @@ function MagicLinkForm() {
           className="h-11"
           value={email}
           onChange={(e) => setEmail(e.target.value)}
-          aria-invalid={failed || undefined}
         />
       </div>
-      {failed && (
-        <p role="alert" className="text-destructive text-sm">
-          Something went wrong. Please try again.
-        </p>
-      )}
       <Button type="submit" className="mt-1 h-11 w-full rounded-xl" disabled={pending}>
         {pending ? 'Sending…' : 'Email me a sign-in link'}
       </Button>

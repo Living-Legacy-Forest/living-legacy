@@ -8,11 +8,14 @@ const searchSchema = z.object({
   q: z.string().optional().catch(undefined),
   category: z.string().optional().catch(undefined),
   page: z.number().int().min(1).optional().catch(undefined),
+  /** Post shown in the preview pane. */
+  selected: z.string().optional().catch(undefined),
 });
 
 export const Route = createFileRoute('/_app/posts/')({
   validateSearch: searchSchema,
-  loaderDeps: ({ search }) => search,
+  // Changing the previewed post must not reload the list.
+  loaderDeps: ({ search: { selected: _selected, ...list } }) => list,
   loader: ({ deps }) => listPosts({ data: { ...deps, page: deps.page ?? 1 } }),
   head: () => ({ meta: [{ title: 'Posts | Living Legacy Forest CMS' }] }),
   component: PostsPage,

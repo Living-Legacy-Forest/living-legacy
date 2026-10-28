@@ -1,7 +1,18 @@
 import { can } from '@llf/content';
 import { Link, useNavigate } from '@tanstack/react-router';
-import { MoreHorizontalIcon, PlusIcon, SearchIcon } from 'lucide-react';
-import { useEffect, useState } from 'react';
+import {
+  ChevronLeftIcon,
+  ChevronRightIcon,
+  ExternalLinkIcon,
+  MoreHorizontalIcon,
+  PencilIcon,
+  PlusIcon,
+  RotateCcwIcon,
+  SearchIcon,
+  Trash2Icon,
+  XIcon,
+} from 'lucide-react';
+import { type KeyboardEvent, useEffect, useState } from 'react';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -21,7 +32,6 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-import { Input } from '@/components/ui/input';
 import {
   Select,
   SelectContent,
@@ -29,19 +39,12 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from '@/components/ui/table';
-import { formatDate } from '@/lib/format';
+import { formatDate, formatRelative } from '@/lib/format';
 import type { SessionUser } from '@/lib/session';
 import { useAction } from '@/lib/use-action';
 import { cn } from '@/lib/utils';
 import {
+  POSTS_PAGE_SIZE,
   type PostListData,
   type PostListRow,
   type PostStatusTab,
@@ -49,13 +52,16 @@ import {
   restorePosts,
   trashPosts,
 } from '@/server/posts';
+import { PostArticle } from './post-article';
 import { PostStatusBadge } from './post-status-badge';
+import { clearPostPreviews, loadPostPreview, usePostPreview } from './use-post-preview';
 
 export type PostListSearch = {
   status: PostStatusTab;
   q?: string;
   category?: string;
   page?: number;
+  selected?: string;
 };
 
 const tabs: { value: PostStatusTab; label: string }[] = [
@@ -78,53 +84,55 @@ export function PostsList({
 }) {
   const navigate = useNavigate({ from: '/posts/' });
   const { run, pending } = useAction();
-  const [selected, setSelected] = useState<Set<string>>(new Set());
+  const [checked, setChecked] = useState<Set<string>>(new Set());
   const [confirmDelete, setConfirmDelete] = useState<string[] | null>(null);
   const [query, setQuery] = useState(search.q ?? '');
   const inTrash = search.status === 'trash';
   const canPurge = can(user.role, 'content:purge');
 
-  // Selection only applies to the rows on screen.
-  useEffect(() => setSelected(new Set()), [data.rows]);
+  // The previewed post: the one in the URL, else the first row.
+  const selectedId =
+    data.rows.find((r) => r.id === search.selected)?.id ?? data.rows[0]?.id ?? null;
+  const select = (id: string) =>
+    navigate({ search: (prev) => ({ ...prev, selected: id }), replace: true });
+
+  useEffect(() => setChecked(new Set()), [data.rows]);
 
   // Debounced search: update the URL once typing pauses.
   useEffect(() => {
     if (query === (search.q ?? '')) return;
     const timer = setTimeout(() => {
       void navigate({
-        search: (prev) => ({ ...prev, q: query || undefined, page: undefined }),
+        search: (prev) => ({
+          ...prev,
+          q: query || undefined,
+          page: undefined,
+          selected: undefined,
+        }),
         replace: true,
       });
     }, 300);
     return () => clearTimeout(timer);
   }, [query, search.q, navigate]);
 
-  const allSelected = data.rows.length > 0 && selected.size === data.rows.length;
-  const toggleAll = () =>
-    setSelected(allSelected ? new Set() : new Set(data.rows.map((r) => r.id)));
   const toggle = (id: string) =>
-    setSelected((prev) => {
+    setChecked((prev) => {
       const next = new Set(prev);
       if (next.has(id)) next.delete(id);
       else next.add(id);
       return next;
     });
 
+  const mutate = async (action: () => Promise<{ count: number }>, verb: string) => {
+    clearPostPreviews();
+    await run(action, (r) => `${r.count} ${plural(r.count)} ${verb}.`);
+  };
   const trash = (ids: string[]) =>
-    run(
-      () => trashPosts({ data: { ids } }),
-      (r) => `${r.count} ${plural(r.count)} moved to the trash.`
-    );
+    mutate(() => trashPosts({ data: { ids } }), 'moved to the trash');
   const restore = (ids: string[]) =>
-    run(
-      () => restorePosts({ data: { ids } }),
-      (r) => `${r.count} ${plural(r.count)} restored as drafts.`
-    );
+    mutate(() => restorePosts({ data: { ids } }), 'restored as drafts');
   const purge = async (ids: string[]) => {
-    await run(
-      () => deletePosts({ data: { ids } }),
-      (r) => `${r.count} ${plural(r.count)} permanently deleted.`
-    );
+    await mutate(() => deletePosts({ data: { ids } }), 'permanently deleted');
     setConfirmDelete(null);
   };
 
@@ -132,53 +140,27 @@ export function PostsList({
     { value: 'all', label: 'All categories' },
     ...data.categories.map((c) => ({ value: c.id, label: c.name })),
   ];
-  const ids = [...selected];
+  const page = search.page ?? 1;
+  const from = data.total === 0 ? 0 : (page - 1) * POSTS_PAGE_SIZE + 1;
+  const to = Math.min(page * POSTS_PAGE_SIZE, data.total);
+  const checkedIds = [...checked];
+  const selectedRow = data.rows.find((r) => r.id === selectedId) ?? null;
 
   return (
-    <div className="space-y-5">
-      <div className="flex items-center justify-between gap-4">
-        <h1 className="text-2xl">Posts</h1>
-        <Button render={<Link to="/posts/new" />} nativeButton={false}>
-          <PlusIcon aria-hidden data-icon="inline-start" />
-          New post
-        </Button>
-      </div>
-
-      <nav aria-label="Post status" className="flex gap-1 border-b">
-        {tabs.map((tab) => {
-          const active = tab.value === search.status;
-          return (
-            <Link
-              key={tab.value}
-              to="/posts"
-              search={(prev) => ({ ...prev, status: tab.value, page: undefined })}
-              aria-current={active ? 'page' : undefined}
-              className={cn(
-                'text-muted-foreground hover:text-foreground -mb-px flex items-center gap-1.5 border-b-2 px-3 pb-2 text-sm transition-colors',
-                active ? 'border-foreground text-foreground font-medium' : 'border-transparent'
-              )}
-            >
-              {tab.label}
-              <span className="text-muted-foreground text-xs tabular-nums">
-                {data.counts[tab.value]}
-              </span>
-            </Link>
-          );
-        })}
-      </nav>
-
-      <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
-        <div className="relative sm:w-72">
+    <div className="flex flex-1 flex-col gap-4 lg:h-[calc(100svh-7.5rem)] lg:min-h-0">
+      <div className="flex flex-wrap items-center gap-3">
+        <h1 className="mr-auto text-xl">Posts</h1>
+        <div className="relative w-full sm:w-56">
           <SearchIcon
             aria-hidden
-            className="text-muted-foreground pointer-events-none absolute top-1/2 left-2.5 size-4 -translate-y-1/2"
+            className="text-muted-foreground pointer-events-none absolute top-1/2 left-2.5 size-3.5 -translate-y-1/2"
           />
-          <Input
+          <input
             aria-label="Search posts by title"
-            placeholder="Search posts"
+            placeholder="Search"
             value={query}
             onChange={(e) => setQuery(e.target.value)}
-            className="pl-8"
+            className="bg-muted/60 placeholder:text-muted-foreground focus-visible:bg-background focus-visible:ring-ring h-8 w-full rounded-md pr-2 pl-8 text-[13px] outline-none focus-visible:ring-1"
           />
         </div>
         <Select
@@ -190,11 +172,16 @@ export function PostsList({
                 ...prev,
                 category: value === 'all' || !value ? undefined : String(value),
                 page: undefined,
+                selected: undefined,
               }),
             })
           }
         >
-          <SelectTrigger aria-label="Filter by category" className="sm:w-48">
+          <SelectTrigger
+            aria-label="Filter by category"
+            size="sm"
+            className="bg-muted/60 w-40 border-0 text-[13px] shadow-none"
+          >
             <SelectValue />
           </SelectTrigger>
           <SelectContent>
@@ -205,111 +192,164 @@ export function PostsList({
             ))}
           </SelectContent>
         </Select>
+        <Button size="sm" render={<Link to="/posts/new" />} nativeButton={false}>
+          <PlusIcon aria-hidden data-icon="inline-start" />
+          New post
+        </Button>
+      </div>
 
-        {selected.size > 0 && (
-          <div className="flex items-center gap-2 sm:ml-auto">
-            <span className="text-muted-foreground text-sm">{selected.size} selected</span>
-            {inTrash ? (
+      <div className="grid min-h-0 flex-1 overflow-hidden rounded-lg border lg:grid-cols-[minmax(20rem,2fr)_3fr]">
+        <section aria-label="Post list" className="flex min-h-0 flex-col lg:border-r">
+          <div className="flex h-11 shrink-0 items-center gap-1 border-b px-2">
+            {checked.size > 0 ? (
               <>
-                <Button variant="outline" size="sm" disabled={pending} onClick={() => restore(ids)}>
-                  Restore
+                <Button
+                  variant="ghost"
+                  size="icon-sm"
+                  aria-label="Clear selection"
+                  onClick={() => setChecked(new Set())}
+                >
+                  <XIcon aria-hidden />
                 </Button>
-                {canPurge && (
+                <span className="mr-auto text-[13px]">{checked.size} selected</span>
+                {inTrash ? (
+                  <>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      disabled={pending}
+                      onClick={() => restore(checkedIds)}
+                    >
+                      <RotateCcwIcon aria-hidden data-icon="inline-start" />
+                      Restore
+                    </Button>
+                    {canPurge && (
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="text-destructive hover:text-destructive"
+                        disabled={pending}
+                        onClick={() => setConfirmDelete(checkedIds)}
+                      >
+                        Delete permanently
+                      </Button>
+                    )}
+                  </>
+                ) : (
                   <Button
-                    variant="destructive"
+                    variant="ghost"
                     size="sm"
                     disabled={pending}
-                    onClick={() => setConfirmDelete(ids)}
+                    onClick={() => trash(checkedIds)}
                   >
-                    Delete permanently
+                    <Trash2Icon aria-hidden data-icon="inline-start" />
+                    Move to trash
                   </Button>
                 )}
               </>
             ) : (
-              <Button variant="outline" size="sm" disabled={pending} onClick={() => trash(ids)}>
-                Move to trash
-              </Button>
+              <nav aria-label="Post status" className="flex gap-0.5">
+                {tabs.map((tab) => {
+                  const active = tab.value === search.status;
+                  return (
+                    <Link
+                      key={tab.value}
+                      to="/posts"
+                      search={(prev) => ({
+                        ...prev,
+                        status: tab.value,
+                        page: undefined,
+                        selected: undefined,
+                      })}
+                      aria-current={active ? 'page' : undefined}
+                      className={cn(
+                        'text-muted-foreground hover:text-foreground flex h-7 items-center gap-1.5 rounded-md px-2.5 text-[13px] transition-colors',
+                        active && 'bg-muted text-foreground font-medium'
+                      )}
+                    >
+                      {tab.label}
+                      <span className="text-muted-foreground text-xs tabular-nums">
+                        {data.counts[tab.value]}
+                      </span>
+                    </Link>
+                  );
+                })}
+              </nav>
             )}
           </div>
-        )}
-      </div>
 
-      {data.rows.length === 0 ? (
-        <EmptyState search={search} />
-      ) : (
-        <div className="ring-border overflow-hidden rounded-lg ring-1">
-          <Table>
-            <TableHeader>
-              <TableRow className="hover:bg-transparent">
-                <TableHead className="w-10 pl-3">
-                  <Checkbox
-                    aria-label="Select all posts on this page"
-                    checked={allSelected}
-                    indeterminate={selected.size > 0 && !allSelected}
-                    onCheckedChange={toggleAll}
-                  />
-                </TableHead>
-                <TableHead>Title</TableHead>
-                <TableHead className="hidden md:table-cell">Author</TableHead>
-                <TableHead className="hidden lg:table-cell">Categories</TableHead>
-                <TableHead className="hidden xl:table-cell">Tags</TableHead>
-                <TableHead className="hidden sm:table-cell">Date</TableHead>
-                <TableHead className="w-10">
-                  <span className="sr-only">Actions</span>
-                </TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
+          {data.rows.length === 0 ? (
+            <EmptyState search={search} />
+          ) : (
+            <ul className="min-h-0 flex-1 space-y-px overflow-y-auto p-1.5">
               {data.rows.map((row) => (
-                <PostRow
+                <PostListItem
                   key={row.id}
                   row={row}
-                  selected={selected.has(row.id)}
-                  onToggle={() => toggle(row.id)}
                   inTrash={inTrash}
-                  canPurge={canPurge}
-                  pending={pending}
-                  onTrash={() => trash([row.id])}
-                  onRestore={() => restore([row.id])}
-                  onDelete={() => setConfirmDelete([row.id])}
+                  selected={row.id === selectedId}
+                  checked={checked.has(row.id)}
+                  selecting={checked.size > 0}
+                  onToggle={() => toggle(row.id)}
+                  onSelect={() => select(row.id)}
                 />
               ))}
-            </TableBody>
-          </Table>
-        </div>
-      )}
+            </ul>
+          )}
 
-      {data.pageCount > 1 && (
-        <div className="text-muted-foreground flex items-center justify-between text-sm">
-          <span>
-            Page {search.page ?? 1} of {data.pageCount} · {data.total} {plural(data.total)}
-          </span>
-          <div className="flex gap-2">
-            <Button
-              variant="outline"
-              size="sm"
-              disabled={(search.page ?? 1) <= 1}
-              onClick={() =>
-                navigate({
-                  search: (prev) => ({ ...prev, page: (prev.page ?? 1) - 1 || undefined }),
-                })
-              }
-            >
-              Previous
-            </Button>
-            <Button
-              variant="outline"
-              size="sm"
-              disabled={(search.page ?? 1) >= data.pageCount}
-              onClick={() =>
-                navigate({ search: (prev) => ({ ...prev, page: (prev.page ?? 1) + 1 }) })
-              }
-            >
-              Next
-            </Button>
-          </div>
-        </div>
-      )}
+          {data.total > 0 && (
+            <div className="text-muted-foreground flex h-10 shrink-0 items-center justify-between border-t px-3 text-xs">
+              <span className="tabular-nums">
+                {from}–{to} of {data.total}
+              </span>
+              {data.pageCount > 1 && (
+                <div className="flex gap-0.5">
+                  <Button
+                    variant="ghost"
+                    size="icon-xs"
+                    aria-label="Previous page"
+                    disabled={page <= 1}
+                    onClick={() =>
+                      navigate({
+                        search: (prev) => ({
+                          ...prev,
+                          page: page - 1 > 1 ? page - 1 : undefined,
+                          selected: undefined,
+                        }),
+                      })
+                    }
+                  >
+                    <ChevronLeftIcon aria-hidden />
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    size="icon-xs"
+                    aria-label="Next page"
+                    disabled={page >= data.pageCount}
+                    onClick={() =>
+                      navigate({
+                        search: (prev) => ({ ...prev, page: page + 1, selected: undefined }),
+                      })
+                    }
+                  >
+                    <ChevronRightIcon aria-hidden />
+                  </Button>
+                </div>
+              )}
+            </div>
+          )}
+        </section>
+
+        <PreviewPane
+          row={selectedRow}
+          inTrash={inTrash}
+          canPurge={canPurge}
+          pending={pending}
+          onTrash={(id) => trash([id])}
+          onRestore={(id) => restore([id])}
+          onDelete={(id) => setConfirmDelete([id])}
+        />
+      </div>
 
       <AlertDialog
         open={confirmDelete !== null}
@@ -340,10 +380,96 @@ export function PostsList({
   );
 }
 
-function PostRow({
+/** Moves focus (and selection) to the neighbouring row with the arrow keys. */
+function onRowKeyDown(event: KeyboardEvent<HTMLButtonElement>) {
+  if (event.key !== 'ArrowDown' && event.key !== 'ArrowUp') return;
+  event.preventDefault();
+  const item = event.currentTarget.closest('li');
+  const next = event.key === 'ArrowDown' ? item?.nextElementSibling : item?.previousElementSibling;
+  const button = next?.querySelector<HTMLButtonElement>('button[data-row]');
+  button?.focus();
+  button?.click();
+}
+
+function PostListItem({
   row,
+  inTrash,
   selected,
+  checked,
+  selecting,
   onToggle,
+  onSelect,
+}: {
+  row: PostListRow;
+  inTrash: boolean;
+  selected: boolean;
+  checked: boolean;
+  selecting: boolean;
+  onToggle: () => void;
+  onSelect: () => void;
+}) {
+  const navigate = useNavigate();
+  const date = inTrash
+    ? row.deletedAt
+    : row.status === 'published'
+      ? row.publishedAt
+      : row.updatedAt;
+  const meta = [row.categories.map((c) => c.name).join(', '), row.author].filter(Boolean);
+
+  const open = () =>
+    inTrash ? undefined : navigate({ to: '/posts/$postId', params: { postId: row.id } });
+
+  return (
+    <li
+      className={cn(
+        'group has-[[data-row]:focus-visible]:ring-ring relative flex items-start gap-1 rounded-md pl-1.5 transition-colors has-[[data-row]:focus-visible]:ring-1',
+        selected ? 'bg-accent' : 'hover:bg-muted/60'
+      )}
+    >
+      <Checkbox
+        aria-label={`Select ${row.title || 'Untitled'}`}
+        checked={checked}
+        onCheckedChange={onToggle}
+        className={cn(
+          'mt-3 transition-opacity',
+          checked || selecting
+            ? 'opacity-100'
+            : 'opacity-0 group-hover:opacity-100 focus-visible:opacity-100'
+        )}
+      />
+      <button
+        type="button"
+        data-row
+        aria-current={selected ? 'true' : undefined}
+        onClick={() => {
+          // Below lg there is no preview pane: open the editor instead.
+          if (window.matchMedia('(min-width: 1024px)').matches) onSelect();
+          else open();
+        }}
+        onDoubleClick={open}
+        onKeyDown={onRowKeyDown}
+        onPointerEnter={() => void loadPostPreview(row.id)}
+        className="min-w-0 flex-1 rounded-md px-1.5 py-2 text-left outline-none"
+      >
+        <span className="flex items-baseline gap-3">
+          <span className="min-w-0 flex-1 truncate text-[13px] font-medium">
+            {row.title || 'Untitled'}
+          </span>
+          <span className="text-muted-foreground shrink-0 text-xs tabular-nums">
+            {date ? formatDate(date) : ''}
+          </span>
+        </span>
+        <span className="text-muted-foreground mt-0.5 flex min-w-0 items-center gap-1 text-xs">
+          <PostStatusBadge status={row.status} hasDraft={row.hasDraft} trashed={inTrash} />
+          {meta.length > 0 && <span className="min-w-0 truncate">{['', ...meta].join(' · ')}</span>}
+        </span>
+      </button>
+    </li>
+  );
+}
+
+function PreviewPane({
+  row,
   inTrash,
   canPurge,
   pending,
@@ -351,99 +477,115 @@ function PostRow({
   onRestore,
   onDelete,
 }: {
-  row: PostListRow;
-  selected: boolean;
-  onToggle: () => void;
+  row: PostListRow | null;
   inTrash: boolean;
   canPurge: boolean;
   pending: boolean;
-  onTrash: () => void;
-  onRestore: () => void;
-  onDelete: () => void;
+  onTrash: (id: string) => void;
+  onRestore: (id: string) => void;
+  onDelete: (id: string) => void;
 }) {
-  const date = inTrash
-    ? { label: 'Trashed', at: row.deletedAt }
-    : row.status === 'published'
-      ? { label: 'Published', at: row.publishedAt }
-      : { label: 'Last edited', at: row.updatedAt };
+  const { post, error, loading } = usePostPreview(row?.id ?? null);
+
+  if (!row) {
+    return (
+      <section
+        aria-label="Preview"
+        className="text-muted-foreground hidden items-center justify-center text-[13px] lg:flex"
+      >
+        Select a post to preview it.
+      </section>
+    );
+  }
 
   return (
-    <TableRow data-state={selected ? 'selected' : undefined}>
-      <TableCell className="pl-3">
-        <Checkbox
-          aria-label={`Select ${row.title}`}
-          checked={selected}
-          onCheckedChange={onToggle}
-        />
-      </TableCell>
-      <TableCell className="max-w-0 min-w-48 whitespace-normal">
-        <div className="flex flex-col gap-1">
-          {inTrash ? (
-            <span className="text-muted-foreground font-medium">{row.title || 'Untitled'}</span>
-          ) : (
-            <Link
-              to="/posts/$postId"
-              params={{ postId: row.id }}
-              className="font-medium hover:underline"
+    <section aria-label="Preview" className="hidden min-h-0 flex-col lg:flex">
+      <div className="flex h-11 shrink-0 items-center gap-2 border-b px-3">
+        <span className="text-muted-foreground mr-auto truncate text-xs">
+          {inTrash
+            ? `Trashed ${formatRelative(row.deletedAt ?? row.updatedAt)}`
+            : `Edited ${formatRelative(row.updatedAt)}`}
+        </span>
+        {inTrash ? (
+          <Button variant="ghost" size="sm" disabled={pending} onClick={() => onRestore(row.id)}>
+            <RotateCcwIcon aria-hidden data-icon="inline-start" />
+            Restore
+          </Button>
+        ) : (
+          <>
+            <Button
+              variant="ghost"
+              size="icon-sm"
+              aria-label="Open preview in a new tab"
+              render={<a href={`/preview/posts/${row.id}`} target="_blank" rel="noreferrer" />}
+              nativeButton={false}
             >
-              {row.title || 'Untitled'}
-            </Link>
-          )}
-          <PostStatusBadge status={row.status} hasDraft={row.hasDraft} trashed={inTrash} />
-        </div>
-      </TableCell>
-      <TableCell className="text-muted-foreground hidden md:table-cell">
-        {row.author ?? '—'}
-      </TableCell>
-      <TableCell className="text-muted-foreground hidden max-w-48 truncate lg:table-cell">
-        {row.categories.map((c) => c.name).join(', ') || '—'}
-      </TableCell>
-      <TableCell className="text-muted-foreground hidden max-w-48 truncate xl:table-cell">
-        {row.tags.map((t) => t.name).join(', ') || '—'}
-      </TableCell>
-      <TableCell className="text-muted-foreground hidden sm:table-cell">
-        <span className="block text-xs">{date.label}</span>
-        {date.at ? formatDate(date.at) : '—'}
-      </TableCell>
-      <TableCell>
-        <DropdownMenu>
-          <DropdownMenuTrigger
-            render={
-              <Button variant="ghost" size="icon-sm" aria-label={`Actions for ${row.title}`} />
-            }
-          >
-            <MoreHorizontalIcon aria-hidden />
-          </DropdownMenuTrigger>
-          <DropdownMenuContent align="end" className="w-44">
-            {inTrash ? (
-              <>
-                <DropdownMenuItem disabled={pending} onClick={onRestore}>
-                  Restore
+              <ExternalLinkIcon aria-hidden />
+            </Button>
+            <Button
+              size="sm"
+              render={<Link to="/posts/$postId" params={{ postId: row.id }} />}
+              nativeButton={false}
+            >
+              <PencilIcon aria-hidden data-icon="inline-start" />
+              Edit
+            </Button>
+          </>
+        )}
+        {(!inTrash || canPurge) && (
+          <DropdownMenu>
+            <DropdownMenuTrigger
+              render={<Button variant="ghost" size="icon-sm" aria-label="More actions" />}
+            >
+              <MoreHorizontalIcon aria-hidden />
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="w-44">
+              {inTrash ? (
+                <DropdownMenuItem
+                  variant="destructive"
+                  disabled={pending}
+                  onClick={() => onDelete(row.id)}
+                >
+                  <Trash2Icon aria-hidden />
+                  Delete permanently
                 </DropdownMenuItem>
-                {canPurge && (
-                  <>
-                    <DropdownMenuSeparator />
-                    <DropdownMenuItem variant="destructive" disabled={pending} onClick={onDelete}>
-                      Delete permanently
-                    </DropdownMenuItem>
-                  </>
-                )}
-              </>
-            ) : (
-              <>
-                <DropdownMenuItem render={<Link to="/posts/$postId" params={{ postId: row.id }} />}>
-                  Edit
-                </DropdownMenuItem>
-                <DropdownMenuSeparator />
-                <DropdownMenuItem variant="destructive" disabled={pending} onClick={onTrash}>
-                  Move to trash
-                </DropdownMenuItem>
-              </>
-            )}
-          </DropdownMenuContent>
-        </DropdownMenu>
-      </TableCell>
-    </TableRow>
+              ) : (
+                <>
+                  <DropdownMenuItem
+                    render={<Link to="/posts/$postId" params={{ postId: row.id }} />}
+                  >
+                    <PencilIcon aria-hidden />
+                    Edit
+                  </DropdownMenuItem>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem
+                    variant="destructive"
+                    disabled={pending}
+                    onClick={() => onTrash(row.id)}
+                  >
+                    <Trash2Icon aria-hidden />
+                    Move to trash
+                  </DropdownMenuItem>
+                </>
+              )}
+            </DropdownMenuContent>
+          </DropdownMenu>
+        )}
+      </div>
+      <div className="min-h-0 flex-1 overflow-y-auto">
+        {error ? (
+          <p className="text-muted-foreground p-8 text-[13px]">{error}</p>
+        ) : loading || !post ? (
+          <div className="mx-auto max-w-xl space-y-4 px-8 py-10">
+            <div className="bg-muted h-7 w-3/4 animate-pulse rounded" />
+            <div className="bg-muted h-4 w-1/2 animate-pulse rounded" />
+            <div className="bg-muted/60 h-40 animate-pulse rounded" />
+          </div>
+        ) : (
+          <PostArticle post={post} size="pane" />
+        )}
+      </div>
+    </section>
   );
 }
 
@@ -460,11 +602,11 @@ function EmptyState({ search }: { search: PostListSearch }) {
           : 'No posts yet.';
 
   return (
-    <div className="flex flex-col items-center gap-3 rounded-lg border border-dashed py-16 text-center">
-      <p className="text-muted-foreground text-sm">{message}</p>
+    <div className="flex flex-1 flex-col items-center justify-center gap-3 p-8 text-center">
+      <p className="text-muted-foreground text-[13px]">{message}</p>
       {filtered ? (
         <Button
-          variant="outline"
+          variant="ghost"
           size="sm"
           render={<Link to="/posts" search={{ status: search.status }} />}
           nativeButton={false}

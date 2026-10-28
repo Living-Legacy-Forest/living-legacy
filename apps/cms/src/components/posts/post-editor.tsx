@@ -66,6 +66,7 @@ import {
   unpublishPost,
 } from '@/server/posts';
 import { PostStatusBadge } from './post-status-badge';
+import { clearPostPreviews } from './use-post-preview';
 
 // Browser only: the editor has nothing to server-render, and keeping
 // ProseMirror out of the server bundle avoids loading it twice in dev.
@@ -156,6 +157,7 @@ export function PostEditor({
       const result = await fn({
         data: { id: meta.id ?? undefined, values, expectedUpdatedAt: meta.updatedAt },
       });
+      clearPostPreviews();
       // The server may adjust the permalink to keep it unique.
       const next = { ...values, slug: result.slug };
       setValues(next);
@@ -220,6 +222,7 @@ export function PostEditor({
     setBusy('other');
     try {
       await action();
+      clearPostPreviews();
       toast.success(success);
       await (after ? after() : onReload());
     } catch (error) {

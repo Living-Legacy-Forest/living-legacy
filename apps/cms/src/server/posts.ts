@@ -640,3 +640,5 @@ export const getPostPreview = createServerFn({ method: 'GET' })
       publishedAt: row.publishedAt?.getTime() ?? null,
     };
   });
+
+export type PostPreviewData = Awaited<ReturnType<typeof getPostPreview>>;

@@ -36,7 +36,7 @@
       // The CMS hostname is still an open decision (spec section 13). Until a
       // custom domain is set, auth runs against the Worker's own *.workers.dev
       // URL; replace this with "https://<host>" once a domain is chosen.
-      "vars": { "BETTER_AUTH_URL": "https://llf-cms-staging.workers.dev" }
+      "vars": { "BETTER_AUTH_URL": "https://llf-cms-staging.living-legacy.workers.dev" }
     }
   }
 }

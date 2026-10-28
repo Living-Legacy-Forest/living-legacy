@@ -1,39 +1,23 @@
 {
   "$schema": "node_modules/wrangler/config-schema.json",
-  "name": "llf-cms",
+  "name": "living-legacy-cms",
   "main": "./src/server.ts",
   // Publishes scheduled posts. Times are UTC; every five minutes.
   "triggers": { "crons": ["*/5 * * * *"] },
   "compatibility_date": "2026-10-20",
   "compatibility_flags": ["nodejs_compat"],
   "observability": { "enabled": true },
-  // No resource IDs: wrangler dev creates local copies, and the first deploy
-  // provisions the remote D1 database and R2 bucket and links them.
   "d1_databases": [
     {
       "binding": "DB",
-      "database_name": "llf-cms",
+      "database_name": "living-legacy-db",
+      "database_id": "6c172a87-78c0-4d32-b8b6-cf57324d1197",
       "migrations_dir": "../../packages/db/migrations"
     }
   ],
-  "r2_buckets": [{ "binding": "MEDIA", "bucket_name": "llf-media" }],
+  // The MEDIA (R2) binding is added once the bucket exists; nothing reads it yet.
   "vars": {
-    "BETTER_AUTH_URL": "http://localhost:3100"
-  },
-  "env": {
-    "staging": {
-      "name": "llf-cms-staging",
-      "d1_databases": [
-        {
-          "binding": "DB",
-          "database_name": "llf-cms-staging",
-          "migrations_dir": "../../packages/db/migrations"
-        }
-      ],
-      "r2_buckets": [{ "binding": "MEDIA", "bucket_name": "llf-media-staging" }],
-      // The CMS hostname is still an open decision (spec section 13). Set
-      // "vars": { "BETTER_AUTH_URL": "https://<host>" } here before deploying.
-      "vars": {}
-    }
+    // Local dev overrides this with http://localhost:3100 in .dev.vars.
+    "BETTER_AUTH_URL": "https://living-legacy-cms.living-legacy.workers.dev"
   }
 }

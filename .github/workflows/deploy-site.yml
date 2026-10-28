@@ -1,0 +1,115 @@
+name: Deploy Site
+
+# Pull request to master: upload an isolated preview version and comment its URL.
+# Push to master: deploy the living-legacy-sites Worker.
+
+on:
+  push:
+    branches: [master]
+    paths:
+      - 'apps/web/**'
+      - 'bun.lock'
+      - 'package.json'
+      - '.node-version'
+      - '.github/workflows/deploy-site.yml'
+  pull_request:
+    branches: [master]
+    paths:
+      - 'apps/web/**'
+      - 'bun.lock'
+      - 'package.json'
+      - '.node-version'
+      - '.github/workflows/deploy-site.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: deploy-site-${{ github.event_name == 'pull_request' && github.ref || 'production' }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+jobs:
+  site:
+    name: ${{ github.event_name == 'pull_request' && 'Preview' || 'Deploy' }} Site
+    # Dependabot and fork PRs cannot read the Cloudflare secrets.
+    if: >-
+      github.event_name != 'pull_request' ||
+      (github.event.pull_request.head.repo.full_name == github.repository &&
+      github.actor != 'dependabot[bot]')
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    permissions:
+      contents: read
+      pull-requests: write # sticky preview comment
+    env:
+      CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+      FORCE_COLOR: 0
+    defaults:
+      run:
+        working-directory: apps/web
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: oven-sh/setup-bun@0c5077e51419868618aeaa5fe8019c62421857d6 # v2.2.0
+        with:
+          bun-version-file: package.json
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .node-version
+
+      - name: Install (frozen lockfile)
+        working-directory: .
+        run: bun install --frozen-lockfile
+
+      # Tolerate a stray newline or spaces in the stored secret: wrangler rejects
+      # any whitespace in the account id.
+      - name: Resolve Cloudflare account id
+        env:
+          RAW_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+        run: echo "CLOUDFLARE_ACCOUNT_ID=$(printf '%s' "$RAW_ACCOUNT_ID" | tr -d '[:space:]')" >> "$GITHUB_ENV"
+
+      - name: Build
+        run: bun run build
+        env:
+          # Public values are inlined into the client bundle at build time.
+          PUBLIC_SANITY_PROJECT_ID: ${{ vars.PUBLIC_SANITY_PROJECT_ID }}
+          PUBLIC_SANITY_DATASET: ${{ vars.PUBLIC_SANITY_DATASET }}
+          PUBLIC_CLOUDINARY_CLOUD_NAME: ${{ vars.PUBLIC_CLOUDINARY_CLOUD_NAME }}
+          # Analytics and the HubSpot form portal only ship to production, so
+          # previews never pollute analytics or create real leads.
+          PUBLIC_GA_MEASUREMENT_ID: ${{ github.event_name != 'pull_request' && vars.PUBLIC_GA_MEASUREMENT_ID || '' }}
+          PUBLIC_GTM_ID: ${{ github.event_name != 'pull_request' && vars.PUBLIC_GTM_ID || '' }}
+          PUBLIC_META_PIXEL_ID: ${{ github.event_name != 'pull_request' && vars.PUBLIC_META_PIXEL_ID || '' }}
+          PUBLIC_POSTHOG_KEY: ${{ github.event_name != 'pull_request' && vars.PUBLIC_POSTHOG_KEY || '' }}
+          PUBLIC_POSTHOG_HOST: ${{ github.event_name != 'pull_request' && vars.PUBLIC_POSTHOG_HOST || '' }}
+          PUBLIC_HUBSPOT_PORTAL_ID: ${{ github.event_name != 'pull_request' && vars.PUBLIC_HUBSPOT_PORTAL_ID || '' }}
+
+      - name: Upload preview version
+        id: preview
+        if: github.event_name == 'pull_request'
+        env:
+          PR_NUMBER: ${{ github.event.number }}
+        run: |
+          set -o pipefail
+          bunx wrangler versions upload --message "PR #$PR_NUMBER" 2>&1 | tee "$RUNNER_TEMP/wrangler.log"
+          url=$(sed -n 's/.*Version Preview URL: \(https:[^ ]*\).*/\1/p' "$RUNNER_TEMP/wrangler.log" | tail -1)
+          echo "url=$url" >> "$GITHUB_OUTPUT"
+
+      - name: Deploy
+        if: github.event_name != 'pull_request'
+        run: bunx wrangler deploy
+
+      - name: Comment preview URL
+        if: steps.preview.outputs.url != ''
+        uses: thollander/actions-comment-pull-request@24bffb9b452ba05a4f3f77933840a6a841d1b32b # v3.0.1
+        with:
+          comment-tag: site-preview
+          message: |
+            ### Site preview
+
+            ${{ steps.preview.outputs.url }}
+
+            Isolated version; the live site is untouched. Analytics and the
+            HubSpot forms are off on previews.

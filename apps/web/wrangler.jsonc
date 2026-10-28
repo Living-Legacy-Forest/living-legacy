@@ -1,6 +1,6 @@
 {
   "$schema": "node_modules/wrangler/config-schema.json",
-  "name": "living-legacy",
+  "name": "living-legacy-sites",
   "main": "@astrojs/cloudflare/entrypoints/server",
   "compatibility_date": "2026-05-25",
   "compatibility_flags": ["nodejs_compat"]

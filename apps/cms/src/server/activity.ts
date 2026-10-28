@@ -1,6 +1,6 @@
 import { schema } from '@llf/db';
 import { createServerFn } from '@tanstack/react-start';
-import { and, asc, desc, eq, isNull, sql } from 'drizzle-orm';
+import { desc, eq, sql } from 'drizzle-orm';
 import { getDb } from '@/lib/db';
 import { authMiddleware } from '@/lib/session';
 
@@ -46,15 +46,3 @@ export const getRecentActivity = createServerFn({ method: 'GET' })
   });
 
 export type ActivityItem = Awaited<ReturnType<typeof getRecentActivity>>[number];
-
-/** Titles of every non-trashed post, for the command menu (filtered in the browser). */
-export const listPostTitles = createServerFn({ method: 'GET' })
-  .middleware([authMiddleware])
-  .handler(async () =>
-    getDb()
-      .select({ id: posts.id, title: posts.title, status: posts.status })
-      .from(posts)
-      .where(and(isNull(posts.deletedAt)))
-      .orderBy(asc(posts.title))
-      .limit(500)
-  );

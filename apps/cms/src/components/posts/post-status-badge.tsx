@@ -1,7 +1,9 @@
+import { formatDateTime } from '@/lib/format';
 import { cn } from '@/lib/utils';
 
 const styles = {
   draft: { dot: 'bg-neutral-400', label: 'Draft' },
+  scheduled: { dot: 'bg-indigo-500', label: 'Scheduled' },
   published: { dot: 'bg-emerald-500', label: 'Published' },
   changes: { dot: 'bg-amber-500', label: 'Unpublished changes' },
   trash: { dot: 'bg-red-400', label: 'In trash' },
@@ -12,21 +14,38 @@ export function PostStatusBadge({
   status,
   hasDraft = false,
   trashed = false,
+  scheduledAt = null,
+  showDate = false,
   className,
 }: {
   status: 'draft' | 'published';
   hasDraft?: boolean;
   trashed?: boolean;
+  /** Set when a draft is scheduled to go live. */
+  scheduledAt?: number | null;
+  /** Append the scheduled time, for example "Scheduled · 2 Nov, 9:00 am". */
+  showDate?: boolean;
   className?: string;
 }) {
-  const key = trashed ? 'trash' : status === 'draft' ? 'draft' : hasDraft ? 'changes' : 'published';
+  const key = trashed
+    ? 'trash'
+    : status === 'published'
+      ? hasDraft
+        ? 'changes'
+        : 'published'
+      : scheduledAt
+        ? 'scheduled'
+        : 'draft';
   const { dot, label } = styles[key];
   return (
     <span
       className={cn('text-muted-foreground inline-flex items-center gap-1.5 text-xs', className)}
     >
-      <span aria-hidden className={cn('size-1.5 rounded-full', dot)} />
+      <span aria-hidden className={cn('size-1.5 shrink-0 rounded-full', dot)} />
       {label}
+      {key === 'scheduled' && showDate && scheduledAt && (
+        <span className="text-muted-foreground">· {formatDateTime(scheduledAt)}</span>
+      )}
     </span>
   );
 }

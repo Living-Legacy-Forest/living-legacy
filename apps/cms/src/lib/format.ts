@@ -75,3 +75,48 @@ export function formatDateTime(timestamp: number) {
     minute: '2-digit',
   });
 }
+
+export type WallTime = { year: number; month: number; day: number; hour: number; minute: number };
+
+/** Calendar date and clock time of `timestamp` in the CMS time zone. */
+export function toZoned(timestamp: number): WallTime {
+  const parts = new Intl.DateTimeFormat('en-US', {
+    timeZone: TIME_ZONE,
+    hourCycle: 'h23',
+    year: 'numeric',
+    month: 'numeric',
+    day: 'numeric',
+    hour: 'numeric',
+    minute: 'numeric',
+  }).formatToParts(new Date(timestamp));
+  const get = (type: string) => Number(parts.find((p) => p.type === type)?.value);
+  return {
+    year: get('year'),
+    month: get('month') - 1,
+    day: get('day'),
+    hour: get('hour'),
+    minute: get('minute'),
+  };
+}
+
+/** Timestamp for a calendar date and clock time in the CMS time zone (handles daylight saving). */
+export function fromZoned(wall: WallTime): number {
+  const asUtc = Date.UTC(wall.year, wall.month, wall.day, wall.hour, wall.minute);
+  let guess = asUtc;
+  // Two passes settle the offset, including across a daylight saving change.
+  for (let i = 0; i < 2; i++) {
+    const seen = toZoned(guess);
+    const seenAsUtc = Date.UTC(seen.year, seen.month, seen.day, seen.hour, seen.minute);
+    guess += asUtc - seenAsUtc;
+  }
+  return guess;
+}
+
+/** Short name of the CMS time zone right now, for example "AEDT". */
+export function zoneName(timestamp = Date.now()) {
+  return (
+    new Intl.DateTimeFormat(LOCALE, { timeZone: TIME_ZONE, timeZoneName: 'short' })
+      .formatToParts(new Date(timestamp))
+      .find((p) => p.type === 'timeZoneName')?.value ?? ''
+  );
+}

@@ -1,7 +1,9 @@
 {
   "$schema": "node_modules/wrangler/config-schema.json",
   "name": "llf-cms",
-  "main": "@tanstack/react-start/server-entry",
+  "main": "./src/server.ts",
+  // Publishes scheduled posts. Times are UTC; every five minutes.
+  "triggers": { "crons": ["*/5 * * * *"] },
   "compatibility_date": "2026-10-20",
   "compatibility_flags": ["nodejs_compat"],
   "observability": { "enabled": true },

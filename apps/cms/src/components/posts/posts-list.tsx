@@ -1,6 +1,7 @@
 import { can } from '@llf/content';
 import { Link, useNavigate } from '@tanstack/react-router';
 import {
+  CalendarClockIcon,
   ChevronLeftIcon,
   ChevronRightIcon,
   CircleAlertIcon,
@@ -82,6 +83,7 @@ export type PostListSearch = {
 const tabs: { value: PostStatusTab; label: string }[] = [
   { value: 'all', label: 'All' },
   { value: 'published', label: 'Published' },
+  { value: 'scheduled', label: 'Scheduled' },
   { value: 'draft', label: 'Drafts' },
   { value: 'trash', label: 'Trash' },
 ];
@@ -428,7 +430,7 @@ function PostListItem({
     ? row.deletedAt
     : row.status === 'published'
       ? row.publishedAt
-      : row.updatedAt;
+      : (row.scheduledAt ?? row.updatedAt);
   const meta = [row.categories.map((c) => c.name).join(', '), row.author].filter(Boolean);
 
   const open = () =>
@@ -475,7 +477,12 @@ function PostListItem({
           </span>
         </span>
         <span className="text-muted-foreground mt-0.5 flex min-w-0 items-center gap-1 text-xs">
-          <PostStatusBadge status={row.status} hasDraft={row.hasDraft} trashed={inTrash} />
+          <PostStatusBadge
+            status={row.status}
+            hasDraft={row.hasDraft}
+            trashed={inTrash}
+            scheduledAt={row.scheduledAt}
+          />
           {meta.length > 0 && <span className="min-w-0 truncate">{['', ...meta].join(' · ')}</span>}
         </span>
       </button>
@@ -627,6 +634,11 @@ const emptyStates = {
     icon: SendIcon,
     title: 'Nothing published yet',
     description: 'Published posts appear here once they are live on the website.',
+  },
+  scheduled: {
+    icon: CalendarClockIcon,
+    title: 'Nothing scheduled',
+    description: 'Schedule a draft from the editor and it publishes itself on time.',
   },
   draft: {
     icon: PencilLineIcon,

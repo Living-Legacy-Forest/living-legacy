@@ -27,13 +27,13 @@ be built later as a separate app that reads the same database.
 - FAQs (grouped), testimonials, team members
 - Site settings, 301 redirects manager
 - Users with Admin and Editor roles, Google sign-in
-- Drafts, publish/unpublish, revision history, trash
+- Drafts, publish/unpublish, scheduled publishing, revision history, trash
 
 **Not in v1**
 
 - Public website and its page builder (after design is approved)
 - Forests/locations and packages content types
-- Scheduled publishing, approval workflow
+- Approval workflow
 - Comments, multi-language, plugins/themes
 - WordPress content import (planned as the first follow-up, see section 12)
 
@@ -110,6 +110,14 @@ IDs are ULIDs (text). Timestamps are integer milliseconds.
 - **Trash** sets `deleted_at` (and unpublishes). **Restore** clears it.
   **Delete permanently** removes the row and its revisions (Admin only). Trash
   older than 30 days is purged by a daily cron trigger.
+
+**Scheduling**
+
+- A draft can be scheduled (`posts.scheduled_at`); it stays a draft until then.
+- A cron trigger (every 5 minutes) publishes due drafts through the same
+  publish path as the Publish button: revision, publish event and redirects.
+- Scheduling, publishing, unscheduling or trashing clears `scheduled_at`.
+- Times are picked and shown in Melbourne time (AEST/AEDT).
 
 ### Content tables
 

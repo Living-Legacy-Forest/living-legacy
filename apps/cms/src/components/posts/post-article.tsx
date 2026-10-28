@@ -41,7 +41,14 @@ export function PostArticle({
         </p>
       )}
       <p className="text-muted-foreground mt-5 border-b pb-5 text-[13px]">
-        {[post.author, post.publishedAt ? formatDate(post.publishedAt) : 'Not published yet']
+        {[
+          post.author,
+          post.publishedAt
+            ? formatDate(post.publishedAt)
+            : post.scheduledAt
+              ? `Scheduled for ${formatDate(post.scheduledAt)}`
+              : 'Not published yet',
+        ]
           .filter(Boolean)
           .join(' · ')}
       </p>

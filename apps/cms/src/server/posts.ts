@@ -1,143 +1,29 @@
 import { type PostInput, blogPath, postInputSchema, publishErrors, slugify } from '@llf/content';
-import { type Db, schema } from '@llf/db';
-import type { BatchItem } from 'drizzle-orm/batch';
+import { schema } from '@llf/db';
 import { createServerFn } from '@tanstack/react-start';
-import { and, asc, count, desc, eq, inArray, isNotNull, isNull, like, ne, sql } from 'drizzle-orm';
+import { and, asc, count, desc, eq, inArray, isNotNull, isNull, like, sql } from 'drizzle-orm';
 import { z } from 'zod';
 import { getDb } from '@/lib/db';
 import { authMiddleware, requirePermission } from '@/lib/session';
+import {
+  type Statement,
+  type Statements,
+  assertVersion,
+  columnWrites,
+  createDraft,
+  liveInput,
+  loadPost,
+  loadTermsFor,
+  publishValues,
+  uniqueSlug,
+} from './post-store';
 
-const { posts, terms, postTerms, teamMembers, revisions, publishEvents, redirects, user } = schema;
+const { posts, terms, postTerms, teamMembers, revisions, publishEvents, user } = schema;
 
 export const POSTS_PAGE_SIZE = 20;
 
-export const postStatusTabs = ['all', 'published', 'draft', 'trash'] as const;
+export const postStatusTabs = ['all', 'published', 'scheduled', 'draft', 'trash'] as const;
 export type PostStatusTab = (typeof postStatusTabs)[number];
-
-type PostRow = typeof posts.$inferSelect;
-type Statement = BatchItem<'sqlite'>;
-type Statements = [Statement, ...Statement[]];
-
-// ---------------------------------------------------------------------------
-// Helpers
-
-function conflictError() {
-  return new Error(
-    'Someone else saved this post while you were editing. Reload to see their changes.'
-  );
-}
-
-async function loadPost(db: Db, id: string) {
-  const row = await db.query.posts.findFirst({ where: eq(posts.id, id) });
-  if (!row) throw new Error('This post no longer exists.');
-  return row;
-}
-
-function assertVersion(row: PostRow, expectedUpdatedAt: number | undefined) {
-  if (expectedUpdatedAt !== undefined && row.updatedAt.getTime() !== expectedUpdatedAt) {
-    throw conflictError();
-  }
-}
-
-async function loadTermsFor(db: Db, postIds: string[]) {
-  if (postIds.length === 0) return [];
-  return db
-    .select({ postId: postTerms.postId, id: terms.id, name: terms.name, type: terms.type })
-    .from(postTerms)
-    .innerJoin(terms, eq(terms.id, postTerms.termId))
-    .where(inArray(postTerms.postId, postIds))
-    .orderBy(asc(terms.name));
-}
-
-/** The live (column) version of a post as editor input. */
-async function liveInput(db: Db, row: PostRow): Promise<PostInput> {
-  const assigned = await loadTermsFor(db, [row.id]);
-  return {
-    title: row.title,
-    slug: row.slug,
-    excerpt: row.excerpt ?? '',
-    body: (row.body as PostInput['body']) ?? null,
-    authorId: row.authorId,
-    categoryIds: assigned.filter((t) => t.type === 'category').map((t) => t.id),
-    tags: assigned.filter((t) => t.type === 'tag').map((t) => t.name),
-    seoTitle: row.seoTitle ?? '',
-    seoDescription: row.seoDescription ?? '',
-    noindex: row.noindex,
-  };
-}
-
-/** Appends -2, -3, ... until no other non-trashed post uses the slug. */
-async function uniqueSlug(db: Db, base: string, excludeId?: string) {
-  const root = base || 'untitled';
-  for (let n = 1; n < 100; n++) {
-    const candidate = n === 1 ? root : `${root}-${n}`;
-    const taken = await db
-      .select({ id: posts.id })
-      .from(posts)
-      .where(
-        and(
-          eq(posts.slug, candidate),
-          isNull(posts.deletedAt),
-          excludeId ? ne(posts.id, excludeId) : undefined
-        )
-      )
-      .limit(1);
-    if (taken.length === 0) return candidate;
-  }
-  throw new Error('Could not find a free permalink. Try a different one.');
-}
-
-/** Term IDs for the given tag names, creating tags that do not exist yet. */
-async function resolveTagIds(db: Db, names: string[]) {
-  const wanted = new Map<string, string>();
-  for (const name of names) {
-    const slug = slugify(name);
-    if (slug && !wanted.has(slug)) wanted.set(slug, name.trim());
-  }
-  if (wanted.size === 0) return [];
-  await db
-    .insert(terms)
-    .values([...wanted].map(([slug, name]) => ({ type: 'tag' as const, name, slug })))
-    .onConflictDoNothing();
-  const rows = await db
-    .select({ id: terms.id })
-    .from(terms)
-    .where(and(eq(terms.type, 'tag'), inArray(terms.slug, [...wanted.keys()])));
-  return rows.map((r) => r.id);
-}
-
-async function validCategoryIds(db: Db, ids: string[]) {
-  if (ids.length === 0) return [];
-  const rows = await db
-    .select({ id: terms.id })
-    .from(terms)
-    .where(and(eq(terms.type, 'category'), inArray(terms.id, ids)));
-  return rows.map((r) => r.id);
-}
-
-/** Column values and term assignment statements for writing input to the live row. */
-async function columnWrites(db: Db, id: string, input: PostInput) {
-  const termIds = [
-    ...(await validCategoryIds(db, input.categoryIds)),
-    ...(await resolveTagIds(db, input.tags)),
-  ];
-  const columns = {
-    title: input.title,
-    excerpt: input.excerpt || null,
-    body: input.body,
-    authorId: input.authorId,
-    seoTitle: input.seoTitle || null,
-    seoDescription: input.seoDescription || null,
-    noindex: input.noindex,
-  };
-  const termStatements: Statement[] = [
-    db.delete(postTerms).where(eq(postTerms.postId, id)),
-    ...(termIds.length
-      ? [db.insert(postTerms).values(termIds.map((termId) => ({ postId: id, termId })))]
-      : []),
-  ];
-  return { columns, termStatements };
-}
 
 // ---------------------------------------------------------------------------
 // Reads
@@ -158,7 +44,8 @@ export const listPosts = createServerFn({ method: 'GET' })
     const byTab = {
       all: notTrashed,
       published: and(notTrashed, eq(posts.status, 'published')),
-      draft: and(notTrashed, eq(posts.status, 'draft')),
+      scheduled: and(notTrashed, eq(posts.status, 'draft'), isNotNull(posts.scheduledAt)),
+      draft: and(notTrashed, eq(posts.status, 'draft'), isNull(posts.scheduledAt)),
       trash: isNotNull(posts.deletedAt),
     } satisfies Record<PostStatusTab, unknown>;
 
@@ -181,7 +68,8 @@ export const listPosts = createServerFn({ method: 'GET' })
         .select({
           all: sql<number>`coalesce(sum(${posts.deletedAt} is null), 0)`,
           published: sql<number>`coalesce(sum(${posts.deletedAt} is null and ${posts.status} = 'published'), 0)`,
-          draft: sql<number>`coalesce(sum(${posts.deletedAt} is null and ${posts.status} = 'draft'), 0)`,
+          scheduled: sql<number>`coalesce(sum(${posts.deletedAt} is null and ${posts.status} = 'draft' and ${posts.scheduledAt} is not null), 0)`,
+          draft: sql<number>`coalesce(sum(${posts.deletedAt} is null and ${posts.status} = 'draft' and ${posts.scheduledAt} is null), 0)`,
           trash: sql<number>`coalesce(sum(${posts.deletedAt} is not null), 0)`,
         })
         .from(posts),
@@ -196,6 +84,7 @@ export const listPosts = createServerFn({ method: 'GET' })
           publishedAt: posts.publishedAt,
           updatedAt: posts.updatedAt,
           deletedAt: posts.deletedAt,
+          scheduledAt: posts.scheduledAt,
           author: teamMembers.name,
         })
         .from(posts)
@@ -204,7 +93,9 @@ export const listPosts = createServerFn({ method: 'GET' })
         .orderBy(
           data.status === 'trash'
             ? desc(posts.deletedAt)
-            : sql`coalesce(${posts.publishedAt}, ${posts.updatedAt}) desc`
+            : data.status === 'scheduled'
+              ? asc(posts.scheduledAt)
+              : sql`coalesce(${posts.publishedAt}, ${posts.updatedAt}) desc`
         )
         .limit(POSTS_PAGE_SIZE)
         .offset((data.page - 1) * POSTS_PAGE_SIZE),
@@ -228,12 +119,14 @@ export const listPosts = createServerFn({ method: 'GET' })
         publishedAt: row.publishedAt?.getTime() ?? null,
         updatedAt: row.updatedAt.getTime(),
         deletedAt: row.deletedAt?.getTime() ?? null,
+        scheduledAt: row.scheduledAt?.getTime() ?? null,
         categories: assigned.filter((t) => t.postId === row.id && t.type === 'category'),
         tags: assigned.filter((t) => t.postId === row.id && t.type === 'tag'),
       })),
       counts: {
         all: Number(counts?.all ?? 0),
         published: Number(counts?.published ?? 0),
+        scheduled: Number(counts?.scheduled ?? 0),
         draft: Number(counts?.draft ?? 0),
         trash: Number(counts?.trash ?? 0),
       },
@@ -293,6 +186,7 @@ export const getPostEditorData = createServerFn({ method: 'GET' })
         publishedAt: row.publishedAt?.getTime() ?? null,
         updatedAt: row.updatedAt.getTime(),
         trashed: row.deletedAt !== null,
+        scheduledAt: row.scheduledAt?.getTime() ?? null,
         values,
       },
       revisions: history.map((r) => ({
@@ -326,28 +220,6 @@ const writeSchema = z.object({
   expectedUpdatedAt: z.number().optional(),
 });
 
-/** Creates a new draft row from input and returns it. */
-async function createDraft(db: Db, input: PostInput, userId: string) {
-  const slug = await uniqueSlug(db, input.slug || slugify(input.title));
-  const [row] = await db
-    .insert(posts)
-    .values({
-      title: input.title || 'Untitled',
-      slug,
-      status: 'draft',
-      createdBy: userId,
-      updatedBy: userId,
-    })
-    .returning();
-  if (!row) throw new Error('Could not create the post.');
-  const { columns, termStatements } = await columnWrites(db, row.id, input);
-  const [updated] = await db.batch([
-    db.update(posts).set(columns).where(eq(posts.id, row.id)).returning(),
-    ...termStatements,
-  ]);
-  return updated[0] ?? row;
-}
-
 export const savePost = createServerFn({ method: 'POST' })
   .middleware([requirePermission('content:write')])
   .validator(writeSchema)
@@ -374,6 +246,12 @@ export const savePost = createServerFn({ method: 'POST' })
       return { id: row.id, updatedAt: now.getTime(), slug: data.values.slug };
     }
 
+    // A scheduled post must stay publishable, or the scheduler would fail.
+    if (row.scheduledAt && publishErrors(data.values).length) {
+      throw new Error(
+        `${publishErrors(data.values).join(' ')} This post is scheduled, so it needs both.`
+      );
+    }
     const slug = await uniqueSlug(db, data.values.slug || slugify(data.values.title), row.id);
     const { columns, termStatements } = await columnWrites(db, row.id, data.values);
     await db.batch([
@@ -399,71 +277,62 @@ export const publishPost = createServerFn({ method: 'POST' })
     if (row.deletedAt) throw new Error('Restore this post from the trash before publishing it.');
     if (data.id) assertVersion(row, data.expectedUpdatedAt);
 
-    const slug = await uniqueSlug(db, data.values.slug, row.id);
-    const values = { ...data.values, slug };
-    const now = new Date();
-    const publishedAt = row.publishedAt ?? now;
-    const wasLive = row.status === 'published';
-    const oldPath = blogPath(row.slug);
-    const newPath = blogPath(slug);
+    return publishValues(db, row, data.values, userId);
+  });
 
-    const { columns, termStatements } = await columnWrites(db, row.id, values);
-    const statements: Statement[] = [
+const idSchema = z.object({ id: z.string() });
+
+/** Earliest a post can be scheduled for: the scheduler runs every five minutes. */
+const MIN_SCHEDULE_LEAD_MS = 60_000;
+
+export const schedulePost = createServerFn({ method: 'POST' })
+  .middleware([requirePermission('content:write')])
+  .validator(writeSchema.extend({ scheduledAt: z.number().int() }))
+  .handler(async ({ data, context }) => {
+    const errors = publishErrors(data.values);
+    if (errors.length) throw new Error(errors.join(' '));
+    if (data.scheduledAt < Date.now() + MIN_SCHEDULE_LEAD_MS) {
+      throw new Error('Pick a time at least a minute from now, or publish now instead.');
+    }
+
+    const db = getDb();
+    const userId = context.user.id;
+    const row = data.id ? await loadPost(db, data.id) : await createDraft(db, data.values, userId);
+    if (row.deletedAt) throw new Error('Restore this post from the trash before scheduling it.');
+    if (row.status === 'published') throw new Error('This post is already live.');
+    if (data.id) assertVersion(row, data.expectedUpdatedAt);
+
+    const now = new Date();
+    const slug = await uniqueSlug(db, data.values.slug, row.id);
+    const { columns, termStatements } = await columnWrites(db, row.id, data.values);
+    await db.batch([
       db
         .update(posts)
         .set({
           ...columns,
           slug,
-          status: 'published' as const,
-          publishedAt,
           draft: null,
+          scheduledAt: new Date(data.scheduledAt),
           updatedAt: now,
           updatedBy: userId,
         })
         .where(eq(posts.id, row.id)),
       ...termStatements,
-      db.insert(revisions).values({
-        entityType: 'post',
-        entityId: row.id,
-        snapshot: values,
-        createdBy: userId,
-      }),
-      db.insert(publishEvents).values({
-        entityType: 'post',
-        entityId: row.id,
-        action: 'publish',
-        paths: wasLive && oldPath !== newPath ? [oldPath, newPath, '/blog'] : [newPath, '/blog'],
-      }),
-      // The new URL must never redirect away (for example after renaming back).
-      db.delete(redirects).where(eq(redirects.fromPath, newPath)),
-    ];
-    // Keep old links working when a live post's permalink changes.
-    if (wasLive && oldPath !== newPath) {
-      statements.push(
-        db
-          .insert(redirects)
-          .values({
-            fromPath: oldPath,
-            toPath: newPath,
-            statusCode: 301,
-            note: 'Permalink changed',
-          })
-          .onConflictDoUpdate({
-            target: redirects.fromPath,
-            set: { toPath: newPath, updatedAt: now },
-          }),
-        // Earlier redirects to the old URL now point straight at the new one.
-        db
-          .update(redirects)
-          .set({ toPath: newPath, updatedAt: now })
-          .where(eq(redirects.toPath, oldPath))
-      );
-    }
-    await db.batch(statements as Statements);
-    return { id: row.id, updatedAt: now.getTime(), slug };
+    ]);
+    return { id: row.id, updatedAt: now.getTime(), slug, scheduledAt: data.scheduledAt };
   });
 
-const idSchema = z.object({ id: z.string() });
+export const unschedulePost = createServerFn({ method: 'POST' })
+  .middleware([requirePermission('content:write')])
+  .validator(z.object({ id: z.string() }))
+  .handler(async ({ data, context }) => {
+    const now = new Date();
+    await getDb()
+      .update(posts)
+      .set({ scheduledAt: null, updatedAt: now, updatedBy: context.user.id })
+      .where(eq(posts.id, data.id));
+    return { updatedAt: now.getTime() };
+  });
 const idsSchema = z.object({ ids: z.array(z.string()).min(1).max(100) });
 
 export const discardChanges = createServerFn({ method: 'POST' })
@@ -525,7 +394,13 @@ export const trashPosts = createServerFn({ method: 'POST' })
     const statements: Statement[] = [
       db
         .update(posts)
-        .set({ deletedAt: now, status: 'draft', updatedAt: now, updatedBy: context.user.id })
+        .set({
+          deletedAt: now,
+          status: 'draft',
+          scheduledAt: null,
+          updatedAt: now,
+          updatedBy: context.user.id,
+        })
         .where(
           inArray(
             posts.id,
@@ -638,6 +513,7 @@ export const getPostPreview = createServerFn({ method: 'GET' })
       status: row.status,
       hasDraft: row.draft !== null,
       publishedAt: row.publishedAt?.getTime() ?? null,
+      scheduledAt: row.scheduledAt?.getTime() ?? null,
     };
   });
 

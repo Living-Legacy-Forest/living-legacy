@@ -70,10 +70,13 @@ import {
   publishPost,
   restorePosts,
   savePost,
+  schedulePost,
   trashPosts,
   unpublishPost,
+  unschedulePost,
 } from '@/server/posts';
 import { PostStatusBadge } from './post-status-badge';
+import { SchedulePopover } from './schedule-popover';
 import { clearPostPreviews } from './use-post-preview';
 
 // Browser only: the editor has nothing to server-render, and keeping
@@ -91,6 +94,8 @@ type Meta = {
   updatedAt: number | undefined;
   publishedAt: number | null;
   trashed: boolean;
+  /** When this draft is due to publish itself; null if not scheduled. */
+  scheduledAt: number | null;
 };
 
 type Option = { id: string; name: string };
@@ -122,6 +127,7 @@ export function PostEditor({
     updatedAt: data.post?.updatedAt,
     publishedAt: data.post?.publishedAt ?? null,
     trashed: data.post?.trashed ?? false,
+    scheduledAt: data.post?.scheduledAt ?? null,
   });
   // The permalink follows the title until it is edited by hand or the post goes live.
   const [slugTouched, setSlugTouched] = useState(
@@ -178,6 +184,7 @@ export function PostEditor({
         status: kind === 'publish' ? 'published' : m.status,
         hasDraft: kind === 'save' && m.status === 'published',
         publishedAt: kind === 'publish' ? (m.publishedAt ?? result.updatedAt) : m.publishedAt,
+        scheduledAt: kind === 'publish' ? null : m.scheduledAt,
       }));
       if (kind === 'publish') setSlugTouched(true);
 
@@ -186,7 +193,9 @@ export function PostEditor({
           kind === 'publish'
             ? meta.status === 'published'
               ? 'Post updated.'
-              : 'Post published.'
+              : meta.scheduledAt
+                ? 'Post published now. The schedule was cleared.'
+                : 'Post published.'
             : meta.status === 'published'
               ? 'Changes saved. They go live when you update the post.'
               : 'Draft saved.'
@@ -205,6 +214,63 @@ export function PostEditor({
       return null;
     } finally {
       setBusy(null);
+    }
+  }
+
+  /** Saves the current values and schedules the post; true on success. */
+  async function schedule(at: number): Promise<boolean> {
+    const errors = publishErrors(values);
+    if (errors.length) {
+      toast.error(errors.join(' '));
+      return false;
+    }
+    setBusy('publish');
+    try {
+      const result = await schedulePost({
+        data: {
+          id: meta.id ?? undefined,
+          values,
+          expectedUpdatedAt: meta.updatedAt,
+          scheduledAt: at,
+        },
+      });
+      clearPostPreviews();
+      const next = { ...values, slug: result.slug };
+      setValues(next);
+      setSaved(next);
+      setLastSavedAt(result.updatedAt);
+      setMeta((m) => ({
+        ...m,
+        id: result.id,
+        updatedAt: result.updatedAt,
+        scheduledAt: result.scheduledAt,
+      }));
+      toast.success(`Scheduled for ${formatDateTime(result.scheduledAt)}.`);
+      if (!meta.id) {
+        skipBlockRef.current = true;
+        await navigate({ to: '/posts/$postId', params: { postId: result.id }, replace: true });
+      } else {
+        await router.invalidate();
+      }
+      return true;
+    } catch (error) {
+      toast.error(errorMessage(error));
+      return false;
+    } finally {
+      setBusy(null);
+    }
+  }
+
+  async function unschedule() {
+    if (!meta.id) return;
+    try {
+      const result = await unschedulePost({ data: { id: meta.id } });
+      clearPostPreviews();
+      setMeta((m) => ({ ...m, scheduledAt: null, updatedAt: result.updatedAt }));
+      toast.success('Unscheduled. The post is a draft again.');
+      await router.invalidate();
+    } catch (error) {
+      toast.error(errorMessage(error));
     }
   }
 
@@ -333,6 +399,8 @@ export function PostEditor({
           <PostStatusBadge
             status={meta.status}
             hasDraft={meta.hasDraft}
+            scheduledAt={meta.scheduledAt}
+            showDate
             className="text-foreground text-[13px]"
           />
           <span className="text-muted-foreground text-xs" aria-live="polite">
@@ -363,14 +431,31 @@ export function PostEditor({
             >
               {busy === 'save' ? 'Saving…' : isLive ? 'Save changes' : 'Save draft'}
             </Button>
-            <Button
-              size="sm"
-              disabled={working || (isLive && !dirty && !meta.hasDraft)}
-              onClick={() => persist('publish')}
-            >
-              <SendIcon aria-hidden data-icon="inline-start" />
-              {busy === 'publish' ? 'Publishing…' : isLive ? 'Update' : 'Publish'}
-            </Button>
+            <div className="flex">
+              <Button
+                size="sm"
+                disabled={working || (isLive && !dirty && !meta.hasDraft)}
+                onClick={() => persist('publish')}
+                className={cn(!isLive && 'rounded-r-none')}
+              >
+                <SendIcon aria-hidden data-icon="inline-start" />
+                {busy === 'publish'
+                  ? 'Publishing…'
+                  : isLive
+                    ? 'Update'
+                    : meta.scheduledAt
+                      ? 'Publish now'
+                      : 'Publish'}
+              </Button>
+              {!isLive && (
+                <SchedulePopover
+                  scheduledAt={meta.scheduledAt}
+                  disabled={working}
+                  onSchedule={schedule}
+                  onUnschedule={unschedule}
+                />
+              )}
+            </div>
             <DropdownMenu>
               <DropdownMenuTrigger
                 render={<Button variant="ghost" size="icon-sm" aria-label="More actions" />}
@@ -482,6 +567,11 @@ export function PostEditor({
               }}
             />
           </Property>
+          {meta.scheduledAt && (
+            <Property label="Goes live">
+              <span className="px-2">{formatDateTime(meta.scheduledAt)}</span>
+            </Property>
+          )}
           {meta.publishedAt && (
             <Property label="Published">
               <span className="text-muted-foreground px-2">{formatDateTime(meta.publishedAt)}</span>

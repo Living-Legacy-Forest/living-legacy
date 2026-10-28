@@ -22,7 +22,12 @@ function PreviewPage() {
     <div className="bg-background min-h-svh">
       <div className="bg-background/80 sticky top-0 z-10 flex h-11 items-center gap-3 border-b px-4 text-[13px] backdrop-blur">
         <span className="font-medium">Preview</span>
-        <PostStatusBadge status={post.status} hasDraft={post.hasDraft} />
+        <PostStatusBadge
+          status={post.status}
+          hasDraft={post.hasDraft}
+          scheduledAt={post.scheduledAt}
+          showDate
+        />
         <span className="text-muted-foreground hidden sm:inline">
           A neutral layout: the finished website design may present it differently.
         </span>

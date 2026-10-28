@@ -49,6 +49,8 @@ export const posts = sqliteTable(
     seoDescription: text('seo_description'),
     ogMediaId: text('og_media_id').references(() => media.id, { onDelete: 'set null' }),
     noindex: integer('noindex', { mode: 'boolean' }).notNull().default(false),
+    /** When a draft goes live on its own; cleared on publish, unschedule or trash. */
+    scheduledAt: integer('scheduled_at', { mode: 'timestamp_ms' }),
     ...lifecycle(),
   },
   (t) => [
@@ -57,6 +59,8 @@ export const posts = sqliteTable(
       .on(t.slug)
       .where(sql`${t.deletedAt} IS NULL`),
     index('posts_status_published_at').on(t.status, t.publishedAt),
+    // The scheduler looks up due drafts every few minutes.
+    index('posts_scheduled_at').on(t.scheduledAt),
   ]
 );
 

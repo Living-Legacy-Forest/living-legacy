@@ -67,14 +67,14 @@
   --ring: oklch(0.708 0 0);
   --radius: 0.625rem;
 
-  /* The sidebar is the app surface; content sits on it as a white panel. */
-  --sidebar: oklch(0.975 0 0);
+  /* White like the content, separated by a hairline. */
+  --sidebar: oklch(1 0 0);
   --sidebar-foreground: oklch(0.27 0 0);
   --sidebar-primary: oklch(0.205 0 0);
   --sidebar-primary-foreground: oklch(0.985 0 0);
-  --sidebar-accent: oklch(0 0 0 / 5%);
+  --sidebar-accent: oklch(0.965 0 0);
   --sidebar-accent-foreground: oklch(0.145 0 0);
-  --sidebar-border: oklch(0 0 0 / 7%);
+  --sidebar-border: oklch(0.93 0 0);
   --sidebar-ring: oklch(0.708 0 0);
 
   /* Charts are the only colour, taken from the website's palette. */

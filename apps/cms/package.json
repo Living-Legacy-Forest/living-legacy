@@ -11,7 +11,8 @@
     "lint": "eslint .",
     "cf-typegen": "wrangler types --env-interface CloudflareEnv",
     "db:migrate:local": "wrangler d1 migrations apply DB --local",
-    "db:migrate:remote": "wrangler d1 migrations apply DB --remote"
+    "db:migrate:remote": "wrangler d1 migrations apply DB --remote",
+    "db:seed:local": "wrangler d1 execute DB --local --file scripts/seed-dev.sql"
   },
   "dependencies": {
     "@base-ui/react": "^1.8.0",
@@ -28,6 +29,7 @@
     "lucide-react": "^1.61.0",
     "react": "^19.3.0",
     "react-dom": "^19.3.0",
+    "recharts": "3.8.0",
     "sonner": "^2.0.8",
     "tailwind-merge": "^3.7.0",
     "zod": "^4.6.7"

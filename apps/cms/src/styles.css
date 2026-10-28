@@ -84,6 +84,12 @@
   --sidebar-accent-foreground: var(--color-moss-deep);
   --sidebar-border: color-mix(in oklab, var(--color-bark) 22%, transparent);
   --sidebar-ring: var(--color-moss);
+
+  --chart-1: var(--color-moss);
+  --chart-2: #b89b5e;
+  --chart-3: var(--color-bark);
+  --chart-4: #8fb08c;
+  --chart-5: var(--color-ink-soft);
 }
 
 @media (prefers-color-scheme: dark) {
@@ -115,6 +121,12 @@
     --sidebar-accent-foreground: #d8e6d5;
     --sidebar-border: color-mix(in oklab, #ece5d6 12%, transparent);
     --sidebar-ring: #8fb08c;
+
+    --chart-1: #a9c4a6;
+    --chart-2: var(--color-sun);
+    --chart-3: #b6a184;
+    --chart-4: #6f9a73;
+    --chart-5: #a7b3aa;
   }
 }
 

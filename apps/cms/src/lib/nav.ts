@@ -2,6 +2,7 @@ import type { Permission } from '@llf/content';
 import {
   ArrowRightLeft,
   CircleHelp,
+  ExternalLink,
   FileText,
   ImageIcon,
   LayoutDashboard,
@@ -14,18 +15,33 @@ import {
 
 export type NavItem = {
   title: string;
-  icon: LucideIcon;
+  icon?: LucideIcon;
   /** Set once the section exists. Items without one show as "Soon". */
   to?: '/';
   permission?: Permission;
+  items?: NavItem[];
 };
 
-export const navGroups: { label: string; items: NavItem[] }[] = [
+export type NavGroup = { label: string; items: NavItem[] };
+
+export const navGroups: NavGroup[] = [
+  {
+    label: 'Overview',
+    items: [{ title: 'Dashboard', icon: LayoutDashboard, to: '/' }],
+  },
   {
     label: 'Content',
     items: [
-      { title: 'Dashboard', icon: LayoutDashboard, to: '/' },
-      { title: 'Posts', icon: FileText },
+      {
+        title: 'Posts',
+        icon: FileText,
+        items: [
+          { title: 'All posts' },
+          { title: 'Add new' },
+          { title: 'Categories' },
+          { title: 'Tags' },
+        ],
+      },
       { title: 'Media', icon: ImageIcon },
       { title: 'FAQs', icon: CircleHelp },
       { title: 'Testimonials', icon: Quote },
@@ -41,3 +57,13 @@ export const navGroups: { label: string; items: NavItem[] }[] = [
     ],
   },
 ];
+
+export const footerLinks: { title: string; href: string; icon: LucideIcon }[] = [
+  { title: 'View website', href: 'https://livinglegacyforest.com.au', icon: ExternalLink },
+];
+
+/** Nav item for the current path, used for the header breadcrumb. */
+export function findNavItem(pathname: string): NavItem | undefined {
+  const all = navGroups.flatMap((g) => g.items.flatMap((i) => [i, ...(i.items ?? [])]));
+  return all.find((item) => item.to === pathname);
+}

@@ -1,27 +1,24 @@
 import { createFileRoute } from '@tanstack/react-router';
-import { Card, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Dashboard } from '@/components/dashboard/dashboard';
+import { DashboardSkeleton } from '@/components/dashboard/dashboard-skeleton';
+import { getDashboardData } from '@/server/dashboard';
 
 export const Route = createFileRoute('/_app/')({
   head: () => ({ meta: [{ title: 'Dashboard | Living Legacy Forest CMS' }] }),
-  component: Dashboard,
+  loader: () => getDashboardData(),
+  pendingComponent: DashboardSkeleton,
+  component: DashboardPage,
 });
 
-function Dashboard() {
+function DashboardPage() {
   const { user } = Route.useRouteContext();
+  const data = Route.useLoaderData();
   const firstName = user.name.split(' ')[0];
 
   return (
-    <div className="mx-auto max-w-5xl space-y-6">
+    <div className="space-y-6">
       <h1 className="text-3xl">Welcome, {firstName}</h1>
-      <Card>
-        <CardHeader>
-          <CardTitle>Content</CardTitle>
-          <CardDescription>
-            Posts, media, FAQs, testimonials and team members will appear here as each section of
-            the CMS is built.
-          </CardDescription>
-        </CardHeader>
-      </Card>
+      <Dashboard data={data} user={user} />
     </div>
   );
 }

@@ -1,0 +1,40 @@
+import { type Permission, type Role, can } from '@llf/content';
+import { createMiddleware, createServerFn } from '@tanstack/react-start';
+import { getRequest } from '@tanstack/react-start/server';
+import { getAuth } from './auth';
+
+export type SessionUser = {
+  id: string;
+  name: string;
+  email: string;
+  image: string | null;
+  role: Role;
+};
+
+async function loadUser(): Promise<SessionUser | null> {
+  const session = await getAuth().api.getSession({ headers: getRequest().headers });
+  if (!session) return null;
+  const { id, name, email, image, role } = session.user;
+  return { id, name, email, image: image ?? null, role: role as Role };
+}
+
+export const getCurrentUser = createServerFn({ method: 'GET' }).handler(() => loadUser());
+
+/** Every CMS server function goes through this: no session, no access. */
+export const authMiddleware = createMiddleware({ type: 'function' }).server(async ({ next }) => {
+  const user = await loadUser();
+  if (!user) throw new Error('You need to sign in.');
+  return next({ context: { user } });
+});
+
+/** Server-side role check. The UI hiding a control is never the only guard. */
+export function requirePermission(permission: Permission) {
+  return createMiddleware({ type: 'function' })
+    .middleware([authMiddleware])
+    .server(({ next, context }) => {
+      if (!can(context.user.role, permission)) {
+        throw new Error('You do not have permission to do that.');
+      }
+      return next();
+    });
+}

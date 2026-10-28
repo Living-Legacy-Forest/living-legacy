@@ -1,0 +1,37 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "llf-cms",
+  "main": "@tanstack/react-start/server-entry",
+  "compatibility_date": "2026-10-20",
+  "compatibility_flags": ["nodejs_compat"],
+  "observability": { "enabled": true },
+  // No resource IDs: wrangler dev creates local copies, and the first deploy
+  // provisions the remote D1 database and R2 bucket and links them.
+  "d1_databases": [
+    {
+      "binding": "DB",
+      "database_name": "llf-cms",
+      "migrations_dir": "../../packages/db/migrations"
+    }
+  ],
+  "r2_buckets": [{ "binding": "MEDIA", "bucket_name": "llf-media" }],
+  "vars": {
+    "BETTER_AUTH_URL": "http://localhost:3100"
+  },
+  "env": {
+    "staging": {
+      "name": "llf-cms-staging",
+      "d1_databases": [
+        {
+          "binding": "DB",
+          "database_name": "llf-cms-staging",
+          "migrations_dir": "../../packages/db/migrations"
+        }
+      ],
+      "r2_buckets": [{ "binding": "MEDIA", "bucket_name": "llf-media-staging" }],
+      // The CMS hostname is still an open decision (spec section 13). Set
+      // "vars": { "BETTER_AUTH_URL": "https://<host>" } here before deploying.
+      "vars": {}
+    }
+  }
+}

@@ -1,0 +1,38 @@
+import tseslint from '@typescript-eslint/eslint-plugin';
+import tsParser from '@typescript-eslint/parser';
+import jsxA11y from 'eslint-plugin-jsx-a11y';
+
+const sharedRules = {
+  '@typescript-eslint/no-explicit-any': 'warn',
+  '@typescript-eslint/no-unused-vars': [
+    'error',
+    { argsIgnorePattern: '^_', varsIgnorePattern: '^_', caughtErrorsIgnorePattern: '^_$|^e$' },
+  ],
+  'no-console': ['warn', { allow: ['error', 'warn'] }],
+  'prefer-const': 'error',
+  eqeqeq: ['error', 'always'],
+  'no-var': 'error',
+};
+
+export default [
+  // routeTree.gen.ts is generated; components/ui is vendored from shadcn.
+  { ignores: ['dist/**', '.wrangler/**', 'src/routeTree.gen.ts', 'worker-configuration.d.ts'] },
+  {
+    files: ['**/*.ts'],
+    plugins: { '@typescript-eslint': tseslint },
+    languageOptions: { parser: tsParser },
+    rules: sharedRules,
+  },
+  {
+    files: ['**/*.tsx'],
+    plugins: { '@typescript-eslint': tseslint, 'jsx-a11y': jsxA11y },
+    languageOptions: { parser: tsParser, parserOptions: { ecmaFeatures: { jsx: true } } },
+    rules: {
+      ...jsxA11y.flatConfigs.recommended.rules,
+      // Same reason as apps/web: Base UI passes elements through `render`.
+      'jsx-a11y/anchor-has-content': 'off',
+      'jsx-a11y/label-has-associated-control': 'off',
+      ...sharedRules,
+    },
+  },
+];

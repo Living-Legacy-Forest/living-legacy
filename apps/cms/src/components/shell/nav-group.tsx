@@ -1,12 +1,10 @@
 import { Link, useLocation } from '@tanstack/react-router';
 import { ChevronRightIcon } from 'lucide-react';
-import { Badge } from '@/components/ui/badge';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import {
   SidebarGroup,
   SidebarGroupLabel,
   SidebarMenu,
-  SidebarMenuBadge,
   SidebarMenuButton,
   SidebarMenuItem,
   SidebarMenuSub,
@@ -14,6 +12,8 @@ import {
   SidebarMenuSubItem,
 } from '@/components/ui/sidebar';
 import type { NavGroup as NavGroupType, NavItem } from '@/lib/nav';
+import { cn } from '@/lib/utils';
+import { navItemClass, navItemSoonClass } from './nav-styles';
 
 const isSoon = (item: NavItem) => !item.to && !item.items?.some((sub) => sub.to);
 
@@ -21,9 +21,13 @@ export function NavGroup({ label, items }: NavGroupType) {
   const { pathname } = useLocation();
 
   return (
-    <SidebarGroup>
-      <SidebarGroupLabel>{label}</SidebarGroupLabel>
-      <SidebarMenu>
+    <SidebarGroup className="py-1">
+      {label && (
+        <SidebarGroupLabel className="text-sidebar-foreground/50 h-7 px-2 text-xs font-medium">
+          {label}
+        </SidebarGroupLabel>
+      )}
+      <SidebarMenu className="gap-px">
         {items.map((item) => {
           const Icon = item.icon;
           const active = item.to === pathname || !!item.items?.some((sub) => sub.to === pathname);
@@ -32,16 +36,14 @@ export function NavGroup({ label, items }: NavGroupType) {
             return (
               <SidebarMenuItem key={item.title}>
                 <SidebarMenuButton
+                  aria-disabled
+                  title={`${item.title}: coming soon`}
                   tooltip={`${item.title} (coming soon)`}
-                  disabled
-                  className="opacity-60"
+                  className={cn(navItemClass, navItemSoonClass)}
                 >
                   {Icon && <Icon aria-hidden />}
                   <span>{item.title}</span>
                 </SidebarMenuButton>
-                <SidebarMenuBadge>
-                  <Badge variant="outline">Soon</Badge>
-                </SidebarMenuBadge>
               </SidebarMenuItem>
             );
           }
@@ -55,28 +57,38 @@ export function NavGroup({ label, items }: NavGroupType) {
                 render={<SidebarMenuItem />}
               >
                 <CollapsibleTrigger
-                  render={<SidebarMenuButton tooltip={item.title} isActive={active} />}
+                  render={
+                    <SidebarMenuButton
+                      tooltip={item.title}
+                      isActive={active}
+                      className={navItemClass}
+                    />
+                  }
                 >
                   {Icon && <Icon aria-hidden />}
                   <span>{item.title}</span>
                   <ChevronRightIcon
                     aria-hidden
-                    className="ml-auto transition-transform duration-200 in-data-[panel-open]:rotate-90"
+                    className="ml-auto size-3.5! transition-transform duration-150 in-data-[panel-open]:rotate-90 motion-reduce:transition-none"
                   />
                 </CollapsibleTrigger>
                 <CollapsibleContent>
-                  <SidebarMenuSub>
+                  <SidebarMenuSub className="border-sidebar-border mr-0 gap-px py-0.5">
                     {item.items.map((sub) => (
                       <SidebarMenuSubItem key={sub.title}>
                         {sub.to ? (
                           <SidebarMenuSubButton
                             isActive={sub.to === pathname}
+                            className="h-7 text-[13px]"
                             render={<Link to={sub.to} />}
                           >
                             <span>{sub.title}</span>
                           </SidebarMenuSubButton>
                         ) : (
-                          <SidebarMenuSubButton aria-disabled className="opacity-60">
+                          <SidebarMenuSubButton
+                            aria-disabled
+                            className={cn('h-7 text-[13px]', navItemSoonClass)}
+                          >
                             <span>{sub.title}</span>
                           </SidebarMenuSubButton>
                         )}
@@ -93,6 +105,7 @@ export function NavGroup({ label, items }: NavGroupType) {
               <SidebarMenuButton
                 tooltip={item.title}
                 isActive={active}
+                className={navItemClass}
                 render={<Link to={item.to ?? '/'} />}
               >
                 {Icon && <Icon aria-hidden />}

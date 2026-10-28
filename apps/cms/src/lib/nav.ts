@@ -26,7 +26,8 @@ export type NavGroup = { label: string; items: NavItem[] };
 
 export const navGroups: NavGroup[] = [
   {
-    label: 'Overview',
+    // No label: top-level items sit above the sections.
+    label: '',
     items: [{ title: 'Dashboard', icon: LayoutDashboard, to: '/' }],
   },
   {

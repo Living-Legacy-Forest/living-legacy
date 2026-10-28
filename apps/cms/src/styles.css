@@ -67,13 +67,14 @@
   --ring: oklch(0.708 0 0);
   --radius: 0.625rem;
 
-  --sidebar: oklch(1 0 0);
-  --sidebar-foreground: oklch(0.145 0 0);
+  /* The sidebar is the app surface; content sits on it as a white panel. */
+  --sidebar: oklch(0.975 0 0);
+  --sidebar-foreground: oklch(0.27 0 0);
   --sidebar-primary: oklch(0.205 0 0);
   --sidebar-primary-foreground: oklch(0.985 0 0);
-  --sidebar-accent: oklch(0.97 0 0);
-  --sidebar-accent-foreground: oklch(0.205 0 0);
-  --sidebar-border: oklch(0.922 0 0);
+  --sidebar-accent: oklch(0 0 0 / 5%);
+  --sidebar-accent-foreground: oklch(0.145 0 0);
+  --sidebar-border: oklch(0 0 0 / 7%);
   --sidebar-ring: oklch(0.708 0 0);
 
   /* Charts are the only colour, taken from the website's palette. */
@@ -82,6 +83,21 @@
   --chart-3: #7d6b54;
   --chart-4: #8fb08c;
   --chart-5: #a3a3a3;
+}
+
+/* Sidebar collapse eases out instead of moving linearly, and is instant when
+   the user asks for reduced motion. Unlayered so it wins over the utilities. */
+[data-slot='sidebar-gap'],
+[data-slot='sidebar-container'] {
+  transition-duration: 220ms;
+  transition-timing-function: cubic-bezier(0.25, 1, 0.5, 1);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  [data-slot='sidebar-gap'],
+  [data-slot='sidebar-container'] {
+    transition-duration: 0ms;
+  }
 }
 
 @layer base {

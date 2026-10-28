@@ -5,6 +5,7 @@ import { Calendar } from '@/components/ui/calendar';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { Spinner } from '@/components/ui/spinner';
 import { type WallTime, formatDateTime, fromZoned, toZoned, zoneName } from '@/lib/format';
 import { cn } from '@/lib/utils';
 
@@ -227,6 +228,7 @@ export function SchedulePopover({
               </Button>
             )}
             <Button size="sm" disabled={pending || tooSoon} onClick={submit}>
+              {pending && <Spinner data-icon="inline-start" />}
               {scheduledAt ? 'Reschedule' : 'Schedule'}
             </Button>
           </div>

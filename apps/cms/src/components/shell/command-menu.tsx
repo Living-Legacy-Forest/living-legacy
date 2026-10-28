@@ -7,7 +7,6 @@ import {
   FileTextIcon,
   FolderIcon,
   LayoutDashboardIcon,
-  Loader2Icon,
   type LucideIcon,
   PanelLeftIcon,
   PencilLineIcon,
@@ -32,6 +31,7 @@ import {
   EmptyTitle,
 } from '@/components/ui/empty';
 import { Kbd } from '@/components/ui/kbd';
+import { Spinner } from '@/components/ui/spinner';
 import { useSidebar } from '@/components/ui/sidebar';
 import { formatRelative } from '@/lib/format';
 import { footerLinks } from '@/lib/nav';
@@ -219,10 +219,7 @@ export function CommandMenu({ user }: { user: SessionUser }) {
               onValueChange={setQuery}
             />
             {loading && (
-              <Loader2Icon
-                aria-hidden
-                className="text-muted-foreground absolute top-1/2 right-4 size-4 -translate-y-1/2 animate-spin"
-              />
+              <Spinner className="text-muted-foreground absolute top-1/2 right-4 -translate-y-1/2" />
             )}
           </div>
           <CommandList className="max-h-[min(28rem,60vh)]">

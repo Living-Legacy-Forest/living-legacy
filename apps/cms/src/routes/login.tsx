@@ -6,6 +6,7 @@ import { z } from 'zod';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { Spinner } from '@/components/ui/spinner';
 import { authClient } from '@/lib/auth-client';
 import { getCurrentUser, getLoginOptions } from '@/lib/session';
 
@@ -123,7 +124,14 @@ function MagicLinkForm() {
         />
       </div>
       <Button type="submit" className="mt-1 h-11 w-full rounded-xl" disabled={pending}>
-        {pending ? 'Sending…' : 'Email me a sign-in link'}
+        {pending ? (
+          <>
+            <Spinner />
+            Sending…
+          </>
+        ) : (
+          'Email me a sign-in link'
+        )}
       </Button>
     </form>
   );
@@ -150,8 +158,17 @@ function GoogleSignIn() {
       disabled={pending}
       className="h-11 w-full gap-2.5 rounded-xl"
     >
-      <GoogleIcon />
-      {pending ? 'Redirecting to Google…' : 'Continue with Google'}
+      {pending ? (
+        <>
+          <Spinner />
+          Redirecting to Google…
+        </>
+      ) : (
+        <>
+          <GoogleIcon />
+          Continue with Google
+        </>
+      )}
     </Button>
   );
 }

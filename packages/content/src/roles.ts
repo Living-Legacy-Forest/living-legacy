@@ -45,3 +45,15 @@ export function resolveSignupRole(
   if (bootstrap.includes(normaliseEmail(email))) return 'admin';
   return options.invitedRole ?? null;
 }
+
+/**
+ * Invite-only policy for magic links: send one only to an email that already
+ * has an account or is eligible to create one (invited or bootstrap). A
+ * stranger gets nothing, so a link request never reveals who has access.
+ */
+export function canReceiveMagicLink(opts: {
+  hasAccount: boolean;
+  signupRole: Role | null;
+}): boolean {
+  return opts.hasAccount || opts.signupRole !== null;
+}

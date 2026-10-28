@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { can, resolveSignupRole } from './roles';
+import { canReceiveMagicLink, can, resolveSignupRole } from './roles';
 
 describe('can', () => {
   it('lets admins do everything', () => {
@@ -33,5 +33,20 @@ describe('resolveSignupRole', () => {
     expect(
       resolveSignupRole('OTHER@example.com', { bootstrapAdminEmails, invitedRole: 'editor' })
     ).toBe('admin');
+  });
+});
+
+describe('canReceiveMagicLink', () => {
+  it('sends to existing accounts', () => {
+    expect(canReceiveMagicLink({ hasAccount: true, signupRole: null })).toBe(true);
+  });
+
+  it('sends to invited or bootstrap emails with no account yet', () => {
+    expect(canReceiveMagicLink({ hasAccount: false, signupRole: 'editor' })).toBe(true);
+    expect(canReceiveMagicLink({ hasAccount: false, signupRole: 'admin' })).toBe(true);
+  });
+
+  it('refuses strangers so a link never reveals who has access', () => {
+    expect(canReceiveMagicLink({ hasAccount: false, signupRole: null })).toBe(false);
   });
 });

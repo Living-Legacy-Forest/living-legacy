@@ -139,14 +139,7 @@ jobs:
           accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
           workingDirectory: apps/cms
           command: deploy --env ${{ env.ENVIRONMENT }}
-          # Pushed to the Worker as encrypted secrets, read from the job env below.
-          secrets: |
-            BETTER_AUTH_SECRET
-            GOOGLE_CLIENT_ID
-            GOOGLE_CLIENT_SECRET
-            BOOTSTRAP_ADMIN_EMAILS
-        env:
-          BETTER_AUTH_SECRET: ${{ secrets.BETTER_AUTH_SECRET }}
-          GOOGLE_CLIENT_ID: ${{ secrets.GOOGLE_CLIENT_ID }}
-          GOOGLE_CLIENT_SECRET: ${{ secrets.GOOGLE_CLIENT_SECRET }}
-          BOOTSTRAP_ADMIN_EMAILS: ${{ secrets.BOOTSTRAP_ADMIN_EMAILS }}
+          # Runtime secrets (BETTER_AUTH_SECRET, BOOTSTRAP_ADMIN_EMAILS,
+          # GOOGLE_CLIENT_ID/SECRET) are set directly on the Worker with
+          # `wrangler secret put --env staging` and persist across deploys, so
+          # they are not managed here. A deploy never clears them.

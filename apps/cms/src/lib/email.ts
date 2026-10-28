@@ -10,11 +10,16 @@ type Email = {
 };
 
 async function send(email: Email): Promise<void> {
-  // Local dev without a Resend key: print the email so the flow is testable
-  // without sending anything. Never reached in a deployed Worker, which has
-  // the secret set.
   if (!env.RESEND_API_KEY) {
-    console.warn(`[email] no RESEND_API_KEY; not sending to ${email.to}:\n${email.text}`);
+    // Fail closed in a deployed Worker: a missing key must never cause a live
+    // sign-in link to be written to logs. Only local dev prints it, so the
+    // flow stays testable without sending anything.
+    if (!import.meta.env.DEV) {
+      throw new Error('Email delivery is not configured');
+    }
+    console.warn(
+      `[email] dev mode, no RESEND_API_KEY; link not sent to ${email.to}:\n${email.text}`
+    );
     return;
   }
 

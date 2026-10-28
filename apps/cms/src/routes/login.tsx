@@ -1,5 +1,5 @@
 import { createFileRoute, redirect } from '@tanstack/react-router';
-import { Check } from 'lucide-react';
+import { MailCheck } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { toast } from 'sonner';
 import { z } from 'zod';
@@ -103,16 +103,29 @@ function MagicLinkForm() {
 
   if (sent) {
     return (
-      <div className="flex flex-col items-center gap-3 rounded-xl border border-dashed py-8 text-center">
-        <span className="bg-muted text-foreground flex size-9 items-center justify-center rounded-full">
-          <Check aria-hidden className="size-4" />
+      <div className="flex flex-col items-center gap-4 py-2 text-center">
+        <span className="flex size-12 items-center justify-center rounded-full bg-[#2c4633]/10 text-[#2c4633]">
+          <MailCheck aria-hidden className="size-5" />
         </span>
-        <div className="space-y-1 px-6">
-          <p className="text-sm font-medium">Check your inbox</p>
+        <div className="space-y-1.5">
+          <p className="font-medium">Check your inbox</p>
           <p className="text-muted-foreground text-sm text-balance">
-            If {email} has access, a sign-in link is on its way. It expires in five minutes.
+            If <span className="text-foreground font-medium">{email}</span> has access, a sign-in
+            link is on its way. It expires in five minutes.
           </p>
         </div>
+        <Button
+          type="button"
+          variant="ghost"
+          size="sm"
+          className="text-muted-foreground"
+          onClick={() => {
+            setSent(false);
+            setEmail('');
+          }}
+        >
+          Use a different email
+        </Button>
       </div>
     );
   }

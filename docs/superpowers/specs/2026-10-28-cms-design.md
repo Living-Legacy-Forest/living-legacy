@@ -273,7 +273,7 @@ drag-to-reorder.
   for the admin.
 - Responsive down to phone width; editing on a phone works, but the editor is
   optimised for desktop.
-- Light and dark themes.
+- Light theme only: white and neutral greys. Charts are the only colour, from the website palette.
 
 ## 11. Testing
 

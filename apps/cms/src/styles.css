@@ -4,20 +4,11 @@
 @import 'tw-animate-css';
 @import 'shadcn/tailwind.css';
 
-/* Dark mode follows the operating system. No toggle, no flash, no script. */
-@custom-variant dark (@media (prefers-color-scheme: dark));
+/* Light only. `dark:` utilities match a .dark class that is never set, so the
+   admin stays white even when the operating system is in dark mode. */
+@custom-variant dark (&:where(.dark, .dark *));
 
-/* Brand palette shared with apps/web (src/styles/global.css). */
 @theme {
-  --color-paper: #f6f2e9;
-  --color-paper-deep: #ece5d6;
-  --color-ink: #17231c;
-  --color-ink-soft: #4b5b51;
-  --color-moss: #4a6f4f;
-  --color-moss-deep: #2c4633;
-  --color-bark: #7d6b54;
-  --color-sun: #d8c493;
-
   --font-display: 'Fraunces Variable', ui-serif, Georgia, serif;
   --font-sans: 'Instrument Sans Variable', ui-sans-serif, system-ui, sans-serif;
 }
@@ -56,78 +47,41 @@
 }
 
 :root {
-  --background: #fbf9f4;
-  --foreground: var(--color-ink);
-  --card: #ffffff;
-  --card-foreground: var(--color-ink);
-  --popover: #ffffff;
-  --popover-foreground: var(--color-ink);
-  --primary: var(--color-moss-deep);
-  --primary-foreground: var(--color-paper);
-  --secondary: var(--color-paper-deep);
-  --secondary-foreground: var(--color-ink);
-  --muted: var(--color-paper-deep);
-  --muted-foreground: var(--color-ink-soft);
-  --accent: var(--color-paper-deep);
-  --accent-foreground: var(--color-moss-deep);
-  --destructive: oklch(0.52 0.16 30);
-  --border: color-mix(in oklab, var(--color-bark) 22%, transparent);
-  --input: color-mix(in oklab, var(--color-bark) 35%, transparent);
-  --ring: var(--color-moss);
+  --background: oklch(1 0 0);
+  --foreground: oklch(0.145 0 0);
+  --card: oklch(1 0 0);
+  --card-foreground: oklch(0.145 0 0);
+  --popover: oklch(1 0 0);
+  --popover-foreground: oklch(0.145 0 0);
+  --primary: oklch(0.205 0 0);
+  --primary-foreground: oklch(0.985 0 0);
+  --secondary: oklch(0.97 0 0);
+  --secondary-foreground: oklch(0.205 0 0);
+  --muted: oklch(0.97 0 0);
+  --muted-foreground: oklch(0.556 0 0);
+  --accent: oklch(0.97 0 0);
+  --accent-foreground: oklch(0.205 0 0);
+  --destructive: oklch(0.577 0.245 27.325);
+  --border: oklch(0.922 0 0);
+  --input: oklch(0.922 0 0);
+  --ring: oklch(0.708 0 0);
   --radius: 0.625rem;
 
-  --sidebar: var(--color-paper);
-  --sidebar-foreground: var(--color-ink);
-  --sidebar-primary: var(--color-moss-deep);
-  --sidebar-primary-foreground: var(--color-paper);
-  --sidebar-accent: var(--color-paper-deep);
-  --sidebar-accent-foreground: var(--color-moss-deep);
-  --sidebar-border: color-mix(in oklab, var(--color-bark) 22%, transparent);
-  --sidebar-ring: var(--color-moss);
+  --sidebar: oklch(1 0 0);
+  --sidebar-foreground: oklch(0.145 0 0);
+  --sidebar-primary: oklch(0.205 0 0);
+  --sidebar-primary-foreground: oklch(0.985 0 0);
+  --sidebar-accent: oklch(0.97 0 0);
+  --sidebar-accent-foreground: oklch(0.205 0 0);
+  --sidebar-border: oklch(0.922 0 0);
+  --sidebar-ring: oklch(0.708 0 0);
 
-  --chart-1: var(--color-moss);
+  /* Charts are the only colour, taken from the website's palette. */
+  --chart-1: #4a6f4f;
   --chart-2: #b89b5e;
-  --chart-3: var(--color-bark);
+  --chart-3: #7d6b54;
   --chart-4: #8fb08c;
-  --chart-5: var(--color-ink-soft);
-}
-
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #101813;
-    --foreground: #ece5d6;
-    --card: #17231c;
-    --card-foreground: #ece5d6;
-    --popover: #17231c;
-    --popover-foreground: #ece5d6;
-    --primary: #a9c4a6;
-    --primary-foreground: #101813;
-    --secondary: #223128;
-    --secondary-foreground: #ece5d6;
-    --muted: #223128;
-    --muted-foreground: #a7b3aa;
-    --accent: #223128;
-    --accent-foreground: #d8e6d5;
-    --destructive: oklch(0.65 0.17 28);
-    --border: color-mix(in oklab, #ece5d6 14%, transparent);
-    --input: color-mix(in oklab, #ece5d6 22%, transparent);
-    --ring: #8fb08c;
-
-    --sidebar: #131d17;
-    --sidebar-foreground: #ece5d6;
-    --sidebar-primary: #a9c4a6;
-    --sidebar-primary-foreground: #101813;
-    --sidebar-accent: #223128;
-    --sidebar-accent-foreground: #d8e6d5;
-    --sidebar-border: color-mix(in oklab, #ece5d6 12%, transparent);
-    --sidebar-ring: #8fb08c;
-
-    --chart-1: #a9c4a6;
-    --chart-2: var(--color-sun);
-    --chart-3: #b6a184;
-    --chart-4: #6f9a73;
-    --chart-5: #a7b3aa;
-  }
+  --chart-5: #a3a3a3;
 }
 
 @layer base {
@@ -136,7 +90,7 @@
   }
 
   html {
-    color-scheme: light dark;
+    color-scheme: light;
   }
 
   body {

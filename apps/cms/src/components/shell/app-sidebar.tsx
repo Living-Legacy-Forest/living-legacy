@@ -20,7 +20,7 @@ export function AppSidebar({ user }: { user: SessionUser }) {
   const allowed = (item: NavItem) => !item.permission || can(user.role, item.permission);
 
   return (
-    <Sidebar collapsible="icon">
+    <Sidebar collapsible="icon" variant="inset">
       <SidebarHeader className="pb-1">
         <SidebarMenu>
           <SidebarMenuItem>

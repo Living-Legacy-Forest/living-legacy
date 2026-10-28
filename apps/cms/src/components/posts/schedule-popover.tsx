@@ -12,6 +12,35 @@ const MIN_LEAD_MS = 60_000;
 
 const pad = (n: number) => String(n).padStart(2, '0');
 
+/**
+ * Reads times typed the way people write them: "9", "9am", "9:30 pm",
+ * "21:10", "0930". Returns 24-hour "HH:MM", or null if it is not a time.
+ */
+export function parseTime(text: string): string | null {
+  const match = text
+    .trim()
+    .toLowerCase()
+    .match(/^(\d{1,2})(?:[:.]?(\d{2}))?\s*(a|am|p|pm)?$/);
+  if (!match) return null;
+  let hour = Number(match[1]);
+  const minute = Number(match[2] ?? 0);
+  const meridiem = match[3]?.[0];
+  if (minute > 59) return null;
+  if (meridiem) {
+    if (hour < 1 || hour > 12) return null;
+    hour = (hour % 12) + (meridiem === 'p' ? 12 : 0);
+  } else if (hour > 23) {
+    return null;
+  }
+  return `${pad(hour)}:${pad(minute)}`;
+}
+
+/** "21:10" becomes "9:10 pm", the way Australians write times. */
+export function displayTime(time: string) {
+  const [hour = 0, minute = 0] = time.split(':').map(Number);
+  return `${hour % 12 || 12}:${pad(minute)} ${hour < 12 ? 'am' : 'pm'}`;
+}
+
 // The calendar works in plain calendar days; times are Melbourne wall-clock
 // times, converted to an instant only when scheduling.
 const dayOf = (wall: WallTime) => new Date(wall.year, wall.month, wall.day);
@@ -47,7 +76,7 @@ function presets(now = Date.now()) {
 
 /**
  * Chevron next to the Publish button that opens a date and time picker.
- * Times are the browser's local time, labelled with its time zone.
+ * Times are Melbourne time, whatever the editor's own time zone.
  */
 export function SchedulePopover({
   scheduledAt,
@@ -63,15 +92,22 @@ export function SchedulePopover({
   const [open, setOpen] = useState(false);
   const [day, setDay] = useState<Date | undefined>();
   const [time, setTime] = useState('09:00');
+  // What is in the field; `time` only changes when it reads as a valid time.
+  const [timeText, setTimeText] = useState(displayTime('09:00'));
   const [pending, setPending] = useState(false);
 
+  const applyTime = (next: string) => {
+    setTime(next);
+    setTimeText(displayTime(next));
+  };
   const reset = () => {
     const base = scheduledAt ? toZoned(scheduledAt) : presets()[1]!.at;
     setDay(dayOf(base));
-    setTime(timeOf(base));
+    applyTime(timeOf(base));
   };
 
-  const target = day ? instant(day, time) : null;
+  const timeValid = parseTime(timeText) !== null;
+  const target = day && timeValid ? instant(day, time) : null;
   const tooSoon = target === null || target < Date.now() + MIN_LEAD_MS;
 
   async function submit() {
@@ -102,20 +138,21 @@ export function SchedulePopover({
       >
         <ChevronDownIcon aria-hidden />
       </PopoverTrigger>
-      <PopoverContent align="end" className="w-auto p-0">
+      <PopoverContent align="end" className="w-[22rem] p-0">
         <div className="flex items-center gap-2 border-b px-3 py-2.5 text-[13px] font-medium">
           <CalendarClockIcon aria-hidden className="text-muted-foreground size-4" />
           {scheduledAt ? 'Reschedule' : 'Schedule for later'}
         </div>
-        <div className="flex flex-wrap gap-1.5 px-3 pt-3">
+        <div className="grid grid-cols-3 gap-1.5 px-3 pt-3">
           {presets().map((preset) => (
             <Button
               key={preset.label}
               variant="outline"
               size="xs"
+              className="w-full"
               onClick={() => {
                 setDay(dayOf(preset.at));
-                setTime(timeOf(preset.at));
+                applyTime(timeOf(preset.at));
               }}
             >
               {preset.label}
@@ -127,7 +164,8 @@ export function SchedulePopover({
           selected={day}
           onSelect={setDay}
           disabled={{ before: dayOf(toZoned(Date.now())) }}
-          className="px-3"
+          className="w-full px-3"
+          classNames={{ root: 'w-full' }}
         />
         <div className="space-y-3 border-t p-3">
           <div className="flex items-center gap-2">
@@ -136,20 +174,41 @@ export function SchedulePopover({
             </Label>
             <Input
               id="schedule-time"
-              type="time"
-              step={300}
-              value={time}
-              onChange={(e) => setTime(e.target.value)}
-              className="h-8 w-32"
+              autoComplete="off"
+              placeholder="9:00 am"
+              value={timeText}
+              aria-invalid={!timeValid}
+              onChange={(e) => {
+                setTimeText(e.target.value);
+                const next = parseTime(e.target.value);
+                if (next) setTime(next);
+              }}
+              onBlur={() => {
+                const next = parseTime(timeText);
+                if (next) applyTime(next);
+              }}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter') void submit();
+              }}
+              className="h-8 w-28"
             />
-            <span className="text-muted-foreground text-xs">{zoneName()}</span>
+            <span className="text-muted-foreground text-xs">
+              Melbourne time ({zoneName(target ?? undefined)})
+            </span>
           </div>
-          <p className={cn('text-xs', tooSoon ? 'text-destructive' : 'text-muted-foreground')}>
-            {!target
+          <p
+            className={cn(
+              'text-xs',
+              day && (!timeValid || tooSoon) ? 'text-destructive' : 'text-muted-foreground'
+            )}
+          >
+            {!day
               ? 'Pick a day.'
-              : tooSoon
-                ? 'Pick a time at least a minute from now.'
-                : `Publishes ${formatDateTime(target)} ${zoneName(target)}.`}
+              : !timeValid
+                ? 'Enter a time like 9:30 am or 21:30.'
+                : tooSoon || target === null
+                  ? 'Pick a time at least a minute from now.'
+                  : `Publishes ${formatDateTime(target)} ${zoneName(target)}.`}
           </p>
           <div className="flex justify-end gap-2">
             {scheduledAt && (

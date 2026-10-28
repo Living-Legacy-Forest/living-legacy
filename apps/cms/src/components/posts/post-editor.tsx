@@ -8,15 +8,22 @@ import {
 } from '@llf/content';
 import { ClientOnly, Link, useBlocker, useNavigate, useRouter } from '@tanstack/react-router';
 import {
+  CalendarClockIcon,
   CheckIcon,
   ChevronRightIcon,
   EyeIcon,
   EyeOffIcon,
+  FolderIcon,
+  GlobeIcon,
+  LinkIcon,
+  type LucideIcon,
   MoreHorizontalIcon,
   PlusIcon,
   SendIcon,
+  TagIcon,
   Trash2Icon,
   Undo2Icon,
+  UserIcon,
 } from 'lucide-react';
 import { type ReactNode, Suspense, lazy, useEffect, useRef, useState } from 'react';
 import { toast } from 'sonner';
@@ -528,7 +535,7 @@ export function PostEditor({
       <aside className="space-y-6 text-[13px] lg:sticky lg:top-6 lg:self-start lg:border-l lg:pl-6">
         <section className="space-y-0.5">
           <h2 className="text-muted-foreground mb-2 text-xs font-medium">Properties</h2>
-          <Property label="Author">
+          <Property label="Author" icon={UserIcon}>
             <SinglePicker
               label="Author"
               options={data.authors}
@@ -537,7 +544,7 @@ export function PostEditor({
               onChange={(authorId) => update({ authorId })}
             />
           </Property>
-          <Property label="Categories">
+          <Property label="Categories" icon={FolderIcon}>
             <MultiPicker
               label="Categories"
               options={categories}
@@ -547,7 +554,7 @@ export function PostEditor({
               onCreate={addCategory}
             />
           </Property>
-          <Property label="Tags">
+          <Property label="Tags" icon={TagIcon}>
             <MultiPicker
               label="Tags"
               options={tagOptions(data.tags, values.tags)}
@@ -557,7 +564,7 @@ export function PostEditor({
               onCreate={async (name) => update({ tags: [...values.tags, name] })}
             />
           </Property>
-          <Property label="URL">
+          <Property label="URL" icon={LinkIcon}>
             <UrlPicker
               slug={values.slug}
               liveSlug={isLive ? saved.slug : null}
@@ -568,12 +575,12 @@ export function PostEditor({
             />
           </Property>
           {meta.scheduledAt && (
-            <Property label="Goes live">
+            <Property label="Goes live" icon={CalendarClockIcon}>
               <span className="px-2">{formatDateTime(meta.scheduledAt)}</span>
             </Property>
           )}
           {meta.publishedAt && (
-            <Property label="Published">
+            <Property label="Published" icon={GlobeIcon}>
               <span className="text-muted-foreground px-2">{formatDateTime(meta.publishedAt)}</span>
             </Property>
           )}
@@ -645,10 +652,21 @@ function tagOptions(existing: string[], assigned: string[]): Option[] {
     .map((name) => ({ id: name, name }));
 }
 
-function Property({ label, children }: { label: string; children: ReactNode }) {
+function Property({
+  label,
+  icon: Icon,
+  children,
+}: {
+  label: string;
+  icon: LucideIcon;
+  children: ReactNode;
+}) {
   return (
-    <div className="grid min-h-8 grid-cols-[5.5rem_minmax(0,1fr)] items-center">
-      <span className="text-muted-foreground">{label}</span>
+    <div className="grid min-h-8 grid-cols-[6.5rem_minmax(0,1fr)] items-center">
+      <span className="text-muted-foreground flex items-center gap-2">
+        <Icon aria-hidden className="size-3.5 shrink-0" />
+        {label}
+      </span>
       <div className="min-w-0">{children}</div>
     </div>
   );

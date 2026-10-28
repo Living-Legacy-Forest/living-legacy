@@ -11,6 +11,7 @@
     {
       "binding": "DB",
       "database_name": "living-legacy-db",
+      "database_id": "6c172a87-78c0-4d32-b8b6-cf57324d1197",
       "migrations_dir": "../../packages/db/migrations"
     }
   ],

@@ -1,0 +1,7 @@
+# Refuse packages published within the last 24 hours, so a compromised release
+# has time to be caught and pulled before it can reach us. Dependabot's cooldown
+# in .github/dependabot.yml is set above this window so the two do not
+# contradict each other. Bun runs no dependency lifecycle scripts unless the
+# package is listed in "trustedDependencies", so none run today.
+[install]
+minimumReleaseAge = 86400

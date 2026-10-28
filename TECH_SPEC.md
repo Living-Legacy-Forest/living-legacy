@@ -6,15 +6,15 @@ A reference for the technical stack, third-party services, conventions, and buil
 
 ## 1. Overview
 
-|                     |                                                                                   |
-| ------------------- | --------------------------------------------------------------------------------- |
-| **Site**            | https://livinglegacyforest.com.au                                                 |
-| **Repo**            | github.com/Living-Legacy-Forest/living-legacy                                     |
-| **Default branch**  | `master`                                                                          |
-| **Branching**       | Trunk-based; PRs target `master`                                                  |
-| **Maintainer**      | Sister Creatives                                                                  |
-| **Node**            | `>=22.13.0` (pinned to `22.23.1` via `.node-version`; pnpm 11 requires `>=22.13`) |
-| **Package manager** | `pnpm`                                                                            |
+|                     |                                                                                        |
+| ------------------- | -------------------------------------------------------------------------------------- |
+| **Site**            | https://livinglegacyforest.com.au                                                      |
+| **Repo**            | github.com/Living-Legacy-Forest/living-legacy                                          |
+| **Default branch**  | `master`                                                                               |
+| **Branching**       | Trunk-based; PRs target `master`                                                       |
+| **Maintainer**      | Sister Creatives                                                                       |
+| **Node**            | `>=22.13.0` (pinned to `22.23.1` via `.node-version`; Astro and ESLint run under Node) |
+| **Package manager** | Bun workspaces (`apps/web` is this site, `apps/cms` the CMS)                           |
 
 ---
 
@@ -53,7 +53,7 @@ A reference for the technical stack, third-party services, conventions, and buil
 Astro 7's `@astrojs/cloudflare` v14 **dropped Cloudflare Pages support**, so the site deploys as a Worker with static assets. `dist/server/` is the Worker, `dist/client/` is served through the `ASSETS` binding.
 
 - Adapter: `@astrojs/cloudflare` with `imageService: 'compile'`.
-- Build command: `pnpm build`
+- Build command: `bun run --filter @llf/web build`
 - Build output: `dist/` (`server/` + `client/`)
 
 ### Wrangler config (`wrangler.jsonc`)
@@ -97,7 +97,7 @@ There is no publish webhook and no scheduled rebuild. Pages render on demand and
 ## 6. CI/CD
 
 - **`ci.yml`**: gitleaks → install → audit → type-check → lint → format check → build → commitlint. Runs on pull requests targeting `master` and on push to `master`.
-- **Supply chain**: pnpm refuses packages published within the last 24 hours (`minimumReleaseAge` in `pnpm-workspace.yaml`). Dependabot's `cooldown` is set to 2 days so it never proposes an update CI would reject.
+- **Supply chain**: Bun refuses packages published within the last 24 hours (`minimumReleaseAge` in `bunfig.toml`) and runs no dependency install scripts. Dependabot's `cooldown` is set to 2 days so it never proposes an update CI would reject.
 - **`dependabot.yml`**: weekly grouped dependency updates (astro, sanity, tailwind, lucide). Major version bumps require manual review.
 
 ---

@@ -1,43 +1,54 @@
-# Astro Starter Kit: Minimal
+# Living Legacy Forest
+
+Monorepo for livinglegacyforest.com.au and its content management system.
+
+| Path               | What it is                                                                |
+| ------------------ | ------------------------------------------------------------------------- |
+| `apps/web`         | Public website. Astro on Cloudflare Workers, content from Sanity for now. |
+| `apps/cms`         | Custom CMS admin. TanStack Start + shadcn/ui on Cloudflare Workers.       |
+| `packages/db`      | Drizzle schema, D1 migrations and typed queries shared by both apps.      |
+| `packages/content` | Shared content rules: roles, permissions, Zod schemas.                    |
+
+Design: [`docs/superpowers/specs/2026-10-28-cms-design.md`](docs/superpowers/specs/2026-10-28-cms-design.md).
+Website stack details: [`TECH_SPEC.md`](TECH_SPEC.md).
+
+## Setup
+
+Requires Bun (version pinned in `package.json` → `packageManager`) and Node (`.node-version`),
+because Astro and ESLint run under Node.
 
 ```sh
-pnpm create astro@latest -- --template minimal
+bun install
 ```
 
-> 🧑‍🚀 **Seasoned astronaut?** Delete this file. Have fun!
+### Website
 
-## 🚀 Project Structure
-
-Inside of your Astro project, you'll see the following folders and files:
-
-```text
-/
-├── public/
-├── src/
-│   └── pages/
-│       └── index.astro
-└── package.json
+```sh
+cp apps/web/.env.example apps/web/.env
+bun run dev:web            # http://localhost:4321
 ```
 
-Astro looks for `.astro` or `.md` files in the `src/pages/` directory. Each page is exposed as a route based on its file name.
+### CMS
 
-There's nothing special about `src/components/`, but that's where we like to put any Astro/React/Vue/Svelte/Preact components.
+```sh
+cp apps/cms/.dev.vars.example apps/cms/.dev.vars   # fill in the values
+bun run --filter @llf/cms db:migrate:local
+bun run dev:cms            # http://localhost:3100
+```
 
-Any static assets, like images, can be placed in the `public/` directory.
+Sign-in is Google only and invite-only. Put your own email in `BOOTSTRAP_ADMIN_EMAILS` to get
+in as the first Admin.
 
-## 🧞 Commands
+## Database changes
 
-All commands are run from the root of the project, from a terminal:
+1. Edit the schema in `packages/db/src/schema/`.
+2. `bun run --filter @llf/db generate -- --name <what-changed>` writes a migration to
+   `packages/db/migrations/`.
+3. `bun run --filter @llf/cms db:migrate:local` applies it locally.
+4. After `wrangler.jsonc` binding changes, run `bun run --filter @llf/cms cf-typegen`.
 
-| Command                | Action                                           |
-| :--------------------- | :----------------------------------------------- |
-| `pnpm install`         | Installs dependencies                            |
-| `pnpm dev`             | Starts local dev server at `localhost:4321`      |
-| `pnpm build`           | Build your production site to `./dist/`          |
-| `pnpm preview`         | Preview your build locally, before deploying     |
-| `pnpm astro ...`       | Run CLI commands like `astro add`, `astro check` |
-| `pnpm astro -- --help` | Get help using the Astro CLI                     |
+## Checks (same as CI)
 
-## 👀 Want to learn more?
-
-Feel free to check [our documentation](https://docs.astro.build) or jump into our [Discord server](https://astro.build/chat).
+```sh
+bun run type-check && bun run lint && bun run format:check && bun run test && bun run build
+```

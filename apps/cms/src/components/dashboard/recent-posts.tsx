@@ -1,3 +1,4 @@
+import { Link } from '@tanstack/react-router';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Item, ItemContent, ItemDescription, ItemGroup, ItemTitle } from '@/components/ui/item';
 import { formatRelative } from '@/lib/format';
@@ -47,8 +48,12 @@ function PostList({
       ) : (
         <ItemGroup className="gap-0">
           {posts.map((post) => (
-            // Links to the editor once it exists (milestone 3).
-            <Item key={post.id} size="sm" className="px-0">
+            <Item
+              key={post.id}
+              size="sm"
+              className="-mx-2 px-2"
+              render={<Link to="/posts/$postId" params={{ postId: post.id }} />}
+            >
               <ItemContent>
                 <ItemTitle className="line-clamp-1">{post.title || 'Untitled'}</ItemTitle>
                 <ItemDescription>

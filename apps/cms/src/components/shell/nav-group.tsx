@@ -11,7 +11,7 @@ import {
   SidebarMenuSubButton,
   SidebarMenuSubItem,
 } from '@/components/ui/sidebar';
-import type { NavGroup as NavGroupType, NavItem } from '@/lib/nav';
+import { type NavGroup as NavGroupType, type NavItem, isNavItemActive } from '@/lib/nav';
 import { cn } from '@/lib/utils';
 import { navItemClass, navItemSoonClass } from './nav-styles';
 
@@ -30,7 +30,9 @@ export function NavGroup({ label, items }: NavGroupType) {
       <SidebarMenu className="gap-px">
         {items.map((item) => {
           const Icon = item.icon;
-          const active = item.to === pathname || !!item.items?.some((sub) => sub.to === pathname);
+          const active =
+            isNavItemActive(item, pathname) ||
+            !!item.items?.some((sub) => isNavItemActive(sub, pathname));
 
           if (isSoon(item)) {
             return (
@@ -78,7 +80,7 @@ export function NavGroup({ label, items }: NavGroupType) {
                       <SidebarMenuSubItem key={sub.title}>
                         {sub.to ? (
                           <SidebarMenuSubButton
-                            isActive={sub.to === pathname}
+                            isActive={isNavItemActive(sub, pathname)}
                             className="h-7 text-[13px]"
                             render={<Link to={sub.to} />}
                           >

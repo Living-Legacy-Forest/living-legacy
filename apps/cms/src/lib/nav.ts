@@ -17,7 +17,7 @@ export type NavItem = {
   title: string;
   icon?: LucideIcon;
   /** Set once the section exists. Items without one show as "Soon". */
-  to?: '/';
+  to?: '/' | '/posts' | '/posts/new';
   permission?: Permission;
   items?: NavItem[];
 };
@@ -37,8 +37,8 @@ export const navGroups: NavGroup[] = [
         title: 'Posts',
         icon: FileText,
         items: [
-          { title: 'All posts' },
-          { title: 'Add new' },
+          { title: 'All posts', to: '/posts' },
+          { title: 'Add new', to: '/posts/new' },
           { title: 'Categories' },
           { title: 'Tags' },
         ],
@@ -63,8 +63,21 @@ export const footerLinks: { title: string; href: string; icon: LucideIcon }[] = 
   { title: 'View website', href: 'https://livinglegacyforest.com.au', icon: ExternalLink },
 ];
 
-/** Nav item for the current path, used for the header breadcrumb. */
+const allNavItems = navGroups.flatMap((g) => g.items.flatMap((i) => [i, ...(i.items ?? [])]));
+
+/**
+ * Nav item for the current path, used for the header breadcrumb. Falls back
+ * to the closest parent, so /posts/abc shows "All posts".
+ */
 export function findNavItem(pathname: string): NavItem | undefined {
-  const all = navGroups.flatMap((g) => g.items.flatMap((i) => [i, ...(i.items ?? [])]));
-  return all.find((item) => item.to === pathname);
+  const exact = allNavItems.find((item) => item.to === pathname);
+  if (exact) return exact;
+  return allNavItems
+    .filter((item) => item.to && item.to !== '/' && pathname.startsWith(`${item.to}/`))
+    .sort((a, b) => (b.to?.length ?? 0) - (a.to?.length ?? 0))[0];
+}
+
+/** Whether a nav item should show as active for the current path. */
+export function isNavItemActive(item: NavItem, pathname: string) {
+  return findNavItem(pathname) === item;
 }

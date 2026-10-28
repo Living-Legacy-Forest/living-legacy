@@ -1,4 +1,6 @@
 export const LOCALE = 'en-AU';
+// Fixed so server and browser render the same dates (no hydration mismatch).
+export const TIME_ZONE = 'Australia/Melbourne';
 
 /** Noon anchor avoids off-by-one labels around timezone boundaries for ISO date strings. */
 export function parseIsoCalendarDate(isoDate: string): Date {
@@ -52,4 +54,24 @@ export function formatRelative(timestamp: number, now = Date.now()) {
     if (Math.abs(diff) >= ms) return relative.format(Math.round(diff / ms), unit);
   }
   return 'just now';
+}
+
+export function formatDate(timestamp: number) {
+  return new Date(timestamp).toLocaleDateString(LOCALE, {
+    timeZone: TIME_ZONE,
+    day: 'numeric',
+    month: 'short',
+    year: 'numeric',
+  });
+}
+
+export function formatDateTime(timestamp: number) {
+  return new Date(timestamp).toLocaleString(LOCALE, {
+    timeZone: TIME_ZONE,
+    day: 'numeric',
+    month: 'short',
+    year: 'numeric',
+    hour: 'numeric',
+    minute: '2-digit',
+  });
 }

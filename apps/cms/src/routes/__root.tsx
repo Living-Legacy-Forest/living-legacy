@@ -38,7 +38,7 @@ function NotFound() {
   return (
     <main className="grid min-h-svh place-items-center p-6 text-center">
       <div className="space-y-4">
-        <h1 className="text-3xl">Page not found</h1>
+        <h1 className="text-2xl">Page not found</h1>
         <p className="text-muted-foreground">This page does not exist or has been moved.</p>
         <Button render={<Link to="/" />}>Back to dashboard</Button>
       </div>

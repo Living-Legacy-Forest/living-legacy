@@ -1,4 +1,5 @@
 import { type Permission, can } from '@llf/content';
+import { Link } from '@tanstack/react-router';
 import {
   FilePlus2Icon,
   type LucideIcon,
@@ -20,16 +21,18 @@ import type { SessionUser } from '@/lib/session';
 
 type Action = {
   title: string;
+  /** Set once the destination exists; otherwise the action shows as "Soon". */
+  to?: '/posts/new';
   description: string;
   icon: LucideIcon;
   permission: Permission;
 };
 
-// Each becomes a link as its section of the CMS is built.
 const actions: Action[] = [
   {
     title: 'New post',
     description: 'Write a blog post.',
+    to: '/posts/new',
     icon: FilePlus2Icon,
     permission: 'content:write',
   },
@@ -63,21 +66,41 @@ export function QuickActions({ user }: { user: SessionUser }) {
         <CardDescription>Shortcuts to common tasks.</CardDescription>
       </CardHeader>
       <CardContent className="grid gap-2 sm:grid-cols-2 lg:grid-cols-4">
-        {visible.map((action) => (
-          <Item key={action.title} variant="outline" size="sm" aria-disabled className="opacity-70">
-            <ItemMedia variant="icon">
-              <action.icon aria-hidden />
-            </ItemMedia>
-            <ItemContent>
-              <ItemTitle>{action.title}</ItemTitle>
-              <ItemDescription className="line-clamp-1">{action.description}</ItemDescription>
-            </ItemContent>
-            <ItemActions>
-              <Badge variant="outline">Soon</Badge>
-            </ItemActions>
-          </Item>
-        ))}
+        {visible.map((action) =>
+          action.to ? (
+            <Item key={action.title} variant="outline" size="sm" render={<Link to={action.to} />}>
+              <ActionBody action={action} />
+            </Item>
+          ) : (
+            <Item
+              key={action.title}
+              variant="outline"
+              size="sm"
+              aria-disabled
+              className="opacity-70"
+            >
+              <ActionBody action={action} />
+              <ItemActions>
+                <Badge variant="outline">Soon</Badge>
+              </ItemActions>
+            </Item>
+          )
+        )}
       </CardContent>
     </Card>
+  );
+}
+
+function ActionBody({ action }: { action: Action }) {
+  return (
+    <>
+      <ItemMedia variant="icon">
+        <action.icon aria-hidden />
+      </ItemMedia>
+      <ItemContent>
+        <ItemTitle>{action.title}</ItemTitle>
+        <ItemDescription className="line-clamp-1">{action.description}</ItemDescription>
+      </ItemContent>
+    </>
   );
 }

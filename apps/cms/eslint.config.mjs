@@ -15,8 +15,19 @@ const sharedRules = {
 };
 
 export default [
-  // routeTree.gen.ts is generated; components/ui is vendored from shadcn.
-  { ignores: ['dist/**', '.wrangler/**', 'src/routeTree.gen.ts', 'worker-configuration.d.ts'] },
+  // Generated files, plus the editorcn editor and extensions, which are vendored
+  // as-is from their registry (still type-checked). components/ui and the
+  // editor template are edited here, so they stay linted.
+  {
+    ignores: [
+      'dist/**',
+      '.wrangler/**',
+      'src/routeTree.gen.ts',
+      'worker-configuration.d.ts',
+      'src/components/editor/**',
+      'src/components/extensions/**',
+    ],
+  },
   {
     files: ['**/*.ts'],
     plugins: { '@typescript-eslint': tseslint },

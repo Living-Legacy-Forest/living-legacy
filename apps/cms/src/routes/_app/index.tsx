@@ -17,7 +17,7 @@ function DashboardPage() {
 
   return (
     <div className="space-y-6">
-      <h1 className="text-3xl">Welcome, {firstName}</h1>
+      <h1 className="text-2xl">Welcome, {firstName}</h1>
       <Dashboard data={data} user={user} />
     </div>
   );

@@ -1,16 +1,19 @@
-@import '@fontsource-variable/fraunces';
-@import '@fontsource-variable/instrument-sans';
+/* Inter with the optical size axis: tighter letterforms at display sizes. */
+@import '@fontsource-variable/inter/opsz.css';
 @import 'tailwindcss';
 @import 'tw-animate-css';
 @import 'shadcn/tailwind.css';
+@import './components/editor/style.css';
+@import './components/extensions/ui/style.css';
+@import './components/extensions/table/style.css';
+@import './components/static-renderer/style.css';
 
 /* Light only. `dark:` utilities match a .dark class that is never set, so the
    admin stays white even when the operating system is in dark mode. */
 @custom-variant dark (&:where(.dark, .dark *));
 
 @theme {
-  --font-display: 'Fraunces Variable', ui-serif, Georgia, serif;
-  --font-sans: 'Instrument Sans Variable', ui-sans-serif, system-ui, sans-serif;
+  --font-sans: 'Inter Variable', ui-sans-serif, system-ui, sans-serif;
 }
 
 @theme inline {
@@ -65,7 +68,7 @@
   --border: oklch(0.922 0 0);
   --input: oklch(0.922 0 0);
   --ring: oklch(0.708 0 0);
-  --radius: 0.625rem;
+  --radius: 0.375rem;
 
   /* The sidebar is the app surface; content sits on it as a white panel. */
   --sidebar: oklch(0.975 0 0);

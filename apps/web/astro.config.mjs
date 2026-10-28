@@ -56,6 +56,9 @@ export default defineConfig({
   // immediately, with no rebuild step.
   output: 'server',
   adapter: cloudflare({ imageService: 'compile' }),
+  // Unused. Left on, the adapter adds a SESSION KV binding that every deploy
+  // would try to provision.
+  session: false,
   prefetch: {
     prefetchAll: false,
     defaultStrategy: 'hover',

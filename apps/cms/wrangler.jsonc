@@ -1,42 +1,22 @@
 {
   "$schema": "node_modules/wrangler/config-schema.json",
-  "name": "llf-cms",
+  "name": "living-legacy-cms",
   "main": "./src/server.ts",
   // Publishes scheduled posts. Times are UTC; every five minutes.
   "triggers": { "crons": ["*/5 * * * *"] },
   "compatibility_date": "2026-10-20",
   "compatibility_flags": ["nodejs_compat"],
   "observability": { "enabled": true },
-  // No resource IDs: wrangler dev creates local copies, and the first deploy
-  // provisions the remote D1 database and R2 bucket and links them.
   "d1_databases": [
     {
       "binding": "DB",
-      "database_name": "llf-cms",
+      "database_name": "living-legacy-db",
       "migrations_dir": "../../packages/db/migrations"
     }
   ],
-  "r2_buckets": [{ "binding": "MEDIA", "bucket_name": "llf-media" }],
+  // The MEDIA (R2) binding is added once the bucket exists; nothing reads it yet.
   "vars": {
-    "BETTER_AUTH_URL": "http://localhost:3100"
-  },
-  "env": {
-    "staging": {
-      "name": "llf-cms-staging",
-      "d1_databases": [
-        {
-          "binding": "DB",
-          "database_name": "living-legacy-stag",
-          "database_id": "7d61806e-f881-4c4b-8b61-a98644401771",
-          "migrations_dir": "../../packages/db/migrations"
-        }
-      ],
-      // R2 is deferred until the bucket is created; media uploads are disabled
-      // on staging until a `"r2_buckets"` binding for MEDIA is added back here.
-      // The CMS hostname is still an open decision (spec section 13). Until a
-      // custom domain is set, auth runs against the Worker's own *.workers.dev
-      // URL; replace this with "https://<host>" once a domain is chosen.
-      "vars": { "BETTER_AUTH_URL": "https://llf-cms-staging.living-legacy.workers.dev" }
-    }
+    // Local dev overrides this with http://localhost:3100 in .dev.vars.
+    "BETTER_AUTH_URL": "https://living-legacy-cms.living-legacy.workers.dev"
   }
 }

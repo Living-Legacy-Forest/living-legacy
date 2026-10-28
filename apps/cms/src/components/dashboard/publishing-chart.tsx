@@ -1,6 +1,14 @@
+import { ChartAreaIcon } from 'lucide-react';
 import { useId, useMemo, useState } from 'react';
 import { Area, AreaChart, CartesianGrid, XAxis, YAxis } from 'recharts';
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
+import {
+  Empty,
+  EmptyDescription,
+  EmptyHeader,
+  EmptyMedia,
+  EmptyTitle,
+} from '@/components/ui/empty';
 import {
   type ChartConfig,
   ChartContainer,
@@ -66,51 +74,65 @@ export function PublishingChart({ activity }: { activity: DashboardData['activit
         </Select>
       </CardHeader>
       <CardContent>
-        <ChartContainer className="aspect-auto h-60 w-full p-0" config={chartConfig}>
-          <AreaChart
-            accessibilityLayer
-            data={[...rows]}
-            margin={{ left: 8, right: 8, top: 8, bottom: 0 }}
-          >
-            <defs>
-              <linearGradient id={gradientId} x1="0" x2="0" y1="0" y2="1">
-                <stop offset="0%" stopColor="var(--color-published)" stopOpacity={0.25} />
-                <stop offset="100%" stopColor="var(--color-published)" stopOpacity={0} />
-              </linearGradient>
-            </defs>
-            <CartesianGrid horizontal={false} strokeDasharray="2 2" />
-            <XAxis
-              axisLine={false}
-              dataKey="date"
-              interval={xAxisIntervalByPeriod[periodDays]}
-              minTickGap={16}
-              tickFormatter={(value) => formatChartAxisTick(String(value), periodDays)}
-              tickLine={false}
-              tickMargin={8}
-            />
-            <YAxis hide allowDecimals={false} domain={[0, (max: number) => Math.max(max, 2)]} />
-            <ChartTooltip
-              content={
-                <ChartTooltipContent
-                  className="min-w-40"
-                  indicator="line"
-                  labelFormatter={(_, payload) => {
-                    const date = (payload?.[0]?.payload as { date?: string } | undefined)?.date;
-                    return date ? formatChartTooltipDate(date) : '';
-                  }}
-                />
-              }
-            />
-            <Area
-              dataKey="published"
-              dot={false}
-              fill={`url(#${gradientId})`}
-              stroke="var(--color-published)"
-              strokeWidth={2}
-              type="monotone"
-            />
-          </AreaChart>
-        </ChartContainer>
+        {total === 0 ? (
+          <Empty className="h-60">
+            <EmptyHeader>
+              <EmptyMedia variant="icon">
+                <ChartAreaIcon aria-hidden />
+              </EmptyMedia>
+              <EmptyTitle>Nothing published</EmptyTitle>
+              <EmptyDescription>
+                No posts were published in the last {periodDays} days.
+              </EmptyDescription>
+            </EmptyHeader>
+          </Empty>
+        ) : (
+          <ChartContainer className="aspect-auto h-60 w-full p-0" config={chartConfig}>
+            <AreaChart
+              accessibilityLayer
+              data={[...rows]}
+              margin={{ left: 8, right: 8, top: 8, bottom: 0 }}
+            >
+              <defs>
+                <linearGradient id={gradientId} x1="0" x2="0" y1="0" y2="1">
+                  <stop offset="0%" stopColor="var(--color-published)" stopOpacity={0.25} />
+                  <stop offset="100%" stopColor="var(--color-published)" stopOpacity={0} />
+                </linearGradient>
+              </defs>
+              <CartesianGrid horizontal={false} strokeDasharray="2 2" />
+              <XAxis
+                axisLine={false}
+                dataKey="date"
+                interval={xAxisIntervalByPeriod[periodDays]}
+                minTickGap={16}
+                tickFormatter={(value) => formatChartAxisTick(String(value), periodDays)}
+                tickLine={false}
+                tickMargin={8}
+              />
+              <YAxis hide allowDecimals={false} domain={[0, (max: number) => Math.max(max, 2)]} />
+              <ChartTooltip
+                content={
+                  <ChartTooltipContent
+                    className="min-w-40"
+                    indicator="line"
+                    labelFormatter={(_, payload) => {
+                      const date = (payload?.[0]?.payload as { date?: string } | undefined)?.date;
+                      return date ? formatChartTooltipDate(date) : '';
+                    }}
+                  />
+                }
+              />
+              <Area
+                dataKey="published"
+                dot={false}
+                fill={`url(#${gradientId})`}
+                stroke="var(--color-published)"
+                strokeWidth={2}
+                type="monotone"
+              />
+            </AreaChart>
+          </ChartContainer>
+        )}
       </CardContent>
       <CardFooter className="text-muted-foreground text-xs">
         {total === 0

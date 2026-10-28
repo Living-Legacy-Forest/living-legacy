@@ -33,6 +33,14 @@ import {
 import { Button } from '@/components/ui/button';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import {
+  Empty,
+  EmptyContent,
+  EmptyDescription,
+  EmptyHeader,
+  EmptyMedia,
+  EmptyTitle,
+} from '@/components/ui/empty';
+import {
   Command,
   CommandEmpty,
   CommandGroup,
@@ -287,10 +295,15 @@ export function PostEditor({
   if (meta.trashed && meta.id) {
     const id = meta.id;
     return (
-      <div className="mx-auto max-w-md space-y-4 py-24 text-center">
-        <h1 className="text-xl">{values.title || 'Untitled'}</h1>
-        <p className="text-muted-foreground text-sm">This post is in the trash.</p>
-        <div className="flex justify-center gap-2">
+      <Empty>
+        <EmptyHeader>
+          <EmptyMedia variant="icon">
+            <Trash2Icon aria-hidden />
+          </EmptyMedia>
+          <EmptyTitle>{values.title || 'Untitled'} is in the trash</EmptyTitle>
+          <EmptyDescription>Restore it as a draft to keep editing.</EmptyDescription>
+        </EmptyHeader>
+        <EmptyContent className="flex-row justify-center">
           <Button
             variant="outline"
             size="sm"
@@ -308,8 +321,8 @@ export function PostEditor({
           >
             Restore
           </Button>
-        </div>
-      </div>
+        </EmptyContent>
+      </Empty>
     );
   }
 
@@ -578,6 +591,18 @@ function Section({
   );
 }
 
+/** Compact empty state for the property pickers. */
+function PickerEmpty() {
+  return (
+    <Empty className="gap-1 p-4">
+      <EmptyHeader className="gap-1">
+        <EmptyTitle className="text-[13px]">No matches</EmptyTitle>
+        <EmptyDescription className="text-xs">Try a different name.</EmptyDescription>
+      </EmptyHeader>
+    </Empty>
+  );
+}
+
 const valueButtonClass =
   'h-7 w-full justify-start gap-1.5 px-2 text-[13px] font-normal hover:bg-accent data-[popup-open]:bg-accent';
 
@@ -638,7 +663,9 @@ function MultiPicker({
             onValueChange={setSearch}
           />
           <CommandList>
-            <CommandEmpty>Nothing found.</CommandEmpty>
+            <CommandEmpty className="p-0">
+              <PickerEmpty />
+            </CommandEmpty>
             <CommandGroup>
               {options.map((option) => (
                 <CommandItem key={option.id} value={option.name} onSelect={() => toggle(option.id)}>
@@ -709,7 +736,9 @@ function SinglePicker({
         <Command>
           <CommandInput placeholder={`Find ${label.toLowerCase()}…`} />
           <CommandList>
-            <CommandEmpty>Nothing found.</CommandEmpty>
+            <CommandEmpty className="p-0">
+              <PickerEmpty />
+            </CommandEmpty>
             <CommandGroup>
               {[{ id: '', name: placeholder }, ...options].map((option) => (
                 <CommandItem

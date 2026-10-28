@@ -1,5 +1,13 @@
+import { type LucideIcon, PencilLineIcon, SendIcon } from 'lucide-react';
 import { Link } from '@tanstack/react-router';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import {
+  Empty,
+  EmptyDescription,
+  EmptyHeader,
+  EmptyMedia,
+  EmptyTitle,
+} from '@/components/ui/empty';
 import { Item, ItemContent, ItemDescription, ItemGroup, ItemTitle } from '@/components/ui/item';
 import { formatRelative } from '@/lib/format';
 import type { PostSummary } from '@/server/dashboard';
@@ -17,12 +25,25 @@ export function RecentPosts({
         <CardTitle>Recent posts</CardTitle>
       </CardHeader>
       <CardContent className="grid gap-6 sm:grid-cols-2">
-        <PostList title="Drafts" verb="Edited" posts={drafts} empty="No drafts." />
+        <PostList
+          title="Drafts"
+          verb="Edited"
+          posts={drafts}
+          empty={{
+            icon: PencilLineIcon,
+            title: 'No drafts',
+            description: 'Saved drafts show up here.',
+          }}
+        />
         <PostList
           title="Recently published"
           verb="Published"
           posts={published}
-          empty="Nothing published yet."
+          empty={{
+            icon: SendIcon,
+            title: 'Nothing published yet',
+            description: 'Published posts show up here.',
+          }}
         />
       </CardContent>
     </Card>
@@ -38,13 +59,21 @@ function PostList({
   title: string;
   verb: string;
   posts: PostSummary[];
-  empty: string;
+  empty: { icon: LucideIcon; title: string; description: string };
 }) {
   return (
     <section className="space-y-2">
       <h2 className="text-muted-foreground text-xs font-medium">{title}</h2>
       {posts.length === 0 ? (
-        <p className="text-muted-foreground text-sm">{empty}</p>
+        <Empty className="border py-8">
+          <EmptyHeader>
+            <EmptyMedia variant="icon">
+              <empty.icon aria-hidden />
+            </EmptyMedia>
+            <EmptyTitle className="text-sm">{empty.title}</EmptyTitle>
+            <EmptyDescription>{empty.description}</EmptyDescription>
+          </EmptyHeader>
+        </Empty>
       ) : (
         <ItemGroup className="gap-0">
           {posts.map((post) => (

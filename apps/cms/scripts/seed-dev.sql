@@ -49,3 +49,16 @@ INSERT OR REPLACE INTO faqs (id, question, group_id, sort_order, status, publish
   ('seed_faq_1', 'Can we visit the tree after the ceremony?', 'seed_faq_group', 0, 'published', unixepoch('now') * 1000, unixepoch('now') * 1000, unixepoch('now') * 1000),
   ('seed_faq_2', 'Which trees can we choose from?', 'seed_faq_group', 1, 'published', unixepoch('now') * 1000, unixepoch('now') * 1000, unixepoch('now') * 1000),
   ('seed_faq_3', 'How long does the tree take to grow?', 'seed_faq_group', 2, 'published', unixepoch('now') * 1000, unixepoch('now') * 1000, unixepoch('now') * 1000);
+
+-- A fictional second editor and publish history, so the activity feed in the
+-- header has something to show. This account cannot sign in.
+INSERT OR REPLACE INTO user (id, name, email, email_verified, role, created_at, updated_at)
+VALUES ('seed_user_editor', 'Sample Editor', 'sample.editor@example.com', 1, 'editor',
+  unixepoch('now') * 1000, unixepoch('now') * 1000);
+
+INSERT OR REPLACE INTO revisions (id, entity_type, entity_id, snapshot, created_by, created_at) VALUES
+  ('seed_rev_1', 'post', 'seed_post_4', '{"title": "Visiting the forest through the seasons", "slug": "forest-through-the-seasons", "excerpt": "What to expect each season.", "body": null, "authorId": "seed_team_1", "categoryIds": ["seed_cat_forests"], "tags": [], "seoTitle": "", "seoDescription": "", "noindex": false}', 'seed_user_editor', (unixepoch('now') - 24 * 86400) * 1000),
+  ('seed_rev_2', 'post', 'seed_post_3', '{"title": "How the Living Legacy Formula works", "slug": "living-legacy-formula", "excerpt": "The science behind the formula.", "body": null, "authorId": "seed_team_1", "categoryIds": ["seed_cat_forests"], "tags": [], "seoTitle": "", "seoDescription": "", "noindex": false}', 'seed_user_editor', (unixepoch('now') - 16 * 86400) * 1000),
+  ('seed_rev_3', 'post', 'seed_post_2', '{"title": "Choosing a native tree for your loved one", "slug": "choosing-a-native-tree", "excerpt": "How families choose a species.", "body": null, "authorId": "seed_team_1", "categoryIds": ["seed_cat_guides"], "tags": [], "seoTitle": "", "seoDescription": "", "noindex": false}', 'seed_user_editor', (unixepoch('now') - 9 * 86400) * 1000),
+  ('seed_rev_4', 'post', 'seed_post_1', '{"title": "What happens at a tree planting ceremony", "slug": "tree-planting-ceremony", "excerpt": "A gentle walk through the day.", "body": null, "authorId": "seed_team_1", "categoryIds": ["seed_cat_guides"], "tags": [], "seoTitle": "", "seoDescription": "", "noindex": false}', 'seed_user_editor', (unixepoch('now') - 3 * 86400) * 1000),
+  ('seed_rev_5', 'post', 'seed_post_1', '{"title": "What happens at a tree planting ceremony", "slug": "tree-planting-ceremony", "excerpt": "A gentle walk through the day.", "body": null, "authorId": "seed_team_1", "categoryIds": ["seed_cat_guides"], "tags": [], "seoTitle": "", "seoDescription": "", "noindex": false}', 'seed_user_editor', (unixepoch('now') - 2 * 3600) * 1000);

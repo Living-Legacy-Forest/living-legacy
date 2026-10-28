@@ -3,12 +3,19 @@ import { Link, useNavigate } from '@tanstack/react-router';
 import {
   ChevronLeftIcon,
   ChevronRightIcon,
+  CircleAlertIcon,
   ExternalLinkIcon,
+  FileTextIcon,
+  type LucideIcon,
   MoreHorizontalIcon,
+  PanelRightIcon,
   PencilIcon,
+  PencilLineIcon,
   PlusIcon,
   RotateCcwIcon,
   SearchIcon,
+  SearchXIcon,
+  SendIcon,
   Trash2Icon,
   XIcon,
 } from 'lucide-react';
@@ -25,6 +32,14 @@ import {
 } from '@/components/ui/alert-dialog';
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
+import {
+  Empty,
+  EmptyContent,
+  EmptyDescription,
+  EmptyHeader,
+  EmptyMedia,
+  EmptyTitle,
+} from '@/components/ui/empty';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -157,7 +172,7 @@ export function PostsList({
           />
           <input
             aria-label="Search posts by title"
-            placeholder="Search"
+            placeholder="Filter by title"
             value={query}
             onChange={(e) => setQuery(e.target.value)}
             className="bg-muted/60 placeholder:text-muted-foreground focus-visible:bg-background focus-visible:ring-ring h-8 w-full rounded-md pr-2 pl-8 text-[13px] outline-none focus-visible:ring-1"
@@ -489,11 +504,16 @@ function PreviewPane({
 
   if (!row) {
     return (
-      <section
-        aria-label="Preview"
-        className="text-muted-foreground hidden items-center justify-center text-[13px] lg:flex"
-      >
-        Select a post to preview it.
+      <section aria-label="Preview" className="hidden lg:flex">
+        <Empty>
+          <EmptyHeader>
+            <EmptyMedia variant="icon">
+              <PanelRightIcon aria-hidden />
+            </EmptyMedia>
+            <EmptyTitle>No post selected</EmptyTitle>
+            <EmptyDescription>Choose a post from the list to preview it here.</EmptyDescription>
+          </EmptyHeader>
+        </Empty>
       </section>
     );
   }
@@ -574,7 +594,15 @@ function PreviewPane({
       </div>
       <div className="min-h-0 flex-1 overflow-y-auto">
         {error ? (
-          <p className="text-muted-foreground p-8 text-[13px]">{error}</p>
+          <Empty className="h-full">
+            <EmptyHeader>
+              <EmptyMedia variant="icon">
+                <CircleAlertIcon aria-hidden />
+              </EmptyMedia>
+              <EmptyTitle>Could not load this post</EmptyTitle>
+              <EmptyDescription>{error}</EmptyDescription>
+            </EmptyHeader>
+          </Empty>
         ) : loading || !post ? (
           <div className="mx-auto max-w-xl space-y-4 px-8 py-10">
             <div className="bg-muted h-7 w-3/4 animate-pulse rounded" />
@@ -589,37 +617,71 @@ function PreviewPane({
   );
 }
 
+const emptyStates = {
+  all: {
+    icon: FileTextIcon,
+    title: 'No posts yet',
+    description: 'Write your first post and it will appear here.',
+  },
+  published: {
+    icon: SendIcon,
+    title: 'Nothing published yet',
+    description: 'Published posts appear here once they are live on the website.',
+  },
+  draft: {
+    icon: PencilLineIcon,
+    title: 'No drafts',
+    description: 'Posts you save without publishing appear here.',
+  },
+  trash: {
+    icon: Trash2Icon,
+    title: 'The trash is empty',
+    description: 'Posts you move to the trash stay here until they are deleted.',
+  },
+} satisfies Record<PostStatusTab, { icon: LucideIcon; title: string; description: string }>;
+
 function EmptyState({ search }: { search: PostListSearch }) {
   const filtered = Boolean(search.q || search.category);
-  const message = filtered
-    ? 'No posts match these filters.'
-    : search.status === 'trash'
-      ? 'The trash is empty.'
-      : search.status === 'draft'
-        ? 'No drafts.'
-        : search.status === 'published'
-          ? 'Nothing published yet.'
-          : 'No posts yet.';
+  const {
+    icon: Icon,
+    title,
+    description,
+  } = filtered
+    ? {
+        icon: SearchXIcon,
+        title: 'No matching posts',
+        description: 'Try a different title or category, or clear the filters.',
+      }
+    : emptyStates[search.status];
 
   return (
-    <div className="flex flex-1 flex-col items-center justify-center gap-3 p-8 text-center">
-      <p className="text-muted-foreground text-[13px]">{message}</p>
-      {filtered ? (
-        <Button
-          variant="ghost"
-          size="sm"
-          render={<Link to="/posts" search={{ status: search.status }} />}
-          nativeButton={false}
-        >
-          Clear filters
-        </Button>
-      ) : (
-        search.status !== 'trash' && (
-          <Button size="sm" render={<Link to="/posts/new" />} nativeButton={false}>
-            Write a post
-          </Button>
-        )
+    <Empty>
+      <EmptyHeader>
+        <EmptyMedia variant="icon">
+          <Icon aria-hidden />
+        </EmptyMedia>
+        <EmptyTitle>{title}</EmptyTitle>
+        <EmptyDescription>{description}</EmptyDescription>
+      </EmptyHeader>
+      {(filtered || search.status !== 'trash') && (
+        <EmptyContent>
+          {filtered ? (
+            <Button
+              variant="outline"
+              size="sm"
+              render={<Link to="/posts" search={{ status: search.status }} />}
+              nativeButton={false}
+            >
+              Clear filters
+            </Button>
+          ) : (
+            <Button size="sm" render={<Link to="/posts/new" />} nativeButton={false}>
+              <PlusIcon aria-hidden data-icon="inline-start" />
+              New post
+            </Button>
+          )}
+        </EmptyContent>
       )}
-    </div>
+    </Empty>
   );
 }

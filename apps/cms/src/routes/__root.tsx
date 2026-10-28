@@ -1,6 +1,15 @@
+import { FileQuestionIcon } from 'lucide-react';
 import { HeadContent, Link, Scripts, createRootRoute } from '@tanstack/react-router';
 import type { ReactNode } from 'react';
 import { Button } from '@/components/ui/button';
+import {
+  Empty,
+  EmptyContent,
+  EmptyDescription,
+  EmptyHeader,
+  EmptyMedia,
+  EmptyTitle,
+} from '@/components/ui/empty';
 import { Toaster } from '@/components/ui/sonner';
 import { TooltipProvider } from '@/components/ui/tooltip';
 import styles from '../styles.css?url';
@@ -36,12 +45,23 @@ function RootDocument({ children }: { children: ReactNode }) {
 
 function NotFound() {
   return (
-    <main className="grid min-h-svh place-items-center p-6 text-center">
-      <div className="space-y-4">
-        <h1 className="text-2xl">Page not found</h1>
-        <p className="text-muted-foreground">This page does not exist or has been moved.</p>
-        <Button render={<Link to="/" />}>Back to dashboard</Button>
-      </div>
+    <main className="flex min-h-svh p-6">
+      <Empty>
+        <EmptyHeader>
+          <EmptyMedia variant="icon">
+            <FileQuestionIcon aria-hidden />
+          </EmptyMedia>
+          <EmptyTitle>
+            <h1>Page not found</h1>
+          </EmptyTitle>
+          <EmptyDescription>This page does not exist or has been moved.</EmptyDescription>
+        </EmptyHeader>
+        <EmptyContent>
+          <Button size="sm" render={<Link to="/" />} nativeButton={false}>
+            Back to dashboard
+          </Button>
+        </EmptyContent>
+      </Empty>
     </main>
   );
 }

@@ -1,6 +1,14 @@
+import { ChartPieIcon } from 'lucide-react';
 import { useMemo } from 'react';
 import { LabelList, Pie, PieChart } from 'recharts';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import {
+  Empty,
+  EmptyDescription,
+  EmptyHeader,
+  EmptyMedia,
+  EmptyTitle,
+} from '@/components/ui/empty';
 import {
   type ChartConfig,
   ChartContainer,
@@ -55,9 +63,15 @@ export function CategoryChart({ categories }: { categories: DashboardData['categ
       </CardHeader>
       <CardContent className="my-auto p-0">
         {pieData.length === 0 ? (
-          <p className="text-muted-foreground px-6 py-16 text-center text-sm">
-            No published posts in a category yet.
-          </p>
+          <Empty className="py-12">
+            <EmptyHeader>
+              <EmptyMedia variant="icon">
+                <ChartPieIcon aria-hidden />
+              </EmptyMedia>
+              <EmptyTitle>No categories in use</EmptyTitle>
+              <EmptyDescription>Published posts with a category appear here.</EmptyDescription>
+            </EmptyHeader>
+          </Empty>
         ) : (
           <ChartContainer className="aspect-auto h-72 w-full" config={chartConfig}>
             <PieChart accessibilityLayer>

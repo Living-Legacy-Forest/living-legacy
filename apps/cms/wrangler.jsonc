@@ -26,7 +26,8 @@
       "d1_databases": [
         {
           "binding": "DB",
-          "database_name": "llf-cms-staging",
+          "database_name": "living-legacy-stag",
+          "database_id": "7d61806e-f881-4c4b-8b61-a98644401771",
           "migrations_dir": "../../packages/db/migrations"
         }
       ],

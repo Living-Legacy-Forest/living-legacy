@@ -44,7 +44,6 @@ jobs:
       pull-requests: write # sticky preview comment
     env:
       CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
-      CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
       FORCE_COLOR: 0
     defaults:
       run:
@@ -63,6 +62,13 @@ jobs:
       - name: Install (frozen lockfile)
         working-directory: .
         run: bun install --frozen-lockfile
+
+      # Tolerate a stray newline or spaces in the stored secret: wrangler rejects
+      # any whitespace in the account id.
+      - name: Resolve Cloudflare account id
+        env:
+          RAW_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+        run: echo "CLOUDFLARE_ACCOUNT_ID=$(printf '%s' "$RAW_ACCOUNT_ID" | tr -d '[:space:]')" >> "$GITHUB_ENV"
 
       - name: Build
         run: bun run build

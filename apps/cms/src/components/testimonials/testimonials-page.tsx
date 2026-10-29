@@ -89,7 +89,7 @@ export function TestimonialsPage({
     run(() => deleteTestimonial({ data: { id } }), 'Testimonial removed.');
 
   return (
-    <div className="flex flex-1 flex-col gap-4 lg:h-[calc(100svh-7.5rem)] lg:min-h-0">
+    <div className="flex flex-col gap-4 lg:h-[calc(100svh-7.5rem)]">
       <div className="flex flex-wrap items-center gap-3">
         <h1 className="mr-auto text-xl">Testimonials</h1>
         {canWrite && (

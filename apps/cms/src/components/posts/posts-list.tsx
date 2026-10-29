@@ -164,7 +164,7 @@ export function PostsList({
   const selectedRow = data.rows.find((r) => r.id === selectedId) ?? null;
 
   return (
-    <div className="flex flex-1 flex-col gap-4 lg:h-[calc(100svh-7.5rem)] lg:min-h-0">
+    <div className="flex flex-col gap-4 lg:h-[calc(100svh-7.5rem)]">
       <div className="flex flex-wrap items-center gap-3">
         <h1 className="mr-auto text-xl">Posts</h1>
         <div className="relative w-full sm:w-56">

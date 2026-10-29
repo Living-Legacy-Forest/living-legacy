@@ -1,6 +1,6 @@
 import { can } from '@llf/content';
 import { Link } from '@tanstack/react-router';
-import { TreeDeciduous } from 'lucide-react';
+import { TreeDeciduous } from '@/components/icons';
 import {
   Sidebar,
   SidebarContent,

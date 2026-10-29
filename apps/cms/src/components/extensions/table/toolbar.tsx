@@ -1,6 +1,6 @@
 'use client';
 import type { ChainedCommands, Editor } from '@tiptap/core';
-import { CheckIcon, Grid3x3 as GridIcon } from 'lucide-react';
+import { CheckIcon, GridIcon } from '@/components/icons';
 import { useRef, useState } from 'react';
 
 import { useToolbar, useToolbarEditor } from '../core/context';

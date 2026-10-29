@@ -1,5 +1,5 @@
 import { Toaster as Sonner, type ToasterProps } from 'sonner';
-import { CircleCheckIcon, InfoIcon, TriangleAlertIcon, OctagonXIcon } from 'lucide-react';
+import { CircleCheckIcon, InfoIcon, TriangleAlertIcon, OctagonXIcon } from '@/components/icons';
 import { Spinner } from '@/components/ui/spinner';
 
 const Toaster = ({ ...props }: ToasterProps) => {

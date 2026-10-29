@@ -1,6 +1,6 @@
 'use client';
 
-import { Image } from 'lucide-react';
+import { Image } from '@/components/icons';
 
 import { useToolbar, useToolbarEditor } from '../core/context';
 import { useEditorState } from '../core/editor-state';

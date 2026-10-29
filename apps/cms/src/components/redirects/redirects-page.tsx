@@ -1,4 +1,4 @@
-import { ArrowRightIcon, PencilIcon, PlusIcon, Trash2Icon } from 'lucide-react';
+import { ArrowRightIcon, PencilIcon, PlusIcon, Trash2Icon } from '@/components/icons';
 import { useState } from 'react';
 import {
   AlertDialog,

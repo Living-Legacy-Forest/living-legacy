@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import {
   ChevronDownIcon,
   ChevronUpIcon,
@@ -7,8 +8,7 @@ import {
   PencilIcon,
   PlusIcon,
   Trash2Icon,
-} from 'lucide-react';
-import { useState } from 'react';
+} from '@/components/icons';
 import {
   AlertDialog,
   AlertDialogAction,

@@ -1,5 +1,5 @@
 import { type Role } from '@llf/content';
-import { Trash2Icon, UserPlusIcon } from 'lucide-react';
+import { Trash2Icon, UserPlusIcon } from '@/components/icons';
 import { useState } from 'react';
 import {
   AlertDialog,

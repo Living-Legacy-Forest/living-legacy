@@ -11,7 +11,7 @@ import {
   Settings,
   UserCog,
   Users,
-} from 'lucide-react';
+} from '@/components/icons';
 
 export type NavItem = {
   title: string;

@@ -1,4 +1,4 @@
-import { CalendarClockIcon, ChevronDownIcon } from 'lucide-react';
+import { CalendarClockIcon, ChevronDownIcon } from '@/components/icons';
 import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Calendar } from '@/components/ui/calendar';

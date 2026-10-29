@@ -6,7 +6,7 @@ import {
   MessageCircleQuestionIcon,
   UploadIcon,
   UserPlusIcon,
-} from 'lucide-react';
+} from '@/components/icons';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import {

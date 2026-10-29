@@ -1,4 +1,4 @@
-import { ChartPieIcon } from 'lucide-react';
+import { ChartPieIcon } from '@/components/icons';
 import { useMemo } from 'react';
 import { LabelList, Pie, PieChart } from 'recharts';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';

@@ -10,7 +10,7 @@ import {
   TrendingDownIcon,
   ArrowDownIcon,
   ChevronDownIcon,
-} from 'lucide-react';
+} from '@/components/icons';
 
 type DeltaIconVariant = 'default' | 'trend' | 'arrow';
 type DeltaVariant = 'default' | 'badge';

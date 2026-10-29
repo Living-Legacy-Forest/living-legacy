@@ -1,5 +1,5 @@
 import { Link } from '@tanstack/react-router';
-import { BellIcon } from 'lucide-react';
+import { BellIcon } from '@/components/icons';
 import { useCallback, useEffect, useState } from 'react';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';

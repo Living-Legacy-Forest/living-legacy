@@ -1,4 +1,4 @@
-import { AlignCenter, AlignJustify, AlignLeft, AlignRight } from 'lucide-react';
+import { AlignCenter, AlignJustify, AlignLeft, AlignRight } from '@/components/icons';
 
 export const TEXT_STYLES = [
   { className: '', label: 'Paragraph', value: '0' },

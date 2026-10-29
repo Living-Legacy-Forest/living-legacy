@@ -76,12 +76,16 @@ export function CommandMenu({ user }: { user: SessionUser }) {
   const { toggleSidebar, state, isMobile } = useSidebar();
   // The dialog is centred on the whole window, but the sidebar isn't part of
   // the page's content; without this it sits visibly off-centre, pulled
-  // toward the sidebar. Shift it right by half the sidebar's current width.
+  // toward the sidebar. Shift it right by half of what the sidebar column
+  // (including the SidebarInset's own margins) actually takes up: 15rem
+  // sidebar + 0.5rem right margin, or 3rem icon rail + 1rem gap + 0.5rem
+  // left margin + 0.5rem right margin when collapsed. Verified empirically
+  // against the built CSS, not just read off the source.
   const dialogOffsetClass = isMobile
     ? ''
     : state === 'expanded'
-      ? 'left-[calc(50%+7.5rem)]'
-      : 'left-[calc(50%+1.5rem)]';
+      ? 'left-[calc(50%+7.25rem)]'
+      : 'left-[calc(50%+2rem)]';
   const [open, setOpen] = useState(false);
   const [query, setQuery] = useState('');
   const [results, setResults] = useState<SearchResults | null>(null);

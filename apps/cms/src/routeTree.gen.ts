@@ -15,7 +15,7 @@ import { Route as AppIndexRouteImport } from './routes/_app/index'
 import { Route as AppPostsIndexRouteImport } from './routes/_app/posts/index'
 import { Route as AppPostsPostIdRouteImport } from './routes/_app/posts/$postId'
 import { Route as AppPostsNewRouteImport } from './routes/_app/posts/new'
-import { Route as AppTeamIndexRouteImport } from './routes/_app/team/index'
+import { Route as AppTestimonialsIndexRouteImport } from './routes/_app/testimonials/index'
 import { Route as AppUsersIndexRouteImport } from './routes/_app/users/index'
 import { Route as ApiAuthSplatRouteImport } from './routes/api/auth/$'
 import { Route as PreviewPostsPostIdRouteImport } from './routes/preview/posts/$postId'
@@ -49,9 +49,9 @@ const AppPostsNewRoute = AppPostsNewRouteImport.update({
   path: '/posts/new',
   getParentRoute: () => AppRoute,
 } as any)
-const AppTeamIndexRoute = AppTeamIndexRouteImport.update({
-  id: '/team/',
-  path: '/team/',
+const AppTestimonialsIndexRoute = AppTestimonialsIndexRouteImport.update({
+  id: '/testimonials/',
+  path: '/testimonials/',
   getParentRoute: () => AppRoute,
 } as any)
 const AppUsersIndexRoute = AppUsersIndexRouteImport.update({
@@ -78,7 +78,7 @@ export interface FileRoutesByFullPath {
   '/api/auth/$': typeof ApiAuthSplatRoute
   '/preview/posts/$postId': typeof PreviewPostsPostIdRoute
   '/posts/': typeof AppPostsIndexRoute
-  '/team/': typeof AppTeamIndexRoute
+  '/testimonials/': typeof AppTestimonialsIndexRoute
   '/users/': typeof AppUsersIndexRoute
 }
 export interface FileRoutesByTo {
@@ -89,7 +89,7 @@ export interface FileRoutesByTo {
   '/api/auth/$': typeof ApiAuthSplatRoute
   '/preview/posts/$postId': typeof PreviewPostsPostIdRoute
   '/posts': typeof AppPostsIndexRoute
-  '/team': typeof AppTeamIndexRoute
+  '/testimonials': typeof AppTestimonialsIndexRoute
   '/users': typeof AppUsersIndexRoute
 }
 export interface FileRoutesById {
@@ -102,7 +102,7 @@ export interface FileRoutesById {
   '/api/auth/$': typeof ApiAuthSplatRoute
   '/preview/posts/$postId': typeof PreviewPostsPostIdRoute
   '/_app/posts/': typeof AppPostsIndexRoute
-  '/_app/team/': typeof AppTeamIndexRoute
+  '/_app/testimonials/': typeof AppTestimonialsIndexRoute
   '/_app/users/': typeof AppUsersIndexRoute
 }
 export interface FileRouteTypes {
@@ -115,7 +115,7 @@ export interface FileRouteTypes {
     | '/api/auth/$'
     | '/preview/posts/$postId'
     | '/posts/'
-    | '/team/'
+    | '/testimonials/'
     | '/users/'
   fileRoutesByTo: FileRoutesByTo
   to:
@@ -126,7 +126,7 @@ export interface FileRouteTypes {
     | '/api/auth/$'
     | '/preview/posts/$postId'
     | '/posts'
-    | '/team'
+    | '/testimonials'
     | '/users'
   id:
     | '__root__'
@@ -138,7 +138,7 @@ export interface FileRouteTypes {
     | '/api/auth/$'
     | '/preview/posts/$postId'
     | '/_app/posts/'
-    | '/_app/team/'
+    | '/_app/testimonials/'
     | '/_app/users/'
   fileRoutesById: FileRoutesById
 }
@@ -193,11 +193,11 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppPostsNewRouteImport
       parentRoute: typeof AppRoute
     }
-    '/_app/team/': {
-      id: '/_app/team/'
-      path: '/team'
-      fullPath: '/team/'
-      preLoaderRoute: typeof AppTeamIndexRouteImport
+    '/_app/testimonials/': {
+      id: '/_app/testimonials/'
+      path: '/testimonials'
+      fullPath: '/testimonials/'
+      preLoaderRoute: typeof AppTestimonialsIndexRouteImport
       parentRoute: typeof AppRoute
     }
     '/_app/users/': {
@@ -229,7 +229,7 @@ interface AppRouteChildren {
   AppPostsPostIdRoute: typeof AppPostsPostIdRoute
   AppPostsNewRoute: typeof AppPostsNewRoute
   AppPostsIndexRoute: typeof AppPostsIndexRoute
-  AppTeamIndexRoute: typeof AppTeamIndexRoute
+  AppTestimonialsIndexRoute: typeof AppTestimonialsIndexRoute
   AppUsersIndexRoute: typeof AppUsersIndexRoute
 }
 
@@ -238,7 +238,7 @@ const AppRouteChildren: AppRouteChildren = {
   AppPostsPostIdRoute: AppPostsPostIdRoute,
   AppPostsNewRoute: AppPostsNewRoute,
   AppPostsIndexRoute: AppPostsIndexRoute,
-  AppTeamIndexRoute: AppTeamIndexRoute,
+  AppTestimonialsIndexRoute: AppTestimonialsIndexRoute,
   AppUsersIndexRoute: AppUsersIndexRoute,
 }
 

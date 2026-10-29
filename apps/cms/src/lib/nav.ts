@@ -17,7 +17,7 @@ export type NavItem = {
   title: string;
   icon?: LucideIcon;
   /** Set once the section exists. Items without one show as "Soon". */
-  to?: '/' | '/posts' | '/posts/new' | '/users';
+  to?: '/' | '/posts' | '/posts/new' | '/team' | '/users';
   permission?: Permission;
   items?: NavItem[];
 };
@@ -46,7 +46,7 @@ export const navGroups: NavGroup[] = [
       { title: 'Media', icon: ImageIcon },
       { title: 'FAQs', icon: CircleHelp },
       { title: 'Testimonials', icon: Quote },
-      { title: 'Team', icon: Users },
+      { title: 'Team', icon: Users, to: '/team' },
     ],
   },
   {

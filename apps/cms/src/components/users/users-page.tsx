@@ -45,6 +45,7 @@ import {
 } from '@/components/ui/table';
 import { formatDate } from '@/lib/format';
 import { useAction } from '@/lib/use-action';
+import { cn } from '@/lib/utils';
 import {
   type TeamData,
   changeUserRole,
@@ -54,8 +55,8 @@ import {
 } from '@/server/users';
 
 const roleItems = [
-  { value: 'editor', label: 'Editor' },
-  { value: 'admin', label: 'Admin' },
+  { value: 'editor', label: 'Editor', description: 'Write and publish content.' },
+  { value: 'admin', label: 'Admin', description: 'Full access, plus users and settings.' },
 ];
 
 const tableCellPadding = '[&_td]:px-4 [&_th]:px-4';
@@ -273,12 +274,17 @@ function InviteDialog() {
           </Button>
         }
       />
-      <DialogContent className="sm:max-w-sm">
+      <DialogContent className="sm:max-w-md">
         <DialogHeader>
+          <span className="bg-muted text-foreground mb-1 flex size-10 items-center justify-center rounded-lg">
+            <UserPlusIcon aria-hidden className="size-5" />
+          </span>
           <DialogTitle>Invite someone</DialogTitle>
-          <DialogDescription>They get an email with a link to sign in.</DialogDescription>
+          <DialogDescription>
+            They get an email with a link to sign in. You can change their role later.
+          </DialogDescription>
         </DialogHeader>
-        <form onSubmit={submit} className="space-y-4">
+        <form onSubmit={submit} className="space-y-5">
           <div className="space-y-1.5">
             <Label htmlFor="invite-email">Email</Label>
             <Input
@@ -290,24 +296,28 @@ function InviteDialog() {
               placeholder="name@example.com"
             />
           </div>
-          <div className="space-y-1.5">
-            <Label htmlFor="invite-role">Role</Label>
-            <Select
-              items={roleItems}
-              value={role}
-              onValueChange={(value) => value && setRole(value as Role)}
-            >
-              <SelectTrigger id="invite-role" className="w-full">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                {roleItems.map((item) => (
-                  <SelectItem key={item.value} value={item.value}>
-                    {item.label}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+          <div className="space-y-2">
+            <Label>Role</Label>
+            <div className="grid grid-cols-2 gap-2">
+              {roleItems.map((item) => {
+                const selected = role === item.value;
+                return (
+                  <button
+                    key={item.value}
+                    type="button"
+                    aria-pressed={selected}
+                    onClick={() => setRole(item.value as Role)}
+                    className={cn(
+                      'focus-visible:ring-ring rounded-lg border p-3 text-left transition-colors outline-none focus-visible:ring-2',
+                      selected ? 'border-foreground bg-muted/50' : 'border-border hover:bg-muted/40'
+                    )}
+                  >
+                    <div className="text-sm font-medium">{item.label}</div>
+                    <div className="text-muted-foreground mt-0.5 text-xs">{item.description}</div>
+                  </button>
+                );
+              })}
+            </div>
           </div>
           <DialogFooter>
             <DialogClose render={<Button type="button" variant="outline" />}>Cancel</DialogClose>

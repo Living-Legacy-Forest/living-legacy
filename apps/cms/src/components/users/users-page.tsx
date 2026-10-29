@@ -58,6 +58,8 @@ const roleItems = [
   { value: 'admin', label: 'Admin' },
 ];
 
+const tableCellPadding = '[&_td]:px-4 [&_th]:px-4';
+
 type TeamUser = TeamData['users'][number];
 
 function initials(name: string): string {
@@ -71,20 +73,46 @@ function initials(name: string): string {
   );
 }
 
+function Section({
+  title,
+  count,
+  children,
+}: {
+  title: string;
+  count: number;
+  children: React.ReactNode;
+}) {
+  return (
+    <section className="space-y-2.5">
+      <div className="flex items-baseline gap-2">
+        <h2 className="text-sm font-medium">{title}</h2>
+        <span className="text-muted-foreground text-xs tabular-nums">{count}</span>
+      </div>
+      <div className="overflow-hidden rounded-lg border">{children}</div>
+    </section>
+  );
+}
+
 export function UsersPage({ data }: { data: TeamData }) {
   return (
     <div className="mx-auto max-w-3xl space-y-8">
       <div className="flex items-start justify-between gap-4">
         <div className="space-y-1">
-          <h1 className="text-lg font-semibold tracking-tight">Users</h1>
+          <h1 className="text-xl font-semibold tracking-tight">Users</h1>
           <p className="text-muted-foreground text-sm">People who can sign in to the CMS.</p>
         </div>
         <InviteDialog />
       </div>
 
-      <UsersTable data={data} />
+      <Section title="Members" count={data.users.length}>
+        <UsersTable data={data} />
+      </Section>
 
-      {data.invitations.length > 0 && <InvitationsTable invitations={data.invitations} />}
+      {data.invitations.length > 0 && (
+        <Section title="Pending invitations" count={data.invitations.length}>
+          <InvitationsTable invitations={data.invitations} />
+        </Section>
+      )}
     </div>
   );
 }
@@ -93,9 +121,9 @@ function UsersTable({ data }: { data: TeamData }) {
   const { run, pending } = useAction();
 
   return (
-    <Table>
+    <Table className={tableCellPadding}>
       <TableHeader>
-        <TableRow>
+        <TableRow className="hover:bg-transparent">
           <TableHead>Name</TableHead>
           <TableHead className="w-32">Role</TableHead>
           <TableHead className="w-28">Joined</TableHead>
@@ -109,11 +137,11 @@ function UsersTable({ data }: { data: TeamData }) {
           const locked = isSelf || isLastAdmin;
           return (
             <TableRow key={u.id}>
-              <TableCell>
+              <TableCell className="py-2.5">
                 <div className="flex items-center gap-3">
                   <Avatar className="size-8">
                     {u.image && <AvatarImage src={u.image} alt="" />}
-                    <AvatarFallback className="text-xs">
+                    <AvatarFallback className="bg-muted text-xs font-medium">
                       {initials(u.name || u.email)}
                     </AvatarFallback>
                   </Avatar>
@@ -191,6 +219,7 @@ function RemoveUser({
             size="icon-sm"
             disabled={disabled}
             aria-label={`Remove ${label}`}
+            className="text-muted-foreground hover:text-destructive"
           />
         }
       >
@@ -303,48 +332,46 @@ function InvitationsTable({ invitations }: { invitations: TeamData['invitations'
   const { run, pending } = useAction();
 
   return (
-    <div className="space-y-3">
-      <h2 className="text-sm font-medium">Pending invitations</h2>
-      <Table>
-        <TableHeader>
-          <TableRow>
-            <TableHead>Email</TableHead>
-            <TableHead className="w-32">Role</TableHead>
-            <TableHead className="w-28">Invited</TableHead>
-            <TableHead className="w-0" />
+    <Table className={tableCellPadding}>
+      <TableHeader>
+        <TableRow className="hover:bg-transparent">
+          <TableHead>Email</TableHead>
+          <TableHead className="w-32">Role</TableHead>
+          <TableHead className="w-28">Invited</TableHead>
+          <TableHead className="w-0" />
+        </TableRow>
+      </TableHeader>
+      <TableBody>
+        {invitations.map((invite) => (
+          <TableRow key={invite.email}>
+            <TableCell className="py-2.5 text-sm">{invite.email}</TableCell>
+            <TableCell>
+              <Badge variant="outline" className="capitalize">
+                {invite.role}
+              </Badge>
+            </TableCell>
+            <TableCell className="text-muted-foreground text-sm">
+              {formatDate(invite.createdAt)}
+            </TableCell>
+            <TableCell>
+              <Button
+                variant="ghost"
+                size="sm"
+                className="text-muted-foreground"
+                disabled={pending}
+                onClick={() =>
+                  run(
+                    () => revokeInvitation({ data: { email: invite.email } }),
+                    'Invitation revoked.'
+                  )
+                }
+              >
+                Revoke
+              </Button>
+            </TableCell>
           </TableRow>
-        </TableHeader>
-        <TableBody>
-          {invitations.map((invite) => (
-            <TableRow key={invite.email}>
-              <TableCell className="text-sm">{invite.email}</TableCell>
-              <TableCell>
-                <Badge variant="secondary" className="capitalize">
-                  {invite.role}
-                </Badge>
-              </TableCell>
-              <TableCell className="text-muted-foreground text-sm">
-                {formatDate(invite.createdAt)}
-              </TableCell>
-              <TableCell>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  disabled={pending}
-                  onClick={() =>
-                    run(
-                      () => revokeInvitation({ data: { email: invite.email } }),
-                      'Invitation revoked.'
-                    )
-                  }
-                >
-                  Revoke
-                </Button>
-              </TableCell>
-            </TableRow>
-          ))}
-        </TableBody>
-      </Table>
-    </div>
+        ))}
+      </TableBody>
+    </Table>
   );
 }

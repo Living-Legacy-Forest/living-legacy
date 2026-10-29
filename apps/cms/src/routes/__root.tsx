@@ -12,9 +12,17 @@ import {
 } from '@/components/ui/empty';
 import { Toaster } from '@/components/ui/sonner';
 import { TooltipProvider } from '@/components/ui/tooltip';
+import { useThemeSync } from '@/lib/use-theme-sync';
+import { getSiteTheme } from '@/server/settings';
 import styles from '../styles.css?url';
 
+// Runs before hydration so a "system" preference never flashes the wrong
+// colour scheme: the explicit light/dark cases are already resolved
+// server-side via the <html class> below.
+const THEME_INIT_SCRIPT = `(function(){try{var d=document.documentElement;if(d.dataset.themePref==='system'&&window.matchMedia('(prefers-color-scheme: dark)').matches){d.classList.add('dark');}}catch(e){}})();`;
+
 export const Route = createRootRoute({
+  loader: () => getSiteTheme(),
   head: () => ({
     meta: [
       { charSet: 'utf-8' },
@@ -29,9 +37,18 @@ export const Route = createRootRoute({
 });
 
 function RootDocument({ children }: { children: ReactNode }) {
+  const theme = Route.useLoaderData();
+  useThemeSync(theme);
+
   return (
-    <html lang="en-AU">
+    <html
+      lang="en-AU"
+      data-theme-pref={theme}
+      className={theme === 'dark' ? 'dark' : undefined}
+      suppressHydrationWarning
+    >
       <head>
+        <script dangerouslySetInnerHTML={{ __html: THEME_INIT_SCRIPT }} />
         <HeadContent />
       </head>
       <body>

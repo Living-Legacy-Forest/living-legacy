@@ -29,14 +29,25 @@ const defaults = {
 
 export type SiteSettings = typeof defaults;
 
+async function readSiteSettings(): Promise<SiteSettings> {
+  const row = await getDb().query.siteSettings.findFirst({
+    where: eq(siteSettings.id, 'site'),
+  });
+  return { ...defaults, ...(row?.data as Partial<SiteSettings> | undefined) };
+}
+
 export const getSiteSettings = createServerFn({ method: 'GET' })
   .middleware([authMiddleware])
-  .handler(async () => {
-    const row = await getDb().query.siteSettings.findFirst({
-      where: eq(siteSettings.id, 'site'),
-    });
-    return { ...defaults, ...(row?.data as Partial<SiteSettings> | undefined) };
-  });
+  .handler(() => readSiteSettings());
+
+/**
+ * Just the theme, with no auth: the root document needs it to render the
+ * right colour scheme server-side, before a session is known (e.g. login).
+ */
+export const getSiteTheme = createServerFn({ method: 'GET' }).handler(async () => {
+  const { theme } = await readSiteSettings();
+  return theme;
+});
 
 const settingsSchema = z.object({
   siteTitle: z.string().trim().min(1).max(80),

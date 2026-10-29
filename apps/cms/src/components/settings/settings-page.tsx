@@ -21,11 +21,38 @@ const localeItems: { value: Locale; label: string }[] = [
   { value: 'en-US', label: 'English (US)' },
 ];
 
-const themeItems: { value: Theme; label: string }[] = [
-  { value: 'system', label: 'System preference' },
-  { value: 'light', label: 'Light' },
-  { value: 'dark', label: 'Dark' },
-];
+const themeLabels: Record<Theme, string> = {
+  system: 'System preference',
+  light: 'Light',
+  dark: 'Dark',
+};
+
+const themeItems: { value: Theme; label: ReactNode }[] = (
+  Object.keys(themeLabels) as Theme[]
+).map((value) => ({
+  value,
+  label: (
+    <span className="flex items-center gap-1.5">
+      <ThemeSwatch theme={value} />
+      <span className="text-[10px] font-semibold tracking-tight">Aa</span>
+      {themeLabels[value]}
+    </span>
+  ),
+}));
+
+function ThemeSwatch({ theme }: { theme: Theme }) {
+  return (
+    <span
+      aria-hidden
+      className={cn(
+        'ring-border inline-block size-2.5 shrink-0 rounded-full ring-1',
+        theme === 'light' && 'bg-white',
+        theme === 'dark' && 'bg-neutral-900',
+        theme === 'system' && 'bg-[linear-gradient(135deg,white_50%,#171717_50%)]'
+      )}
+    />
+  );
+}
 
 export function SettingsPage({ data }: { data: SiteSettings }) {
   const [values, setValues] = useState(data);

@@ -1,12 +1,14 @@
-import { normaliseEmail, resolveSignupRole } from '@llf/content';
+import { canReceiveMagicLink, normaliseEmail, resolveSignupRole } from '@llf/content';
 import { schema } from '@llf/db';
 import { betterAuth } from 'better-auth';
 import { drizzleAdapter } from 'better-auth/adapters/drizzle';
 import { APIError } from 'better-auth/api';
+import { magicLink } from 'better-auth/plugins';
 import { tanstackStartCookies } from 'better-auth/tanstack-start';
 import { env } from 'cloudflare:workers';
 import { eq } from 'drizzle-orm';
 import { getDb } from './db';
+import { sendMagicLinkEmail } from './email';
 
 function createAuth() {
   const db = getDb();
@@ -23,13 +25,16 @@ function createAuth() {
         verification: schema.verification,
       },
     }),
-    socialProviders: {
-      google: {
-        clientId: env.GOOGLE_CLIENT_ID,
-        clientSecret: env.GOOGLE_CLIENT_SECRET,
-        prompt: 'select_account',
-      },
-    },
+    // Google is optional: enabled only when its credentials are configured.
+    socialProviders: env.GOOGLE_CLIENT_ID
+      ? {
+          google: {
+            clientId: env.GOOGLE_CLIENT_ID,
+            clientSecret: env.GOOGLE_CLIENT_SECRET,
+            prompt: 'select_account',
+          },
+        }
+      : undefined,
     user: {
       additionalFields: {
         role: { type: 'string', required: false, defaultValue: 'editor', input: false },
@@ -64,7 +69,29 @@ function createAuth() {
         },
       },
     },
-    plugins: [tanstackStartCookies()],
+    plugins: [
+      magicLink({
+        expiresIn: 300, // 5 minutes
+        storeToken: 'hashed', // a DB leak must not expose usable links
+        rateLimit: { window: 60, max: 5 },
+        sendMagicLink: async ({ email, url }) => {
+          const normalised = normaliseEmail(email);
+          const [existing, invite] = await Promise.all([
+            db.query.user.findFirst({ where: eq(schema.user.email, normalised) }),
+            db.query.invitation.findFirst({ where: eq(schema.invitation.email, normalised) }),
+          ]);
+          const signupRole = resolveSignupRole(normalised, {
+            bootstrapAdminEmails: env.BOOTSTRAP_ADMIN_EMAILS,
+            invitedRole: invite?.role,
+          });
+          // Invite-only: say nothing to strangers. The user-create hook is the
+          // backstop if a link is ever used for a non-eligible email.
+          if (!canReceiveMagicLink({ hasAccount: Boolean(existing), signupRole })) return;
+          await sendMagicLinkEmail(normalised, url);
+        },
+      }),
+      tanstackStartCookies(),
+    ],
   });
 }
 

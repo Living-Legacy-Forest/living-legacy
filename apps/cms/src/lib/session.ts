@@ -1,6 +1,7 @@
 import { type Permission, type Role, can } from '@llf/content';
 import { createMiddleware, createServerFn } from '@tanstack/react-start';
 import { getRequest } from '@tanstack/react-start/server';
+import { env } from 'cloudflare:workers';
 import { getAuth } from './auth';
 
 export type SessionUser = {
@@ -19,6 +20,11 @@ async function loadUser(): Promise<SessionUser | null> {
 }
 
 export const getCurrentUser = createServerFn({ method: 'GET' }).handler(() => loadUser());
+
+/** Which sign-in methods the login page should offer. */
+export const getLoginOptions = createServerFn({ method: 'GET' }).handler(() => ({
+  google: Boolean(env.GOOGLE_CLIENT_ID),
+}));
 
 /** Every CMS server function goes through this: no session, no access. */
 export const authMiddleware = createMiddleware({ type: 'function' }).server(async ({ next }) => {

@@ -38,6 +38,7 @@ import {
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
 import { Button } from '@/components/ui/button';
+import { Spinner } from '@/components/ui/spinner';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import {
   Empty,
@@ -436,7 +437,16 @@ export function PostEditor({
               disabled={working || (!dirty && meta.id !== null)}
               onClick={() => persist('save')}
             >
-              {busy === 'save' ? 'Saving…' : isLive ? 'Save changes' : 'Save draft'}
+              {busy === 'save' ? (
+                <>
+                  <Spinner data-icon="inline-start" />
+                  Saving…
+                </>
+              ) : isLive ? (
+                'Save changes'
+              ) : (
+                'Save draft'
+              )}
             </Button>
             <div className="flex">
               <Button
@@ -445,14 +455,17 @@ export function PostEditor({
                 onClick={() => persist('publish')}
                 className={cn(!isLive && 'rounded-r-none')}
               >
-                <SendIcon aria-hidden data-icon="inline-start" />
-                {busy === 'publish'
-                  ? 'Publishing…'
-                  : isLive
-                    ? 'Update'
-                    : meta.scheduledAt
-                      ? 'Publish now'
-                      : 'Publish'}
+                {busy === 'publish' ? (
+                  <>
+                    <Spinner data-icon="inline-start" />
+                    Publishing…
+                  </>
+                ) : (
+                  <>
+                    <SendIcon aria-hidden data-icon="inline-start" />
+                    {isLive ? 'Update' : meta.scheduledAt ? 'Publish now' : 'Publish'}
+                  </>
+                )}
               </Button>
               {!isLive && (
                 <SchedulePopover

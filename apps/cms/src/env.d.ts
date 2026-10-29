@@ -3,8 +3,11 @@
 declare namespace Cloudflare {
   interface Env {
     BETTER_AUTH_SECRET: string;
-    GOOGLE_CLIENT_ID: string;
-    GOOGLE_CLIENT_SECRET: string;
+    // Google sign-in is optional; absent unless configured.
+    GOOGLE_CLIENT_ID?: string;
+    GOOGLE_CLIENT_SECRET?: string;
     BOOTSTRAP_ADMIN_EMAILS?: string;
+    // Resend. The key is absent in local dev, where links are logged instead.
+    RESEND_API_KEY?: string;
   }
 }

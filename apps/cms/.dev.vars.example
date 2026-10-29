@@ -1,0 +1,23 @@
+# Copy to .dev.vars for local dev. In staging/production set these with
+# `wrangler secret put <NAME> [--env staging]`.
+
+# Random 32+ character string: `openssl rand -base64 32`
+BETTER_AUTH_SECRET=
+
+# Comma-separated emails that are always allowed in as Admin, so the first
+# admin can sign in before anyone has been invited.
+BOOTSTRAP_ADMIN_EMAILS=
+
+# Resend API key for sending magic-link emails (https://resend.com/api-keys).
+# The sender domain in EMAIL_FROM (wrangler.jsonc) must be verified in Resend.
+# Leave unset in local dev to log the link to the console instead of sending.
+RESEND_API_KEY=
+
+# Optional: Google sign-in. Omit to show only magic-link sign-in.
+# Google Cloud console > Credentials > OAuth client ID, type "Web application".
+# Local redirect URI: http://localhost:3100/api/auth/callback/google
+GOOGLE_CLIENT_ID=
+GOOGLE_CLIENT_SECRET=
+
+# Optional: overrides the deployed URL in wrangler.jsonc for local dev.
+BETTER_AUTH_URL=http://localhost:3100

@@ -20,6 +20,6 @@
     // Local dev overrides this with http://localhost:3100 in .dev.vars.
     "BETTER_AUTH_URL": "https://living-legacy-cms.living-legacy.workers.dev",
     // Magic-link sender. The domain must be verified in Resend.
-    "EMAIL_FROM": "Living Legacy Forest <login@livinglegacyforest.com>"
+    "EMAIL_FROM": "Living Legacy Forest <login@livinglegacy.earth>"
   }
 }

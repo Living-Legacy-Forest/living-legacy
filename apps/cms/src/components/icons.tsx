@@ -119,7 +119,6 @@ export const SearchIcon = make(H.Search01Icon);
 export const SearchXIcon = make(H.SearchRemoveIcon);
 export const XIcon = make(H.Cancel01Icon);
 export const ArrowRightIcon = make(H.ArrowRight01Icon);
-export const TreeDeciduous = make(H.Tree01Icon);
 export const ArchiveIcon = make(H.Archive01Icon);
 export const LayoutDashboardIcon = make(H.DashboardSquare01Icon);
 export const PanelLeftIcon = make(H.SidebarLeftIcon);

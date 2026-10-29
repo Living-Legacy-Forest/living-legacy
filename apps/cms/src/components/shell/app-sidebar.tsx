@@ -1,6 +1,6 @@
 import { can } from '@llf/content';
 import { Link } from '@tanstack/react-router';
-import { TreeDeciduous } from '@/components/icons';
+import logoMark from '@/assets/brand/logo-mark.webp';
 import {
   Sidebar,
   SidebarContent,
@@ -29,9 +29,17 @@ export function AppSidebar({ user }: { user: SessionUser }) {
               className="h-8 gap-2.5 px-1.5 text-[13px] font-semibold"
               render={<Link to="/" />}
             >
-              <span className="bg-foreground text-background flex size-5 shrink-0 items-center justify-center rounded-[5px]">
-                <TreeDeciduous aria-hidden className="size-3!" />
-              </span>
+              {/* White artwork painted in the brand colour via a CSS mask, as on the site and login page. */}
+              <span
+                role="img"
+                aria-label="Living Legacy Forest"
+                className="inline-block size-5 shrink-0"
+                style={{
+                  backgroundColor: '#2c4633',
+                  WebkitMask: `url(${logoMark}) center / contain no-repeat`,
+                  mask: `url(${logoMark}) center / contain no-repeat`,
+                }}
+              />
               <span>Living Legacy Forest</span>
             </SidebarMenuButton>
           </SidebarMenuItem>

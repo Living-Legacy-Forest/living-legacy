@@ -1,4 +1,5 @@
 import { useNavigate } from '@tanstack/react-router';
+import { useState } from 'react';
 import {
   MessageSquareQuoteIcon,
   PanelRightIcon,
@@ -6,8 +7,7 @@ import {
   PlusIcon,
   StarIcon,
   Trash2Icon,
-} from 'lucide-react';
-import { useState } from 'react';
+} from '@/components/icons';
 import {
   AlertDialog,
   AlertDialogAction,

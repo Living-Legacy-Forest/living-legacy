@@ -19,7 +19,7 @@ import {
   SendIcon,
   Trash2Icon,
   XIcon,
-} from 'lucide-react';
+} from '@/components/icons';
 import { type KeyboardEvent, useEffect, useState } from 'react';
 import {
   AlertDialog,

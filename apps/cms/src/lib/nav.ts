@@ -11,13 +11,14 @@ import {
   Settings,
   UserCog,
   Users,
-} from 'lucide-react';
+} from '@/components/icons';
 
 export type NavItem = {
   title: string;
   icon?: LucideIcon;
   /** Set once the section exists. Items without one show as "Soon". */
-  to?: '/' | '/posts' | '/posts/new' | '/faqs' | '/team' | '/testimonials' | '/users';
+  to?:
+    '/' | '/posts' | '/posts/new' | '/faqs' | '/redirects' | '/team' | '/testimonials' | '/users';
   permission?: Permission;
   items?: NavItem[];
 };
@@ -52,7 +53,7 @@ export const navGroups: NavGroup[] = [
   {
     label: 'Admin',
     items: [
-      { title: 'Redirects', icon: ArrowRightLeft, permission: 'redirects:write' },
+      { title: 'Redirects', icon: ArrowRightLeft, to: '/redirects', permission: 'redirects:write' },
       { title: 'Users', icon: UserCog, to: '/users', permission: 'users:manage' },
       { title: 'Settings', icon: Settings, permission: 'settings:write' },
     ],

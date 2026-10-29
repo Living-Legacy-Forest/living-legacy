@@ -1,5 +1,5 @@
 import { useRouter } from '@tanstack/react-router';
-import { ExternalLinkIcon, KeyboardIcon, LogOutIcon } from 'lucide-react';
+import { ExternalLinkIcon, KeyboardIcon, LogOutIcon } from '@/components/icons';
 import { useState } from 'react';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import {

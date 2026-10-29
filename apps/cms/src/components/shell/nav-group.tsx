@@ -1,5 +1,5 @@
 import { Link, useLocation } from '@tanstack/react-router';
-import { ChevronRightIcon } from 'lucide-react';
+import { ChevronRightIcon } from '@/components/icons';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import {
   SidebarGroup,

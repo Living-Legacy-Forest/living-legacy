@@ -10,7 +10,7 @@ import {
   ArrowLeft,
   ArrowUp,
   ArrowDown,
-} from 'lucide-react';
+} from '@/components/icons';
 import { useCallback, useEffect, useRef, useState } from 'react';
 
 import { useToolbar, useToolbarEditor } from '../core/context';

@@ -16,6 +16,7 @@ import { Route as AppFaqsIndexRouteImport } from './routes/_app/faqs/index'
 import { Route as AppPostsIndexRouteImport } from './routes/_app/posts/index'
 import { Route as AppPostsPostIdRouteImport } from './routes/_app/posts/$postId'
 import { Route as AppPostsNewRouteImport } from './routes/_app/posts/new'
+import { Route as AppRedirectsIndexRouteImport } from './routes/_app/redirects/index'
 import { Route as AppTeamIndexRouteImport } from './routes/_app/team/index'
 import { Route as AppTestimonialsIndexRouteImport } from './routes/_app/testimonials/index'
 import { Route as AppUsersIndexRouteImport } from './routes/_app/users/index'
@@ -56,6 +57,11 @@ const AppPostsNewRoute = AppPostsNewRouteImport.update({
   path: '/posts/new',
   getParentRoute: () => AppRoute,
 } as any)
+const AppRedirectsIndexRoute = AppRedirectsIndexRouteImport.update({
+  id: '/redirects/',
+  path: '/redirects/',
+  getParentRoute: () => AppRoute,
+} as any)
 const AppTeamIndexRoute = AppTeamIndexRouteImport.update({
   id: '/team/',
   path: '/team/',
@@ -91,6 +97,7 @@ export interface FileRoutesByFullPath {
   '/preview/posts/$postId': typeof PreviewPostsPostIdRoute
   '/faqs/': typeof AppFaqsIndexRoute
   '/posts/': typeof AppPostsIndexRoute
+  '/redirects/': typeof AppRedirectsIndexRoute
   '/team/': typeof AppTeamIndexRoute
   '/testimonials/': typeof AppTestimonialsIndexRoute
   '/users/': typeof AppUsersIndexRoute
@@ -104,6 +111,7 @@ export interface FileRoutesByTo {
   '/preview/posts/$postId': typeof PreviewPostsPostIdRoute
   '/faqs': typeof AppFaqsIndexRoute
   '/posts': typeof AppPostsIndexRoute
+  '/redirects': typeof AppRedirectsIndexRoute
   '/team': typeof AppTeamIndexRoute
   '/testimonials': typeof AppTestimonialsIndexRoute
   '/users': typeof AppUsersIndexRoute
@@ -119,6 +127,7 @@ export interface FileRoutesById {
   '/preview/posts/$postId': typeof PreviewPostsPostIdRoute
   '/_app/faqs/': typeof AppFaqsIndexRoute
   '/_app/posts/': typeof AppPostsIndexRoute
+  '/_app/redirects/': typeof AppRedirectsIndexRoute
   '/_app/team/': typeof AppTeamIndexRoute
   '/_app/testimonials/': typeof AppTestimonialsIndexRoute
   '/_app/users/': typeof AppUsersIndexRoute
@@ -134,6 +143,7 @@ export interface FileRouteTypes {
     | '/preview/posts/$postId'
     | '/faqs/'
     | '/posts/'
+    | '/redirects/'
     | '/team/'
     | '/testimonials/'
     | '/users/'
@@ -147,6 +157,7 @@ export interface FileRouteTypes {
     | '/preview/posts/$postId'
     | '/faqs'
     | '/posts'
+    | '/redirects'
     | '/team'
     | '/testimonials'
     | '/users'
@@ -161,6 +172,7 @@ export interface FileRouteTypes {
     | '/preview/posts/$postId'
     | '/_app/faqs/'
     | '/_app/posts/'
+    | '/_app/redirects/'
     | '/_app/team/'
     | '/_app/testimonials/'
     | '/_app/users/'
@@ -224,6 +236,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppPostsNewRouteImport
       parentRoute: typeof AppRoute
     }
+    '/_app/redirects/': {
+      id: '/_app/redirects/'
+      path: '/redirects'
+      fullPath: '/redirects/'
+      preLoaderRoute: typeof AppRedirectsIndexRouteImport
+      parentRoute: typeof AppRoute
+    }
     '/_app/team/': {
       id: '/_app/team/'
       path: '/team'
@@ -268,6 +287,7 @@ interface AppRouteChildren {
   AppPostsNewRoute: typeof AppPostsNewRoute
   AppFaqsIndexRoute: typeof AppFaqsIndexRoute
   AppPostsIndexRoute: typeof AppPostsIndexRoute
+  AppRedirectsIndexRoute: typeof AppRedirectsIndexRoute
   AppTeamIndexRoute: typeof AppTeamIndexRoute
   AppTestimonialsIndexRoute: typeof AppTestimonialsIndexRoute
   AppUsersIndexRoute: typeof AppUsersIndexRoute
@@ -279,6 +299,7 @@ const AppRouteChildren: AppRouteChildren = {
   AppPostsNewRoute: AppPostsNewRoute,
   AppFaqsIndexRoute: AppFaqsIndexRoute,
   AppPostsIndexRoute: AppPostsIndexRoute,
+  AppRedirectsIndexRoute: AppRedirectsIndexRoute,
   AppTeamIndexRoute: AppTeamIndexRoute,
   AppTestimonialsIndexRoute: AppTestimonialsIndexRoute,
   AppUsersIndexRoute: AppUsersIndexRoute,

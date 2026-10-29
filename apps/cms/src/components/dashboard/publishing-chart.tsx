@@ -1,4 +1,4 @@
-import { ChartAreaIcon } from 'lucide-react';
+import { ChartAreaIcon } from '@/components/icons';
 import { useId, useMemo, useState } from 'react';
 import { Area, AreaChart, CartesianGrid, XAxis, YAxis } from 'recharts';
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';

@@ -13,7 +13,7 @@ import {
   PlusIcon,
   SearchIcon,
   SearchXIcon,
-} from 'lucide-react';
+} from '@/components/icons';
 import { type ReactNode, useEffect, useState } from 'react';
 import {
   Command,

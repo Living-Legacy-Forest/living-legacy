@@ -1,4 +1,4 @@
-import { FileQuestionIcon } from 'lucide-react';
+import { FileQuestionIcon } from '@/components/icons';
 import { HeadContent, Link, Scripts, createRootRoute } from '@tanstack/react-router';
 import type { ReactNode } from 'react';
 import { Button } from '@/components/ui/button';

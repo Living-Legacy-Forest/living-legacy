@@ -11,7 +11,7 @@ import {
   Maximize2,
   MoreHorizontal,
   Trash2,
-} from 'lucide-react';
+} from '@/components/icons';
 import { useEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 

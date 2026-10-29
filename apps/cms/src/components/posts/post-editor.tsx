@@ -24,7 +24,7 @@ import {
   Trash2Icon,
   Undo2Icon,
   UserIcon,
-} from 'lucide-react';
+} from '@/components/icons';
 import { type ReactNode, Suspense, lazy, useEffect, useRef, useState } from 'react';
 import { toast } from 'sonner';
 import {

@@ -2,7 +2,7 @@
 
 import type { NodeViewProps } from '@tiptap/react';
 import { NodeViewWrapper } from '@tiptap/react';
-import { Image, Link, Upload } from 'lucide-react';
+import { Image, Link, Upload } from '@/components/icons';
 import type { DragEvent, FormEvent } from 'react';
 import { useCallback, useId, useState } from 'react';
 

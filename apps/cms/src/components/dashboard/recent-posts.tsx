@@ -1,4 +1,4 @@
-import { type LucideIcon, PencilLineIcon, SendIcon } from 'lucide-react';
+import { type LucideIcon, PencilLineIcon, SendIcon } from '@/components/icons';
 import { Link } from '@tanstack/react-router';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import {

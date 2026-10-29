@@ -57,3 +57,26 @@ export function canReceiveMagicLink(opts: {
 }): boolean {
   return opts.hasAccount || opts.signupRole !== null;
 }
+
+/**
+ * Guards a role change so an admin can neither change their own role nor leave
+ * the CMS with no admin. Returns an error message, or null if the change is ok.
+ */
+export function guardRoleChange(opts: {
+  isSelf: boolean;
+  targetIsLastAdmin: boolean;
+  newRole: Role;
+}): string | null {
+  if (opts.isSelf) return 'You cannot change your own role.';
+  if (opts.targetIsLastAdmin && opts.newRole !== 'admin') {
+    return 'There must be at least one admin.';
+  }
+  return null;
+}
+
+/** Guards removal so you cannot remove yourself or the last admin. */
+export function guardRemoval(opts: { isSelf: boolean; targetIsLastAdmin: boolean }): string | null {
+  if (opts.isSelf) return 'You cannot remove yourself.';
+  if (opts.targetIsLastAdmin) return 'There must be at least one admin.';
+  return null;
+}

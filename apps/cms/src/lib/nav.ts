@@ -17,7 +17,7 @@ export type NavItem = {
   title: string;
   icon?: LucideIcon;
   /** Set once the section exists. Items without one show as "Soon". */
-  to?: '/' | '/posts' | '/posts/new';
+  to?: '/' | '/posts' | '/posts/new' | '/users';
   permission?: Permission;
   items?: NavItem[];
 };
@@ -53,7 +53,7 @@ export const navGroups: NavGroup[] = [
     label: 'Admin',
     items: [
       { title: 'Redirects', icon: ArrowRightLeft, permission: 'redirects:write' },
-      { title: 'Users', icon: UserCog, permission: 'users:manage' },
+      { title: 'Users', icon: UserCog, to: '/users', permission: 'users:manage' },
       { title: 'Settings', icon: Settings, permission: 'settings:write' },
     ],
   },

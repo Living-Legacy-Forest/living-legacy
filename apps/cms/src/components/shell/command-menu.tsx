@@ -36,7 +36,6 @@ import { useSidebar } from '@/components/ui/sidebar';
 import { formatRelative } from '@/lib/format';
 import { footerLinks } from '@/lib/nav';
 import type { SessionUser } from '@/lib/session';
-import { cn } from '@/lib/utils';
 import { type SearchResults, searchContent } from '@/server/search';
 import { PostStatusBadge } from '../posts/post-status-badge';
 
@@ -73,19 +72,7 @@ function aroundMatch(text: string, query: string, radius = 48) {
 /** Search field in the header that opens a command menu (also on Cmd/Ctrl+K). */
 export function CommandMenu({ user }: { user: SessionUser }) {
   const navigate = useNavigate();
-  const { toggleSidebar, state, isMobile } = useSidebar();
-  // The dialog is centred on the whole window, but the sidebar isn't part of
-  // the page's content; without this it sits visibly off-centre, pulled
-  // toward the sidebar. Shift it right by half of what the sidebar column
-  // (including the SidebarInset's own margins) actually takes up: 15rem
-  // sidebar + 0.5rem right margin, or 3rem icon rail + 1rem gap + 0.5rem
-  // left margin + 0.5rem right margin when collapsed. Verified empirically
-  // against the built CSS, not just read off the source.
-  const dialogOffsetClass = isMobile
-    ? ''
-    : state === 'expanded'
-      ? 'left-[calc(50%+7.25rem)]'
-      : 'left-[calc(50%+2rem)]';
+  const { toggleSidebar } = useSidebar();
   const [open, setOpen] = useState(false);
   const [query, setQuery] = useState('');
   const [results, setResults] = useState<SearchResults | null>(null);
@@ -222,7 +209,7 @@ export function CommandMenu({ user }: { user: SessionUser }) {
         onOpenChange={(next) => (next ? setOpen(true) : close())}
         title="Search"
         description="Search posts and categories, or jump to a page"
-        className={cn('sm:max-w-xl', dialogOffsetClass)}
+        className="sm:max-w-xl"
       >
         <Command shouldFilter={false} loop>
           <div className="relative">

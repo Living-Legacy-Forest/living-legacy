@@ -15,6 +15,7 @@ export const listTeamMembers = createServerFn({ method: 'GET' })
         id: teamMembers.id,
         name: teamMembers.name,
         role: teamMembers.role,
+        bio: teamMembers.bio,
         status: teamMembers.status,
         sortOrder: teamMembers.sortOrder,
         createdAt: teamMembers.createdAt,
@@ -22,7 +23,11 @@ export const listTeamMembers = createServerFn({ method: 'GET' })
       .from(teamMembers)
       .where(isNull(teamMembers.deletedAt))
       .orderBy(asc(teamMembers.sortOrder), asc(teamMembers.name));
-    return rows.map((r) => ({ ...r, createdAt: r.createdAt.getTime() }));
+    return rows.map((r) => ({
+      ...r,
+      bio: (r.bio?.text as string | undefined) ?? '',
+      createdAt: r.createdAt.getTime(),
+    }));
   });
 
 export type TeamListData = Awaited<ReturnType<typeof listTeamMembers>>;
@@ -32,6 +37,7 @@ const memberSchema = z.object({
   id: z.string().optional(),
   name: z.string().trim().min(1).max(80),
   role: z.string().trim().max(60).optional(),
+  bio: z.string().trim().max(2000).optional(),
   status: z.enum(['draft', 'published']),
 });
 
@@ -42,6 +48,7 @@ export const saveTeamMember = createServerFn({ method: 'POST' })
     const db = getDb();
     const now = new Date();
     const role = data.role || null;
+    const bio = data.bio ? { type: 'text', text: data.bio } : null;
 
     if (!data.id) {
       const [{ maxOrder } = { maxOrder: -1 }] = await db
@@ -52,6 +59,7 @@ export const saveTeamMember = createServerFn({ method: 'POST' })
         .values({
           name: data.name,
           role,
+          bio,
           status: data.status,
           sortOrder: Number(maxOrder) + 1,
           publishedAt: data.status === 'published' ? now : null,
@@ -68,6 +76,7 @@ export const saveTeamMember = createServerFn({ method: 'POST' })
       .set({
         name: data.name,
         role,
+        bio,
         status: data.status,
         // Keep the original publish time if it was already live.
         publishedAt: data.status === 'published' ? (existing?.publishedAt ?? now) : null,

@@ -2,9 +2,10 @@ import { useState } from 'react';
 import {
   ChevronDownIcon,
   ChevronUpIcon,
-  PencilIcon,
+  PanelRightIcon,
   PlusIcon,
   Trash2Icon,
+  UsersIcon,
 } from '@/components/icons';
 import {
   AlertDialog,
@@ -28,18 +29,18 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog';
+import {
+  Empty,
+  EmptyDescription,
+  EmptyHeader,
+  EmptyMedia,
+  EmptyTitle,
+} from '@/components/ui/empty';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Spinner } from '@/components/ui/spinner';
 import { Switch } from '@/components/ui/switch';
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from '@/components/ui/table';
+import { Textarea } from '@/components/ui/textarea';
 import { useAction } from '@/lib/use-action';
 import {
   type TeamListData,
@@ -49,28 +50,25 @@ import {
   saveTeamMember,
 } from '@/server/team';
 
-export function TeamPage({ data, canWrite }: { data: TeamListData; canWrite: boolean }) {
-  const [editing, setEditing] = useState<TeamMember | null>(null);
-  const [open, setOpen] = useState(false);
+const isDesktop = () =>
+  typeof window !== 'undefined' && window.matchMedia('(min-width: 1024px)').matches;
 
-  const openNew = () => {
-    setEditing(null);
-    setOpen(true);
-  };
-  const openEdit = (member: TeamMember) => {
-    setEditing(member);
-    setOpen(true);
-  };
+export function TeamPage({ data, canWrite }: { data: TeamListData; canWrite: boolean }) {
+  // Desktop: who the right-hand pane is editing. Mobile has no pane, so the
+  // same form opens in a dialog instead (set independently, see openNew/openEdit).
+  const [editingId, setEditingId] = useState<string | 'new' | null>(null);
+  const [dialogTarget, setDialogTarget] = useState<TeamMember | 'new' | null>(null);
+
+  const selected = data.find((m) => m.id === editingId) ?? null;
+
+  const openNew = () => (isDesktop() ? setEditingId('new') : setDialogTarget('new'));
+  const openEdit = (member: TeamMember) =>
+    isDesktop() ? setEditingId(member.id) : setDialogTarget(member);
 
   return (
-    <div className="mx-auto max-w-3xl space-y-8">
-      <div className="flex items-start justify-between gap-4">
-        <div className="space-y-1">
-          <h1 className="text-xl font-semibold tracking-tight">Team</h1>
-          <p className="text-muted-foreground text-sm">
-            People shown on the website and chosen as post authors.
-          </p>
-        </div>
+    <div className="flex flex-1 flex-col gap-4 lg:h-[calc(100svh-7.5rem)]">
+      <div className="flex flex-wrap items-center gap-3">
+        <h1 className="mr-auto text-xl">Team</h1>
         {canWrite && (
           <Button size="sm" onClick={openNew}>
             <PlusIcon aria-hidden data-icon="inline-start" />
@@ -80,118 +78,234 @@ export function TeamPage({ data, canWrite }: { data: TeamListData; canWrite: boo
       </div>
 
       {data.length === 0 ? (
-        <div className="text-muted-foreground rounded-lg border border-dashed py-12 text-center text-sm">
-          No team members yet.
-        </div>
+        <Empty className="flex-1 rounded-lg border">
+          <EmptyHeader>
+            <EmptyMedia variant="icon">
+              <UsersIcon aria-hidden />
+            </EmptyMedia>
+            <EmptyTitle>No team members yet</EmptyTitle>
+            <EmptyDescription>
+              Add someone and they appear here, ready to be chosen as a post author.
+            </EmptyDescription>
+          </EmptyHeader>
+        </Empty>
       ) : (
-        <section className="space-y-2.5">
-          <div className="flex items-baseline gap-2">
-            <h2 className="text-sm font-medium">Members</h2>
-            <span className="text-muted-foreground text-xs tabular-nums">{data.length}</span>
-          </div>
-          <div className="overflow-hidden rounded-lg border">
-            <TeamTable data={data} canWrite={canWrite} onEdit={openEdit} />
-          </div>
-        </section>
+        <div className="grid min-h-0 flex-1 overflow-hidden rounded-lg border lg:grid-cols-[minmax(20rem,2fr)_3fr]">
+          <section aria-label="Team members" className="flex min-h-0 flex-col lg:border-r">
+            <div className="flex h-11 shrink-0 items-center gap-2 border-b px-3">
+              <span className="text-[13px] font-medium">Members</span>
+              <span className="text-muted-foreground text-xs tabular-nums">{data.length}</span>
+            </div>
+            <ul className="min-h-0 flex-1 space-y-px overflow-y-auto p-1.5">
+              {data.map((member, index) => (
+                <MemberListItem
+                  key={member.id}
+                  member={member}
+                  selected={member.id === editingId}
+                  canMoveUp={index > 0}
+                  canMoveDown={index < data.length - 1}
+                  canWrite={canWrite}
+                  onSelect={() => openEdit(member)}
+                />
+              ))}
+            </ul>
+          </section>
+
+          <section aria-label="Edit member" className="hidden min-h-0 flex-col lg:flex">
+            {!canWrite || editingId === null ? (
+              <Empty>
+                <EmptyHeader>
+                  <EmptyMedia variant="icon">
+                    <PanelRightIcon aria-hidden />
+                  </EmptyMedia>
+                  <EmptyTitle>No member selected</EmptyTitle>
+                  <EmptyDescription>
+                    Choose someone from the list, or add a new member.
+                  </EmptyDescription>
+                </EmptyHeader>
+              </Empty>
+            ) : (
+              <MemberPane
+                key={editingId}
+                member={editingId === 'new' ? null : selected}
+                onSaved={(id) => setEditingId(id)}
+                onClose={() => setEditingId(null)}
+              />
+            )}
+          </section>
+        </div>
       )}
 
       {canWrite && (
-        <MemberDialog
-          key={editing?.id ?? 'new'}
-          member={editing}
-          open={open}
-          onOpenChange={setOpen}
-        />
+        <Dialog
+          open={dialogTarget !== null}
+          onOpenChange={(open) => !open && setDialogTarget(null)}
+        >
+          <DialogContent className="sm:max-w-sm">
+            <DialogHeader>
+              <DialogTitle>{dialogTarget === 'new' ? 'Add member' : 'Edit member'}</DialogTitle>
+              <DialogDescription>
+                Shown on the website and available as a post author.
+              </DialogDescription>
+            </DialogHeader>
+            <MemberForm
+              member={dialogTarget === 'new' ? null : dialogTarget}
+              onSaved={() => setDialogTarget(null)}
+              footer={(pending) => (
+                <DialogFooter>
+                  <DialogClose render={<Button type="button" variant="outline" />}>
+                    Cancel
+                  </DialogClose>
+                  <SubmitButton pending={pending} isNew={dialogTarget === 'new'} />
+                </DialogFooter>
+              )}
+            />
+          </DialogContent>
+        </Dialog>
       )}
     </div>
   );
 }
 
-function TeamTable({
-  data,
+function MemberListItem({
+  member,
+  selected,
+  canMoveUp,
+  canMoveDown,
   canWrite,
-  onEdit,
+  onSelect,
 }: {
-  data: TeamListData;
+  member: TeamMember;
+  selected: boolean;
+  canMoveUp: boolean;
+  canMoveDown: boolean;
   canWrite: boolean;
-  onEdit: (member: TeamMember) => void;
+  onSelect: () => void;
 }) {
   const { run, pending } = useAction();
 
   return (
-    <Table className="[&_td]:px-4 [&_th]:px-4">
-      <TableHeader>
-        <TableRow className="hover:bg-transparent">
-          <TableHead>Name</TableHead>
-          <TableHead className="w-28">Status</TableHead>
-          <TableHead className="w-0" />
-        </TableRow>
-      </TableHeader>
-      <TableBody>
-        {data.map((member, index) => (
-          <TableRow key={member.id}>
-            <TableCell className="py-2.5">
-              <div className="text-sm font-medium">{member.name}</div>
-              {member.role && <div className="text-muted-foreground text-xs">{member.role}</div>}
-            </TableCell>
-            <TableCell>
-              <Badge
-                variant={member.status === 'published' ? 'secondary' : 'outline'}
-                className="capitalize"
-              >
-                {member.status}
+    <li className={selected ? 'bg-accent rounded-md' : 'hover:bg-muted/60 rounded-md'}>
+      <div className="flex items-center gap-1 px-1.5 py-1">
+        <button
+          type="button"
+          onClick={onSelect}
+          className="min-w-0 flex-1 rounded-md px-1.5 py-1.5 text-left outline-none"
+        >
+          <div className="flex items-center gap-2">
+            <span className="truncate text-[13px] font-medium">{member.name}</span>
+            {member.status === 'draft' && (
+              <Badge variant="outline" className="shrink-0">
+                Draft
               </Badge>
-            </TableCell>
-            <TableCell>
-              {canWrite && (
-                <div className="flex items-center justify-end gap-0.5">
-                  <Button
-                    variant="ghost"
-                    size="icon-sm"
-                    aria-label={`Move ${member.name} up`}
-                    disabled={index === 0 || pending}
-                    onClick={() =>
-                      run(() => moveTeamMember({ data: { id: member.id, direction: 'up' } }))
-                    }
-                  >
-                    <ChevronUpIcon aria-hidden className="size-4" />
-                  </Button>
-                  <Button
-                    variant="ghost"
-                    size="icon-sm"
-                    aria-label={`Move ${member.name} down`}
-                    disabled={index === data.length - 1 || pending}
-                    onClick={() =>
-                      run(() => moveTeamMember({ data: { id: member.id, direction: 'down' } }))
-                    }
-                  >
-                    <ChevronDownIcon aria-hidden className="size-4" />
-                  </Button>
-                  <Button
-                    variant="ghost"
-                    size="icon-sm"
-                    aria-label={`Edit ${member.name}`}
-                    onClick={() => onEdit(member)}
-                  >
-                    <PencilIcon aria-hidden className="size-4" />
-                  </Button>
-                  <DeleteMember
-                    member={member}
-                    onConfirm={() =>
-                      run(() => deleteTeamMember({ data: { id: member.id } }), 'Member removed.')
-                    }
-                  />
-                </div>
-              )}
-            </TableCell>
-          </TableRow>
-        ))}
-      </TableBody>
-    </Table>
+            )}
+          </div>
+          {member.role && (
+            <div className="text-muted-foreground truncate text-xs">{member.role}</div>
+          )}
+        </button>
+        {canWrite && (
+          <div className="flex shrink-0 items-center gap-0.5">
+            <Button
+              variant="ghost"
+              size="icon-sm"
+              aria-label={`Move ${member.name} up`}
+              disabled={!canMoveUp || pending}
+              onClick={() =>
+                run(() => moveTeamMember({ data: { id: member.id, direction: 'up' } }))
+              }
+            >
+              <ChevronUpIcon aria-hidden className="size-4" />
+            </Button>
+            <Button
+              variant="ghost"
+              size="icon-sm"
+              aria-label={`Move ${member.name} down`}
+              disabled={!canMoveDown || pending}
+              onClick={() =>
+                run(() => moveTeamMember({ data: { id: member.id, direction: 'down' } }))
+              }
+            >
+              <ChevronDownIcon aria-hidden className="size-4" />
+            </Button>
+          </div>
+        )}
+      </div>
+    </li>
   );
 }
 
-function DeleteMember({ member, onConfirm }: { member: TeamMember; onConfirm: () => void }) {
+function SubmitButton({ pending, isNew }: { pending: boolean; isNew: boolean }) {
+  return (
+    <Button type="submit" disabled={pending}>
+      {pending ? (
+        <>
+          <Spinner />
+          Saving…
+        </>
+      ) : isNew ? (
+        'Add member'
+      ) : (
+        'Save'
+      )}
+    </Button>
+  );
+}
+
+/** The inline desktop pane: header with delete, scrollable form body. */
+function MemberPane({
+  member,
+  onSaved,
+  onClose,
+}: {
+  member: TeamMember | null;
+  onSaved: (id: string) => void;
+  onClose: () => void;
+}) {
+  const { run, pending } = useAction();
+
+  return (
+    <>
+      <div className="flex h-11 shrink-0 items-center gap-1.5 border-b px-3">
+        <span className="text-sm font-medium">{member ? member.name : 'New member'}</span>
+        {member && (
+          <div className="ml-auto">
+            <DeleteMember
+              member={member}
+              disabled={pending}
+              onConfirm={() =>
+                run(() => deleteTeamMember({ data: { id: member.id } }), 'Member removed.').then(
+                  onClose
+                )
+              }
+            />
+          </div>
+        )}
+      </div>
+      <div className="min-h-0 flex-1 overflow-y-auto p-4">
+        <MemberForm
+          member={member}
+          onSaved={onSaved}
+          footer={(formPending, isNew) => (
+            <div className="flex justify-end">
+              <SubmitButton pending={formPending} isNew={isNew} />
+            </div>
+          )}
+        />
+      </div>
+    </>
+  );
+}
+
+function DeleteMember({
+  member,
+  disabled,
+  onConfirm,
+}: {
+  member: TeamMember;
+  disabled: boolean;
+  onConfirm: () => void;
+}) {
   return (
     <AlertDialog>
       <AlertDialogTrigger
@@ -199,6 +313,7 @@ function DeleteMember({ member, onConfirm }: { member: TeamMember; onConfirm: ()
           <Button
             variant="ghost"
             size="icon-sm"
+            disabled={disabled}
             aria-label={`Remove ${member.name}`}
             className="text-muted-foreground hover:text-destructive"
           />
@@ -222,17 +337,19 @@ function DeleteMember({ member, onConfirm }: { member: TeamMember; onConfirm: ()
   );
 }
 
-function MemberDialog({
+/** Shared fields + submit logic, used inline (desktop pane) and in the mobile dialog. */
+function MemberForm({
   member,
-  open,
-  onOpenChange,
+  onSaved,
+  footer,
 }: {
   member: TeamMember | null;
-  open: boolean;
-  onOpenChange: (open: boolean) => void;
+  onSaved: (id: string) => void;
+  footer: (pending: boolean, isNew: boolean) => React.ReactNode;
 }) {
   const [name, setName] = useState(member?.name ?? '');
   const [role, setRole] = useState(member?.role ?? '');
+  const [bio, setBio] = useState(member?.bio ?? '');
   const [published, setPublished] = useState(member?.status === 'published');
   const { run, pending } = useAction();
 
@@ -245,67 +362,54 @@ function MemberDialog({
             id: member?.id,
             name,
             role: role || undefined,
+            bio: bio || undefined,
             status: published ? 'published' : 'draft',
           },
         }),
       member ? 'Member updated.' : 'Member added.'
     );
-    if (result) onOpenChange(false);
+    if (result) onSaved(result.id);
   }
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-sm">
-        <DialogHeader>
-          <DialogTitle>{member ? 'Edit member' : 'Add member'}</DialogTitle>
-          <DialogDescription>
-            Shown on the website and available as a post author.
-          </DialogDescription>
-        </DialogHeader>
-        <form onSubmit={submit} className="space-y-4">
-          <div className="space-y-1.5">
-            <Label htmlFor="member-name">Name</Label>
-            <Input
-              id="member-name"
-              required
-              value={name}
-              onChange={(e) => setName(e.target.value)}
-              placeholder="Jane Smith"
-            />
-          </div>
-          <div className="space-y-1.5">
-            <Label htmlFor="member-role">Role</Label>
-            <Input
-              id="member-role"
-              value={role}
-              onChange={(e) => setRole(e.target.value)}
-              placeholder="Founder"
-            />
-          </div>
-          <div className="flex items-center justify-between rounded-lg border p-3">
-            <div className="space-y-0.5">
-              <div className="text-sm font-medium">Published</div>
-              <div className="text-muted-foreground text-xs">Show this person on the website.</div>
-            </div>
-            <Switch checked={published} onCheckedChange={setPublished} />
-          </div>
-          <DialogFooter>
-            <DialogClose render={<Button type="button" variant="outline" />}>Cancel</DialogClose>
-            <Button type="submit" disabled={pending}>
-              {pending ? (
-                <>
-                  <Spinner />
-                  Saving…
-                </>
-              ) : member ? (
-                'Save'
-              ) : (
-                'Add member'
-              )}
-            </Button>
-          </DialogFooter>
-        </form>
-      </DialogContent>
-    </Dialog>
+    <form onSubmit={submit} className="space-y-4">
+      <div className="space-y-1.5">
+        <Label htmlFor="member-name">Name</Label>
+        <Input
+          id="member-name"
+          required
+          value={name}
+          onChange={(e) => setName(e.target.value)}
+          placeholder="Jane Smith"
+        />
+      </div>
+      <div className="space-y-1.5">
+        <Label htmlFor="member-role">Role</Label>
+        <Input
+          id="member-role"
+          value={role}
+          onChange={(e) => setRole(e.target.value)}
+          placeholder="Founder"
+        />
+      </div>
+      <div className="space-y-1.5">
+        <Label htmlFor="member-bio">Bio</Label>
+        <Textarea
+          id="member-bio"
+          rows={4}
+          value={bio}
+          onChange={(e) => setBio(e.target.value)}
+          placeholder="A short introduction, shown on the website."
+        />
+      </div>
+      <div className="flex items-center justify-between rounded-lg border p-3">
+        <div className="space-y-0.5">
+          <div className="text-sm font-medium">Published</div>
+          <div className="text-muted-foreground text-xs">Show this person on the website.</div>
+        </div>
+        <Switch checked={published} onCheckedChange={setPublished} />
+      </div>
+      {footer(pending, member === null)}
+    </form>
   );
 }

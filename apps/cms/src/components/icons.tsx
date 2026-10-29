@@ -139,6 +139,7 @@ export const LayoutDashboard = make(H.DashboardSquare01Icon);
 export const Settings = make(H.Settings01Icon);
 export const UserCog = make(H.UserSettings01Icon);
 export const Users = make(H.UserGroupIcon);
+export const UsersIcon = make(H.UserGroupIcon);
 export const FileQuestionIcon = make(H.FileQuestionMarkIcon);
 export const MailCheck = make(H.MailCheckIcon);
 export const MessageSquareQuoteIcon = make(H.MessageSquareQuoteIcon);

@@ -36,6 +36,7 @@ import { useSidebar } from '@/components/ui/sidebar';
 import { formatRelative } from '@/lib/format';
 import { footerLinks } from '@/lib/nav';
 import type { SessionUser } from '@/lib/session';
+import { cn } from '@/lib/utils';
 import { type SearchResults, searchContent } from '@/server/search';
 import { PostStatusBadge } from '../posts/post-status-badge';
 
@@ -72,7 +73,15 @@ function aroundMatch(text: string, query: string, radius = 48) {
 /** Search field in the header that opens a command menu (also on Cmd/Ctrl+K). */
 export function CommandMenu({ user }: { user: SessionUser }) {
   const navigate = useNavigate();
-  const { toggleSidebar } = useSidebar();
+  const { toggleSidebar, state, isMobile } = useSidebar();
+  // The dialog is centred on the whole window, but the sidebar isn't part of
+  // the page's content; without this it sits visibly off-centre, pulled
+  // toward the sidebar. Shift it right by half the sidebar's current width.
+  const dialogOffsetClass = isMobile
+    ? ''
+    : state === 'expanded'
+      ? 'left-[calc(50%+7.5rem)]'
+      : 'left-[calc(50%+1.5rem)]';
   const [open, setOpen] = useState(false);
   const [query, setQuery] = useState('');
   const [results, setResults] = useState<SearchResults | null>(null);
@@ -209,7 +218,7 @@ export function CommandMenu({ user }: { user: SessionUser }) {
         onOpenChange={(next) => (next ? setOpen(true) : close())}
         title="Search"
         description="Search posts and categories, or jump to a page"
-        className="sm:max-w-xl"
+        className={cn('sm:max-w-xl', dialogOffsetClass)}
       >
         <Command shouldFilter={false} loop>
           <div className="relative">

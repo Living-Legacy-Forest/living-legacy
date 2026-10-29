@@ -146,3 +146,5 @@ export const MessageSquareQuoteIcon = make(H.MessageSquareQuoteIcon);
 export const StarIcon = make(H.StarIcon);
 export const CircleHelpIcon = make(H.HelpCircleIcon);
 export const FolderPlusIcon = make(H.FolderAddIcon);
+export const MailIcon = make(H.MailIcon);
+export const SunMoonIcon = make(H.SunMoonIcon);

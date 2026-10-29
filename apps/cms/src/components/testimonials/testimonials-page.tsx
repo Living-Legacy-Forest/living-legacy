@@ -1,4 +1,12 @@
-import { PencilIcon, PlusIcon, Trash2Icon } from 'lucide-react';
+import { useNavigate } from '@tanstack/react-router';
+import {
+  MessageSquareQuoteIcon,
+  PanelRightIcon,
+  PencilIcon,
+  PlusIcon,
+  StarIcon,
+  Trash2Icon,
+} from 'lucide-react';
 import { useState } from 'react';
 import {
   AlertDialog,
@@ -22,20 +30,21 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog';
+import {
+  Empty,
+  EmptyContent,
+  EmptyDescription,
+  EmptyHeader,
+  EmptyMedia,
+  EmptyTitle,
+} from '@/components/ui/empty';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Spinner } from '@/components/ui/spinner';
 import { Switch } from '@/components/ui/switch';
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from '@/components/ui/table';
 import { Textarea } from '@/components/ui/textarea';
 import { useAction } from '@/lib/use-action';
+import { cn } from '@/lib/utils';
 import {
   type Testimonial,
   type TestimonialsData,
@@ -43,34 +52,46 @@ import {
   saveTestimonial,
 } from '@/server/testimonials';
 
+type Search = { selected?: string };
+
+function attribution(t: Testimonial): string {
+  return [t.relationship, t.location].filter(Boolean).join(' · ');
+}
+
 export function TestimonialsPage({
   data,
+  search,
   canWrite,
 }: {
   data: TestimonialsData;
+  search: Search;
   canWrite: boolean;
 }) {
+  const navigate = useNavigate({ from: '/testimonials/' });
+  const { run, pending } = useAction();
   const [editing, setEditing] = useState<Testimonial | null>(null);
   const [open, setOpen] = useState(false);
+
+  const selectedId = data.find((t) => t.id === search.selected)?.id ?? data[0]?.id ?? null;
+  const selected = data.find((t) => t.id === selectedId) ?? null;
+  const select = (id: string) =>
+    navigate({ search: (prev) => ({ ...prev, selected: id }), replace: true });
 
   const openNew = () => {
     setEditing(null);
     setOpen(true);
   };
-  const openEdit = (testimonial: Testimonial) => {
-    setEditing(testimonial);
+  const openEdit = (t: Testimonial) => {
+    setEditing(t);
     setOpen(true);
   };
+  const remove = (id: string) =>
+    run(() => deleteTestimonial({ data: { id } }), 'Testimonial removed.');
 
   return (
-    <div className="mx-auto max-w-3xl space-y-8">
-      <div className="flex items-start justify-between gap-4">
-        <div className="space-y-1">
-          <h1 className="text-xl font-semibold tracking-tight">Testimonials</h1>
-          <p className="text-muted-foreground text-sm">
-            Quotes from families, shown on the website.
-          </p>
-        </div>
+    <div className="flex flex-1 flex-col gap-4 lg:h-[calc(100svh-7.5rem)] lg:min-h-0">
+      <div className="flex flex-wrap items-center gap-3">
+        <h1 className="mr-auto text-xl">Testimonials</h1>
         {canWrite && (
           <Button size="sm" onClick={openNew}>
             <PlusIcon aria-hidden data-icon="inline-start" />
@@ -80,19 +101,51 @@ export function TestimonialsPage({
       </div>
 
       {data.length === 0 ? (
-        <div className="text-muted-foreground rounded-lg border border-dashed py-12 text-center text-sm">
-          No testimonials yet.
-        </div>
+        <Empty className="flex-1 rounded-lg border">
+          <EmptyHeader>
+            <EmptyMedia variant="icon">
+              <MessageSquareQuoteIcon aria-hidden />
+            </EmptyMedia>
+            <EmptyTitle>No testimonials yet</EmptyTitle>
+            <EmptyDescription>Add a family quote and it appears here.</EmptyDescription>
+          </EmptyHeader>
+          {canWrite && (
+            <EmptyContent>
+              <Button size="sm" onClick={openNew}>
+                <PlusIcon aria-hidden data-icon="inline-start" />
+                Add testimonial
+              </Button>
+            </EmptyContent>
+          )}
+        </Empty>
       ) : (
-        <section className="space-y-2.5">
-          <div className="flex items-baseline gap-2">
-            <h2 className="text-sm font-medium">All</h2>
-            <span className="text-muted-foreground text-xs tabular-nums">{data.length}</span>
-          </div>
-          <div className="overflow-hidden rounded-lg border">
-            <TestimonialsTable data={data} canWrite={canWrite} onEdit={openEdit} />
-          </div>
-        </section>
+        <div className="grid min-h-0 flex-1 overflow-hidden rounded-lg border lg:grid-cols-[minmax(20rem,2fr)_3fr]">
+          <section aria-label="Testimonials" className="flex min-h-0 flex-col lg:border-r">
+            <div className="flex h-11 shrink-0 items-center gap-2 border-b px-3">
+              <span className="text-[13px] font-medium">All</span>
+              <span className="text-muted-foreground text-xs tabular-nums">{data.length}</span>
+            </div>
+            <ul className="min-h-0 flex-1 space-y-px overflow-y-auto p-1.5">
+              {data.map((t) => (
+                <TestimonialListItem
+                  key={t.id}
+                  testimonial={t}
+                  selected={t.id === selectedId}
+                  onSelect={() => select(t.id)}
+                  onOpen={() => (canWrite ? openEdit(t) : select(t.id))}
+                />
+              ))}
+            </ul>
+          </section>
+
+          <PreviewPane
+            testimonial={selected}
+            canWrite={canWrite}
+            pending={pending}
+            onEdit={openEdit}
+            onDelete={remove}
+          />
+        </div>
       )}
 
       {canWrite && (
@@ -107,87 +160,129 @@ export function TestimonialsPage({
   );
 }
 
-function TestimonialsTable({
-  data,
-  canWrite,
-  onEdit,
+function TestimonialListItem({
+  testimonial,
+  selected,
+  onSelect,
+  onOpen,
 }: {
-  data: TestimonialsData;
-  canWrite: boolean;
-  onEdit: (testimonial: Testimonial) => void;
+  testimonial: Testimonial;
+  selected: boolean;
+  onSelect: () => void;
+  onOpen: () => void;
 }) {
-  const { run } = useAction();
+  return (
+    <li
+      className={cn('rounded-md transition-colors', selected ? 'bg-accent' : 'hover:bg-muted/60')}
+    >
+      <button
+        type="button"
+        aria-current={selected || undefined}
+        onClick={() => {
+          if (window.matchMedia('(min-width: 1024px)').matches) onSelect();
+          else onOpen();
+        }}
+        onDoubleClick={onOpen}
+        className="focus-visible:ring-ring w-full rounded-md px-2.5 py-2 text-left outline-none focus-visible:ring-1"
+      >
+        <span className="flex items-center gap-2">
+          <span className="min-w-0 flex-1 truncate text-[13px] font-medium">
+            {testimonial.name}
+          </span>
+          {testimonial.featured && (
+            <StarIcon aria-label="Featured" className="size-3 shrink-0 fill-current" />
+          )}
+          {testimonial.status === 'draft' && (
+            <span className="text-muted-foreground shrink-0 text-xs">Draft</span>
+          )}
+        </span>
+        <span className="text-muted-foreground mt-0.5 line-clamp-1 text-xs">
+          {testimonial.quote}
+        </span>
+      </button>
+    </li>
+  );
+}
+
+function PreviewPane({
+  testimonial,
+  canWrite,
+  pending,
+  onEdit,
+  onDelete,
+}: {
+  testimonial: Testimonial | null;
+  canWrite: boolean;
+  pending: boolean;
+  onEdit: (t: Testimonial) => void;
+  onDelete: (id: string) => void;
+}) {
+  if (!testimonial) {
+    return (
+      <section aria-label="Preview" className="hidden lg:flex">
+        <Empty>
+          <EmptyHeader>
+            <EmptyMedia variant="icon">
+              <PanelRightIcon aria-hidden />
+            </EmptyMedia>
+            <EmptyTitle>No testimonial selected</EmptyTitle>
+            <EmptyDescription>Choose one from the list to see it here.</EmptyDescription>
+          </EmptyHeader>
+        </Empty>
+      </section>
+    );
+  }
+
+  const from = attribution(testimonial);
 
   return (
-    <Table className="[&_td]:px-4 [&_th]:px-4">
-      <TableHeader>
-        <TableRow className="hover:bg-transparent">
-          <TableHead>Quote</TableHead>
-          <TableHead className="w-40">From</TableHead>
-          <TableHead className="w-28">Status</TableHead>
-          <TableHead className="w-0" />
-        </TableRow>
-      </TableHeader>
-      <TableBody>
-        {data.map((testimonial) => (
-          <TableRow key={testimonial.id}>
-            <TableCell className="py-2.5">
-              <p className="line-clamp-2 max-w-md text-sm">{testimonial.quote}</p>
-            </TableCell>
-            <TableCell>
-              <div className="text-sm font-medium">{testimonial.name}</div>
-              {(testimonial.relationship || testimonial.location) && (
-                <div className="text-muted-foreground text-xs">
-                  {[testimonial.relationship, testimonial.location].filter(Boolean).join(' · ')}
-                </div>
-              )}
-            </TableCell>
-            <TableCell>
-              <div className="flex flex-wrap items-center gap-1.5">
-                <Badge
-                  variant={testimonial.status === 'published' ? 'secondary' : 'outline'}
-                  className="capitalize"
-                >
-                  {testimonial.status}
-                </Badge>
-                {testimonial.featured && <Badge variant="default">Featured</Badge>}
-              </div>
-            </TableCell>
-            <TableCell>
-              {canWrite && (
-                <div className="flex items-center justify-end gap-0.5">
-                  <Button
-                    variant="ghost"
-                    size="icon-sm"
-                    aria-label={`Edit testimonial from ${testimonial.name}`}
-                    onClick={() => onEdit(testimonial)}
-                  >
-                    <PencilIcon aria-hidden className="size-4" />
-                  </Button>
-                  <DeleteTestimonial
-                    testimonial={testimonial}
-                    onConfirm={() =>
-                      run(
-                        () => deleteTestimonial({ data: { id: testimonial.id } }),
-                        'Testimonial removed.'
-                      )
-                    }
-                  />
-                </div>
-              )}
-            </TableCell>
-          </TableRow>
-        ))}
-      </TableBody>
-    </Table>
+    <section aria-label="Preview" className="hidden min-h-0 flex-col lg:flex">
+      <div className="flex h-11 shrink-0 items-center gap-1.5 border-b px-3">
+        <Badge
+          variant={testimonial.status === 'published' ? 'secondary' : 'outline'}
+          className="capitalize"
+        >
+          {testimonial.status}
+        </Badge>
+        {testimonial.featured && <Badge variant="default">Featured</Badge>}
+        <div className="ml-auto flex items-center gap-1.5">
+          {canWrite && (
+            <>
+              <Button size="sm" onClick={() => onEdit(testimonial)}>
+                <PencilIcon aria-hidden data-icon="inline-start" />
+                Edit
+              </Button>
+              <DeleteTestimonial
+                testimonial={testimonial}
+                disabled={pending}
+                onConfirm={() => onDelete(testimonial.id)}
+              />
+            </>
+          )}
+        </div>
+      </div>
+      <div className="min-h-0 flex-1 overflow-y-auto">
+        <figure className="mx-auto max-w-xl px-8 py-12">
+          <blockquote className="text-xl leading-relaxed font-medium text-balance">
+            “{testimonial.quote}”
+          </blockquote>
+          <figcaption className="mt-6">
+            <div className="font-medium">{testimonial.name}</div>
+            {from && <div className="text-muted-foreground text-sm">{from}</div>}
+          </figcaption>
+        </figure>
+      </div>
+    </section>
   );
 }
 
 function DeleteTestimonial({
   testimonial,
+  disabled,
   onConfirm,
 }: {
   testimonial: Testimonial;
+  disabled: boolean;
   onConfirm: () => void;
 }) {
   return (
@@ -197,6 +292,7 @@ function DeleteTestimonial({
           <Button
             variant="ghost"
             size="icon-sm"
+            disabled={disabled}
             aria-label={`Remove testimonial from ${testimonial.name}`}
             className="text-muted-foreground hover:text-destructive"
           />

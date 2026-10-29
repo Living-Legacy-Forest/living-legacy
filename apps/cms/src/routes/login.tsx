@@ -28,6 +28,7 @@ export const Route = createFileRoute('/login')({
 function LoginPage() {
   const { error } = Route.useSearch();
   const { google } = Route.useLoaderData();
+  const [sentTo, setSentTo] = useState<string | null>(null);
 
   useEffect(() => {
     if (error) {
@@ -40,51 +41,82 @@ function LoginPage() {
   return (
     <main className="bg-background flex min-h-svh items-center justify-center px-6 py-16">
       <div className="w-full max-w-sm">
-        <header className="flex flex-col items-center gap-3 text-center">
-          {/* White artwork painted in the brand colour via a CSS mask, as on the site. */}
-          <span
-            role="img"
-            aria-label="Living Legacy Forest"
-            className="inline-block shrink-0"
-            style={{
-              height: '2.75rem',
-              aspectRatio: '97 / 81',
-              backgroundColor: '#2c4633',
-              WebkitMask: `url("${logoMark}") center / contain no-repeat`,
-              mask: `url("${logoMark}") center / contain no-repeat`,
-            }}
-          />
-          <div className="space-y-1">
-            <h1 className="text-2xl font-semibold tracking-tight">Welcome back</h1>
-            <p className="text-muted-foreground text-sm text-balance">
-              Sign in to manage Living Legacy Forest content.
-            </p>
-          </div>
-        </header>
-
-        <div className="mt-8">
-          {google && (
-            <>
-              <GoogleSignIn />
-              <div className="my-5 flex items-center gap-3">
-                <span className="bg-border h-px flex-1" />
-                <span className="text-muted-foreground text-xs">or</span>
-                <span className="bg-border h-px flex-1" />
+        {sentTo ? (
+          <SentConfirmation email={sentTo} onReset={() => setSentTo(null)} />
+        ) : (
+          <>
+            <header className="flex flex-col items-center gap-3 text-center">
+              {/* White artwork painted in the brand colour via a CSS mask, as on the site. */}
+              <span
+                role="img"
+                aria-label="Living Legacy Forest"
+                className="inline-block shrink-0"
+                style={{
+                  height: '2.75rem',
+                  aspectRatio: '97 / 81',
+                  backgroundColor: '#2c4633',
+                  WebkitMask: `url("${logoMark}") center / contain no-repeat`,
+                  mask: `url("${logoMark}") center / contain no-repeat`,
+                }}
+              />
+              <div className="space-y-1">
+                <h1 className="text-2xl font-semibold tracking-tight">Welcome back</h1>
+                <p className="text-muted-foreground text-sm text-balance">
+                  Sign in to manage Living Legacy Forest content.
+                </p>
               </div>
-            </>
-          )}
+            </header>
 
-          <MagicLinkForm />
-        </div>
+            <div className="mt-8">
+              {google && (
+                <>
+                  <GoogleSignIn />
+                  <div className="my-5 flex items-center gap-3">
+                    <span className="bg-border h-px flex-1" />
+                    <span className="text-muted-foreground text-xs">or</span>
+                    <span className="bg-border h-px flex-1" />
+                  </div>
+                </>
+              )}
+
+              <MagicLinkForm onSent={setSentTo} />
+            </div>
+          </>
+        )}
       </div>
     </main>
   );
 }
 
-function MagicLinkForm() {
+function SentConfirmation({ email, onReset }: { email: string; onReset: () => void }) {
+  return (
+    <div className="flex flex-col items-center gap-4 text-center">
+      <span className="flex size-12 items-center justify-center rounded-full bg-[#2c4633]/10 text-[#2c4633]">
+        <MailCheck aria-hidden className="size-5" />
+      </span>
+      <div className="space-y-1.5">
+        <p className="text-lg font-semibold tracking-tight">Check your inbox</p>
+        <p className="text-muted-foreground text-sm text-balance">
+          If <span className="text-foreground font-medium">{email}</span> has access, a sign-in link
+          is on its way. It expires in five minutes.
+        </p>
+      </div>
+      <Button
+        type="button"
+        variant="ghost"
+        size="sm"
+        className="text-muted-foreground"
+        onClick={onReset}
+      >
+        Use a different email
+      </Button>
+    </div>
+  );
+}
+
+function MagicLinkForm({ onSent }: { onSent: (email: string) => void }) {
   const [email, setEmail] = useState('');
   const [pending, setPending] = useState(false);
-  const [sent, setSent] = useState(false);
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -98,36 +130,7 @@ function MagicLinkForm() {
     // Same outcome for everyone, whether or not a link was actually sent, so the
     // page never reveals who has access.
     toast.success('Check your email for a sign-in link.');
-    setSent(true);
-  }
-
-  if (sent) {
-    return (
-      <div className="flex flex-col items-center gap-4 py-2 text-center">
-        <span className="flex size-12 items-center justify-center rounded-full bg-[#2c4633]/10 text-[#2c4633]">
-          <MailCheck aria-hidden className="size-5" />
-        </span>
-        <div className="space-y-1.5">
-          <p className="font-medium">Check your inbox</p>
-          <p className="text-muted-foreground text-sm text-balance">
-            If <span className="text-foreground font-medium">{email}</span> has access, a sign-in
-            link is on its way. It expires in five minutes.
-          </p>
-        </div>
-        <Button
-          type="button"
-          variant="ghost"
-          size="sm"
-          className="text-muted-foreground"
-          onClick={() => {
-            setSent(false);
-            setEmail('');
-          }}
-        >
-          Use a different email
-        </Button>
-      </div>
-    );
+    onSent(email);
   }
 
   return (

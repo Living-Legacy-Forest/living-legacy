@@ -50,11 +50,10 @@ function LoginPage() {
               <span
                 role="img"
                 aria-label="Living Legacy Forest"
-                className="inline-block shrink-0"
+                className="bg-brand inline-block shrink-0"
                 style={{
                   height: '2.75rem',
                   aspectRatio: '97 / 81',
-                  backgroundColor: '#2c4633',
                   WebkitMask: `url("${logoMark}") center / contain no-repeat`,
                   mask: `url("${logoMark}") center / contain no-repeat`,
                 }}
@@ -91,7 +90,7 @@ function LoginPage() {
 function SentConfirmation({ email, onReset }: { email: string; onReset: () => void }) {
   return (
     <div className="flex flex-col items-center gap-4 text-center">
-      <span className="flex size-12 items-center justify-center rounded-full bg-[#2c4633]/10 text-[#2c4633]">
+      <span className="bg-brand/10 text-brand flex size-12 items-center justify-center rounded-full">
         <MailCheck aria-hidden className="size-5" />
       </span>
       <div className="space-y-1.5">

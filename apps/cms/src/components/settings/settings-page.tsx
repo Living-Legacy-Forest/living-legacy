@@ -1,5 +1,6 @@
 import { SEO_DESCRIPTION_LIMIT } from '@llf/content';
-import { type ReactNode, useState } from 'react';
+import { getRouteApi } from '@tanstack/react-router';
+import { type ReactNode, useEffect, useRef, useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import {
@@ -12,8 +13,11 @@ import {
 import { Spinner } from '@/components/ui/spinner';
 import { Textarea } from '@/components/ui/textarea';
 import { useAction } from '@/lib/use-action';
+import { setTheme, useThemeSync } from '@/lib/use-theme-sync';
 import { cn } from '@/lib/utils';
 import { type Locale, type SiteSettings, type Theme, saveSiteSettings } from '@/server/settings';
+
+const rootRoute = getRouteApi('__root__');
 
 const localeItems: { value: Locale; label: string }[] = [
   { value: 'en-AU', label: 'English (Australia)' },
@@ -57,6 +61,16 @@ function ThemeSwatch({ theme }: { theme: Theme }) {
 export function SettingsPage({ data }: { data: SiteSettings }) {
   const [values, setValues] = useState(data);
   const { run, pending } = useAction();
+
+  // Preview the theme as soon as it's picked, not only once Save succeeds.
+  useThemeSync(values.theme);
+
+  // Leaving without saving must not leave an unsaved preview applied
+  // app-wide, so restore whatever is actually persisted on unmount.
+  const persistedTheme = rootRoute.useLoaderData();
+  const persistedThemeRef = useRef(persistedTheme);
+  persistedThemeRef.current = persistedTheme;
+  useEffect(() => () => setTheme(persistedThemeRef.current), []);
 
   const patch = (next: Partial<SiteSettings>) => setValues((v) => ({ ...v, ...next }));
 

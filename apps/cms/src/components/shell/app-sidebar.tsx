@@ -33,9 +33,8 @@ export function AppSidebar({ user }: { user: SessionUser }) {
               <span
                 role="img"
                 aria-label="Living Legacy Forest"
-                className="inline-block size-5 shrink-0"
+                className="bg-brand inline-block size-5 shrink-0"
                 style={{
-                  backgroundColor: '#2c4633',
                   WebkitMask: `url(${logoMark}) center / contain no-repeat`,
                   mask: `url(${logoMark}) center / contain no-repeat`,
                 }}

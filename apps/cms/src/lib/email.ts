@@ -67,3 +67,27 @@ export async function sendMagicLinkEmail(to: string, url: string): Promise<void>
 
   await send({ to, subject, html, text });
 }
+
+export async function sendInviteEmail(to: string, loginUrl: string): Promise<void> {
+  const subject = 'You have been invited to Living Legacy Forest';
+  const text = [
+    'You have been invited to the Living Legacy Forest CMS.',
+    '',
+    `Go to ${loginUrl} and sign in with this email (${to}) to get started.`,
+  ].join('\n');
+
+  const html = `
+    <div style="font-family: system-ui, sans-serif; max-width: 480px; margin: 0 auto; padding: 24px; color: #1a1a1a;">
+      <h1 style="font-size: 20px; margin: 0 0 16px;">You're invited to Living Legacy Forest</h1>
+      <p style="margin: 0 0 24px;">You've been invited to help manage the website content. Sign in with this email (${to}) to get started.</p>
+      <p style="margin: 0 0 24px;">
+        <a href="${loginUrl}" style="display: inline-block; background: #2c4633; color: #fff; text-decoration: none; padding: 12px 20px; border-radius: 8px;">Go to the CMS</a>
+      </p>
+      <p style="font-size: 13px; color: #666; margin: 0;">
+        If you weren't expecting this, you can ignore this email.
+      </p>
+    </div>
+  `;
+
+  await send({ to, subject, html, text });
+}

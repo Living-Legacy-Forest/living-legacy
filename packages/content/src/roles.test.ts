@@ -1,5 +1,11 @@
 import { describe, expect, it } from 'vitest';
-import { canReceiveMagicLink, can, resolveSignupRole } from './roles';
+import {
+  canReceiveMagicLink,
+  can,
+  guardRemoval,
+  guardRoleChange,
+  resolveSignupRole,
+} from './roles';
 
 describe('can', () => {
   it('lets admins do everything', () => {
@@ -48,5 +54,43 @@ describe('canReceiveMagicLink', () => {
 
   it('refuses strangers so a link never reveals who has access', () => {
     expect(canReceiveMagicLink({ hasAccount: false, signupRole: null })).toBe(false);
+  });
+});
+
+describe('guardRoleChange', () => {
+  it('stops you changing your own role', () => {
+    expect(guardRoleChange({ isSelf: true, targetIsLastAdmin: false, newRole: 'editor' })).toMatch(
+      /your own/i
+    );
+  });
+
+  it('stops demoting the last admin', () => {
+    expect(guardRoleChange({ isSelf: false, targetIsLastAdmin: true, newRole: 'editor' })).toMatch(
+      /at least one admin/i
+    );
+  });
+
+  it('allows other changes', () => {
+    expect(
+      guardRoleChange({ isSelf: false, targetIsLastAdmin: false, newRole: 'admin' })
+    ).toBeNull();
+    // Re-affirming the last admin as admin is fine.
+    expect(
+      guardRoleChange({ isSelf: false, targetIsLastAdmin: true, newRole: 'admin' })
+    ).toBeNull();
+  });
+});
+
+describe('guardRemoval', () => {
+  it('stops you removing yourself', () => {
+    expect(guardRemoval({ isSelf: true, targetIsLastAdmin: false })).toMatch(/yourself/i);
+  });
+
+  it('stops removing the last admin', () => {
+    expect(guardRemoval({ isSelf: false, targetIsLastAdmin: true })).toMatch(/at least one admin/i);
+  });
+
+  it('allows removing others', () => {
+    expect(guardRemoval({ isSelf: false, targetIsLastAdmin: false })).toBeNull();
   });
 });

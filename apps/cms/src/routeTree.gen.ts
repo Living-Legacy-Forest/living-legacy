@@ -15,6 +15,7 @@ import { Route as AppIndexRouteImport } from './routes/_app/index'
 import { Route as AppPostsIndexRouteImport } from './routes/_app/posts/index'
 import { Route as AppPostsPostIdRouteImport } from './routes/_app/posts/$postId'
 import { Route as AppPostsNewRouteImport } from './routes/_app/posts/new'
+import { Route as AppUsersIndexRouteImport } from './routes/_app/users/index'
 import { Route as ApiAuthSplatRouteImport } from './routes/api/auth/$'
 import { Route as PreviewPostsPostIdRouteImport } from './routes/preview/posts/$postId'
 
@@ -47,6 +48,11 @@ const AppPostsNewRoute = AppPostsNewRouteImport.update({
   path: '/posts/new',
   getParentRoute: () => AppRoute,
 } as any)
+const AppUsersIndexRoute = AppUsersIndexRouteImport.update({
+  id: '/users/',
+  path: '/users/',
+  getParentRoute: () => AppRoute,
+} as any)
 const ApiAuthSplatRoute = ApiAuthSplatRouteImport.update({
   id: '/api/auth/$',
   path: '/api/auth/$',
@@ -66,6 +72,7 @@ export interface FileRoutesByFullPath {
   '/api/auth/$': typeof ApiAuthSplatRoute
   '/preview/posts/$postId': typeof PreviewPostsPostIdRoute
   '/posts/': typeof AppPostsIndexRoute
+  '/users/': typeof AppUsersIndexRoute
 }
 export interface FileRoutesByTo {
   '/login': typeof LoginRoute
@@ -75,6 +82,7 @@ export interface FileRoutesByTo {
   '/api/auth/$': typeof ApiAuthSplatRoute
   '/preview/posts/$postId': typeof PreviewPostsPostIdRoute
   '/posts': typeof AppPostsIndexRoute
+  '/users': typeof AppUsersIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -86,6 +94,7 @@ export interface FileRoutesById {
   '/api/auth/$': typeof ApiAuthSplatRoute
   '/preview/posts/$postId': typeof PreviewPostsPostIdRoute
   '/_app/posts/': typeof AppPostsIndexRoute
+  '/_app/users/': typeof AppUsersIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -97,6 +106,7 @@ export interface FileRouteTypes {
     | '/api/auth/$'
     | '/preview/posts/$postId'
     | '/posts/'
+    | '/users/'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/login'
@@ -106,6 +116,7 @@ export interface FileRouteTypes {
     | '/api/auth/$'
     | '/preview/posts/$postId'
     | '/posts'
+    | '/users'
   id:
     | '__root__'
     | '/_app'
@@ -116,6 +127,7 @@ export interface FileRouteTypes {
     | '/api/auth/$'
     | '/preview/posts/$postId'
     | '/_app/posts/'
+    | '/_app/users/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -169,6 +181,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppPostsNewRouteImport
       parentRoute: typeof AppRoute
     }
+    '/_app/users/': {
+      id: '/_app/users/'
+      path: '/users'
+      fullPath: '/users/'
+      preLoaderRoute: typeof AppUsersIndexRouteImport
+      parentRoute: typeof AppRoute
+    }
     '/api/auth/$': {
       id: '/api/auth/$'
       path: '/api/auth/$'
@@ -191,6 +210,7 @@ interface AppRouteChildren {
   AppPostsPostIdRoute: typeof AppPostsPostIdRoute
   AppPostsNewRoute: typeof AppPostsNewRoute
   AppPostsIndexRoute: typeof AppPostsIndexRoute
+  AppUsersIndexRoute: typeof AppUsersIndexRoute
 }
 
 const AppRouteChildren: AppRouteChildren = {
@@ -198,6 +218,7 @@ const AppRouteChildren: AppRouteChildren = {
   AppPostsPostIdRoute: AppPostsPostIdRoute,
   AppPostsNewRoute: AppPostsNewRoute,
   AppPostsIndexRoute: AppPostsIndexRoute,
+  AppUsersIndexRoute: AppUsersIndexRoute,
 }
 
 const AppRouteWithChildren = AppRoute._addFileChildren(AppRouteChildren)

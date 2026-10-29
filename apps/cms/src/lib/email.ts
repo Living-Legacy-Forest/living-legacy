@@ -33,7 +33,9 @@ async function send(email: Email): Promise<void> {
   });
 
   if (!res.ok) {
-    // The body can echo the recipient; keep it out of the thrown message.
+    // Log Resend's reason (domain not verified, etc.) for diagnosis; keep it out
+    // of the thrown message, which surfaces to the client.
+    console.error(`[email] Resend ${res.status}: ${await res.text()}`);
     throw new Error(`Resend returned ${res.status}`);
   }
 }

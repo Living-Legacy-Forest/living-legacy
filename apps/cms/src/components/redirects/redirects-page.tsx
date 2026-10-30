@@ -135,7 +135,9 @@ export function RedirectsPage({ data }: { data: RedirectsData }) {
                     <PanelRightIcon aria-hidden />
                   </EmptyMedia>
                   <EmptyTitle>No redirect selected</EmptyTitle>
-                  <EmptyDescription>Choose one from the list, or add a new redirect.</EmptyDescription>
+                  <EmptyDescription>
+                    Choose one from the list, or add a new redirect.
+                  </EmptyDescription>
                 </EmptyHeader>
               </Empty>
             ) : (
@@ -205,9 +207,7 @@ function RedirectListItem({
         )}
       >
         <span className="flex items-center gap-2">
-          <span className="min-w-0 flex-1 truncate font-mono text-[13px]">
-            {redirect.fromPath}
-          </span>
+          <span className="min-w-0 flex-1 truncate font-mono text-[13px]">{redirect.fromPath}</span>
           {redirect.enabled ? (
             <Badge variant={redirect.statusCode === 301 ? 'secondary' : 'outline'}>
               {redirect.statusCode}

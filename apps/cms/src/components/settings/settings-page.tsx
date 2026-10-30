@@ -32,18 +32,18 @@ const themeLabels: Record<Theme, string> = {
   dark: 'Dark',
 };
 
-const themeItems: { value: Theme; label: ReactNode }[] = (
-  Object.keys(themeLabels) as Theme[]
-).map((value) => ({
-  value,
-  label: (
-    <span className="flex items-center gap-1.5">
-      <ThemeSwatch theme={value} />
-      <span className="text-[10px] font-semibold tracking-tight">Aa</span>
-      {themeLabels[value]}
-    </span>
-  ),
-}));
+const themeItems: { value: Theme; label: ReactNode }[] = (Object.keys(themeLabels) as Theme[]).map(
+  (value) => ({
+    value,
+    label: (
+      <span className="flex items-center gap-1.5">
+        <ThemeSwatch theme={value} />
+        <span className="text-[10px] font-semibold tracking-tight">Aa</span>
+        {themeLabels[value]}
+      </span>
+    ),
+  })
+);
 
 function ThemeSwatch({ theme }: { theme: Theme }) {
   return (
@@ -92,7 +92,10 @@ export function SettingsPage({ data }: { data: SiteSettings }) {
       </div>
 
       <form noValidate onSubmit={submit} className="space-y-8">
-        <SettingsSection title="General" description="What the site is called and how people reach you.">
+        <SettingsSection
+          title="General"
+          description="What the site is called and how people reach you."
+        >
           <SettingsRow title="Site title">
             <Input
               required

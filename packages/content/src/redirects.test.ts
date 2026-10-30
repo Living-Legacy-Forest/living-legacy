@@ -2,7 +2,11 @@ import { describe, expect, it } from 'vitest';
 import { type RedirectRule, resolveRedirect, traceRedirect } from './redirects';
 
 let n = 0;
-const rule = (fromPath: string, toPath: string, extra: Partial<RedirectRule> = {}): RedirectRule => ({
+const rule = (
+  fromPath: string,
+  toPath: string,
+  extra: Partial<RedirectRule> = {}
+): RedirectRule => ({
   id: `r${++n}`,
   fromPath,
   toPath,
@@ -21,8 +25,7 @@ describe('resolveRedirect', () => {
     rule('/old-offer', '/offer', { keepQuery: false }),
     rule('/removed', '', { statusCode: 410 }),
   ];
-  const location = (path: string, search = '') =>
-    resolveRedirect(rules, path, search)?.location;
+  const location = (path: string, search = '') => resolveRedirect(rules, path, search)?.location;
 
   it('matches exact paths ignoring case and a trailing slash', () => {
     expect(location('/About/')).toBe('/#about-section');

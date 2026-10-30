@@ -142,9 +142,7 @@ export function FaqsPage({ data, canWrite }: { data: FaqData; canWrite: boolean 
           <section aria-label="FAQs" className="flex min-h-0 flex-col lg:border-r">
             <div className="flex h-11 shrink-0 items-center gap-2 border-b px-3">
               <span className="text-[13px] font-medium">All</span>
-              <span className="text-muted-foreground text-xs tabular-nums">
-                {data.faqs.length}
-              </span>
+              <span className="text-muted-foreground text-xs tabular-nums">{data.faqs.length}</span>
             </div>
             <div className="min-h-0 flex-1 space-y-3 overflow-y-auto p-1.5">
               {sections.map((section) => (

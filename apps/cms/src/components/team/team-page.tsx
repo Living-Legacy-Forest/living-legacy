@@ -1,10 +1,21 @@
 import { useState } from 'react';
+import { BulkCsvForm } from '@/components/bulk/bulk-csv-form';
+import {
+  BulkPane,
+  ConfirmBulkDelete,
+  RowCheckbox,
+  SearchInput,
+  SelectionBar,
+  matchesSearch,
+  useSelection,
+} from '@/components/bulk/list-tools';
 import {
   ChevronDownIcon,
   ChevronUpIcon,
   PanelRightIcon,
   PlusIcon,
   Trash2Icon,
+  UploadIcon,
   UsersIcon,
 } from '@/components/icons';
 import {
@@ -42,12 +53,16 @@ import { Label } from '@/components/ui/label';
 import { Spinner } from '@/components/ui/spinner';
 import { Switch } from '@/components/ui/switch';
 import { Textarea } from '@/components/ui/textarea';
+import { readStatus } from '@/lib/bulk-import';
 import { reportInvalid } from '@/lib/form-validation';
 import { useAction } from '@/lib/use-action';
+import { cn } from '@/lib/utils';
 import {
   type TeamListData,
   type TeamMember,
   deleteTeamMember,
+  deleteTeamMembers,
+  importTeamMembers,
   moveTeamMember,
   saveTeamMember,
 } from '@/server/team';
@@ -55,27 +70,96 @@ import {
 const isDesktop = () =>
   typeof window !== 'undefined' && window.matchMedia('(min-width: 1024px)').matches;
 
+const NOUN: [string, string] = ['team member', 'team members'];
+
+/** A CSV row's values as member fields, or what is wrong with them. */
+function memberFromCsv(values: Record<string, string>) {
+  const status = readStatus(values.status ?? '');
+  if (!values.name) return 'The name is empty.';
+  if (values.name.length > 80) return 'The name is over 80 characters.';
+  if ((values.role ?? '').length > 60) return 'The role is over 60 characters.';
+  if ((values.bio ?? '').length > 2000) return 'The bio is over 2000 characters.';
+  if (!status) return 'The status must be draft or published.';
+  return { name: values.name, role: values.role, bio: values.bio, status };
+}
+
 export function TeamPage({ data, canWrite }: { data: TeamListData; canWrite: boolean }) {
   // Desktop: who the right-hand pane is editing. Mobile has no pane, so the
   // same form opens in a dialog instead (set independently, see openNew/openEdit).
-  const [editingId, setEditingId] = useState<string | 'new' | null>(null);
-  const [dialogTarget, setDialogTarget] = useState<TeamMember | 'new' | null>(null);
+  const [editingId, setEditingId] = useState<string | 'new' | 'bulk' | null>(null);
+  const [dialogTarget, setDialogTarget] = useState<TeamMember | 'new' | 'bulk' | null>(null);
+  const [query, setQuery] = useState('');
+  const [confirmDelete, setConfirmDelete] = useState(false);
+  const selection = useSelection(data.map((m) => m.id));
+  const { run, pending } = useAction();
 
   const selected = data.find((m) => m.id === editingId) ?? null;
+  const visible = data.filter((m) => matchesSearch(query, [m.name, m.role, m.bio]));
 
   const openNew = () => (isDesktop() ? setEditingId('new') : setDialogTarget('new'));
+  const openBulk = () => (isDesktop() ? setEditingId('bulk') : setDialogTarget('bulk'));
   const openEdit = (member: TeamMember) =>
     isDesktop() ? setEditingId(member.id) : setDialogTarget(member);
+
+  async function removeChecked() {
+    const ids = selection.checkedIds;
+    const result = await run(
+      () => deleteTeamMembers({ data: { ids } }),
+      `${ids.length} ${ids.length === 1 ? NOUN[0] : NOUN[1]} removed.`
+    );
+    if (!result) return;
+    if (editingId && ids.includes(editingId)) setEditingId(null);
+    selection.clear();
+  }
+
+  const bulkForm = (onDone: () => void, footer: (submit: React.ReactNode) => React.ReactNode) => (
+    <BulkCsvForm
+      noun={NOUN}
+      fileName="team"
+      fields={['name', 'role', 'bio', 'status']}
+      example={{
+        name: 'Jane Smith',
+        role: 'Founder',
+        bio: 'A short introduction.',
+        status: 'draft',
+      }}
+      current={data.map((m) => ({
+        id: m.id,
+        name: m.name,
+        role: m.role ?? '',
+        bio: m.bio,
+        status: m.status,
+      }))}
+      toRow={memberFromCsv}
+      apply={(rows) => importTeamMembers({ data: { rows } })}
+      onDone={onDone}
+      footer={footer}
+    />
+  );
 
   return (
     <div className="flex flex-1 flex-col gap-4 lg:h-[calc(100svh-7.5rem)] lg:flex-none">
       <div className="flex flex-wrap items-center gap-3">
         <h1 className="mr-auto text-xl">Team</h1>
+        {data.length > 0 && (
+          <SearchInput
+            label="Search team members"
+            placeholder="Search names and roles"
+            value={query}
+            onChange={setQuery}
+          />
+        )}
         {canWrite && (
-          <Button size="sm" onClick={openNew}>
-            <PlusIcon aria-hidden data-icon="inline-start" />
-            Add member
-          </Button>
+          <>
+            <Button size="sm" variant="outline" onClick={openBulk}>
+              <UploadIcon aria-hidden data-icon="inline-start" />
+              Bulk update
+            </Button>
+            <Button size="sm" onClick={openNew}>
+              <PlusIcon aria-hidden data-icon="inline-start" />
+              Add member
+            </Button>
+          </>
         )}
       </div>
 
@@ -92,33 +176,61 @@ export function TeamPage({ data, canWrite }: { data: TeamListData; canWrite: boo
           </EmptyHeader>
           {canWrite && (
             <EmptyContent>
-              <Button size="sm" onClick={openNew}>
-                <PlusIcon aria-hidden data-icon="inline-start" />
-                Add member
-              </Button>
+              <div className="flex gap-2">
+                <Button size="sm" variant="outline" onClick={openBulk}>
+                  <UploadIcon aria-hidden data-icon="inline-start" />
+                  Bulk update
+                </Button>
+                <Button size="sm" onClick={openNew}>
+                  <PlusIcon aria-hidden data-icon="inline-start" />
+                  Add member
+                </Button>
+              </div>
             </EmptyContent>
           )}
         </Empty>
       ) : (
-        <div className="grid min-h-0 flex-1 overflow-hidden rounded-lg border lg:grid-cols-[minmax(20rem,2fr)_3fr]">
+        <div className="grid min-h-0 flex-1 overflow-hidden rounded-lg border lg:grid-cols-[minmax(20rem,1fr)_1fr]">
           <section aria-label="Team members" className="flex min-h-0 flex-col lg:border-r">
-            <div className="flex h-11 shrink-0 items-center gap-2 border-b px-3">
-              <span className="text-[13px] font-medium">Members</span>
-              <span className="text-muted-foreground text-xs tabular-nums">{data.length}</span>
-            </div>
-            <ul className="min-h-0 flex-1 space-y-px overflow-y-auto p-1.5">
-              {data.map((member, index) => (
-                <MemberListItem
-                  key={member.id}
-                  member={member}
-                  selected={member.id === editingId}
-                  canMoveUp={index > 0}
-                  canMoveDown={index < data.length - 1}
-                  canWrite={canWrite}
-                  onSelect={() => openEdit(member)}
-                />
-              ))}
-            </ul>
+            {canWrite ? (
+              <SelectionBar
+                selection={selection}
+                visibleIds={visible.map((m) => m.id)}
+                title="Members"
+                total={data.length}
+                pending={pending}
+                onDelete={() => setConfirmDelete(true)}
+              />
+            ) : (
+              <div className="flex h-11 shrink-0 items-center gap-2 border-b px-3">
+                <span className="text-[13px] font-medium">Members</span>
+                <span className="text-muted-foreground text-xs tabular-nums">{data.length}</span>
+              </div>
+            )}
+            {visible.length === 0 ? (
+              <NoMatches onClear={() => setQuery('')} />
+            ) : (
+              <ul className="min-h-0 flex-1 space-y-px overflow-y-auto p-1.5">
+                {visible.map((member) => {
+                  const index = data.indexOf(member);
+                  return (
+                    <MemberListItem
+                      key={member.id}
+                      member={member}
+                      selected={member.id === editingId}
+                      checked={selection.isChecked(member.id)}
+                      selecting={selection.checkedIds.length > 0}
+                      onToggle={() => selection.toggle(member.id)}
+                      // Reordering a filtered list would be confusing, so it waits for a clear search.
+                      canMoveUp={!query && index > 0}
+                      canMoveDown={!query && index < data.length - 1}
+                      canWrite={canWrite}
+                      onSelect={() => openEdit(member)}
+                    />
+                  );
+                })}
+              </ul>
+            )}
           </section>
 
           <section aria-label="Edit member" className="hidden min-h-0 flex-col lg:flex">
@@ -134,6 +246,20 @@ export function TeamPage({ data, canWrite }: { data: TeamListData; canWrite: boo
                   </EmptyDescription>
                 </EmptyHeader>
               </Empty>
+            ) : editingId === 'bulk' ? (
+              <BulkPane title="Bulk update team members">
+                {bulkForm(
+                  () => setEditingId(null),
+                  (submit) => (
+                    <div className="flex justify-end gap-2">
+                      <Button type="button" variant="outline" onClick={() => setEditingId(null)}>
+                        Cancel
+                      </Button>
+                      {submit}
+                    </div>
+                  )
+                )}
+              </BulkPane>
             ) : (
               <MemberPane
                 key={editingId}
@@ -146,30 +272,61 @@ export function TeamPage({ data, canWrite }: { data: TeamListData; canWrite: boo
         </div>
       )}
 
+      <ConfirmBulkDelete
+        open={confirmDelete}
+        onOpenChange={setConfirmDelete}
+        count={selection.checkedIds.length}
+        noun={NOUN}
+        description="They are removed from the website. Posts they authored keep their content."
+        onConfirm={removeChecked}
+      />
+
       {canWrite && (
         <Dialog
           open={dialogTarget !== null}
           onOpenChange={(open) => !open && setDialogTarget(null)}
         >
-          <DialogContent className="sm:max-w-sm">
+          <DialogContent className={dialogTarget === 'bulk' ? 'sm:max-w-lg' : 'sm:max-w-sm'}>
             <DialogHeader>
-              <DialogTitle>{dialogTarget === 'new' ? 'Add member' : 'Edit member'}</DialogTitle>
+              <DialogTitle>
+                {dialogTarget === 'bulk'
+                  ? 'Bulk update team members'
+                  : dialogTarget === 'new'
+                    ? 'Add member'
+                    : 'Edit member'}
+              </DialogTitle>
               <DialogDescription>
-                Shown on the website and available as a post author.
+                {dialogTarget === 'bulk'
+                  ? 'Add or update many members at once from a CSV file.'
+                  : 'Shown on the website and available as a post author.'}
               </DialogDescription>
             </DialogHeader>
-            <MemberForm
-              member={dialogTarget === 'new' ? null : dialogTarget}
-              onSaved={() => setDialogTarget(null)}
-              footer={(pending) => (
-                <DialogFooter>
-                  <DialogClose render={<Button type="button" variant="outline" />}>
-                    Cancel
-                  </DialogClose>
-                  <SubmitButton pending={pending} isNew={dialogTarget === 'new'} />
-                </DialogFooter>
-              )}
-            />
+            {dialogTarget === 'bulk' ? (
+              bulkForm(
+                () => setDialogTarget(null),
+                (submit) => (
+                  <DialogFooter>
+                    <DialogClose render={<Button type="button" variant="outline" />}>
+                      Cancel
+                    </DialogClose>
+                    {submit}
+                  </DialogFooter>
+                )
+              )
+            ) : (
+              <MemberForm
+                member={dialogTarget === 'new' ? null : dialogTarget}
+                onSaved={() => setDialogTarget(null)}
+                footer={(pending) => (
+                  <DialogFooter>
+                    <DialogClose render={<Button type="button" variant="outline" />}>
+                      Cancel
+                    </DialogClose>
+                    <SubmitButton pending={pending} isNew={dialogTarget === 'new'} />
+                  </DialogFooter>
+                )}
+              />
+            )}
           </DialogContent>
         </Dialog>
       )}
@@ -177,9 +334,23 @@ export function TeamPage({ data, canWrite }: { data: TeamListData; canWrite: boo
   );
 }
 
+function NoMatches({ onClear }: { onClear: () => void }) {
+  return (
+    <div className="text-muted-foreground flex flex-1 flex-col items-center justify-center gap-2 p-6 text-center text-sm">
+      Nobody matches that search.
+      <Button variant="ghost" size="sm" onClick={onClear}>
+        Clear search
+      </Button>
+    </div>
+  );
+}
+
 function MemberListItem({
   member,
   selected,
+  checked,
+  selecting,
+  onToggle,
   canMoveUp,
   canMoveDown,
   canWrite,
@@ -187,6 +358,9 @@ function MemberListItem({
 }: {
   member: TeamMember;
   selected: boolean;
+  checked: boolean;
+  selecting: boolean;
+  onToggle: () => void;
   canMoveUp: boolean;
   canMoveDown: boolean;
   canWrite: boolean;
@@ -195,8 +369,16 @@ function MemberListItem({
   const { run, pending } = useAction();
 
   return (
-    <li className={selected ? 'bg-accent rounded-md' : 'hover:bg-muted/60 rounded-md'}>
+    <li className={cn('group rounded-md', selected ? 'bg-accent' : 'hover:bg-muted/60')}>
       <div className="flex items-center gap-1 px-1.5 py-1">
+        {canWrite && (
+          <RowCheckbox
+            label={`Select ${member.name}`}
+            checked={checked}
+            selecting={selecting}
+            onToggle={onToggle}
+          />
+        )}
         <button
           type="button"
           onClick={onSelect}

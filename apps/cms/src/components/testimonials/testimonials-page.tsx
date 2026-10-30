@@ -43,6 +43,7 @@ import { Label } from '@/components/ui/label';
 import { Spinner } from '@/components/ui/spinner';
 import { Switch } from '@/components/ui/switch';
 import { Textarea } from '@/components/ui/textarea';
+import { reportInvalid } from '@/lib/form-validation';
 import { useAction } from '@/lib/use-action';
 import { cn } from '@/lib/utils';
 import {
@@ -58,6 +59,9 @@ function attribution(t: Testimonial): string {
   return [t.relationship, t.location].filter(Boolean).join(' · ');
 }
 
+const isDesktop = () =>
+  typeof window !== 'undefined' && window.matchMedia('(min-width: 1024px)').matches;
+
 export function TestimonialsPage({
   data,
   search,
@@ -69,22 +73,20 @@ export function TestimonialsPage({
 }) {
   const navigate = useNavigate({ from: '/testimonials/' });
   const { run, pending } = useAction();
-  const [editing, setEditing] = useState<Testimonial | null>(null);
-  const [open, setOpen] = useState(false);
+  // Desktop: what the right-hand pane is editing, in place of the preview. Mobile
+  // has no pane, so the same form opens in a dialog instead (as on the team page).
+  const [editingId, setEditingId] = useState<string | 'new' | null>(null);
+  const [dialogTarget, setDialogTarget] = useState<Testimonial | 'new' | null>(null);
 
   const selectedId = data.find((t) => t.id === search.selected)?.id ?? data[0]?.id ?? null;
   const selected = data.find((t) => t.id === selectedId) ?? null;
-  const select = (id: string) =>
+  const select = (id: string) => {
+    setEditingId(null);
     navigate({ search: (prev) => ({ ...prev, selected: id }), replace: true });
+  };
 
-  const openNew = () => {
-    setEditing(null);
-    setOpen(true);
-  };
-  const openEdit = (t: Testimonial) => {
-    setEditing(t);
-    setOpen(true);
-  };
+  const openNew = () => (isDesktop() ? setEditingId('new') : setDialogTarget('new'));
+  const openEdit = (t: Testimonial) => (isDesktop() ? setEditingId(t.id) : setDialogTarget(t));
   const remove = (id: string) =>
     run(() => deleteTestimonial({ data: { id } }), 'Testimonial removed.');
 
@@ -100,7 +102,7 @@ export function TestimonialsPage({
         )}
       </div>
 
-      {data.length === 0 ? (
+      {data.length === 0 && editingId === null ? (
         <Empty className="flex-1 rounded-lg border">
           <EmptyHeader>
             <EmptyMedia variant="icon">
@@ -130,7 +132,7 @@ export function TestimonialsPage({
                 <TestimonialListItem
                   key={t.id}
                   testimonial={t}
-                  selected={t.id === selectedId}
+                  selected={editingId !== 'new' && t.id === selectedId}
                   onSelect={() => select(t.id)}
                   onOpen={() => (canWrite ? openEdit(t) : select(t.id))}
                 />
@@ -138,23 +140,54 @@ export function TestimonialsPage({
             </ul>
           </section>
 
-          <PreviewPane
-            testimonial={selected}
-            canWrite={canWrite}
-            pending={pending}
-            onEdit={openEdit}
-            onDelete={remove}
-          />
+          {canWrite && editingId !== null ? (
+            <section aria-label="Edit testimonial" className="hidden min-h-0 flex-col lg:flex">
+              <TestimonialPane
+                key={editingId}
+                testimonial={data.find((t) => t.id === editingId) ?? null}
+                onSaved={select}
+                onClose={() => setEditingId(null)}
+              />
+            </section>
+          ) : (
+            <PreviewPane
+              testimonial={selected}
+              canWrite={canWrite}
+              pending={pending}
+              onEdit={openEdit}
+              onDelete={remove}
+            />
+          )}
         </div>
       )}
 
       {canWrite && (
-        <TestimonialDialog
-          key={editing?.id ?? 'new'}
-          testimonial={editing}
-          open={open}
-          onOpenChange={setOpen}
-        />
+        <Dialog
+          open={dialogTarget !== null}
+          onOpenChange={(open) => !open && setDialogTarget(null)}
+        >
+          <DialogContent className="sm:max-w-md">
+            <DialogHeader>
+              <DialogTitle>
+                {dialogTarget === 'new' ? 'Add testimonial' : 'Edit testimonial'}
+              </DialogTitle>
+              <DialogDescription>A quote from a family, shown on the website.</DialogDescription>
+            </DialogHeader>
+            <TestimonialForm
+              key={dialogTarget === 'new' ? 'new' : dialogTarget?.id}
+              testimonial={dialogTarget === 'new' ? null : dialogTarget}
+              onSaved={() => setDialogTarget(null)}
+              footer={(formPending, isNew) => (
+                <DialogFooter>
+                  <DialogClose render={<Button type="button" variant="outline" />}>
+                    Cancel
+                  </DialogClose>
+                  <SubmitButton pending={formPending} isNew={isNew} />
+                </DialogFooter>
+              )}
+            />
+          </DialogContent>
+        </Dialog>
       )}
     </div>
   );
@@ -316,14 +349,69 @@ function DeleteTestimonial({
   );
 }
 
-function TestimonialDialog({
+function SubmitButton({ pending, isNew }: { pending: boolean; isNew: boolean }) {
+  return (
+    <Button type="submit" disabled={pending}>
+      {pending ? (
+        <>
+          <Spinner />
+          Saving…
+        </>
+      ) : isNew ? (
+        'Add testimonial'
+      ) : (
+        'Save'
+      )}
+    </Button>
+  );
+}
+
+/** The inline desktop pane: header, scrollable form body, cancel back to the preview. */
+function TestimonialPane({
   testimonial,
-  open,
-  onOpenChange,
+  onSaved,
+  onClose,
 }: {
   testimonial: Testimonial | null;
-  open: boolean;
-  onOpenChange: (open: boolean) => void;
+  onSaved: (id: string) => void;
+  onClose: () => void;
+}) {
+  return (
+    <>
+      <div className="flex h-11 shrink-0 items-center gap-1.5 border-b px-3">
+        <span className="text-sm font-medium">
+          {testimonial ? `Edit ${testimonial.name}` : 'New testimonial'}
+        </span>
+      </div>
+      <div className="min-h-0 flex-1 overflow-y-auto px-4 py-6">
+        <div className="mx-auto max-w-md">
+          <TestimonialForm
+            testimonial={testimonial}
+            onSaved={onSaved}
+            footer={(pending, isNew) => (
+              <div className="flex justify-end gap-2">
+                <Button type="button" variant="outline" onClick={onClose}>
+                  Cancel
+                </Button>
+                <SubmitButton pending={pending} isNew={isNew} />
+              </div>
+            )}
+          />
+        </div>
+      </div>
+    </>
+  );
+}
+
+/** Shared fields + submit logic, used inline (desktop pane) and in the mobile dialog. */
+function TestimonialForm({
+  testimonial,
+  onSaved,
+  footer,
+}: {
+  testimonial: Testimonial | null;
+  onSaved: (id: string) => void;
+  footer: (pending: boolean, isNew: boolean) => React.ReactNode;
 }) {
   const [quote, setQuote] = useState(testimonial?.quote ?? '');
   const [name, setName] = useState(testimonial?.name ?? '');
@@ -335,6 +423,7 @@ function TestimonialDialog({
 
   async function submit(e: React.FormEvent) {
     e.preventDefault();
+    if (!reportInvalid(e.currentTarget)) return;
     const result = await run(
       () =>
         saveTestimonial({
@@ -350,89 +439,67 @@ function TestimonialDialog({
         }),
       testimonial ? 'Testimonial updated.' : 'Testimonial added.'
     );
-    if (result) onOpenChange(false);
+    if (result) onSaved(result.id);
   }
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-md">
-        <DialogHeader>
-          <DialogTitle>{testimonial ? 'Edit testimonial' : 'Add testimonial'}</DialogTitle>
-          <DialogDescription>A quote from a family, shown on the website.</DialogDescription>
-        </DialogHeader>
-        <form onSubmit={submit} className="space-y-4">
-          <div className="space-y-1.5">
-            <Label htmlFor="t-quote">Quote</Label>
-            <Textarea
-              id="t-quote"
-              required
-              rows={4}
-              value={quote}
-              onChange={(e) => setQuote(e.target.value)}
-              placeholder="It felt like we were giving something back…"
-            />
-          </div>
-          <div className="grid grid-cols-2 gap-3">
-            <div className="space-y-1.5">
-              <Label htmlFor="t-name">Name</Label>
-              <Input
-                id="t-name"
-                required
-                value={name}
-                onChange={(e) => setName(e.target.value)}
-                placeholder="Jane Smith"
-              />
-            </div>
-            <div className="space-y-1.5">
-              <Label htmlFor="t-relationship">Relationship</Label>
-              <Input
-                id="t-relationship"
-                value={relationship}
-                onChange={(e) => setRelationship(e.target.value)}
-                placeholder="Daughter"
-              />
-            </div>
-          </div>
-          <div className="space-y-1.5">
-            <Label htmlFor="t-location">Location</Label>
-            <Input
-              id="t-location"
-              value={location}
-              onChange={(e) => setLocation(e.target.value)}
-              placeholder="Melbourne"
-            />
-          </div>
-          <div className="flex items-center justify-between rounded-lg border p-3">
-            <div className="space-y-0.5">
-              <div className="text-sm font-medium">Featured</div>
-              <div className="text-muted-foreground text-xs">Highlight this quote on the site.</div>
-            </div>
-            <Switch checked={featured} onCheckedChange={setFeatured} />
-          </div>
-          <div className="flex items-center justify-between rounded-lg border p-3">
-            <div className="space-y-0.5">
-              <div className="text-sm font-medium">Published</div>
-              <div className="text-muted-foreground text-xs">Show this quote on the website.</div>
-            </div>
-            <Switch checked={published} onCheckedChange={setPublished} />
-          </div>
-          <DialogFooter>
-            <DialogClose render={<Button type="button" variant="outline" />}>Cancel</DialogClose>
-            <Button type="submit" disabled={pending}>
-              {pending ? (
-                <>
-                  <Spinner />
-                  Saving…
-                </>
-              ) : testimonial ? (
-                'Save'
-              ) : (
-                'Add testimonial'
-              )}
-            </Button>
-          </DialogFooter>
-        </form>
-      </DialogContent>
-    </Dialog>
+    <form noValidate onSubmit={submit} className="space-y-4">
+      <div className="space-y-1.5">
+        <Label htmlFor="t-quote">Quote</Label>
+        <Textarea
+          id="t-quote"
+          required
+          rows={4}
+          value={quote}
+          onChange={(e) => setQuote(e.target.value)}
+          placeholder="It felt like we were giving something back…"
+        />
+      </div>
+      <div className="grid grid-cols-2 gap-3">
+        <div className="space-y-1.5">
+          <Label htmlFor="t-name">Name</Label>
+          <Input
+            id="t-name"
+            required
+            value={name}
+            onChange={(e) => setName(e.target.value)}
+            placeholder="Jane Smith"
+          />
+        </div>
+        <div className="space-y-1.5">
+          <Label htmlFor="t-relationship">Relationship</Label>
+          <Input
+            id="t-relationship"
+            value={relationship}
+            onChange={(e) => setRelationship(e.target.value)}
+            placeholder="Daughter"
+          />
+        </div>
+      </div>
+      <div className="space-y-1.5">
+        <Label htmlFor="t-location">Location</Label>
+        <Input
+          id="t-location"
+          value={location}
+          onChange={(e) => setLocation(e.target.value)}
+          placeholder="Melbourne"
+        />
+      </div>
+      <div className="flex items-center justify-between rounded-lg border p-3">
+        <div className="space-y-0.5">
+          <div className="text-sm font-medium">Featured</div>
+          <div className="text-muted-foreground text-xs">Highlight this quote on the site.</div>
+        </div>
+        <Switch checked={featured} onCheckedChange={setFeatured} />
+      </div>
+      <div className="flex items-center justify-between rounded-lg border p-3">
+        <div className="space-y-0.5">
+          <div className="text-sm font-medium">Published</div>
+          <div className="text-muted-foreground text-xs">Show this quote on the website.</div>
+        </div>
+        <Switch checked={published} onCheckedChange={setPublished} />
+      </div>
+      {footer(pending, testimonial === null)}
+    </form>
   );
 }

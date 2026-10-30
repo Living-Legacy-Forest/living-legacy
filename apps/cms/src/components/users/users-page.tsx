@@ -44,6 +44,7 @@ import {
   TableRow,
 } from '@/components/ui/table';
 import { formatDate } from '@/lib/format';
+import { reportInvalid } from '@/lib/form-validation';
 import { useAction } from '@/lib/use-action';
 import { cn } from '@/lib/utils';
 import {
@@ -250,6 +251,7 @@ function InviteDialog() {
 
   async function submit(e: React.FormEvent) {
     e.preventDefault();
+    if (!reportInvalid(e.currentTarget)) return;
     const result = await run(
       () => inviteUser({ data: { email, role } }),
       (r) =>
@@ -284,7 +286,7 @@ function InviteDialog() {
             They get an email with a link to sign in. You can change their role later.
           </DialogDescription>
         </DialogHeader>
-        <form onSubmit={submit} className="space-y-5">
+        <form noValidate onSubmit={submit} className="space-y-5">
           <div className="space-y-1.5">
             <Label htmlFor="invite-email">Email</Label>
             <Input

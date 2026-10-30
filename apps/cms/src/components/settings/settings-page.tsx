@@ -12,6 +12,7 @@ import {
 } from '@/components/ui/select';
 import { Spinner } from '@/components/ui/spinner';
 import { Textarea } from '@/components/ui/textarea';
+import { reportInvalid } from '@/lib/form-validation';
 import { useAction } from '@/lib/use-action';
 import { setTheme, useThemeSync } from '@/lib/use-theme-sync';
 import { cn } from '@/lib/utils';
@@ -76,6 +77,7 @@ export function SettingsPage({ data }: { data: SiteSettings }) {
 
   async function submit(e: React.FormEvent) {
     e.preventDefault();
+    if (!reportInvalid(e.currentTarget)) return;
     const result = await run(() => saveSiteSettings({ data: values }), 'Settings saved.');
     if (result) setValues(result);
   }
@@ -89,7 +91,7 @@ export function SettingsPage({ data }: { data: SiteSettings }) {
         </p>
       </div>
 
-      <form onSubmit={submit} className="space-y-8">
+      <form noValidate onSubmit={submit} className="space-y-8">
         <SettingsSection title="General" description="What the site is called and how people reach you.">
           <SettingsRow title="Site title">
             <Input

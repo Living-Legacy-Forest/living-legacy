@@ -190,7 +190,9 @@ export function ConfirmBulkDelete({
         </AlertDialogHeader>
         <AlertDialogFooter>
           <AlertDialogCancel>Cancel</AlertDialogCancel>
-          <AlertDialogAction onClick={onConfirm}>Remove</AlertDialogAction>
+          <AlertDialogAction disabled={count === 0} onClick={onConfirm}>
+            Remove
+          </AlertDialogAction>
         </AlertDialogFooter>
       </AlertDialogContent>
     </AlertDialog>

@@ -71,6 +71,7 @@ import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover
 import { Switch } from '@/components/ui/switch';
 import { Textarea } from '@/components/ui/textarea';
 import { formatDateTime, formatRelative } from '@/lib/format';
+import { readableError } from '@/lib/errors';
 import { cn } from '@/lib/utils';
 import {
   type PostEditorData,
@@ -114,8 +115,7 @@ type Meta = {
 
 type Option = { id: string; name: string };
 
-const errorMessage = (error: unknown) =>
-  error instanceof Error ? error.message : 'Something went wrong. Please try again.';
+const errorMessage = readableError;
 
 /**
  * Create and edit form for a post. Remount it (change its `key`) to reload

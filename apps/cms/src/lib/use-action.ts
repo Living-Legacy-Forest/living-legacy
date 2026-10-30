@@ -1,6 +1,7 @@
 import { useRouter } from '@tanstack/react-router';
 import { useState } from 'react';
 import { toast } from 'sonner';
+import { readableError } from './errors';
 
 /**
  * Runs a mutation with a pending flag, a toast for the outcome and a router
@@ -18,9 +19,7 @@ export function useAction() {
       await router.invalidate();
       return result;
     } catch (error) {
-      toast.error(
-        error instanceof Error ? error.message : 'Something went wrong. Please try again.'
-      );
+      toast.error(readableError(error));
       return undefined;
     } finally {
       setPending(false);

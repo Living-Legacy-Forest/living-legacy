@@ -1,5 +1,6 @@
 import {
   type PostInput,
+  type RichTextDoc,
   type Role,
   SEO_DESCRIPTION_LIMIT,
   SEO_TITLE_LIMIT,
@@ -25,6 +26,7 @@ import {
   TagIcon,
   Trash2Icon,
   Undo2Icon,
+  UploadIcon,
   UserIcon,
 } from '@/components/icons';
 import { type ReactNode, Suspense, lazy, useEffect, useRef, useState } from 'react';
@@ -174,6 +176,8 @@ export function PostEditor({
   const [categories, setCategories] = useState<Option[]>(data.categories);
   const [busy, setBusy] = useState<null | 'save' | 'publish' | 'other'>(null);
   const [lastSavedAt, setLastSavedAt] = useState<number | null>(data.post?.updatedAt ?? null);
+  const [importingDocx, setImportingDocx] = useState(false);
+  const docxInputRef = useRef<HTMLInputElement>(null);
 
   const dirty = JSON.stringify(values) !== JSON.stringify(saved);
   const dirtyRef = useRef(dirty);
@@ -402,6 +406,44 @@ export function PostEditor({
     }
   }
 
+  /**
+   * Converts a .docx file to the post body. Images have nowhere to be
+   * hosted yet, so they are dropped rather than embedded as data URIs: the
+   * editor's extensions have no image node, so an <img> with no src is
+   * silently ignored by generateJSON.
+   */
+  async function importDocx(file: File) {
+    if (values.body && !window.confirm(`Replace the current content with ${file.name}?`)) {
+      return;
+    }
+    setImportingDocx(true);
+    try {
+      const [{ default: mammoth }, { generateJSON }, { postContentExtensions }] =
+        await Promise.all([import('mammoth'), import('@tiptap/core'), import('./post-extensions')]);
+      let imageCount = 0;
+      const { value: html } = await mammoth.convertToHtml(
+        { arrayBuffer: await file.arrayBuffer() },
+        {
+          convertImage: mammoth.images.imgElement(async () => {
+            imageCount += 1;
+            return { src: '' };
+          }),
+        }
+      );
+      update({ body: generateJSON(html, postContentExtensions) as RichTextDoc });
+      setBodyKey((k) => k + 1);
+      toast.success(
+        imageCount > 0
+          ? `Imported ${file.name}. ${imageCount} image${imageCount === 1 ? '' : 's'} could not be imported; add ${imageCount === 1 ? 'it' : 'them'} manually.`
+          : `Imported ${file.name}.`
+      );
+    } catch {
+      toast.error('Could not read that file. Make sure it is a .docx document.');
+    } finally {
+      setImportingDocx(false);
+    }
+  }
+
   async function addCategory(name: string) {
     try {
       const category = await createCategory({ data: { name } });
@@ -562,6 +604,13 @@ export function PostEditor({
                       <EyeIcon aria-hidden />
                       Preview
                     </DropdownMenuItem>
+                    <DropdownMenuItem
+                      disabled={working || importingDocx}
+                      onClick={() => docxInputRef.current?.click()}
+                    >
+                      {importingDocx ? <Spinner /> : <UploadIcon aria-hidden />}
+                      Import Word doc
+                    </DropdownMenuItem>
                     {isLive && (
                       <DropdownMenuItem
                         disabled={working}
@@ -635,6 +684,15 @@ export function PostEditor({
                   <>
                     <Button
                       variant="ghost"
+                      size="icon-sm"
+                      aria-label="Import Word doc"
+                      disabled={working || importingDocx}
+                      onClick={() => docxInputRef.current?.click()}
+                    >
+                      {importingDocx ? <Spinner /> : <UploadIcon aria-hidden />}
+                    </Button>
+                    <Button
+                      variant="ghost"
                       size="sm"
                       disabled={working || (!dirty && meta.id !== null)}
                       onClick={() => persist('save')}
@@ -676,6 +734,18 @@ export function PostEditor({
             )}
           </div>
         </header>
+
+        <input
+          ref={docxInputRef}
+          type="file"
+          accept=".docx,application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+          className="hidden"
+          onChange={(e) => {
+            const file = e.target.files?.[0];
+            e.target.value = '';
+            if (file) void importDocx(file);
+          }}
+        />
 
         <div className="min-h-[32rem] flex-1 lg:min-h-0">
           <ClientOnly fallback={<EditorFallback />}>

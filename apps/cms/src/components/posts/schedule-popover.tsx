@@ -6,41 +6,20 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Spinner } from '@/components/ui/spinner';
-import { type WallTime, formatDateTime, fromZoned, toZoned, zoneName } from '@/lib/format';
+import {
+  type WallTime,
+  displayTime,
+  formatDateTime,
+  fromZoned,
+  parseTime,
+  toZoned,
+  zoneName,
+} from '@/lib/format';
 import { cn } from '@/lib/utils';
 
 const MIN_LEAD_MS = 60_000;
 
 const pad = (n: number) => String(n).padStart(2, '0');
-
-/**
- * Reads times typed the way people write them: "9", "9am", "9:30 pm",
- * "21:10", "0930". Returns 24-hour "HH:MM", or null if it is not a time.
- */
-export function parseTime(text: string): string | null {
-  const match = text
-    .trim()
-    .toLowerCase()
-    .match(/^(\d{1,2})(?:[:.]?(\d{2}))?\s*(a|am|p|pm)?$/);
-  if (!match) return null;
-  let hour = Number(match[1]);
-  const minute = Number(match[2] ?? 0);
-  const meridiem = match[3]?.[0];
-  if (minute > 59) return null;
-  if (meridiem) {
-    if (hour < 1 || hour > 12) return null;
-    hour = (hour % 12) + (meridiem === 'p' ? 12 : 0);
-  } else if (hour > 23) {
-    return null;
-  }
-  return `${pad(hour)}:${pad(minute)}`;
-}
-
-/** "21:10" becomes "9:10 pm", the way Australians write times. */
-export function displayTime(time: string) {
-  const [hour = 0, minute = 0] = time.split(':').map(Number);
-  return `${hour % 12 || 12}:${pad(minute)} ${hour < 12 ? 'am' : 'pm'}`;
-}
 
 // The calendar works in plain calendar days; times are Melbourne wall-clock
 // times, converted to an instant only when scheduling.

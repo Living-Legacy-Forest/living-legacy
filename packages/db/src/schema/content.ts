@@ -51,6 +51,8 @@ export const posts = sqliteTable(
     noindex: integer('noindex', { mode: 'boolean' }).notNull().default(false),
     /** When a draft goes live on its own; cleared on publish, unschedule or trash. */
     scheduledAt: integer('scheduled_at', { mode: 'timestamp_ms' }),
+    // Set when an author asks for review; publishing clears it.
+    reviewRequestedAt: integer('review_requested_at', { mode: 'timestamp_ms' }),
     ...lifecycle(),
   },
   (t) => [
@@ -105,6 +107,9 @@ export const faqs = sqliteTable('faqs', {
   question: text('question').notNull(),
   answer: richText('answer'),
   groupId: text('group_id').references(() => faqGroups.id, { onDelete: 'set null' }),
+  // Where the FAQ appears, as tag codes like "home" or "pricing"; the website
+  // picks FAQs for a page by tag.
+  tags: text('tags', { mode: 'json' }).$type<string[]>().notNull().default([]),
   sortOrder: integer('sort_order').notNull().default(0),
   ...lifecycle(),
 });
@@ -119,3 +124,32 @@ export const testimonials = sqliteTable('testimonials', {
   featured: integer('featured', { mode: 'boolean' }).notNull().default(false),
   ...lifecycle(),
 });
+
+// Site-wide notice bars. Several can be prepared ahead; the website shows the
+// one whose window covers now (see currentAnnouncement in @llf/content).
+export const announcements = sqliteTable(
+  'announcements',
+  {
+    id: id(),
+    /** Internal name, e.g. "November tree upgrade". Not shown on the site. */
+    title: text('title').notNull(),
+    enabled: integer('enabled', { mode: 'boolean' }).notNull().default(true),
+    /** Shown on phones, and on larger screens unless overridden below. */
+    message: text('message').notNull(),
+    messageTablet: text('message_tablet'),
+    messageDesktop: text('message_desktop'),
+    ctaLabel: text('cta_label'),
+    ctaUrl: text('cta_url'),
+    background: text('background', { enum: ['moss', 'ink', 'sun', 'paper'] })
+      .notNull()
+      .default('moss'),
+    /** Blank start shows it as soon as it is enabled; blank end never expires. */
+    startsAt: integer('starts_at', { mode: 'timestamp_ms' }),
+    endsAt: integer('ends_at', { mode: 'timestamp_ms' }),
+    /** Page paths where the bar is hidden, e.g. /events/open-days. */
+    hidePaths: text('hide_paths', { mode: 'json' }).$type<string[]>().notNull().default([]),
+    updatedBy: text('updated_by').references(() => user.id, { onDelete: 'set null' }),
+    ...timestamps(),
+  },
+  (t) => [index('announcements_starts_at').on(t.startsAt)]
+);

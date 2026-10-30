@@ -9,7 +9,7 @@ export const user = sqliteTable('user', {
   email: text('email').notNull().unique(),
   emailVerified: integer('email_verified', { mode: 'boolean' }).notNull().default(false),
   image: text('image'),
-  role: text('role', { enum: ['admin', 'editor'] })
+  role: text('role', { enum: ['admin', 'editor', 'author', 'seo', 'viewer'] })
     .notNull()
     .default('editor'),
   createdAt: integer('created_at', { mode: 'timestamp_ms' }).notNull(),
@@ -60,7 +60,7 @@ export const verification = sqliteTable('verification', {
 // not here (or in BOOTSTRAP_ADMIN_EMAILS).
 export const invitation = sqliteTable('invitation', {
   email: text('email').primaryKey(),
-  role: text('role', { enum: ['admin', 'editor'] }).notNull(),
+  role: text('role', { enum: ['admin', 'editor', 'author', 'seo', 'viewer'] }).notNull(),
   invitedBy: text('invited_by').references(() => user.id, { onDelete: 'set null' }),
   createdAt: integer('created_at', { mode: 'timestamp_ms' }).notNull(),
 });

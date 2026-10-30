@@ -1,8 +1,20 @@
-import { SEO_DESCRIPTION_LIMIT } from '@llf/content';
-import { getRouteApi } from '@tanstack/react-router';
+import { SEO_DESCRIPTION_LIMIT, isValidAbn } from '@llf/content';
+import { getRouteApi, useBlocker } from '@tanstack/react-router';
 import { type ReactNode, useEffect, useRef, useState } from 'react';
+import { toast } from 'sonner';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
 import {
   Select,
   SelectContent,
@@ -16,9 +28,25 @@ import { reportInvalid } from '@/lib/form-validation';
 import { useAction } from '@/lib/use-action';
 import { setTheme, useThemeSync } from '@/lib/use-theme-sync';
 import { cn } from '@/lib/utils';
-import { type Locale, type SiteSettings, type Theme, saveSiteSettings } from '@/server/settings';
+import {
+  type Locale,
+  type SiteSettings,
+  TITLE_TOKENS,
+  type Theme,
+  saveSiteSettings,
+} from '@/server/settings';
 
 const rootRoute = getRouteApi('__root__');
+
+const SITE_HOST = 'livinglegacyforest.com.au';
+
+const sections = [
+  { id: 'general', title: 'General' },
+  { id: 'business', title: 'Contact & business' },
+  { id: 'social', title: 'Social links' },
+  { id: 'search', title: 'Search & sharing' },
+  { id: 'appearance', title: 'Language & appearance' },
+] as const;
 
 const localeItems: { value: Locale; label: string }[] = [
   { value: 'en-AU', label: 'English (Australia)' },
@@ -59,9 +87,32 @@ function ThemeSwatch({ theme }: { theme: Theme }) {
   );
 }
 
-export function SettingsPage({ data }: { data: SiteSettings }) {
+/** Checks the browser cannot do with input types alone, mirrored on the server. */
+function problem(v: SiteSettings): { field: string; message: string } | null {
+  if (v.abn && !isValidAbn(v.abn)) {
+    return { field: 'settings-abn', message: 'That ABN is not valid. Check the 11 digits.' };
+  }
+  if (v.titlePattern && !v.titlePattern.includes(TITLE_TOKENS.page)) {
+    return {
+      field: 'settings-title-pattern',
+      message: `The title pattern needs ${TITLE_TOKENS.page} where the page's own title goes.`,
+    };
+  }
+  return null;
+}
+
+export function SettingsPage({
+  data,
+  seoOnly = false,
+}: {
+  data: SiteSettings;
+  /** For SEO people: only the Search & sharing section. */
+  seoOnly?: boolean;
+}) {
+  const [saved, setSaved] = useState(data);
   const [values, setValues] = useState(data);
   const { run, pending } = useAction();
+  const dirty = JSON.stringify(values) !== JSON.stringify(saved);
 
   // Preview the theme as soon as it's picked, not only once Save succeeds.
   useThemeSync(values.theme);
@@ -73,195 +124,464 @@ export function SettingsPage({ data }: { data: SiteSettings }) {
   persistedThemeRef.current = persistedTheme;
   useEffect(() => () => setTheme(persistedThemeRef.current), []);
 
+  // Ask before leaving with unsaved changes, in the app and on tab close.
+  const blocker = useBlocker({
+    shouldBlockFn: () => dirty,
+    enableBeforeUnload: () => dirty,
+    withResolver: true,
+  });
+
   const patch = (next: Partial<SiteSettings>) => setValues((v) => ({ ...v, ...next }));
 
   async function submit(e: React.FormEvent) {
     e.preventDefault();
     if (!reportInvalid(e.currentTarget)) return;
+    const issue = problem(values);
+    if (issue) {
+      toast.error(issue.message);
+      document.getElementById(issue.field)?.focus();
+      return;
+    }
     const result = await run(() => saveSiteSettings({ data: values }), 'Settings saved.');
-    if (result) setValues(result);
+    if (result) {
+      setSaved(result);
+      setValues(result);
+    }
   }
 
+  const exampleTitle = (values.titlePattern || TITLE_TOKENS.page)
+    .replace(TITLE_TOKENS.page, 'Our story')
+    .replace(TITLE_TOKENS.site, values.siteTitle);
+
   return (
-    <div className="mx-auto max-w-2xl space-y-8">
-      <div className="space-y-1">
+    <div className="mx-auto w-full max-w-4xl">
+      <div className="mb-8 space-y-1">
         <h1 className="text-xl font-semibold tracking-tight">Settings</h1>
         <p className="text-muted-foreground text-sm">
-          Site-wide details used across the CMS and, eventually, the public website.
+          Site-wide details used across the CMS and, once connected, the public website.
         </p>
       </div>
 
-      <form noValidate onSubmit={submit} className="space-y-8">
-        <SettingsSection
-          title="General"
-          description="What the site is called and how people reach you."
-        >
-          <SettingsRow title="Site title">
-            <Input
-              required
-              value={values.siteTitle}
-              onChange={(e) => patch({ siteTitle: e.target.value })}
-              className="w-64"
-            />
-          </SettingsRow>
-          <SettingsRow title="Tagline">
-            <Input
-              value={values.tagline}
-              placeholder="Transforming grief into growth"
-              onChange={(e) => patch({ tagline: e.target.value })}
-              className="w-64"
-            />
-          </SettingsRow>
-          <SettingsRow title="Contact email">
-            <Input
-              type="email"
-              value={values.contactEmail}
-              placeholder="hello@livinglegacyforest.com.au"
-              onChange={(e) => patch({ contactEmail: e.target.value })}
-              className="w-64"
-            />
-          </SettingsRow>
-        </SettingsSection>
+      <div className="lg:grid lg:grid-cols-[11rem_minmax(0,1fr)] lg:gap-10">
+        <SectionNav ids={seoOnly ? ['search'] : sections.map((x) => x.id)} />
 
-        <SettingsSection title="Social links" description="Shown in the website footer.">
-          <SettingsRow title="Facebook">
-            <Input
-              type="url"
-              value={values.facebookUrl}
-              placeholder="https://www.facebook.com/…"
-              onChange={(e) => patch({ facebookUrl: e.target.value })}
-              className="w-64"
-            />
-          </SettingsRow>
-          <SettingsRow title="Instagram">
-            <Input
-              type="url"
-              value={values.instagramUrl}
-              placeholder="https://www.instagram.com/…"
-              onChange={(e) => patch({ instagramUrl: e.target.value })}
-              className="w-64"
-            />
-          </SettingsRow>
-          <SettingsRow title="YouTube">
-            <Input
-              type="url"
-              value={values.youtubeUrl}
-              placeholder="https://www.youtube.com/…"
-              onChange={(e) => patch({ youtubeUrl: e.target.value })}
-              className="w-64"
-            />
-          </SettingsRow>
-        </SettingsSection>
+        <form noValidate onSubmit={submit} className="space-y-10">
+          {!seoOnly && (
+            <SettingsSection
+              id="general"
+              title="General"
+              description="What the site is called and how people reach you."
+            >
+              <SettingsRow id="settings-site-title" title="Site title">
+                <Input
+                  id="settings-site-title"
+                  required
+                  value={values.siteTitle}
+                  onChange={(e) => patch({ siteTitle: e.target.value })}
+                  className={fieldWidth}
+                />
+              </SettingsRow>
+              <SettingsRow id="settings-tagline" title="Tagline">
+                <Input
+                  id="settings-tagline"
+                  value={values.tagline}
+                  placeholder="Transforming grief into growth"
+                  onChange={(e) => patch({ tagline: e.target.value })}
+                  className={fieldWidth}
+                />
+              </SettingsRow>
+              <SettingsRow id="settings-email" title="Contact email">
+                <Input
+                  id="settings-email"
+                  type="email"
+                  value={values.contactEmail}
+                  placeholder="hello@livinglegacyforest.com.au"
+                  onChange={(e) => patch({ contactEmail: e.target.value })}
+                  className={fieldWidth}
+                />
+              </SettingsRow>
+            </SettingsSection>
+          )}
 
-        <SettingsSection
-          title="Search & sharing defaults"
-          description="Used when a page doesn't set its own description or preview image."
-        >
-          <SettingsRow
-            title="Default description"
-            suffix={
-              <span
-                className={cn(
-                  'text-muted-foreground text-xs tabular-nums',
-                  values.seoDescription.length > SEO_DESCRIPTION_LIMIT && 'text-destructive'
-                )}
+          {!seoOnly && (
+            <SettingsSection
+              id="business"
+              title="Contact & business"
+              description="For the website footer and contact page."
+            >
+              <SettingsRow id="settings-phone" title="Phone">
+                <Input
+                  id="settings-phone"
+                  type="tel"
+                  value={values.phone}
+                  placeholder="1300 000 000"
+                  onChange={(e) => patch({ phone: e.target.value })}
+                  className={fieldWidth}
+                />
+              </SettingsRow>
+              <SettingsRow id="settings-address" title="Address" stacked>
+                <Textarea
+                  id="settings-address"
+                  rows={2}
+                  value={values.address}
+                  placeholder="Street, suburb, state and postcode"
+                  onChange={(e) => patch({ address: e.target.value })}
+                />
+              </SettingsRow>
+              <SettingsRow
+                id="settings-hours"
+                title="Opening hours"
+                description="Written as visitors should read it."
+                stacked
               >
-                {values.seoDescription.length}/{SEO_DESCRIPTION_LIMIT}
-              </span>
-            }
-            stacked
+                <Textarea
+                  id="settings-hours"
+                  rows={2}
+                  value={values.openingHours}
+                  placeholder="Monday to Friday, 9am to 5pm"
+                  onChange={(e) => patch({ openingHours: e.target.value })}
+                />
+              </SettingsRow>
+              <SettingsRow id="settings-legal-name" title="Legal name">
+                <Input
+                  id="settings-legal-name"
+                  value={values.legalName}
+                  placeholder="Company Pty Ltd"
+                  onChange={(e) => patch({ legalName: e.target.value })}
+                  className={fieldWidth}
+                />
+              </SettingsRow>
+              <SettingsRow
+                id="settings-abn"
+                title="ABN"
+                description="Checked and spaced for you when saved."
+              >
+                <Input
+                  id="settings-abn"
+                  inputMode="numeric"
+                  value={values.abn}
+                  placeholder="00 000 000 000"
+                  onChange={(e) => patch({ abn: e.target.value })}
+                  aria-invalid={values.abn !== '' && !isValidAbn(values.abn)}
+                  className={cn(fieldWidth, 'tabular-nums')}
+                />
+              </SettingsRow>
+            </SettingsSection>
+          )}
+
+          {!seoOnly && (
+            <SettingsSection
+              id="social"
+              title="Social links"
+              description="Shown in the website footer."
+            >
+              {(
+                [
+                  ['facebookUrl', 'Facebook', 'https://www.facebook.com/…'],
+                  ['instagramUrl', 'Instagram', 'https://www.instagram.com/…'],
+                  ['youtubeUrl', 'YouTube', 'https://www.youtube.com/…'],
+                  ['linkedinUrl', 'LinkedIn', 'https://www.linkedin.com/company/…'],
+                  ['tiktokUrl', 'TikTok', 'https://www.tiktok.com/@…'],
+                  ['googleBusinessUrl', 'Google reviews', 'https://g.page/…'],
+                ] as const
+              ).map(([key, title, placeholder]) => (
+                <SettingsRow key={key} id={`settings-${key}`} title={title}>
+                  <Input
+                    id={`settings-${key}`}
+                    type="url"
+                    value={values[key]}
+                    placeholder={placeholder}
+                    onChange={(e) => patch({ [key]: e.target.value })}
+                    className={fieldWidth}
+                  />
+                </SettingsRow>
+              ))}
+            </SettingsSection>
+          )}
+
+          <SettingsSection
+            id="search"
+            title="Search & sharing"
+            description="How pages appear in search results and when shared, unless a page sets its own."
           >
-            <Textarea
-              value={values.seoDescription}
-              placeholder="Summarise the site in a sentence or two."
-              rows={2}
-              onChange={(e) => patch({ seoDescription: e.target.value })}
-              className={cn(
-                values.seoDescription.length > SEO_DESCRIPTION_LIMIT && 'border-destructive'
-              )}
-            />
-          </SettingsRow>
-          <SettingsRow title="Default share image">
-            <Input
-              type="url"
-              value={values.seoImageUrl}
-              placeholder="https://…/share-image.jpg"
-              onChange={(e) => patch({ seoImageUrl: e.target.value })}
-              className="w-64"
-            />
-          </SettingsRow>
-        </SettingsSection>
-
-        <SettingsSection
-          title="Language & appearance"
-          description="The site's language and its default colour theme."
-        >
-          <SettingsRow title="Language">
-            <Select
-              items={localeItems}
-              value={values.locale}
-              onValueChange={(value) => value && patch({ locale: value as Locale })}
+            <SettingsRow
+              id="settings-title-pattern"
+              title="Page title pattern"
+              description={`${TITLE_TOKENS.page} is the page's title, ${TITLE_TOKENS.site} the site title.`}
             >
-              <SelectTrigger className="w-48">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                {localeItems.map((item) => (
-                  <SelectItem key={item.value} value={item.value}>
-                    {item.label}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </SettingsRow>
-          <SettingsRow title="Theme">
-            <Select
-              items={themeItems}
-              value={values.theme}
-              onValueChange={(value) => value && patch({ theme: value as Theme })}
+              <Input
+                id="settings-title-pattern"
+                value={values.titlePattern}
+                placeholder={`${TITLE_TOKENS.page} | ${TITLE_TOKENS.site}`}
+                onChange={(e) => patch({ titlePattern: e.target.value })}
+                className={cn(fieldWidth, 'font-mono')}
+              />
+            </SettingsRow>
+            <SettingsRow
+              id="settings-description"
+              title="Default description"
+              suffix={<Counter value={values.seoDescription} limit={SEO_DESCRIPTION_LIMIT} />}
+              stacked
             >
-              <SelectTrigger className="w-48">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                {themeItems.map((item) => (
-                  <SelectItem key={item.value} value={item.value}>
-                    {item.label}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </SettingsRow>
-        </SettingsSection>
+              <Textarea
+                id="settings-description"
+                value={values.seoDescription}
+                placeholder="Summarise the site in a sentence or two."
+                rows={2}
+                onChange={(e) => patch({ seoDescription: e.target.value })}
+                aria-invalid={values.seoDescription.length > SEO_DESCRIPTION_LIMIT}
+              />
+            </SettingsRow>
+            <div className="space-y-1.5 px-4 py-3.5">
+              <p className="text-muted-foreground text-xs">Search result preview</p>
+              <div className="rounded-md border px-4 py-3">
+                <p className="text-muted-foreground truncate text-xs">{SITE_HOST} › our-story</p>
+                <p className="truncate text-base text-[#1a0dab] dark:text-[#8ab4f8]">
+                  {exampleTitle}
+                </p>
+                <p className="text-muted-foreground line-clamp-2 text-sm">
+                  {values.seoDescription || 'Your default description shows here.'}
+                </p>
+              </div>
+            </div>
+            <SettingsRow id="settings-share-image" title="Default share image" stacked>
+              <div className="flex items-start gap-3">
+                <Input
+                  id="settings-share-image"
+                  type="url"
+                  value={values.seoImageUrl}
+                  placeholder="https://…/share-image.jpg"
+                  onChange={(e) => patch({ seoImageUrl: e.target.value })}
+                />
+                <SharePreview url={values.seoImageUrl} />
+              </div>
+            </SettingsRow>
+            <SettingsRow
+              id="settings-google"
+              title="Google verification"
+              description="From Search Console. Paste the code or the whole meta tag."
+            >
+              <Input
+                id="settings-google"
+                value={values.googleVerification}
+                onChange={(e) => patch({ googleVerification: e.target.value })}
+                className={cn(fieldWidth, 'font-mono')}
+              />
+            </SettingsRow>
+            <SettingsRow
+              id="settings-bing"
+              title="Bing verification"
+              description="From Bing Webmaster Tools. Code or meta tag."
+            >
+              <Input
+                id="settings-bing"
+                value={values.bingVerification}
+                onChange={(e) => patch({ bingVerification: e.target.value })}
+                className={cn(fieldWidth, 'font-mono')}
+              />
+            </SettingsRow>
+          </SettingsSection>
 
-        <div className="flex justify-end">
-          <Button type="submit" disabled={pending}>
-            {pending ? (
-              <>
-                <Spinner />
-                Saving…
-              </>
-            ) : (
-              'Save changes'
+          {!seoOnly && (
+            <SettingsSection
+              id="appearance"
+              title="Language & appearance"
+              description="The site's language and the CMS colour theme."
+            >
+              <SettingsRow id="settings-locale" title="Language">
+                <Select
+                  items={localeItems}
+                  value={values.locale}
+                  onValueChange={(value) => value && patch({ locale: value as Locale })}
+                >
+                  <SelectTrigger id="settings-locale" className="w-48">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {localeItems.map((item) => (
+                      <SelectItem key={item.value} value={item.value}>
+                        {item.label}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </SettingsRow>
+              <SettingsRow id="settings-theme" title="Theme">
+                <Select
+                  items={themeItems}
+                  value={values.theme}
+                  onValueChange={(value) => value && patch({ theme: value as Theme })}
+                >
+                  <SelectTrigger id="settings-theme" className="w-48">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {themeItems.map((item) => (
+                      <SelectItem key={item.value} value={item.value}>
+                        {item.label}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </SettingsRow>
+            </SettingsSection>
+          )}
+
+          {/* Only there while something is unsaved, so it never nags. */}
+          <div
+            className={cn(
+              'bg-background/95 sticky bottom-4 z-10 flex items-center gap-3 rounded-lg border px-4 py-3 shadow-lg backdrop-blur transition-all',
+              dirty ? 'translate-y-0 opacity-100' : 'pointer-events-none translate-y-2 opacity-0'
             )}
-          </Button>
-        </div>
-      </form>
+            aria-hidden={!dirty}
+          >
+            <span className="mr-auto text-sm">You have unsaved changes.</span>
+            <Button
+              type="button"
+              variant="ghost"
+              size="sm"
+              disabled={pending}
+              onClick={() => setValues(saved)}
+            >
+              Discard
+            </Button>
+            <Button type="submit" size="sm" disabled={pending}>
+              {pending ? (
+                <>
+                  <Spinner />
+                  Saving…
+                </>
+              ) : (
+                'Save changes'
+              )}
+            </Button>
+          </div>
+        </form>
+      </div>
+
+      <AlertDialog open={blocker.status === 'blocked'}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Leave without saving?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Your changes to the settings will be lost.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel onClick={() => blocker.reset?.()}>Stay</AlertDialogCancel>
+            <AlertDialogAction onClick={() => blocker.proceed?.()}>Leave</AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+    </div>
+  );
+}
+
+const fieldWidth = 'w-full sm:w-72';
+
+/**
+ * Glides to a section. Done per click rather than with a global smooth scroll,
+ * so page changes and scroll restoration stay instant. Respects reduced motion.
+ */
+function scrollToSection(id: string) {
+  const reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  document.getElementById(id)?.scrollIntoView({ behavior: reduce ? 'auto' : 'smooth' });
+  history.replaceState(null, '', `#${id}`);
+}
+
+/** Jump links to each section; the one in view is highlighted. Desktop only. */
+function SectionNav({ ids }: { ids: string[] }) {
+  const shown = sections.filter((section) => ids.includes(section.id));
+  const [active, setActive] = useState<string>(shown[0]?.id ?? '');
+
+  useEffect(() => {
+    const observer = new IntersectionObserver(
+      (entries) => {
+        const visible = entries.find((entry) => entry.isIntersecting);
+        if (visible) setActive(visible.target.id);
+      },
+      // A section counts as current once its top passes just under the header.
+      { rootMargin: '-80px 0px -70% 0px' }
+    );
+    for (const { id } of shown) {
+      const el = document.getElementById(id);
+      if (el) observer.observe(el);
+    }
+    return () => observer.disconnect();
+  }, []);
+
+  return (
+    <nav aria-label="Settings sections" className="hidden lg:block">
+      <ul className="sticky top-20 space-y-0.5">
+        {shown.map((section) => (
+          <li key={section.id}>
+            <a
+              href={`#${section.id}`}
+              aria-current={active === section.id ? 'true' : undefined}
+              onClick={(e) => {
+                e.preventDefault();
+                scrollToSection(section.id);
+                setActive(section.id);
+              }}
+              className={cn(
+                'text-muted-foreground hover:text-foreground block rounded-md px-2.5 py-1.5 text-[13px] transition-colors',
+                active === section.id && 'bg-muted text-foreground font-medium'
+              )}
+            >
+              {section.title}
+            </a>
+          </li>
+        ))}
+      </ul>
+    </nav>
+  );
+}
+
+function Counter({ value, limit }: { value: string; limit: number }) {
+  return (
+    <span
+      className={cn(
+        'text-muted-foreground text-xs tabular-nums',
+        value.length > limit && 'text-destructive'
+      )}
+    >
+      {value.length}/{limit}
+    </span>
+  );
+}
+
+/** A small preview of the share image, at the 1.91:1 shape link previews use. */
+function SharePreview({ url }: { url: string }) {
+  const [broken, setBroken] = useState(false);
+  useEffect(() => setBroken(false), [url]);
+  if (!/^https?:\/\/\S+$/.test(url)) return null;
+
+  return (
+    <div className="bg-muted aspect-[1.91/1] w-28 shrink-0 overflow-hidden rounded-md border">
+      {broken ? (
+        <p className="text-muted-foreground flex h-full items-center justify-center p-1 text-center text-[11px]">
+          Image not found
+        </p>
+      ) : (
+        <img src={url} alt="" className="size-full object-cover" onError={() => setBroken(true)} />
+      )}
     </div>
   );
 }
 
 function SettingsSection({
+  id,
   title,
   description,
   children,
 }: {
+  id: string;
   title: string;
   description?: string;
   children: ReactNode;
 }) {
   return (
-    <section className="space-y-3">
+    <section id={id} className="scroll-mt-20 space-y-3">
       <div>
         <h2 className="text-sm font-semibold">{title}</h2>
         {description && <p className="text-muted-foreground mt-0.5 text-xs">{description}</p>}
@@ -272,12 +592,15 @@ function SettingsSection({
 }
 
 function SettingsRow({
+  id,
   title,
   description,
   suffix,
   stacked = false,
   children,
 }: {
+  /** The field's id, so the title labels it (and error toasts can name it). */
+  id: string;
   title: string;
   description?: string;
   suffix?: ReactNode;
@@ -288,7 +611,7 @@ function SettingsRow({
     return (
       <div className="space-y-1.5 px-4 py-3.5">
         <div className="flex items-center justify-between gap-2">
-          <p className="text-sm font-medium">{title}</p>
+          <Label htmlFor={id}>{title}</Label>
           {suffix}
         </div>
         {description && <p className="text-muted-foreground text-xs">{description}</p>}
@@ -300,10 +623,10 @@ function SettingsRow({
   return (
     <div className="flex flex-wrap items-center justify-between gap-x-4 gap-y-2 px-4 py-3.5">
       <div className="min-w-0 flex-1 space-y-0.5">
-        <p className="text-sm font-medium">{title}</p>
+        <Label htmlFor={id}>{title}</Label>
         {description && <p className="text-muted-foreground text-xs">{description}</p>}
       </div>
-      <div className="shrink-0">{children}</div>
+      <div className="w-full shrink-0 sm:w-auto">{children}</div>
     </div>
   );
 }

@@ -1,4 +1,16 @@
+import { MAX_FAQ_TAGS, splitTags } from '@llf/content';
 import { useState } from 'react';
+import { BulkCsvForm } from '@/components/bulk/bulk-csv-form';
+import {
+  BulkPane,
+  ConfirmBulkDelete,
+  RowCheckbox,
+  SearchInput,
+  type Selection,
+  SelectionBar,
+  matchesSearch,
+  useSelection,
+} from '@/components/bulk/list-tools';
 import {
   ChevronDownIcon,
   ChevronUpIcon,
@@ -8,6 +20,7 @@ import {
   PanelRightIcon,
   PlusIcon,
   Trash2Icon,
+  UploadIcon,
 } from '@/components/icons';
 import {
   AlertDialog,
@@ -57,26 +70,64 @@ import {
 import { Spinner } from '@/components/ui/spinner';
 import { Switch } from '@/components/ui/switch';
 import { Textarea } from '@/components/ui/textarea';
+import { readStatus } from '@/lib/bulk-import';
 import { reportInvalid } from '@/lib/form-validation';
 import { useAction } from '@/lib/use-action';
+import { cn } from '@/lib/utils';
 import {
   type Faq,
   type FaqData,
   type FaqGroup,
   deleteFaq,
   deleteFaqGroup,
+  deleteFaqs,
+  importFaqs,
   moveFaq,
   saveFaq,
   saveFaqGroup,
 } from '@/server/faqs';
+import { TagInput } from './tag-input';
 
 const UNGROUPED = 'ungrouped';
 
 /** What the editing surface shows: an FAQ, a blank FAQ (maybe pre-grouped) or a new group. */
-type Target = { kind: 'faq'; id: string } | { kind: 'new'; groupId?: string } | { kind: 'group' };
+type Target =
+  | { kind: 'faq'; id: string }
+  | { kind: 'new'; groupId?: string }
+  | { kind: 'group' }
+  | { kind: 'bulk' };
+
+/** The targets that open a single FAQ or group form. */
+type FormTarget = Exclude<Target, { kind: 'bulk' }>;
 
 const targetKey = (t: Target) =>
-  t.kind === 'faq' ? t.id : t.kind === 'new' ? `new-${t.groupId ?? UNGROUPED}` : 'group';
+  t.kind === 'faq' ? t.id : t.kind === 'new' ? `new-${t.groupId ?? UNGROUPED}` : t.kind;
+
+const NOUN: [string, string] = ['FAQ', 'FAQs'];
+
+/** Tag filter values besides a tag itself. */
+const ALL_TAGS = 'all';
+const NO_TAG = 'untagged';
+
+/** A CSV row's values as FAQ fields, or what is wrong with them. */
+function faqFromCsv(values: Record<string, string>) {
+  const status = readStatus(values.status ?? '');
+  if (!values.question) return 'The question is empty.';
+  if (values.question.length > 200) return 'The question is over 200 characters.';
+  if (!values.answer) return 'The answer is empty.';
+  if (values.answer.length > 2000) return 'The answer is over 2000 characters.';
+  if ((values.group ?? '').length > 80) return 'The group name is over 80 characters.';
+  const tags = splitTags(values.tags ?? '');
+  if (tags.length > MAX_FAQ_TAGS) return `An FAQ can have up to ${MAX_FAQ_TAGS} tags.`;
+  if (!status) return 'The status must be draft or published.';
+  return {
+    question: values.question,
+    answer: values.answer,
+    group: values.group ?? '',
+    tags,
+    status,
+  };
+}
 
 const isDesktop = () =>
   typeof window !== 'undefined' && window.matchMedia('(min-width: 1024px)').matches;
@@ -86,6 +137,11 @@ export function FaqsPage({ data, canWrite }: { data: FaqData; canWrite: boolean 
   // same form opens in a dialog instead (as on the team page).
   const [paneTarget, setPaneTarget] = useState<Target | null>(null);
   const [dialogTarget, setDialogTarget] = useState<Target | null>(null);
+  const [query, setQuery] = useState('');
+  const [tagFilter, setTagFilter] = useState(ALL_TAGS);
+  const [confirmDelete, setConfirmDelete] = useState(false);
+  const selection = useSelection(data.faqs.map((f) => f.id));
+  const { run, pending } = useAction();
 
   const open = (target: Target) => (isDesktop() ? setPaneTarget(target) : setDialogTarget(target));
   // Targets hold an id, so the form always edits the live row.
@@ -100,13 +156,105 @@ export function FaqsPage({ data, canWrite }: { data: FaqData; canWrite: boolean 
     ...data.groups.map((g) => ({ group: g, faqs: data.faqs.filter((f) => f.groupId === g.id) })),
     ...(ungrouped.length > 0 ? [{ group: null, faqs: ungrouped }] : []),
   ];
+  const knownTags = [...new Set(data.faqs.flatMap((f) => f.tags))].sort();
+  const matchesTag = (f: Faq) =>
+    tagFilter === ALL_TAGS ||
+    (tagFilter === NO_TAG ? f.tags.length === 0 : f.tags.includes(tagFilter));
+  const searching = query.trim() !== '' || tagFilter !== ALL_TAGS;
+  const visibleSections = sections
+    .map((s) => ({
+      ...s,
+      faqs: s.faqs.filter(
+        (f) => matchesTag(f) && matchesSearch(query, [f.question, f.answer, ...f.tags])
+      ),
+    }))
+    .filter((s) => !searching || s.faqs.length > 0);
+  const tagItems = [
+    { value: ALL_TAGS, label: 'All tags' },
+    ...knownTags.map((tag) => ({ value: tag, label: tag })),
+    { value: NO_TAG, label: 'No tag' },
+  ];
+  const visibleIds = visibleSections.flatMap((s) => s.faqs.map((f) => f.id));
+  const groupName = new Map(data.groups.map((g) => [g.id, g.name]));
+
+  async function removeChecked() {
+    const ids = selection.checkedIds;
+    const result = await run(
+      () => deleteFaqs({ data: { ids } }),
+      `${ids.length} ${ids.length === 1 ? NOUN[0] : NOUN[1]} removed.`
+    );
+    if (!result) return;
+    if (paneTarget?.kind === 'faq' && ids.includes(paneTarget.id)) setPaneTarget(null);
+    selection.clear();
+  }
+
+  const bulkForm = (onDone: () => void, footer: (submit: React.ReactNode) => React.ReactNode) => (
+    <BulkCsvForm
+      noun={NOUN}
+      fileName="faqs"
+      fields={['question', 'answer', 'group', 'tags', 'status']}
+      example={{
+        question: 'How do I choose a tree?',
+        answer: 'Our team can help you choose a native species.',
+        group: 'Getting started',
+        tags: 'home, pricing',
+        status: 'draft',
+      }}
+      current={data.faqs.map((f) => ({
+        id: f.id,
+        question: f.question,
+        answer: f.answer,
+        group: (f.groupId && groupName.get(f.groupId)) || '',
+        tags: f.tags.join(', '),
+        status: f.status,
+      }))}
+      toRow={faqFromCsv}
+      apply={(rows) => importFaqs({ data: { rows } })}
+      onDone={onDone}
+      footer={footer}
+    />
+  );
 
   return (
     <div className="flex flex-1 flex-col gap-4 lg:h-[calc(100svh-7.5rem)] lg:flex-none">
       <div className="flex flex-wrap items-center gap-3">
         <h1 className="mr-auto text-xl">FAQs</h1>
+        {data.faqs.length > 0 && (
+          <SearchInput
+            label="Search FAQs"
+            placeholder="Search questions, answers, tags"
+            value={query}
+            onChange={setQuery}
+          />
+        )}
+        {knownTags.length > 0 && (
+          <Select
+            items={tagItems}
+            value={tagFilter}
+            onValueChange={(value) => value && setTagFilter(value)}
+          >
+            <SelectTrigger
+              aria-label="Filter by tag"
+              size="sm"
+              className="bg-muted/60 w-40 border-0 text-[13px] shadow-none"
+            >
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              {tagItems.map((item) => (
+                <SelectItem key={item.value} value={item.value} className="text-[13px]">
+                  {item.label}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        )}
         {canWrite && (
           <>
+            <Button size="sm" variant="outline" onClick={() => open({ kind: 'bulk' })}>
+              <UploadIcon aria-hidden data-icon="inline-start" />
+              Bulk update
+            </Button>
             <Button size="sm" variant="outline" onClick={() => open({ kind: 'group' })}>
               <FolderPlusIcon aria-hidden data-icon="inline-start" />
               New group
@@ -130,33 +278,70 @@ export function FaqsPage({ data, canWrite }: { data: FaqData; canWrite: boolean 
           </EmptyHeader>
           {canWrite && (
             <EmptyContent>
-              <Button size="sm" onClick={() => open({ kind: 'new' })}>
-                <PlusIcon aria-hidden data-icon="inline-start" />
-                Add FAQ
-              </Button>
+              <div className="flex gap-2">
+                <Button size="sm" variant="outline" onClick={() => open({ kind: 'bulk' })}>
+                  <UploadIcon aria-hidden data-icon="inline-start" />
+                  Bulk update
+                </Button>
+                <Button size="sm" onClick={() => open({ kind: 'new' })}>
+                  <PlusIcon aria-hidden data-icon="inline-start" />
+                  Add FAQ
+                </Button>
+              </div>
             </EmptyContent>
           )}
         </Empty>
       ) : (
-        <div className="grid min-h-0 flex-1 overflow-hidden rounded-lg border lg:grid-cols-[minmax(20rem,2fr)_3fr]">
+        <div className="grid min-h-0 flex-1 overflow-hidden rounded-lg border lg:grid-cols-[minmax(20rem,1fr)_1fr]">
           <section aria-label="FAQs" className="flex min-h-0 flex-col lg:border-r">
-            <div className="flex h-11 shrink-0 items-center gap-2 border-b px-3">
-              <span className="text-[13px] font-medium">All</span>
-              <span className="text-muted-foreground text-xs tabular-nums">{data.faqs.length}</span>
-            </div>
-            <div className="min-h-0 flex-1 space-y-3 overflow-y-auto p-1.5">
-              {sections.map((section) => (
-                <FaqSection
-                  key={section.group?.id ?? UNGROUPED}
-                  group={section.group}
-                  faqs={section.faqs}
-                  selectedId={pane?.kind === 'faq' ? pane.id : null}
-                  canWrite={canWrite}
-                  onSelect={(faq) => canWrite && open({ kind: 'faq', id: faq.id })}
-                  onAdd={() => open({ kind: 'new', groupId: section.group?.id })}
-                />
-              ))}
-            </div>
+            {canWrite ? (
+              <SelectionBar
+                selection={selection}
+                visibleIds={visibleIds}
+                title="All"
+                total={data.faqs.length}
+                pending={pending}
+                onDelete={() => setConfirmDelete(true)}
+              />
+            ) : (
+              <div className="flex h-11 shrink-0 items-center gap-2 border-b px-3">
+                <span className="text-[13px] font-medium">All</span>
+                <span className="text-muted-foreground text-xs tabular-nums">
+                  {data.faqs.length}
+                </span>
+              </div>
+            )}
+            {visibleSections.length === 0 ? (
+              <div className="text-muted-foreground flex flex-1 flex-col items-center justify-center gap-2 p-6 text-center text-sm">
+                No FAQs match.
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => {
+                    setQuery('');
+                    setTagFilter(ALL_TAGS);
+                  }}
+                >
+                  Clear search and filter
+                </Button>
+              </div>
+            ) : (
+              <div className="min-h-0 flex-1 space-y-3 overflow-y-auto p-1.5">
+                {visibleSections.map((section) => (
+                  <FaqSection
+                    key={section.group?.id ?? UNGROUPED}
+                    group={section.group}
+                    faqs={section.faqs}
+                    selectedId={pane?.kind === 'faq' ? pane.id : null}
+                    canWrite={canWrite}
+                    selection={selection}
+                    searching={searching}
+                    onSelect={(faq) => canWrite && open({ kind: 'faq', id: faq.id })}
+                    onAdd={() => open({ kind: 'new', groupId: section.group?.id })}
+                  />
+                ))}
+              </div>
+            )}
           </section>
 
           <section aria-label="Edit FAQ" className="hidden min-h-0 flex-col lg:flex">
@@ -170,12 +355,27 @@ export function FaqsPage({ data, canWrite }: { data: FaqData; canWrite: boolean 
                   <EmptyDescription>Choose one from the list, or add a new FAQ.</EmptyDescription>
                 </EmptyHeader>
               </Empty>
+            ) : pane.kind === 'bulk' ? (
+              <BulkPane title="Bulk update FAQs">
+                {bulkForm(
+                  () => setPaneTarget(null),
+                  (submit) => (
+                    <div className="flex justify-end gap-2">
+                      <Button type="button" variant="outline" onClick={() => setPaneTarget(null)}>
+                        Cancel
+                      </Button>
+                      {submit}
+                    </div>
+                  )
+                )}
+              </BulkPane>
             ) : (
               <EditPane
                 key={targetKey(pane)}
                 target={pane}
                 faq={faqFor(pane)}
                 groups={data.groups}
+                knownTags={knownTags}
                 onSaved={(saved) => setPaneTarget(saved)}
                 onClose={() => setPaneTarget(null)}
               />
@@ -184,13 +384,51 @@ export function FaqsPage({ data, canWrite }: { data: FaqData; canWrite: boolean 
         </div>
       )}
 
+      <ConfirmBulkDelete
+        open={confirmDelete}
+        onOpenChange={setConfirmDelete}
+        count={selection.checkedIds.length}
+        noun={NOUN}
+        description="They are removed from the website. This cannot be undone."
+        onConfirm={removeChecked}
+      />
+
       {canWrite && (
         <Dialog
           open={dialogTarget !== null}
           onOpenChange={(isOpen) => !isOpen && setDialogTarget(null)}
         >
-          <DialogContent className={dialogTarget?.kind === 'group' ? 'sm:max-w-sm' : 'sm:max-w-md'}>
-            {dialogTarget && (
+          <DialogContent
+            className={
+              dialogTarget?.kind === 'group'
+                ? 'sm:max-w-sm'
+                : dialogTarget?.kind === 'bulk'
+                  ? 'sm:max-w-lg'
+                  : 'sm:max-w-md'
+            }
+          >
+            {dialogTarget?.kind === 'bulk' && (
+              <>
+                <DialogHeader>
+                  <DialogTitle>Bulk update FAQs</DialogTitle>
+                  <DialogDescription>
+                    Add or update many FAQs at once from a CSV file.
+                  </DialogDescription>
+                </DialogHeader>
+                {bulkForm(
+                  () => setDialogTarget(null),
+                  (submit) => (
+                    <DialogFooter>
+                      <DialogClose render={<Button type="button" variant="outline" />}>
+                        Cancel
+                      </DialogClose>
+                      {submit}
+                    </DialogFooter>
+                  )
+                )}
+              </>
+            )}
+            {dialogTarget && dialogTarget.kind !== 'bulk' && (
               <>
                 <DialogHeader>
                   <DialogTitle>{targetTitle(dialogTarget)}</DialogTitle>
@@ -205,6 +443,7 @@ export function FaqsPage({ data, canWrite }: { data: FaqData; canWrite: boolean 
                   target={dialogTarget}
                   faq={dialogFaq}
                   groups={data.groups}
+                  knownTags={knownTags}
                   onSaved={() => setDialogTarget(null)}
                   footer={(pending) => (
                     <DialogFooter>
@@ -233,7 +472,7 @@ export function FaqsPage({ data, canWrite }: { data: FaqData; canWrite: boolean 
   );
 }
 
-function targetTitle(target: Target) {
+function targetTitle(target: FormTarget) {
   if (target.kind === 'group') return 'New group';
   return target.kind === 'new' ? 'New FAQ' : 'Edit FAQ';
 }
@@ -243,6 +482,8 @@ function FaqSection({
   faqs,
   selectedId,
   canWrite,
+  selection,
+  searching,
   onSelect,
   onAdd,
 }: {
@@ -250,6 +491,9 @@ function FaqSection({
   faqs: Faq[];
   selectedId: string | null;
   canWrite: boolean;
+  selection: Selection;
+  /** While searching the list is partial, so reordering waits. */
+  searching: boolean;
   onSelect: (faq: Faq) => void;
   onAdd: () => void;
 }) {
@@ -316,8 +560,11 @@ function FaqSection({
               faq={faq}
               selected={faq.id === selectedId}
               canWrite={canWrite}
-              canMoveUp={index > 0}
-              canMoveDown={index < faqs.length - 1}
+              checked={selection.isChecked(faq.id)}
+              selecting={selection.checkedIds.length > 0}
+              onToggle={() => selection.toggle(faq.id)}
+              canMoveUp={!searching && index > 0}
+              canMoveDown={!searching && index < faqs.length - 1}
               onSelect={() => onSelect(faq)}
             />
           ))}
@@ -331,6 +578,9 @@ function FaqListItem({
   faq,
   selected,
   canWrite,
+  checked,
+  selecting,
+  onToggle,
   canMoveUp,
   canMoveDown,
   onSelect,
@@ -338,6 +588,9 @@ function FaqListItem({
   faq: Faq;
   selected: boolean;
   canWrite: boolean;
+  checked: boolean;
+  selecting: boolean;
+  onToggle: () => void;
   canMoveUp: boolean;
   canMoveDown: boolean;
   onSelect: () => void;
@@ -345,8 +598,16 @@ function FaqListItem({
   const { run, pending } = useAction();
 
   return (
-    <li className={selected ? 'bg-accent rounded-md' : 'hover:bg-muted/60 rounded-md'}>
+    <li className={cn('group rounded-md', selected ? 'bg-accent' : 'hover:bg-muted/60')}>
       <div className="flex items-center gap-1 px-1.5 py-1">
+        {canWrite && (
+          <RowCheckbox
+            label={`Select ${faq.question}`}
+            checked={checked}
+            selecting={selecting}
+            onToggle={onToggle}
+          />
+        )}
         <button
           type="button"
           onClick={onSelect}
@@ -361,6 +622,15 @@ function FaqListItem({
             )}
           </div>
           <div className="text-muted-foreground truncate text-xs">{faq.answer}</div>
+          {faq.tags.length > 0 && (
+            <div className="mt-1 flex flex-wrap gap-1">
+              {faq.tags.map((tag) => (
+                <Badge key={tag} variant="outline" className="font-mono text-[11px]">
+                  {tag}
+                </Badge>
+              ))}
+            </div>
+          )}
         </button>
         {canWrite && (
           <div className="flex shrink-0 items-center gap-0.5">
@@ -389,7 +659,7 @@ function FaqListItem({
   );
 }
 
-function SubmitButton({ pending, target }: { pending: boolean; target: Target }) {
+function SubmitButton({ pending, target }: { pending: boolean; target: FormTarget }) {
   return (
     <Button type="submit" disabled={pending}>
       {pending ? (
@@ -413,12 +683,14 @@ function EditPane({
   target,
   faq,
   groups,
+  knownTags,
   onSaved,
   onClose,
 }: {
-  target: Target;
+  target: FormTarget;
   faq: Faq | null;
   groups: FaqGroup[];
+  knownTags: string[];
   onSaved: (saved: Target | null) => void;
   onClose: () => void;
 }) {
@@ -440,6 +712,7 @@ function EditPane({
             target={target}
             faq={faq}
             groups={groups}
+            knownTags={knownTags}
             onSaved={onSaved}
             footer={(pending) => (
               <div className="flex justify-end gap-2">
@@ -513,12 +786,14 @@ function TargetForm({
   target,
   faq,
   groups,
+  knownTags,
   onSaved,
   footer,
 }: {
-  target: Target;
+  target: FormTarget;
   faq: Faq | null;
   groups: FaqGroup[];
+  knownTags: string[];
   onSaved: (saved: Target | null) => void;
   footer: (pending: boolean) => React.ReactNode;
 }) {
@@ -527,6 +802,7 @@ function TargetForm({
     <FaqForm
       faq={faq}
       groups={groups}
+      knownTags={knownTags}
       defaultGroupId={target.kind === 'new' ? target.groupId : undefined}
       onSaved={(id) => onSaved({ kind: 'faq', id })}
       footer={footer}
@@ -537,12 +813,14 @@ function TargetForm({
 function FaqForm({
   faq,
   groups,
+  knownTags,
   defaultGroupId,
   onSaved,
   footer,
 }: {
   faq: Faq | null;
   groups: FaqGroup[];
+  knownTags: string[];
   defaultGroupId: string | undefined;
   onSaved: (id: string) => void;
   footer: (pending: boolean) => React.ReactNode;
@@ -550,6 +828,7 @@ function FaqForm({
   const [question, setQuestion] = useState(faq?.question ?? '');
   const [answer, setAnswer] = useState(faq?.answer ?? '');
   const [groupId, setGroupId] = useState(faq?.groupId ?? defaultGroupId ?? UNGROUPED);
+  const [tags, setTags] = useState<string[]>(faq?.tags ?? []);
   const [published, setPublished] = useState(faq?.status === 'published');
   const { run, pending } = useAction();
 
@@ -569,6 +848,7 @@ function FaqForm({
             question,
             answer,
             groupId: groupId === UNGROUPED ? undefined : groupId,
+            tags,
             status: published ? 'published' : 'draft',
           },
         }),
@@ -614,6 +894,20 @@ function FaqForm({
             ))}
           </SelectContent>
         </Select>
+      </div>
+      <div className="space-y-1.5">
+        <Label htmlFor="faq-tags">Tags</Label>
+        <TagInput
+          id="faq-tags"
+          value={tags}
+          onChange={(next) => setTags(next.slice(0, MAX_FAQ_TAGS))}
+          suggestions={knownTags}
+          placeholder="home, pricing"
+        />
+        <p className="text-muted-foreground text-xs">
+          Where this FAQ appears on the website, e.g. home, pricing or a location. Press Enter or a
+          comma after each tag.
+        </p>
       </div>
       <div className="flex items-center justify-between rounded-lg border p-3">
         <div className="space-y-0.5">

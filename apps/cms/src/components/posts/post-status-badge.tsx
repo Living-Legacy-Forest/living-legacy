@@ -6,6 +6,7 @@ const styles = {
   scheduled: { dot: 'bg-indigo-500', label: 'Scheduled' },
   published: { dot: 'bg-emerald-500', label: 'Published' },
   changes: { dot: 'bg-amber-500', label: 'Unpublished changes' },
+  review: { dot: 'bg-sky-500', label: 'In review' },
   trash: { dot: 'bg-red-400', label: 'In trash' },
 };
 
@@ -14,6 +15,7 @@ export function PostStatusBadge({
   status,
   hasDraft = false,
   trashed = false,
+  inReview = false,
   scheduledAt = null,
   showDate = false,
   className,
@@ -21,6 +23,8 @@ export function PostStatusBadge({
   status: 'draft' | 'published';
   hasDraft?: boolean;
   trashed?: boolean;
+  /** An author asked for this post to be reviewed. */
+  inReview?: boolean;
   /** Set when a draft is scheduled to go live. */
   scheduledAt?: number | null;
   /** Append the scheduled time, for example "Scheduled · 2 Nov, 9:00 am". */
@@ -29,13 +33,15 @@ export function PostStatusBadge({
 }) {
   const key = trashed
     ? 'trash'
-    : status === 'published'
-      ? hasDraft
-        ? 'changes'
-        : 'published'
-      : scheduledAt
-        ? 'scheduled'
-        : 'draft';
+    : inReview
+      ? 'review'
+      : status === 'published'
+        ? hasDraft
+          ? 'changes'
+          : 'published'
+        : scheduledAt
+          ? 'scheduled'
+          : 'draft';
   const { dot, label } = styles[key];
   return (
     <span

@@ -34,7 +34,7 @@ const actions: Action[] = [
     description: 'Write a blog post.',
     to: '/posts/new',
     icon: FilePlus2Icon,
-    permission: 'content:write',
+    permission: 'posts:write',
   },
   {
     title: 'Upload media',

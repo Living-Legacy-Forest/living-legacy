@@ -1,7 +1,9 @@
 import {
   type PostInput,
+  type Role,
   SEO_DESCRIPTION_LIMIT,
   SEO_TITLE_LIMIT,
+  can,
   emptyPostInput,
   publishErrors,
   slugify,
@@ -76,6 +78,8 @@ import {
   discardChanges,
   getRevision,
   publishPost,
+  requestReview,
+  savePostSeo,
   restorePosts,
   savePost,
   schedulePost,
@@ -104,6 +108,8 @@ type Meta = {
   trashed: boolean;
   /** When this draft is due to publish itself; null if not scheduled. */
   scheduledAt: number | null;
+  /** When an author asked for review; publishing clears it. */
+  reviewRequestedAt: number | null;
 };
 
 type Option = { id: string; name: string };
@@ -115,13 +121,35 @@ const errorMessage = (error: unknown) =>
  * Create and edit form for a post. Remount it (change its `key`) to reload
  * from the server, for example after discarding changes.
  */
+/**
+ * What the signed-in person may do here. `full` edits and publishes; `author`
+ * edits and submits for review; `seo` changes only the search listing;
+ * `readonly` looks.
+ */
+export type PostAccess = 'full' | 'author' | 'seo' | 'readonly';
+
+/** Access for a person on a post; `createdBy` is null for a new post. */
+export function postAccessFor(
+  user: { id: string; role: Role },
+  createdBy: string | null
+): PostAccess {
+  if (can(user.role, 'posts:publish')) return 'full';
+  if (can(user.role, 'posts:write') && (createdBy === null || createdBy === user.id)) {
+    return 'author';
+  }
+  return can(user.role, 'seo:write') ? 'seo' : 'readonly';
+}
+
 export function PostEditor({
   data,
+  access,
   onReload,
 }: {
   data: PostEditorData;
+  access: PostAccess;
   onReload: () => Promise<void>;
 }) {
+  const contentLocked = access === 'seo' || access === 'readonly';
   const router = useRouter();
   const navigate = useNavigate();
   const initial = data.post?.values ?? emptyPostInput;
@@ -136,6 +164,7 @@ export function PostEditor({
     publishedAt: data.post?.publishedAt ?? null,
     trashed: data.post?.trashed ?? false,
     scheduledAt: data.post?.scheduledAt ?? null,
+    reviewRequestedAt: data.post?.reviewRequestedAt ?? null,
   });
   // The permalink follows the title until it is edited by hand or the post goes live.
   const [slugTouched, setSlugTouched] = useState(
@@ -193,6 +222,7 @@ export function PostEditor({
         hasDraft: kind === 'save' && m.status === 'published',
         publishedAt: kind === 'publish' ? (m.publishedAt ?? result.updatedAt) : m.publishedAt,
         scheduledAt: kind === 'publish' ? null : m.scheduledAt,
+        reviewRequestedAt: kind === 'publish' ? null : m.reviewRequestedAt,
       }));
       if (kind === 'publish') setSlugTouched(true);
 
@@ -287,7 +317,8 @@ export function PostEditor({
     // Open synchronously so the browser treats it as a user action, not a popup.
     const tab = window.open('', '_blank');
     if (tab) tab.opener = null;
-    const id = dirty || !meta.id ? await persist('save', { quiet: true }) : meta.id;
+    const canSave = access === 'full' || access === 'author';
+    const id = canSave && (dirty || !meta.id) ? await persist('save', { quiet: true }) : meta.id;
     if (!id) {
       tab?.close();
       return;
@@ -307,6 +338,47 @@ export function PostEditor({
       clearPostPreviews();
       toast.success(success);
       await (after ? after() : onReload());
+    } catch (error) {
+      toast.error(errorMessage(error));
+    } finally {
+      setBusy(null);
+    }
+  }
+
+  /** Saves if needed, then hands the post to an editor. */
+  async function submitForReview() {
+    const id = dirty || !meta.id ? await persist('save', { quiet: true }) : meta.id;
+    if (!id) return;
+    setBusy('other');
+    try {
+      const result = await requestReview({ data: { id } });
+      setMeta((m) => ({ ...m, ...result }));
+      toast.success('Sent for review. An editor will check it and publish it.');
+      await router.invalidate();
+    } catch (error) {
+      toast.error(errorMessage(error));
+    } finally {
+      setBusy(null);
+    }
+  }
+
+  async function saveSeo() {
+    if (!meta.id) return;
+    setBusy('save');
+    try {
+      const { seoTitle, seoDescription, noindex } = values;
+      const result = await savePostSeo({
+        data: { id: meta.id, seoTitle, seoDescription, noindex, expectedUpdatedAt: meta.updatedAt },
+      });
+      setSaved((s) => ({ ...s, seoTitle, seoDescription, noindex }));
+      setMeta((m) => ({ ...m, updatedAt: result.updatedAt }));
+      setLastSavedAt(result.updatedAt);
+      toast.success(
+        meta.status === 'published'
+          ? 'Search listing updated on the live post.'
+          : 'Search listing saved.'
+      );
+      await router.invalidate();
     } catch (error) {
       toast.error(errorMessage(error));
     } finally {
@@ -407,6 +479,7 @@ export function PostEditor({
           <PostStatusBadge
             status={meta.status}
             hasDraft={meta.hasDraft}
+            inReview={meta.reviewRequestedAt !== null}
             scheduledAt={meta.scheduledAt}
             showDate
             className="text-foreground text-[13px]"
@@ -415,116 +488,192 @@ export function PostEditor({
             {saveState}
           </span>
           <div className="ml-auto flex items-center gap-1">
-            {meta.hasDraft && !dirty && meta.id && (
-              <Button
-                variant="ghost"
-                size="sm"
-                disabled={working}
-                onClick={() =>
-                  other(
-                    () => discardChanges({ data: { id: meta.id as string } }),
-                    'Changes discarded.'
-                  )
-                }
-              >
-                <Undo2Icon aria-hidden data-icon="inline-start" />
-                Discard changes
-              </Button>
-            )}
-            <Button
-              variant="ghost"
-              size="sm"
-              disabled={working || (!dirty && meta.id !== null)}
-              onClick={() => persist('save')}
-            >
-              {busy === 'save' ? (
-                <>
-                  <Spinner data-icon="inline-start" />
-                  Saving…
-                </>
-              ) : isLive ? (
-                'Save changes'
-              ) : (
-                'Save draft'
-              )}
-            </Button>
-            <div className="flex">
-              <Button
-                size="sm"
-                disabled={working || (isLive && !dirty && !meta.hasDraft)}
-                onClick={() => persist('publish')}
-                className={cn(!isLive && 'rounded-r-none')}
-              >
-                {busy === 'publish' ? (
-                  <>
-                    <Spinner data-icon="inline-start" />
-                    Publishing…
-                  </>
-                ) : (
-                  <>
-                    <SendIcon aria-hidden data-icon="inline-start" />
-                    {isLive ? 'Update' : meta.scheduledAt ? 'Publish now' : 'Publish'}
-                  </>
-                )}
-              </Button>
-              {!isLive && (
-                <SchedulePopover
-                  scheduledAt={meta.scheduledAt}
-                  disabled={working}
-                  onSchedule={schedule}
-                  onUnschedule={unschedule}
-                />
-              )}
-            </div>
-            <DropdownMenu>
-              <DropdownMenuTrigger
-                render={<Button variant="ghost" size="icon-sm" aria-label="More actions" />}
-              >
-                <MoreHorizontalIcon aria-hidden />
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="end" className="w-44">
-                <DropdownMenuItem disabled={working} onClick={preview}>
-                  <EyeIcon aria-hidden />
-                  Preview
-                </DropdownMenuItem>
-                {isLive && (
-                  <DropdownMenuItem
+            {access === 'full' ? (
+              <>
+                {meta.hasDraft && !dirty && meta.id && (
+                  <Button
+                    variant="ghost"
+                    size="sm"
                     disabled={working}
                     onClick={() =>
                       other(
-                        () => unpublishPost({ data: { id: meta.id as string } }),
-                        'Post unpublished. It is a draft again.'
+                        () => discardChanges({ data: { id: meta.id as string } }),
+                        'Changes discarded.'
                       )
                     }
                   >
-                    <EyeOffIcon aria-hidden />
-                    Unpublish
-                  </DropdownMenuItem>
+                    <Undo2Icon aria-hidden data-icon="inline-start" />
+                    Discard changes
+                  </Button>
                 )}
-                {meta.id && (
-                  <>
-                    <DropdownMenuSeparator />
-                    <DropdownMenuItem
-                      variant="destructive"
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  disabled={working || (!dirty && meta.id !== null)}
+                  onClick={() => persist('save')}
+                >
+                  {busy === 'save' ? (
+                    <>
+                      <Spinner data-icon="inline-start" />
+                      Saving…
+                    </>
+                  ) : isLive ? (
+                    'Save changes'
+                  ) : (
+                    'Save draft'
+                  )}
+                </Button>
+                <div className="flex">
+                  <Button
+                    size="sm"
+                    disabled={working || (isLive && !dirty && !meta.hasDraft)}
+                    onClick={() => persist('publish')}
+                    className={cn(!isLive && 'rounded-r-none')}
+                  >
+                    {busy === 'publish' ? (
+                      <>
+                        <Spinner data-icon="inline-start" />
+                        Publishing…
+                      </>
+                    ) : (
+                      <>
+                        <SendIcon aria-hidden data-icon="inline-start" />
+                        {isLive ? 'Update' : meta.scheduledAt ? 'Publish now' : 'Publish'}
+                      </>
+                    )}
+                  </Button>
+                  {!isLive && (
+                    <SchedulePopover
+                      scheduledAt={meta.scheduledAt}
                       disabled={working}
-                      onClick={() =>
-                        other(
-                          () => trashPosts({ data: { ids: [meta.id as string] } }),
-                          'Post moved to the trash.',
-                          async () => {
-                            skipBlockRef.current = true;
-                            await navigate({ to: '/posts' });
-                          }
-                        )
-                      }
-                    >
-                      <Trash2Icon aria-hidden />
-                      Move to trash
+                      onSchedule={schedule}
+                      onUnschedule={unschedule}
+                    />
+                  )}
+                </div>
+                <DropdownMenu>
+                  <DropdownMenuTrigger
+                    render={<Button variant="ghost" size="icon-sm" aria-label="More actions" />}
+                  >
+                    <MoreHorizontalIcon aria-hidden />
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="end" className="w-44">
+                    <DropdownMenuItem disabled={working} onClick={preview}>
+                      <EyeIcon aria-hidden />
+                      Preview
                     </DropdownMenuItem>
+                    {isLive && (
+                      <DropdownMenuItem
+                        disabled={working}
+                        onClick={() =>
+                          other(
+                            () => unpublishPost({ data: { id: meta.id as string } }),
+                            'Post unpublished. It is a draft again.'
+                          )
+                        }
+                      >
+                        <EyeOffIcon aria-hidden />
+                        Unpublish
+                      </DropdownMenuItem>
+                    )}
+                    {meta.id && (
+                      <>
+                        <DropdownMenuSeparator />
+                        <DropdownMenuItem
+                          variant="destructive"
+                          disabled={working}
+                          onClick={() =>
+                            other(
+                              () => trashPosts({ data: { ids: [meta.id as string] } }),
+                              'Post moved to the trash.',
+                              async () => {
+                                skipBlockRef.current = true;
+                                await navigate({ to: '/posts' });
+                              }
+                            )
+                          }
+                        >
+                          <Trash2Icon aria-hidden />
+                          Move to trash
+                        </DropdownMenuItem>
+                      </>
+                    )}
+                  </DropdownMenuContent>
+                </DropdownMenu>
+              </>
+            ) : (
+              <>
+                {access === 'author' && meta.hasDraft && !dirty && meta.id && (
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    disabled={working}
+                    onClick={() =>
+                      other(
+                        () => discardChanges({ data: { id: meta.id as string } }),
+                        'Changes discarded.'
+                      )
+                    }
+                  >
+                    <Undo2Icon aria-hidden data-icon="inline-start" />
+                    Discard changes
+                  </Button>
+                )}
+                {access === 'readonly' && (
+                  <span className="text-muted-foreground px-2 text-xs">Read only</span>
+                )}
+                <Button
+                  variant="ghost"
+                  size="icon-sm"
+                  aria-label="Preview"
+                  disabled={working || !meta.id}
+                  onClick={preview}
+                >
+                  <EyeIcon aria-hidden />
+                </Button>
+                {access === 'author' && (
+                  <>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      disabled={working || (!dirty && meta.id !== null)}
+                      onClick={() => persist('save')}
+                    >
+                      {busy === 'save' ? (
+                        <>
+                          <Spinner data-icon="inline-start" />
+                          Saving…
+                        </>
+                      ) : (
+                        'Save draft'
+                      )}
+                    </Button>
+                    <Button
+                      size="sm"
+                      disabled={working || (meta.reviewRequestedAt !== null && !dirty)}
+                      onClick={submitForReview}
+                    >
+                      <SendIcon aria-hidden data-icon="inline-start" />
+                      {meta.reviewRequestedAt !== null && !dirty
+                        ? 'Submitted for review'
+                        : 'Submit for review'}
+                    </Button>
                   </>
                 )}
-              </DropdownMenuContent>
-            </DropdownMenu>
+                {access === 'seo' && (
+                  <Button size="sm" disabled={working || !dirty || !meta.id} onClick={saveSeo}>
+                    {busy === 'save' ? (
+                      <>
+                        <Spinner data-icon="inline-start" />
+                        Saving…
+                      </>
+                    ) : (
+                      'Save search listing'
+                    )}
+                  </Button>
+                )}
+              </>
+            )}
           </div>
         </header>
 
@@ -539,6 +688,7 @@ export function PostEditor({
                 onExcerptChange={(excerpt) => update({ excerpt })}
                 body={values.body}
                 onBodyChange={(body) => update({ body })}
+                readOnly={contentLocked}
               />
             </Suspense>
           </ClientOnly>
@@ -546,7 +696,8 @@ export function PostEditor({
       </div>
 
       <aside className="space-y-6 text-[13px] lg:sticky lg:top-6 lg:self-start lg:border-l lg:pl-6">
-        <section className="space-y-0.5">
+        {/* A disabled fieldset locks every picker inside for SEO and read-only access. */}
+        <fieldset disabled={contentLocked} className="min-w-0 space-y-0.5 disabled:opacity-70">
           <h2 className="text-muted-foreground mb-2 text-xs font-medium">Properties</h2>
           <Property label="Author" icon={UserIcon}>
             <SinglePicker
@@ -597,10 +748,12 @@ export function PostEditor({
               <span className="text-muted-foreground px-2">{formatDateTime(meta.publishedAt)}</span>
             </Property>
           )}
-        </section>
+        </fieldset>
 
         <Section title="Search listing">
-          <SeoFields values={values} onChange={update} />
+          <fieldset disabled={access === 'readonly'} className="min-w-0">
+            <SeoFields values={values} onChange={update} />
+          </fieldset>
         </Section>
 
         {data.revisions.length > 0 && (
@@ -617,7 +770,7 @@ export function PostEditor({
                   </span>
                   {index === 0 ? (
                     <span className="text-muted-foreground text-xs">Live</span>
-                  ) : (
+                  ) : contentLocked ? null : (
                     <Button
                       variant="ghost"
                       size="xs"

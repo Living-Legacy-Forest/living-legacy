@@ -18,6 +18,8 @@ type Props = {
   /** Read once on mount; remount with a new `key` to replace it. */
   body: RichTextDoc | null;
   onBodyChange: (body: RichTextDoc | null) => void;
+  /** Show the post without letting it be changed (no toolbar, nothing editable). */
+  readOnly?: boolean;
 };
 
 /**
@@ -31,9 +33,11 @@ export function DocumentEditor({
   onExcerptChange,
   body,
   onBodyChange,
+  readOnly = false,
 }: Props) {
   const editor = useEditor({
     content: body ?? '',
+    editable: !readOnly,
     extensions: [
       ...postContentExtensions,
       Placeholder.configure({ placeholder: 'Start writing…' }),
@@ -61,12 +65,13 @@ export function DocumentEditor({
           SCROLLBAR
         )}
       >
-        <Toolbar editor={editor} state={state} />
+        {!readOnly && <Toolbar editor={editor} state={state} />}
         <article className="bg-background px-4 py-5 sm:mx-auto sm:mt-4 sm:mb-6 sm:max-w-3xl sm:rounded-md sm:border sm:px-14 sm:py-12 sm:shadow-xs">
           <textarea
             aria-label="Title"
             rows={1}
             value={title}
+            readOnly={readOnly}
             onChange={(e) => onTitleChange(e.target.value.replace(/\n/g, ' '))}
             placeholder="Post title"
             className="placeholder:text-muted-foreground/60 field-sizing-content w-full resize-none bg-transparent text-2xl font-bold tracking-tight outline-none sm:text-3xl"
@@ -75,6 +80,7 @@ export function DocumentEditor({
             aria-label="Summary"
             rows={1}
             value={excerpt}
+            readOnly={readOnly}
             onChange={(e) => onExcerptChange(e.target.value)}
             placeholder="Add a short summary…"
             className="text-muted-foreground placeholder:text-muted-foreground/50 mt-1 mb-6 field-sizing-content w-full resize-none bg-transparent text-base leading-relaxed outline-none"

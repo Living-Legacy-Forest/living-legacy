@@ -1,5 +1,15 @@
 import { useNavigate } from '@tanstack/react-router';
 import { useState } from 'react';
+import { BulkCsvForm } from '@/components/bulk/bulk-csv-form';
+import {
+  BulkPane,
+  ConfirmBulkDelete,
+  RowCheckbox,
+  SearchInput,
+  SelectionBar,
+  matchesSearch,
+  useSelection,
+} from '@/components/bulk/list-tools';
 import {
   MessageSquareQuoteIcon,
   PanelRightIcon,
@@ -7,6 +17,7 @@ import {
   PlusIcon,
   StarIcon,
   Trash2Icon,
+  UploadIcon,
 } from '@/components/icons';
 import {
   AlertDialog,
@@ -43,6 +54,7 @@ import { Label } from '@/components/ui/label';
 import { Spinner } from '@/components/ui/spinner';
 import { Switch } from '@/components/ui/switch';
 import { Textarea } from '@/components/ui/textarea';
+import { readStatus, readYesNo } from '@/lib/bulk-import';
 import { reportInvalid } from '@/lib/form-validation';
 import { useAction } from '@/lib/use-action';
 import { cn } from '@/lib/utils';
@@ -50,6 +62,8 @@ import {
   type Testimonial,
   type TestimonialsData,
   deleteTestimonial,
+  deleteTestimonials,
+  importTestimonials,
   saveTestimonial,
 } from '@/server/testimonials';
 
@@ -57,6 +71,30 @@ type Search = { selected?: string };
 
 function attribution(t: Testimonial): string {
   return [t.relationship, t.location].filter(Boolean).join(' · ');
+}
+
+const NOUN: [string, string] = ['testimonial', 'testimonials'];
+
+/** A CSV row's values as testimonial fields, or what is wrong with them. */
+function testimonialFromCsv(values: Record<string, string>) {
+  const status = readStatus(values.status ?? '');
+  const featured = readYesNo(values.featured ?? '');
+  if (!values.quote) return 'The quote is empty.';
+  if (values.quote.length > 1000) return 'The quote is over 1000 characters.';
+  if (!values.name) return 'The name is empty.';
+  if (values.name.length > 80) return 'The name is over 80 characters.';
+  if ((values.relationship ?? '').length > 80) return 'The relationship is over 80 characters.';
+  if ((values.location ?? '').length > 80) return 'The location is over 80 characters.';
+  if (featured === null) return 'Featured must be yes or no.';
+  if (!status) return 'The status must be draft or published.';
+  return {
+    quote: values.quote,
+    name: values.name,
+    relationship: values.relationship,
+    location: values.location,
+    featured,
+    status,
+  };
 }
 
 const isDesktop = () =>
@@ -75,8 +113,14 @@ export function TestimonialsPage({
   const { run, pending } = useAction();
   // Desktop: what the right-hand pane is editing, in place of the preview. Mobile
   // has no pane, so the same form opens in a dialog instead (as on the team page).
-  const [editingId, setEditingId] = useState<string | 'new' | null>(null);
-  const [dialogTarget, setDialogTarget] = useState<Testimonial | 'new' | null>(null);
+  const [editingId, setEditingId] = useState<string | 'new' | 'bulk' | null>(null);
+  const [dialogTarget, setDialogTarget] = useState<Testimonial | 'new' | 'bulk' | null>(null);
+  const [query, setQuery] = useState('');
+  const [confirmDelete, setConfirmDelete] = useState(false);
+  const selection = useSelection(data.map((t) => t.id));
+  const visible = data.filter((t) =>
+    matchesSearch(query, [t.name, t.quote, t.relationship, t.location])
+  );
 
   const selectedId = data.find((t) => t.id === search.selected)?.id ?? data[0]?.id ?? null;
   const selected = data.find((t) => t.id === selectedId) ?? null;
@@ -86,19 +130,74 @@ export function TestimonialsPage({
   };
 
   const openNew = () => (isDesktop() ? setEditingId('new') : setDialogTarget('new'));
+  const openBulk = () => (isDesktop() ? setEditingId('bulk') : setDialogTarget('bulk'));
   const openEdit = (t: Testimonial) => (isDesktop() ? setEditingId(t.id) : setDialogTarget(t));
   const remove = (id: string) =>
     run(() => deleteTestimonial({ data: { id } }), 'Testimonial removed.');
+
+  async function removeChecked() {
+    const ids = selection.checkedIds;
+    const result = await run(
+      () => deleteTestimonials({ data: { ids } }),
+      `${ids.length} ${ids.length === 1 ? NOUN[0] : NOUN[1]} removed.`
+    );
+    if (!result) return;
+    if (editingId && ids.includes(editingId)) setEditingId(null);
+    selection.clear();
+  }
+
+  const bulkForm = (onDone: () => void, footer: (submit: React.ReactNode) => React.ReactNode) => (
+    <BulkCsvForm
+      noun={NOUN}
+      fileName="testimonials"
+      fields={['quote', 'name', 'relationship', 'location', 'featured', 'status']}
+      example={{
+        quote: 'It felt like we were giving something back.',
+        name: 'Jane Smith',
+        relationship: 'Daughter',
+        location: 'Melbourne',
+        featured: 'no',
+        status: 'draft',
+      }}
+      current={data.map((t) => ({
+        id: t.id,
+        quote: t.quote,
+        name: t.name,
+        relationship: t.relationship ?? '',
+        location: t.location ?? '',
+        featured: t.featured ? 'yes' : 'no',
+        status: t.status,
+      }))}
+      toRow={testimonialFromCsv}
+      apply={(rows) => importTestimonials({ data: { rows } })}
+      onDone={onDone}
+      footer={footer}
+    />
+  );
 
   return (
     <div className="flex flex-col gap-4 lg:h-[calc(100svh-7.5rem)]">
       <div className="flex flex-wrap items-center gap-3">
         <h1 className="mr-auto text-xl">Testimonials</h1>
+        {data.length > 0 && (
+          <SearchInput
+            label="Search testimonials"
+            placeholder="Search names and quotes"
+            value={query}
+            onChange={setQuery}
+          />
+        )}
         {canWrite && (
-          <Button size="sm" onClick={openNew}>
-            <PlusIcon aria-hidden data-icon="inline-start" />
-            Add testimonial
-          </Button>
+          <>
+            <Button size="sm" variant="outline" onClick={openBulk}>
+              <UploadIcon aria-hidden data-icon="inline-start" />
+              Bulk update
+            </Button>
+            <Button size="sm" onClick={openNew}>
+              <PlusIcon aria-hidden data-icon="inline-start" />
+              Add testimonial
+            </Button>
+          </>
         )}
       </div>
 
@@ -113,34 +212,80 @@ export function TestimonialsPage({
           </EmptyHeader>
           {canWrite && (
             <EmptyContent>
-              <Button size="sm" onClick={openNew}>
-                <PlusIcon aria-hidden data-icon="inline-start" />
-                Add testimonial
-              </Button>
+              <div className="flex gap-2">
+                <Button size="sm" variant="outline" onClick={openBulk}>
+                  <UploadIcon aria-hidden data-icon="inline-start" />
+                  Bulk update
+                </Button>
+                <Button size="sm" onClick={openNew}>
+                  <PlusIcon aria-hidden data-icon="inline-start" />
+                  Add testimonial
+                </Button>
+              </div>
             </EmptyContent>
           )}
         </Empty>
       ) : (
-        <div className="grid min-h-0 flex-1 overflow-hidden rounded-lg border lg:grid-cols-[minmax(20rem,2fr)_3fr]">
+        <div className="grid min-h-0 flex-1 overflow-hidden rounded-lg border lg:grid-cols-[minmax(20rem,1fr)_1fr]">
           <section aria-label="Testimonials" className="flex min-h-0 flex-col lg:border-r">
-            <div className="flex h-11 shrink-0 items-center gap-2 border-b px-3">
-              <span className="text-[13px] font-medium">All</span>
-              <span className="text-muted-foreground text-xs tabular-nums">{data.length}</span>
-            </div>
-            <ul className="min-h-0 flex-1 space-y-px overflow-y-auto p-1.5">
-              {data.map((t) => (
-                <TestimonialListItem
-                  key={t.id}
-                  testimonial={t}
-                  selected={editingId !== 'new' && t.id === selectedId}
-                  onSelect={() => select(t.id)}
-                  onOpen={() => (canWrite ? openEdit(t) : select(t.id))}
-                />
-              ))}
-            </ul>
+            {canWrite ? (
+              <SelectionBar
+                selection={selection}
+                visibleIds={visible.map((t) => t.id)}
+                title="All"
+                total={data.length}
+                pending={pending}
+                onDelete={() => setConfirmDelete(true)}
+              />
+            ) : (
+              <div className="flex h-11 shrink-0 items-center gap-2 border-b px-3">
+                <span className="text-[13px] font-medium">All</span>
+                <span className="text-muted-foreground text-xs tabular-nums">{data.length}</span>
+              </div>
+            )}
+            {visible.length === 0 ? (
+              <div className="text-muted-foreground flex flex-1 flex-col items-center justify-center gap-2 p-6 text-center text-sm">
+                No testimonials match that search.
+                <Button variant="ghost" size="sm" onClick={() => setQuery('')}>
+                  Clear search
+                </Button>
+              </div>
+            ) : (
+              <ul className="min-h-0 flex-1 space-y-px overflow-y-auto p-1.5">
+                {visible.map((t) => (
+                  <TestimonialListItem
+                    key={t.id}
+                    testimonial={t}
+                    selected={editingId === null ? t.id === selectedId : t.id === editingId}
+                    canWrite={canWrite}
+                    checked={selection.isChecked(t.id)}
+                    selecting={selection.checkedIds.length > 0}
+                    onToggle={() => selection.toggle(t.id)}
+                    onSelect={() => select(t.id)}
+                    onOpen={() => (canWrite ? openEdit(t) : select(t.id))}
+                  />
+                ))}
+              </ul>
+            )}
           </section>
 
-          {canWrite && editingId !== null ? (
+          {canWrite && editingId === 'bulk' ? (
+            <section aria-label="Bulk update" className="hidden min-h-0 flex-col lg:flex">
+              <BulkPane title="Bulk update testimonials">
+                {bulkForm(
+                  () => setEditingId(null),
+                  (submit) => (
+                    <div className="flex justify-end gap-2">
+                      <Button type="button" variant="outline" onClick={() => setEditingId(null)}>
+                        Cancel
+                      </Button>
+                      {submit}
+                    </div>
+                  )
+                )}
+              </BulkPane>
+            </section>
+          ) : canWrite && editingId !== null ? (
             <section aria-label="Edit testimonial" className="hidden min-h-0 flex-col lg:flex">
               <TestimonialPane
                 key={editingId}
@@ -161,31 +306,62 @@ export function TestimonialsPage({
         </div>
       )}
 
+      <ConfirmBulkDelete
+        open={confirmDelete}
+        onOpenChange={setConfirmDelete}
+        count={selection.checkedIds.length}
+        noun={NOUN}
+        description="Their quotes are removed from the website. This cannot be undone."
+        onConfirm={removeChecked}
+      />
+
       {canWrite && (
         <Dialog
           open={dialogTarget !== null}
           onOpenChange={(open) => !open && setDialogTarget(null)}
         >
-          <DialogContent className="sm:max-w-md">
+          <DialogContent className={dialogTarget === 'bulk' ? 'sm:max-w-lg' : 'sm:max-w-md'}>
             <DialogHeader>
               <DialogTitle>
-                {dialogTarget === 'new' ? 'Add testimonial' : 'Edit testimonial'}
+                {dialogTarget === 'bulk'
+                  ? 'Bulk update testimonials'
+                  : dialogTarget === 'new'
+                    ? 'Add testimonial'
+                    : 'Edit testimonial'}
               </DialogTitle>
-              <DialogDescription>A quote from a family, shown on the website.</DialogDescription>
+              <DialogDescription>
+                {dialogTarget === 'bulk'
+                  ? 'Add or update many testimonials at once from a CSV file.'
+                  : 'A quote from a family, shown on the website.'}
+              </DialogDescription>
             </DialogHeader>
-            <TestimonialForm
-              key={dialogTarget === 'new' ? 'new' : dialogTarget?.id}
-              testimonial={dialogTarget === 'new' ? null : dialogTarget}
-              onSaved={() => setDialogTarget(null)}
-              footer={(formPending, isNew) => (
-                <DialogFooter>
-                  <DialogClose render={<Button type="button" variant="outline" />}>
-                    Cancel
-                  </DialogClose>
-                  <SubmitButton pending={formPending} isNew={isNew} />
-                </DialogFooter>
-              )}
-            />
+            {dialogTarget === 'bulk' ? (
+              bulkForm(
+                () => setDialogTarget(null),
+                (submit) => (
+                  <DialogFooter>
+                    <DialogClose render={<Button type="button" variant="outline" />}>
+                      Cancel
+                    </DialogClose>
+                    {submit}
+                  </DialogFooter>
+                )
+              )
+            ) : (
+              <TestimonialForm
+                key={dialogTarget === 'new' ? 'new' : dialogTarget?.id}
+                testimonial={dialogTarget === 'new' ? null : dialogTarget}
+                onSaved={() => setDialogTarget(null)}
+                footer={(formPending, isNew) => (
+                  <DialogFooter>
+                    <DialogClose render={<Button type="button" variant="outline" />}>
+                      Cancel
+                    </DialogClose>
+                    <SubmitButton pending={formPending} isNew={isNew} />
+                  </DialogFooter>
+                )}
+              />
+            )}
           </DialogContent>
         </Dialog>
       )}
@@ -196,18 +372,39 @@ export function TestimonialsPage({
 function TestimonialListItem({
   testimonial,
   selected,
+  canWrite,
+  checked,
+  selecting,
+  onToggle,
   onSelect,
   onOpen,
 }: {
   testimonial: Testimonial;
   selected: boolean;
+  canWrite: boolean;
+  checked: boolean;
+  selecting: boolean;
+  onToggle: () => void;
   onSelect: () => void;
   onOpen: () => void;
 }) {
   return (
     <li
-      className={cn('rounded-md transition-colors', selected ? 'bg-accent' : 'hover:bg-muted/60')}
+      className={cn(
+        'group flex items-start gap-1 rounded-md transition-colors',
+        canWrite && 'pl-1.5',
+        selected ? 'bg-accent' : 'hover:bg-muted/60'
+      )}
     >
+      {canWrite && (
+        <RowCheckbox
+          label={`Select the quote from ${testimonial.name}`}
+          checked={checked}
+          selecting={selecting}
+          onToggle={onToggle}
+          className="mt-2.5"
+        />
+      )}
       <button
         type="button"
         aria-current={selected || undefined}
@@ -216,7 +413,7 @@ function TestimonialListItem({
           else onOpen();
         }}
         onDoubleClick={onOpen}
-        className="focus-visible:ring-ring w-full rounded-md px-2.5 py-2 text-left outline-none focus-visible:ring-1"
+        className="focus-visible:ring-ring min-w-0 flex-1 rounded-md px-2.5 py-2 text-left outline-none focus-visible:ring-1"
       >
         <span className="flex items-center gap-2">
           <span className="min-w-0 flex-1 truncate text-[13px] font-medium">

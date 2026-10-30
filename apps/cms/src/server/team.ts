@@ -1,7 +1,8 @@
 import { schema } from '@llf/db';
 import { createServerFn } from '@tanstack/react-start';
-import { asc, eq, isNull, sql } from 'drizzle-orm';
+import { asc, eq, inArray, isNull, sql } from 'drizzle-orm';
 import { z } from 'zod';
+import { type BulkResult, firstIssue } from '@/lib/bulk-import';
 import { getDb } from '@/lib/db';
 import { authMiddleware, requirePermission } from '@/lib/session';
 
@@ -123,4 +124,83 @@ export const moveTeamMember = createServerFn({ method: 'POST' })
         .set({ sortOrder: a.sortOrder, updatedAt: now })
         .where(eq(teamMembers.id, b.id)),
     ]);
+  });
+
+export const deleteTeamMembers = createServerFn({ method: 'POST' })
+  .middleware([requirePermission('content:write')])
+  .validator(z.object({ ids: z.array(z.string()).min(1).max(500) }))
+  .handler(async ({ data }) => {
+    await getDb().delete(teamMembers).where(inArray(teamMembers.id, data.ids));
+    return { removed: data.ids.length };
+  });
+
+/** Adds rows without an id and updates rows with one, from a CSV upload. */
+export const importTeamMembers = createServerFn({ method: 'POST' })
+  .middleware([requirePermission('content:write')])
+  .validator(
+    z.object({
+      rows: z
+        .array(memberSchema.extend({ row: z.number().int(), status: z.string() }))
+        .min(1)
+        .max(500),
+    })
+  )
+  .handler(async ({ data, context }): Promise<BulkResult> => {
+    const db = getDb();
+    const now = new Date();
+    const existing = new Map(
+      (
+        await db
+          .select({ id: teamMembers.id, publishedAt: teamMembers.publishedAt })
+          .from(teamMembers)
+          .where(isNull(teamMembers.deletedAt))
+      ).map((m) => [m.id, m])
+    );
+    const [{ maxOrder } = { maxOrder: -1 }] = await db
+      .select({ maxOrder: sql<number>`coalesce(max(${teamMembers.sortOrder}), -1)` })
+      .from(teamMembers);
+    let nextOrder = Number(maxOrder) + 1;
+
+    const result: BulkResult = { added: 0, updated: 0, skipped: [] };
+    for (const { row, ...input } of data.rows) {
+      const parsed = memberSchema.safeParse(input);
+      if (!parsed.success) {
+        result.skipped.push({ row, reason: firstIssue(parsed.error) });
+        continue;
+      }
+      const member = parsed.data;
+      const values = {
+        name: member.name,
+        role: member.role || null,
+        bio: member.bio ? { type: 'text', text: member.bio } : null,
+        status: member.status,
+        updatedBy: context.user.id,
+      };
+
+      if (member.id) {
+        const current = existing.get(member.id);
+        if (!current) {
+          result.skipped.push({ row, reason: 'No team member has this id.' });
+          continue;
+        }
+        await db
+          .update(teamMembers)
+          .set({
+            ...values,
+            publishedAt: member.status === 'published' ? (current.publishedAt ?? now) : null,
+            updatedAt: now,
+          })
+          .where(eq(teamMembers.id, member.id));
+        result.updated++;
+      } else {
+        await db.insert(teamMembers).values({
+          ...values,
+          sortOrder: nextOrder++,
+          publishedAt: member.status === 'published' ? now : null,
+          createdBy: context.user.id,
+        });
+        result.added++;
+      }
+    }
+    return result;
   });

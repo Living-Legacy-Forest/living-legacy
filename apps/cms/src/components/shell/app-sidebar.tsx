@@ -17,7 +17,8 @@ import { NavGroup } from './nav-group';
 import { navItemClass } from './nav-styles';
 
 export function AppSidebar({ user }: { user: SessionUser }) {
-  const allowed = (item: NavItem) => !item.permission || can(user.role, item.permission);
+  const allowed = (item: NavItem) =>
+    !item.permission || [item.permission].flat().some((permission) => can(user.role, permission));
 
   return (
     <Sidebar collapsible="icon" variant="inset">

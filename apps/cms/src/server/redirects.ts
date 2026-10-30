@@ -1,8 +1,9 @@
 import { type RedirectRule, isWildcard, redirectStatusCodes, traceRedirect } from '@llf/content';
 import { schema } from '@llf/db';
 import { createServerFn } from '@tanstack/react-start';
-import { desc, eq } from 'drizzle-orm';
+import { desc, eq, inArray } from 'drizzle-orm';
 import { z } from 'zod';
+import { type BulkResult, firstIssue } from '@/lib/bulk-import';
 import { getDb } from '@/lib/db';
 import { requirePermission } from '@/lib/session';
 
@@ -181,4 +182,112 @@ export const deleteRedirect = createServerFn({ method: 'POST' })
   .validator(z.object({ id: z.string() }))
   .handler(async ({ data }) => {
     await getDb().delete(redirects).where(eq(redirects.id, data.id));
+  });
+
+export const deleteRedirects = createServerFn({ method: 'POST' })
+  .middleware([requirePermission('redirects:write')])
+  .validator(z.object({ ids: z.array(z.string()).min(1).max(500) }))
+  .handler(async ({ data }) => {
+    await getDb().delete(redirects).where(inArray(redirects.id, data.ids));
+    return { removed: data.ids.length };
+  });
+
+/** D1 caps bound parameters per statement, so new rows are inserted a few at a time. */
+const INSERT_CHUNK = 10;
+
+/** Adds rows without an id and updates rows with one, from a CSV upload. */
+export const importRedirects = createServerFn({ method: 'POST' })
+  .middleware([requirePermission('redirects:write')])
+  .validator(
+    z.object({
+      rows: z
+        .array(
+          z.object({
+            row: z.number().int(),
+            id: z.string().optional(),
+            fromPath: z.string(),
+            toPath: z.string(),
+            statusCode: z.number(),
+            note: z.string().optional(),
+            enabled: z.boolean(),
+            keepQuery: z.boolean(),
+          })
+        )
+        .min(1)
+        .max(500),
+    })
+  )
+  .handler(async ({ data }): Promise<BulkResult> => {
+    const db = getDb();
+    const existing = await db
+      .select({
+        id: redirects.id,
+        fromPath: redirects.fromPath,
+        toPath: redirects.toPath,
+        statusCode: redirects.statusCode,
+        keepQuery: redirects.keepQuery,
+        enabled: redirects.enabled,
+      })
+      .from(redirects);
+    const ids = new Set(existing.map((r) => r.id));
+    // Which entry owns each old path, so two rows never claim the same one.
+    const owner = new Map(existing.map((r) => [r.fromPath.toLowerCase(), r.id]));
+    // Enabled rules as they will be after this import, to catch loops across rows.
+    const rules = new Map<string, RedirectRule>(
+      existing.filter((r) => r.enabled).map((r) => [r.id, r])
+    );
+
+    const result: BulkResult = { added: 0, updated: 0, skipped: [] };
+    const inserts: (typeof redirects.$inferInsert)[] = [];
+    for (const { row, ...input } of data.rows) {
+      const parsed = redirectSchema.safeParse(input);
+      if (!parsed.success) {
+        result.skipped.push({ row, reason: firstIssue(parsed.error) });
+        continue;
+      }
+      const r = parsed.data;
+      const id = r.id ?? `row-${row}`;
+      const key = r.fromPath.toLowerCase();
+      if (r.id && !ids.has(r.id)) {
+        result.skipped.push({ row, reason: 'No redirect has this id.' });
+        continue;
+      }
+      if (owner.has(key) && owner.get(key) !== id) {
+        result.skipped.push({ row, reason: `${r.fromPath} is already redirected.` });
+        continue;
+      }
+      const toPath = r.statusCode === 410 ? '' : r.toPath;
+      const rule: RedirectRule = { ...r, id, toPath };
+      if (r.enabled && traceRedirect([...rules.values()], rule).loop) {
+        result.skipped.push({ row, reason: 'Would send visitors round in a loop.' });
+        continue;
+      }
+
+      owner.set(key, id);
+      if (r.enabled) rules.set(id, rule);
+      else rules.delete(id);
+      const values = {
+        fromPath: r.fromPath,
+        toPath,
+        statusCode: r.statusCode,
+        enabled: r.enabled,
+        keepQuery: r.keepQuery,
+        note: r.note || null,
+      };
+      if (r.id) {
+        await db
+          .update(redirects)
+          .set({ ...values, updatedAt: new Date() })
+          .where(eq(redirects.id, r.id));
+        result.updated++;
+      } else {
+        inserts.push(values);
+      }
+    }
+
+    for (let i = 0; i < inserts.length; i += INSERT_CHUNK) {
+      await db.insert(redirects).values(inserts.slice(i, i + INSERT_CHUNK));
+    }
+    result.added = inserts.length;
+    return result;
   });

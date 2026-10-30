@@ -56,7 +56,10 @@ import {
 } from '@/server/users';
 
 const roleItems = [
-  { value: 'editor', label: 'Editor', description: 'Write and publish content.' },
+  { value: 'editor', label: 'Editor', description: 'Write and publish all content.' },
+  { value: 'author', label: 'Author', description: 'Write posts and submit them for review.' },
+  { value: 'seo', label: 'SEO', description: 'Search listings, redirects and search settings.' },
+  { value: 'viewer', label: 'Viewer', description: 'Read only. Sees content, changes nothing.' },
   { value: 'admin', label: 'Admin', description: 'Full access, plus users and settings.' },
 ];
 

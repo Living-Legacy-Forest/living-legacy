@@ -22,6 +22,27 @@
       "when": 1793329717337,
       "tag": "0002_redirect_settings",
       "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "6",
+      "when": 1793332490932,
+      "tag": "0003_faq_tags",
+      "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "6",
+      "when": 1793333793222,
+      "tag": "0004_announcements",
+      "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "6",
+      "when": 1793334100415,
+      "tag": "0005_post_review_and_roles",
+      "breakpoints": true
     }
   ]
 }

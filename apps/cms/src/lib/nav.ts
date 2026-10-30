@@ -6,6 +6,7 @@ import {
   FileText,
   ImageIcon,
   LayoutDashboard,
+  MegaphoneIcon,
   type LucideIcon,
   Quote,
   Settings,
@@ -21,13 +22,15 @@ export type NavItem = {
     | '/'
     | '/posts'
     | '/posts/new'
+    | '/announcements'
     | '/faqs'
     | '/redirects'
     | '/settings'
     | '/team'
     | '/testimonials'
     | '/users';
-  permission?: Permission;
+  /** Shown when the person has any of these. */
+  permission?: Permission | Permission[];
   items?: NavItem[];
 };
 
@@ -56,6 +59,7 @@ export const navGroups: NavGroup[] = [
       { title: 'FAQs', icon: CircleHelp, to: '/faqs' },
       { title: 'Testimonials', icon: Quote, to: '/testimonials' },
       { title: 'Team', icon: Users, to: '/team' },
+      { title: 'Announcements', icon: MegaphoneIcon, to: '/announcements' },
     ],
   },
   {
@@ -63,7 +67,12 @@ export const navGroups: NavGroup[] = [
     items: [
       { title: 'Redirects', icon: ArrowRightLeft, to: '/redirects', permission: 'redirects:write' },
       { title: 'Users', icon: UserCog, to: '/users', permission: 'users:manage' },
-      { title: 'Settings', icon: Settings, to: '/settings', permission: 'settings:write' },
+      {
+        title: 'Settings',
+        icon: Settings,
+        to: '/settings',
+        permission: ['settings:write', 'seo:write'],
+      },
     ],
   },
 ];

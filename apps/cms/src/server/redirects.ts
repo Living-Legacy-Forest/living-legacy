@@ -6,6 +6,7 @@ import { z } from 'zod';
 import { type BulkResult, firstIssue } from '@/lib/bulk-import';
 import { getDb } from '@/lib/db';
 import { requirePermission } from '@/lib/session';
+import { logActivity } from './activity-log';
 
 const { redirects } = schema;
 
@@ -120,7 +121,7 @@ async function redirectWarnings(rule: RedirectRule, others: RedirectRule[]): Pro
 export const saveRedirect = createServerFn({ method: 'POST' })
   .middleware([requirePermission('redirects:write')])
   .validator(redirectSchema)
-  .handler(async ({ data }) => {
+  .handler(async ({ data, context }) => {
     const db = getDb();
     const note = data.note || null;
     const toPath = data.statusCode === 410 ? '' : data.toPath;
@@ -163,6 +164,12 @@ export const saveRedirect = createServerFn({ method: 'POST' })
           note,
         })
         .returning({ id: redirects.id });
+      await logActivity(db, {
+        actorId: context.user.id,
+        actorName: context.user.name,
+        action: 'redirect.created',
+        summary: `Added a redirect from ${data.fromPath}`,
+      });
       return { id: row!.id, warnings };
     }
 
@@ -178,21 +185,44 @@ export const saveRedirect = createServerFn({ method: 'POST' })
         updatedAt: new Date(),
       })
       .where(eq(redirects.id, data.id));
+    await logActivity(db, {
+      actorId: context.user.id,
+      actorName: context.user.name,
+      action: 'redirect.updated',
+      summary: `Updated the redirect from ${data.fromPath}`,
+    });
     return { id: data.id, warnings };
   });
 
 export const deleteRedirect = createServerFn({ method: 'POST' })
   .middleware([requirePermission('redirects:write')])
   .validator(z.object({ id: z.string() }))
-  .handler(async ({ data }) => {
-    await getDb().delete(redirects).where(eq(redirects.id, data.id));
+  .handler(async ({ data, context }) => {
+    const db = getDb();
+    const row = await db.query.redirects.findFirst({ where: eq(redirects.id, data.id) });
+    await db.delete(redirects).where(eq(redirects.id, data.id));
+    if (row) {
+      await logActivity(db, {
+        actorId: context.user.id,
+        actorName: context.user.name,
+        action: 'redirect.deleted',
+        summary: `Deleted the redirect from ${row.fromPath}`,
+      });
+    }
   });
 
 export const deleteRedirects = createServerFn({ method: 'POST' })
   .middleware([requirePermission('redirects:write')])
   .validator(z.object({ ids: z.array(z.string()).min(1).max(500) }))
-  .handler(async ({ data }) => {
-    await getDb().delete(redirects).where(inArray(redirects.id, data.ids));
+  .handler(async ({ data, context }) => {
+    const db = getDb();
+    await db.delete(redirects).where(inArray(redirects.id, data.ids));
+    await logActivity(db, {
+      actorId: context.user.id,
+      actorName: context.user.name,
+      action: 'redirect.deleted',
+      summary: `Deleted ${data.ids.length} ${data.ids.length === 1 ? 'redirect' : 'redirects'}`,
+    });
     return { removed: data.ids.length };
   });
 

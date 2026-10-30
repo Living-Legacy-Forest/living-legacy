@@ -5,6 +5,7 @@ import { eq } from 'drizzle-orm';
 import { z } from 'zod';
 import { getDb } from '@/lib/db';
 import { authMiddleware, requirePermission } from '@/lib/session';
+import { logActivity } from './activity-log';
 
 const { siteSettings } = schema;
 
@@ -121,12 +122,19 @@ export const saveSiteSettings = createServerFn({ method: 'POST' })
           ...(await readSiteSettings()),
           ...Object.fromEntries(SEO_KEYS.map((key) => [key, data[key]])),
         };
-    await getDb()
+    const db = getDb();
+    await db
       .insert(siteSettings)
       .values({ id: 'site', data: value, updatedBy: context.user.id })
       .onConflictDoUpdate({
         target: siteSettings.id,
         set: { data: value, updatedBy: context.user.id, updatedAt: new Date() },
       });
+    await logActivity(db, {
+      actorId: context.user.id,
+      actorName: context.user.name,
+      action: 'settings.updated',
+      summary: 'Updated site settings',
+    });
     return value;
   });

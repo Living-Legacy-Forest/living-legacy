@@ -12,6 +12,7 @@ import { Route as rootRouteImport } from './routes/__root'
 import { Route as AppRouteImport } from './routes/_app'
 import { Route as LoginRouteImport } from './routes/login'
 import { Route as AppIndexRouteImport } from './routes/_app/index'
+import { Route as AppActivityIndexRouteImport } from './routes/_app/activity/index'
 import { Route as AppAnnouncementsIndexRouteImport } from './routes/_app/announcements/index'
 import { Route as AppFaqsIndexRouteImport } from './routes/_app/faqs/index'
 import { Route as AppMediaIndexRouteImport } from './routes/_app/media/index'
@@ -43,6 +44,11 @@ const LoginRoute = LoginRouteImport.update({
 const AppIndexRoute = AppIndexRouteImport.update({
   id: '/',
   path: '/',
+  getParentRoute: () => AppRoute,
+} as any)
+const AppActivityIndexRoute = AppActivityIndexRouteImport.update({
+  id: '/activity/',
+  path: '/activity/',
   getParentRoute: () => AppRoute,
 } as any)
 const AppAnnouncementsIndexRoute = AppAnnouncementsIndexRouteImport.update({
@@ -145,6 +151,7 @@ export interface FileRoutesByFullPath {
   '/api/avatar/$key': typeof ApiAvatarKeyRoute
   '/api/media/$id': typeof ApiMediaIdRoute
   '/preview/posts/$postId': typeof PreviewPostsPostIdRoute
+  '/activity/': typeof AppActivityIndexRoute
   '/announcements/': typeof AppAnnouncementsIndexRoute
   '/faqs/': typeof AppFaqsIndexRoute
   '/media/': typeof AppMediaIndexRoute
@@ -167,6 +174,7 @@ export interface FileRoutesByTo {
   '/api/avatar/$key': typeof ApiAvatarKeyRoute
   '/api/media/$id': typeof ApiMediaIdRoute
   '/preview/posts/$postId': typeof PreviewPostsPostIdRoute
+  '/activity': typeof AppActivityIndexRoute
   '/announcements': typeof AppAnnouncementsIndexRoute
   '/faqs': typeof AppFaqsIndexRoute
   '/media': typeof AppMediaIndexRoute
@@ -191,6 +199,7 @@ export interface FileRoutesById {
   '/api/avatar/$key': typeof ApiAvatarKeyRoute
   '/api/media/$id': typeof ApiMediaIdRoute
   '/preview/posts/$postId': typeof PreviewPostsPostIdRoute
+  '/_app/activity/': typeof AppActivityIndexRoute
   '/_app/announcements/': typeof AppAnnouncementsIndexRoute
   '/_app/faqs/': typeof AppFaqsIndexRoute
   '/_app/media/': typeof AppMediaIndexRoute
@@ -215,6 +224,7 @@ export interface FileRouteTypes {
     | '/api/avatar/$key'
     | '/api/media/$id'
     | '/preview/posts/$postId'
+    | '/activity/'
     | '/announcements/'
     | '/faqs/'
     | '/media/'
@@ -237,6 +247,7 @@ export interface FileRouteTypes {
     | '/api/avatar/$key'
     | '/api/media/$id'
     | '/preview/posts/$postId'
+    | '/activity'
     | '/announcements'
     | '/faqs'
     | '/media'
@@ -260,6 +271,7 @@ export interface FileRouteTypes {
     | '/api/avatar/$key'
     | '/api/media/$id'
     | '/preview/posts/$postId'
+    | '/_app/activity/'
     | '/_app/announcements/'
     | '/_app/faqs/'
     | '/_app/media/'
@@ -306,6 +318,13 @@ declare module '@tanstack/react-router' {
       path: '/'
       fullPath: '/'
       preLoaderRoute: typeof AppIndexRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/_app/activity/': {
+      id: '/_app/activity/'
+      path: '/activity'
+      fullPath: '/activity/'
+      preLoaderRoute: typeof AppActivityIndexRouteImport
       parentRoute: typeof AppRoute
     }
     '/_app/announcements/': {
@@ -441,6 +460,7 @@ interface AppRouteChildren {
   AppIndexRoute: typeof AppIndexRoute
   AppPostsPostIdRoute: typeof AppPostsPostIdRoute
   AppPostsNewRoute: typeof AppPostsNewRoute
+  AppActivityIndexRoute: typeof AppActivityIndexRoute
   AppAnnouncementsIndexRoute: typeof AppAnnouncementsIndexRoute
   AppFaqsIndexRoute: typeof AppFaqsIndexRoute
   AppMediaIndexRoute: typeof AppMediaIndexRoute
@@ -457,6 +477,7 @@ const AppRouteChildren: AppRouteChildren = {
   AppIndexRoute: AppIndexRoute,
   AppPostsPostIdRoute: AppPostsPostIdRoute,
   AppPostsNewRoute: AppPostsNewRoute,
+  AppActivityIndexRoute: AppActivityIndexRoute,
   AppAnnouncementsIndexRoute: AppAnnouncementsIndexRoute,
   AppFaqsIndexRoute: AppFaqsIndexRoute,
   AppMediaIndexRoute: AppMediaIndexRoute,

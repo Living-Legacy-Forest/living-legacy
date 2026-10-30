@@ -2,11 +2,12 @@ import { type PostInput, blogPath, slugify } from '@llf/content';
 import { type Db, schema } from '@llf/db';
 import { and, asc, eq, inArray, isNull, ne } from 'drizzle-orm';
 import type { BatchItem } from 'drizzle-orm/batch';
+import { logActivity } from './activity-log';
 
 // Database operations for posts, shared by the server functions and the
 // scheduler (which runs outside any request, so nothing here reads one).
 
-const { posts, terms, postTerms, revisions, publishEvents, redirects } = schema;
+const { posts, terms, postTerms, revisions, publishEvents, redirects, user } = schema;
 
 export type PostRow = typeof posts.$inferSelect;
 export type Statement = BatchItem<'sqlite'>;
@@ -168,7 +169,9 @@ export async function publishValues(
   db: Db,
   row: PostRow,
   input: PostInput,
-  actorId: string | null
+  actorId: string | null,
+  /** Already known to the caller (e.g. the session), to skip a lookup. */
+  actorName?: string
 ) {
   const slug = await uniqueSlug(db, input.slug, row.id);
   const values = { ...input, slug };
@@ -177,6 +180,12 @@ export async function publishValues(
   const wasLive = row.status === 'published';
   const oldPath = blogPath(row.slug);
   const newPath = blogPath(slug);
+
+  const resolvedActorName =
+    actorName ??
+    (actorId
+      ? ((await db.query.user.findFirst({ where: eq(user.id, actorId) }))?.name ?? 'Someone')
+      : 'Someone');
 
   const { columns, termStatements } = await columnWrites(db, row.id, values);
   const statements: Statement[] = [
@@ -209,6 +218,12 @@ export async function publishValues(
     }),
     // The new URL must never redirect away (for example after renaming back).
     db.delete(redirects).where(eq(redirects.fromPath, newPath)),
+    logActivity(db, {
+      actorId,
+      actorName: resolvedActorName,
+      action: 'post.published',
+      summary: `Published "${values.title || 'Untitled'}"`,
+    }),
   ];
   // Keep old links working when a live post's permalink changes.
   if (wasLive && oldPath !== newPath) {

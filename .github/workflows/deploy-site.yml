@@ -8,6 +8,7 @@ on:
     branches: [master]
     paths:
       - 'apps/web/**'
+      - 'packages/**'
       - 'bun.lock'
       - 'package.json'
       - '.node-version'
@@ -16,6 +17,7 @@ on:
     branches: [master]
     paths:
       - 'apps/web/**'
+      - 'packages/**'
       - 'bun.lock'
       - 'package.json'
       - '.node-version'

@@ -28,7 +28,7 @@ export const Route = createRootRoute({
       { charSet: 'utf-8' },
       { name: 'viewport', content: 'width=device-width, initial-scale=1' },
       { name: 'robots', content: 'noindex, nofollow' },
-      { title: 'Living Legacy Forest CMS' },
+      { title: 'Living Legacy CMS' },
     ],
     links: [{ rel: 'stylesheet', href: styles }],
   }),

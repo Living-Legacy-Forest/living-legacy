@@ -2,10 +2,10 @@ import { Button as ButtonPrimitive } from '@base-ui/react/button';
 import { cva, type VariantProps } from 'class-variance-authority';
 import { cn } from '@/lib/utils';
 
-// Pill buttons on the golden type scale. Press feedback is a small scale
-// rather than a nudge down, and only the properties that change transition.
+// Softly rounded buttons on the golden type scale. Press feedback is a small
+// scale rather than a nudge down, and only the properties that change transition.
 const buttonClasses = cva(
-  "group/button inline-flex shrink-0 items-center justify-center rounded-full border border-transparent bg-clip-padding text-base font-medium whitespace-nowrap outline-none select-none transition-[transform,background-color,border-color,color] duration-160 ease-[var(--ease-grow)] focus-visible:ring-3 focus-visible:ring-ring/50 active:not-aria-[haspopup]:scale-[0.97] disabled:pointer-events-none disabled:opacity-50 aria-invalid:border-destructive aria-invalid:ring-3 aria-invalid:ring-destructive/20 [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-4 [&_svg[data-icon=inline-end]]:transition-transform [&_svg[data-icon=inline-end]]:duration-200 hover:[&_svg[data-icon=inline-end]]:translate-x-0.5",
+  "group/button inline-flex shrink-0 items-center justify-center rounded-xl border border-transparent bg-clip-padding text-base font-medium whitespace-nowrap outline-none select-none transition-[transform,background-color,border-color,color] duration-160 ease-[var(--ease-grow)] focus-visible:ring-3 focus-visible:ring-ring/50 active:not-aria-[haspopup]:scale-[0.97] disabled:pointer-events-none disabled:opacity-50 aria-invalid:border-destructive aria-invalid:ring-3 aria-invalid:ring-destructive/20 [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-4 [&_svg[data-icon=inline-end]]:transition-transform [&_svg[data-icon=inline-end]]:duration-200 hover:[&_svg[data-icon=inline-end]]:translate-x-0.5",
   {
     variants: {
       variant: {

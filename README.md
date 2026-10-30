@@ -1,6 +1,6 @@
-# Living Legacy Forest
+# Living Legacy
 
-Monorepo for livinglegacyforest.com.au and its content management system.
+Monorepo for livinglegacy.com.au and its content management system.
 
 | Path               | What it is                                                                |
 | ------------------ | ------------------------------------------------------------------------- |

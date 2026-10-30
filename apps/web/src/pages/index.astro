@@ -8,21 +8,20 @@ import CoreValues from '@/components/sections/home/CoreValues.astro';
 import Sustainability from '@/components/sections/home/Sustainability.astro';
 import PreplanCarousel from '@/components/sections/home/PreplanCarousel.astro';
 import Locations from '@/components/sections/home/Locations.astro';
-import ActionTiles from '@/components/sections/home/ActionTiles.astro';
 import SoilScience from '@/components/sections/home/SoilScience.astro';
 import MediaTeaser from '@/components/sections/home/MediaTeaser.astro';
 import HowItWorks from '@/components/sections/home/HowItWorks.astro';
 import Faq from '@/components/sections/home/Faq.astro';
 
 const description =
-  'Return to the earth and live on through nature with Living Legacy Forest. Our patented process transforms cremated ashes into beautiful living memorial trees, an eco-friendly alternative to traditional burial, with family memorial options available across Australia. Pre-planning is also available.';
+  'Return to the earth and live on through nature with Living Legacy. Our patented process transforms cremated ashes into beautiful living memorial trees, an eco-friendly alternative to traditional burial, with family memorial options available across Australia. Pre-planning is also available.';
 
 const organizationJsonLd = {
   '@context': 'https://schema.org',
   '@type': 'Organization',
-  name: 'Living Legacy Forest',
+  name: 'Living Legacy',
   legalName: 'Forest Conservation Australia Pty Ltd',
-  url: 'https://livinglegacyforest.com.au/',
+  url: 'https://livinglegacy.com.au/',
   address: {
     '@type': 'PostalAddress',
     streetAddress: '4/349 Collins St',
@@ -40,7 +39,7 @@ const organizationJsonLd = {
 ---
 
 <BaseLayout
-  title="Living memorial trees in Australia | Living Legacy Forest"
+  title="Living memorial trees in Australia | Living Legacy"
   description={description}
 >
   <!-- Full width, so its wash can run edge to edge; it sets its own column. -->
@@ -53,7 +52,6 @@ const organizationJsonLd = {
     <Sustainability />
     <PreplanCarousel />
     <Locations />
-    <ActionTiles />
     <SoilScience />
     <MediaTeaser />
     <HowItWorks />

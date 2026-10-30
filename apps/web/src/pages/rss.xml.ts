@@ -9,10 +9,10 @@ export const GET: APIRoute = async ({ site }) => {
   const posts = await getAllBlogPosts();
 
   return rss({
-    title: 'Living Legacy Forest Blog',
+    title: 'Living Legacy Blog',
     description:
       'Stories, insights, and reflections on nature, healing, remembrance, and the powerful connection between life and the forest.',
-    site: site ?? 'https://livinglegacyforest.com.au',
+    site: site ?? 'https://livinglegacy.com.au',
     items: posts.map((post) => ({
       title: post.title,
       pubDate: new Date(post.publishedAt),

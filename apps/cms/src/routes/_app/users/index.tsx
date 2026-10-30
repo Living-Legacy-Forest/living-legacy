@@ -8,7 +8,7 @@ export const Route = createFileRoute('/_app/users/')({
     if (!can(context.user.role, 'users:manage')) throw redirect({ to: '/' });
   },
   loader: () => listUsers(),
-  head: () => ({ meta: [{ title: 'Users | Living Legacy Forest CMS' }] }),
+  head: () => ({ meta: [{ title: 'Users | Living Legacy CMS' }] }),
   component: UsersRoute,
 });
 

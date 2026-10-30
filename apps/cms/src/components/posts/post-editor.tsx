@@ -14,6 +14,7 @@ import {
   CalendarClockIcon,
   CheckIcon,
   ChevronRightIcon,
+  CopyIcon,
   EyeIcon,
   EyeOffIcon,
   FolderIcon,
@@ -80,6 +81,7 @@ import {
   type PostEditorData,
   createCategory,
   discardChanges,
+  duplicatePost,
   getRevision,
   publishPost,
   requestReview,
@@ -101,7 +103,7 @@ const DocumentEditor = lazy(() =>
   import('./document-editor').then((m) => ({ default: m.DocumentEditor }))
 );
 
-const SITE_HOST = 'livinglegacyforest.com.au';
+const SITE_HOST = 'livinglegacy.com.au';
 
 type Meta = {
   id: string | null;
@@ -344,6 +346,22 @@ export function PostEditor({
       clearPostPreviews();
       toast.success(success);
       await (after ? after() : onReload());
+    } catch (error) {
+      toast.error(errorMessage(error));
+    } finally {
+      setBusy(null);
+    }
+  }
+
+  /** Copies the post into a new draft and opens it. */
+  async function duplicate() {
+    if (!meta.id) return;
+    setBusy('other');
+    try {
+      const result = await duplicatePost({ data: { id: meta.id } });
+      toast.success('Post duplicated.');
+      skipBlockRef.current = true;
+      await navigate({ to: '/posts/$postId', params: { postId: result.id } });
     } catch (error) {
       toast.error(errorMessage(error));
     } finally {
@@ -624,6 +642,12 @@ export function PostEditor({
                       {importingDocx ? <Spinner /> : <UploadIcon aria-hidden />}
                       Import Word doc
                     </DropdownMenuItem>
+                    {meta.id && (
+                      <DropdownMenuItem disabled={working} onClick={duplicate}>
+                        <CopyIcon aria-hidden />
+                        Duplicate
+                      </DropdownMenuItem>
+                    )}
                     {isLive && (
                       <DropdownMenuItem
                         disabled={working}
@@ -704,6 +728,17 @@ export function PostEditor({
                     >
                       {importingDocx ? <Spinner /> : <UploadIcon aria-hidden />}
                     </Button>
+                    {meta.id && (
+                      <Button
+                        variant="ghost"
+                        size="icon-sm"
+                        aria-label="Duplicate"
+                        disabled={working}
+                        onClick={duplicate}
+                      >
+                        <CopyIcon aria-hidden />
+                      </Button>
+                    )}
                     <Button
                       variant="ghost"
                       size="sm"

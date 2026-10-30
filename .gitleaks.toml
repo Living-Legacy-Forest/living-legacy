@@ -1,4 +1,4 @@
-title = "Living Legacy Forest gitleaks config"
+title = "Living Legacy gitleaks config"
 
 # Add an [allowlist] block once you have known public identifiers (Sanity project ID,
 # HubSpot portal ID, Cloudinary cloud name). Example:

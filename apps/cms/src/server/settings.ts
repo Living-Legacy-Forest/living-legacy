@@ -18,7 +18,7 @@ export type Locale = (typeof locales)[number];
 export const TITLE_TOKENS = { page: '{page}', site: '{site}' } as const;
 
 const defaults = {
-  siteTitle: 'Living Legacy Forest',
+  siteTitle: 'Living Legacy',
   tagline: '',
   contactEmail: '',
   // Contact and business details, for the website footer and contact page.

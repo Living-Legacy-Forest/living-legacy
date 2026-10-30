@@ -11,11 +11,9 @@
  * body copy, so the text column sits level with the video rather than
  * running twice its height.
  */
-import BrandImage from '@/components/ui/BrandImage.astro';
 import HugeIcon from '@/components/ui/HugeIcon.astro';
 import { ArrowRight02Icon, PauseIcon, PlayIcon } from '@hugeicons/core-free-icons';
 import { buttonVariants } from '@/components/ui/button';
-import icon from '@/assets/home/become-legacy-icon.png';
 import { FLODESK_HREF } from './constants';
 ---
 
@@ -25,9 +23,7 @@ import { FLODESK_HREF } from './constants';
        columns finish level instead of a 16:9 strip floating beside the text. -->
   <div class="grid gap-14 lg:grid-cols-12 lg:gap-12">
     <div class="lg:col-span-5">
-      <!-- Hairline artwork, painted in moss through a mask so it reads on paper. -->
-      <BrandImage src={icon} height="3rem" class="text-moss-deep" />
-      <p class="eyebrow mt-6">Become a Living Legacy</p>
+      <p class="eyebrow">Become a Living Legacy</p>
       <h2 class="section-title mt-4 text-balance">Change the way we leave the world</h2>
       <p class="lead mt-6 text-pretty">
         Welcome to Living Legacy, where we transform grief into growth by bringing communities

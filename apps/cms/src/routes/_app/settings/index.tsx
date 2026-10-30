@@ -9,7 +9,7 @@ export const Route = createFileRoute('/_app/settings/')({
     if (!can(context.user.role, 'seo:write')) throw redirect({ to: '/' });
   },
   loader: () => getSiteSettings(),
-  head: () => ({ meta: [{ title: 'Settings | Living Legacy Forest CMS' }] }),
+  head: () => ({ meta: [{ title: 'Settings | Living Legacy CMS' }] }),
   component: SettingsRoute,
 });
 

@@ -4,6 +4,7 @@
  * see ContactForm.tsx for the shared submission/validation pattern.
  */
 import { useEffect, useRef, useState } from 'react';
+import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Field, FieldGroup, FieldLabel } from '@/components/ui/field';
@@ -50,7 +51,6 @@ export function PartnerForm() {
   const [fields, setFields] = useState<PartnerFields>(EMPTY_FIELDS);
   const [consent, setConsent] = useState(false);
   const [invalid, setInvalid] = useState<Set<TextFieldName>>(new Set());
-  const [formError, setFormError] = useState<string | null>(null);
 
   const { honeypotRef, failsBotCheck } = useHoneypot();
   const fallbackRef = useRef<HTMLDivElement>(null);
@@ -88,7 +88,6 @@ export function PartnerForm() {
     event.preventDefault();
     if (hubspotSubmit.sending) return;
 
-    setFormError(null);
     hubspotSubmit.hideFallback();
 
     if (failsBotCheck()) {
@@ -109,14 +108,14 @@ export function PartnerForm() {
     setInvalid(nextInvalid);
 
     if (nextInvalid.size > 0) {
-      setFormError('Please check the highlighted fields and try again.');
+      toast.error('Please check the highlighted fields and try again.');
       const firstInvalidName = TEXT_FIELD_ORDER.find((name) => nextInvalid.has(name));
       if (firstInvalidName) focusField[firstInvalidName]();
       return;
     }
 
     if (!consent) {
-      setFormError('Please agree to the privacy policy to continue.');
+      toast.error('Please agree to the privacy policy to continue.');
       return;
     }
 
@@ -260,16 +259,6 @@ export function PartnerForm() {
               </span>
             </FieldLabel>
           </Field>
-
-          {formError && (
-            <p
-              role="alert"
-              aria-live="assertive"
-              className="text-destructive text-base font-medium sm:col-span-2"
-            >
-              {formError}
-            </p>
-          )}
 
           <div className="sm:col-span-2">
             <Button

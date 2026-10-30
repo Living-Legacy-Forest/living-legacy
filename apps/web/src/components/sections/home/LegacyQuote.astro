@@ -1,13 +1,11 @@
 ---
 /**
- * The legacy quote. Logo mark and a pair of stump illustrations frame a
- * short quotation, live's `id="about-section"` kept so old links resolve.
+ * The legacy quote. Logo mark frames a short quotation, live's
+ * `id="about-section"` kept so old links resolve.
  */
 import BrandImage from '@/components/ui/BrandImage.astro';
 import { Separator } from '@/components/ui/separator';
 import logoMark from '@/assets/home/legacy-quote-logo-mark.png';
-import stumpLeft from '@/assets/home/legacy-quote-stump-left.png';
-import stumpRight from '@/assets/home/legacy-quote-stump-right.png';
 ---
 
 <section
@@ -16,23 +14,10 @@ import stumpRight from '@/assets/home/legacy-quote-stump-right.png';
   aria-labelledby="about-section-heading"
 >
   <div class="relative mx-auto max-w-3xl text-center">
-    <div
-      class="pointer-events-none absolute -top-16 -left-10 hidden w-24 opacity-70 sm:block lg:-left-20 lg:w-32"
-      aria-hidden="true"
-    >
-      <BrandImage src={stumpLeft} height="auto" class="text-bark block w-full" />
-    </div>
-    <div
-      class="pointer-events-none absolute -top-16 -right-10 hidden w-24 opacity-70 sm:block lg:-right-20 lg:w-32"
-      aria-hidden="true"
-    >
-      <BrandImage src={stumpRight} height="auto" class="text-bark block w-full" />
-    </div>
-
     <BrandImage
       src={logoMark}
       height="3rem"
-      label="Living Legacy Forest"
+      label="Living Legacy"
       class="text-moss mx-auto block w-fit"
     />
 

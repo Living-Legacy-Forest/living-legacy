@@ -26,21 +26,21 @@ export function AppSidebar({ user }: { user: SessionUser }) {
         <SidebarMenu>
           <SidebarMenuItem>
             <SidebarMenuButton
-              tooltip="Living Legacy Forest"
+              tooltip="Living Legacy"
               className="h-8 gap-2.5 px-1.5 text-[13px] font-semibold"
               render={<Link to="/" />}
             >
               {/* White artwork painted in the brand colour via a CSS mask, as on the site and login page. */}
               <span
                 role="img"
-                aria-label="Living Legacy Forest"
+                aria-label="Living Legacy"
                 className="bg-brand inline-block size-5 shrink-0"
                 style={{
                   WebkitMask: `url(${logoMark}) center / contain no-repeat`,
                   mask: `url(${logoMark}) center / contain no-repeat`,
                 }}
               />
-              <span>Living Legacy Forest</span>
+              <span>Living Legacy</span>
             </SidebarMenuButton>
           </SidebarMenuItem>
         </SidebarMenu>

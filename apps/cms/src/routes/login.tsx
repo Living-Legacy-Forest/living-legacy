@@ -21,7 +21,7 @@ export const Route = createFileRoute('/login')({
     if (await getCurrentUser()) throw redirect({ to: '/' });
   },
   loader: () => getLoginOptions(),
-  head: () => ({ meta: [{ title: 'Sign in | Living Legacy Forest CMS' }] }),
+  head: () => ({ meta: [{ title: 'Sign in | Living Legacy CMS' }] }),
   component: LoginPage,
 });
 
@@ -49,7 +49,7 @@ function LoginPage() {
               {/* White artwork painted in the brand colour via a CSS mask, as on the site. */}
               <span
                 role="img"
-                aria-label="Living Legacy Forest"
+                aria-label="Living Legacy"
                 className="bg-brand inline-block shrink-0"
                 style={{
                   height: '2.75rem',
@@ -61,7 +61,7 @@ function LoginPage() {
               <div className="space-y-1">
                 <h1 className="text-2xl font-semibold tracking-tight">Welcome back</h1>
                 <p className="text-muted-foreground text-sm text-balance">
-                  Sign in to manage Living Legacy Forest content.
+                  Sign in to manage Living Legacy content.
                 </p>
               </div>
             </header>
@@ -143,7 +143,7 @@ function MagicLinkForm({ onSent }: { onSent: (email: string) => void }) {
           type="email"
           required
           autoComplete="email"
-          placeholder="you@livinglegacyforest.com"
+          placeholder="you@livinglegacy.com.au"
           className="h-11"
           value={email}
           onChange={(e) => setEmail(e.target.value)}

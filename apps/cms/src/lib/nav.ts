@@ -78,7 +78,7 @@ export const navGroups: NavGroup[] = [
 ];
 
 export const footerLinks: { title: string; href: string; icon: LucideIcon }[] = [
-  { title: 'View website', href: 'https://livinglegacyforest.com.au', icon: ExternalLink },
+  { title: 'View website', href: 'https://livinglegacy.com.au', icon: ExternalLink },
 ];
 
 const allNavItems = navGroups.flatMap((g) => g.items.flatMap((i) => [i, ...(i.items ?? [])]));

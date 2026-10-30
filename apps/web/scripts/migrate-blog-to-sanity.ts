@@ -61,7 +61,7 @@ const WP_SITE = process.env.WP_SITE_URL ?? 'https://livinglegacyforest.com';
 // Both the WordPress host and the domain the rebuilt site publishes under are
 // rewritten to root-relative — an internal link in a post body might point at
 // either one on the live site.
-const WP_HOSTS = ['livinglegacyforest.com', 'livinglegacyforest.com.au'];
+const WP_HOSTS = ['livinglegacyforest.com', 'livinglegacy.com.au'];
 
 const PROJECT_ID = process.env.SANITY_PROJECT_ID;
 const DATASET = process.env.SANITY_DATASET ?? 'production';
@@ -319,7 +319,7 @@ function buildRules(assets: Map<string, string>): DeserializerRule[] {
           // The schema makes alt required. WordPress alt is frequently
           // empty, so a caption is the next best real description; the
           // filename is never used, since "IMG_4021" describes nothing.
-          alt: toPlainText(img.getAttribute('alt') ?? '') || caption || 'Living Legacy Forest',
+          alt: toPlainText(img.getAttribute('alt') ?? '') || caption || 'Living Legacy',
           ...(caption ? { caption } : {}),
         });
       },
@@ -334,7 +334,7 @@ function buildRules(assets: Map<string, string>): DeserializerRule[] {
         return block({
           _type: 'image',
           asset: { _type: 'reference', _ref: assetId },
-          alt: toPlainText(el.getAttribute('alt') ?? '') || 'Living Legacy Forest',
+          alt: toPlainText(el.getAttribute('alt') ?? '') || 'Living Legacy',
         });
       },
     },

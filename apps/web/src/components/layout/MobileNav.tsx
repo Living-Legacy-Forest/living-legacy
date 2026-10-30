@@ -33,10 +33,10 @@ export default function MobileNav() {
           <a
             href="/"
             onClick={close}
-            aria-label="Living Legacy Forest home"
+            aria-label="Living Legacy home"
             className="font-display text-moss-deep text-lg"
           >
-            Living Legacy Forest
+            Living Legacy
           </a>
         </SheetHeader>
 

@@ -60,9 +60,9 @@ const locations = [
   },
 ];
 
-const title = 'Contact | Living Legacy Forest';
+const title = 'Contact | Living Legacy';
 const description =
-  'Get in touch with Living Legacy Forest. Send us a message or contact one of our four locations across Australia directly.';
+  'Get in touch with Living Legacy. Send us a message or contact one of our four locations across Australia directly.';
 ---
 
 <BaseLayout title={title} description={description}>
@@ -74,10 +74,6 @@ const description =
       <div class="lg:col-span-7">
         <Card className="shadow-panel bg-white/50 p-2 sm:p-4">
           <CardContent className="flex flex-col gap-8 px-4 sm:px-6">
-            <div class="border-bark/20 aspect-[16/9] overflow-hidden rounded-xl border">
-              <Image src={contactFormPhoto} alt="" width={800} class="h-full w-full object-cover" />
-            </div>
-
             <div>
               <h2 class="card-title">Send us a message</h2>
               <p class="lead mt-3">
@@ -95,7 +91,10 @@ const description =
       <aside class="lg:col-span-5">
         <Card>
           <CardContent>
-            <h2 class="section-title">Contact us</h2>
+            <div class="border-bark/20 aspect-[16/9] overflow-hidden rounded-xl border">
+              <Image src={contactFormPhoto} alt="" width={800} class="h-full w-full object-cover" />
+            </div>
+            <h2 class="section-title mt-6">Contact us</h2>
             <p class="card-body mt-4">
               Let us know how our team can assist you. A quick phone call is the best way to answer
               any of your questions, however, you are welcome to send a message via our contact

@@ -33,11 +33,11 @@ if (pageCount > 0 && page > pageCount) {
 }
 
 const canonicalPath = `/blog/tag/${tag.slug.current}/`;
-const description = `${total} ${total === 1 ? 'post' : 'posts'} tagged ${tag.title} on the Living Legacy Forest blog.`;
+const description = `${total} ${total === 1 ? 'post' : 'posts'} tagged ${tag.title} on the Living Legacy blog.`;
 ---
 
 <BaseLayout
-  title={`${tag.title} | Living Legacy Forest blog`}
+  title={`${tag.title} | Living Legacy blog`}
   description={description}
   canonical={new URL(canonicalPath, Astro.site).toString()}
   noindex={page > 1}

@@ -55,8 +55,8 @@ const jsonLd = {
   ...(post.author ? { author: { '@type': 'Person', name: post.author.name } } : {}),
   publisher: {
     '@type': 'Organization',
-    name: 'Living Legacy Forest',
-    url: 'https://livinglegacyforest.com.au',
+    name: 'Living Legacy',
+    url: 'https://livinglegacy.com.au',
   },
 };
 
@@ -81,7 +81,7 @@ const toJsonLd = (value: unknown) => JSON.stringify(value).replace(/</g, '\\u003
 ---
 
 <BaseLayout
-  title={`${seoTitle} | Living Legacy Forest`}
+  title={`${seoTitle} | Living Legacy`}
   description={seoDescription}
   canonical={shareUrl}
   ogImage={ogImage}

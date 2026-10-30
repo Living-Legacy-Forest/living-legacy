@@ -35,11 +35,11 @@ if (pageCount > 0 && page > pageCount) {
 const canonicalPath = `/blog/author/${author.slug.current}/`;
 const description =
   author.bio ||
-  `${total} ${total === 1 ? 'post' : 'posts'} by ${author.name} on the Living Legacy Forest blog.`;
+  `${total} ${total === 1 ? 'post' : 'posts'} by ${author.name} on the Living Legacy blog.`;
 ---
 
 <BaseLayout
-  title={`${author.name} | Living Legacy Forest blog`}
+  title={`${author.name} | Living Legacy blog`}
   description={description}
   canonical={new URL(canonicalPath, Astro.site).toString()}
   noindex={page > 1}

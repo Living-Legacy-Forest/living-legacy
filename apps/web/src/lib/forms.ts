@@ -53,7 +53,7 @@ export const CONSENT_TEXT = 'I have read and agree to the privacy policy.';
 export const FALLBACK_CONTACT = {
   phone: '03 7019 6142',
   phoneHref: 'tel:0370196142',
-  email: 'contact@livinglegacyforest.com',
+  email: 'contact@livinglegacy.com.au',
 } as const;
 
 export interface PageContext {

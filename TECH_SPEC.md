@@ -1,6 +1,6 @@
-# Tech Specification — Living Legacy Forest
+# Tech Specification — Living Legacy
 
-A reference for the technical stack, third-party services, conventions, and build/deploy pipeline behind livinglegacyforest.com.au.
+A reference for the technical stack, third-party services, conventions, and build/deploy pipeline behind livinglegacy.com.au.
 
 ---
 
@@ -8,7 +8,7 @@ A reference for the technical stack, third-party services, conventions, and buil
 
 |                     |                                                                                        |
 | ------------------- | -------------------------------------------------------------------------------------- |
-| **Site**            | https://livinglegacyforest.com.au                                                      |
+| **Site**            | https://livinglegacy.com.au                                                      |
 | **Repo**            | github.com/Living-Legacy-Forest/living-legacy                                          |
 | **Default branch**  | `master`                                                                               |
 | **Branching**       | Trunk-based; PRs target `master`                                                       |

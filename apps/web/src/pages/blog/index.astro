@@ -87,8 +87,8 @@ const description =
 
 <BaseLayout
   title={filtering
-    ? `${resultsTitle} | Blog | Living Legacy Forest`
-    : 'Blog | Living Legacy Forest'}
+    ? `${resultsTitle} | Blog | Living Legacy`
+    : 'Blog | Living Legacy'}
   description={description}
   canonical={new URL('/blog/', Astro.site).toString()}
   noindex={filtering}
@@ -106,7 +106,7 @@ const description =
           </BreadcrumbItem>
         </BreadcrumbList>
       </Breadcrumb>
-      <h1 class="display-title text-balance">Living Legacy Forest blog</h1>
+      <h1 class="display-title text-balance">Living Legacy blog</h1>
       <p class="lead max-w-2xl">{description}</p>
     </header>
 

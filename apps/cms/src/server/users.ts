@@ -69,7 +69,7 @@ export const inviteUser = createServerFn({ method: 'POST' })
     // A failed email must not lose the invitation; the admin can resend it.
     let emailed = true;
     try {
-      await sendInviteEmail(email, `${env.BETTER_AUTH_URL}/login`);
+      await sendInviteEmail(email, `${env.BETTER_AUTH_URL}/login`, data.role);
     } catch {
       emailed = false;
     }

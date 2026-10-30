@@ -38,7 +38,7 @@
     "embla-carousel": "^8.6.0",
     "embla-carousel-react": "^8.6.0",
     "motion": "^12.38.0",
-    "posthog-js": "^1.407.2",
+    "posthog-js": "^1.440.0",
     "posthog-node": "^5.46.1",
     "react": "^19.3.0",
     "react-dom": "^19.3.0",

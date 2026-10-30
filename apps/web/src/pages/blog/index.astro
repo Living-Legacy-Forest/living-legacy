@@ -86,9 +86,7 @@ const description =
 ---
 
 <BaseLayout
-  title={filtering
-    ? `${resultsTitle} | Blog | Living Legacy`
-    : 'Blog | Living Legacy'}
+  title={filtering ? `${resultsTitle} | Blog | Living Legacy` : 'Blog | Living Legacy'}
   description={description}
   canonical={new URL('/blog/', Astro.site).toString()}
   noindex={filtering}

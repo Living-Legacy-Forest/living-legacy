@@ -59,21 +59,19 @@ async function loadAnnouncements(): Promise<Announcement[]> {
          FROM announcements`
       )
       .all<Row>();
-    const rows = results.map(
-      (r): Announcement => ({
-        id: r.id,
-        enabled: r.enabled === 1,
-        message: r.message,
-        messageTablet: r.message_tablet ?? '',
-        messageDesktop: r.message_desktop ?? '',
-        ctaLabel: r.cta_label ?? '',
-        ctaUrl: r.cta_url ?? '',
-        background: r.background,
-        startsAt: r.starts_at,
-        endsAt: r.ends_at,
-        hidePaths: JSON.parse(r.hide_paths) as string[],
-      })
-    );
+    const rows = results.map((r): Announcement => ({
+      id: r.id,
+      enabled: r.enabled === 1,
+      message: r.message,
+      messageTablet: r.message_tablet ?? '',
+      messageDesktop: r.message_desktop ?? '',
+      ctaLabel: r.cta_label ?? '',
+      ctaUrl: r.cta_url ?? '',
+      background: r.background,
+      startsAt: r.starts_at,
+      endsAt: r.ends_at,
+      hidePaths: JSON.parse(r.hide_paths) as string[],
+    }));
     cache = { rows, expires: Date.now() + CACHE_MS };
     return rows;
   } catch (error) {

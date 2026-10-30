@@ -70,7 +70,11 @@ function VideoCard({ item }: { item: VideoMediaItem }) {
               className="absolute inset-0 h-full w-full object-cover opacity-90 transition-opacity duration-200 group-hover:opacity-100"
             />
             <span className="bg-paper/90 group-hover:bg-paper relative flex h-14 w-14 items-center justify-center rounded-full shadow-lg transition-colors duration-200">
-              <HugeiconsIcon icon={PlayIcon} className="text-ink ml-0.5 size-6" aria-hidden="true" />
+              <HugeiconsIcon
+                icon={PlayIcon}
+                className="text-ink ml-0.5 size-6"
+                aria-hidden="true"
+              />
             </span>
           </button>
         )}

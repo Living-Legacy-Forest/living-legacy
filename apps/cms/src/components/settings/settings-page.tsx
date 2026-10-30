@@ -12,6 +12,7 @@ import {
 } from '@/components/ui/select';
 import { Spinner } from '@/components/ui/spinner';
 import { Textarea } from '@/components/ui/textarea';
+import { reportInvalid } from '@/lib/form-validation';
 import { useAction } from '@/lib/use-action';
 import { setTheme, useThemeSync } from '@/lib/use-theme-sync';
 import { cn } from '@/lib/utils';
@@ -31,18 +32,18 @@ const themeLabels: Record<Theme, string> = {
   dark: 'Dark',
 };
 
-const themeItems: { value: Theme; label: ReactNode }[] = (
-  Object.keys(themeLabels) as Theme[]
-).map((value) => ({
-  value,
-  label: (
-    <span className="flex items-center gap-1.5">
-      <ThemeSwatch theme={value} />
-      <span className="text-[10px] font-semibold tracking-tight">Aa</span>
-      {themeLabels[value]}
-    </span>
-  ),
-}));
+const themeItems: { value: Theme; label: ReactNode }[] = (Object.keys(themeLabels) as Theme[]).map(
+  (value) => ({
+    value,
+    label: (
+      <span className="flex items-center gap-1.5">
+        <ThemeSwatch theme={value} />
+        <span className="text-[10px] font-semibold tracking-tight">Aa</span>
+        {themeLabels[value]}
+      </span>
+    ),
+  })
+);
 
 function ThemeSwatch({ theme }: { theme: Theme }) {
   return (
@@ -76,6 +77,7 @@ export function SettingsPage({ data }: { data: SiteSettings }) {
 
   async function submit(e: React.FormEvent) {
     e.preventDefault();
+    if (!reportInvalid(e.currentTarget)) return;
     const result = await run(() => saveSiteSettings({ data: values }), 'Settings saved.');
     if (result) setValues(result);
   }
@@ -89,8 +91,11 @@ export function SettingsPage({ data }: { data: SiteSettings }) {
         </p>
       </div>
 
-      <form onSubmit={submit} className="space-y-8">
-        <SettingsSection title="General" description="What the site is called and how people reach you.">
+      <form noValidate onSubmit={submit} className="space-y-8">
+        <SettingsSection
+          title="General"
+          description="What the site is called and how people reach you."
+        >
           <SettingsRow title="Site title">
             <Input
               required

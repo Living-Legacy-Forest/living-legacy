@@ -1,14 +1,14 @@
 import { defineMiddleware } from 'astro:middleware';
 import { captureServerException } from '@/lib/analytics/posthog-server';
 import { isIndexableHost } from '@/lib/seo';
-import { resolveRedirect } from '@/lib/redirects';
+import { findRedirect, recordHit } from '@/lib/redirects';
 
 /**
  * Three jobs on every on-demand response:
  *
- * 1. Send legacy URLs (see `src/lib/redirects.ts`) to their new home with a
- *    301, ahead of routing. `public/_redirects` cannot do this on Workers,
- *    since every request — not just static-asset misses — hits the Worker.
+ * 1. Apply the redirects managed in the CMS (see `src/lib/redirects.ts`),
+ *    ahead of routing. `public/_redirects` cannot do this on Workers, since
+ *    every request (not just static-asset misses) hits the Worker.
  * 2. Block indexing on any host that is not the production domain. The header
  *    covers responses a meta tag cannot reach, such as the sitemap, and applies
  *    even if a page forgets to use BaseLayout.
@@ -17,8 +17,13 @@ import { resolveRedirect } from '@/lib/redirects';
  */
 export const onRequest = defineMiddleware(async (context, next) => {
   try {
-    const redirectLocation = resolveRedirect(context.url.pathname, context.url.search);
-    const response = redirectLocation ? context.redirect(redirectLocation, 301) : await next();
+    const redirect = await findRedirect(context.url);
+    if (redirect) context.locals.cfContext?.waitUntil(recordHit(redirect.rule.id));
+    const response = !redirect
+      ? await next()
+      : redirect.location === null
+        ? await gone(context.rewrite('/404'))
+        : context.redirect(redirect.location, redirect.rule.statusCode === 302 ? 302 : 301);
 
     if (!isIndexableHost(context.url.host)) {
       // Response headers are occasionally immutable (redirects, cached asset
@@ -36,3 +41,9 @@ export const onRequest = defineMiddleware(async (context, next) => {
     throw error;
   }
 });
+
+/** The not-found page, served as 410 Gone for paths removed on purpose. */
+async function gone(notFound: Promise<Response>): Promise<Response> {
+  const page = await notFound;
+  return new Response(page.body, { status: 410, headers: page.headers });
+}

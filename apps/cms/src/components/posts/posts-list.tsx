@@ -317,7 +317,7 @@ export function PostsList({
           {data.total > 0 && (
             <div className="text-muted-foreground flex h-10 shrink-0 items-center justify-between border-t px-3 text-xs">
               <span className="tabular-nums">
-                {from}–{to} of {data.total}
+                {from}-{to} of {data.total}
               </span>
               {data.pageCount > 1 && (
                 <div className="flex gap-0.5">

@@ -21,7 +21,7 @@ import {
 import { Kbd, KbdGroup } from '@/components/ui/kbd';
 import { authClient } from '@/lib/auth-client';
 import { footerLinks } from '@/lib/nav';
-import type { SessionUser } from '@/lib/session';
+import { type SessionUser, forgetCachedUser } from '@/lib/session';
 
 const shortcuts: { keys: string[]; label: string }[] = [
   { keys: ['⌘', 'K'], label: 'Search or jump to a page' },
@@ -42,6 +42,7 @@ export function NavUser({ user }: { user: SessionUser }) {
 
   async function signOut() {
     await authClient.signOut();
+    forgetCachedUser();
     await router.navigate({ to: '/login' });
   }
 

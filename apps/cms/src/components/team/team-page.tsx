@@ -31,6 +31,7 @@ import {
 } from '@/components/ui/dialog';
 import {
   Empty,
+  EmptyContent,
   EmptyDescription,
   EmptyHeader,
   EmptyMedia,
@@ -41,6 +42,7 @@ import { Label } from '@/components/ui/label';
 import { Spinner } from '@/components/ui/spinner';
 import { Switch } from '@/components/ui/switch';
 import { Textarea } from '@/components/ui/textarea';
+import { reportInvalid } from '@/lib/form-validation';
 import { useAction } from '@/lib/use-action';
 import {
   type TeamListData,
@@ -66,7 +68,7 @@ export function TeamPage({ data, canWrite }: { data: TeamListData; canWrite: boo
     isDesktop() ? setEditingId(member.id) : setDialogTarget(member);
 
   return (
-    <div className="flex flex-1 flex-col gap-4 lg:h-[calc(100svh-7.5rem)]">
+    <div className="flex flex-1 flex-col gap-4 lg:h-[calc(100svh-7.5rem)] lg:flex-none">
       <div className="flex flex-wrap items-center gap-3">
         <h1 className="mr-auto text-xl">Team</h1>
         {canWrite && (
@@ -77,7 +79,7 @@ export function TeamPage({ data, canWrite }: { data: TeamListData; canWrite: boo
         )}
       </div>
 
-      {data.length === 0 ? (
+      {data.length === 0 && editingId === null ? (
         <Empty className="flex-1 rounded-lg border">
           <EmptyHeader>
             <EmptyMedia variant="icon">
@@ -88,6 +90,14 @@ export function TeamPage({ data, canWrite }: { data: TeamListData; canWrite: boo
               Add someone and they appear here, ready to be chosen as a post author.
             </EmptyDescription>
           </EmptyHeader>
+          {canWrite && (
+            <EmptyContent>
+              <Button size="sm" onClick={openNew}>
+                <PlusIcon aria-hidden data-icon="inline-start" />
+                Add member
+              </Button>
+            </EmptyContent>
+          )}
         </Empty>
       ) : (
         <div className="grid min-h-0 flex-1 overflow-hidden rounded-lg border lg:grid-cols-[minmax(20rem,2fr)_3fr]">
@@ -282,16 +292,21 @@ function MemberPane({
           </div>
         )}
       </div>
-      <div className="min-h-0 flex-1 overflow-y-auto p-4">
-        <MemberForm
-          member={member}
-          onSaved={onSaved}
-          footer={(formPending, isNew) => (
-            <div className="flex justify-end">
-              <SubmitButton pending={formPending} isNew={isNew} />
-            </div>
-          )}
-        />
+      <div className="min-h-0 flex-1 overflow-y-auto px-4 py-6">
+        <div className="mx-auto max-w-md">
+          <MemberForm
+            member={member}
+            onSaved={onSaved}
+            footer={(formPending, isNew) => (
+              <div className="flex justify-end gap-2">
+                <Button type="button" variant="outline" onClick={onClose}>
+                  Cancel
+                </Button>
+                <SubmitButton pending={formPending} isNew={isNew} />
+              </div>
+            )}
+          />
+        </div>
       </div>
     </>
   );
@@ -355,6 +370,7 @@ function MemberForm({
 
   async function submit(e: React.FormEvent) {
     e.preventDefault();
+    if (!reportInvalid(e.currentTarget)) return;
     const result = await run(
       () =>
         saveTeamMember({
@@ -372,7 +388,7 @@ function MemberForm({
   }
 
   return (
-    <form onSubmit={submit} className="space-y-4">
+    <form noValidate onSubmit={submit} className="space-y-4">
       <div className="space-y-1.5">
         <Label htmlFor="member-name">Name</Label>
         <Input

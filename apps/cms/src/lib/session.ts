@@ -21,6 +21,23 @@ async function loadUser(): Promise<SessionUser | null> {
 
 export const getCurrentUser = createServerFn({ method: 'GET' }).handler(() => loadUser());
 
+/**
+ * The signed-in user as last seen by the browser, so changing pages does not wait
+ * on a session check. Server functions still check the session on every call.
+ */
+let browserUser: SessionUser | undefined;
+
+export async function getCachedUser() {
+  if (browserUser) return browserUser;
+  const user = await getCurrentUser();
+  if (user && typeof window !== 'undefined') browserUser = user;
+  return user;
+}
+
+export function forgetCachedUser() {
+  browserUser = undefined;
+}
+
 /** Which sign-in methods the login page should offer. */
 export const getLoginOptions = createServerFn({ method: 'GET' }).handler(() => ({
   google: Boolean(env.GOOGLE_CLIENT_ID),

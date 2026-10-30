@@ -37,11 +37,19 @@ export const Route = createFileRoute('/api/avatar/')({
         const key = `avatar-${crypto.randomUUID()}${ext ? `.${ext}` : ''}`;
         await env.MEDIA.put(key, await file.arrayBuffer(), {
           httpMetadata: { contentType: file.type },
+          customMetadata: { userId: session.user.id },
         });
 
-        // The old object is otherwise orphaned: nothing else references it by key.
+        // user.image is client-settable (better-auth's own /update-user), so it
+        // could point at someone else's object; only delete what we tagged as
+        // this user's own upload.
         const previousKey = avatarKey(session.user.image);
-        if (previousKey) await env.MEDIA.delete(previousKey);
+        if (previousKey) {
+          const previous = await env.MEDIA.head(previousKey);
+          if (previous?.customMetadata?.userId === session.user.id) {
+            await env.MEDIA.delete(previousKey);
+          }
+        }
 
         return Response.json({ url: `/api/avatar/${key}` });
       },

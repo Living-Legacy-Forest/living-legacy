@@ -1,5 +1,5 @@
-import { useRouter } from '@tanstack/react-router';
-import { ExternalLinkIcon, KeyboardIcon, LogOutIcon } from '@/components/icons';
+import { Link, useRouter } from '@tanstack/react-router';
+import { ExternalLinkIcon, KeyboardIcon, LogOutIcon, UserIcon } from '@/components/icons';
 import { useState } from 'react';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import {
@@ -79,6 +79,13 @@ export function NavUser({ user }: { user: SessionUser }) {
                 {user.role}
               </span>
             </DropdownMenuLabel>
+          </DropdownMenuGroup>
+          <DropdownMenuSeparator />
+          <DropdownMenuGroup>
+            <DropdownMenuItem render={<Link to="/profile" />}>
+              <UserIcon aria-hidden />
+              Edit profile
+            </DropdownMenuItem>
           </DropdownMenuGroup>
           <DropdownMenuSeparator />
           <DropdownMenuGroup>

@@ -18,12 +18,15 @@ import { Route as AppMediaIndexRouteImport } from './routes/_app/media/index'
 import { Route as AppPostsIndexRouteImport } from './routes/_app/posts/index'
 import { Route as AppPostsPostIdRouteImport } from './routes/_app/posts/$postId'
 import { Route as AppPostsNewRouteImport } from './routes/_app/posts/new'
+import { Route as AppProfileIndexRouteImport } from './routes/_app/profile/index'
 import { Route as AppRedirectsIndexRouteImport } from './routes/_app/redirects/index'
 import { Route as AppSettingsIndexRouteImport } from './routes/_app/settings/index'
 import { Route as AppTeamIndexRouteImport } from './routes/_app/team/index'
 import { Route as AppTestimonialsIndexRouteImport } from './routes/_app/testimonials/index'
 import { Route as AppUsersIndexRouteImport } from './routes/_app/users/index'
 import { Route as ApiAuthSplatRouteImport } from './routes/api/auth/$'
+import { Route as ApiAvatarIndexRouteImport } from './routes/api/avatar/index'
+import { Route as ApiAvatarKeyRouteImport } from './routes/api/avatar/$key'
 import { Route as ApiMediaIndexRouteImport } from './routes/api/media/index'
 import { Route as ApiMediaIdRouteImport } from './routes/api/media/$id'
 import { Route as PreviewPostsPostIdRouteImport } from './routes/preview/posts/$postId'
@@ -72,6 +75,11 @@ const AppPostsNewRoute = AppPostsNewRouteImport.update({
   path: '/posts/new',
   getParentRoute: () => AppRoute,
 } as any)
+const AppProfileIndexRoute = AppProfileIndexRouteImport.update({
+  id: '/profile/',
+  path: '/profile/',
+  getParentRoute: () => AppRoute,
+} as any)
 const AppRedirectsIndexRoute = AppRedirectsIndexRouteImport.update({
   id: '/redirects/',
   path: '/redirects/',
@@ -102,6 +110,16 @@ const ApiAuthSplatRoute = ApiAuthSplatRouteImport.update({
   path: '/api/auth/$',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ApiAvatarIndexRoute = ApiAvatarIndexRouteImport.update({
+  id: '/api/avatar/',
+  path: '/api/avatar/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiAvatarKeyRoute = ApiAvatarKeyRouteImport.update({
+  id: '/api/avatar/$key',
+  path: '/api/avatar/$key',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ApiMediaIndexRoute = ApiMediaIndexRouteImport.update({
   id: '/api/media/',
   path: '/api/media/',
@@ -124,17 +142,20 @@ export interface FileRoutesByFullPath {
   '/posts/$postId': typeof AppPostsPostIdRoute
   '/posts/new': typeof AppPostsNewRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
+  '/api/avatar/$key': typeof ApiAvatarKeyRoute
   '/api/media/$id': typeof ApiMediaIdRoute
   '/preview/posts/$postId': typeof PreviewPostsPostIdRoute
   '/announcements/': typeof AppAnnouncementsIndexRoute
   '/faqs/': typeof AppFaqsIndexRoute
   '/media/': typeof AppMediaIndexRoute
   '/posts/': typeof AppPostsIndexRoute
+  '/profile/': typeof AppProfileIndexRoute
   '/redirects/': typeof AppRedirectsIndexRoute
   '/settings/': typeof AppSettingsIndexRoute
   '/team/': typeof AppTeamIndexRoute
   '/testimonials/': typeof AppTestimonialsIndexRoute
   '/users/': typeof AppUsersIndexRoute
+  '/api/avatar/': typeof ApiAvatarIndexRoute
   '/api/media/': typeof ApiMediaIndexRoute
 }
 export interface FileRoutesByTo {
@@ -143,17 +164,20 @@ export interface FileRoutesByTo {
   '/posts/$postId': typeof AppPostsPostIdRoute
   '/posts/new': typeof AppPostsNewRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
+  '/api/avatar/$key': typeof ApiAvatarKeyRoute
   '/api/media/$id': typeof ApiMediaIdRoute
   '/preview/posts/$postId': typeof PreviewPostsPostIdRoute
   '/announcements': typeof AppAnnouncementsIndexRoute
   '/faqs': typeof AppFaqsIndexRoute
   '/media': typeof AppMediaIndexRoute
   '/posts': typeof AppPostsIndexRoute
+  '/profile': typeof AppProfileIndexRoute
   '/redirects': typeof AppRedirectsIndexRoute
   '/settings': typeof AppSettingsIndexRoute
   '/team': typeof AppTeamIndexRoute
   '/testimonials': typeof AppTestimonialsIndexRoute
   '/users': typeof AppUsersIndexRoute
+  '/api/avatar': typeof ApiAvatarIndexRoute
   '/api/media': typeof ApiMediaIndexRoute
 }
 export interface FileRoutesById {
@@ -164,17 +188,20 @@ export interface FileRoutesById {
   '/_app/posts/$postId': typeof AppPostsPostIdRoute
   '/_app/posts/new': typeof AppPostsNewRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
+  '/api/avatar/$key': typeof ApiAvatarKeyRoute
   '/api/media/$id': typeof ApiMediaIdRoute
   '/preview/posts/$postId': typeof PreviewPostsPostIdRoute
   '/_app/announcements/': typeof AppAnnouncementsIndexRoute
   '/_app/faqs/': typeof AppFaqsIndexRoute
   '/_app/media/': typeof AppMediaIndexRoute
   '/_app/posts/': typeof AppPostsIndexRoute
+  '/_app/profile/': typeof AppProfileIndexRoute
   '/_app/redirects/': typeof AppRedirectsIndexRoute
   '/_app/settings/': typeof AppSettingsIndexRoute
   '/_app/team/': typeof AppTeamIndexRoute
   '/_app/testimonials/': typeof AppTestimonialsIndexRoute
   '/_app/users/': typeof AppUsersIndexRoute
+  '/api/avatar/': typeof ApiAvatarIndexRoute
   '/api/media/': typeof ApiMediaIndexRoute
 }
 export interface FileRouteTypes {
@@ -185,17 +212,20 @@ export interface FileRouteTypes {
     | '/posts/$postId'
     | '/posts/new'
     | '/api/auth/$'
+    | '/api/avatar/$key'
     | '/api/media/$id'
     | '/preview/posts/$postId'
     | '/announcements/'
     | '/faqs/'
     | '/media/'
     | '/posts/'
+    | '/profile/'
     | '/redirects/'
     | '/settings/'
     | '/team/'
     | '/testimonials/'
     | '/users/'
+    | '/api/avatar/'
     | '/api/media/'
   fileRoutesByTo: FileRoutesByTo
   to:
@@ -204,17 +234,20 @@ export interface FileRouteTypes {
     | '/posts/$postId'
     | '/posts/new'
     | '/api/auth/$'
+    | '/api/avatar/$key'
     | '/api/media/$id'
     | '/preview/posts/$postId'
     | '/announcements'
     | '/faqs'
     | '/media'
     | '/posts'
+    | '/profile'
     | '/redirects'
     | '/settings'
     | '/team'
     | '/testimonials'
     | '/users'
+    | '/api/avatar'
     | '/api/media'
   id:
     | '__root__'
@@ -224,17 +257,20 @@ export interface FileRouteTypes {
     | '/_app/posts/$postId'
     | '/_app/posts/new'
     | '/api/auth/$'
+    | '/api/avatar/$key'
     | '/api/media/$id'
     | '/preview/posts/$postId'
     | '/_app/announcements/'
     | '/_app/faqs/'
     | '/_app/media/'
     | '/_app/posts/'
+    | '/_app/profile/'
     | '/_app/redirects/'
     | '/_app/settings/'
     | '/_app/team/'
     | '/_app/testimonials/'
     | '/_app/users/'
+    | '/api/avatar/'
     | '/api/media/'
   fileRoutesById: FileRoutesById
 }
@@ -242,8 +278,10 @@ export interface RootRouteChildren {
   AppRoute: typeof AppRouteWithChildren
   LoginRoute: typeof LoginRoute
   ApiAuthSplatRoute: typeof ApiAuthSplatRoute
+  ApiAvatarKeyRoute: typeof ApiAvatarKeyRoute
   ApiMediaIdRoute: typeof ApiMediaIdRoute
   PreviewPostsPostIdRoute: typeof PreviewPostsPostIdRoute
+  ApiAvatarIndexRoute: typeof ApiAvatarIndexRoute
   ApiMediaIndexRoute: typeof ApiMediaIndexRoute
 }
 
@@ -312,6 +350,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppPostsNewRouteImport
       parentRoute: typeof AppRoute
     }
+    '/_app/profile/': {
+      id: '/_app/profile/'
+      path: '/profile'
+      fullPath: '/profile/'
+      preLoaderRoute: typeof AppProfileIndexRouteImport
+      parentRoute: typeof AppRoute
+    }
     '/_app/redirects/': {
       id: '/_app/redirects/'
       path: '/redirects'
@@ -354,6 +399,20 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiAuthSplatRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/avatar/': {
+      id: '/api/avatar/'
+      path: '/api/avatar'
+      fullPath: '/api/avatar/'
+      preLoaderRoute: typeof ApiAvatarIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/avatar/$key': {
+      id: '/api/avatar/$key'
+      path: '/api/avatar/$key'
+      fullPath: '/api/avatar/$key'
+      preLoaderRoute: typeof ApiAvatarKeyRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/api/media/': {
       id: '/api/media/'
       path: '/api/media'
@@ -386,6 +445,7 @@ interface AppRouteChildren {
   AppFaqsIndexRoute: typeof AppFaqsIndexRoute
   AppMediaIndexRoute: typeof AppMediaIndexRoute
   AppPostsIndexRoute: typeof AppPostsIndexRoute
+  AppProfileIndexRoute: typeof AppProfileIndexRoute
   AppRedirectsIndexRoute: typeof AppRedirectsIndexRoute
   AppSettingsIndexRoute: typeof AppSettingsIndexRoute
   AppTeamIndexRoute: typeof AppTeamIndexRoute
@@ -401,6 +461,7 @@ const AppRouteChildren: AppRouteChildren = {
   AppFaqsIndexRoute: AppFaqsIndexRoute,
   AppMediaIndexRoute: AppMediaIndexRoute,
   AppPostsIndexRoute: AppPostsIndexRoute,
+  AppProfileIndexRoute: AppProfileIndexRoute,
   AppRedirectsIndexRoute: AppRedirectsIndexRoute,
   AppSettingsIndexRoute: AppSettingsIndexRoute,
   AppTeamIndexRoute: AppTeamIndexRoute,
@@ -414,8 +475,10 @@ const rootRouteChildren: RootRouteChildren = {
   AppRoute: AppRouteWithChildren,
   LoginRoute: LoginRoute,
   ApiAuthSplatRoute: ApiAuthSplatRoute,
+  ApiAvatarKeyRoute: ApiAvatarKeyRoute,
   ApiMediaIdRoute: ApiMediaIdRoute,
   PreviewPostsPostIdRoute: PreviewPostsPostIdRoute,
+  ApiAvatarIndexRoute: ApiAvatarIndexRoute,
   ApiMediaIndexRoute: ApiMediaIndexRoute,
 }
 export const routeTree = rootRouteImport

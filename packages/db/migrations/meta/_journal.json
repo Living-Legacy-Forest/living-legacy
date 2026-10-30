@@ -50,6 +50,13 @@
       "when": 1793351990444,
       "tag": "0006_post_reviewer",
       "breakpoints": true
+    },
+    {
+      "idx": 7,
+      "version": "6",
+      "when": 1793368921705,
+      "tag": "0007_user_bio",
+      "breakpoints": true
     }
   ]
 }

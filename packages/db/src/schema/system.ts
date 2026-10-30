@@ -66,3 +66,35 @@ export const publishEvents = sqliteTable(
   },
   (t) => [index('publish_events_created_at').on(t.createdAt)]
 );
+
+export const activityActions = [
+  'post.published',
+  'post.scheduled',
+  'post.unpublished',
+  'user.invited',
+  'user.role_changed',
+  'user.removed',
+  'redirect.created',
+  'redirect.updated',
+  'redirect.deleted',
+  'settings.updated',
+] as const;
+export type ActivityAction = (typeof activityActions)[number];
+
+// Human-readable audit trail, distinct from publish_events (which is a cache
+// purge feed). The actor's name is a snapshot, so the entry still reads
+// correctly after that person is removed.
+export const activityLog = sqliteTable(
+  'activity_log',
+  {
+    id: id(),
+    actorId: text('actor_id').references(() => user.id, { onDelete: 'set null' }),
+    actorName: text('actor_name').notNull(),
+    action: text('action', { enum: activityActions }).notNull(),
+    summary: text('summary').notNull(),
+    createdAt: integer('created_at', { mode: 'timestamp_ms' })
+      .notNull()
+      .$defaultFn(() => new Date()),
+  },
+  (t) => [index('activity_log_created_at').on(t.createdAt)]
+);

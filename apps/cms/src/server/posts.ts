@@ -14,6 +14,7 @@ import { z } from 'zod';
 import { getDb } from '@/lib/db';
 import { cmsOrigin, sendReviewRequestedEmail } from '@/lib/email';
 import { type SessionUser, authMiddleware, requirePermission } from '@/lib/session';
+import { logActivity } from './activity-log';
 import {
   type PostRow,
   type Statement,
@@ -325,7 +326,7 @@ export const publishPost = createServerFn({ method: 'POST' })
     if (row.deletedAt) throw new Error('Restore this post from the trash before publishing it.');
     if (data.id) assertVersion(row, data.expectedUpdatedAt);
 
-    return publishValues(db, row, data.values, userId);
+    return publishValues(db, row, data.values, userId, context.user.name);
   });
 
 const idSchema = z.object({ id: z.string() });
@@ -366,6 +367,12 @@ export const schedulePost = createServerFn({ method: 'POST' })
         })
         .where(eq(posts.id, row.id)),
       ...termStatements,
+      logActivity(db, {
+        actorId: userId,
+        actorName: context.user.name,
+        action: 'post.scheduled',
+        summary: `Scheduled "${data.values.title || 'Untitled'}"`,
+      }),
     ]);
     return { id: row.id, updatedAt: now.getTime(), slug, scheduledAt: data.scheduledAt };
   });
@@ -548,6 +555,12 @@ export const unpublishPost = createServerFn({ method: 'POST' })
         entityId: row.id,
         action: 'unpublish',
         paths: [blogPath(row.slug), '/blog'],
+      }),
+      logActivity(db, {
+        actorId: context.user.id,
+        actorName: context.user.name,
+        action: 'post.unpublished',
+        summary: `Unpublished "${row.title || 'Untitled'}"`,
       }),
     ];
     await db.batch(statements as Statements);

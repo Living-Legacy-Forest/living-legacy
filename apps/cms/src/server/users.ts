@@ -7,6 +7,7 @@ import { z } from 'zod';
 import { getDb } from '@/lib/db';
 import { sendInviteEmail } from '@/lib/email';
 import { requirePermission } from '@/lib/session';
+import { logActivity } from './activity-log';
 
 const { user, invitation } = schema;
 
@@ -73,6 +74,12 @@ export const inviteUser = createServerFn({ method: 'POST' })
     } catch {
       emailed = false;
     }
+    await logActivity(db, {
+      actorId: context.user.id,
+      actorName: context.user.name,
+      action: 'user.invited',
+      summary: `Invited ${email} as ${data.role}`,
+    });
     return { email, emailed };
   });
 
@@ -95,6 +102,12 @@ export const changeUserRole = createServerFn({ method: 'POST' })
       .update(user)
       .set({ role: data.role, updatedAt: new Date() })
       .where(eq(user.id, target.id));
+    await logActivity(db, {
+      actorId: context.user.id,
+      actorName: context.user.name,
+      action: 'user.role_changed',
+      summary: `Changed ${target.name}'s role from ${target.role} to ${data.role}`,
+    });
   });
 
 export const removeUser = createServerFn({ method: 'POST' })
@@ -113,6 +126,12 @@ export const removeUser = createServerFn({ method: 'POST' })
 
     // Sessions and accounts cascade-delete with the user.
     await db.delete(user).where(eq(user.id, target.id));
+    await logActivity(db, {
+      actorId: context.user.id,
+      actorName: context.user.name,
+      action: 'user.removed',
+      summary: `Removed ${target.name} (${target.email})`,
+    });
   });
 
 export const revokeInvitation = createServerFn({ method: 'POST' })

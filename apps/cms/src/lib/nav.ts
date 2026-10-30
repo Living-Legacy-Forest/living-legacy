@@ -1,5 +1,6 @@
 import type { Permission } from '@llf/content';
 import {
+  ActivityIcon,
   ArrowRightLeft,
   CircleHelp,
   ExternalLink,
@@ -22,6 +23,7 @@ export type NavItem = {
     | '/'
     | '/posts'
     | '/posts/new'
+    | '/activity'
     | '/announcements'
     | '/faqs'
     | '/media'
@@ -66,6 +68,7 @@ export const navGroups: NavGroup[] = [
   {
     label: 'Admin',
     items: [
+      { title: 'Activity', icon: ActivityIcon, to: '/activity', permission: 'posts:publish' },
       { title: 'Redirects', icon: ArrowRightLeft, to: '/redirects', permission: 'redirects:write' },
       { title: 'Users', icon: UserCog, to: '/users', permission: 'users:manage' },
       {

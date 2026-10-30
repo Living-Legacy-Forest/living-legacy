@@ -31,6 +31,7 @@ export const MessageCircleQuestionIcon = make(H.MessageQuestionIcon);
 export const DownloadIcon = make(H.Download01Icon);
 export const UploadIcon = make(H.Upload01Icon);
 export const CameraIcon = make(H.Camera02Icon);
+export const ActivityIcon = make(H.Activity01Icon);
 export const UserPlusIcon = make(H.UserAdd01Icon);
 export const PencilLineIcon = make(H.PencilEdit02Icon);
 export const SendIcon = make(H.Sent02Icon);

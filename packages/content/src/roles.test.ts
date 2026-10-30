@@ -15,11 +15,37 @@ describe('can', () => {
 
   it('limits editors to content and media', () => {
     expect(can('editor', 'content:write')).toBe(true);
+    expect(can('editor', 'posts:publish')).toBe(true);
     expect(can('editor', 'media:write')).toBe(true);
     expect(can('editor', 'content:purge')).toBe(false);
     expect(can('editor', 'settings:write')).toBe(false);
     expect(can('editor', 'redirects:write')).toBe(false);
     expect(can('editor', 'users:manage')).toBe(false);
+  });
+
+  it('lets authors write posts but not publish them', () => {
+    expect(can('author', 'posts:write')).toBe(true);
+    expect(can('author', 'media:write')).toBe(true);
+    expect(can('author', 'posts:publish')).toBe(false);
+    expect(can('author', 'content:write')).toBe(false);
+  });
+
+  it('limits SEO to search fields and redirects', () => {
+    expect(can('seo', 'seo:write')).toBe(true);
+    expect(can('seo', 'redirects:write')).toBe(true);
+    expect(can('seo', 'posts:write')).toBe(false);
+    expect(can('seo', 'settings:write')).toBe(false);
+  });
+
+  it('gives viewers no write access at all', () => {
+    for (const permission of [
+      'posts:write',
+      'seo:write',
+      'content:write',
+      'media:write',
+    ] as const) {
+      expect(can('viewer', permission)).toBe(false);
+    }
   });
 });
 

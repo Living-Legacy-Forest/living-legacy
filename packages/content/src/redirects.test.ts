@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { type RedirectRule, resolveRedirect, traceRedirect } from './redirects';
+import { type RedirectRule, checkRedirect, resolveRedirect, traceRedirect } from './redirects';
 
 let n = 0;
 const rule = (
@@ -90,5 +90,23 @@ describe('traceRedirect', () => {
       loop: false,
       gone: false,
     });
+  });
+});
+
+describe('checkRedirect', () => {
+  it('accepts plain, wildcard and removed redirects', () => {
+    expect(checkRedirect('/a', '/b', 301)).toBeNull();
+    expect(checkRedirect('/blog/*', '/stories/*', 302)).toBeNull();
+    expect(checkRedirect('/gone', '', 410)).toBeNull();
+  });
+
+  it('explains what is wrong', () => {
+    expect(checkRedirect('a', '/b', 301)).toBe('The old path must start with a slash.');
+    expect(checkRedirect('/a*/b', '/b', 301)).toBe('A * can only end the old path.');
+    expect(checkRedirect('/a', '/b', 999)).toBe('The type must be 301, 302 or 410.');
+    expect(checkRedirect('/a', '', 301)).toBe('The destination is empty.');
+    expect(checkRedirect('/a', '/b/*', 301)).toBe(
+      'A * in the destination needs a * at the end of the old path.'
+    );
   });
 });

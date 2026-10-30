@@ -1,0 +1,1 @@
+ALTER TABLE `posts` ADD `review_requested_at` integer;

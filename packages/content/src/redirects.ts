@@ -128,3 +128,25 @@ export function traceRedirect(rules: RedirectRule[], candidate: RedirectRule): R
   }
   return { hops, loop: false, gone: false };
 }
+
+const DESTINATION = /^(\/\S*|https?:\/\/\S+)$/;
+
+/**
+ * Checks one redirect's paths and type, the same rules the CMS form applies.
+ * Returns what is wrong, or null when it is fine.
+ */
+export function checkRedirect(fromPath: string, toPath: string, statusCode: number): string | null {
+  if (!fromPath.startsWith('/')) return 'The old path must start with a slash.';
+  if (/\s/.test(fromPath)) return 'The old path cannot contain spaces.';
+  if (fromPath.slice(0, -1).includes('*')) return 'A * can only end the old path.';
+  if (!(redirectStatusCodes as readonly number[]).includes(statusCode)) {
+    return 'The type must be 301, 302 or 410.';
+  }
+  if (statusCode === 410) return null;
+  if (!toPath) return 'The destination is empty.';
+  if (!DESTINATION.test(toPath)) return 'The destination must be a path or a full URL.';
+  if (toPath.includes('*') && !isWildcard(fromPath)) {
+    return 'A * in the destination needs a * at the end of the old path.';
+  }
+  return null;
+}

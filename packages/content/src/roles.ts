@@ -1,11 +1,17 @@
 import { z } from 'zod';
 
-export const roles = ['admin', 'editor'] as const;
+export const roles = ['admin', 'editor', 'author', 'seo', 'viewer'] as const;
 export const roleSchema = z.enum(roles);
 export type Role = z.infer<typeof roleSchema>;
 
 export const permissions = [
-  // Posts, terms, FAQs, testimonials, team: create, edit, publish, trash, restore.
+  // Write and edit posts, saved as drafts. Authors can only touch their own.
+  'posts:write',
+  // Publish, schedule, unpublish, trash and restore posts, and edit anyone's.
+  'posts:publish',
+  // A post's SEO fields and the Search & sharing settings.
+  'seo:write',
+  // FAQs, testimonials, team, announcements and post categories.
   'content:write',
   'media:write',
   // Permanent delete, from the trash or of media.
@@ -18,7 +24,11 @@ export type Permission = (typeof permissions)[number];
 
 const grants: Record<Role, readonly Permission[]> = {
   admin: permissions,
-  editor: ['content:write', 'media:write'],
+  editor: ['posts:write', 'posts:publish', 'seo:write', 'content:write', 'media:write'],
+  author: ['posts:write', 'media:write'],
+  seo: ['seo:write', 'redirects:write'],
+  // Read-only: sees the content pages, changes nothing.
+  viewer: [],
 };
 
 export function can(role: Role, permission: Permission): boolean {

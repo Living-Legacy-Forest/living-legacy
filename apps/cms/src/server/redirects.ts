@@ -15,10 +15,7 @@ const SITE_URL = 'https://livinglegacyforest.com.au';
 const fromPathSchema = z
   .string()
   .trim()
-  .regex(
-    /^\/(?![/\\])\S*$/,
-    'The old path must start with a single slash, like /old-page.'
-  )
+  .regex(/^\/(?![/\\])\S*$/, 'The old path must start with a single slash, like /old-page.')
   .refine(
     (path) => !path.slice(0, -1).includes('*'),
     'A * can only go at the end of the old path, like /blog/*.'

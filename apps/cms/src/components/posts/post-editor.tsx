@@ -21,6 +21,7 @@ import {
   LinkIcon,
   type LucideIcon,
   MoreHorizontalIcon,
+  PanelRightIcon,
   PlusIcon,
   SendIcon,
   TagIcon,
@@ -177,6 +178,7 @@ export function PostEditor({
   const [busy, setBusy] = useState<null | 'save' | 'publish' | 'other'>(null);
   const [lastSavedAt, setLastSavedAt] = useState<number | null>(data.post?.updatedAt ?? null);
   const [importingDocx, setImportingDocx] = useState(false);
+  const [showProperties, setShowProperties] = useState(true);
   const docxInputRef = useRef<HTMLInputElement>(null);
 
   const dirty = JSON.stringify(values) !== JSON.stringify(saved);
@@ -418,8 +420,9 @@ export function PostEditor({
     }
     setImportingDocx(true);
     try {
-      const [{ default: mammoth }, { generateJSON }, { postContentExtensions }] =
-        await Promise.all([import('mammoth'), import('@tiptap/core'), import('./post-extensions')]);
+      const [{ default: mammoth }, { generateJSON }, { postContentExtensions }] = await Promise.all(
+        [import('mammoth'), import('@tiptap/core'), import('./post-extensions')]
+      );
       let imageCount = 0;
       const { value: html } = await mammoth.convertToHtml(
         { arrayBuffer: await file.arrayBuffer() },
@@ -515,8 +518,18 @@ export function PostEditor({
   }
 
   return (
-    <div className="grid flex-1 gap-6 lg:grid-cols-[minmax(0,1fr)_17rem] lg:gap-0">
-      <div className="bg-background flex min-w-0 flex-col overflow-hidden rounded-lg border lg:mr-6 lg:h-[calc(100svh-7.5rem)]">
+    <div
+      className={cn(
+        'grid flex-1 gap-6 lg:gap-0 lg:transition-[grid-template-columns] lg:duration-200 lg:ease-[cubic-bezier(0.25,1,0.5,1)] motion-reduce:lg:transition-none',
+        showProperties ? 'lg:grid-cols-[minmax(0,1fr)_17rem]' : 'lg:grid-cols-[minmax(0,1fr)_0rem]'
+      )}
+    >
+      <div
+        className={cn(
+          'bg-background flex min-w-0 flex-col overflow-hidden rounded-lg border lg:h-[calc(100svh-7.5rem)] lg:transition-[margin-right] lg:duration-200 motion-reduce:lg:transition-none',
+          showProperties && 'lg:mr-6'
+        )}
+      >
         <header className="flex h-12 shrink-0 items-center gap-3 border-b px-3">
           <PostStatusBadge
             status={meta.status}
@@ -732,6 +745,14 @@ export function PostEditor({
                 )}
               </>
             )}
+            <Button
+              variant="ghost"
+              size="icon-sm"
+              aria-label={showProperties ? 'Hide properties panel' : 'Show properties panel'}
+              onClick={() => setShowProperties((v) => !v)}
+            >
+              <PanelRightIcon aria-hidden />
+            </Button>
           </div>
         </header>
 
@@ -765,98 +786,110 @@ export function PostEditor({
         </div>
       </div>
 
-      <aside className="space-y-6 text-[13px] lg:sticky lg:top-6 lg:self-start lg:border-l lg:pl-6">
-        <Section title="Properties" defaultOpen first>
-          {/* A disabled fieldset locks every picker inside for SEO and read-only access. */}
-          <fieldset disabled={contentLocked} className="min-w-0 space-y-0.5 disabled:opacity-70">
-            <Property label="Author" icon={UserIcon}>
-              <SinglePicker
-                label="Author"
-                options={data.authors}
-                value={values.authorId}
-                placeholder="No author"
-                onChange={(authorId) => update({ authorId })}
-              />
-            </Property>
-            <Property label="Categories" icon={FolderIcon}>
-              <MultiPicker
-                label="Categories"
-                options={categories}
-                selected={values.categoryIds}
-                placeholder="Add categories"
-                onChange={(categoryIds) => update({ categoryIds })}
-                onCreate={addCategory}
-              />
-            </Property>
-            <Property label="Tags" icon={TagIcon}>
-              <MultiPicker
-                label="Tags"
-                options={tagOptions(data.tags, values.tags)}
-                selected={values.tags}
-                placeholder="Add tags"
-                onChange={(tags) => update({ tags })}
-                onCreate={async (name) => update({ tags: [...values.tags, name] })}
-              />
-            </Property>
-            <Property label="URL" icon={LinkIcon}>
-              <UrlPicker
-                slug={values.slug}
-                liveSlug={isLive ? saved.slug : null}
-                onChange={(slug) => {
-                  setSlugTouched(true);
-                  update({ slug });
-                }}
-              />
-            </Property>
-            {meta.scheduledAt && (
-              <Property label="Goes live" icon={CalendarClockIcon}>
-                <span className="px-2">{formatDateTime(meta.scheduledAt)}</span>
-              </Property>
-            )}
-            {meta.publishedAt && (
-              <Property label="Published" icon={GlobeIcon}>
-                <span className="text-muted-foreground px-2">
-                  {formatDateTime(meta.publishedAt)}
-                </span>
-              </Property>
-            )}
-          </fieldset>
-        </Section>
+      <aside
+        className={cn(
+          'min-w-0 space-y-6 text-[13px] lg:sticky lg:top-6 lg:self-start lg:overflow-hidden lg:transition-[padding] lg:duration-150 motion-reduce:lg:transition-none',
+          showProperties ? 'lg:border-l lg:pl-6' : 'lg:border-l-0 lg:pl-0'
+        )}
+      >
+        {showProperties && (
+          <>
+            <Section title="Properties" defaultOpen first>
+              {/* A disabled fieldset locks every picker inside for SEO and read-only access. */}
+              <fieldset
+                disabled={contentLocked}
+                className="min-w-0 space-y-0.5 disabled:opacity-70"
+              >
+                <Property label="Author" icon={UserIcon}>
+                  <SinglePicker
+                    label="Author"
+                    options={data.authors}
+                    value={values.authorId}
+                    placeholder="No author"
+                    onChange={(authorId) => update({ authorId })}
+                  />
+                </Property>
+                <Property label="Categories" icon={FolderIcon}>
+                  <MultiPicker
+                    label="Categories"
+                    options={categories}
+                    selected={values.categoryIds}
+                    placeholder="Add categories"
+                    onChange={(categoryIds) => update({ categoryIds })}
+                    onCreate={addCategory}
+                  />
+                </Property>
+                <Property label="Tags" icon={TagIcon}>
+                  <MultiPicker
+                    label="Tags"
+                    options={tagOptions(data.tags, values.tags)}
+                    selected={values.tags}
+                    placeholder="Add tags"
+                    onChange={(tags) => update({ tags })}
+                    onCreate={async (name) => update({ tags: [...values.tags, name] })}
+                  />
+                </Property>
+                <Property label="URL" icon={LinkIcon}>
+                  <UrlPicker
+                    slug={values.slug}
+                    liveSlug={isLive ? saved.slug : null}
+                    onChange={(slug) => {
+                      setSlugTouched(true);
+                      update({ slug });
+                    }}
+                  />
+                </Property>
+                {meta.scheduledAt && (
+                  <Property label="Goes live" icon={CalendarClockIcon}>
+                    <span className="px-2">{formatDateTime(meta.scheduledAt)}</span>
+                  </Property>
+                )}
+                {meta.publishedAt && (
+                  <Property label="Published" icon={GlobeIcon}>
+                    <span className="text-muted-foreground px-2">
+                      {formatDateTime(meta.publishedAt)}
+                    </span>
+                  </Property>
+                )}
+              </fieldset>
+            </Section>
 
-        <Section title="Search listing">
-          <fieldset disabled={access === 'readonly'} className="min-w-0">
-            <SeoFields values={values} onChange={update} />
-          </fieldset>
-        </Section>
+            <Section title="Search listing">
+              <fieldset disabled={access === 'readonly'} className="min-w-0">
+                <SeoFields values={values} onChange={update} />
+              </fieldset>
+            </Section>
 
-        {data.revisions.length > 0 && (
-          <Section title="Revisions" count={data.revisions.length}>
-            <ul className="space-y-0.5">
-              {data.revisions.map((revision, index) => (
-                <li
-                  key={revision.id}
-                  className="hover:bg-accent flex min-h-8 items-center justify-between gap-2 rounded-md px-2"
-                >
-                  <span className="min-w-0 truncate">
-                    {formatDateTime(revision.createdAt)}
-                    <span className="text-muted-foreground"> · {revision.by}</span>
-                  </span>
-                  {index === 0 ? (
-                    <span className="text-muted-foreground text-xs">Live</span>
-                  ) : contentLocked ? null : (
-                    <Button
-                      variant="ghost"
-                      size="xs"
-                      className="text-muted-foreground h-6"
-                      onClick={() => loadRevision(revision.id)}
+            {data.revisions.length > 0 && (
+              <Section title="Revisions" count={data.revisions.length}>
+                <ul className="space-y-0.5">
+                  {data.revisions.map((revision, index) => (
+                    <li
+                      key={revision.id}
+                      className="hover:bg-accent flex min-h-8 items-center justify-between gap-2 rounded-md px-2"
                     >
-                      Restore
-                    </Button>
-                  )}
-                </li>
-              ))}
-            </ul>
-          </Section>
+                      <span className="min-w-0 truncate">
+                        {formatDateTime(revision.createdAt)}
+                        <span className="text-muted-foreground"> · {revision.by}</span>
+                      </span>
+                      {index === 0 ? (
+                        <span className="text-muted-foreground text-xs">Live</span>
+                      ) : contentLocked ? null : (
+                        <Button
+                          variant="ghost"
+                          size="xs"
+                          className="text-muted-foreground h-6"
+                          onClick={() => loadRevision(revision.id)}
+                        >
+                          Restore
+                        </Button>
+                      )}
+                    </li>
+                  ))}
+                </ul>
+              </Section>
+            )}
+          </>
         )}
       </aside>
 

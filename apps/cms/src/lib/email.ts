@@ -66,7 +66,7 @@ function escapeHtml(value: string) {
 }
 
 /** The CMS's own address, where the email logo is served from (public/email). */
-const cmsOrigin = () => new URL(env.BETTER_AUTH_URL).origin;
+export const cmsOrigin = () => new URL(env.BETTER_AUTH_URL).origin;
 
 /**
  * One branded layout for every CMS email. Tables and inline styles, because
@@ -208,6 +208,30 @@ const roleNames: Record<Role, string> = {
   seo: 'an SEO editor',
   viewer: 'a Viewer',
 };
+
+export async function sendReviewRequestedEmail(
+  to: string,
+  opts: { postTitle: string; authorName: string; postUrl: string }
+): Promise<void> {
+  const subject = `${opts.authorName} submitted "${opts.postTitle}" for review`;
+  const text = [
+    `${opts.authorName} submitted "${opts.postTitle}" for review on Living Legacy.`,
+    '',
+    `Open it here: ${opts.postUrl}`,
+    ...textFooter,
+  ].join('\n');
+
+  const html = layout({
+    preheader: `${opts.authorName} submitted a post for review.`,
+    heading: 'A post is ready for review',
+    intro: [
+      `<strong style="color:${colours.ink};">${escapeHtml(opts.authorName)}</strong> submitted <strong style="color:${colours.ink};">${escapeHtml(opts.postTitle)}</strong> for review.`,
+    ],
+    button: { label: 'Review the post', url: opts.postUrl },
+  });
+
+  await send({ to, subject, html, text });
+}
 
 export async function sendInviteEmail(to: string, loginUrl: string, role: Role): Promise<void> {
   const subject = 'You have been invited to Living Legacy';

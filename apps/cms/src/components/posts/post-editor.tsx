@@ -94,6 +94,7 @@ import {
   unschedulePost,
 } from '@/server/posts';
 import { PostStatusBadge } from './post-status-badge';
+import { ReviewerPopover } from './reviewer-popover';
 import { SchedulePopover } from './schedule-popover';
 import { clearPostPreviews } from './use-post-preview';
 
@@ -369,18 +370,22 @@ export function PostEditor({
     }
   }
 
-  /** Saves if needed, then hands the post to an editor. */
-  async function submitForReview() {
+  /** Saves if needed, then hands the post to a reviewer. */
+  async function submitForReview(reviewerId: string | null): Promise<boolean> {
     const id = dirty || !meta.id ? await persist('save', { quiet: true }) : meta.id;
-    if (!id) return;
+    if (!id) return false;
     setBusy('other');
     try {
-      const result = await requestReview({ data: { id } });
+      const result = await requestReview({ data: { id, reviewerId } });
       setMeta((m) => ({ ...m, ...result }));
-      toast.success('Sent for review. An editor will check it and publish it.');
+      toast.success(
+        reviewerId ? 'Sent for review.' : 'Sent for review. Anyone who can publish was notified.'
+      );
       await router.invalidate();
+      return true;
     } catch (error) {
       toast.error(errorMessage(error));
+      return false;
     } finally {
       setBusy(null);
     }
@@ -754,16 +759,18 @@ export function PostEditor({
                         'Save draft'
                       )}
                     </Button>
-                    <Button
-                      size="sm"
-                      disabled={working || (meta.reviewRequestedAt !== null && !dirty)}
-                      onClick={submitForReview}
-                    >
-                      <SendIcon aria-hidden data-icon="inline-start" />
-                      {meta.reviewRequestedAt !== null && !dirty
-                        ? 'Submitted for review'
-                        : 'Submit for review'}
-                    </Button>
+                    {meta.reviewRequestedAt !== null && !dirty ? (
+                      <Button size="sm" disabled>
+                        <SendIcon aria-hidden data-icon="inline-start" />
+                        Submitted for review
+                      </Button>
+                    ) : (
+                      <ReviewerPopover
+                        reviewers={data.reviewers}
+                        disabled={working}
+                        onSubmit={submitForReview}
+                      />
+                    )}
                   </>
                 )}
                 {access === 'seo' && (

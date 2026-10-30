@@ -53,6 +53,8 @@ export const posts = sqliteTable(
     scheduledAt: integer('scheduled_at', { mode: 'timestamp_ms' }),
     // Set when an author asks for review; publishing clears it.
     reviewRequestedAt: integer('review_requested_at', { mode: 'timestamp_ms' }),
+    // Who was asked to review it; blank means anyone who can publish.
+    reviewerId: text('reviewer_id').references(() => user.id, { onDelete: 'set null' }),
     ...lifecycle(),
   },
   (t) => [

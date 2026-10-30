@@ -4,13 +4,15 @@ import {
   can,
   postInputSchema,
   publishErrors,
+  roles,
   slugify,
 } from '@llf/content';
 import { schema } from '@llf/db';
 import { createServerFn } from '@tanstack/react-start';
-import { and, asc, count, desc, eq, inArray, isNotNull, isNull, like, sql } from 'drizzle-orm';
+import { and, asc, count, desc, eq, inArray, isNotNull, isNull, like, ne, sql } from 'drizzle-orm';
 import { z } from 'zod';
 import { getDb } from '@/lib/db';
+import { cmsOrigin, sendReviewRequestedEmail } from '@/lib/email';
 import { type SessionUser, authMiddleware, requirePermission } from '@/lib/session';
 import {
   type PostRow,
@@ -34,6 +36,9 @@ function assertCanEdit(row: PostRow, actor: SessionUser) {
     throw new Error('You can only edit posts you wrote.');
   }
 }
+
+/** Roles that may publish, i.e. who is eligible to review a post. */
+const publishRoles = () => roles.filter((r) => can(r, 'posts:publish'));
 
 export const POSTS_PAGE_SIZE = 20;
 
@@ -86,7 +91,7 @@ export const listPosts = createServerFn({ method: 'GET' })
         : undefined
     );
 
-    const [tabCounts, [{ total } = { total: 0 }], rows, categories] = await Promise.all([
+    const [tabCounts, [{ total } = { total: 0 }], rows, categories, reviewers] = await Promise.all([
       db
         .select({
           all: sql<number>`coalesce(sum(${posts.deletedAt} is null), 0)`,
@@ -110,6 +115,8 @@ export const listPosts = createServerFn({ method: 'GET' })
           deletedAt: posts.deletedAt,
           scheduledAt: posts.scheduledAt,
           reviewRequestedAt: posts.reviewRequestedAt,
+          reviewerId: posts.reviewerId,
+          createdBy: posts.createdBy,
           author: teamMembers.name,
         })
         .from(posts)
@@ -129,6 +136,11 @@ export const listPosts = createServerFn({ method: 'GET' })
         .from(terms)
         .where(eq(terms.type, 'category'))
         .orderBy(asc(terms.name)),
+      db
+        .select({ id: user.id, name: user.name })
+        .from(user)
+        .where(inArray(user.role, publishRoles()))
+        .orderBy(asc(user.name)),
     ]);
 
     const assigned = await loadTermsFor(
@@ -160,6 +172,7 @@ export const listPosts = createServerFn({ method: 'GET' })
       total,
       pageCount: Math.max(1, Math.ceil(total / POSTS_PAGE_SIZE)),
       categories,
+      reviewers,
     };
   });
 
@@ -172,7 +185,7 @@ export const getPostEditorData = createServerFn({ method: 'GET' })
   .handler(async ({ data }) => {
     const db = getDb();
 
-    const [categories, tags, authors] = await Promise.all([
+    const [categories, tags, authors, reviewers] = await Promise.all([
       db
         .select({ id: terms.id, name: terms.name })
         .from(terms)
@@ -188,8 +201,13 @@ export const getPostEditorData = createServerFn({ method: 'GET' })
         .from(teamMembers)
         .where(isNull(teamMembers.deletedAt))
         .orderBy(asc(teamMembers.sortOrder), asc(teamMembers.name)),
+      db
+        .select({ id: user.id, name: user.name })
+        .from(user)
+        .where(inArray(user.role, publishRoles()))
+        .orderBy(asc(user.name)),
     ]);
-    const options = { categories, tags: tags.map((t) => t.name), authors };
+    const options = { categories, tags: tags.map((t) => t.name), authors, reviewers };
 
     if (!data.id) return { post: null, revisions: [], ...options };
 
@@ -381,17 +399,50 @@ export const discardChanges = createServerFn({ method: 'POST' })
 /** An author hands a saved post to an editor. Publishing clears the request. */
 export const requestReview = createServerFn({ method: 'POST' })
   .middleware([requirePermission('posts:write')])
-  .validator(idSchema)
+  .validator(idSchema.extend({ reviewerId: z.string().nullable().optional() }))
   .handler(async ({ data, context }) => {
     const db = getDb();
     const row = await loadPost(db, data.id);
     assertCanEdit(row, context.user);
     if (row.deletedAt) throw new Error('Restore this post from the trash first.');
+
+    // A chosen reviewer must actually be someone who can publish.
+    let reviewerId: string | null = null;
+    if (data.reviewerId) {
+      const reviewer = await db.query.user.findFirst({ where: eq(user.id, data.reviewerId) });
+      if (!reviewer || !can(reviewer.role, 'posts:publish')) {
+        throw new Error('Choose someone who can publish posts.');
+      }
+      reviewerId = reviewer.id;
+    }
+
     const now = new Date();
     await db
       .update(posts)
-      .set({ reviewRequestedAt: now, updatedAt: now, updatedBy: context.user.id })
+      .set({ reviewRequestedAt: now, reviewerId, updatedAt: now, updatedBy: context.user.id })
       .where(eq(posts.id, row.id));
+
+    // Best-effort: a failed email must not lose the review request. A chosen
+    // reviewer gets it alone; otherwise everyone who can publish does.
+    const recipients = await db
+      .select({ email: user.email })
+      .from(user)
+      .where(
+        reviewerId
+          ? eq(user.id, reviewerId)
+          : and(inArray(user.role, publishRoles()), ne(user.id, context.user.id))
+      );
+    const postUrl = `${cmsOrigin()}/posts/${row.id}`;
+    await Promise.allSettled(
+      recipients.map((r) =>
+        sendReviewRequestedEmail(r.email, {
+          postTitle: row.title,
+          authorName: context.user.name,
+          postUrl,
+        })
+      )
+    );
+
     return { reviewRequestedAt: now.getTime(), updatedAt: now.getTime() };
   });
 

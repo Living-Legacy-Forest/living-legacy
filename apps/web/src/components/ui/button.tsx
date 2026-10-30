@@ -4,7 +4,7 @@ import { cn } from '@/lib/utils';
 
 // Pill buttons on the golden type scale. Press feedback is a small scale
 // rather than a nudge down, and only the properties that change transition.
-const buttonVariants = cva(
+const buttonClasses = cva(
   "group/button inline-flex shrink-0 items-center justify-center rounded-full border border-transparent bg-clip-padding text-base font-medium whitespace-nowrap outline-none select-none transition-[transform,background-color,border-color,color] duration-160 ease-[var(--ease-grow)] focus-visible:ring-3 focus-visible:ring-ring/50 active:not-aria-[haspopup]:scale-[0.97] disabled:pointer-events-none disabled:opacity-50 aria-invalid:border-destructive aria-invalid:ring-3 aria-invalid:ring-destructive/20 [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-4 [&_svg[data-icon=inline-end]]:transition-transform [&_svg[data-icon=inline-end]]:duration-200 hover:[&_svg[data-icon=inline-end]]:translate-x-0.5",
   {
     variants: {
@@ -38,16 +38,28 @@ const buttonVariants = cva(
   }
 );
 
+/**
+ * The button classes for a variant and size, merged. cva only concatenates,
+ * so the base's `border-transparent` and outline's `border-input` would both
+ * reach the page and the stylesheet order would pick the winner (transparent,
+ * which hid every outline button's border). Merging here means a variant's
+ * utilities always replace the base's, including for the .astro links that
+ * call this directly rather than going through Button.
+ */
+function buttonVariants(props?: Parameters<typeof buttonClasses>[0]) {
+  return cn(buttonClasses(props));
+}
+
 function Button({
   className,
   variant = 'default',
   size = 'default',
   ...props
-}: ButtonPrimitive.Props & VariantProps<typeof buttonVariants>) {
+}: ButtonPrimitive.Props & VariantProps<typeof buttonClasses>) {
   return (
     <ButtonPrimitive
       data-slot="button"
-      className={cn(buttonVariants({ variant, size, className }))}
+      className={buttonVariants({ variant, size, className })}
       {...props}
     />
   );

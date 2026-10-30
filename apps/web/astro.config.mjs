@@ -41,10 +41,32 @@ const SSR_DEPS = [
   'class-variance-authority',
   'clsx',
   'embla-carousel-react',
-  'lucide-react',
+  '@hugeicons/react',
+  '@hugeicons/core-free-icons',
+  // The home hero's optional motion entrance (src/components/ui/hero-04.tsx).
+  'motion/react',
   'posthog-node',
   'sonner',
   'tailwind-merge',
+  // Sanity content layer: the client and image builder (src/lib/sanity.ts) and
+  // the Portable Text renderer (PortableText.astro). First reached when a route
+  // that reads from Sanity renders. Left out, Vite discovered them mid-session,
+  // re-optimised, and the workerd runner died on a stale deps_ssr chunk.
+  '@sanity/client',
+  '@sanity/image-url',
+  '@portabletext/to-html',
+  // The RSS feed helper, imported only by src/pages/rss.xml.ts, so it is first
+  // reached when the feed is requested.
+  '@astrojs/rss',
+  // Astro internals the installed Cloudflare adapter (14.1.4) leaves out of its
+  // own pre-bundle list. Adapter 14.4.1 adds them itself, so this block can go
+  // once it is upgraded. Each is reached lazily (the manifest a second after
+  // boot, the logger on the first request), which on a cold cache made Vite
+  // re-optimise mid-session and the workerd runner die on a stale chunk.
+  'astro/app/manifest',
+  'astro/assets/services/noop',
+  'astro/logger/console',
+  'astro/logger/json',
   // CommonJS, two levels below @astrojs/react. workerd cannot load CJS, so it
   // has to be pre-bundled into ESM; Vite does not find it on its own.
   '@astrojs/react > @astrojs/internal-helpers > picomatch',
@@ -79,9 +101,17 @@ export default defineConfig({
   ],
   vite: {
     plugins: [tailwindcss()],
-    // SSR only. @astrojs/react already configures the client optimiser, and
-    // forcing these through it too produced a second JSX runtime on the sister
-    // site, which broke every island on hydration.
+    // Client: the libraries reached only by islands that hydrate late
+    // (client:visible / client:idle), so Vite never meets them on the first
+    // page load. Found later, they got import URLs into the deps cache whose
+    // files the re-optimise never wrote, so every request 404'd and the home
+    // map, carousel and FAQ never hydrated. Pre-bundling them at start avoids
+    // the mid-session discovery. React itself stays out: @astrojs/react
+    // already includes it, and forcing it through again gave the sister site
+    // a second JSX runtime that broke every island.
+    optimizeDeps: { include: [...BASE_UI_SUBPATHS, 'embla-carousel-react'] },
+    // SSR only, for the same reason as the client list above, plus the
+    // workerd constraints below.
     environments: {
       ssr: {
         // No `noDiscovery` here, unlike the sister site: dev SSR runs in

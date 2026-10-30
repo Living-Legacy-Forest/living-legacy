@@ -3,7 +3,8 @@
  * The five home-page FAQ entries, as accordions, with FAQPage JSON-LD for
  * these five only (the full ~30-question set lives at /faqs/).
  */
-import { ArrowRight } from 'lucide-astro';
+import HugeIcon from '@/components/ui/HugeIcon.astro';
+import { ArrowRight02Icon } from '@hugeicons/core-free-icons';
 import { buttonVariants } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 import HomeFaq from './HomeFaq';
@@ -59,7 +60,7 @@ const faqJsonLd = {
 
   <a href="/faqs/" class={cn(buttonVariants({ variant: 'link' }), 'mt-10')}>
     More FAQs
-    <ArrowRight data-icon="inline-end" aria-hidden="true" />
+    <HugeIcon icon={ArrowRight02Icon} data-icon="inline-end" aria-hidden="true" />
   </a>
 </section>
 

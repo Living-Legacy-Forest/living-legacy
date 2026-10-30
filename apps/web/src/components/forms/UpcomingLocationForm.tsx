@@ -258,13 +258,13 @@ export function UpcomingLocationForm() {
             />
           </Field>
 
-          <Field orientation="horizontal" className="items-start">
+          <Field orientation="horizontal" className="items-start gap-3">
             <Checkbox
               id="upcoming-consent"
               checked={consent}
               onCheckedChange={(checked) => setConsent(checked === true)}
             />
-            <FieldLabel htmlFor="upcoming-consent" className="text-base font-normal">
+            <FieldLabel htmlFor="upcoming-consent" className="text-ink-soft font-normal">
               I have read and agree to the{' '}
               <a
                 href="/privacy/"

@@ -47,7 +47,9 @@ const values = [
   <p class="eyebrow">What we stand for</p>
   <h2 class="section-title mt-4 max-w-2xl">Our Living Legacy core values</h2>
 
-  <ul class="bg-bark/20 mt-14 grid gap-px overflow-hidden rounded-lg sm:grid-cols-2 lg:grid-cols-3">
+  <!-- The rules are the list's background showing through 1px gaps; px-px adds
+       the same 1px rule down the outer left and right edges. -->
+  <ul class="bg-bark/20 mt-14 grid gap-px overflow-hidden px-px sm:grid-cols-2 lg:grid-cols-3">
     {
       values.map((value) => (
         <li>

@@ -4,6 +4,7 @@
 // address for the same content.
 import BaseLayout from '@/layouts/BaseLayout.astro';
 import BlogCard from '@/components/blog/BlogCard.astro';
+import BlogFilters from '@/components/blog/BlogFilters.astro';
 import BlogPagination from '@/components/blog/BlogPagination.astro';
 import {
   Breadcrumb,
@@ -14,7 +15,7 @@ import {
   BreadcrumbSeparator,
 } from '@/components/ui/breadcrumb';
 import { Separator } from '@/components/ui/separator';
-import { getBlogPage } from '@/lib/sanity';
+import { getBlogPage, getBlogTags } from '@/lib/sanity';
 
 export const prerender = false;
 
@@ -28,7 +29,7 @@ if (requested === 1) {
   return Astro.redirect('/blog/', 301);
 }
 
-const { posts, pageCount } = await getBlogPage(requested);
+const [{ posts, pageCount }, tags] = await Promise.all([getBlogPage(requested), getBlogTags()]);
 
 if (pageCount > 0 && requested > pageCount) {
   return Astro.rewrite('/404');
@@ -59,8 +60,10 @@ const description =
       <h1 class="display-title text-balance">Living Legacy Forest blog</h1>
     </header>
 
-    <Separator className="mt-14 md:mt-16" />
-    <div class="flex flex-col gap-16 pt-14 md:gap-20 md:pt-16">
+    <BlogFilters tags={tags} class="mt-10 md:mt-12" />
+
+    <Separator className="mt-10 md:mt-12" />
+    <div class="flex flex-col gap-16 pt-10 md:gap-20 md:pt-12">
       <div class="grid gap-x-8 gap-y-14 sm:grid-cols-2 lg:grid-cols-3">
         {posts.map((post) => <BlogCard post={post} />)}
       </div>

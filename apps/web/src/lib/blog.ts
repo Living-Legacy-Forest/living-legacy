@@ -66,6 +66,20 @@ export function extractH2Headings(blocks: unknown[] | undefined): BlogHeading[] 
     .filter((h) => h.text.length > 0);
 }
 
+/**
+ * When a post was last meaningfully updated: the editor's "Updated at" field
+ * when it is later than the publish date, otherwise the publish date. The
+ * article header and its JSON-LD both read this, so they never disagree.
+ *
+ * Sanity's own `_updatedAt` is deliberately ignored: it moves on any save,
+ * and a bulk edit stamped every post with 24 September 2026, which would have
+ * claimed a 2018 article was updated that day.
+ */
+export function lastUpdatedAt(post: { publishedAt: string; updatedAt?: string }): string {
+  const { publishedAt, updatedAt } = post;
+  return updatedAt && new Date(updatedAt) > new Date(publishedAt) ? updatedAt : publishedAt;
+}
+
 /** en-AU, not "August 5, 2026": "5 August 2026". */
 export function formatBlogDate(iso: string): string {
   return new Date(iso).toLocaleDateString('en-AU', {

@@ -57,6 +57,10 @@
   --text-5xl--line-height: 1.05;
   --text-6xl: 5.388rem;
   --text-6xl--line-height: 1.02;
+
+  /* Lifts a form's card off the paper: a hairline contact shadow and a soft,
+     low spread underneath. */
+  --shadow-panel: 0 1px 2px rgb(23 35 28 / 0.04), 0 16px 40px -20px rgb(23 35 28 / 0.2);
 }
 
 /* shadcn's semantic tokens, all drawn from the palette above. */

@@ -9,7 +9,7 @@ import {
   BreadcrumbPage,
   BreadcrumbSeparator,
 } from '@/components/ui/breadcrumb';
-import { formatBlogDate } from '@/lib/blog';
+import { formatBlogDate, lastUpdatedAt } from '@/lib/blog';
 import { imageDimensions, imageUrl } from '@/lib/sanity';
 import type { SanityBlogPost } from '@/types';
 
@@ -19,15 +19,14 @@ interface Props {
 }
 
 const { post, shareUrl } = Astro.props;
-const { title, publishedAt, updatedAt, category, author, featuredImage, readingTime } = post;
+const { title, publishedAt, category, author, featuredImage, readingTime } = post;
 
 const heroSrc = imageUrl(featuredImage, { width: 1600, fit: 'max' });
 const heroDim = imageDimensions(featuredImage?.asset?._ref);
 
-// Only worth a second line when the edit happened on a different day.
-const showUpdated = Boolean(
-  updatedAt && new Date(updatedAt).toDateString() !== new Date(publishedAt).toDateString()
-);
+// Only worth a second line when the last edit happened on a different day.
+const updatedAt = lastUpdatedAt(post);
+const showUpdated = new Date(updatedAt).toDateString() !== new Date(publishedAt).toDateString();
 ---
 
 <header class="pt-10 pb-8 md:pt-14">
@@ -89,7 +88,7 @@ const showUpdated = Boolean(
       </div>
 
       {
-        showUpdated && updatedAt && (
+        showUpdated && (
           <p class="text-bark -mt-2 text-base">
             Updated <time datetime={updatedAt}>{formatBlogDate(updatedAt)}</time>
           </p>

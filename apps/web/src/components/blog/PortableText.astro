@@ -131,6 +131,13 @@ const html = toHTML(content as Parameters<typeof toHTML>[0], { components });
 <div class="pt" set:html={html} />
 
 <style>
+  /* Reading size: 18px on wide screens, easing down to 16px on a phone, with
+     a looser leading than the site's base so long articles stay restful. */
+  .pt {
+    --pt-size: clamp(var(--text-base), 0.95rem + 0.3vw, 1.125rem);
+    --pt-leading: 1.7;
+  }
+
   .pt :global(h2),
   .pt :global(h3),
   .pt :global(h4) {
@@ -138,19 +145,23 @@ const html = toHTML(content as Parameters<typeof toHTML>[0], { components });
     font-weight: 400;
     color: var(--color-ink);
     text-wrap: balance;
-    scroll-margin-top: 6rem;
+    /* Matches the sticky side columns' 7rem, clear of the sticky header. */
+    scroll-margin-top: 7rem;
   }
+  /* Each H2 opens a new section, so it gets clearly more room above than
+     below: the space reads as a break, and the heading belongs to what
+     follows it. */
   .pt :global(h2) {
     font-size: var(--text-2xl);
     line-height: var(--text-2xl--line-height);
-    margin-top: 2.5rem;
-    margin-bottom: 0.75rem;
+    margin-top: 3.5rem;
+    margin-bottom: 1rem;
   }
   .pt :global(h3) {
     font-size: var(--text-xl);
     line-height: var(--text-xl--line-height);
-    margin-top: 2rem;
-    margin-bottom: 0.5rem;
+    margin-top: 2.25rem;
+    margin-bottom: 0.625rem;
   }
   .pt :global(h4) {
     font-size: var(--text-lg);
@@ -165,9 +176,9 @@ const html = toHTML(content as Parameters<typeof toHTML>[0], { components });
 
   .pt :global(p) {
     color: var(--color-ink);
-    font-size: var(--text-base);
-    line-height: var(--text-base--line-height);
-    margin-bottom: 1.25rem;
+    font-size: var(--pt-size);
+    line-height: var(--pt-leading);
+    margin-bottom: 1.375rem;
     text-wrap: pretty;
   }
 
@@ -175,9 +186,9 @@ const html = toHTML(content as Parameters<typeof toHTML>[0], { components });
   .pt :global(ol) {
     color: var(--color-ink);
     padding-left: 1.5rem;
-    margin-bottom: 1.25rem;
-    font-size: var(--text-base);
-    line-height: var(--text-base--line-height);
+    margin-bottom: 1.375rem;
+    font-size: var(--pt-size);
+    line-height: var(--pt-leading);
   }
   .pt :global(ul) {
     list-style-type: disc;

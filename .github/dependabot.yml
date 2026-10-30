@@ -27,9 +27,9 @@ updates:
         patterns:
           - 'tailwindcss'
           - '@tailwindcss/*'
-      lucide:
+      hugeicons:
         patterns:
-          - 'lucide-astro'
+          - '@hugeicons/*'
     ignore:
       - dependency-name: 'astro'
         update-types: ['version-update:semver-major']

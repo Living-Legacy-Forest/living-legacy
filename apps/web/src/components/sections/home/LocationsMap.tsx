@@ -7,7 +7,8 @@
  * Locations.astro keep working unchanged. The list itself stays server
  * rendered in the .astro parent.
  */
-import { MapPin, Phone, ArrowRight } from 'lucide-react';
+import { HugeiconsIcon } from '@hugeicons/react';
+import { Location01Icon, Call02Icon, ArrowRight02Icon } from '@hugeicons/core-free-icons';
 import { HoverCard, HoverCardContent, HoverCardTrigger } from '@/components/ui/hover-card';
 import { buttonVariants } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
@@ -60,7 +61,12 @@ export default function LocationsMap({ mapSrc, mapWidth, mapHeight, locations }:
                   className="location-marker__pin"
                   aria-label={`${location.name}, ${location.address}`}
                 >
-                  <MapPin className="h-10 w-10" strokeWidth={1.5} aria-hidden="true" />
+                  <HugeiconsIcon
+                    icon={Location01Icon}
+                    className="h-10 w-10"
+                    strokeWidth={1.5}
+                    aria-hidden="true"
+                  />
                 </a>
               }
             />
@@ -88,7 +94,7 @@ export default function LocationsMap({ mapSrc, mapWidth, mapHeight, locations }:
                       href={location.tel}
                       className="text-moss-deep hover:text-ink inline-flex items-center gap-1.5 whitespace-nowrap transition-colors duration-200"
                     >
-                      <Phone className="h-3.5 w-3.5" aria-hidden="true" />
+                      <HugeiconsIcon icon={Call02Icon} className="h-3.5 w-3.5" aria-hidden="true" />
                       {location.phone}
                     </a>
                     <a
@@ -98,7 +104,12 @@ export default function LocationsMap({ mapSrc, mapWidth, mapHeight, locations }:
                       className={cn(buttonVariants({ variant: 'link' }), 'gap-1 text-xs')}
                     >
                       Visit site
-                      <ArrowRight data-icon="inline-end" className="size-3" aria-hidden="true" />
+                      <HugeiconsIcon
+                        icon={ArrowRight02Icon}
+                        data-icon="inline-end"
+                        className="size-3"
+                        aria-hidden="true"
+                      />
                     </a>
                   </div>
                 </div>

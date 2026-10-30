@@ -3,53 +3,80 @@
  * "Become a Living Legacy": the pitch, a link to the Flodesk info form, and
  * the process video. Autoplay is applied by script rather than the HTML
  * attribute, so a visitor who prefers reduced motion gets the poster frame
- * instead of a moving video (see the inline script below).
+ * instead of a moving video (see the inline script below). A pause and play
+ * button sits on the video, since moving content that runs longer than five
+ * seconds needs a way to stop it (WCAG 2.2.2).
+ *
+ * The pitch opens with its first sentence as the lead and sets the rest as
+ * body copy, so the text column sits level with the video rather than
+ * running twice its height.
  */
-import { Image } from 'astro:assets';
-import { ArrowRight } from 'lucide-astro';
+import BrandImage from '@/components/ui/BrandImage.astro';
+import HugeIcon from '@/components/ui/HugeIcon.astro';
+import { ArrowRight02Icon, PauseIcon, PlayIcon } from '@hugeicons/core-free-icons';
 import { buttonVariants } from '@/components/ui/button';
 import icon from '@/assets/home/become-legacy-icon.png';
 import { FLODESK_HREF } from './constants';
 ---
 
 <section class="border-bark/20 scroll-mt-24 border-t py-24 lg:py-32">
-  <div class="grid items-center gap-14 lg:grid-cols-12 lg:gap-10">
+  <!-- On wide screens the video frame stretches to the text column's height
+       (the video is taken out of flow and cropped to fill it), so the two
+       columns finish level instead of a 16:9 strip floating beside the text. -->
+  <div class="grid gap-14 lg:grid-cols-12 lg:gap-12">
     <div class="lg:col-span-5">
-      <Image src={icon} alt="" width={48} loading="lazy" class="h-10 w-auto" aria-hidden="true" />
+      <!-- Hairline artwork, painted in moss through a mask so it reads on paper. -->
+      <BrandImage src={icon} height="3rem" class="text-moss-deep" />
       <p class="eyebrow mt-6">Become a Living Legacy</p>
-      <h2 class="section-title mt-4">Change the way we leave the world</h2>
-      <p class="lead mt-6">
+      <h2 class="section-title mt-4 text-balance">Change the way we leave the world</h2>
+      <p class="lead mt-6 text-pretty">
         Welcome to Living Legacy, where we transform grief into growth by bringing communities
-        together to create memorial forests and gardens. Through a unique, scientifically proven
-        process, cremated ashes are converted into nutrients that help trees thrive, allowing a
-        person's legacy to live on in nature. This connection not only honours the memory of loved
-        ones but empowers individuals to heal, creating a lasting legacy of love and hope for future
-        generations.
+        together to create memorial forests and gardens.
+      </p>
+      <p class="card-body mt-5 text-pretty">
+        Through a unique, scientifically proven process, cremated ashes are converted into nutrients
+        that help trees thrive, allowing a person's legacy to live on in nature. This connection not
+        only honours the memory of loved ones but empowers individuals to heal, creating a lasting
+        legacy of love and hope for future generations.
       </p>
       <a
         href={FLODESK_HREF}
         target="_blank"
         rel="noopener noreferrer"
-        class:list={[buttonVariants(), 'mt-8']}
+        class:list={[buttonVariants(), 'mt-9']}
       >
         Get more info
-        <ArrowRight data-icon="inline-end" aria-hidden="true" />
+        <HugeIcon icon={ArrowRight02Icon} data-icon="inline-end" aria-hidden="true" />
+        <span class="sr-only">(opens in new tab)</span>
       </a>
     </div>
 
-    <div class="lg:col-span-7">
+    <div class="relative lg:col-span-7" data-video-frame>
       <video
-        class="aspect-video w-full rounded-2xl object-cover"
+        class="aspect-video w-full rounded-2xl object-cover shadow-[0_30px_60px_-30px_rgb(23_35_28/0.55)] outline outline-black/10 lg:absolute lg:inset-0 lg:aspect-auto lg:h-full"
         muted
         loop
         playsinline
         preload="metadata"
         poster="/media/living-legacy-poster.webp"
+        aria-label="Video about the Living Legacy process"
         data-autoplay-video
       >
         <source src="/media/living-legacy.webm" type="video/webm" />
         <source src="/media/living-legacy.mp4" type="video/mp4" />
       </video>
+
+      <!-- Shows "play" until the video is actually playing, so a blocked
+           autoplay or a reduced-motion visitor sees the right control. -->
+      <button
+        type="button"
+        class="bg-paper/90 text-ink hover:bg-paper focus-visible:ring-ring/50 press absolute right-4 bottom-4 inline-flex size-11 items-center justify-center rounded-full shadow-[0_8px_20px_-8px_rgb(23_35_28/0.5)] backdrop-blur outline-none focus-visible:ring-3"
+        aria-label="Play video"
+        data-video-toggle
+      >
+        <HugeIcon icon={PlayIcon} class="size-5" aria-hidden="true" data-when="paused" />
+        <HugeIcon icon={PauseIcon} class="hidden size-5" aria-hidden="true" data-when="playing" />
+      </button>
     </div>
   </div>
 </section>
@@ -60,12 +87,35 @@ import { FLODESK_HREF } from './constants';
   // starts before this check runs.
   const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
-  if (!prefersReducedMotion) {
-    document.querySelectorAll<HTMLVideoElement>('[data-autoplay-video]').forEach((video) => {
+  document.querySelectorAll<HTMLElement>('[data-video-frame]').forEach((frame) => {
+    const video = frame.querySelector<HTMLVideoElement>('[data-autoplay-video]');
+    const toggle = frame.querySelector<HTMLButtonElement>('[data-video-toggle]');
+    if (!video || !toggle) return;
+
+    // The button follows the video's real state rather than tracking its own.
+    const sync = () => {
+      const playing = !video.paused;
+      toggle.setAttribute('aria-label', playing ? 'Pause video' : 'Play video');
+      toggle.querySelector('[data-when="paused"]')?.classList.toggle('hidden', playing);
+      toggle.querySelector('[data-when="playing"]')?.classList.toggle('hidden', !playing);
+    };
+    video.addEventListener('play', sync);
+    video.addEventListener('pause', sync);
+
+    toggle.addEventListener('click', () => {
+      if (video.paused) {
+        video.play().catch(() => {});
+      } else {
+        video.pause();
+      }
+    });
+
+    if (!prefersReducedMotion) {
       video.play().catch(() => {
         // Autoplay can still be blocked by the browser; the poster frame
-        // remains visible, which is an acceptable fallback.
+        // remains visible and the button offers play, which is an acceptable
+        // fallback.
       });
-    });
-  }
+    }
+  });
 </script>

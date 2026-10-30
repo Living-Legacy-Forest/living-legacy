@@ -1,5 +1,6 @@
 import { useState } from 'react';
-import { Menu } from 'lucide-react';
+import { HugeiconsIcon } from '@hugeicons/react';
+import { Menu01Icon } from '@hugeicons/core-free-icons';
 import { cn } from '@/lib/utils';
 import { Button, buttonVariants } from '@/components/ui/button';
 import {
@@ -23,7 +24,7 @@ export default function MobileNav() {
   return (
     <Sheet open={open} onOpenChange={setOpen}>
       <SheetTrigger render={<Button variant="outline" size="icon" className="lg:hidden" />}>
-        <Menu aria-hidden="true" />
+        <HugeiconsIcon icon={Menu01Icon} aria-hidden="true" />
         <span className="sr-only">Open menu</span>
       </SheetTrigger>
       <SheetContent side="right" className="data-[side=right]:w-full">

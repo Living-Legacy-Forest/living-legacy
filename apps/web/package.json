@@ -29,7 +29,7 @@
     "@llf/content": "workspace:*",
     "@portabletext/to-html": "^5.0.2",
     "@sanity/astro": "^3.5.0",
-    "@sanity/client": "^7.25.0",
+    "@sanity/client": "^8.12.0",
     "@sanity/image-url": "^2.1.1",
     "@tailwindcss/vite": "^4.3.3",
     "astro": "^7.2.10",

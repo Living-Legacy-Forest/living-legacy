@@ -24,6 +24,7 @@
     "@base-ui/react": "^1.8.0",
     "@fontsource-variable/fraunces": "5.3.0",
     "@fontsource-variable/instrument-sans": "5.3.0",
+    "@llf/content": "workspace:*",
     "@portabletext/to-html": "^5.0.2",
     "@sanity/astro": "^3.5.0",
     "@sanity/client": "^7.25.0",

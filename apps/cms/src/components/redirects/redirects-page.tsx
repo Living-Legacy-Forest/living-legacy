@@ -1,5 +1,6 @@
-import { ArrowRightIcon, PencilIcon, PlusIcon, Trash2Icon } from '@/components/icons';
+import { ArrowRightIcon, PanelRightIcon, PlusIcon, Trash2Icon } from '@/components/icons';
 import { useState } from 'react';
+import { toast } from 'sonner';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -40,15 +41,10 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { Spinner } from '@/components/ui/spinner';
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from '@/components/ui/table';
+import { Switch } from '@/components/ui/switch';
+import { reportInvalid } from '@/lib/form-validation';
 import { useAction } from '@/lib/use-action';
+import { cn } from '@/lib/utils';
 import {
   type Redirect,
   type RedirectsData,
@@ -56,41 +52,48 @@ import {
   saveRedirect,
 } from '@/server/redirects';
 
-const codeItems = [
-  { value: '301', label: '301 — Permanent' },
-  { value: '302', label: '302 — Temporary' },
+type Code = '301' | '302' | '410';
+
+const codeItems: { value: Code; label: string }[] = [
+  { value: '301', label: '301 - Permanent' },
+  { value: '302', label: '302 - Temporary' },
+  { value: '410', label: '410 - Removed, no replacement' },
 ];
 
-export function RedirectsPage({ data }: { data: RedirectsData }) {
-  const [editing, setEditing] = useState<Redirect | null>(null);
-  const [open, setOpen] = useState(false);
+const dateFormat = new Intl.DateTimeFormat('en-AU', { dateStyle: 'medium' });
 
-  const openNew = () => {
-    setEditing(null);
-    setOpen(true);
-  };
-  const openEdit = (r: Redirect) => {
-    setEditing(r);
-    setOpen(true);
-  };
+function usage(r: Redirect) {
+  if (r.hits === 0) return 'Not used yet';
+  const times = `Used ${r.hits} ${r.hits === 1 ? 'time' : 'times'}`;
+  return r.lastHitAt ? `${times}, last on ${dateFormat.format(r.lastHitAt)}` : times;
+}
+
+const isDesktop = () =>
+  typeof window !== 'undefined' && window.matchMedia('(min-width: 1024px)').matches;
+
+export function RedirectsPage({ data }: { data: RedirectsData }) {
+  // Desktop: what the right-hand pane is editing. Mobile has no pane, so the
+  // same form opens in a dialog instead (as on the team page).
+  const [editingId, setEditingId] = useState<string | 'new' | null>(null);
+  const [dialogTarget, setDialogTarget] = useState<Redirect | 'new' | null>(null);
+
+  const selected = data.find((r) => r.id === editingId) ?? null;
+
+  const openNew = () => (isDesktop() ? setEditingId('new') : setDialogTarget('new'));
+  const openEdit = (r: Redirect) => (isDesktop() ? setEditingId(r.id) : setDialogTarget(r));
 
   return (
-    <div className="mx-auto max-w-3xl space-y-8">
-      <div className="flex items-start justify-between gap-4">
-        <div className="space-y-1">
-          <h1 className="text-xl font-semibold tracking-tight">Redirects</h1>
-          <p className="text-muted-foreground text-sm">
-            Send old or changed URLs to the right page.
-          </p>
-        </div>
+    <div className="flex flex-1 flex-col gap-4 lg:h-[calc(100svh-7.5rem)] lg:flex-none">
+      <div className="flex flex-wrap items-center gap-3">
+        <h1 className="mr-auto text-xl">Redirects</h1>
         <Button size="sm" onClick={openNew}>
           <PlusIcon aria-hidden data-icon="inline-start" />
           Add redirect
         </Button>
       </div>
 
-      {data.length === 0 ? (
-        <Empty className="rounded-lg border">
+      {data.length === 0 && editingId === null ? (
+        <Empty className="flex-1 rounded-lg border">
           <EmptyHeader>
             <EmptyMedia variant="icon">
               <ArrowRightIcon aria-hidden />
@@ -106,90 +109,210 @@ export function RedirectsPage({ data }: { data: RedirectsData }) {
           </EmptyContent>
         </Empty>
       ) : (
-        <section className="space-y-2.5">
-          <div className="flex items-baseline gap-2">
-            <h2 className="text-sm font-medium">All</h2>
-            <span className="text-muted-foreground text-xs tabular-nums">{data.length}</span>
-          </div>
-          <div className="overflow-hidden rounded-lg border">
-            <RedirectsTable data={data} onEdit={openEdit} />
-          </div>
-        </section>
+        <div className="grid min-h-0 flex-1 overflow-hidden rounded-lg border lg:grid-cols-[minmax(20rem,2fr)_3fr]">
+          <section aria-label="Redirects" className="flex min-h-0 flex-col lg:border-r">
+            <div className="flex h-11 shrink-0 items-center gap-2 border-b px-3">
+              <span className="text-[13px] font-medium">All</span>
+              <span className="text-muted-foreground text-xs tabular-nums">{data.length}</span>
+            </div>
+            <ul className="min-h-0 flex-1 space-y-px overflow-y-auto p-1.5">
+              {data.map((r) => (
+                <RedirectListItem
+                  key={r.id}
+                  redirect={r}
+                  selected={r.id === editingId}
+                  onSelect={() => openEdit(r)}
+                />
+              ))}
+            </ul>
+          </section>
+
+          <section aria-label="Edit redirect" className="hidden min-h-0 flex-col lg:flex">
+            {editingId === null ? (
+              <Empty>
+                <EmptyHeader>
+                  <EmptyMedia variant="icon">
+                    <PanelRightIcon aria-hidden />
+                  </EmptyMedia>
+                  <EmptyTitle>No redirect selected</EmptyTitle>
+                  <EmptyDescription>Choose one from the list, or add a new redirect.</EmptyDescription>
+                </EmptyHeader>
+              </Empty>
+            ) : (
+              <RedirectPane
+                key={editingId}
+                redirect={editingId === 'new' ? null : selected}
+                onSaved={(id) => setEditingId(id)}
+                onClose={() => setEditingId(null)}
+              />
+            )}
+          </section>
+        </div>
       )}
 
-      <RedirectDialog
-        key={editing?.id ?? 'new'}
-        redirect={editing}
-        open={open}
-        onOpenChange={setOpen}
-      />
+      <Dialog open={dialogTarget !== null} onOpenChange={(open) => !open && setDialogTarget(null)}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>{dialogTarget === 'new' ? 'Add redirect' : 'Edit redirect'}</DialogTitle>
+            <DialogDescription>Send one URL to another.</DialogDescription>
+          </DialogHeader>
+          <RedirectForm
+            key={dialogTarget === 'new' ? 'new' : dialogTarget?.id}
+            redirect={dialogTarget === 'new' ? null : dialogTarget}
+            onSaved={() => setDialogTarget(null)}
+            footer={(pending, isNew) => (
+              <DialogFooter>
+                {dialogTarget && dialogTarget !== 'new' && (
+                  <div className="mr-auto">
+                    <DeleteRedirect
+                      redirect={dialogTarget}
+                      disabled={pending}
+                      onRemoved={() => setDialogTarget(null)}
+                    />
+                  </div>
+                )}
+                <DialogClose render={<Button type="button" variant="outline" />}>
+                  Cancel
+                </DialogClose>
+                <SubmitButton pending={pending} isNew={isNew} />
+              </DialogFooter>
+            )}
+          />
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
 
-function RedirectsTable({ data, onEdit }: { data: RedirectsData; onEdit: (r: Redirect) => void }) {
-  const { run } = useAction();
-
+function RedirectListItem({
+  redirect,
+  selected,
+  onSelect,
+}: {
+  redirect: Redirect;
+  selected: boolean;
+  onSelect: () => void;
+}) {
   return (
-    <Table className="[&_td]:px-4 [&_th]:px-4">
-      <TableHeader>
-        <TableRow className="hover:bg-transparent">
-          <TableHead>From → To</TableHead>
-          <TableHead className="w-20">Type</TableHead>
-          <TableHead className="w-16 text-right">Hits</TableHead>
-          <TableHead className="w-0" />
-        </TableRow>
-      </TableHeader>
-      <TableBody>
-        {data.map((r) => (
-          <TableRow key={r.id}>
-            <TableCell className="py-2.5">
-              <div className="flex items-center gap-2 font-mono text-[13px]">
-                <span className="truncate">{r.fromPath}</span>
-                <ArrowRightIcon aria-hidden className="text-muted-foreground size-3.5 shrink-0" />
-                <span className="text-muted-foreground truncate">{r.toPath}</span>
-              </div>
-              {r.note && <div className="text-muted-foreground mt-0.5 text-xs">{r.note}</div>}
-            </TableCell>
-            <TableCell>
-              <Badge variant={r.statusCode === 301 ? 'secondary' : 'outline'}>{r.statusCode}</Badge>
-            </TableCell>
-            <TableCell className="text-muted-foreground text-right text-sm tabular-nums">
-              {r.hits}
-            </TableCell>
-            <TableCell>
-              <div className="flex items-center justify-end gap-0.5">
-                <Button
-                  variant="ghost"
-                  size="icon-sm"
-                  aria-label={`Edit redirect from ${r.fromPath}`}
-                  onClick={() => onEdit(r)}
-                >
-                  <PencilIcon aria-hidden className="size-4" />
-                </Button>
-                <DeleteRedirect
-                  redirect={r}
-                  onConfirm={() =>
-                    run(() => deleteRedirect({ data: { id: r.id } }), 'Redirect removed.')
-                  }
-                />
-              </div>
-            </TableCell>
-          </TableRow>
-        ))}
-      </TableBody>
-    </Table>
+    <li className={selected ? 'bg-accent rounded-md' : 'hover:bg-muted/60 rounded-md'}>
+      <button
+        type="button"
+        aria-current={selected || undefined}
+        onClick={onSelect}
+        className={cn(
+          'focus-visible:ring-ring w-full rounded-md px-3 py-2 text-left outline-none focus-visible:ring-1',
+          !redirect.enabled && 'opacity-60'
+        )}
+      >
+        <span className="flex items-center gap-2">
+          <span className="min-w-0 flex-1 truncate font-mono text-[13px]">
+            {redirect.fromPath}
+          </span>
+          {redirect.enabled ? (
+            <Badge variant={redirect.statusCode === 301 ? 'secondary' : 'outline'}>
+              {redirect.statusCode}
+            </Badge>
+          ) : (
+            <Badge variant="outline">Off</Badge>
+          )}
+        </span>
+        <span className="text-muted-foreground mt-0.5 flex items-center gap-1.5 text-xs">
+          {redirect.statusCode === 410 ? (
+            <span className="min-w-0 flex-1 truncate">Removed</span>
+          ) : (
+            <>
+              <ArrowRightIcon aria-hidden className="size-3 shrink-0" />
+              <span className="min-w-0 flex-1 truncate font-mono">{redirect.toPath}</span>
+            </>
+          )}
+          <span className="shrink-0 tabular-nums">
+            {redirect.hits} {redirect.hits === 1 ? 'hit' : 'hits'}
+          </span>
+        </span>
+      </button>
+    </li>
   );
 }
 
-function DeleteRedirect({ redirect, onConfirm }: { redirect: Redirect; onConfirm: () => void }) {
+function SubmitButton({ pending, isNew }: { pending: boolean; isNew: boolean }) {
+  return (
+    <Button type="submit" disabled={pending}>
+      {pending ? (
+        <>
+          <Spinner />
+          Saving…
+        </>
+      ) : isNew ? (
+        'Add redirect'
+      ) : (
+        'Save'
+      )}
+    </Button>
+  );
+}
+
+/** The inline desktop pane: header with delete, scrollable form body. */
+function RedirectPane({
+  redirect,
+  onSaved,
+  onClose,
+}: {
+  redirect: Redirect | null;
+  onSaved: (id: string) => void;
+  onClose: () => void;
+}) {
+  return (
+    <>
+      <div className="flex h-11 shrink-0 items-center gap-1.5 border-b px-3">
+        <span className="truncate text-sm font-medium">
+          {redirect ? <span className="font-mono">{redirect.fromPath}</span> : 'New redirect'}
+        </span>
+        {redirect && (
+          <div className="ml-auto">
+            <DeleteRedirect redirect={redirect} onRemoved={onClose} />
+          </div>
+        )}
+      </div>
+      <div className="min-h-0 flex-1 overflow-y-auto px-4 py-6">
+        <div className="mx-auto max-w-md">
+          <RedirectForm
+            redirect={redirect}
+            onSaved={onSaved}
+            footer={(pending, isNew) => (
+              <div className="flex justify-end gap-2">
+                <Button type="button" variant="outline" onClick={onClose}>
+                  Cancel
+                </Button>
+                <SubmitButton pending={pending} isNew={isNew} />
+              </div>
+            )}
+          />
+        </div>
+      </div>
+    </>
+  );
+}
+
+function DeleteRedirect({
+  redirect,
+  disabled,
+  onRemoved,
+}: {
+  redirect: Redirect;
+  disabled?: boolean;
+  onRemoved: () => void;
+}) {
+  const { run, pending } = useAction();
+
   return (
     <AlertDialog>
       <AlertDialogTrigger
         render={
           <Button
+            type="button"
             variant="ghost"
             size="icon-sm"
+            disabled={disabled || pending}
             aria-label={`Remove redirect from ${redirect.fromPath}`}
             className="text-muted-foreground hover:text-destructive"
           />
@@ -207,123 +330,153 @@ function DeleteRedirect({ redirect, onConfirm }: { redirect: Redirect; onConfirm
         </AlertDialogHeader>
         <AlertDialogFooter>
           <AlertDialogCancel>Cancel</AlertDialogCancel>
-          <AlertDialogAction onClick={onConfirm}>Remove</AlertDialogAction>
+          <AlertDialogAction
+            onClick={() =>
+              run(async () => {
+                await deleteRedirect({ data: { id: redirect.id } });
+                return true;
+              }, 'Redirect removed.').then((removed) => removed && onRemoved())
+            }
+          >
+            Remove
+          </AlertDialogAction>
         </AlertDialogFooter>
       </AlertDialogContent>
     </AlertDialog>
   );
 }
 
-function RedirectDialog({
+/** Shared fields + submit logic, used inline (desktop pane) and in the mobile dialog. */
+function RedirectForm({
   redirect,
-  open,
-  onOpenChange,
+  onSaved,
+  footer,
 }: {
   redirect: Redirect | null;
-  open: boolean;
-  onOpenChange: (open: boolean) => void;
+  onSaved: (id: string) => void;
+  footer: (pending: boolean, isNew: boolean) => React.ReactNode;
 }) {
   const [fromPath, setFromPath] = useState(redirect?.fromPath ?? '');
   const [toPath, setToPath] = useState(redirect?.toPath ?? '');
-  const [statusCode, setStatusCode] = useState<'301' | '302'>(
-    redirect ? (String(redirect.statusCode) as '301' | '302') : '301'
+  const [statusCode, setStatusCode] = useState<Code>(
+    redirect ? (String(redirect.statusCode) as Code) : '301'
   );
+  const [keepQuery, setKeepQuery] = useState(redirect?.keepQuery ?? true);
+  const [enabled, setEnabled] = useState(redirect?.enabled ?? true);
   const [note, setNote] = useState(redirect?.note ?? '');
   const { run, pending } = useAction();
+  const removed = statusCode === '410';
 
   async function submit(e: React.FormEvent) {
     e.preventDefault();
+    if (!reportInvalid(e.currentTarget)) return;
     const result = await run(
       () =>
         saveRedirect({
           data: {
             id: redirect?.id,
             fromPath,
-            toPath,
-            statusCode: Number(statusCode) as 301 | 302,
+            toPath: removed ? '' : toPath,
+            statusCode: Number(statusCode) as 301 | 302 | 410,
+            enabled,
+            keepQuery,
             note: note || undefined,
           },
         }),
       redirect ? 'Redirect updated.' : 'Redirect added.'
     );
-    if (result) onOpenChange(false);
+    if (!result) return;
+    for (const warning of result.warnings) toast.warning(warning);
+    onSaved(result.id);
   }
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-md">
-        <DialogHeader>
-          <DialogTitle>{redirect ? 'Edit redirect' : 'Add redirect'}</DialogTitle>
-          <DialogDescription>Send one URL to another.</DialogDescription>
-        </DialogHeader>
-        <form onSubmit={submit} className="space-y-4">
-          <div className="space-y-1.5">
-            <Label htmlFor="r-from">Old path</Label>
-            <Input
-              id="r-from"
-              required
-              value={fromPath}
-              onChange={(e) => setFromPath(e.target.value)}
-              placeholder="/old-page"
-              className="font-mono"
-            />
+    <form noValidate onSubmit={submit} className="space-y-4">
+      <div className="space-y-1.5">
+        <Label htmlFor="r-from">Old path</Label>
+        <Input
+          id="r-from"
+          required
+          value={fromPath}
+          onChange={(e) => setFromPath(e.target.value)}
+          placeholder="/old-page"
+          className="font-mono"
+        />
+        <p className="text-muted-foreground text-xs">
+          End with * to cover everything under a path, like /blog/*.
+        </p>
+      </div>
+      <div className="space-y-1.5">
+        <Label htmlFor="r-type">Type</Label>
+        <Select
+          items={codeItems}
+          value={statusCode}
+          onValueChange={(value) => value && setStatusCode(value as Code)}
+        >
+          <SelectTrigger id="r-type" className="w-full">
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            {codeItems.map((item) => (
+              <SelectItem key={item.value} value={item.value}>
+                {item.label}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+        {removed && (
+          <p className="text-muted-foreground text-xs">
+            Visitors see the not-found page, and search engines drop the page sooner.
+          </p>
+        )}
+      </div>
+      {!removed && (
+        <div className="space-y-1.5">
+          <Label htmlFor="r-to">Destination</Label>
+          <Input
+            id="r-to"
+            required
+            value={toPath}
+            onChange={(e) => setToPath(e.target.value)}
+            placeholder="/new-page"
+            className="font-mono"
+          />
+          <p className="text-muted-foreground text-xs">
+            A path like /new-page or a full URL. A * here receives what the old path's * matched.
+          </p>
+        </div>
+      )}
+      <div className="space-y-1.5">
+        <Label htmlFor="r-note">Note</Label>
+        <Input
+          id="r-note"
+          value={note}
+          onChange={(e) => setNote(e.target.value)}
+          placeholder="Why this exists (optional)"
+        />
+      </div>
+      {!removed && (
+        <div className="flex items-center justify-between gap-4 rounded-lg border p-3">
+          <div className="space-y-0.5">
+            <div className="text-sm font-medium">Keep query string</div>
+            <div className="text-muted-foreground text-xs">
+              Carry tracking tags like ?utm_source= over to the destination.
+            </div>
           </div>
-          <div className="space-y-1.5">
-            <Label htmlFor="r-to">Destination</Label>
-            <Input
-              id="r-to"
-              required
-              value={toPath}
-              onChange={(e) => setToPath(e.target.value)}
-              placeholder="/new-page"
-              className="font-mono"
-            />
+          <Switch checked={keepQuery} onCheckedChange={setKeepQuery} />
+        </div>
+      )}
+      <div className="flex items-center justify-between gap-4 rounded-lg border p-3">
+        <div className="space-y-0.5">
+          <div className="text-sm font-medium">Active</div>
+          <div className="text-muted-foreground text-xs">
+            Turn off to pause this redirect without deleting it.
           </div>
-          <div className="space-y-1.5">
-            <Label htmlFor="r-type">Type</Label>
-            <Select
-              items={codeItems}
-              value={statusCode}
-              onValueChange={(value) => value && setStatusCode(value as '301' | '302')}
-            >
-              <SelectTrigger id="r-type" className="w-full">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                {codeItems.map((item) => (
-                  <SelectItem key={item.value} value={item.value}>
-                    {item.label}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-          <div className="space-y-1.5">
-            <Label htmlFor="r-note">Note</Label>
-            <Input
-              id="r-note"
-              value={note}
-              onChange={(e) => setNote(e.target.value)}
-              placeholder="Why this exists (optional)"
-            />
-          </div>
-          <DialogFooter>
-            <DialogClose render={<Button type="button" variant="outline" />}>Cancel</DialogClose>
-            <Button type="submit" disabled={pending}>
-              {pending ? (
-                <>
-                  <Spinner />
-                  Saving…
-                </>
-              ) : redirect ? (
-                'Save'
-              ) : (
-                'Add redirect'
-              )}
-            </Button>
-          </DialogFooter>
-        </form>
-      </DialogContent>
-    </Dialog>
+        </div>
+        <Switch checked={enabled} onCheckedChange={setEnabled} />
+      </div>
+      {redirect && <p className="text-muted-foreground text-xs">{usage(redirect)}.</p>}
+      {footer(pending, redirect === null)}
+    </form>
   );
 }

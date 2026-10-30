@@ -3,5 +3,14 @@
   "name": "living-legacy-sites",
   "main": "@astrojs/cloudflare/entrypoints/server",
   "compatibility_date": "2026-05-25",
-  "compatibility_flags": ["nodejs_compat"]
+  "compatibility_flags": ["nodejs_compat"],
+  // The CMS's database, read for redirects (src/lib/redirects.ts). Migrations
+  // live in packages/db and are applied from apps/cms.
+  "d1_databases": [
+    {
+      "binding": "DB",
+      "database_name": "living-legacy-db",
+      "database_id": "6c172a87-78c0-4d32-b8b6-cf57324d1197"
+    }
+  ]
 }

@@ -19,8 +19,17 @@ export const redirects = sqliteTable('redirects', {
   id: id(),
   fromPath: text('from_path').notNull().unique(),
   toPath: text('to_path').notNull(),
-  statusCode: integer('status_code', { mode: 'number' }).$type<301 | 302>().notNull().default(301),
+  // A trailing * on from_path matches everything under it; a * in to_path
+  // receives the matched rest. 410 means "gone", and to_path is then empty.
+  statusCode: integer('status_code', { mode: 'number' })
+    .$type<301 | 302 | 410>()
+    .notNull()
+    .default(301),
+  enabled: integer('enabled', { mode: 'boolean' }).notNull().default(true),
+  // Carry the request's query string (e.g. UTM tags) over to the destination.
+  keepQuery: integer('keep_query', { mode: 'boolean' }).notNull().default(true),
   hits: integer('hits').notNull().default(0),
+  lastHitAt: integer('last_hit_at', { mode: 'timestamp_ms' }),
   note: text('note'),
   ...timestamps(),
 });

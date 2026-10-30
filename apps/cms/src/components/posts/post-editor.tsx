@@ -766,59 +766,62 @@ export function PostEditor({
       </div>
 
       <aside className="space-y-6 text-[13px] lg:sticky lg:top-6 lg:self-start lg:border-l lg:pl-6">
-        {/* A disabled fieldset locks every picker inside for SEO and read-only access. */}
-        <fieldset disabled={contentLocked} className="min-w-0 space-y-0.5 disabled:opacity-70">
-          <h2 className="text-muted-foreground mb-2 text-xs font-medium">Properties</h2>
-          <Property label="Author" icon={UserIcon}>
-            <SinglePicker
-              label="Author"
-              options={data.authors}
-              value={values.authorId}
-              placeholder="No author"
-              onChange={(authorId) => update({ authorId })}
-            />
-          </Property>
-          <Property label="Categories" icon={FolderIcon}>
-            <MultiPicker
-              label="Categories"
-              options={categories}
-              selected={values.categoryIds}
-              placeholder="Add categories"
-              onChange={(categoryIds) => update({ categoryIds })}
-              onCreate={addCategory}
-            />
-          </Property>
-          <Property label="Tags" icon={TagIcon}>
-            <MultiPicker
-              label="Tags"
-              options={tagOptions(data.tags, values.tags)}
-              selected={values.tags}
-              placeholder="Add tags"
-              onChange={(tags) => update({ tags })}
-              onCreate={async (name) => update({ tags: [...values.tags, name] })}
-            />
-          </Property>
-          <Property label="URL" icon={LinkIcon}>
-            <UrlPicker
-              slug={values.slug}
-              liveSlug={isLive ? saved.slug : null}
-              onChange={(slug) => {
-                setSlugTouched(true);
-                update({ slug });
-              }}
-            />
-          </Property>
-          {meta.scheduledAt && (
-            <Property label="Goes live" icon={CalendarClockIcon}>
-              <span className="px-2">{formatDateTime(meta.scheduledAt)}</span>
+        <Section title="Properties" defaultOpen first>
+          {/* A disabled fieldset locks every picker inside for SEO and read-only access. */}
+          <fieldset disabled={contentLocked} className="min-w-0 space-y-0.5 disabled:opacity-70">
+            <Property label="Author" icon={UserIcon}>
+              <SinglePicker
+                label="Author"
+                options={data.authors}
+                value={values.authorId}
+                placeholder="No author"
+                onChange={(authorId) => update({ authorId })}
+              />
             </Property>
-          )}
-          {meta.publishedAt && (
-            <Property label="Published" icon={GlobeIcon}>
-              <span className="text-muted-foreground px-2">{formatDateTime(meta.publishedAt)}</span>
+            <Property label="Categories" icon={FolderIcon}>
+              <MultiPicker
+                label="Categories"
+                options={categories}
+                selected={values.categoryIds}
+                placeholder="Add categories"
+                onChange={(categoryIds) => update({ categoryIds })}
+                onCreate={addCategory}
+              />
             </Property>
-          )}
-        </fieldset>
+            <Property label="Tags" icon={TagIcon}>
+              <MultiPicker
+                label="Tags"
+                options={tagOptions(data.tags, values.tags)}
+                selected={values.tags}
+                placeholder="Add tags"
+                onChange={(tags) => update({ tags })}
+                onCreate={async (name) => update({ tags: [...values.tags, name] })}
+              />
+            </Property>
+            <Property label="URL" icon={LinkIcon}>
+              <UrlPicker
+                slug={values.slug}
+                liveSlug={isLive ? saved.slug : null}
+                onChange={(slug) => {
+                  setSlugTouched(true);
+                  update({ slug });
+                }}
+              />
+            </Property>
+            {meta.scheduledAt && (
+              <Property label="Goes live" icon={CalendarClockIcon}>
+                <span className="px-2">{formatDateTime(meta.scheduledAt)}</span>
+              </Property>
+            )}
+            {meta.publishedAt && (
+              <Property label="Published" icon={GlobeIcon}>
+                <span className="text-muted-foreground px-2">
+                  {formatDateTime(meta.publishedAt)}
+                </span>
+              </Property>
+            )}
+          </fieldset>
+        </Section>
 
         <Section title="Search listing">
           <fieldset disabled={access === 'readonly'} className="min-w-0">
@@ -911,14 +914,19 @@ function Property({
 function Section({
   title,
   count,
+  defaultOpen = false,
+  first = false,
   children,
 }: {
   title: string;
   count?: number;
+  defaultOpen?: boolean;
+  /** Drops the top border/padding for the first section in the sidebar. */
+  first?: boolean;
   children: ReactNode;
 }) {
   return (
-    <Collapsible className="border-t pt-4">
+    <Collapsible defaultOpen={defaultOpen} className={cn('pt-4', !first && 'border-t')}>
       <CollapsibleTrigger className="group text-muted-foreground hover:text-foreground flex w-full items-center gap-1 text-xs font-medium">
         <ChevronRightIcon
           aria-hidden

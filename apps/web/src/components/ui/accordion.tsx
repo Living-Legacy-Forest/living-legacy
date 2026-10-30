@@ -1,6 +1,7 @@
 import { Accordion as AccordionPrimitive } from '@base-ui/react/accordion';
 import { cn } from '@/lib/utils';
-import { PlusIcon } from 'lucide-react';
+import { HugeiconsIcon } from '@hugeicons/react';
+import { PlusSignIcon } from '@hugeicons/core-free-icons';
 
 function Accordion({ className, ...props }: AccordionPrimitive.Root.Props) {
   return (
@@ -34,7 +35,8 @@ function AccordionTrigger({ className, children, ...props }: AccordionPrimitive.
         {...props}
       >
         {children}
-        <PlusIcon
+        <HugeiconsIcon
+          icon={PlusSignIcon}
           data-slot="accordion-trigger-icon"
           className="text-moss pointer-events-none size-5 shrink-0 transition-transform duration-200 ease-[var(--ease-grow)] group-aria-expanded/accordion-trigger:rotate-45"
         />

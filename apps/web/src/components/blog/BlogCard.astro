@@ -10,6 +10,19 @@
 // CardTitle (src/components/ui/card.tsx) renders a <div>, not a heading, and
 // has no render/asChild prop to become one. Its classes are reproduced here
 // directly on a real <h3> so post titles keep their place in the outline.
+//
+// Feel, after Apple's fluid-interface guidance:
+// - The card fills its grid row and the meta line sits at the bottom, so every
+//   card in a row ends level whatever the title's length.
+// - Pressing the title link (i.e. anywhere on the card but the badge) gives
+//   instant feedback: a 100ms scale to 0.985 on press, eased back on release.
+// - Hover adds depth rather than motion for its own sake: a slight lift with a
+//   deeper, softer shadow, and the photo eases in. Tailwind's `hover:` only
+//   applies where the device can hover, so touch never sticks in that state.
+// - Keyboard focus rings the whole card, the area the link actually covers,
+//   rather than the title text alone.
+// - Reduced motion keeps the shadow and focus ring but drops lift, press scale
+//   and the photo zoom.
 import { Card, CardHeader, CardFooter, CardDescription } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { formatBlogDate } from '@/lib/blog';
@@ -26,8 +39,11 @@ const { title, slug, excerpt, publishedAt, featuredImage, category, readingTime 
 const imgSrc = imageUrl(featuredImage, { width: 800, height: 534, fit: 'crop' });
 ---
 
-<article class="group">
-  <Card size="sm" className="relative pt-0">
+<article class="group h-full">
+  <Card
+    size="sm"
+    className="has-[h3_a:focus-visible]:ring-moss relative h-full pt-0 transition-[translate,scale,box-shadow] duration-300 ease-[var(--ease-grow)] hover:-translate-y-0.5 hover:shadow-[0_24px_48px_-24px_rgb(23_35_28/0.35)] has-[h3_a:active]:scale-[0.985] has-[h3_a:active]:duration-100 has-[h3_a:focus-visible]:ring-2 motion-reduce:transition-shadow motion-reduce:hover:translate-y-0 motion-reduce:has-[h3_a:active]:scale-100"
+  >
     {
       /* Rendered only when there is an image: an empty frame reads as one that
         failed to load rather than as a card that never had one. */
@@ -48,7 +64,7 @@ const imgSrc = imageUrl(featuredImage, { width: 800, height: 534, fit: 'crop' })
       )
     }
 
-    <CardHeader className="gap-2">
+    <CardHeader className="flex-1 content-start gap-2.5">
       {
         category && (
           <a href={`/blog/category/${category.slug.current}/`} class="relative z-10 w-fit">
@@ -62,7 +78,7 @@ const imgSrc = imageUrl(featuredImage, { width: 800, height: 534, fit: 'crop' })
       <h3 class="font-heading text-lg leading-snug font-normal tracking-tight text-balance">
         <a
           href={`/blog/${slug.current}/`}
-          class="hover:text-moss-deep transition-colors duration-300 after:absolute after:inset-0 after:content-['']"
+          class="group-hover:text-moss-deep transition-colors duration-300 outline-none after:absolute after:inset-0 after:content-['']"
         >
           {title}
         </a>
@@ -71,7 +87,7 @@ const imgSrc = imageUrl(featuredImage, { width: 800, height: 534, fit: 'crop' })
       {excerpt && <CardDescription className="line-clamp-3 text-pretty">{excerpt}</CardDescription>}
     </CardHeader>
 
-    <CardFooter className="text-bark flex-wrap gap-x-2 text-base">
+    <CardFooter className="text-bark flex-wrap gap-x-2 border-t-0 pt-0 text-base">
       <time datetime={publishedAt}>{formatBlogDate(publishedAt)}</time>
       {readingTime && <span aria-hidden="true">&middot;</span>}
       {readingTime && <span>{readingTime} min read</span>}

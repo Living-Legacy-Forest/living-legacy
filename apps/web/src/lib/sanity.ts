@@ -293,6 +293,95 @@ export async function getPostsByTag(tagSlug: string, page = 1): Promise<BlogPage
   });
 }
 
+// --- Search and filter -------------------------------------------------
+
+export interface BlogTagCount extends SanityTag {
+  count: number;
+}
+
+/** Tags with at least one published post, busiest first, for the filter chips. */
+export async function getBlogTags(): Promise<BlogTagCount[]> {
+  return safeSanity('getBlogTags', [], () =>
+    getSanityClient().fetch<BlogTagCount[]>(
+      `*[_type == "tag" && defined(slug.current)] {
+        _id, title, slug,
+        "count": count(*[${PUBLISHED} && references(^._id)])
+      } [count > 0] | order(count desc, lower(title) asc)`
+    )
+  );
+}
+
+/**
+ * The words of a search, each made a prefix ("mush" finds "mushroom").
+ * GROQ's `match` with an array requires every term, so more words narrow the
+ * results rather than widen them. Punctuation is dropped (it would otherwise
+ * reach `match` as wildcards or operators) and the query is capped so a
+ * pasted essay cannot become an expensive query.
+ */
+export function searchTerms(q: string): string[] {
+  return q
+    .slice(0, 100)
+    .toLowerCase()
+    .replace(/[^\p{L}\p{N}'-]+/gu, ' ')
+    .split(/\s+/)
+    .filter((word) => word.replace(/['-]/g, '').length > 0)
+    .slice(0, 8)
+    .map((word) => `${word}*`);
+}
+
+/**
+ * The blog index narrowed by a search, a tag, or both. With a search,
+ * results rank by relevance (a title match counts three times a match in the
+ * excerpt or body), newest first among equals; with only a tag, newest first.
+ */
+export async function searchBlogPosts({
+  q = '',
+  tag = '',
+  page = 1,
+}: {
+  q?: string;
+  tag?: string;
+  page?: number;
+}): Promise<BlogPage> {
+  const current = Math.max(1, Math.floor(page) || 1);
+  const empty: BlogPage = { posts: [], total: 0, page: 1, pageCount: 0 };
+  const terms = searchTerms(q);
+
+  return safeSanity('searchBlogPosts', empty, async () => {
+    const conditions = [PUBLISHED];
+    if (terms.length) conditions.push('[title, excerpt, pt::text(body)] match $terms');
+    if (tag) conditions.push('$tag in tags[]->slug.current');
+    const filter = conditions.join(' && ');
+
+    const order = terms.length
+      ? `| score(boost(title match $terms, 3), excerpt match $terms, pt::text(body) match $terms)
+         | order(_score desc, publishedAt desc)`
+      : '| order(publishedAt desc)';
+
+    const from = (current - 1) * BLOG_PAGE_SIZE;
+    const params: Record<string, string | number | string[]> = { from, to: from + BLOG_PAGE_SIZE };
+    if (terms.length) params.terms = terms;
+    if (tag) params.tag = tag;
+    const result = await getSanityClient().fetch<{
+      total: number;
+      posts: (SanityBlogPost & { body?: unknown[] })[];
+    }>(
+      `{
+        "total": count(*[${filter}]),
+        "posts": *[${filter}] ${order} [$from...$to] { ${BLOG_CARD}, body }
+      }`,
+      params
+    );
+
+    return {
+      posts: withReadingTime(result.posts),
+      total: result.total,
+      page: current,
+      pageCount: Math.ceil(result.total / BLOG_PAGE_SIZE),
+    };
+  });
+}
+
 export async function getAuthorBySlug(slug: string): Promise<SanityAuthor | null> {
   return safeSanity('getAuthorBySlug', null, () =>
     getSanityClient().fetch<SanityAuthor | null>(

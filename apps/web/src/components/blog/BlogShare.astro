@@ -3,7 +3,8 @@
 // their SDKs, so nothing third-party loads and nothing is tracked before
 // someone chooses to share. The copy-link button is the only part that needs
 // JS, and it degrades to a keyboard hint if the clipboard is unavailable.
-import { Facebook, Linkedin, Link2 } from 'lucide-astro';
+import HugeIcon from '@/components/ui/HugeIcon.astro';
+import { Facebook01Icon, Linkedin01Icon, Link04Icon, Mail01Icon } from '@hugeicons/core-free-icons';
 import { buttonVariants } from '@/components/ui/button';
 
 interface Props {
@@ -29,7 +30,7 @@ const iconButton = buttonVariants({ variant: 'outline', size: 'icon-sm' });
     aria-label="Share on Facebook"
     class={iconButton}
   >
-    <Facebook aria-hidden="true" />
+    <HugeIcon icon={Facebook01Icon} aria-hidden="true" />
   </a>
   <a
     href={`https://www.linkedin.com/sharing/share-offsite/?url=${encodedUrl}`}
@@ -38,14 +39,14 @@ const iconButton = buttonVariants({ variant: 'outline', size: 'icon-sm' });
     aria-label="Share on LinkedIn"
     class={iconButton}
   >
-    <Linkedin aria-hidden="true" />
+    <HugeIcon icon={Linkedin01Icon} aria-hidden="true" />
   </a>
   <a
     href={`mailto:?subject=${encodedTitle}&body=${encodedUrl}`}
     aria-label="Share by email"
     class={iconButton}
   >
-    <Link2 class="rotate-45" aria-hidden="true" />
+    <HugeIcon icon={Mail01Icon} aria-hidden="true" />
   </a>
   <button
     type="button"
@@ -53,7 +54,7 @@ const iconButton = buttonVariants({ variant: 'outline', size: 'icon-sm' });
     aria-label="Copy link to this article"
     class={iconButton}
   >
-    <Link2 aria-hidden="true" />
+    <HugeIcon icon={Link04Icon} aria-hidden="true" />
   </button>
   <span data-copy-status role="status" aria-live="polite" class="text-moss-deep text-base"></span>
 </div>

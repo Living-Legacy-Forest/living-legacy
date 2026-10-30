@@ -1,0 +1,63 @@
+---
+/**
+ * A Hugeicons icon, rendered to inline SVG at build time.
+ *
+ * The React islands use HugeiconsIcon from @hugeicons/react. Hugeicons ships
+ * no Astro package, and using the React component from .astro would send
+ * every static icon through the React renderer and need `className` rather
+ * than `class`. So this mirrors that component's output natively: the same
+ * 24 by 24 viewBox, `currentColor`, and an optional stroke width that
+ * overrides every child's own.
+ *
+ * Icons are data, imported from @hugeicons/core-free-icons:
+ *
+ *   import { ArrowRight02Icon } from '@hugeicons/core-free-icons';
+ *   <HugeIcon icon={ArrowRight02Icon} data-icon="inline-end" aria-hidden="true" />
+ *
+ * Size is left to CSS where a parent already sets it (buttons size their SVGs
+ * through `[&_svg]` selectors); `size` only sets the width and height
+ * attributes, which any CSS size class overrides.
+ *
+ * Not mirrored: the React component's two-tone handling (it draws paths with
+ * an `opacity` first and takes primaryColor, secondaryColor and altIcon). No
+ * icon on this site is two-tone; add that here before using one that is.
+ */
+import type { HTMLAttributes } from 'astro/types';
+
+type IconData = readonly (readonly [string, { readonly [key: string]: string | number }])[];
+
+interface Props extends HTMLAttributes<'svg'> {
+  icon: IconData;
+  size?: number | string;
+  strokeWidth?: number;
+}
+
+const { icon, size = 24, strokeWidth, ...rest } = Astro.props;
+
+// The icon data uses React's camelCase attribute names (strokeLinecap,
+// fillRule) and a React `key`; SVG in HTML wants kebab-case and no key.
+const toAttributes = (attrs: { readonly [key: string]: string | number }) => {
+  const out: Record<string, string | number> = {};
+  for (const [name, value] of Object.entries(attrs)) {
+    if (name === 'key') continue;
+    out[name.replace(/[A-Z]/g, (letter) => `-${letter.toLowerCase()}`)] = value;
+  }
+  if (strokeWidth !== undefined) out['stroke-width'] = strokeWidth;
+  return out;
+};
+
+const children = icon.map(([tag, attrs]) => ({ Tag: tag, attributes: toAttributes(attrs) }));
+---
+
+<svg
+  xmlns="http://www.w3.org/2000/svg"
+  width={size}
+  height={size}
+  viewBox="0 0 24 24"
+  fill="none"
+  color="currentColor"
+  stroke-width={strokeWidth}
+  {...rest}
+>
+  {children.map(({ Tag, attributes }) => <Tag {...attributes} />)}
+</svg>

@@ -1,40 +1,135 @@
 ---
 // Table of contents, built from the article's own H2s. Ids match the ones
 // PortableText.astro assigns, via the same slugify() call.
-import { buttonVariants } from '@/components/ui/button';
+//
+// Two forms: `sidebar` (the sticky rail beside the article from lg) and
+// `collapsible` (a closed-by-default panel above the article below lg, where
+// there is no rail). Both mark the section being read: the script below sets
+// aria-current="location" on its link, which also styles it.
+//
+// The links are styled here rather than through buttonVariants: a button is
+// `inline-flex whitespace-nowrap`, so a long heading could not wrap and ran
+// out of the narrow rail across the article. These wrap, and clamp at two
+// lines in the rail.
+import HugeIcon from '@/components/ui/HugeIcon.astro';
+import { ArrowDown01Icon } from '@hugeicons/core-free-icons';
 import { Separator } from '@/components/ui/separator';
 import type { BlogHeading } from '@/lib/blog';
-import { cn } from '@/lib/utils';
 
 interface Props {
   headings: BlogHeading[];
+  variant?: 'sidebar' | 'collapsible';
+  class?: string;
 }
 
-const { headings } = Astro.props;
+const { headings, variant = 'sidebar', class: className } = Astro.props;
+
+const linkClass =
+  'text-ink-soft decoration-bark/40 hover:text-moss-deep hover:decoration-moss aria-[current=location]:text-moss-deep aria-[current=location]:decoration-moss text-base leading-snug font-medium text-pretty underline underline-offset-4 transition-colors duration-200';
 ---
 
 {
-  headings.length > 1 && (
-    <nav aria-label="Table of contents" class="flex gap-5">
-      <Separator orientation="vertical" />
-      <div class="flex flex-col gap-4">
-        <p class="eyebrow">In this article</p>
-        <ol class="flex flex-col gap-2.5">
-          {headings.map((h) => (
-            <li>
-              <a
-                href={`#${h.id}`}
-                class={cn(
-                  buttonVariants({ variant: 'link' }),
-                  'text-ink-soft line-clamp-2 justify-start'
-                )}
-              >
-                {h.text}
-              </a>
-            </li>
-          ))}
-        </ol>
-      </div>
-    </nav>
-  )
+  headings.length > 1 &&
+    (variant === 'sidebar' ? (
+      <nav aria-label="Table of contents" class:list={['flex gap-5', className]} data-toc>
+        <Separator orientation="vertical" />
+        <div class="flex flex-col gap-4">
+          <p class="eyebrow">In this article</p>
+          <ol class="flex flex-col gap-2.5">
+            {headings.map((h) => (
+              <li>
+                <a href={`#${h.id}`} title={h.text} class:list={[linkClass, 'line-clamp-2']}>
+                  {h.text}
+                </a>
+              </li>
+            ))}
+          </ol>
+        </div>
+      </nav>
+    ) : (
+      <details
+        class:list={['group border-bark/20 bg-paper-deep/40 rounded-xl border', className]}
+        data-toc
+        data-toc-collapsible
+      >
+        <summary class="flex cursor-pointer list-none items-center justify-between gap-4 px-5 py-4 [&::-webkit-details-marker]:hidden">
+          <span class="eyebrow">In this article</span>
+          <HugeIcon
+            icon={ArrowDown01Icon}
+            class="text-bark size-5 transition-transform duration-200 group-open:rotate-180"
+            aria-hidden="true"
+          />
+        </summary>
+        <nav aria-label="Table of contents" class="px-5 pb-5">
+          <ol class="flex flex-col gap-3">
+            {headings.map((h) => (
+              <li>
+                <a href={`#${h.id}`} class={linkClass}>
+                  {h.text}
+                </a>
+              </li>
+            ))}
+          </ol>
+        </nav>
+      </details>
+    ))
 }
+
+<script>
+  // Marks the section being read in every table of contents on the page: the
+  // last H2 whose top has passed just below the sticky header. Before the
+  // first one, nothing is marked. One rAF-throttled scroll listener rather
+  // than an IntersectionObserver, since "last heading above a line" is what
+  // matters and an observer only reports crossings.
+  function initToc(): void {
+    const tocs = document.querySelectorAll<HTMLElement>('[data-toc]');
+    if (!tocs.length) return;
+
+    const links = [...document.querySelectorAll<HTMLAnchorElement>('[data-toc] a[href^="#"]')];
+    const ids = [...new Set(links.map((a) => a.hash.slice(1)))];
+    const headings = ids
+      .map((id) => document.getElementById(id))
+      .filter((el): el is HTMLElement => el !== null);
+    const first = headings[0];
+    if (!first) return;
+
+    // Just below the sticky header, matching the headings' scroll-margin-top.
+    const line = () => parseFloat(getComputedStyle(first).scrollMarginTop) + 8;
+
+    let frame = 0;
+    const update = () => {
+      frame = 0;
+      const passed = headings.filter((h) => h.getBoundingClientRect().top <= line());
+      const current = passed.at(-1)?.id;
+      for (const a of links) {
+        if (a.hash.slice(1) === current) a.setAttribute('aria-current', 'location');
+        else a.removeAttribute('aria-current');
+      }
+    };
+    const schedule = () => {
+      if (!frame) frame = requestAnimationFrame(update);
+    };
+
+    window.addEventListener('scroll', schedule, { passive: true });
+    window.addEventListener('resize', schedule);
+    update();
+
+    // The collapsible panel closes once a section is chosen. It sits above
+    // the article, so closing it after the browser's own jump would pull the
+    // heading up out of view: close first, then scroll, then set the hash.
+    document.querySelectorAll<HTMLDetailsElement>('[data-toc-collapsible]').forEach((panel) => {
+      panel.querySelectorAll<HTMLAnchorElement>('a[href^="#"]').forEach((a) => {
+        a.addEventListener('click', (event) => {
+          const target = document.getElementById(a.hash.slice(1));
+          if (!target) return;
+          event.preventDefault();
+          panel.open = false;
+          target.scrollIntoView();
+          history.pushState(null, '', a.hash);
+        });
+      });
+    });
+  }
+
+  initToc();
+</script>

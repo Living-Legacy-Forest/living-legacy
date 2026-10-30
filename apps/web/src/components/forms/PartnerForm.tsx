@@ -238,13 +238,13 @@ export function PartnerForm() {
             />
           </Field>
 
-          <Field orientation="horizontal" className="items-start sm:col-span-2">
+          <Field orientation="horizontal" className="items-start gap-3 sm:col-span-2">
             <Checkbox
               id="partner-consent"
               checked={consent}
               onCheckedChange={(checked) => setConsent(checked === true)}
             />
-            <FieldLabel htmlFor="partner-consent" className="text-base font-normal">
+            <FieldLabel htmlFor="partner-consent" className="text-ink-soft font-normal">
               I have read and agree to the{' '}
               <a
                 href="/privacy/"

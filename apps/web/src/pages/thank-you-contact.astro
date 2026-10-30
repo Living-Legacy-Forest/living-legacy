@@ -9,7 +9,8 @@
 // ?type= tweaks the sentence for the other two forms that land here; any
 // other or missing value falls back to the default, contact, wording.
 import BaseLayout from '@/layouts/BaseLayout.astro';
-import { ArrowRight } from 'lucide-astro';
+import HugeIcon from '@/components/ui/HugeIcon.astro';
+import { ArrowRight02Icon } from '@hugeicons/core-free-icons';
 import { buttonVariants } from '@/components/ui/button';
 import GrowthRings from '@/components/ui/GrowthRings.astro';
 
@@ -41,7 +42,7 @@ const message = copy[type ?? 'contact'] ?? copy.contact;
 
     <a href="/" class:list={[buttonVariants(), 'mt-10']}>
       Back home
-      <ArrowRight data-icon="inline-end" aria-hidden="true" />
+      <HugeIcon icon={ArrowRight02Icon} data-icon="inline-end" aria-hidden="true" />
     </a>
   </div>
 </BaseLayout>

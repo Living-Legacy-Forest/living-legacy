@@ -7,7 +7,7 @@ import logoWordmark from '@/assets/brand/logo-wordmark.png';
 import { UPCOMING_LOCATIONS_HREF } from '@/components/layout/nav-links';
 ---
 
-<div class="bg-moss-deep text-paper">
+<div class="bg-moss-deep text-paper" data-site-chrome>
   <p
     class="mx-auto flex max-w-6xl flex-wrap items-center justify-center gap-x-3 gap-y-1 px-6 py-2.5 text-center sm:px-10"
   >
@@ -21,7 +21,10 @@ import { UPCOMING_LOCATIONS_HREF } from '@/components/layout/nav-links';
   </p>
 </div>
 
-<header class="border-bark/20 bg-paper/95 sticky top-0 z-40 border-b backdrop-blur">
+<header
+  class="border-bark/20 bg-paper/95 sticky top-0 z-40 border-b backdrop-blur"
+  data-site-chrome
+>
   <div class="mx-auto flex max-w-6xl items-center justify-between gap-6 px-6 py-5 sm:px-10">
     <a href="/" class="flex items-center gap-3" aria-label="Living Legacy Forest home">
       <BrandImage src={logoMark} height="2.25rem" class="text-moss-deep" />
@@ -37,3 +40,21 @@ import { UPCOMING_LOCATIONS_HREF } from '@/components/layout/nav-links';
     <MobileNav client:load />
   </div>
 </header>
+
+<!-- The announcement bar and header's combined height, as --site-chrome, so a
+     section can fill exactly the first screen below them (the home hero does).
+     The bar wraps to two or three lines on phones, so it is measured rather
+     than guessed. Inline and right after the header, so the value is set
+     before the hero below it is painted. -->
+<script is:inline>
+  (() => {
+    const parts = document.querySelectorAll('[data-site-chrome]');
+    const update = () => {
+      const height = [...parts].reduce((sum, el) => sum + el.offsetHeight, 0);
+      document.documentElement.style.setProperty('--site-chrome', `${height}px`);
+    };
+    update();
+    const observer = new ResizeObserver(update);
+    parts.forEach((el) => observer.observe(el));
+  })();
+</script>

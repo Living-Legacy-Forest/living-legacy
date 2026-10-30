@@ -9,7 +9,8 @@
 // dash lost somewhere between WordPress and the crawl. A colon is used in
 // its place rather than an em or en dash, which house style forbids.
 import { Image } from 'astro:assets';
-import { ArrowRight } from 'lucide-astro';
+import HugeIcon from '@/components/ui/HugeIcon.astro';
+import { ArrowRight02Icon } from '@hugeicons/core-free-icons';
 import BaseLayout from '@/layouts/BaseLayout.astro';
 import { Card, CardContent } from '@/components/ui/card';
 import { Separator } from '@/components/ui/separator';
@@ -89,7 +90,7 @@ const description =
       </p>
       <a href="#become-a-partner-form" class:list={[buttonVariants(), 'mt-9']}>
         Become a partner
-        <ArrowRight data-icon="inline-end" aria-hidden="true" />
+        <HugeIcon icon={ArrowRight02Icon} data-icon="inline-end" aria-hidden="true" />
       </a>
     </div>
   </section>
@@ -169,7 +170,7 @@ const description =
         </div>
 
         <div class="lg:col-span-7">
-          <Card className="p-2 sm:p-4">
+          <Card className="shadow-panel bg-white/50 p-2 sm:p-4">
             <CardContent className="px-4 sm:px-6">
               <PartnerForm client:visible />
             </CardContent>

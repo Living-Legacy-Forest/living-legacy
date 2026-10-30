@@ -5,12 +5,13 @@
 import BaseLayout from '@/layouts/BaseLayout.astro';
 import BlogCTA from '@/components/blog/BlogCTA.astro';
 import BlogHero from '@/components/blog/BlogHero.astro';
+import BlogShare from '@/components/blog/BlogShare.astro';
 import BlogToc from '@/components/blog/BlogToc.astro';
 import PortableText from '@/components/blog/PortableText.astro';
 import RelatedPosts from '@/components/blog/RelatedPosts.astro';
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
-import { extractH2Headings } from '@/lib/blog';
+import { extractH2Headings, lastUpdatedAt } from '@/lib/blog';
 import { getBlogPostBySlug, getRelatedBlogPosts, imageUrl } from '@/lib/sanity';
 import type { SanityBlogPost } from '@/types';
 
@@ -47,7 +48,7 @@ const jsonLd = {
   '@type': 'BlogPosting',
   headline: post.title,
   datePublished: post.publishedAt,
-  dateModified: post.updatedAt ?? post._updatedAt ?? post.publishedAt,
+  dateModified: lastUpdatedAt(post),
   mainEntityOfPage: { '@type': 'WebPage', '@id': shareUrl },
   ...(seoDescription ? { description: seoDescription } : {}),
   ...(ogImage ? { image: [ogImage] } : {}),
@@ -93,35 +94,38 @@ const toJsonLd = (value: unknown) => JSON.stringify(value).replace(/</g, '\\u003
 
     <div class="mx-auto max-w-6xl px-6 pt-4 pb-20 sm:px-10 md:pb-28">
       <div class="lg:grid lg:grid-cols-[12rem_minmax(0,1fr)_16rem] lg:items-start lg:gap-10">
-        <div class="hidden lg:sticky lg:top-10 lg:block">
+        <!-- Both side columns stick 7rem down: clear of the 81px sticky header
+             with room to breathe. Each is the grid item itself, so it can travel
+             the full height of the row (the article's) while sticking. -->
+        <div class="hidden lg:sticky lg:top-28 lg:block">
           <BlogToc headings={headings} />
         </div>
 
         <article class="mx-auto w-full max-w-[68ch]">
+          <BlogToc headings={headings} variant="collapsible" class="mb-10 lg:hidden" />
+
           <PortableText content={post.body ?? []} />
 
+          <Separator className="mt-12" />
           {
             post.tags && post.tags.length > 0 && (
-              <>
-                <Separator className="mt-10" />
-                <div class="mt-8 flex flex-wrap items-center gap-2">
-                  {post.tags.map((tag) => (
-                    <a href={`/blog/tag/${tag.slug.current}/`}>
-                      <Badge variant="secondary" className="hover:bg-sun/40">
-                        #{tag.title}
-                      </Badge>
-                    </a>
-                  ))}
-                </div>
-              </>
+              <div class="mt-8 flex flex-wrap items-center gap-2">
+                {post.tags.map((tag) => (
+                  <a href={`/blog/tag/${tag.slug.current}/`}>
+                    <Badge variant="secondary" className="hover:bg-sun/40">
+                      #{tag.title}
+                    </Badge>
+                  </a>
+                ))}
+              </div>
             )
           }
+          <!-- Repeated from the header, for a reader who reaches the end. -->
+          <BlogShare url={shareUrl} title={post.title} class="mt-8" />
         </article>
 
-        <div class="mt-14 lg:mt-0">
-          <div class="lg:sticky lg:top-10">
-            <BlogCTA />
-          </div>
+        <div class="mt-14 lg:sticky lg:top-28 lg:mt-0">
+          <BlogCTA />
         </div>
       </div>
     </div>

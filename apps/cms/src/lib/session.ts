@@ -9,14 +9,22 @@ export type SessionUser = {
   name: string;
   email: string;
   image: string | null;
+  bio: string | null;
   role: Role;
 };
 
 async function loadUser(): Promise<SessionUser | null> {
   const session = await getAuth().api.getSession({ headers: getRequest().headers });
   if (!session) return null;
-  const { id, name, email, image, role } = session.user;
-  return { id, name, email, image: image ?? null, role: role as Role };
+  const { id, name, email, image, bio, role } = session.user;
+  return {
+    id,
+    name,
+    email,
+    image: image ?? null,
+    bio: (bio as string | null) ?? null,
+    role: role as Role,
+  };
 }
 
 export const getCurrentUser = createServerFn({ method: 'GET' }).handler(() => loadUser());

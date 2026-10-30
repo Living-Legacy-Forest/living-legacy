@@ -8,7 +8,7 @@ import { tanstackStartCookies } from 'better-auth/tanstack-start';
 import { env } from 'cloudflare:workers';
 import { eq } from 'drizzle-orm';
 import { getDb } from './db';
-import { sendMagicLinkEmail } from './email';
+import { sendChangeEmailVerificationEmail, sendMagicLinkEmail } from './email';
 
 function createAuth() {
   const db = getDb();
@@ -38,6 +38,15 @@ function createAuth() {
     user: {
       additionalFields: {
         role: { type: 'string', required: false, defaultValue: 'editor', input: false },
+        bio: { type: 'string', required: false },
+      },
+      // The new address must be confirmed before it takes effect: there is no
+      // password, so the magic-link email itself is how identity is proven.
+      changeEmail: { enabled: true },
+    },
+    emailVerification: {
+      sendVerificationEmail: async ({ user, url }) => {
+        await sendChangeEmailVerificationEmail(normaliseEmail(user.email), url);
       },
     },
     // A refused sign-in lands back on the login page with ?error=...

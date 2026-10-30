@@ -233,6 +233,31 @@ export async function sendReviewRequestedEmail(
   await send({ to, subject, html, text });
 }
 
+export async function sendChangeEmailVerificationEmail(to: string, url: string): Promise<void> {
+  const subject = 'Confirm your new email for Living Legacy';
+  const text = [
+    `Someone requested changing a Living Legacy CMS account's email to ${to}.`,
+    '',
+    `Confirm it with this link: ${url}`,
+    '',
+    'If this was not you, you can ignore this email. Your email stays unchanged',
+    'until this link is used.',
+    ...textFooter,
+  ].join('\n');
+
+  const html = layout({
+    preheader: 'Confirm this email change to the Living Legacy CMS.',
+    heading: 'Confirm your new email',
+    intro: [
+      `Use the button below to confirm <strong style="color:${colours.ink};">${escapeHtml(to)}</strong> as the sign-in email for a Living Legacy CMS account.`,
+    ],
+    button: { label: 'Confirm email', url },
+    note: 'If this was not you, you can ignore this email. The email stays unchanged until this link is used.',
+  });
+
+  await send({ to, subject, html, text });
+}
+
 export async function sendInviteEmail(to: string, loginUrl: string, role: Role): Promise<void> {
   const subject = 'You have been invited to Living Legacy';
   const text = [

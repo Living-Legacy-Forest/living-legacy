@@ -9,6 +9,7 @@ export const user = sqliteTable('user', {
   email: text('email').notNull().unique(),
   emailVerified: integer('email_verified', { mode: 'boolean' }).notNull().default(false),
   image: text('image'),
+  bio: text('bio'),
   role: text('role', { enum: ['admin', 'editor', 'author', 'seo', 'viewer'] })
     .notNull()
     .default('editor'),

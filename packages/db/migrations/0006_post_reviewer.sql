@@ -1,0 +1,1 @@
+ALTER TABLE `posts` ADD `reviewer_id` text REFERENCES user(id);

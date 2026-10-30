@@ -65,11 +65,13 @@ import {
   type PostListRow,
   type PostStatusTab,
   deletePosts,
+  requestReview,
   restorePosts,
   trashPosts,
 } from '@/server/posts';
 import { PostArticle } from './post-article';
 import { PostStatusBadge } from './post-status-badge';
+import { ReviewerPopover } from './reviewer-popover';
 import { clearPostPreviews, loadPostPreview, usePostPreview } from './use-post-preview';
 
 export type PostListSearch = {
@@ -154,6 +156,13 @@ export function PostsList({
   const purge = async (ids: string[]) => {
     await mutate(() => deletePosts({ data: { ids } }), 'permanently deleted');
     setConfirmDelete(null);
+  };
+  const submitReview = async (id: string, reviewerId: string | null) => {
+    const result = await run(
+      () => requestReview({ data: { id, reviewerId } }),
+      'Submitted for review.'
+    );
+    return Boolean(result);
   };
 
   const categoryItems = [
@@ -368,11 +377,15 @@ export function PostsList({
           inTrash={inTrash}
           canPurge={canPurge}
           canPublish={canPublish}
+          canRequestReview={canWrite && !canPublish}
+          userId={user.id}
+          reviewers={data.reviewers}
           editLabel={canWrite ? 'Edit' : 'Open'}
           pending={pending}
           onTrash={(id) => trash([id])}
           onRestore={(id) => restore([id])}
           onDelete={(id) => setConfirmDelete([id])}
+          onRequestReview={submitReview}
         />
       </div>
 
@@ -509,21 +522,29 @@ function PreviewPane({
   inTrash,
   canPurge,
   canPublish,
+  canRequestReview,
+  userId,
+  reviewers,
   editLabel,
   pending,
   onTrash,
   onRestore,
   onDelete,
+  onRequestReview,
 }: {
   row: PostListRow | null;
   inTrash: boolean;
   canPurge: boolean;
   canPublish: boolean;
+  canRequestReview: boolean;
+  userId: string;
+  reviewers: { id: string; name: string }[];
   editLabel: string;
   pending: boolean;
   onTrash: (id: string) => void;
   onRestore: (id: string) => void;
   onDelete: (id: string) => void;
+  onRequestReview: (id: string, reviewerId: string | null) => Promise<boolean>;
 }) {
   const { post, error, loading } = usePostPreview(row?.id ?? null);
 
@@ -543,14 +564,31 @@ function PreviewPane({
     );
   }
 
+  const offerReview =
+    !inTrash &&
+    canRequestReview &&
+    row.createdBy === userId &&
+    row.status === 'draft' &&
+    !row.reviewRequestedAt;
+
   return (
     <section aria-label="Preview" className="hidden min-h-0 flex-col lg:flex">
       <div className="flex h-11 shrink-0 items-center gap-2 border-b px-3">
         <span className="text-muted-foreground mr-auto truncate text-xs">
           {inTrash
             ? `Trashed ${formatRelative(row.deletedAt ?? row.updatedAt)}`
-            : `Edited ${formatRelative(row.updatedAt)}`}
+            : row.reviewRequestedAt
+              ? 'Submitted for review'
+              : `Edited ${formatRelative(row.updatedAt)}`}
         </span>
+        {offerReview && (
+          <ReviewerPopover
+            reviewers={reviewers}
+            disabled={pending}
+            size="sm"
+            onSubmit={(reviewerId) => onRequestReview(row.id, reviewerId)}
+          />
+        )}
         {inTrash ? (
           canPublish && (
             <Button variant="ghost" size="sm" disabled={pending} onClick={() => onRestore(row.id)}>

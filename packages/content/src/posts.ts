@@ -117,8 +117,10 @@ export const postInputSchema = z.object({
   categoryIds: z.array(z.string()).max(20),
   /** Tag names; unknown tags are created on save. */
   tags: z.array(z.string().trim().min(1).max(50)).max(30),
+  featuredMediaId: z.string().nullable(),
   seoTitle: z.string().trim().max(120),
   seoDescription: z.string().trim().max(320),
+  ogMediaId: z.string().nullable(),
   noindex: z.boolean(),
 });
 
@@ -132,8 +134,10 @@ export const emptyPostInput: PostInput = {
   authorId: null,
   categoryIds: [],
   tags: [],
+  featuredMediaId: null,
   seoTitle: '',
   seoDescription: '',
+  ogMediaId: null,
   noindex: false,
 };
 

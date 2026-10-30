@@ -135,8 +135,10 @@ describe('postInputSchema and publishErrors', () => {
     authorId: null,
     categoryIds: [],
     tags: [],
+    featuredMediaId: null,
     seoTitle: '',
     seoDescription: '',
+    ogMediaId: null,
     noindex: false,
   };
 

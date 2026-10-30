@@ -24,6 +24,7 @@ export type NavItem = {
     | '/posts/new'
     | '/announcements'
     | '/faqs'
+    | '/media'
     | '/redirects'
     | '/settings'
     | '/team'
@@ -55,7 +56,7 @@ export const navGroups: NavGroup[] = [
           { title: 'Tags' },
         ],
       },
-      { title: 'Media', icon: ImageIcon },
+      { title: 'Media', icon: ImageIcon, to: '/media', permission: 'media:write' },
       { title: 'FAQs', icon: CircleHelp, to: '/faqs' },
       { title: 'Testimonials', icon: Quote, to: '/testimonials' },
       { title: 'Team', icon: Users, to: '/team' },

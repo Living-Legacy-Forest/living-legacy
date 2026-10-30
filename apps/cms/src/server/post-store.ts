@@ -54,8 +54,10 @@ export async function liveInput(db: Db, row: PostRow): Promise<PostInput> {
     authorId: row.authorId,
     categoryIds: assigned.filter((t) => t.type === 'category').map((t) => t.id),
     tags: assigned.filter((t) => t.type === 'tag').map((t) => t.name),
+    featuredMediaId: row.featuredMediaId,
     seoTitle: row.seoTitle ?? '',
     seoDescription: row.seoDescription ?? '',
+    ogMediaId: row.ogMediaId,
     noindex: row.noindex,
   };
 }
@@ -120,8 +122,10 @@ export async function columnWrites(db: Db, id: string, input: PostInput) {
     excerpt: input.excerpt || null,
     body: input.body,
     authorId: input.authorId,
+    featuredMediaId: input.featuredMediaId,
     seoTitle: input.seoTitle || null,
     seoDescription: input.seoDescription || null,
+    ogMediaId: input.ogMediaId,
     noindex: input.noindex,
   };
   const termStatements: Statement[] = [

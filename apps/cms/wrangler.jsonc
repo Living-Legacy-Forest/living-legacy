@@ -15,7 +15,12 @@
       "migrations_dir": "../../packages/db/migrations"
     }
   ],
-  // The MEDIA (R2) binding is added once the bucket exists; nothing reads it yet.
+  "r2_buckets": [
+    {
+      "binding": "MEDIA",
+      "bucket_name": "living-legacy-media"
+    }
+  ],
   "vars": {
     // Local dev overrides this with http://localhost:3100 in .dev.vars.
     "BETTER_AUTH_URL": "https://living-legacy-cms.living-legacy.workers.dev",

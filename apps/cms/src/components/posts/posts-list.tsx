@@ -270,7 +270,7 @@ export function PostsList({
                 )}
               </>
             ) : (
-              <nav aria-label="Post status" className="flex gap-0.5">
+              <nav aria-label="Post status" className="no-scrollbar flex gap-0.5 overflow-x-auto">
                 {tabs.map((tab) => {
                   const active = tab.value === search.status;
                   return (
@@ -285,7 +285,7 @@ export function PostsList({
                       })}
                       aria-current={active ? 'page' : undefined}
                       className={cn(
-                        'text-muted-foreground hover:text-foreground flex h-7 items-center gap-1.5 rounded-md px-2.5 text-[13px] transition-colors',
+                        'text-muted-foreground hover:text-foreground flex h-7 shrink-0 items-center gap-1.5 rounded-md px-2.5 text-[13px] whitespace-nowrap transition-colors',
                         active && 'bg-muted text-foreground font-medium'
                       )}
                     >

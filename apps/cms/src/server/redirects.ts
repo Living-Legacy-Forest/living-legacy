@@ -15,7 +15,7 @@ const SITE_URL = 'https://livinglegacyforest.com.au';
 const fromPathSchema = z
   .string()
   .trim()
-  .regex(/^\/\S*$/, 'The old path must start with a slash, like /old-page.')
+  .regex(/^\/(?![/\\])\S*$/, 'The old path must start with a single slash, like /old-page.')
   .refine(
     (path) => !path.slice(0, -1).includes('*'),
     'A * can only go at the end of the old path, like /blog/*.'
@@ -86,7 +86,11 @@ const redirectSchema = z
 async function isLivePage(fromPath: string): Promise<boolean> {
   if (isWildcard(fromPath)) return false;
   try {
-    const res = await fetch(new URL(fromPath, SITE_URL), {
+    const target = new URL(fromPath, SITE_URL);
+    // fromPathSchema already rejects "//" and "/\" paths, but pin the origin
+    // too: a path that resolves off-site must never be fetched.
+    if (target.origin !== new URL(SITE_URL).origin) return false;
+    const res = await fetch(target, {
       method: 'HEAD',
       redirect: 'manual',
       signal: AbortSignal.timeout(3000),

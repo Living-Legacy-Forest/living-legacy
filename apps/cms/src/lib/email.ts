@@ -52,7 +52,7 @@ const colours = {
   white: '#ffffff',
 };
 
-const SITE_URL = 'https://livinglegacyforest.com.au';
+const SITE_URL = 'https://livinglegacy.com.au';
 const LEGAL_LINE = 'Forest Conservation Australia Pty Ltd · ABN 59 639 330 617';
 const serif = "Georgia, 'Times New Roman', serif";
 const sans = "-apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif";
@@ -115,12 +115,12 @@ function layout(opts: {
                   <table role="presentation" cellpadding="0" cellspacing="0" border="0">
                     <tr>
                       <td style="background:${colours.moss};border-radius:10px;padding:8px 7px;">
-                        <img src="${cmsOrigin()}/email/logo-mark.png" width="30" height="25" alt="Living Legacy Forest" style="display:block;border:0;">
+                        <img src="${cmsOrigin()}/email/logo-mark.png" width="30" height="25" alt="Living Legacy" style="display:block;border:0;">
                       </td>
                     </tr>
                   </table>
                 </td>
-                <td style="vertical-align:middle;font-family:${serif};font-size:18px;color:${colours.ink};">Living Legacy Forest</td>
+                <td style="vertical-align:middle;font-family:${serif};font-size:18px;color:${colours.ink};">Living Legacy</td>
               </tr>
             </table>
           </td>
@@ -151,9 +151,9 @@ function layout(opts: {
         </tr>
         <tr>
           <td style="padding:24px 4px 0;font-family:${sans};font-size:12px;line-height:19px;color:${colours.inkSoft};">
-            <p style="margin:0 0 4px;"><a href="${SITE_URL}" style="color:${colours.ink};text-decoration:none;font-weight:600;">Living Legacy Forest</a></p>
+            <p style="margin:0 0 4px;"><a href="${SITE_URL}" style="color:${colours.ink};text-decoration:none;font-weight:600;">Living Legacy</a></p>
             <p style="margin:0 0 4px;">${LEGAL_LINE}</p>
-            <p style="margin:0;">Sent by the Living Legacy Forest content system. Please do not reply to this email.</p>
+            <p style="margin:0;">Sent by the Living Legacy content system. Please do not reply to this email.</p>
           </td>
         </tr>
       </table>
@@ -167,17 +167,17 @@ function layout(opts: {
 const textFooter = [
   '',
   '--',
-  'Living Legacy Forest',
+  'Living Legacy',
   LEGAL_LINE,
   SITE_URL,
-  'Sent by the Living Legacy Forest content system. Please do not reply to this email.',
+  'Sent by the Living Legacy content system. Please do not reply to this email.',
 ];
 
 export async function sendMagicLinkEmail(to: string, url: string): Promise<void> {
-  const subject = 'Your sign-in link for Living Legacy Forest';
+  const subject = 'Your sign-in link for Living Legacy';
   const requested = `${formatDateTime(Date.now())} (Melbourne time)`;
   const text = [
-    'Sign in to the Living Legacy Forest CMS with this link:',
+    'Sign in to the Living Legacy CMS with this link:',
     '',
     url,
     '',
@@ -192,7 +192,7 @@ export async function sendMagicLinkEmail(to: string, url: string): Promise<void>
     preheader: 'Your sign-in link. It works once and expires in 5 minutes.',
     heading: 'Sign in to the CMS',
     intro: [
-      'Use the button below to sign in to the Living Legacy Forest content system. The link works once and expires in 5 minutes.',
+      'Use the button below to sign in to the Living Legacy content system. The link works once and expires in 5 minutes.',
     ],
     button: { label: 'Sign in', url },
     note: `Requested for <strong style="color:${colours.ink};">${escapeHtml(to)}</strong> on ${escapeHtml(requested)}. If this was not you, you can ignore this email. No one can sign in without the link.`,
@@ -210,9 +210,9 @@ const roleNames: Record<Role, string> = {
 };
 
 export async function sendInviteEmail(to: string, loginUrl: string, role: Role): Promise<void> {
-  const subject = 'You have been invited to Living Legacy Forest';
+  const subject = 'You have been invited to Living Legacy';
   const text = [
-    `You have been invited to the Living Legacy Forest CMS as ${roleNames[role]}.`,
+    `You have been invited to the Living Legacy CMS as ${roleNames[role]}.`,
     '',
     `Go to ${loginUrl} and sign in with this email (${to}) to get started.`,
     '',
@@ -221,10 +221,10 @@ export async function sendInviteEmail(to: string, loginUrl: string, role: Role):
   ].join('\n');
 
   const html = layout({
-    preheader: 'You have been invited to help manage the Living Legacy Forest website.',
+    preheader: 'You have been invited to help manage the Living Legacy website.',
     heading: 'You are invited',
     intro: [
-      `You have been given access to the Living Legacy Forest content system, where the website is managed, as ${roleNames[role]}.`,
+      `You have been given access to the Living Legacy content system, where the website is managed, as ${roleNames[role]}.`,
       `Sign in with <strong style="color:${colours.ink};">${escapeHtml(to)}</strong> to get started. There is no password; we email you a sign-in link each time.`,
     ],
     button: { label: 'Accept invitation', url: loginUrl },

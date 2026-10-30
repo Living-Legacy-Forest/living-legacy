@@ -10,6 +10,8 @@
  * since React islands cannot use astro:assets themselves.
  */
 import { useState } from 'react';
+import { HugeiconsIcon } from '@hugeicons/react';
+import { PlayIcon } from '@hugeicons/core-free-icons';
 import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
 
 export interface NewsMediaItem {
@@ -68,9 +70,11 @@ function VideoCard({ item }: { item: VideoMediaItem }) {
               className="absolute inset-0 h-full w-full object-cover opacity-90 transition-opacity duration-200 group-hover:opacity-100"
             />
             <span className="bg-paper/90 group-hover:bg-paper relative flex h-14 w-14 items-center justify-center rounded-full shadow-lg transition-colors duration-200">
-              <svg viewBox="0 0 24 24" className="text-ink ml-0.5 h-6 w-6" fill="currentColor">
-                <path d="M8 5v14l11-7z" />
-              </svg>
+              <HugeiconsIcon
+                icon={PlayIcon}
+                className="text-ink ml-0.5 size-6"
+                aria-hidden="true"
+              />
             </span>
           </button>
         )}

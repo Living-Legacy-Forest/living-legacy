@@ -5,7 +5,7 @@ import { listAnnouncements } from '@/server/announcements';
 
 export const Route = createFileRoute('/_app/announcements/')({
   loader: () => listAnnouncements(),
-  head: () => ({ meta: [{ title: 'Announcements | Living Legacy Forest CMS' }] }),
+  head: () => ({ meta: [{ title: 'Announcements | Living Legacy CMS' }] }),
   component: AnnouncementsRoute,
 });
 

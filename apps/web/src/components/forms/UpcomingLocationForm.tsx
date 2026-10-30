@@ -5,6 +5,7 @@
  * (and only becomes required) once "Other" is chosen.
  */
 import { useEffect, useRef, useState } from 'react';
+import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Field, FieldGroup, FieldLabel } from '@/components/ui/field';
@@ -55,7 +56,6 @@ export function UpcomingLocationForm() {
   const [fields, setFields] = useState<UpcomingLocationFields>(EMPTY_FIELDS);
   const [consent, setConsent] = useState(false);
   const [invalid, setInvalid] = useState<Set<ValidatedField | 'location'>>(new Set());
-  const [formError, setFormError] = useState<string | null>(null);
 
   const { honeypotRef, failsBotCheck } = useHoneypot();
   const fallbackRef = useRef<HTMLDivElement>(null);
@@ -101,7 +101,6 @@ export function UpcomingLocationForm() {
     event.preventDefault();
     if (hubspotSubmit.sending) return;
 
-    setFormError(null);
     hubspotSubmit.hideFallback();
 
     if (failsBotCheck()) {
@@ -124,7 +123,7 @@ export function UpcomingLocationForm() {
     setInvalid(nextInvalid);
 
     if (nextInvalid.size > 0) {
-      setFormError('Please check the highlighted fields and try again.');
+      toast.error('Please check the highlighted fields and try again.');
       if (nextInvalid.has('name')) {
         nameRef.current?.focus();
       } else if (nextInvalid.has('email')) {
@@ -139,7 +138,7 @@ export function UpcomingLocationForm() {
     }
 
     if (!consent) {
-      setFormError('Please agree to the privacy policy to continue.');
+      toast.error('Please agree to the privacy policy to continue.');
       return;
     }
 
@@ -245,7 +244,7 @@ export function UpcomingLocationForm() {
           )}
           <Field data-invalid={invalid.has('reason') || undefined}>
             <FieldLabel htmlFor="upcoming-reason">
-              Why did you choose this area for a Living Legacy Forest?
+              Why did you choose this area for a Living Legacy?
             </FieldLabel>
             <Textarea
               id="upcoming-reason"
@@ -280,16 +279,6 @@ export function UpcomingLocationForm() {
               </span>
             </FieldLabel>
           </Field>
-
-          {formError && (
-            <p
-              role="alert"
-              aria-live="assertive"
-              className="text-destructive text-base font-medium"
-            >
-              {formError}
-            </p>
-          )}
 
           <div>
             <Button

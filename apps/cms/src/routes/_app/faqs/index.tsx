@@ -5,7 +5,7 @@ import { listFaqs } from '@/server/faqs';
 
 export const Route = createFileRoute('/_app/faqs/')({
   loader: () => listFaqs(),
-  head: () => ({ meta: [{ title: 'FAQs | Living Legacy Forest CMS' }] }),
+  head: () => ({ meta: [{ title: 'FAQs | Living Legacy CMS' }] }),
   component: FaqsRoute,
 });
 

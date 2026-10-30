@@ -395,6 +395,25 @@ export const requestReview = createServerFn({ method: 'POST' })
     return { reviewRequestedAt: now.getTime(), updatedAt: now.getTime() };
   });
 
+/** Copies a post's current content (its draft, if it has one) into a new draft. */
+export const duplicatePost = createServerFn({ method: 'POST' })
+  .middleware([requirePermission('posts:write')])
+  .validator(idSchema)
+  .handler(async ({ data, context }) => {
+    const db = getDb();
+    const row = await loadPost(db, data.id);
+    if (row.deletedAt) throw new Error('Restore this post from the trash before duplicating it.');
+    const live = await liveInput(db, row);
+    const values = row.draft ? ({ ...live, ...row.draft } as PostInput) : live;
+    const title = `${values.title} (copy)`;
+    const created = await createDraft(
+      db,
+      { ...values, title, slug: slugify(title) },
+      context.user.id
+    );
+    return { id: created.id };
+  });
+
 const seoSchema = postInputSchema
   .pick({ seoTitle: true, seoDescription: true, noindex: true })
   .extend({ id: z.string(), expectedUpdatedAt: z.number().optional() });

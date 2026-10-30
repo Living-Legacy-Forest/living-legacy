@@ -10,7 +10,7 @@ export const Route = createFileRoute('/preview/posts/$postId')({
   },
   loader: ({ params }) => getPostPreview({ data: { id: params.postId } }),
   head: ({ loaderData }) => ({
-    meta: [{ title: `Preview: ${loaderData?.title || 'Untitled'} | Living Legacy Forest CMS` }],
+    meta: [{ title: `Preview: ${loaderData?.title || 'Untitled'} | Living Legacy CMS` }],
   }),
   component: PreviewPage,
 });

@@ -8,7 +8,7 @@ export const Route = createFileRoute('/_app/posts/$postId')({
   head: ({ loaderData }) => ({
     meta: [
       {
-        title: `${loaderData?.post?.values.title || 'Edit post'} | Living Legacy Forest CMS`,
+        title: `${loaderData?.post?.values.title || 'Edit post'} | Living Legacy CMS`,
       },
     ],
   }),

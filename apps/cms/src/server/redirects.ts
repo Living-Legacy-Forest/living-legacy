@@ -10,7 +10,7 @@ import { requirePermission } from '@/lib/session';
 const { redirects } = schema;
 
 /** The public website, checked so a redirect does not hide a page that still exists. */
-const SITE_URL = 'https://livinglegacyforest.com.au';
+const SITE_URL = 'https://livinglegacy.com.au';
 
 const fromPathSchema = z
   .string()

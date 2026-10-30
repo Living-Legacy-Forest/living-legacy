@@ -4,7 +4,7 @@ import { DashboardSkeleton } from '@/components/dashboard/dashboard-skeleton';
 import { getDashboardData } from '@/server/dashboard';
 
 export const Route = createFileRoute('/_app/')({
-  head: () => ({ meta: [{ title: 'Dashboard | Living Legacy Forest CMS' }] }),
+  head: () => ({ meta: [{ title: 'Dashboard | Living Legacy CMS' }] }),
   loader: () => getDashboardData(),
   pendingComponent: DashboardSkeleton,
   component: DashboardPage,

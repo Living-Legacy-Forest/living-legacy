@@ -1,4 +1,4 @@
-// Shared TypeScript types for livinglegacyforest.com.au
+// Shared TypeScript types for livinglegacy.com.au
 
 export interface SanitySlug {
   current: string;

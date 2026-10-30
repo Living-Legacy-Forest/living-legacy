@@ -73,7 +73,7 @@ const SSR_DEPS = [
 ];
 
 export default defineConfig({
-  site: 'https://livinglegacyforest.com.au',
+  site: 'https://livinglegacy.com.au',
   // Every route renders on demand so published Sanity content appears
   // immediately, with no rebuild step.
   output: 'server',
@@ -94,7 +94,7 @@ export default defineConfig({
     sitemap({
       // Blog posts render on demand from Sanity, so they are listed by the
       // runtime sitemap at /sitemap-blog.xml rather than at build time.
-      customSitemaps: ['https://livinglegacyforest.com.au/sitemap-blog.xml'],
+      customSitemaps: ['https://livinglegacy.com.au/sitemap-blog.xml'],
       filter: (page) => !page.includes('/thank-you-contact'),
     }),
     react(),

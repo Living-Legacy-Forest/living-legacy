@@ -5,6 +5,7 @@
  * claims success unless HubSpot actually accepted it.
  */
 import { useEffect, useRef, useState } from 'react';
+import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Field, FieldGroup, FieldLabel } from '@/components/ui/field';
@@ -31,7 +32,6 @@ export function ContactForm() {
   const [fields, setFields] = useState<ContactFields>(EMPTY_FIELDS);
   const [consent, setConsent] = useState(false);
   const [invalid, setInvalid] = useState<Set<FieldName>>(new Set());
-  const [formError, setFormError] = useState<string | null>(null);
 
   const { honeypotRef, failsBotCheck } = useHoneypot();
   const fallbackRef = useRef<HTMLDivElement>(null);
@@ -69,7 +69,6 @@ export function ContactForm() {
     event.preventDefault();
     if (hubspotSubmit.sending) return;
 
-    setFormError(null);
     hubspotSubmit.hideFallback();
 
     if (failsBotCheck()) {
@@ -91,14 +90,14 @@ export function ContactForm() {
     setInvalid(nextInvalid);
 
     if (nextInvalid.size > 0) {
-      setFormError('Please check the highlighted fields and try again.');
+      toast.error('Please check the highlighted fields and try again.');
       const firstInvalidName = FIELD_ORDER.find((name) => nextInvalid.has(name));
       if (firstInvalidName) focusField[firstInvalidName]();
       return;
     }
 
     if (!consent) {
-      setFormError('Please agree to the privacy policy to continue.');
+      toast.error('Please agree to the privacy policy to continue.');
       return;
     }
 
@@ -215,16 +214,6 @@ export function ContactForm() {
               </span>
             </FieldLabel>
           </Field>
-
-          {formError && (
-            <p
-              role="alert"
-              aria-live="assertive"
-              className="text-destructive text-base font-medium sm:col-span-2"
-            >
-              {formError}
-            </p>
-          )}
 
           <div className="sm:col-span-2">
             <Button

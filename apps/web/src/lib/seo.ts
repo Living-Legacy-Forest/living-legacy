@@ -6,7 +6,7 @@
  * blocked automatically, so a preview URL can never be indexed by accident and
  * there is no flag anyone has to remember to set.
  */
-export const CANONICAL_HOST = 'livinglegacyforest.com.au';
+export const CANONICAL_HOST = 'livinglegacy.com.au';
 
 export function isIndexableHost(host: string | undefined | null): boolean {
   if (!host) return false;

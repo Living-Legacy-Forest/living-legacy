@@ -8,7 +8,7 @@ export const Route = createFileRoute('/_app/redirects/')({
     if (!can(context.user.role, 'redirects:write')) throw redirect({ to: '/' });
   },
   loader: () => listRedirects(),
-  head: () => ({ meta: [{ title: 'Redirects | Living Legacy Forest CMS' }] }),
+  head: () => ({ meta: [{ title: 'Redirects | Living Legacy CMS' }] }),
   component: RedirectsRoute,
 });
 

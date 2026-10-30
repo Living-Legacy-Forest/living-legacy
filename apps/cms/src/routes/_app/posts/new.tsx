@@ -8,7 +8,7 @@ export const Route = createFileRoute('/_app/posts/new')({
     if (!can(context.user.role, 'posts:write')) throw redirect({ to: '/posts' });
   },
   loader: () => getPostEditorData({ data: {} }),
-  head: () => ({ meta: [{ title: 'New post | Living Legacy Forest CMS' }] }),
+  head: () => ({ meta: [{ title: 'New post | Living Legacy CMS' }] }),
   component: NewPostPage,
 });
 

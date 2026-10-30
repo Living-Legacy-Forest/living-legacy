@@ -26,7 +26,7 @@ function withTrailingSlash(pathname: string): string {
 
 const {
   title,
-  description = 'Living Legacy Forest',
+  description = 'Living Legacy',
   noindex,
   canonical = new URL(withTrailingSlash(Astro.url.pathname), Astro.site).toString(),
   ogImage,
@@ -54,7 +54,7 @@ const blockIndexing = noindex === true || !isIndexableHost(Astro.url.host);
     <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
     <meta name="theme-color" content="#f6f2e9" />
     <meta property="og:type" content="website" />
-    <meta property="og:site_name" content="Living Legacy Forest" />
+    <meta property="og:site_name" content="Living Legacy" />
     <meta property="og:title" content={title} />
     {description && <meta property="og:description" content={description} />}
     <meta property="og:url" content={canonical} />

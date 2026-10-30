@@ -5,7 +5,7 @@ import { listTeamMembers } from '@/server/team';
 
 export const Route = createFileRoute('/_app/team/')({
   loader: () => listTeamMembers(),
-  head: () => ({ meta: [{ title: 'Team | Living Legacy Forest CMS' }] }),
+  head: () => ({ meta: [{ title: 'Team | Living Legacy CMS' }] }),
   component: TeamRoute,
 });
 

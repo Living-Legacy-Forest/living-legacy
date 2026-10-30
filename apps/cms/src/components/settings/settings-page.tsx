@@ -38,7 +38,7 @@ import {
 
 const rootRoute = getRouteApi('__root__');
 
-const SITE_HOST = 'livinglegacyforest.com.au';
+const SITE_HOST = 'livinglegacy.com.au';
 
 const sections = [
   { id: 'general', title: 'General' },
@@ -195,7 +195,7 @@ export function SettingsPage({
                   id="settings-email"
                   type="email"
                   value={values.contactEmail}
-                  placeholder="hello@livinglegacyforest.com.au"
+                  placeholder="hello@livinglegacy.com.au"
                   onChange={(e) => patch({ contactEmail: e.target.value })}
                   className={fieldWidth}
                 />

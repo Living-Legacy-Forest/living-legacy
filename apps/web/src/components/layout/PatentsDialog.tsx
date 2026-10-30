@@ -19,7 +19,7 @@ export default function PatentsDialog() {
             Living Legacy's soil treatment process is protected by the following patents
           </DialogTitle>
           <DialogDescription>
-            Living Legacy Forest's proprietary ash transformation technology is protected under:
+            Living Legacy's proprietary ash transformation technology is protected under:
           </DialogDescription>
         </DialogHeader>
         <ul className="text-muted-foreground list-disc space-y-1 pl-5 text-base">

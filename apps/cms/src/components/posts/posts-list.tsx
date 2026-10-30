@@ -85,6 +85,7 @@ const tabs: { value: PostStatusTab; label: string }[] = [
   { value: 'published', label: 'Published' },
   { value: 'scheduled', label: 'Scheduled' },
   { value: 'draft', label: 'Drafts' },
+  { value: 'review', label: 'In review' },
   { value: 'trash', label: 'Trash' },
 ];
 
@@ -106,6 +107,8 @@ export function PostsList({
   const [query, setQuery] = useState(search.q ?? '');
   const inTrash = search.status === 'trash';
   const canPurge = can(user.role, 'content:purge');
+  const canWrite = can(user.role, 'posts:write');
+  const canPublish = can(user.role, 'posts:publish');
 
   // The previewed post: the one in the URL, else the first row.
   const selectedId =
@@ -203,16 +206,18 @@ export function PostsList({
           </SelectTrigger>
           <SelectContent>
             {categoryItems.map((item) => (
-              <SelectItem key={item.value} value={item.value}>
+              <SelectItem key={item.value} value={item.value} className="text-[13px]">
                 {item.label}
               </SelectItem>
             ))}
           </SelectContent>
         </Select>
-        <Button size="sm" render={<Link to="/posts/new" />} nativeButton={false}>
-          <PlusIcon aria-hidden data-icon="inline-start" />
-          New post
-        </Button>
+        {canWrite && (
+          <Button size="sm" render={<Link to="/posts/new" />} nativeButton={false}>
+            <PlusIcon aria-hidden data-icon="inline-start" />
+            New post
+          </Button>
+        )}
       </div>
 
       <div className="grid min-h-0 flex-1 overflow-hidden rounded-lg border lg:grid-cols-[minmax(20rem,2fr)_3fr]">
@@ -307,6 +312,7 @@ export function PostsList({
                   selected={row.id === selectedId}
                   checked={checked.has(row.id)}
                   selecting={checked.size > 0}
+                  selectable={canPublish}
                   onToggle={() => toggle(row.id)}
                   onSelect={() => select(row.id)}
                 />
@@ -361,6 +367,8 @@ export function PostsList({
           row={selectedRow}
           inTrash={inTrash}
           canPurge={canPurge}
+          canPublish={canPublish}
+          editLabel={canWrite ? 'Edit' : 'Open'}
           pending={pending}
           onTrash={(id) => trash([id])}
           onRestore={(id) => restore([id])}
@@ -414,6 +422,7 @@ function PostListItem({
   selected,
   checked,
   selecting,
+  selectable,
   onToggle,
   onSelect,
 }: {
@@ -422,6 +431,8 @@ function PostListItem({
   selected: boolean;
   checked: boolean;
   selecting: boolean;
+  /** Only people who may trash or restore get tick boxes. */
+  selectable: boolean;
   onToggle: () => void;
   onSelect: () => void;
 }) {
@@ -443,17 +454,19 @@ function PostListItem({
         selected ? 'bg-accent' : 'hover:bg-muted/60'
       )}
     >
-      <Checkbox
-        aria-label={`Select ${row.title || 'Untitled'}`}
-        checked={checked}
-        onCheckedChange={onToggle}
-        className={cn(
-          'mt-3 transition-opacity',
-          checked || selecting
-            ? 'opacity-100'
-            : 'opacity-0 group-hover:opacity-100 focus-visible:opacity-100'
-        )}
-      />
+      {selectable && (
+        <Checkbox
+          aria-label={`Select ${row.title || 'Untitled'}`}
+          checked={checked}
+          onCheckedChange={onToggle}
+          className={cn(
+            'mt-3 transition-opacity',
+            checked || selecting
+              ? 'opacity-100'
+              : 'opacity-0 group-hover:opacity-100 focus-visible:opacity-100'
+          )}
+        />
+      )}
       <button
         type="button"
         data-row
@@ -481,6 +494,7 @@ function PostListItem({
             status={row.status}
             hasDraft={row.hasDraft}
             trashed={inTrash}
+            inReview={row.reviewRequestedAt !== null}
             scheduledAt={row.scheduledAt}
           />
           {meta.length > 0 && <span className="min-w-0 truncate">{['', ...meta].join(' · ')}</span>}
@@ -494,6 +508,8 @@ function PreviewPane({
   row,
   inTrash,
   canPurge,
+  canPublish,
+  editLabel,
   pending,
   onTrash,
   onRestore,
@@ -502,6 +518,8 @@ function PreviewPane({
   row: PostListRow | null;
   inTrash: boolean;
   canPurge: boolean;
+  canPublish: boolean;
+  editLabel: string;
   pending: boolean;
   onTrash: (id: string) => void;
   onRestore: (id: string) => void;
@@ -534,10 +552,12 @@ function PreviewPane({
             : `Edited ${formatRelative(row.updatedAt)}`}
         </span>
         {inTrash ? (
-          <Button variant="ghost" size="sm" disabled={pending} onClick={() => onRestore(row.id)}>
-            <RotateCcwIcon aria-hidden data-icon="inline-start" />
-            Restore
-          </Button>
+          canPublish && (
+            <Button variant="ghost" size="sm" disabled={pending} onClick={() => onRestore(row.id)}>
+              <RotateCcwIcon aria-hidden data-icon="inline-start" />
+              Restore
+            </Button>
+          )
         ) : (
           <>
             <Button
@@ -555,11 +575,11 @@ function PreviewPane({
               nativeButton={false}
             >
               <PencilIcon aria-hidden data-icon="inline-start" />
-              Edit
+              {editLabel}
             </Button>
           </>
         )}
-        {(!inTrash || canPurge) && (
+        {(inTrash ? canPurge : canPublish) && (
           <DropdownMenu>
             <DropdownMenuTrigger
               render={<Button variant="ghost" size="icon-sm" aria-label="More actions" />}
@@ -644,6 +664,11 @@ const emptyStates = {
     icon: PencilLineIcon,
     title: 'No drafts',
     description: 'Posts you save without publishing appear here.',
+  },
+  review: {
+    icon: SendIcon,
+    title: 'Nothing to review',
+    description: 'Posts authors submit for review appear here, ready to publish.',
   },
   trash: {
     icon: Trash2Icon,

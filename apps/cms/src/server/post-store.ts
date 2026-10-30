@@ -183,6 +183,7 @@ export async function publishValues(
         slug,
         status: 'published' as const,
         scheduledAt: null,
+        reviewRequestedAt: null,
         publishedAt,
         draft: null,
         updatedAt: now,

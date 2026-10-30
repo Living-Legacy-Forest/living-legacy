@@ -1,11 +1,19 @@
-import { type PostInput, blogPath, postInputSchema, publishErrors, slugify } from '@llf/content';
+import {
+  type PostInput,
+  blogPath,
+  can,
+  postInputSchema,
+  publishErrors,
+  slugify,
+} from '@llf/content';
 import { schema } from '@llf/db';
 import { createServerFn } from '@tanstack/react-start';
 import { and, asc, count, desc, eq, inArray, isNotNull, isNull, like, sql } from 'drizzle-orm';
 import { z } from 'zod';
 import { getDb } from '@/lib/db';
-import { authMiddleware, requirePermission } from '@/lib/session';
+import { type SessionUser, authMiddleware, requirePermission } from '@/lib/session';
 import {
+  type PostRow,
   type Statement,
   type Statements,
   assertVersion,
@@ -20,9 +28,23 @@ import {
 
 const { posts, terms, postTerms, teamMembers, revisions, publishEvents, user } = schema;
 
+/** Authors may only change posts they started; publishers may change any. */
+function assertCanEdit(row: PostRow, actor: SessionUser) {
+  if (!can(actor.role, 'posts:publish') && row.createdBy !== actor.id) {
+    throw new Error('You can only edit posts you wrote.');
+  }
+}
+
 export const POSTS_PAGE_SIZE = 20;
 
-export const postStatusTabs = ['all', 'published', 'scheduled', 'draft', 'trash'] as const;
+export const postStatusTabs = [
+  'all',
+  'published',
+  'scheduled',
+  'draft',
+  'review',
+  'trash',
+] as const;
 export type PostStatusTab = (typeof postStatusTabs)[number];
 
 // ---------------------------------------------------------------------------
@@ -46,6 +68,7 @@ export const listPosts = createServerFn({ method: 'GET' })
       published: and(notTrashed, eq(posts.status, 'published')),
       scheduled: and(notTrashed, eq(posts.status, 'draft'), isNotNull(posts.scheduledAt)),
       draft: and(notTrashed, eq(posts.status, 'draft'), isNull(posts.scheduledAt)),
+      review: and(notTrashed, isNotNull(posts.reviewRequestedAt)),
       trash: isNotNull(posts.deletedAt),
     } satisfies Record<PostStatusTab, unknown>;
 
@@ -70,6 +93,7 @@ export const listPosts = createServerFn({ method: 'GET' })
           published: sql<number>`coalesce(sum(${posts.deletedAt} is null and ${posts.status} = 'published'), 0)`,
           scheduled: sql<number>`coalesce(sum(${posts.deletedAt} is null and ${posts.status} = 'draft' and ${posts.scheduledAt} is not null), 0)`,
           draft: sql<number>`coalesce(sum(${posts.deletedAt} is null and ${posts.status} = 'draft' and ${posts.scheduledAt} is null), 0)`,
+          review: sql<number>`coalesce(sum(${posts.deletedAt} is null and ${posts.reviewRequestedAt} is not null), 0)`,
           trash: sql<number>`coalesce(sum(${posts.deletedAt} is not null), 0)`,
         })
         .from(posts),
@@ -85,6 +109,7 @@ export const listPosts = createServerFn({ method: 'GET' })
           updatedAt: posts.updatedAt,
           deletedAt: posts.deletedAt,
           scheduledAt: posts.scheduledAt,
+          reviewRequestedAt: posts.reviewRequestedAt,
           author: teamMembers.name,
         })
         .from(posts)
@@ -120,6 +145,7 @@ export const listPosts = createServerFn({ method: 'GET' })
         updatedAt: row.updatedAt.getTime(),
         deletedAt: row.deletedAt?.getTime() ?? null,
         scheduledAt: row.scheduledAt?.getTime() ?? null,
+        reviewRequestedAt: row.reviewRequestedAt?.getTime() ?? null,
         categories: assigned.filter((t) => t.postId === row.id && t.type === 'category'),
         tags: assigned.filter((t) => t.postId === row.id && t.type === 'tag'),
       })),
@@ -128,6 +154,7 @@ export const listPosts = createServerFn({ method: 'GET' })
         published: Number(counts?.published ?? 0),
         scheduled: Number(counts?.scheduled ?? 0),
         draft: Number(counts?.draft ?? 0),
+        review: Number(counts?.review ?? 0),
         trash: Number(counts?.trash ?? 0),
       },
       total,
@@ -187,6 +214,8 @@ export const getPostEditorData = createServerFn({ method: 'GET' })
         updatedAt: row.updatedAt.getTime(),
         trashed: row.deletedAt !== null,
         scheduledAt: row.scheduledAt?.getTime() ?? null,
+        reviewRequestedAt: row.reviewRequestedAt?.getTime() ?? null,
+        createdBy: row.createdBy,
         values,
       },
       revisions: history.map((r) => ({
@@ -221,7 +250,7 @@ const writeSchema = z.object({
 });
 
 export const savePost = createServerFn({ method: 'POST' })
-  .middleware([requirePermission('content:write')])
+  .middleware([requirePermission('posts:write')])
   .validator(writeSchema)
   .handler(async ({ data, context }) => {
     const db = getDb();
@@ -233,6 +262,7 @@ export const savePost = createServerFn({ method: 'POST' })
     }
 
     const row = await loadPost(db, data.id);
+    assertCanEdit(row, context.user);
     if (row.deletedAt) throw new Error('Restore this post from the trash before editing it.');
     assertVersion(row, data.expectedUpdatedAt);
     const now = new Date();
@@ -265,7 +295,7 @@ export const savePost = createServerFn({ method: 'POST' })
   });
 
 export const publishPost = createServerFn({ method: 'POST' })
-  .middleware([requirePermission('content:write')])
+  .middleware([requirePermission('posts:publish')])
   .validator(writeSchema)
   .handler(async ({ data, context }) => {
     const errors = publishErrors(data.values);
@@ -286,7 +316,7 @@ const idSchema = z.object({ id: z.string() });
 const MIN_SCHEDULE_LEAD_MS = 60_000;
 
 export const schedulePost = createServerFn({ method: 'POST' })
-  .middleware([requirePermission('content:write')])
+  .middleware([requirePermission('posts:publish')])
   .validator(writeSchema.extend({ scheduledAt: z.number().int() }))
   .handler(async ({ data, context }) => {
     const errors = publishErrors(data.values);
@@ -323,7 +353,7 @@ export const schedulePost = createServerFn({ method: 'POST' })
   });
 
 export const unschedulePost = createServerFn({ method: 'POST' })
-  .middleware([requirePermission('content:write')])
+  .middleware([requirePermission('posts:publish')])
   .validator(z.object({ id: z.string() }))
   .handler(async ({ data, context }) => {
     const now = new Date();
@@ -336,18 +366,92 @@ export const unschedulePost = createServerFn({ method: 'POST' })
 const idsSchema = z.object({ ids: z.array(z.string()).min(1).max(100) });
 
 export const discardChanges = createServerFn({ method: 'POST' })
-  .middleware([requirePermission('content:write')])
+  .middleware([requirePermission('posts:write')])
   .validator(idSchema)
   .handler(async ({ data, context }) => {
+    const db = getDb();
+    assertCanEdit(await loadPost(db, data.id), context.user);
     const now = new Date();
-    await getDb()
+    await db
       .update(posts)
       .set({ draft: null, updatedAt: now, updatedBy: context.user.id })
       .where(eq(posts.id, data.id));
   });
 
+/** An author hands a saved post to an editor. Publishing clears the request. */
+export const requestReview = createServerFn({ method: 'POST' })
+  .middleware([requirePermission('posts:write')])
+  .validator(idSchema)
+  .handler(async ({ data, context }) => {
+    const db = getDb();
+    const row = await loadPost(db, data.id);
+    assertCanEdit(row, context.user);
+    if (row.deletedAt) throw new Error('Restore this post from the trash first.');
+    const now = new Date();
+    await db
+      .update(posts)
+      .set({ reviewRequestedAt: now, updatedAt: now, updatedBy: context.user.id })
+      .where(eq(posts.id, row.id));
+    return { reviewRequestedAt: now.getTime(), updatedAt: now.getTime() };
+  });
+
+const seoSchema = postInputSchema
+  .pick({ seoTitle: true, seoDescription: true, noindex: true })
+  .extend({ id: z.string(), expectedUpdatedAt: z.number().optional() });
+
+/**
+ * SEO fields only, for people who may not change a post's content. They apply
+ * straight away, to the live post and to any pending edits, so a later
+ * publish keeps them.
+ */
+export const savePostSeo = createServerFn({ method: 'POST' })
+  .middleware([requirePermission('seo:write')])
+  .validator(seoSchema)
+  .handler(async ({ data, context }) => {
+    const db = getDb();
+    const row = await loadPost(db, data.id);
+    if (row.deletedAt) throw new Error('Restore this post from the trash first.');
+    assertVersion(row, data.expectedUpdatedAt);
+    const seo = {
+      seoTitle: data.seoTitle || null,
+      seoDescription: data.seoDescription || null,
+      noindex: data.noindex,
+    };
+    const now = new Date();
+    const statements: Statement[] = [
+      db
+        .update(posts)
+        .set({
+          ...seo,
+          draft: row.draft
+            ? {
+                ...row.draft,
+                seoTitle: data.seoTitle,
+                seoDescription: data.seoDescription,
+                noindex: data.noindex,
+              }
+            : null,
+          updatedAt: now,
+          updatedBy: context.user.id,
+        })
+        .where(eq(posts.id, row.id)),
+    ];
+    if (row.status === 'published') {
+      statements.push(
+        db.insert(publishEvents).values({
+          entityType: 'post',
+          entityId: row.id,
+          action: 'update',
+          paths: [blogPath(row.slug)],
+        })
+      );
+    }
+    await db.batch(statements as Statements);
+    return { updatedAt: now.getTime() };
+  });
+
 export const unpublishPost = createServerFn({ method: 'POST' })
-  .middleware([requirePermission('content:write')])
+  .middleware([requirePermission('posts:publish')])
   .validator(idSchema)
   .handler(async ({ data, context }) => {
     const db = getDb();
@@ -380,7 +484,7 @@ export const unpublishPost = createServerFn({ method: 'POST' })
   });
 
 export const trashPosts = createServerFn({ method: 'POST' })
-  .middleware([requirePermission('content:write')])
+  .middleware([requirePermission('posts:publish')])
   .validator(idsSchema)
   .handler(async ({ data, context }) => {
     const db = getDb();
@@ -421,7 +525,7 @@ export const trashPosts = createServerFn({ method: 'POST' })
   });
 
 export const restorePosts = createServerFn({ method: 'POST' })
-  .middleware([requirePermission('content:write')])
+  .middleware([requirePermission('posts:publish')])
   .validator(idsSchema)
   .handler(async ({ data, context }) => {
     const db = getDb();
@@ -462,7 +566,7 @@ export const deletePosts = createServerFn({ method: 'POST' })
   });
 
 export const createCategory = createServerFn({ method: 'POST' })
-  .middleware([requirePermission('content:write')])
+  .middleware([requirePermission('posts:write')])
   .validator(z.object({ name: z.string().trim().min(1).max(60) }))
   .handler(async ({ data }) => {
     const db = getDb();

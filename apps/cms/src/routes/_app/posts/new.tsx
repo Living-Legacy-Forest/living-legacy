@@ -1,8 +1,12 @@
-import { createFileRoute } from '@tanstack/react-router';
-import { PostEditor } from '@/components/posts/post-editor';
+import { can } from '@llf/content';
+import { createFileRoute, redirect } from '@tanstack/react-router';
+import { PostEditor, postAccessFor } from '@/components/posts/post-editor';
 import { getPostEditorData } from '@/server/posts';
 
 export const Route = createFileRoute('/_app/posts/new')({
+  beforeLoad: ({ context }) => {
+    if (!can(context.user.role, 'posts:write')) throw redirect({ to: '/posts' });
+  },
   loader: () => getPostEditorData({ data: {} }),
   head: () => ({ meta: [{ title: 'New post | Living Legacy Forest CMS' }] }),
   component: NewPostPage,
@@ -11,5 +15,12 @@ export const Route = createFileRoute('/_app/posts/new')({
 function NewPostPage() {
   const data = Route.useLoaderData();
   const router = Route.useNavigate();
-  return <PostEditor data={data} onReload={() => router({ to: '/posts/new' })} />;
+  const { user } = Route.useRouteContext();
+  return (
+    <PostEditor
+      data={data}
+      access={postAccessFor(user, null)}
+      onReload={() => router({ to: '/posts/new' })}
+    />
+  );
 }

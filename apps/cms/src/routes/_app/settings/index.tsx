@@ -5,7 +5,8 @@ import { getSiteSettings } from '@/server/settings';
 
 export const Route = createFileRoute('/_app/settings/')({
   beforeLoad: ({ context }) => {
-    if (!can(context.user.role, 'settings:write')) throw redirect({ to: '/' });
+    // SEO people get the Search & sharing section only.
+    if (!can(context.user.role, 'seo:write')) throw redirect({ to: '/' });
   },
   loader: () => getSiteSettings(),
   head: () => ({ meta: [{ title: 'Settings | Living Legacy Forest CMS' }] }),
@@ -14,5 +15,6 @@ export const Route = createFileRoute('/_app/settings/')({
 
 function SettingsRoute() {
   const data = Route.useLoaderData();
-  return <SettingsPage data={data} />;
+  const { user } = Route.useRouteContext();
+  return <SettingsPage data={data} seoOnly={!can(user.role, 'settings:write')} />;
 }

@@ -155,7 +155,7 @@ export function CommandMenu({ user }: { user: SessionUser }) {
     },
   ];
   const actions: StaticItem[] = [
-    ...(can(user.role, 'content:write')
+    ...(can(user.role, 'posts:write')
       ? [
           {
             label: 'New post',

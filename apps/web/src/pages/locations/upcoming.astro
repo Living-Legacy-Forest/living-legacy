@@ -29,8 +29,9 @@ const description =
       Please fill out the form below to let us know your area of interest and location.
     </p>
 
-    <Card className="shadow-panel mt-10 bg-white/50 p-2 sm:p-4">
-      <CardContent className="px-4 sm:px-6">
+    <!-- Same box as the contact form: the default card colour, no shadow. -->
+    <Card className="mt-10">
+      <CardContent>
         <UpcomingLocationForm contact={contact} client:visible />
       </CardContent>
     </Card>

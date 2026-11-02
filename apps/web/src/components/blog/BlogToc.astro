@@ -1,6 +1,6 @@
 ---
-// Table of contents, built from the article's own H2s. Ids match the ones
-// PortableText.astro assigns, via the same slugify() call.
+// Table of contents, built from the article's own H2s. The ids are the ones
+// each post's source put on its H2 tags (src/lib/blog-cms.ts, blog-wordpress.ts).
 //
 // Two forms: `sidebar` (the sticky rail beside the article from lg) and
 // `collapsible` (a closed-by-default panel above the article below lg, where
@@ -24,15 +24,23 @@ interface Props {
 
 const { headings, variant = 'sidebar', class: className } = Astro.props;
 
+// Plain text, no underlines: a column of underlined links reads as noise. The
+// section being read is marked by colour and weight alone.
 const linkClass =
-  'text-ink-soft decoration-bark/40 hover:text-moss-deep hover:decoration-moss aria-[current=location]:text-moss-deep aria-[current=location]:decoration-moss text-base leading-snug font-medium text-pretty underline underline-offset-4 transition-colors duration-200';
+  'text-ink-soft hover:text-ink aria-[current=location]:text-moss-deep aria-[current=location]:font-medium text-sm leading-snug text-pretty transition-colors duration-200';
 ---
 
 {
   headings.length > 1 &&
     (variant === 'sidebar' ? (
-      <nav aria-label="Table of contents" class:list={['flex gap-5', className]} data-toc>
+      <nav aria-label="Table of contents" class:list={['relative flex gap-5', className]} data-toc>
         <Separator orientation="vertical" />
+        {/* Slides along the rule to the section being read (script below). */}
+        <span
+          aria-hidden="true"
+          data-toc-marker
+          class="bg-moss pointer-events-none absolute top-0 -left-px h-0 w-[3px] rounded-full opacity-0 transition-[transform,height,opacity] duration-300 ease-[var(--ease-grow)]"
+        />
         <div class="flex flex-col gap-4">
           <p class="eyebrow">In this article</p>
           <ol class="flex flex-col gap-2.5">
@@ -48,7 +56,7 @@ const linkClass =
       </nav>
     ) : (
       <details
-        class:list={['group border-bark/20 bg-paper-deep/40 rounded-xl border', className]}
+        class:list={['group border-bark/20 rounded-xl border', className]}
         data-toc
         data-toc-collapsible
       >
@@ -104,6 +112,19 @@ const linkClass =
       for (const a of links) {
         if (a.hash.slice(1) === current) a.setAttribute('aria-current', 'location');
         else a.removeAttribute('aria-current');
+      }
+      // Move each sidebar's marker beside its current link, or fade it out
+      // before the first section.
+      for (const toc of tocs) {
+        const marker = toc.querySelector<HTMLElement>('[data-toc-marker]');
+        if (!marker) continue;
+        const link = toc.querySelector<HTMLElement>('a[aria-current]');
+        marker.style.opacity = link ? '1' : '0';
+        if (!link) continue;
+        const nav = toc.getBoundingClientRect();
+        const box = link.getBoundingClientRect();
+        marker.style.height = `${box.height}px`;
+        marker.style.transform = `translateY(${box.top - nav.top}px)`;
       }
     };
     const schedule = () => {

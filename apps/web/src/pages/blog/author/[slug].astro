@@ -12,7 +12,7 @@ import {
   BreadcrumbSeparator,
 } from '@/components/ui/breadcrumb';
 import { Separator } from '@/components/ui/separator';
-import { getAuthorBySlug, getPostsByAuthor } from '@/lib/sanity';
+import { getAuthorBySlug, getPostsByAuthor } from '@/lib/blog-posts';
 
 export const prerender = false;
 
@@ -26,13 +26,13 @@ if (!author) {
 const requestedPage = Number.parseInt(Astro.url.searchParams.get('page') ?? '1', 10);
 const page = Number.isInteger(requestedPage) && requestedPage > 0 ? requestedPage : 1;
 
-const { posts, total, pageCount } = await getPostsByAuthor(author.slug.current, page);
+const { posts, total, pageCount } = await getPostsByAuthor(author.slug, page);
 
 if (pageCount > 0 && page > pageCount) {
   return Astro.rewrite('/404');
 }
 
-const canonicalPath = `/blog/author/${author.slug.current}/`;
+const canonicalPath = `/blog/author/${author.slug}/`;
 const description =
   author.bio ||
   `${total} ${total === 1 ? 'post' : 'posts'} by ${author.name} on the Living Legacy blog.`;

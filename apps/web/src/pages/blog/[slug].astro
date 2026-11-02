@@ -7,32 +7,31 @@ import BlogCTA from '@/components/blog/BlogCTA.astro';
 import BlogHero from '@/components/blog/BlogHero.astro';
 import BlogShare from '@/components/blog/BlogShare.astro';
 import BlogToc from '@/components/blog/BlogToc.astro';
-import PortableText from '@/components/blog/PortableText.astro';
+import BlogBody from '@/components/blog/BlogBody.astro';
 import RelatedPosts from '@/components/blog/RelatedPosts.astro';
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
-import { extractH2Headings, lastUpdatedAt } from '@/lib/blog';
+import { type BlogPost, lastUpdatedAt } from '@/lib/blog';
+import { getBlogPostBySlug, getRelatedBlogPosts } from '@/lib/blog-posts';
 import { getSiteSettings } from '@/lib/settings';
-import { getBlogPostBySlug, getRelatedBlogPosts, imageUrl } from '@/lib/sanity';
-import type { SanityBlogPost } from '@/types';
 
 export const prerender = false;
 
 const { slug } = Astro.params;
 const post = slug ? await getBlogPostBySlug(slug) : null;
 
-// getBlogPostBySlug soft-fails to null on a Sanity error too, so a CMS
-// outage reads as "not found" for the moment it lasts rather than a 500.
+// Each source soft-fails to no posts, so an outage reads as "not found" for
+// the moment it lasts rather than a 500.
 if (!post) {
   return Astro.rewrite('/404');
 }
 
 const shareUrl = new URL(Astro.url.pathname, Astro.site ?? Astro.url).toString();
-const headings = extractH2Headings(post.body);
+const headings = post.headings;
 
-let related: SanityBlogPost[] = [];
+let related: BlogPost[] = [];
 try {
-  related = await getRelatedBlogPosts(post._id, post.category?._id, 3);
+  related = await getRelatedBlogPosts(post, 3);
 } catch {
   related = [];
 }
@@ -41,9 +40,9 @@ const seoTitle = post.seoTitle ?? post.title;
 const { siteTitle } = await getSiteSettings();
 const seoDescription = post.seoDescription ?? post.excerpt ?? '';
 
-// 1200x630 is the size social platforms crop to anyway, so they are not each
-// downloading a full-resolution original.
-const ogImage = imageUrl(post.featuredImage, { width: 1200, height: 630, fit: 'crop' });
+// A smaller rendition where the source has one, so social platforms are not
+// each downloading a full-resolution original.
+const ogImage = post.ogImageUrl ?? post.image?.url;
 
 const jsonLd = {
   '@context': 'https://schema.org',
@@ -82,12 +81,22 @@ const breadcrumbLd = {
 const toJsonLd = (value: unknown) => JSON.stringify(value).replace(/</g, '\\u003c');
 ---
 
-<BaseLayout title={seoTitle} description={seoDescription} canonical={shareUrl} ogImage={ogImage}>
+<BaseLayout
+  title={seoTitle}
+  description={seoDescription}
+  canonical={shareUrl}
+  ogImage={ogImage}
+  noindex={post.noindex}
+>
   <script type="application/ld+json" is:inline set:html={toJsonLd(jsonLd)} />
   <script type="application/ld+json" is:inline set:html={toJsonLd(breadcrumbLd)} />
 
-  <div>
-    <BlogHero post={post} shareUrl={shareUrl} />
+  <!-- The article names a view timeline that the reading-progress bar,
+       a sibling, follows; timeline-scope lets the bar see it. -->
+  <div class="[timeline-scope:--article]">
+    <div aria-hidden="true" class="reading-progress bg-moss fixed inset-x-0 top-0 z-[60] h-0.5">
+    </div>
+    <BlogHero post={post} />
 
     <div class="mx-auto max-w-6xl px-6 pt-4 pb-20 sm:px-10 md:pb-28">
       <div class="lg:grid lg:grid-cols-[12rem_minmax(0,1fr)_16rem] lg:items-start lg:gap-10">
@@ -98,17 +107,17 @@ const toJsonLd = (value: unknown) => JSON.stringify(value).replace(/</g, '\\u003
           <BlogToc headings={headings} />
         </div>
 
-        <article class="mx-auto w-full max-w-[68ch]">
+        <article class="mx-auto w-full max-w-[68ch] [view-timeline-name:--article]">
           <BlogToc headings={headings} variant="collapsible" class="mb-10 lg:hidden" />
 
-          <PortableText content={post.body ?? []} />
+          <BlogBody html={post.html} />
 
           <Separator className="mt-12" />
           {
             post.tags && post.tags.length > 0 && (
               <div class="mt-8 flex flex-wrap items-center gap-2">
                 {post.tags.map((tag) => (
-                  <a href={`/blog/tag/${tag.slug.current}/`}>
+                  <a href={`/blog/tag/${tag.slug}/`}>
                     <Badge variant="secondary" className="hover:bg-sun/40">
                       #{tag.title}
                     </Badge>
@@ -117,7 +126,6 @@ const toJsonLd = (value: unknown) => JSON.stringify(value).replace(/</g, '\\u003
               </div>
             )
           }
-          <!-- Repeated from the header, for a reader who reaches the end. -->
           <BlogShare url={shareUrl} title={post.title} class="mt-8" />
         </article>
 

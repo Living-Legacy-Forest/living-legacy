@@ -1,15 +1,16 @@
 ---
 // Search and topic filter for the blog index.
 //
-// Plain GET form and plain links, so it works with no JavaScript and every
-// result is a shareable URL: /blog/?q=ashes&tag=memorial-ideas. The search
-// keeps the chosen topic through a hidden field; a topic chip keeps the
-// search in its link. Choosing "All topics" drops the topic, not the search.
+// A plain GET form, so every result is a shareable URL:
+// /blog/?q=ashes&tag=memorial-ideas. The topic dropdown (BlogTopicSelect)
+// loads a topic as soon as it is picked; the Search button keeps the current
+// topic through a hidden field. "All topics" drops the topic, not the search.
 import HugeIcon from '@/components/ui/HugeIcon.astro';
-import { Search01Icon } from '@hugeicons/core-free-icons';
-import { Input } from '@/components/ui/input';
+import { Cancel01Icon, Search01Icon } from '@hugeicons/core-free-icons';
+import { BlogTopicSelect } from '@/components/blog/BlogTopicSelect';
 import { buttonVariants } from '@/components/ui/button';
-import type { BlogTagCount } from '@/lib/sanity';
+import { cn } from '@/lib/utils';
+import type { BlogTagCount } from '@/lib/blog-posts';
 
 interface Props {
   q?: string;
@@ -29,91 +30,77 @@ function href(params: { q?: string; tag?: string }): string {
 }
 
 // Editors have typed tags in mixed case ("memorial ideas", "What to do with
-// cremated ashes"); the chips read as one set in sentence case.
+// cremated ashes"); the options read as one set in sentence case.
 const sentenceCase = (title: string) => title.charAt(0).toUpperCase() + title.slice(1);
 
-// The chips are one sideways-scrolling row on a phone, running to the screen
-// edge so the cut-off chip shows there is more; wrapped rows from sm.
-const chipClass =
-  'inline-flex h-10 items-center gap-1.5 rounded-full border px-4 text-base font-medium whitespace-nowrap transition-[color,background-color,border-color,scale] duration-200 outline-none focus-visible:ring-4 focus-visible:ring-ring/20 active:scale-[0.97] motion-reduce:active:scale-100';
-const chipIdle = 'border-bark/25 text-ink-soft hover:border-moss hover:text-moss-deep bg-white';
-const chipActive = 'border-moss-deep bg-moss-deep text-paper';
+// The search field matches the buttons' 48px height and rounded-xl corners,
+// as does the topic dropdown's trigger.
+const fieldClass =
+  'border-bark/25 hover:border-bark/40 focus-within:border-moss focus-within:ring-ring/20 relative flex h-12 items-center rounded-xl border bg-white transition-[border-color,box-shadow] duration-200 focus-within:ring-4';
 ---
 
-<div class:list={['flex flex-col gap-6', className]}>
-  <form action="/blog/" method="get" role="search" class="flex max-w-xl gap-3">
+<form
+  action="/blog/"
+  method="get"
+  role="search"
+  data-blog-filters
+  class:list={['flex flex-col gap-3 sm:flex-row', className]}
+>
+  <div class={cn(fieldClass, 'pl-4 sm:max-w-md sm:flex-1')}>
     <label for="blog-search" class="sr-only">Search articles</label>
-    <div class="relative flex-1">
-      <HugeIcon
-        icon={Search01Icon}
-        class="text-bark pointer-events-none absolute top-1/2 left-4 size-5 -translate-y-1/2"
-        aria-hidden="true"
-      />
-      <Input
-        id="blog-search"
-        type="search"
-        name="q"
-        value={q}
-        maxLength={100}
-        placeholder="Search articles"
-        autoComplete="off"
-        enterKeyHint="search"
-        className="pl-11"
-      />
-    </div>
-    {tag && <input type="hidden" name="tag" value={tag} />}
-    <button type="submit" class={buttonVariants({ variant: 'default' })}> Search </button>
-  </form>
-
-  {
-    tags.length > 0 && (
-      <nav aria-label="Filter by topic">
-        <ul
-          data-topic-chips
-          class="-mx-6 -my-1 flex [scrollbar-width:none] gap-2 overflow-x-auto px-6 py-1 sm:mx-0 sm:flex-wrap sm:overflow-visible sm:px-0"
+    <HugeIcon icon={Search01Icon} class="text-bark size-5 shrink-0" aria-hidden="true" />
+    <input
+      id="blog-search"
+      type="search"
+      name="q"
+      value={q}
+      maxlength={100}
+      placeholder="Search articles"
+      autocomplete="off"
+      enterkeyhint="search"
+      class="text-ink placeholder:text-bark/80 h-full min-w-0 flex-1 bg-transparent px-3 text-base outline-none [&::-webkit-search-cancel-button]:hidden"
+    />
+    {
+      q && (
+        <a
+          href={href({ tag })}
+          aria-label="Clear search"
+          class="text-bark hover:text-ink focus-visible:ring-ring/30 mr-2 grid size-8 shrink-0 place-items-center rounded-lg transition-colors outline-none focus-visible:ring-2"
         >
-          <li>
-            <a
-              href={href({ q })}
-              aria-current={!tag ? 'page' : undefined}
-              class:list={[chipClass, !tag ? chipActive : chipIdle]}
-            >
-              All topics
-            </a>
-          </li>
-          {tags.map((t) => {
-            const active = t.slug.current === tag;
-            return (
-              <li>
-                <a
-                  href={href({ q, tag: t.slug.current })}
-                  aria-current={active ? 'page' : undefined}
-                  aria-label={`${sentenceCase(t.title)}, ${t.count} ${t.count === 1 ? 'article' : 'articles'}`}
-                  class:list={[chipClass, active ? chipActive : chipIdle]}
-                >
-                  {sentenceCase(t.title)}
-                  <span
-                    aria-hidden="true"
-                    class:list={['tabular-nums', active ? 'text-paper/70' : 'text-bark']}
-                  >
-                    {t.count}
-                  </span>
-                </a>
-              </li>
-            );
-          })}
-        </ul>
-      </nav>
-    )
-  }
-</div>
+          <HugeIcon icon={Cancel01Icon} class="size-4" aria-hidden="true" />
+        </a>
+      )
+    }
+  </div>
+
+  <div class="flex gap-3">
+    {
+      tags.length > 0 && (
+        <div class="min-w-0 flex-1 sm:flex-none">
+          <BlogTopicSelect
+            client:load
+            tag={tag}
+            topics={tags.map((t) => ({
+              slug: t.slug,
+              title: sentenceCase(t.title),
+              count: t.count,
+            }))}
+          />
+        </div>
+      )
+    }
+    {tag && <input type="hidden" name="tag" value={tag} />}
+    <button type="submit" class={cn(buttonVariants(), 'shrink-0')}> Search </button>
+  </div>
+</form>
 
 <script>
-  // On a phone the chips scroll sideways, so a topic far down the list would
-  // load out of sight. Bring the chosen one into view without moving the page.
-  const row = document.querySelector<HTMLElement>('[data-topic-chips]');
-  const current = row?.querySelector<HTMLElement>('[aria-current]');
-  if (row && current && row.scrollWidth > row.clientWidth) {
-    row.scrollLeft = current.offsetLeft - row.offsetLeft - 24;
-  }
+  // An empty search box is left out of the URL, so a topic on its own reads
+  // /blog/?tag=… rather than /blog/?q=&tag=….
+  const form = document.querySelector<HTMLFormElement>('[data-blog-filters]');
+  form?.addEventListener('formdata', (event) => {
+    for (const key of ['q', 'tag']) {
+      if (!event.formData.get(key)) event.formData.delete(key);
+    }
+  });
 </script>

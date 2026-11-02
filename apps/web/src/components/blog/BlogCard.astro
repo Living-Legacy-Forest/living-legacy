@@ -1,96 +1,109 @@
 ---
 // One post on the index, an archive, or the related-posts strip.
 //
+// Deliberately plain: the photo, a small topic label, the title, two lines of
+// excerpt and the date. No card frame, shadow or badge, so a grid of them
+// reads as a calm list of articles rather than a wall of boxes.
+//
 // The whole card is not a link: the title is, stretched over the card with an
 // ::after so the click target covers everything while the accessibility tree
-// only announces one sensible link, not one wrapping the image, the category
-// and the date as one long run. The category badge sits above the stretched
-// overlay (relative z-10) so it stays independently clickable.
+// only announces one sensible link. The topic label sits above that overlay
+// (relative z-10) so it stays independently clickable.
 //
-// CardTitle (src/components/ui/card.tsx) renders a <div>, not a heading, and
-// has no render/asChild prop to become one. Its classes are reproduced here
-// directly on a real <h3> so post titles keep their place in the outline.
+// Cards further down the page fade up as they scroll in, a row at a time with
+// a short stagger (the script below and [data-reveal] in global.css).
 //
-// Feel, after Apple's fluid-interface guidance:
-// - The card fills its grid row and the meta line sits at the bottom, so every
-//   card in a row ends level whatever the title's length.
-// - Pressing the title link (i.e. anywhere on the card but the badge) gives
-//   instant feedback: a 100ms scale to 0.985 on press, eased back on release.
-// - Hover adds depth rather than motion for its own sake: a slight lift with a
-//   deeper, softer shadow, and the photo eases in. Tailwind's `hover:` only
-//   applies where the device can hover, so touch never sticks in that state.
-// - Keyboard focus rings the whole card, the area the link actually covers,
-//   rather than the title text alone.
-// - Reduced motion keeps the shadow and focus ring but drops lift, press scale
-//   and the photo zoom.
-import { Card, CardHeader, CardFooter, CardDescription } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
-import { formatBlogDate } from '@/lib/blog';
-import { imageUrl } from '@/lib/sanity';
-import type { SanityBlogPost } from '@/types';
+// Hover is quiet on purpose: the title turns moss and the photo dims a touch.
+// Nothing moves or scales. Keyboard focus rings the photo, the card's
+// clearest edge, rather than the title text alone.
+import { type BlogPost, formatBlogDate } from '@/lib/blog';
 
 interface Props {
-  post: SanityBlogPost;
+  post: BlogPost;
 }
 
 const { post } = Astro.props;
-const { title, slug, excerpt, publishedAt, featuredImage, category, readingTime } = post;
+const { title, slug, excerpt, publishedAt, image, category, readingTime } = post;
 
-const imgSrc = imageUrl(featuredImage, { width: 800, height: 534, fit: 'crop' });
+const imgSrc = image?.cardUrl ?? image?.url;
 ---
 
-<article class="group h-full">
-  <Card
-    size="sm"
-    className="has-[h3_a:focus-visible]:ring-moss relative h-full pt-0 transition-[translate,scale,box-shadow] duration-300 ease-[var(--ease-grow)] hover:-translate-y-0.5 hover:shadow-[0_24px_48px_-24px_rgb(23_35_28/0.35)] has-[h3_a:active]:scale-[0.985] has-[h3_a:active]:duration-100 has-[h3_a:focus-visible]:ring-2 motion-reduce:transition-shadow motion-reduce:hover:translate-y-0 motion-reduce:has-[h3_a:active]:scale-100"
-  >
-    {
-      /* Rendered only when there is an image: an empty frame reads as one that
-        failed to load rather than as a card that never had one. */
-    }
-    {
-      imgSrc && (
-        <div class="bg-paper-deep aspect-[3/2] w-full overflow-hidden">
-          <img
-            src={imgSrc}
-            alt={featuredImage?.alt ?? ''}
-            width="800"
-            height="534"
-            loading="lazy"
-            decoding="async"
-            class="size-full object-cover transition-transform duration-500 ease-[var(--ease-grow)] group-hover:scale-[1.03] motion-reduce:transition-none motion-reduce:group-hover:scale-100"
-          />
-        </div>
-      )
-    }
+<article data-reveal class="group relative flex h-full flex-col">
+  {
+    /* Rendered only when there is an image: an empty frame reads as one that
+      failed to load rather than as a card that never had one. */
+  }
+  {
+    imgSrc && (
+      <div class="bg-paper-deep group-has-[h3_a:focus-visible]:ring-moss mb-5 aspect-[3/2] overflow-hidden rounded-xl ring-offset-2 ring-offset-[var(--color-paper)] group-has-[h3_a:focus-visible]:ring-2">
+        <img
+          src={imgSrc}
+          alt={image?.alt ?? ''}
+          width="800"
+          height="534"
+          loading="lazy"
+          decoding="async"
+          class="size-full object-cover transition-opacity duration-300 group-hover:opacity-90 motion-reduce:transition-none"
+        />
+      </div>
+    )
+  }
 
-    <CardHeader className="flex-1 content-start gap-2.5">
-      {
-        category && (
-          <a href={`/blog/category/${category.slug.current}/`} class="relative z-10 w-fit">
-            <Badge variant="outline" className="hover:border-moss hover:text-moss-deep">
-              {category.title}
-            </Badge>
-          </a>
-        )
-      }
+  {
+    category && (
+      <a
+        href={`/blog/category/${category.slug}/`}
+        class="text-moss-deep hover:text-ink relative z-10 mb-2 w-fit text-sm font-medium transition-colors duration-200"
+      >
+        {category.title}
+      </a>
+    )
+  }
 
-      <h3 class="font-heading text-lg leading-snug font-normal tracking-tight text-balance">
-        <a
-          href={`/blog/${slug.current}/`}
-          class="group-hover:text-moss-deep transition-colors duration-300 outline-none after:absolute after:inset-0 after:content-['']"
-        >
-          {title}
-        </a>
-      </h3>
+  <h3 class="font-heading text-xl leading-snug font-normal tracking-tight text-balance">
+    <a
+      href={`/blog/${slug}/`}
+      class="group-hover:text-moss-deep transition-colors duration-200 outline-none after:absolute after:inset-0 after:content-['']"
+    >
+      {title}
+    </a>
+  </h3>
 
-      {excerpt && <CardDescription className="line-clamp-3 text-pretty">{excerpt}</CardDescription>}
-    </CardHeader>
+  {excerpt && <p class="text-ink-soft mt-2 line-clamp-2 text-base text-pretty">{excerpt}</p>}
 
-    <CardFooter className="text-bark flex-wrap gap-x-2 border-t-0 pt-0 text-base">
-      <time datetime={publishedAt}>{formatBlogDate(publishedAt)}</time>
-      {readingTime && <span aria-hidden="true">&middot;</span>}
-      {readingTime && <span>{readingTime} min read</span>}
-    </CardFooter>
-  </Card>
+  <p class="text-bark mt-auto flex flex-wrap gap-x-2 pt-4 text-sm">
+    <time datetime={publishedAt}>{formatBlogDate(publishedAt)}</time>
+    <span aria-hidden="true">&middot;</span>
+    <span>{readingTime} min read</span>
+  </p>
 </article>
+
+<script>
+  // Reveal cards still below the fold as they scroll in. Cards on screen at
+  // load are left alone, so nothing visible ever blinks out; with reduced
+  // motion, or no IntersectionObserver, cards simply show.
+  const cards = [...document.querySelectorAll<HTMLElement>('[data-reveal]')];
+  const reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+  if (!reduce && 'IntersectionObserver' in window) {
+    const pending = cards.filter((card) => card.getBoundingClientRect().top > window.innerHeight);
+    for (const card of pending) card.dataset.reveal = 'pending';
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        // Cards that arrive together (a row) stagger left to right.
+        const arriving = entries
+          .filter((entry) => entry.isIntersecting)
+          .sort((a, b) => a.boundingClientRect.left - b.boundingClientRect.left);
+        arriving.forEach((entry, i) => {
+          const card = entry.target as HTMLElement;
+          card.style.setProperty('--reveal-delay', `${i * 70}ms`);
+          card.dataset.reveal = 'shown';
+          observer.unobserve(card);
+        });
+      },
+      { rootMargin: '0px 0px -8% 0px' }
+    );
+    for (const card of pending) observer.observe(card);
+  }
+</script>

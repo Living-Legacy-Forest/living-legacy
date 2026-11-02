@@ -254,6 +254,71 @@
   animation: rise 0.9s var(--ease-grow) both;
 }
 
+/* The same rise, applied to each direct child in turn, 80ms apart: a page
+   header's breadcrumb, title and intro arrive as a short cascade. */
+@utility rise-children {
+  & > * {
+    animation: rise 0.9s var(--ease-grow) both;
+  }
+  & > :nth-child(2) {
+    animation-delay: 80ms;
+  }
+  & > :nth-child(3) {
+    animation-delay: 160ms;
+  }
+  & > :nth-child(4) {
+    animation-delay: 240ms;
+  }
+  & > :nth-child(n + 5) {
+    animation-delay: 320ms;
+  }
+}
+
+/* Content further down the page fades up as it scrolls into view (blog cards,
+   see BlogCard.astro). Only what the script has marked pending is hidden, and
+   it only marks what is still below the fold, so nothing on screen ever blinks
+   out, and without JavaScript everything simply shows. */
+[data-reveal='pending'] {
+  opacity: 0;
+  transform: translateY(1rem);
+}
+[data-reveal='shown'] {
+  transition:
+    opacity 0.6s var(--ease-grow),
+    transform 0.6s var(--ease-grow);
+  transition-delay: var(--reveal-delay, 0ms);
+}
+
+/* How far through an article the reader is: a thin bar driven by scrolling
+   itself, so it costs no script. Spans the article only (its view timeline is
+   named on the post page), from its top reaching the top of the screen to its
+   bottom reaching the bottom. Hidden where scroll timelines are unsupported. */
+@keyframes grow-x {
+  from {
+    transform: scaleX(0);
+  }
+  to {
+    transform: scaleX(1);
+  }
+}
+@utility reading-progress {
+  transform-origin: left;
+  transform: scaleX(0);
+  animation: grow-x linear both;
+  animation-timeline: --article;
+  animation-range: contain 0% contain 100%;
+
+  /* It only moves as the reader scrolls, so reduced motion keeps it; the
+     global rule's tiny duration would otherwise break the scroll link. */
+  @media (prefers-reduced-motion: reduce) {
+    animation-duration: auto !important;
+  }
+
+  @supports not (animation-timeline: view()) {
+    display: none;
+  }
+}
+
 /* Growth rings drawing themselves, outermost last. Each ring settles at its
    own opacity (--o) rather than a shared value. */
 @keyframes draw-ring {

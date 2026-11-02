@@ -6,3 +6,4 @@ export * from './faqs';
 export * from './abn';
 export * from './announcements';
 export * from './settings';
+export * from './rich-text-html';

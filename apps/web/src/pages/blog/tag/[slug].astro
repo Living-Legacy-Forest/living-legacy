@@ -12,7 +12,7 @@ import {
   BreadcrumbSeparator,
 } from '@/components/ui/breadcrumb';
 import { Separator } from '@/components/ui/separator';
-import { getPostsByTag, getTagBySlug } from '@/lib/sanity';
+import { getPostsByTag, getTagBySlug } from '@/lib/blog-posts';
 
 export const prerender = false;
 
@@ -26,13 +26,13 @@ if (!tag) {
 const requestedPage = Number.parseInt(Astro.url.searchParams.get('page') ?? '1', 10);
 const page = Number.isInteger(requestedPage) && requestedPage > 0 ? requestedPage : 1;
 
-const { posts, total, pageCount } = await getPostsByTag(tag.slug.current, page);
+const { posts, total, pageCount } = await getPostsByTag(tag.slug, page);
 
 if (pageCount > 0 && page > pageCount) {
   return Astro.rewrite('/404');
 }
 
-const canonicalPath = `/blog/tag/${tag.slug.current}/`;
+const canonicalPath = `/blog/tag/${tag.slug}/`;
 const description = `${total} ${total === 1 ? 'post' : 'posts'} tagged ${tag.title} on the Living Legacy blog.`;
 ---
 

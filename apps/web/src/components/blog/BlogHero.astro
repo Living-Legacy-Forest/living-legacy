@@ -1,28 +1,22 @@
 ---
 // Article header: breadcrumb, category, title, byline and featured image.
-import BlogShare from '@/components/blog/BlogShare.astro';
 import {
   Breadcrumb,
   BreadcrumbItem,
   BreadcrumbLink,
   BreadcrumbList,
-  BreadcrumbPage,
   BreadcrumbSeparator,
 } from '@/components/ui/breadcrumb';
-import { formatBlogDate, lastUpdatedAt } from '@/lib/blog';
-import { imageDimensions, imageUrl } from '@/lib/sanity';
-import type { SanityBlogPost } from '@/types';
+import { type BlogPost, formatBlogDate, lastUpdatedAt } from '@/lib/blog';
 
 interface Props {
-  post: SanityBlogPost;
-  shareUrl: string;
+  post: BlogPost;
 }
 
-const { post, shareUrl } = Astro.props;
-const { title, publishedAt, category, author, featuredImage, readingTime } = post;
+const { post } = Astro.props;
+const { title, publishedAt, category, author, image, readingTime } = post;
 
-const heroSrc = imageUrl(featuredImage, { width: 1600, fit: 'max' });
-const heroDim = imageDimensions(featuredImage?.asset?._ref);
+const heroSrc = image?.url;
 
 // Only worth a second line when the last edit happened on a different day.
 const updatedAt = lastUpdatedAt(post);
@@ -31,7 +25,7 @@ const showUpdated = new Date(updatedAt).toDateString() !== new Date(publishedAt)
 
 <header class="pt-10 pb-8 md:pt-14">
   <div class="mx-auto max-w-6xl px-6 sm:px-10">
-    <Breadcrumb className="mb-8">
+    <Breadcrumb className="rise mb-8">
       <BreadcrumbList>
         <BreadcrumbItem>
           <BreadcrumbLink href="/">Home</BreadcrumbLink>
@@ -40,17 +34,16 @@ const showUpdated = new Date(updatedAt).toDateString() !== new Date(publishedAt)
         <BreadcrumbItem>
           <BreadcrumbLink href="/blog/">Blog</BreadcrumbLink>
         </BreadcrumbItem>
-        <BreadcrumbSeparator />
-        <BreadcrumbItem>
-          <BreadcrumbPage>{title}</BreadcrumbPage>
-        </BreadcrumbItem>
       </BreadcrumbList>
     </Breadcrumb>
 
-    <div class="flex max-w-3xl flex-col gap-5">
+    <div class="rise-children flex max-w-3xl flex-col gap-5">
       {
         category && (
-          <a href={`/blog/category/${category.slug.current}/`} class="eyebrow text-moss-deep">
+          <a
+            href={`/blog/category/${category.slug}/`}
+            class="text-moss-deep hover:text-ink w-fit text-sm font-medium transition-colors duration-200"
+          >
             {category.title}
           </a>
         )
@@ -58,22 +51,12 @@ const showUpdated = new Date(updatedAt).toDateString() !== new Date(publishedAt)
 
       <h1 class="display-title text-balance">{title}</h1>
 
-      <div class="text-bark flex flex-wrap items-center gap-x-3 gap-y-2 text-base">
-        {
-          author && (
-            <span
-              aria-hidden="true"
-              class="bg-moss text-paper flex size-10 items-center justify-center rounded-full text-base font-semibold"
-            >
-              {author.name.charAt(0)}
-            </span>
-          )
-        }
+      <div class="text-bark text-base">
         <div class="flex flex-wrap items-center gap-x-2 gap-y-1">
           {
             author && (
               <a
-                href={`/blog/author/${author.slug.current}/`}
+                href={`/blog/author/${author.slug}/`}
                 class="text-ink hover:text-moss-deep font-medium transition-colors duration-300"
               >
                 {author.name}
@@ -94,19 +77,17 @@ const showUpdated = new Date(updatedAt).toDateString() !== new Date(publishedAt)
           </p>
         )
       }
-
-      <BlogShare url={shareUrl} title={title} class="mt-1" />
     </div>
   </div>
 
   {
     heroSrc && (
-      <div class="mx-auto mt-10 max-w-6xl px-6 sm:px-10">
+      <div class="rise mx-auto mt-10 max-w-6xl px-6 [animation-delay:320ms] sm:px-10">
         <img
           src={heroSrc}
-          alt={featuredImage?.alt ?? ''}
-          width={heroDim?.width ?? 1600}
-          height={heroDim?.height ?? 900}
+          alt={image?.alt ?? ''}
+          width={image?.width ?? 1600}
+          height={image?.height ?? 900}
           fetchpriority="high"
           class="aspect-[16/9] w-full rounded-xl object-cover"
         />

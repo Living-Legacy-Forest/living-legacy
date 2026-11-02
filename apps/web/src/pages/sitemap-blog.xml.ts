@@ -1,10 +1,10 @@
 import type { APIRoute } from 'astro';
-import { getBlogSitemapEntries } from '@/lib/sanity';
+import { getBlogSitemapEntries } from '@/lib/blog-posts';
 
 /**
  * Blog sitemap, rendered on request.
  *
- * Posts live in Sanity and render on demand, so the build-time sitemap from
+ * Posts come from the CMS and the old WordPress site and render on demand, so the build-time sitemap from
  * @astrojs/sitemap never sees them. The sitemap index lists this file through
  * the integration's `customSitemaps` option.
  */

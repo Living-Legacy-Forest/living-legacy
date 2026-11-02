@@ -125,6 +125,20 @@ export default defineConfig({
   },
   env: {
     schema: {
+      // Where the blog reads posts not yet moved into the CMS
+      // (src/lib/blog-wordpress.ts). Point it at the old site's new address
+      // once the domain moves here.
+      WORDPRESS_URL: envField.string({
+        context: 'server',
+        access: 'public',
+        default: 'https://livinglegacyforest.com',
+      }),
+      // The CMS, which serves the images uploaded to it (src/lib/blog-cms.ts).
+      CMS_URL: envField.string({
+        context: 'server',
+        access: 'public',
+        default: 'https://living-legacy-cms.living-legacy.workers.dev',
+      }),
       SANITY_PROJECT_ID: envField.string({
         context: 'server',
         access: 'secret',

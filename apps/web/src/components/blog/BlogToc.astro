@@ -33,8 +33,14 @@ const linkClass =
 {
   headings.length > 1 &&
     (variant === 'sidebar' ? (
-      <nav aria-label="Table of contents" class:list={['flex gap-5', className]} data-toc>
+      <nav aria-label="Table of contents" class:list={['relative flex gap-5', className]} data-toc>
         <Separator orientation="vertical" />
+        {/* Slides along the rule to the section being read (script below). */}
+        <span
+          aria-hidden="true"
+          data-toc-marker
+          class="bg-moss pointer-events-none absolute top-0 -left-px h-0 w-[3px] rounded-full opacity-0 transition-[transform,height,opacity] duration-300 ease-[var(--ease-grow)]"
+        />
         <div class="flex flex-col gap-4">
           <p class="eyebrow">In this article</p>
           <ol class="flex flex-col gap-2.5">
@@ -106,6 +112,19 @@ const linkClass =
       for (const a of links) {
         if (a.hash.slice(1) === current) a.setAttribute('aria-current', 'location');
         else a.removeAttribute('aria-current');
+      }
+      // Move each sidebar's marker beside its current link, or fade it out
+      // before the first section.
+      for (const toc of tocs) {
+        const marker = toc.querySelector<HTMLElement>('[data-toc-marker]');
+        if (!marker) continue;
+        const link = toc.querySelector<HTMLElement>('a[aria-current]');
+        marker.style.opacity = link ? '1' : '0';
+        if (!link) continue;
+        const nav = toc.getBoundingClientRect();
+        const box = link.getBoundingClientRect();
+        marker.style.height = `${box.height}px`;
+        marker.style.transform = `translateY(${box.top - nav.top}px)`;
       }
     };
     const schedule = () => {

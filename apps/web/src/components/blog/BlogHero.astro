@@ -25,7 +25,7 @@ const showUpdated = new Date(updatedAt).toDateString() !== new Date(publishedAt)
 
 <header class="pt-10 pb-8 md:pt-14">
   <div class="mx-auto max-w-6xl px-6 sm:px-10">
-    <Breadcrumb className="mb-8">
+    <Breadcrumb className="rise mb-8">
       <BreadcrumbList>
         <BreadcrumbItem>
           <BreadcrumbLink href="/">Home</BreadcrumbLink>
@@ -37,7 +37,7 @@ const showUpdated = new Date(updatedAt).toDateString() !== new Date(publishedAt)
       </BreadcrumbList>
     </Breadcrumb>
 
-    <div class="flex max-w-3xl flex-col gap-5">
+    <div class="rise-children flex max-w-3xl flex-col gap-5">
       {
         category && (
           <a
@@ -82,7 +82,7 @@ const showUpdated = new Date(updatedAt).toDateString() !== new Date(publishedAt)
 
   {
     heroSrc && (
-      <div class="mx-auto mt-10 max-w-6xl px-6 sm:px-10">
+      <div class="rise mx-auto mt-10 max-w-6xl px-6 [animation-delay:320ms] sm:px-10">
         <img
           src={heroSrc}
           alt={image?.alt ?? ''}

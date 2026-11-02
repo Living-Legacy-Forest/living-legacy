@@ -91,7 +91,11 @@ const toJsonLd = (value: unknown) => JSON.stringify(value).replace(/</g, '\\u003
   <script type="application/ld+json" is:inline set:html={toJsonLd(jsonLd)} />
   <script type="application/ld+json" is:inline set:html={toJsonLd(breadcrumbLd)} />
 
-  <div>
+  <!-- The article names a view timeline that the reading-progress bar,
+       a sibling, follows; timeline-scope lets the bar see it. -->
+  <div class="[timeline-scope:--article]">
+    <div aria-hidden="true" class="reading-progress bg-moss fixed inset-x-0 top-0 z-[60] h-0.5">
+    </div>
     <BlogHero post={post} />
 
     <div class="mx-auto max-w-6xl px-6 pt-4 pb-20 sm:px-10 md:pb-28">
@@ -103,7 +107,7 @@ const toJsonLd = (value: unknown) => JSON.stringify(value).replace(/</g, '\\u003
           <BlogToc headings={headings} />
         </div>
 
-        <article class="mx-auto w-full max-w-[68ch]">
+        <article class="mx-auto w-full max-w-[68ch] [view-timeline-name:--article]">
           <BlogToc headings={headings} variant="collapsible" class="mb-10 lg:hidden" />
 
           <BlogBody html={post.html} />

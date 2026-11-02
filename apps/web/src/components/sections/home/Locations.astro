@@ -114,7 +114,7 @@ const mapPins = await Promise.all(
   aria-labelledby="location-section-heading"
   data-locations
 >
-  <div class="max-w-2xl">
+  <div data-reveal-stagger class="max-w-2xl">
     <p class="eyebrow">Where to find us</p>
     <h2 id="location-section-heading" class="section-title mt-4">Locations in Australia</h2>
     <p class="lead mt-6">
@@ -125,7 +125,7 @@ const mapPins = await Promise.all(
 
   <div class="mt-14 grid gap-12 lg:mt-20 lg:grid-cols-12 lg:gap-16">
     <!-- The map. Sticky beside the list on wide screens; above it, smaller, on phones. -->
-    <div class="lg:col-span-6">
+    <div data-reveal="fade" class="lg:col-span-6">
       <div class="lg:sticky lg:top-28">
         <LocationsMap
           mapSrc={optimizedMap.src}
@@ -144,7 +144,7 @@ const mapPins = await Promise.all(
           <div>
             <h3 class="eyebrow font-body">{group.title}</h3>
             <Separator className="mt-4" />
-            <ol class="divide-bark/20 divide-y">
+            <ol data-reveal-stagger class="divide-bark/20 divide-y">
               {group.items.map((location) => (
                 <li
                   id={`location-${location.key}`}

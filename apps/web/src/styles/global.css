@@ -274,18 +274,44 @@
   }
 }
 
-/* Content further down the page fades up as it scrolls into view (blog cards,
-   see BlogCard.astro). Only what the script has marked pending is hidden, and
-   it only marks what is still below the fold, so nothing on screen ever blinks
-   out, and without JavaScript everything simply shows. */
-[data-reveal='pending'] {
+/* Content further down the page reveals as it scrolls into view
+   (src/components/Reveal.astro). Only what the script has marked pending is
+   hidden, and it only marks what is still below the fold, so nothing on
+   screen ever blinks out, and without JavaScript everything simply shows.
+
+   data-reveal names the motion, chosen for the content: repeated things
+   (cards, steps, list rows) and section intros all use the same `up`, while a
+   one-off image or quote gets a motion of its own. */
+[data-reveal-state='pending'] {
   opacity: 0;
+}
+[data-reveal-state='pending']:is([data-reveal=''], [data-reveal='up']) {
   transform: translateY(1rem);
 }
-[data-reveal='shown'] {
+/* Slides in from the side it scrolls from (a carousel). */
+[data-reveal-state='pending'][data-reveal='right'] {
+  transform: translateX(2.5rem);
+}
+/* Comes into focus without moving: for a quote. */
+[data-reveal-state='pending'][data-reveal='blur'] {
+  filter: blur(8px);
+}
+/* Settles from slightly smaller: for a single large image or banner. */
+[data-reveal-state='pending'][data-reveal='zoom'] {
+  transform: scale(0.96);
+}
+/* Wipes upward from the bottom edge, like something growing: for photos
+   and the tree. Fully opaque throughout; the clip does the work. */
+[data-reveal-state='pending'][data-reveal='clip'] {
+  opacity: 1;
+  clip-path: inset(100% 0 0 0);
+}
+[data-reveal-state='shown'] {
   transition:
-    opacity 0.6s var(--ease-grow),
-    transform 0.6s var(--ease-grow);
+    opacity 0.7s var(--ease-grow),
+    transform 0.9s var(--ease-grow),
+    filter 0.9s var(--ease-grow),
+    clip-path 1.1s var(--ease-grow);
   transition-delay: var(--reveal-delay, 0ms);
 }
 

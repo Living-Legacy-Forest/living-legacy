@@ -53,10 +53,12 @@ const faqJsonLd = {
 ---
 
 <section class="border-bark/20 border-t py-24 lg:py-32">
-  <p class="eyebrow">Questions</p>
-  <h2 class="section-title mt-4">Frequently asked questions</h2>
+  <p data-reveal class="eyebrow">Questions</p>
+  <h2 data-reveal class="section-title mt-4">Frequently asked questions</h2>
 
-  <HomeFaq faqs={faqs} client:visible />
+  <div data-reveal>
+    <HomeFaq faqs={faqs} client:visible />
+  </div>
 
   <a href="/faqs/" class={cn(buttonVariants({ variant: 'link' }), 'mt-10')}>
     More FAQs

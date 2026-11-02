@@ -14,6 +14,7 @@ import { Route as LoginRouteImport } from './routes/login'
 import { Route as AppIndexRouteImport } from './routes/_app/index'
 import { Route as AppActivityIndexRouteImport } from './routes/_app/activity/index'
 import { Route as AppAnnouncementsIndexRouteImport } from './routes/_app/announcements/index'
+import { Route as AppApiKeysIndexRouteImport } from './routes/_app/api-keys/index'
 import { Route as AppFaqsIndexRouteImport } from './routes/_app/faqs/index'
 import { Route as AppMediaIndexRouteImport } from './routes/_app/media/index'
 import { Route as AppPostsIndexRouteImport } from './routes/_app/posts/index'
@@ -30,7 +31,10 @@ import { Route as ApiAvatarIndexRouteImport } from './routes/api/avatar/index'
 import { Route as ApiAvatarKeyRouteImport } from './routes/api/avatar/$key'
 import { Route as ApiMediaIndexRouteImport } from './routes/api/media/index'
 import { Route as ApiMediaIdRouteImport } from './routes/api/media/$id'
+import { Route as ApiV1TermsRouteImport } from './routes/api/v1/terms'
 import { Route as PreviewPostsPostIdRouteImport } from './routes/preview/posts/$postId'
+import { Route as ApiV1PostsIndexRouteImport } from './routes/api/v1/posts/index'
+import { Route as ApiV1PostsIdRouteImport } from './routes/api/v1/posts/$id'
 
 const AppRoute = AppRouteImport.update({
   id: '/_app',
@@ -54,6 +58,11 @@ const AppActivityIndexRoute = AppActivityIndexRouteImport.update({
 const AppAnnouncementsIndexRoute = AppAnnouncementsIndexRouteImport.update({
   id: '/announcements/',
   path: '/announcements/',
+  getParentRoute: () => AppRoute,
+} as any)
+const AppApiKeysIndexRoute = AppApiKeysIndexRouteImport.update({
+  id: '/api-keys/',
+  path: '/api-keys/',
   getParentRoute: () => AppRoute,
 } as any)
 const AppFaqsIndexRoute = AppFaqsIndexRouteImport.update({
@@ -136,9 +145,24 @@ const ApiMediaIdRoute = ApiMediaIdRouteImport.update({
   path: '/api/media/$id',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ApiV1TermsRoute = ApiV1TermsRouteImport.update({
+  id: '/api/v1/terms',
+  path: '/api/v1/terms',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const PreviewPostsPostIdRoute = PreviewPostsPostIdRouteImport.update({
   id: '/preview/posts/$postId',
   path: '/preview/posts/$postId',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiV1PostsIndexRoute = ApiV1PostsIndexRouteImport.update({
+  id: '/api/v1/posts/',
+  path: '/api/v1/posts/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiV1PostsIdRoute = ApiV1PostsIdRouteImport.update({
+  id: '/api/v1/posts/$id',
+  path: '/api/v1/posts/$id',
   getParentRoute: () => rootRouteImport,
 } as any)
 
@@ -150,9 +174,11 @@ export interface FileRoutesByFullPath {
   '/api/auth/$': typeof ApiAuthSplatRoute
   '/api/avatar/$key': typeof ApiAvatarKeyRoute
   '/api/media/$id': typeof ApiMediaIdRoute
+  '/api/v1/terms': typeof ApiV1TermsRoute
   '/preview/posts/$postId': typeof PreviewPostsPostIdRoute
   '/activity/': typeof AppActivityIndexRoute
   '/announcements/': typeof AppAnnouncementsIndexRoute
+  '/api-keys/': typeof AppApiKeysIndexRoute
   '/faqs/': typeof AppFaqsIndexRoute
   '/media/': typeof AppMediaIndexRoute
   '/posts/': typeof AppPostsIndexRoute
@@ -164,6 +190,8 @@ export interface FileRoutesByFullPath {
   '/users/': typeof AppUsersIndexRoute
   '/api/avatar/': typeof ApiAvatarIndexRoute
   '/api/media/': typeof ApiMediaIndexRoute
+  '/api/v1/posts/$id': typeof ApiV1PostsIdRoute
+  '/api/v1/posts/': typeof ApiV1PostsIndexRoute
 }
 export interface FileRoutesByTo {
   '/login': typeof LoginRoute
@@ -173,9 +201,11 @@ export interface FileRoutesByTo {
   '/api/auth/$': typeof ApiAuthSplatRoute
   '/api/avatar/$key': typeof ApiAvatarKeyRoute
   '/api/media/$id': typeof ApiMediaIdRoute
+  '/api/v1/terms': typeof ApiV1TermsRoute
   '/preview/posts/$postId': typeof PreviewPostsPostIdRoute
   '/activity': typeof AppActivityIndexRoute
   '/announcements': typeof AppAnnouncementsIndexRoute
+  '/api-keys': typeof AppApiKeysIndexRoute
   '/faqs': typeof AppFaqsIndexRoute
   '/media': typeof AppMediaIndexRoute
   '/posts': typeof AppPostsIndexRoute
@@ -187,6 +217,8 @@ export interface FileRoutesByTo {
   '/users': typeof AppUsersIndexRoute
   '/api/avatar': typeof ApiAvatarIndexRoute
   '/api/media': typeof ApiMediaIndexRoute
+  '/api/v1/posts/$id': typeof ApiV1PostsIdRoute
+  '/api/v1/posts': typeof ApiV1PostsIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -198,9 +230,11 @@ export interface FileRoutesById {
   '/api/auth/$': typeof ApiAuthSplatRoute
   '/api/avatar/$key': typeof ApiAvatarKeyRoute
   '/api/media/$id': typeof ApiMediaIdRoute
+  '/api/v1/terms': typeof ApiV1TermsRoute
   '/preview/posts/$postId': typeof PreviewPostsPostIdRoute
   '/_app/activity/': typeof AppActivityIndexRoute
   '/_app/announcements/': typeof AppAnnouncementsIndexRoute
+  '/_app/api-keys/': typeof AppApiKeysIndexRoute
   '/_app/faqs/': typeof AppFaqsIndexRoute
   '/_app/media/': typeof AppMediaIndexRoute
   '/_app/posts/': typeof AppPostsIndexRoute
@@ -212,6 +246,8 @@ export interface FileRoutesById {
   '/_app/users/': typeof AppUsersIndexRoute
   '/api/avatar/': typeof ApiAvatarIndexRoute
   '/api/media/': typeof ApiMediaIndexRoute
+  '/api/v1/posts/$id': typeof ApiV1PostsIdRoute
+  '/api/v1/posts/': typeof ApiV1PostsIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -223,9 +259,11 @@ export interface FileRouteTypes {
     | '/api/auth/$'
     | '/api/avatar/$key'
     | '/api/media/$id'
+    | '/api/v1/terms'
     | '/preview/posts/$postId'
     | '/activity/'
     | '/announcements/'
+    | '/api-keys/'
     | '/faqs/'
     | '/media/'
     | '/posts/'
@@ -237,6 +275,8 @@ export interface FileRouteTypes {
     | '/users/'
     | '/api/avatar/'
     | '/api/media/'
+    | '/api/v1/posts/$id'
+    | '/api/v1/posts/'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/login'
@@ -246,9 +286,11 @@ export interface FileRouteTypes {
     | '/api/auth/$'
     | '/api/avatar/$key'
     | '/api/media/$id'
+    | '/api/v1/terms'
     | '/preview/posts/$postId'
     | '/activity'
     | '/announcements'
+    | '/api-keys'
     | '/faqs'
     | '/media'
     | '/posts'
@@ -260,6 +302,8 @@ export interface FileRouteTypes {
     | '/users'
     | '/api/avatar'
     | '/api/media'
+    | '/api/v1/posts/$id'
+    | '/api/v1/posts'
   id:
     | '__root__'
     | '/_app'
@@ -270,9 +314,11 @@ export interface FileRouteTypes {
     | '/api/auth/$'
     | '/api/avatar/$key'
     | '/api/media/$id'
+    | '/api/v1/terms'
     | '/preview/posts/$postId'
     | '/_app/activity/'
     | '/_app/announcements/'
+    | '/_app/api-keys/'
     | '/_app/faqs/'
     | '/_app/media/'
     | '/_app/posts/'
@@ -284,6 +330,8 @@ export interface FileRouteTypes {
     | '/_app/users/'
     | '/api/avatar/'
     | '/api/media/'
+    | '/api/v1/posts/$id'
+    | '/api/v1/posts/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -292,9 +340,12 @@ export interface RootRouteChildren {
   ApiAuthSplatRoute: typeof ApiAuthSplatRoute
   ApiAvatarKeyRoute: typeof ApiAvatarKeyRoute
   ApiMediaIdRoute: typeof ApiMediaIdRoute
+  ApiV1TermsRoute: typeof ApiV1TermsRoute
   PreviewPostsPostIdRoute: typeof PreviewPostsPostIdRoute
   ApiAvatarIndexRoute: typeof ApiAvatarIndexRoute
   ApiMediaIndexRoute: typeof ApiMediaIndexRoute
+  ApiV1PostsIdRoute: typeof ApiV1PostsIdRoute
+  ApiV1PostsIndexRoute: typeof ApiV1PostsIndexRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -332,6 +383,13 @@ declare module '@tanstack/react-router' {
       path: '/announcements'
       fullPath: '/announcements/'
       preLoaderRoute: typeof AppAnnouncementsIndexRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/_app/api-keys/': {
+      id: '/_app/api-keys/'
+      path: '/api-keys'
+      fullPath: '/api-keys/'
+      preLoaderRoute: typeof AppApiKeysIndexRouteImport
       parentRoute: typeof AppRoute
     }
     '/_app/faqs/': {
@@ -446,11 +504,32 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiMediaIdRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/v1/terms': {
+      id: '/api/v1/terms'
+      path: '/api/v1/terms'
+      fullPath: '/api/v1/terms'
+      preLoaderRoute: typeof ApiV1TermsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/preview/posts/$postId': {
       id: '/preview/posts/$postId'
       path: '/preview/posts/$postId'
       fullPath: '/preview/posts/$postId'
       preLoaderRoute: typeof PreviewPostsPostIdRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/v1/posts/': {
+      id: '/api/v1/posts/'
+      path: '/api/v1/posts'
+      fullPath: '/api/v1/posts/'
+      preLoaderRoute: typeof ApiV1PostsIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/v1/posts/$id': {
+      id: '/api/v1/posts/$id'
+      path: '/api/v1/posts/$id'
+      fullPath: '/api/v1/posts/$id'
+      preLoaderRoute: typeof ApiV1PostsIdRouteImport
       parentRoute: typeof rootRouteImport
     }
   }
@@ -462,6 +541,7 @@ interface AppRouteChildren {
   AppPostsNewRoute: typeof AppPostsNewRoute
   AppActivityIndexRoute: typeof AppActivityIndexRoute
   AppAnnouncementsIndexRoute: typeof AppAnnouncementsIndexRoute
+  AppApiKeysIndexRoute: typeof AppApiKeysIndexRoute
   AppFaqsIndexRoute: typeof AppFaqsIndexRoute
   AppMediaIndexRoute: typeof AppMediaIndexRoute
   AppPostsIndexRoute: typeof AppPostsIndexRoute
@@ -479,6 +559,7 @@ const AppRouteChildren: AppRouteChildren = {
   AppPostsNewRoute: AppPostsNewRoute,
   AppActivityIndexRoute: AppActivityIndexRoute,
   AppAnnouncementsIndexRoute: AppAnnouncementsIndexRoute,
+  AppApiKeysIndexRoute: AppApiKeysIndexRoute,
   AppFaqsIndexRoute: AppFaqsIndexRoute,
   AppMediaIndexRoute: AppMediaIndexRoute,
   AppPostsIndexRoute: AppPostsIndexRoute,
@@ -498,9 +579,12 @@ const rootRouteChildren: RootRouteChildren = {
   ApiAuthSplatRoute: ApiAuthSplatRoute,
   ApiAvatarKeyRoute: ApiAvatarKeyRoute,
   ApiMediaIdRoute: ApiMediaIdRoute,
+  ApiV1TermsRoute: ApiV1TermsRoute,
   PreviewPostsPostIdRoute: PreviewPostsPostIdRoute,
   ApiAvatarIndexRoute: ApiAvatarIndexRoute,
   ApiMediaIndexRoute: ApiMediaIndexRoute,
+  ApiV1PostsIdRoute: ApiV1PostsIdRoute,
+  ApiV1PostsIndexRoute: ApiV1PostsIndexRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

@@ -78,6 +78,10 @@ export const activityActions = [
   'redirect.updated',
   'redirect.deleted',
   'settings.updated',
+  'api_key.created',
+  'api_key.revoked',
+  'post.created_via_api',
+  'post.updated_via_api',
 ] as const;
 export type ActivityAction = (typeof activityActions)[number];
 
@@ -97,4 +101,30 @@ export const activityLog = sqliteTable(
       .$defaultFn(() => new Date()),
   },
   (t) => [index('activity_log_created_at').on(t.createdAt)]
+);
+
+export const apiKeyScopes = ['read', 'write'] as const;
+export type ApiKeyScope = (typeof apiKeyScopes)[number];
+
+// Keys for the CMS API (/api/v1). Only a SHA-256 hash of each key is stored;
+// the key itself is shown once, when it is created. A key acts as the admin
+// who created it, so it stops working if that person is removed or loses the
+// right to change content.
+export const apiKeys = sqliteTable(
+  'api_keys',
+  {
+    id: id(),
+    name: text('name').notNull(),
+    /** The first characters of the key, shown so people can tell keys apart. */
+    prefix: text('prefix').notNull(),
+    keyHash: text('key_hash').notNull().unique(),
+    scope: text('scope', { enum: apiKeyScopes }).notNull(),
+    createdBy: text('created_by').references(() => user.id, { onDelete: 'set null' }),
+    lastUsedAt: integer('last_used_at', { mode: 'timestamp_ms' }),
+    revokedAt: integer('revoked_at', { mode: 'timestamp_ms' }),
+    createdAt: integer('created_at', { mode: 'timestamp_ms' })
+      .notNull()
+      .$defaultFn(() => new Date()),
+  },
+  (t) => [index('api_keys_created_at').on(t.createdAt)]
 );

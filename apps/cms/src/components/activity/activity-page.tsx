@@ -2,6 +2,7 @@ import {
   ActivityIcon,
   ArrowRightLeft,
   FileText,
+  KeyIcon,
   Settings,
   UserCog,
   type LucideIcon,
@@ -21,6 +22,7 @@ const icons: Record<string, LucideIcon> = {
   user: UserCog,
   redirect: ArrowRightLeft,
   settings: Settings,
+  api_key: KeyIcon,
 };
 
 function iconFor(action: ActivityLogEntry['action']): LucideIcon {

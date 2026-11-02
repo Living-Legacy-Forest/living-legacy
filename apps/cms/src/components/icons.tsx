@@ -126,6 +126,7 @@ export const ArchiveIcon = make(H.Archive01Icon);
 export const LayoutDashboardIcon = make(H.DashboardSquare01Icon);
 export const PanelLeftIcon = make(H.SidebarLeftIcon);
 export const KeyboardIcon = make(H.KeyboardIcon);
+export const KeyIcon = make(H.Key01Icon);
 export const LogOutIcon = make(H.Logout03Icon);
 export const BellIcon = make(H.Notification01Icon);
 export const CircleCheckIcon = make(H.CircleCheckIcon);

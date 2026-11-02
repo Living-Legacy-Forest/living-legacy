@@ -2,6 +2,7 @@ import type { Permission } from '@llf/content';
 import {
   ActivityIcon,
   ArrowRightLeft,
+  KeyIcon,
   CircleHelp,
   ExternalLink,
   FileText,
@@ -24,6 +25,7 @@ export type NavItem = {
     | '/posts'
     | '/posts/new'
     | '/activity'
+    | '/api-keys'
     | '/announcements'
     | '/faqs'
     | '/media'
@@ -71,6 +73,7 @@ export const navGroups: NavGroup[] = [
       { title: 'Activity', icon: ActivityIcon, to: '/activity', permission: 'posts:publish' },
       { title: 'Redirects', icon: ArrowRightLeft, to: '/redirects', permission: 'redirects:write' },
       { title: 'Users', icon: UserCog, to: '/users', permission: 'users:manage' },
+      { title: 'API keys', icon: KeyIcon, to: '/api-keys', permission: 'settings:write' },
       {
         title: 'Settings',
         icon: Settings,

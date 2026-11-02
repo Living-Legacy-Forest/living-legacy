@@ -16,6 +16,7 @@
 // fails (see src/components/forms/ContactForm.tsx).
 import { Image } from 'astro:assets';
 import BaseLayout from '@/layouts/BaseLayout.astro';
+import { getSiteSettings } from '@/lib/settings';
 import { Card, CardContent } from '@/components/ui/card';
 import { ContactForm } from '@/components/forms/ContactForm';
 import contactFormPhoto from '@/assets/contact/contact-form-photo.webp';
@@ -60,7 +61,10 @@ const locations = [
   },
 ];
 
-const title = 'Contact | Living Legacy';
+const settings = await getSiteSettings();
+const contact = { phone: settings.phone, email: settings.contactEmail };
+
+const title = 'Contact';
 const description =
   'Get in touch with Living Legacy. Send us a message or contact one of our four locations across Australia directly.';
 ---
@@ -81,7 +85,7 @@ const description =
               </p>
 
               <div class="mt-8">
-                <ContactForm client:visible />
+                <ContactForm contact={contact} client:visible />
               </div>
             </div>
           </CardContent>
@@ -100,8 +104,16 @@ const description =
               any of your questions, however, you are welcome to send a message via our contact
               form, and we will respond as soon as possible.
             </p>
-            <p class="card-body mt-4">We're available to respond to calls and chats from:</p>
-            <p class="text-ink mt-2 font-medium">Monday to Friday, 9am to 6pm AEST</p>
+            {
+              settings.openingHours && (
+                <>
+                  <p class="card-body mt-4">We're available to respond to calls and chats from:</p>
+                  <p class="text-ink mt-2 font-medium whitespace-pre-line">
+                    {settings.openingHours}
+                  </p>
+                </>
+              )
+            }
           </CardContent>
         </Card>
       </aside>

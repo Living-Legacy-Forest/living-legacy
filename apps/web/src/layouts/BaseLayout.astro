@@ -6,14 +6,17 @@ import Header from '@/components/layout/Header.astro';
 import Footer from '@/components/layout/Footer.astro';
 import { Toaster } from '@/components/ui/sonner';
 import { isIndexableHost } from '@/lib/seo';
+import { getSiteSettings } from '@/lib/settings';
+import { formatPageTitle } from '@llf/content';
 
 interface Props {
+  /** The page's own title; the site title is added by the CMS title pattern. */
   title: string;
   description?: string;
   /** Force the robots meta on. Non-production hosts are always blocked regardless. */
   noindex?: boolean;
   canonical?: string;
-  /** Absolute URL for og:image / twitter:image. Omitted when not given. */
+  /** Absolute URL for og:image / twitter:image. Falls back to the CMS default share image. */
   ogImage?: string;
   /** Skips Header and Footer — for the 404 page and anything else that draws its own chrome. */
   bare?: boolean;
@@ -24,14 +27,16 @@ function withTrailingSlash(pathname: string): string {
   return pathname.endsWith('/') ? pathname : `${pathname}/`;
 }
 
+const settings = await getSiteSettings();
 const {
-  title,
-  description = 'Living Legacy',
+  title: pageTitle,
+  description = settings.seoDescription || settings.siteTitle,
   noindex,
   canonical = new URL(withTrailingSlash(Astro.url.pathname), Astro.site).toString(),
-  ogImage,
+  ogImage = settings.seoImageUrl || undefined,
   bare = false,
 } = Astro.props;
+const title = formatPageTitle(settings.titlePattern, pageTitle, settings.siteTitle);
 
 // Anything that is not the production domain is always blocked, so preview and
 // workers.dev URLs cannot be indexed. `noindex` can only add a block, never lift
@@ -41,7 +46,7 @@ const blockIndexing = noindex === true || !isIndexableHost(Astro.url.host);
 ---
 
 <!doctype html>
-<html lang="en-AU">
+<html lang={settings.locale}>
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
@@ -54,13 +59,19 @@ const blockIndexing = noindex === true || !isIndexableHost(Astro.url.host);
     <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
     <meta name="theme-color" content="#f6f2e9" />
     <meta property="og:type" content="website" />
-    <meta property="og:site_name" content="Living Legacy" />
+    <meta property="og:site_name" content={settings.siteTitle} />
     <meta property="og:title" content={title} />
     {description && <meta property="og:description" content={description} />}
     <meta property="og:url" content={canonical} />
     {ogImage && <meta property="og:image" content={ogImage} />}
     <meta name="twitter:card" content="summary_large_image" />
     {ogImage && <meta name="twitter:image" content={ogImage} />}
+    {
+      settings.googleVerification && (
+        <meta name="google-site-verification" content={settings.googleVerification} />
+      )
+    }
+    {settings.bingVerification && <meta name="msvalidate.01" content={settings.bingVerification} />}
     <PostHog />
   </head>
   <body>

@@ -1,4 +1,16 @@
-import { SEO_DESCRIPTION_LIMIT, can, formatAbn, isValidAbn } from '@llf/content';
+import {
+  type Locale,
+  SEO_DESCRIPTION_LIMIT,
+  type SiteSettings,
+  TITLE_TOKENS,
+  type Theme,
+  can,
+  formatAbn,
+  isValidAbn,
+  locales,
+  parseSiteSettings,
+  themes,
+} from '@llf/content';
 import { schema } from '@llf/db';
 import { createServerFn } from '@tanstack/react-start';
 import { eq } from 'drizzle-orm';
@@ -9,47 +21,14 @@ import { logActivity } from './activity-log';
 
 const { siteSettings } = schema;
 
-export const themes = ['system', 'light', 'dark'] as const;
-export type Theme = (typeof themes)[number];
-
-export const locales = ['en-AU', 'en-US', 'en-GB'] as const;
-export type Locale = (typeof locales)[number];
-
-/** Placeholders the title pattern may use. */
-export const TITLE_TOKENS = { page: '{page}', site: '{site}' } as const;
-
-const defaults = {
-  siteTitle: 'Living Legacy',
-  tagline: '',
-  contactEmail: '',
-  // Contact and business details, for the website footer and contact page.
-  phone: '',
-  address: '',
-  openingHours: '',
-  legalName: '',
-  abn: '',
-  facebookUrl: '',
-  instagramUrl: '',
-  youtubeUrl: '',
-  linkedinUrl: '',
-  tiktokUrl: '',
-  googleBusinessUrl: '',
-  titlePattern: `${TITLE_TOKENS.page} | ${TITLE_TOKENS.site}`,
-  seoDescription: '',
-  seoImageUrl: '',
-  googleVerification: '',
-  bingVerification: '',
-  locale: 'en-AU' as Locale,
-  theme: 'system' as Theme,
-};
-
-export type SiteSettings = typeof defaults;
+export { TITLE_TOKENS, locales, themes };
+export type { Locale, SiteSettings, Theme };
 
 async function readSiteSettings(): Promise<SiteSettings> {
   const row = await getDb().query.siteSettings.findFirst({
     where: eq(siteSettings.id, 'site'),
   });
-  return { ...defaults, ...(row?.data as Partial<SiteSettings> | undefined) };
+  return parseSiteSettings(row?.data);
 }
 
 export const getSiteSettings = createServerFn({ method: 'GET' })

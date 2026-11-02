@@ -12,6 +12,7 @@ import RelatedPosts from '@/components/blog/RelatedPosts.astro';
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
 import { extractH2Headings, lastUpdatedAt } from '@/lib/blog';
+import { getSiteSettings } from '@/lib/settings';
 import { getBlogPostBySlug, getRelatedBlogPosts, imageUrl } from '@/lib/sanity';
 import type { SanityBlogPost } from '@/types';
 
@@ -37,6 +38,7 @@ try {
 }
 
 const seoTitle = post.seoTitle ?? post.title;
+const { siteTitle } = await getSiteSettings();
 const seoDescription = post.seoDescription ?? post.excerpt ?? '';
 
 // 1200x630 is the size social platforms crop to anyway, so they are not each
@@ -55,7 +57,7 @@ const jsonLd = {
   ...(post.author ? { author: { '@type': 'Person', name: post.author.name } } : {}),
   publisher: {
     '@type': 'Organization',
-    name: 'Living Legacy',
+    name: siteTitle,
     url: 'https://livinglegacy.com.au',
   },
 };
@@ -80,12 +82,7 @@ const breadcrumbLd = {
 const toJsonLd = (value: unknown) => JSON.stringify(value).replace(/</g, '\\u003c');
 ---
 
-<BaseLayout
-  title={`${seoTitle} | Living Legacy`}
-  description={seoDescription}
-  canonical={shareUrl}
-  ogImage={ogImage}
->
+<BaseLayout title={seoTitle} description={seoDescription} canonical={shareUrl} ogImage={ogImage}>
   <script type="application/ld+json" is:inline set:html={toJsonLd(jsonLd)} />
   <script type="application/ld+json" is:inline set:html={toJsonLd(breadcrumbLd)} />
 

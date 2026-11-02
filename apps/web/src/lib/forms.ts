@@ -49,12 +49,12 @@ export const CONSENT_TEXT = 'I have read and agree to the privacy policy.';
 
 /** The phone and email shown when a form cannot be submitted, either
  *  because its HubSpot GUID is not yet configured or because the request
- *  failed. Centralised so every page shows the same fallback. */
-export const FALLBACK_CONTACT = {
-  phone: '03 7019 6142',
-  phoneHref: 'tel:0370196142',
-  email: 'contact@livinglegacy.com.au',
-} as const;
+ *  failed. Each page passes them in from the CMS Settings page, so every form
+ *  shows the same fallback. */
+export interface FallbackContact {
+  phone: string;
+  email: string;
+}
 
 export interface PageContext {
   pageUri: string;

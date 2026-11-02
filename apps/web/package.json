@@ -18,8 +18,8 @@
     "studio:deploy": "sanity deploy"
   },
   "dependencies": {
-    "@astrojs/cloudflare": "^14.1.4",
-    "@astrojs/react": "^7.0.0",
+    "@astrojs/cloudflare": "^14.4.3",
+    "@astrojs/react": "^7.1.2",
     "@astrojs/rss": "^4.0.19",
     "@base-ui/react": "^1.8.0",
     "@fontsource-variable/fraunces": "5.3.0",
@@ -32,7 +32,7 @@
     "@sanity/client": "^7.25.0",
     "@sanity/image-url": "^2.1.1",
     "@tailwindcss/vite": "^4.3.3",
-    "astro": "^7.2.10",
+    "astro": "^7.4.4",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
     "embla-carousel": "^8.6.0",

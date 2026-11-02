@@ -19,10 +19,6 @@ updates:
         patterns:
           - 'astro'
           - '@astrojs/*'
-      sanity:
-        patterns:
-          - 'sanity'
-          - '@sanity/*'
       tailwind:
         patterns:
           - 'tailwindcss'
@@ -32,8 +28,6 @@ updates:
           - '@hugeicons/*'
     ignore:
       - dependency-name: 'astro'
-        update-types: ['version-update:semver-major']
-      - dependency-name: 'sanity'
         update-types: ['version-update:semver-major']
       - dependency-name: 'tailwindcss'
         update-types: ['version-update:semver-major']

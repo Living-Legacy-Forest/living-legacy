@@ -27,7 +27,7 @@
     "@hugeicons/core-free-icons": "^4.3.5",
     "@hugeicons/react": "^1.1.10",
     "@llf/content": "workspace:*",
-    "@portabletext/to-html": "^5.0.2",
+    "@portabletext/to-html": "^6.0.0",
     "@sanity/astro": "^3.5.0",
     "@sanity/client": "^7.25.0",
     "@sanity/image-url": "^2.1.1",

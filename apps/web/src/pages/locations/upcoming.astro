@@ -1,7 +1,8 @@
 ---
-// Register interest in an upcoming location. Carries the live page's short
-// intro and its form (live/out/locations__register-your-interest-for-
-// locations-throughout-australia.txt). Option labels for "Which part of
+// Register interest in an upcoming location, at /locations/upcoming/. It
+// was /locations/register-your-interest-for-locations-throughout-australia/
+// on the old site, which redirects here (migration 0010). Carries the live
+// page's short intro and its form. Option labels for "Which part of
 // Australia are you located in" are copied exactly from the live form's
 // rendered <select>, including "Other".
 //
@@ -15,7 +16,7 @@ import { UpcomingLocationForm } from '@/components/forms/UpcomingLocationForm';
 const settings = await getSiteSettings();
 const contact = { phone: settings.phone, email: settings.contactEmail };
 
-const title = 'Register your interest for locations throughout Australia';
+const title = 'Register interest in new locations';
 const description =
   'Living Legacy is coming to new locations across Australia. Register your interest and let us know which area you would like to see us in.';
 ---
@@ -23,13 +24,14 @@ const description =
 <BaseLayout title={title} description={description}>
   <div class="mx-auto max-w-2xl px-6 py-20 sm:px-10 lg:py-28">
     <p class="eyebrow">Upcoming locations</p>
-    <h1 class="display-title mt-4">Register your interest for locations throughout Australia</h1>
+    <h1 class="display-title mt-4">Register interest in new locations</h1>
     <p class="lead mt-5">
       Please fill out the form below to let us know your area of interest and location.
     </p>
 
-    <Card className="shadow-panel mt-10 bg-white/50 p-2 sm:p-4">
-      <CardContent className="px-4 sm:px-6">
+    <!-- Same box as the contact form: the default card colour, no shadow. -->
+    <Card className="mt-10">
+      <CardContent>
         <UpcomingLocationForm contact={contact} client:visible />
       </CardContent>
     </Card>

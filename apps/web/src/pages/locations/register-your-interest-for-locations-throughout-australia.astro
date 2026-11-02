@@ -8,10 +8,14 @@
 // "Other location" is shown, and made required, only once "Other" is
 // selected; see UpcomingLocationForm.tsx.
 import BaseLayout from '@/layouts/BaseLayout.astro';
+import { getSiteSettings } from '@/lib/settings';
 import { Card, CardContent } from '@/components/ui/card';
 import { UpcomingLocationForm } from '@/components/forms/UpcomingLocationForm';
 
-const title = 'Register your interest for locations throughout Australia | Living Legacy';
+const settings = await getSiteSettings();
+const contact = { phone: settings.phone, email: settings.contactEmail };
+
+const title = 'Register your interest for locations throughout Australia';
 const description =
   'Living Legacy is coming to new locations across Australia. Register your interest and let us know which area you would like to see us in.';
 ---
@@ -26,7 +30,7 @@ const description =
 
     <Card className="shadow-panel mt-10 bg-white/50 p-2 sm:p-4">
       <CardContent className="px-4 sm:px-6">
-        <UpcomingLocationForm client:visible />
+        <UpcomingLocationForm contact={contact} client:visible />
       </CardContent>
     </Card>
   </div>

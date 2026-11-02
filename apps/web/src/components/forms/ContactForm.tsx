@@ -11,7 +11,12 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { Field, FieldGroup, FieldLabel } from '@/components/ui/field';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
-import { buildContactPayload, readHubSpotCookie, type ContactFields } from '@/lib/forms';
+import {
+  buildContactPayload,
+  readHubSpotCookie,
+  type ContactFields,
+  type FallbackContact,
+} from '@/lib/forms';
 import { FormFallbackAlert } from './FormFallbackAlert';
 import { HoneypotField, useHoneypot } from './honeypot';
 import { useHubspotSubmit } from './useHubspotSubmit';
@@ -28,7 +33,7 @@ const EMPTY_FIELDS: ContactFields = {
 type FieldName = keyof ContactFields;
 const FIELD_ORDER: FieldName[] = ['firstName', 'lastName', 'email', 'phone', 'message'];
 
-export function ContactForm() {
+export function ContactForm({ contact }: { contact: FallbackContact }) {
   const [fields, setFields] = useState<ContactFields>(EMPTY_FIELDS);
   const [consent, setConsent] = useState(false);
   const [invalid, setInvalid] = useState<Set<FieldName>>(new Set());
@@ -231,7 +236,7 @@ export function ContactForm() {
 
       {hubspotSubmit.fallbackVisible && (
         <div className="mt-6">
-          <FormFallbackAlert ref={fallbackRef} />
+          <FormFallbackAlert contact={contact} ref={fallbackRef} />
         </div>
       )}
     </div>

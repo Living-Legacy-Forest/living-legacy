@@ -18,7 +18,12 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
-import { buildPartnerPayload, readHubSpotCookie, type PartnerFields } from '@/lib/forms';
+import {
+  buildPartnerPayload,
+  readHubSpotCookie,
+  type PartnerFields,
+  type FallbackContact,
+} from '@/lib/forms';
 import { FormFallbackAlert } from './FormFallbackAlert';
 import { HoneypotField, useHoneypot } from './honeypot';
 import { useHubspotSubmit } from './useHubspotSubmit';
@@ -47,7 +52,7 @@ const PARTNERSHIP_INTERESTS = [
 type TextFieldName = 'firstName' | 'companyName' | 'email' | 'phone' | 'message';
 const TEXT_FIELD_ORDER: TextFieldName[] = ['firstName', 'companyName', 'email', 'phone', 'message'];
 
-export function PartnerForm() {
+export function PartnerForm({ contact }: { contact: FallbackContact }) {
   const [fields, setFields] = useState<PartnerFields>(EMPTY_FIELDS);
   const [consent, setConsent] = useState(false);
   const [invalid, setInvalid] = useState<Set<TextFieldName>>(new Set());
@@ -276,7 +281,7 @@ export function PartnerForm() {
 
       {hubspotSubmit.fallbackVisible && (
         <div className="mt-6">
-          <FormFallbackAlert ref={fallbackRef} />
+          <FormFallbackAlert contact={contact} ref={fallbackRef} />
         </div>
       )}
     </div>

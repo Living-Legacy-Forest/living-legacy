@@ -23,6 +23,7 @@ import {
   buildUpcomingLocationPayload,
   readHubSpotCookie,
   type UpcomingLocationFields,
+  type FallbackContact,
 } from '@/lib/forms';
 import { FormFallbackAlert } from './FormFallbackAlert';
 import { HoneypotField, useHoneypot } from './honeypot';
@@ -52,7 +53,7 @@ const AREAS = [
 type ValidatedField = 'name' | 'email' | 'otherLocation' | 'reason';
 const TEXT_FIELD_ORDER: ValidatedField[] = ['name', 'email', 'otherLocation', 'reason'];
 
-export function UpcomingLocationForm() {
+export function UpcomingLocationForm({ contact }: { contact: FallbackContact }) {
   const [fields, setFields] = useState<UpcomingLocationFields>(EMPTY_FIELDS);
   const [consent, setConsent] = useState(false);
   const [invalid, setInvalid] = useState<Set<ValidatedField | 'location'>>(new Set());
@@ -296,7 +297,7 @@ export function UpcomingLocationForm() {
 
       {hubspotSubmit.fallbackVisible && (
         <div className="mt-6">
-          <FormFallbackAlert ref={fallbackRef} />
+          <FormFallbackAlert contact={contact} ref={fallbackRef} />
         </div>
       )}
     </div>

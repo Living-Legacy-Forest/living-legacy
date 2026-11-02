@@ -866,7 +866,7 @@ function FaqForm({
           required
           value={question}
           onChange={(e) => setQuestion(e.target.value)}
-          placeholder="How do I choose a tree?"
+          placeholder="What would people like to know?"
         />
       </div>
       <div className="space-y-1.5">
@@ -877,7 +877,7 @@ function FaqForm({
           rows={5}
           value={answer}
           onChange={(e) => setAnswer(e.target.value)}
-          placeholder="Our team can help you choose a native species…"
+          placeholder="A clear, helpful answer…"
         />
       </div>
       <div className="space-y-1.5">

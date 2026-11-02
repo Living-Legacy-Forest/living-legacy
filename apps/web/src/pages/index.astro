@@ -1,5 +1,6 @@
 ---
 import BaseLayout from '@/layouts/BaseLayout.astro';
+import { getSiteSettings, socialLinks } from '@/lib/settings';
 import Hero from '@/components/sections/home/Hero.astro';
 import PromoBanner from '@/components/sections/home/PromoBanner.astro';
 import LegacyQuote from '@/components/sections/home/LegacyQuote.astro';
@@ -16,29 +17,21 @@ import Faq from '@/components/sections/home/Faq.astro';
 const description =
   'Return to the earth and live on through nature with Living Legacy. Our patented process transforms cremated ashes into beautiful living memorial trees, an eco-friendly alternative to traditional burial, with family memorial options available across Australia. Pre-planning is also available.';
 
+const settings = await getSiteSettings();
 const organizationJsonLd = {
   '@context': 'https://schema.org',
   '@type': 'Organization',
-  name: 'Living Legacy',
-  legalName: 'Forest Conservation Australia Pty Ltd',
+  name: settings.siteTitle,
   url: 'https://livinglegacy.com.au/',
-  address: {
-    '@type': 'PostalAddress',
-    streetAddress: '4/349 Collins St',
-    addressLocality: 'Melbourne',
-    addressRegion: 'VIC',
-    postalCode: '3000',
-    addressCountry: 'AU',
-  },
-  sameAs: [
-    'https://www.facebook.com/livinglegacyforest/',
-    'https://www.instagram.com/living_legacy_forest/',
-    'https://www.youtube.com/channel/UCA3aDohvY5Y8Hr2oviiH-gw',
-  ],
+  ...(settings.legalName ? { legalName: settings.legalName } : {}),
+  ...(settings.contactEmail ? { email: settings.contactEmail } : {}),
+  ...(settings.phone ? { telephone: settings.phone } : {}),
+  ...(settings.address ? { address: settings.address } : {}),
+  sameAs: socialLinks(settings).map((link) => link.href),
 };
 ---
 
-<BaseLayout title="Living memorial trees in Australia | Living Legacy" description={description}>
+<BaseLayout title="Living memorial trees in Australia" description={description}>
   <!-- Full width, so its wash can run edge to edge; it sets its own column. -->
   <Hero />
   <div class="mx-auto max-w-6xl px-6 sm:px-10">

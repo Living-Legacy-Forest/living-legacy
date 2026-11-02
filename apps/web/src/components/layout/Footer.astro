@@ -1,11 +1,19 @@
 ---
 import HugeIcon from '@/components/ui/HugeIcon.astro';
-import { Facebook01Icon, InstagramIcon, YoutubeIcon } from '@hugeicons/core-free-icons';
+import {
+  Facebook01Icon,
+  GoogleIcon,
+  InstagramIcon,
+  Linkedin01Icon,
+  TiktokIcon,
+  YoutubeIcon,
+} from '@hugeicons/core-free-icons';
 import BrandImage from '@/components/ui/BrandImage.astro';
 import PatentsDialog from '@/components/layout/PatentsDialog';
 import { Separator } from '@/components/ui/separator';
 import { buttonVariants } from '@/components/ui/button';
 import logoWordmark from '@/assets/brand/logo-wordmark.png';
+import { type SocialKey, getSiteSettings, socialLinks } from '@/lib/settings';
 
 const exploreLinks = [
   { label: 'Home', href: '/' },
@@ -21,19 +29,22 @@ const mediaLinks = [
   { label: 'Our partners', href: '/our-partners/' },
 ];
 
-const socialLinks = [
-  { label: 'Facebook', href: 'https://www.facebook.com/livinglegacyforest/', icon: Facebook01Icon },
-  {
-    label: 'Instagram',
-    href: 'https://www.instagram.com/living_legacy_forest/',
-    icon: InstagramIcon,
-  },
-  {
-    label: 'YouTube',
-    href: 'https://www.youtube.com/channel/UCA3aDohvY5Y8Hr2oviiH-gw',
-    icon: YoutubeIcon,
-  },
-];
+// Contact, business and social details come from the CMS Settings page.
+const settings = await getSiteSettings();
+
+const socialIcons = {
+  facebookUrl: Facebook01Icon,
+  instagramUrl: InstagramIcon,
+  youtubeUrl: YoutubeIcon,
+  linkedinUrl: Linkedin01Icon,
+  tiktokUrl: TiktokIcon,
+  googleBusinessUrl: GoogleIcon,
+} satisfies Record<SocialKey, unknown>;
+const socials = socialLinks(settings);
+
+const business = [settings.legalName, settings.abn && `ABN ${settings.abn}`]
+  .filter(Boolean)
+  .join(', ');
 
 const legalLinks = [
   { label: 'Privacy', href: '/privacy/' },
@@ -48,35 +59,38 @@ const year = new Date().getFullYear();
   <div class="mx-auto max-w-6xl px-6 py-16 sm:px-10 lg:py-20">
     <div class="grid gap-12 lg:grid-cols-12 lg:gap-8">
       <div class="lg:col-span-4">
-        <a href="/" aria-label="Living Legacy home">
+        <a href="/" aria-label={`${settings.siteTitle} home`}>
           <BrandImage
             src={logoWordmark}
             height="1.75rem"
-            label="Living Legacy"
+            label={settings.siteTitle}
             class="text-moss-deep"
           />
         </a>
-        <p class="text-ink-soft mt-5 max-w-sm leading-relaxed">
-          Welcome to Living Legacy, where we transform grief into growth by bringing communities
-          together to create memorial forests and gardens.
-        </p>
-        <ul class="mt-6 flex items-center gap-3">
-          {
-            socialLinks.map((social) => (
-              <li>
-                <a
-                  href={social.href}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  aria-label={social.label}
-                  class={buttonVariants({ variant: 'outline', size: 'icon' })}
-                >
-                  <HugeIcon icon={social.icon} aria-hidden="true" />
-                </a>
-              </li>
-            ))
-          }
-        </ul>
+        {
+          settings.tagline && (
+            <p class="text-ink-soft mt-5 max-w-sm leading-relaxed">{settings.tagline}</p>
+          )
+        }
+        {
+          socials.length > 0 && (
+            <ul class="mt-6 flex items-center gap-3">
+              {socials.map((social) => (
+                <li>
+                  <a
+                    href={social.href}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    aria-label={social.label}
+                    class={buttonVariants({ variant: 'outline', size: 'icon' })}
+                  >
+                    <HugeIcon icon={socialIcons[social.key]} aria-hidden="true" />
+                  </a>
+                </li>
+              ))}
+            </ul>
+          )
+        }
       </div>
 
       <nav aria-label="Explore us" class="lg:col-span-2">
@@ -115,10 +129,14 @@ const year = new Date().getFullYear();
         </ul>
       </nav>
 
-      <div class="lg:col-span-3">
-        <p class="eyebrow">Find us</p>
-        <p class="text-ink-soft mt-5 leading-relaxed">4/349 Collins St, Melbourne VIC 3000</p>
-      </div>
+      {
+        settings.address && (
+          <div class="lg:col-span-3">
+            <p class="eyebrow">Find us</p>
+            <p class="text-ink-soft mt-5 leading-relaxed whitespace-pre-line">{settings.address}</p>
+          </div>
+        )
+      }
     </div>
 
     <Separator className="mt-14" />
@@ -127,9 +145,9 @@ const year = new Date().getFullYear();
       class="text-bark flex flex-col gap-4 pt-8 text-xs sm:flex-row sm:items-center sm:justify-between"
     >
       <div class="space-y-1">
-        <p>Forest Conservation Australia Pty Ltd, ABN 59 639 330 617</p>
+        {business && <p>{business}</p>}
         <p>
-          Living Legacy &copy; {year}.
+          {settings.siteTitle} &copy; {year}.
           <PatentsDialog client:idle />
         </p>
       </div>

@@ -143,7 +143,7 @@ function MagicLinkForm({ onSent }: { onSent: (email: string) => void }) {
           type="email"
           required
           autoComplete="email"
-          placeholder="you@livinglegacy.com.au"
+          placeholder="you@example.com"
           className="h-11"
           value={email}
           onChange={(e) => setEmail(e.target.value)}

@@ -170,9 +170,13 @@ export function SettingsPage({
             <SettingsSection
               id="general"
               title="General"
-              description="What the site is called and how people reach you."
+              description="What the site is called and how people reach you. Changes reach the website within a minute."
             >
-              <SettingsRow id="settings-site-title" title="Site title">
+              <SettingsRow
+                id="settings-site-title"
+                title="Site title"
+                description="Used in page titles, the footer and when pages are shared."
+              >
                 <Input
                   id="settings-site-title"
                   required
@@ -181,21 +185,29 @@ export function SettingsPage({
                   className={fieldWidth}
                 />
               </SettingsRow>
-              <SettingsRow id="settings-tagline" title="Tagline">
+              <SettingsRow
+                id="settings-tagline"
+                title="Tagline"
+                description="Shown under the logo in the website footer."
+              >
                 <Input
                   id="settings-tagline"
                   value={values.tagline}
-                  placeholder="Transforming grief into growth"
+                  placeholder="A short line that sums up the organisation"
                   onChange={(e) => patch({ tagline: e.target.value })}
                   className={fieldWidth}
                 />
               </SettingsRow>
-              <SettingsRow id="settings-email" title="Contact email">
+              <SettingsRow
+                id="settings-email"
+                title="Contact email"
+                description="Offered when a website form cannot send."
+              >
                 <Input
                   id="settings-email"
                   type="email"
                   value={values.contactEmail}
-                  placeholder="hello@livinglegacy.com.au"
+                  placeholder="hello@example.com"
                   onChange={(e) => patch({ contactEmail: e.target.value })}
                   className={fieldWidth}
                 />
@@ -207,9 +219,13 @@ export function SettingsPage({
             <SettingsSection
               id="business"
               title="Contact & business"
-              description="For the website footer and contact page."
+              description="For the website footer, contact page and search results."
             >
-              <SettingsRow id="settings-phone" title="Phone">
+              <SettingsRow
+                id="settings-phone"
+                title="Phone"
+                description="Offered when a website form cannot send."
+              >
                 <Input
                   id="settings-phone"
                   type="tel"

@@ -5,3 +5,4 @@ export * from './csv';
 export * from './faqs';
 export * from './abn';
 export * from './announcements';
+export * from './settings';

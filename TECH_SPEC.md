@@ -26,20 +26,20 @@ A reference for the technical stack, third-party services, conventions, and buil
 | Adapter   | `@astrojs/cloudflare`                   |
 | Language  | TypeScript (strict)                     |
 | Styling   | Tailwind CSS 4.x (Vite plugin)          |
-| CMS       | Sanity (studio + client)                |
+| CMS       | Own CMS (`apps/cms`), Cloudflare D1     |
 | Asset CDN | Cloudinary (upload tooling)             |
 | Hosting   | Cloudflare Workers (static assets)      |
 | Animation | Motion One (`motion`)                   |
 | Icons     | `@hugeicons/react`                      |
-| Rich text | `@portabletext/to-html`                 |
+| Rich text | `renderRichText` (`@llf/content`)       |
 | Analytics | PostHog (`posthog-js` + `posthog-node`) |
 
 ---
 
 ## 3. Architecture
 
-- **Astro file-based routing.** Pages live under `src/pages/`, components under `src/components/`, content modules under `src/lib/`, types in `src/types/`.
-- **Server-rendered on demand.** `output: 'server'` — every route renders per request on the Workers runtime, so published Sanity content appears immediately with no rebuild step. Nothing is pre-rendered.
+- **Astro file-based routing.** Pages live under `src/pages/`, components under `src/components/`, content modules under `src/lib/`.
+- **Server-rendered on demand.** `output: 'server'` — every route renders per request on the Workers runtime, so published CMS content appears immediately with no rebuild step. Nothing is pre-rendered.
 - **Error reporting.** `src/middleware.ts` wraps on-demand rendering and reports failures to PostHog.
 - **Single layout.** `src/layouts/BaseLayout.astro` provides `<head>`, canonical URL, robots meta, and the `noindex` prop.
 - **Component organisation:** `src/components/sections/shared/` for reusable blocks; `src/components/ui/` for atoms; `src/components/forms/` for form primitives; `src/components/layout/` for header/footer.
@@ -80,17 +80,15 @@ Server vars are read through `astro:env/server`, which resolves from the **Worke
 
 ---
 
-## 5. CMS — Sanity
+## 5. Content
 
-- **Project ID**: _(set after Sanity project creation)_
-- **Dataset**: `production`
-- **API version**: `2026-05-25`
-- **Hosted studio**: `living-legacy.sanity.studio`
-- **Client config**: `src/lib/sanity.ts` — `getSanityClient()`, a lazily created request-time client with `useCdn: false`.
+- **CMS**: `apps/cms`, writing to the shared D1 database (`living-legacy-db`). The site reads the same database for settings, redirects, announcements and blog posts.
+- **Blog**: `src/lib/blog-posts.ts` merges posts written in the CMS (`src/lib/blog-cms.ts`) with posts still on the old WordPress site, read from its REST API (`src/lib/blog-wordpress.ts`, `WORDPRESS_URL`). A CMS post with the same slug replaces its WordPress copy.
+- **Images**: uploaded through the CMS media library (R2) and served by the CMS (`CMS_URL`).
 
 ### Content freshness
 
-There is no publish webhook and no scheduled rebuild. Pages render on demand and query Sanity directly with the CDN disabled, so published edits are live on the next request.
+There is no publish webhook and no scheduled rebuild. Pages render on demand; each source is cached briefly per isolate (a minute for the database, ten minutes for WordPress), so published edits are live within that window.
 
 ---
 
@@ -98,7 +96,7 @@ There is no publish webhook and no scheduled rebuild. Pages render on demand and
 
 - **`ci.yml`**: gitleaks → install → audit → type-check → lint → format check → build → commitlint. Runs on pull requests targeting `master` and on push to `master`.
 - **Supply chain**: Bun refuses packages published within the last 24 hours (`minimumReleaseAge` in `bunfig.toml`) and runs no dependency install scripts. Dependabot's `cooldown` is set to 2 days so it never proposes an update CI would reject.
-- **`dependabot.yml`**: weekly grouped dependency updates (astro, sanity, tailwind, hugeicons). Major version bumps require manual review.
+- **`dependabot.yml`**: weekly grouped dependency updates (astro, tailwind, hugeicons). Major version bumps require manual review.
 
 ---
 

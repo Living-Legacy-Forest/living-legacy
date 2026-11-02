@@ -1,6 +1,5 @@
 import { defineConfig, envField } from 'astro/config';
 import cloudflare from '@astrojs/cloudflare';
-import sanity from '@sanity/astro';
 import sitemap from '@astrojs/sitemap';
 import tailwindcss from '@tailwindcss/vite';
 import react from '@astrojs/react';
@@ -48,13 +47,6 @@ const SSR_DEPS = [
   'posthog-node',
   'sonner',
   'tailwind-merge',
-  // Sanity content layer: the client and image builder (src/lib/sanity.ts) and
-  // the Portable Text renderer (PortableText.astro). First reached when a route
-  // that reads from Sanity renders. Left out, Vite discovered them mid-session,
-  // re-optimised, and the workerd runner died on a stale deps_ssr chunk.
-  '@sanity/client',
-  '@sanity/image-url',
-  '@portabletext/to-html',
   // The RSS feed helper, imported only by src/pages/rss.xml.ts, so it is first
   // reached when the feed is requested.
   '@astrojs/rss',
@@ -74,7 +66,7 @@ const SSR_DEPS = [
 
 export default defineConfig({
   site: 'https://livinglegacy.com.au',
-  // Every route renders on demand so published Sanity content appears
+  // Every route renders on demand so published CMS content appears
   // immediately, with no rebuild step.
   output: 'server',
   adapter: cloudflare({ imageService: 'compile' }),
@@ -86,13 +78,8 @@ export default defineConfig({
     defaultStrategy: 'hover',
   },
   integrations: [
-    sanity({
-      projectId: process.env.SANITY_PROJECT_ID ?? '6nf0cv12',
-      dataset: 'production',
-      useCdn: true,
-    }),
     sitemap({
-      // Blog posts render on demand from Sanity, so they are listed by the
+      // Blog posts render on demand from the CMS and WordPress, so they are listed by the
       // runtime sitemap at /sitemap-blog.xml rather than at build time.
       customSitemaps: ['https://livinglegacy.com.au/sitemap-blog.xml'],
       filter: (page) => !page.includes('/thank-you-contact'),
@@ -139,21 +126,6 @@ export default defineConfig({
         access: 'public',
         default: 'https://living-legacy-cms.living-legacy.workers.dev',
       }),
-      SANITY_PROJECT_ID: envField.string({
-        context: 'server',
-        access: 'secret',
-        optional: true,
-      }),
-      SANITY_DATASET: envField.string({
-        context: 'server',
-        access: 'secret',
-        default: 'production',
-      }),
-      SANITY_API_VERSION: envField.string({
-        context: 'server',
-        access: 'secret',
-        default: '2026-05-25',
-      }),
       PUBLIC_HUBSPOT_PORTAL_ID: envField.string({
         context: 'client',
         access: 'public',
@@ -190,16 +162,6 @@ export default defineConfig({
         default: 'https://us.i.posthog.com',
       }),
       PUBLIC_CLOUDINARY_CLOUD_NAME: envField.string({
-        context: 'client',
-        access: 'public',
-        optional: true,
-      }),
-      PUBLIC_SANITY_PROJECT_ID: envField.string({
-        context: 'client',
-        access: 'public',
-        optional: true,
-      }),
-      PUBLIC_SANITY_DATASET: envField.string({
         context: 'client',
         access: 'public',
         optional: true,

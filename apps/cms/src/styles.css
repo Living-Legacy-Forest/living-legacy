@@ -12,8 +12,12 @@
    site's Theme setting (and client-side for "system"); see __root.tsx. */
 @custom-variant dark (&:where(.dark, .dark *));
 
+/* One typeface for the whole CMS. Mono is pointed at Inter too, so code,
+   paths and keys (font-mono, var(--font-mono)) never fall back to the
+   system's monospace font; tabular figures keep numbers aligned instead. */
 @theme {
   --font-sans: 'Inter Variable', ui-sans-serif, system-ui, sans-serif;
+  --font-mono: 'Inter Variable', ui-sans-serif, system-ui, sans-serif;
 }
 
 @theme inline {
@@ -155,9 +159,5 @@
 
   body {
     @apply bg-background text-foreground font-sans antialiased;
-  }
-
-  h1 {
-    font-family: var(--font-display);
   }
 }

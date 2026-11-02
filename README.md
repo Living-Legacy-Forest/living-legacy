@@ -2,12 +2,12 @@
 
 Monorepo for livinglegacy.com.au and its content management system.
 
-| Path               | What it is                                                                |
-| ------------------ | ------------------------------------------------------------------------- |
-| `apps/web`         | Public website. Astro on Cloudflare Workers, content from Sanity for now. |
-| `apps/cms`         | Custom CMS admin. TanStack Start + shadcn/ui on Cloudflare Workers.       |
-| `packages/db`      | Drizzle schema, D1 migrations and typed queries shared by both apps.      |
-| `packages/content` | Shared content rules: roles, permissions, Zod schemas.                    |
+| Path               | What it is                                                           |
+| ------------------ | -------------------------------------------------------------------- |
+| `apps/web`         | Public website. Astro on Cloudflare Workers, content from the CMS.   |
+| `apps/cms`         | Custom CMS admin. TanStack Start + shadcn/ui on Cloudflare Workers.  |
+| `packages/db`      | Drizzle schema, D1 migrations and typed queries shared by both apps. |
+| `packages/content` | Shared content rules: roles, permissions, Zod schemas.               |
 
 Design: [`docs/superpowers/specs/2026-10-28-cms-design.md`](docs/superpowers/specs/2026-10-28-cms-design.md).
 Website stack details: [`TECH_SPEC.md`](TECH_SPEC.md).

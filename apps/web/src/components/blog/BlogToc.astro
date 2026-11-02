@@ -24,8 +24,10 @@ interface Props {
 
 const { headings, variant = 'sidebar', class: className } = Astro.props;
 
+// Plain text, no underlines: a column of underlined links reads as noise. The
+// section being read is marked by colour and weight alone.
 const linkClass =
-  'text-ink-soft decoration-bark/40 hover:text-moss-deep hover:decoration-moss aria-[current=location]:text-moss-deep aria-[current=location]:decoration-moss text-base leading-snug font-medium text-pretty underline underline-offset-4 transition-colors duration-200';
+  'text-ink-soft hover:text-ink aria-[current=location]:text-moss-deep aria-[current=location]:font-medium text-sm leading-snug text-pretty transition-colors duration-200';
 ---
 
 {
@@ -48,7 +50,7 @@ const linkClass =
       </nav>
     ) : (
       <details
-        class:list={['group border-bark/20 bg-paper-deep/40 rounded-xl border', className]}
+        class:list={['group border-bark/20 rounded-xl border', className]}
         data-toc
         data-toc-collapsible
       >

@@ -11,7 +11,7 @@
 // (relative z-10) so it stays independently clickable.
 //
 // Cards further down the page fade up as they scroll in, a row at a time with
-// a short stagger (the script below and [data-reveal] in global.css).
+// a short stagger (src/components/Reveal.astro).
 //
 // Hover is quiet on purpose: the title turns moss and the photo dims a touch.
 // Nothing moves or scales. Keyboard focus rings the photo, the card's
@@ -77,33 +77,3 @@ const imgSrc = image?.cardUrl ?? image?.url;
     <span>{readingTime} min read</span>
   </p>
 </article>
-
-<script>
-  // Reveal cards still below the fold as they scroll in. Cards on screen at
-  // load are left alone, so nothing visible ever blinks out; with reduced
-  // motion, or no IntersectionObserver, cards simply show.
-  const cards = [...document.querySelectorAll<HTMLElement>('[data-reveal]')];
-  const reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-
-  if (!reduce && 'IntersectionObserver' in window) {
-    const pending = cards.filter((card) => card.getBoundingClientRect().top > window.innerHeight);
-    for (const card of pending) card.dataset.reveal = 'pending';
-
-    const observer = new IntersectionObserver(
-      (entries) => {
-        // Cards that arrive together (a row) stagger left to right.
-        const arriving = entries
-          .filter((entry) => entry.isIntersecting)
-          .sort((a, b) => a.boundingClientRect.left - b.boundingClientRect.left);
-        arriving.forEach((entry, i) => {
-          const card = entry.target as HTMLElement;
-          card.style.setProperty('--reveal-delay', `${i * 70}ms`);
-          card.dataset.reveal = 'shown';
-          observer.unobserve(card);
-        });
-      },
-      { rootMargin: '0px 0px -8% 0px' }
-    );
-    for (const card of pending) observer.observe(card);
-  }
-</script>

@@ -34,7 +34,7 @@ const photos = await Promise.all(
 
 <section class="border-bark/20 scroll-mt-24 border-t py-24 lg:py-32">
   <div class="grid gap-6 lg:grid-cols-12 lg:items-end lg:gap-10">
-    <div class="lg:col-span-8">
+    <div data-reveal-stagger class="lg:col-span-8">
       <p class="eyebrow">Pre-plan or planning for someone else?</p>
       <h2 class="section-title mt-4">
         We've helped thousands of Australians create lasting legacies.
@@ -46,5 +46,7 @@ const photos = await Promise.all(
     </div>
   </div>
 
-  <PreplanPhotosCarousel photos={photos} client:visible />
+  <div data-reveal="right">
+    <PreplanPhotosCarousel photos={photos} client:visible />
+  </div>
 </section>

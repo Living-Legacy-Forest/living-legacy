@@ -1,0 +1,73 @@
+---
+// Scroll reveals for the whole site; included once in BaseLayout. Mark an
+// element with data-reveal="up|right|fade|blur|zoom|clip" (empty means up), or a
+// container with data-reveal-stagger="<motion>" to reveal its children one
+// after another, 80ms apart. The motions themselves are in global.css.
+//
+// Only elements still below the fold at load are hidden, so nothing on
+// screen ever blinks out. With reduced motion, or no IntersectionObserver,
+// everything simply shows. Once an element has revealed, its state is
+// cleared, so its own transitions (hover and so on) apply again.
+---
+
+<script>
+  const STAGGER_MS = 80;
+  const SETTLE_MS = 1300;
+
+  const reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+  if (!reduce && 'IntersectionObserver' in window) {
+    const belowFold = (el: Element) => el.getBoundingClientRect().top > window.innerHeight;
+
+    const reveal = (el: HTMLElement, delay: number) => {
+      el.style.setProperty('--reveal-delay', `${delay}ms`);
+      el.dataset.revealState = 'shown';
+      window.setTimeout(() => {
+        delete el.dataset.revealState;
+        el.style.removeProperty('--reveal-delay');
+      }, delay + SETTLE_MS);
+    };
+
+    const containers = [...document.querySelectorAll<HTMLElement>('[data-reveal-stagger]')].filter(
+      belowFold
+    );
+    for (const container of containers) {
+      for (const child of container.children as HTMLCollectionOf<HTMLElement>) {
+        child.dataset.reveal ??= container.dataset.revealStagger ?? '';
+        child.dataset.revealState = 'pending';
+      }
+    }
+
+    // Single elements, leaving out any inside a stagger container.
+    const singles = [...document.querySelectorAll<HTMLElement>('[data-reveal]')].filter(
+      (el) => !el.parentElement?.closest('[data-reveal-stagger]') && belowFold(el)
+    );
+    for (const el of singles) el.dataset.revealState = 'pending';
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        // Elements that arrive together reveal in reading order.
+        const arriving = entries
+          .filter((entry) => entry.isIntersecting)
+          .sort(
+            (a, b) =>
+              a.boundingClientRect.top - b.boundingClientRect.top ||
+              a.boundingClientRect.left - b.boundingClientRect.left
+          );
+        arriving.forEach((entry, i) => {
+          const el = entry.target as HTMLElement;
+          observer.unobserve(el);
+          if (el.dataset.revealStagger !== undefined) {
+            [...el.children].forEach((child, j) =>
+              reveal(child as HTMLElement, (i + j) * STAGGER_MS)
+            );
+          } else {
+            reveal(el, i * STAGGER_MS);
+          }
+        });
+      },
+      { rootMargin: '0px 0px -10% 0px' }
+    );
+    for (const el of [...containers, ...singles]) observer.observe(el);
+  }
+</script>

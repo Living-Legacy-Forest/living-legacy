@@ -17,7 +17,7 @@ const steps = [
   class="border-bark/20 scroll-mt-24 border-t py-24 lg:py-32"
   aria-labelledby="how-it-works-heading"
 >
-  <div class="max-w-2xl">
+  <div data-reveal-stagger class="max-w-2xl">
     <p class="eyebrow">How it works</p>
     <h2 id="how-it-works-heading" class="section-title mt-4">
       3 steps to create your Living Legacy
@@ -30,7 +30,7 @@ const steps = [
     </p>
   </div>
 
-  <ol class="mt-14 flex flex-col items-stretch gap-6 sm:flex-row">
+  <ol data-reveal-stagger class="mt-14 flex flex-col items-stretch gap-6 sm:flex-row">
     {
       steps.map((step, i) => (
         <>

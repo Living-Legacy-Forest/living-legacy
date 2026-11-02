@@ -14,21 +14,23 @@ import logoMark from '@/assets/home/legacy-quote-logo-mark.png';
   aria-labelledby="about-section-heading"
 >
   <div class="relative mx-auto max-w-3xl text-center">
-    <BrandImage
-      src={logoMark}
-      height="3rem"
-      label="Living Legacy"
-      class="text-moss mx-auto block w-fit"
-    />
+    <div data-reveal>
+      <BrandImage
+        src={logoMark}
+        height="3rem"
+        label="Living Legacy"
+        class="text-moss mx-auto block w-fit"
+      />
+    </div>
 
-    <h2 id="about-section-heading" class="section-title rise mt-8">
+    <h2 id="about-section-heading" data-reveal="blur" class="section-title mt-8">
       "Every life has the potential to create beauty, inspire connection, and leave a lasting
       legacy."
     </h2>
 
     <Separator className="bg-bark/30 mx-auto mt-10 w-16" />
 
-    <p class="lead mt-10">
+    <p data-reveal class="lead mt-10">
       Through Living Legacy, we honour that potential by transforming ashes into living memorials,
       trees that grow, evolve, and carry a person's spirit forward, fostering a deeper connection to
       nature, community, and future generations.

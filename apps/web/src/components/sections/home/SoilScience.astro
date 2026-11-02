@@ -47,7 +47,7 @@ const steps = [
 >
   <!-- Above ground -->
   <div class="grid items-end gap-10 lg:grid-cols-12 lg:gap-8">
-    <div class="pb-2 lg:col-span-6 lg:pb-16">
+    <div data-reveal-stagger class="pb-2 lg:col-span-6 lg:pb-16">
       <div class="flex items-center gap-3">
         <Image src={dnaIcon} alt="" width={64} loading="lazy" class="h-9 w-auto" />
         <p class="eyebrow">The science</p>
@@ -79,6 +79,7 @@ const steps = [
           widths={[480, 720, 1000]}
           sizes="(min-width: 1024px) 560px, 100vw"
           loading="lazy"
+          data-reveal="clip"
           class="relative block h-auto w-full"
         />
         <Image
@@ -99,7 +100,7 @@ const steps = [
   >
     <p class="eyebrow text-sun/80">Beneath the tree, in four steps</p>
 
-    <ol class="mt-8 grid gap-10 sm:grid-cols-2 lg:grid-cols-4 lg:gap-8">
+    <ol data-reveal-stagger class="mt-8 grid gap-10 sm:grid-cols-2 lg:grid-cols-4 lg:gap-8">
       {
         steps.map((step, i) => (
           <li class="border-paper/15 relative border-t pt-6 lg:border-t-0 lg:border-l lg:pt-0 lg:pl-6 lg:first:border-l-0 lg:first:pl-0">

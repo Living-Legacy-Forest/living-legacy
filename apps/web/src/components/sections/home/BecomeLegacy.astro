@@ -22,7 +22,7 @@ import { FLODESK_HREF } from './constants';
        (the video is taken out of flow and cropped to fill it), so the two
        columns finish level instead of a 16:9 strip floating beside the text. -->
   <div class="grid gap-14 lg:grid-cols-12 lg:gap-12">
-    <div class="lg:col-span-5">
+    <div data-reveal-stagger class="lg:col-span-5">
       <p class="eyebrow">Become a Living Legacy</p>
       <h2 class="section-title mt-4 text-balance">Change the way we leave the world</h2>
       <p class="lead mt-6 text-pretty">
@@ -47,7 +47,7 @@ import { FLODESK_HREF } from './constants';
       </a>
     </div>
 
-    <div class="relative lg:col-span-7" data-video-frame>
+    <div class="relative lg:col-span-7" data-video-frame data-reveal="clip">
       <video
         class="aspect-video w-full rounded-2xl object-cover shadow-[0_30px_60px_-30px_rgb(23_35_28/0.55)] outline outline-black/10 lg:absolute lg:inset-0 lg:aspect-auto lg:h-full"
         muted

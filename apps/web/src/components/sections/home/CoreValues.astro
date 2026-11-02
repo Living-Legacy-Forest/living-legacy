@@ -44,16 +44,18 @@ const values = [
 ---
 
 <section class="border-bark/20 scroll-mt-24 border-t py-24 lg:py-32">
-  <p class="eyebrow">What we stand for</p>
-  <h2 class="section-title mt-4 max-w-2xl">Our Living Legacy core values</h2>
+  <p data-reveal class="eyebrow">What we stand for</p>
+  <h2 data-reveal class="section-title mt-4 max-w-2xl">Our Living Legacy core values</h2>
 
   <!-- The rules are the list's background showing through 1px gaps; px-px adds
-       the same 1px rule down the outer left and right edges. -->
+       the same 1px rule down the outer left and right edges. Each cell keeps its
+       paper background while only its content reveals, so the rules never show
+       as a solid block before the values appear. -->
   <ul class="bg-bark/20 mt-14 grid gap-px overflow-hidden px-px sm:grid-cols-2 lg:grid-cols-3">
     {
       values.map((value) => (
-        <li>
-          <Card className="gap-6 rounded-none bg-paper ring-0">
+        <li class="bg-paper">
+          <Card data-reveal className="gap-6 rounded-none bg-paper ring-0">
             <CardHeader className="gap-6">
               <Image src={value.icon} alt="" width={44} loading="lazy" class="h-10 w-auto" />
               <h3 class="card-title">{value.title}</h3>

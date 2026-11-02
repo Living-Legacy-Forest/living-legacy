@@ -8,5 +8,4 @@
 export const FLODESK_HREF = 'https://living-legacy-forest.myflodesk.com/p79xkiruk8';
 
 /** Upcoming-locations register-interest form, linked from several sections. */
-export const UPCOMING_LOCATIONS_HREF =
-  '/locations/register-your-interest-for-locations-throughout-australia/';
+export const UPCOMING_LOCATIONS_HREF = '/locations/upcoming/';

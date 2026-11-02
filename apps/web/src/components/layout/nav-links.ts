@@ -14,8 +14,7 @@ export interface NavItem {
   children?: NavChild[];
 }
 
-export const UPCOMING_LOCATIONS_HREF =
-  '/locations/register-your-interest-for-locations-throughout-australia/';
+export const UPCOMING_LOCATIONS_HREF = '/locations/upcoming/';
 
 export const NAV_ITEMS: NavItem[] = [
   {

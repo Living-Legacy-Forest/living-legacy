@@ -16,6 +16,7 @@
     "apps/cms": {
       "name": "@llf/cms",
       "dependencies": {
+        "@animateicons/react": "^0.13.0",
         "@base-ui/react": "^1.8.0",
         "@fontsource-variable/inter": "^5.3.0",
         "@hugeicons/core-free-icons": "^4.3.5",
@@ -161,6 +162,8 @@
     "tar": ">=7.5.19",
   },
   "packages": {
+    "@animateicons/react": ["@animateicons/react@0.13.0", "", { "peerDependencies": { "react": "^18.0.0 || ^19.0.0", "react-dom": "^18.0.0 || ^19.0.0" } }, "sha512-xbSymVZQJqUR1tcRVW4vyEy+USAFMDp0l3uM4nlmEyQazPib7Ay+PFKdBNLeXHXaSUGhKUYJXSvxHYkFki6P2w=="],
+
     "@asamuzakjp/css-color": ["@asamuzakjp/css-color@7.1.9", "", { "dependencies": { "@csstools/css-calc": "^3.4.3", "@csstools/css-color-parser": "^4.2.6", "@csstools/css-parser-algorithms": "^4.0.2", "@csstools/css-tokenizer": "^4.0.2", "lru-cache": "^11.5.3" } }, "sha512-vZ6JQVq8Ivgz6b/IBlAf90wZviXdluY13cQOPO+nJHbmXwGrPl2GcpqUY7a55/8ZVdfONXpCFMpRijOBCHNlcQ=="],
 
     "@asamuzakjp/dom-selector": ["@asamuzakjp/dom-selector@10.0.5", "", { "dependencies": { "bidi-js": "^1.1.0", "css-tree": "^3.2.1", "is-potential-custom-element-name": "^1.0.1", "lru-cache": "^11.5.3" } }, "sha512-EgmJ7oEaGQECTn3H3wmnQpEy4hKY66VvM7VQndwPIQob3p877BgbyOUE3EX0LgXQCciF2H8KMdR+RznqjMNOLw=="],

@@ -11,3 +11,7 @@ declare namespace Cloudflare {
     RESEND_API_KEY?: string;
   }
 }
+
+// Set at build time in vite.config.ts; read through src/lib/build-info.ts.
+declare const __APP_COMMIT__: string;
+declare const __APP_BUILT_AT__: string;

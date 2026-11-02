@@ -1,5 +1,6 @@
 import type { SessionUser } from '@/lib/session';
 import type { DashboardData } from '@/server/dashboard';
+import { AppVersion } from './app-version';
 import { CategoryChart } from './category-chart';
 import { PublishingChart } from './publishing-chart';
 import { QuickActions } from './quick-actions';
@@ -14,6 +15,7 @@ export function Dashboard({ data, user }: { data: DashboardData; user: SessionUs
       <CategoryChart categories={data.categories} />
       <RecentPosts drafts={data.recentDrafts} published={data.recentlyPublished} />
       <QuickActions user={user} />
+      <AppVersion />
     </div>
   );
 }

@@ -1,10 +1,10 @@
 title = "Living Legacy gitleaks config"
 
-# Add an [allowlist] block once you have known public identifiers (Sanity project ID,
+# Add an [allowlist] block once you have known public identifiers (analytics IDs,
 # HubSpot portal ID, Cloudinary cloud name). Example:
 #
 # [allowlist]
 #   description = "Known public identifiers — not secrets"
 #   regexes = [
-#     "\\byour-sanity-project-id\\b",
+#     "\\byour-public-id\\b",
 #   ]

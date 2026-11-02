@@ -76,8 +76,6 @@ jobs:
         run: bun run build
         env:
           # Public values are inlined into the client bundle at build time.
-          PUBLIC_SANITY_PROJECT_ID: ${{ vars.PUBLIC_SANITY_PROJECT_ID }}
-          PUBLIC_SANITY_DATASET: ${{ vars.PUBLIC_SANITY_DATASET }}
           PUBLIC_CLOUDINARY_CLOUD_NAME: ${{ vars.PUBLIC_CLOUDINARY_CLOUD_NAME }}
           # Analytics and the HubSpot form portal only ship to production, so
           # previews never pollute analytics or create real leads.

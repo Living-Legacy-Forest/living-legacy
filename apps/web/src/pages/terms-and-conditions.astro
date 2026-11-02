@@ -11,6 +11,14 @@
 // public/documents/customer-waiver-for-conservation-zone.pdf and linked
 // directly rather than through the old redirect.
 //
+// The terms themselves are now real text, transcribed word for word from
+// that PDF (Waiver & Release, and the memorial tree terms and warranty), so
+// they can be read on a phone, by screen readers and by search engines.
+// Wording, spelling and capitals are exactly as the PDF has them, including
+// its known slips (clause 2 of the waiver ends mid-sentence; "Cancellations
+// made at within 21 from purchase"); fixing them is the client's call. The
+// PDF's blank form fields and signature line are left to the PDF itself.
+//
 // Dropped as noise rather than content: live repeats the waiver PDF link
 // and the "Purchase your plot" button a second time each further down the
 // page, an about:blank map iframe with nothing to embed, a Facebook/
@@ -18,12 +26,11 @@
 // original plugin, and a page-specific 2018 mini footer (address,
 // copyright, social links) that would sit directly above this site's real,
 // current footer and only contradict it.
-import { Image } from 'astro:assets';
 import BaseLayout from '@/layouts/BaseLayout.astro';
+import BlogToc from '@/components/blog/BlogToc.astro';
+import Prose from '@/components/Prose.astro';
 import { buttonVariants } from '@/components/ui/button';
 import { Separator } from '@/components/ui/separator';
-import logoAnimation from '@/assets/terms/logo-animation.gif';
-import waiverPhoto from '@/assets/terms/waiver-photo.jpg';
 
 const title = 'Terms and conditions';
 const description =
@@ -31,22 +38,26 @@ const description =
 
 const WAIVER_PDF_HREF = '/documents/customer-waiver-for-conservation-zone.pdf';
 const PURCHASE_PLOT_HREF = 'https://livinglegacy.com.au/wellington-legacy-sanctuary-event/';
+
+// The document's sections, for the contents list. Ids match the h2s below.
+const headings = [
+  { id: 'waiver-and-release', text: 'Waiver & Release' },
+  { id: 'terms-and-warranty', text: 'Living Legacy Memorial Tree terms & warranty' },
+  { id: 'cancellations-and-refunds', text: 'Cancellations & Refunds' },
+  { id: 'planted-living-legacy-trees', text: 'Planted LIVING LEGACY TREES' },
+];
 ---
 
 <BaseLayout title={title} description={description}>
-  <div class="mx-auto max-w-3xl px-6 py-20 sm:px-10 lg:py-28">
-    <header class="rise-children">
-      <img src={logoAnimation.src} alt="" width="120" height="120" class="mb-6 h-24 w-24" />
-
+  <div class="mx-auto max-w-6xl px-6 py-20 sm:px-10 lg:py-28">
+    <header class="rise-children max-w-3xl">
       <p class="eyebrow">Wellington Dam memorial sanctuary event</p>
       <h1 class="display-title mt-4">Terms and conditions</h1>
-
       <p class="lead mt-6">
         All customers must agree to the standard terms and conditions and waiver to take part in
         this memorial sanctuary event. By purchasing your plot you agree to be bound by these terms
         and conditions.
       </p>
-
       <div class="mt-8 flex flex-wrap gap-4">
         <a href={PURCHASE_PLOT_HREF} class={buttonVariants()}>Purchase your plot</a>
         <a
@@ -60,19 +71,200 @@ const PURCHASE_PLOT_HREF = 'https://livinglegacy.com.au/wellington-legacy-sanctu
       </div>
     </header>
 
-    <Image
-      src={waiverPhoto}
-      alt=""
-      width={900}
-      data-reveal
-      class="border-bark/20 mt-10 h-auto w-full rounded-2xl border"
-    />
+    <!-- Contents beside the terms from lg, as on the privacy policy; a
+         collapsible panel above them on smaller screens. -->
+    <div class="mt-14 lg:grid lg:grid-cols-[12rem_minmax(0,1fr)] lg:items-start lg:gap-16">
+      <div class="hidden lg:sticky lg:top-28 lg:block">
+        <BlogToc headings={headings} label="On this page" />
+      </div>
 
-    <section data-reveal class="mt-16" aria-labelledby="terms-location-heading">
+      <div class="max-w-[68ch]">
+        <BlogToc
+          headings={headings}
+          label="On this page"
+          variant="collapsible"
+          class="mb-10 lg:hidden"
+        />
+        <Prose>
+          <p>Living Legacy Standard Terms and Conditions 2016 Ver 1.0</p>
+
+          <h2 id="waiver-and-release">Waiver &amp; Release</h2>
+          <ol>
+            <li>
+              I desire to participate voluntarily in the planting and memorial activities
+              facilitated by Living Legacy Forest Pty Ltd (“LLT”) on the SITE.
+            </li>
+            <li>
+              I understand, accept, and assume the risks associated with participation in any and
+              all activities relating to the planting day and accessing the conservation site. I
+              also assume the responsibility of conducting myself in a civil manner that is mutually
+              beneficial to all participants. Unacceptable conduct generally includes, but is not
+              limited to theft, profanity, causing damage whether intentionally or recklessly and
+              any offensive behaviour. I agree and understand that I should wear suitable clothes
+              and shoes for
+            </li>
+            <li>
+              I assume full responsibility for any injuries which may occur to me, as well as the
+              safety of my family and guests, and do hereby fully and forever discharge and release
+              LLT, South West Catchments Council, and the SITE owner and their employees, board
+              members, officers, agents, authorized volunteers, representatives, consultants,
+              insurers and sureties, and their successors and assigns (collectively, the "Released
+              Parties") from any "Claims.” "Claims," as used in this document, mean any and all
+              claims, demands, damages, rights of action or causes of action, present or future,
+              whether the same be known, anticipated or unanticipated, resulting from or arising out
+              of my presence or the presence of my family members and guests at the garden,
+              activities at the SITE, and/or participation in activities connected with the SITE or
+              LLT including, without limitation, any of the foregoing resulting from or arising out
+              of the negligence of a Released Party. Further, I hereby waive any and all Claims
+              against a Released Party.
+            </li>
+            <li>
+              I expressly acknowledge that participation in the SITE and memorial forest is for my
+              purposes and not for the purpose of any one or more of the Released Parties.
+            </li>
+            <li>
+              I understand and agree that the conservation legacy zone service is provided fully by
+              South West Catchments Council, and to the extent legally permissible, I release,
+              indemnify and hold LLT and the land owner harmless from any and all claims related to
+              the planting and maintenance of my trees in the conservation zone except to the extent
+              such claim relates directly to any damage or loss resulting from the treatment of
+              ashes by LLT.
+            </li>
+          </ol>
+          <p>
+            I have read, understand and agree to the terms and responsibilities as stated in this
+            document including the standard terms and conditions on page 2 of this document.
+          </p>
+          <p>(Or Parent/legal guardian signature if participant is under the age of 18).</p>
+
+          <h2 id="terms-and-warranty">Living Legacy Memorial Tree terms &amp; warranty</h2>
+          <p>
+            CONGRATULATIONS on choosing to honour the circle of life through a Living Legacy
+            memorial.
+          </p>
+          <p>
+            We are proud to offer LIVING LEGACY TREE to retell the life stories of your loved one.
+            We understand how important this event is and we want to do everything we can to ensure
+            the healthy growth of your LIVING LEGACY TREE. Before you proceed, please ensure you
+            understand the different options we provide; each option will involve a different level
+            of care and maintenance of your LIVING LEGACY TREE. When you elect to plant your LIVING
+            LEGACY TREE at one of our partner conservation parks or sanctuaries you will need to
+            sign the attached waiver. Where you choose to plant your LIVING LEGACY TREE privately
+            Living Legacy Pty Ltd can only provide limited warranties that relate to the
+            effectiveness of our ash treatment and its suitability for native plants in healthy
+            soil. Under any of these options we suggest that you retain a small amount of ash in a
+            keepsake. We offer a beautiful crystal keepsake as part of your package.
+          </p>
+
+          <h2 id="cancellations-and-refunds">Cancellations &amp; Refunds</h2>
+          <p>
+            Cancellations made at within 21 from purchase will be fully refunded (less a 5% charge
+            for administration and processing fees from third parties).
+          </p>
+          <p>
+            Cancellations made at after 21 days but at least 21 days prior to the planting day will
+            be refunded 50% of the purchase price.
+          </p>
+          <p>
+            Cancellations made less than 21 days prior to the planting date, will not be refunded,
+            except in situations of legitimate and substantiated emergency and where Living Legacy
+            has agreed to provide a full refund (less the booking fee).
+          </p>
+          <p>
+            For this project, Living Legacy will commit significant funds to the conservation and
+            management of the planting day and memorial sanctuary. These funds are allocated based
+            on the purchases made prior to the planting date, so we are unable to give refunds
+            within the 21 day period preceding the planting date.
+          </p>
+
+          <h2 id="planted-living-legacy-trees">Planted LIVING LEGACY TREES</h2>
+          <p>
+            Our patented infusion process is the culmination of years of research and development
+            but is simple to use. LIVING LEGACY REPRESENTATIVES can undertake the infusion process
+            and you may be able to take part in the process
+          </p>
+          <p>
+            Independent Laboratory tests resulted in 100% success rate for native trees in
+            Australian soils recommended by a certified local nursery for your location.
+          </p>
+          <p>
+            Accordingly, Living Legacy Pty Ltd guarantees the growth of native trees in healthy
+            soils subject to natural attrition and force majeure.
+          </p>
+          <p>
+            Even where all precautions are taken natural attrition rates apply for all trees for
+            various reasons including but not limited to (extreme weather, flooding, disease or
+            vandalism) known as “Force Majeure” and as such the Living Legacy Pty Ltd guarantee does
+            not apply to damage or loss resulting from any force Majeure events.
+          </p>
+          <p>
+            Even though the likelihood of unsuccessful infusion is extremely low, due to the
+            unavoidable natural attrition rate of any tree Living Legacy Pty Ltd recommends that ALL
+            customers retain a small part of the cremated remains which can be used as a contingency
+            if the original tree(s) fail to grow successfully in the first instance. If a LIVING
+            LEGACY TREE which is planted in accordance with the LIVING LEGACY CARE AND MAINTENANCE
+            GUIDELINES fails to grow or dies within the first 5 years due to Living Legacy’s default
+            but not where due to any Force Majeure event Living Legacy will replace the tree and
+            re-perform infusion at no cost to you.
+          </p>
+          <p>
+            LL agrees to carry out its services in accordance with the standards of the profession
+            or practice relevant to the performance of those obligations, and exercising that degree
+            of skill, care, diligence, prudence, foresight and operating practice which would
+            reasonably and ordinarily be expected from a skilled and experienced person engaged in a
+            similar type of undertaking as that of LL under the same or similar circumstances.
+          </p>
+          <p>
+            The following are confirmations that you, understand the warranties provided by Living
+            Legacy, by purchasing this LIVING LEGACY TREE you confirm that you have read these
+            instructions and agree to the following:
+          </p>
+          <ol>
+            <li>
+              LL does not warrant successful infusion where LL Guidelines are not followed, or where
+              failure to grow is the result of environmental factors, force majeure or due to any
+              mishandling or error made by Client.
+            </li>
+            <li>
+              You acknowledge that by purchasing LIVING LEGACY TREE that you do not do so in
+              reliance on any representation, warranty or other provision except as expressly
+              provided herein, and any conditions, warranties or other terms implied by statute or
+              common law are, to the greatest extent permissible by law, excluded from this
+              agreement to the fullest extent permitted by law.
+            </li>
+            <li>
+              You understand that except for the warranties provided in this clause, you accept full
+              responsibility for your LIVING LEGACY TREE upon taking receipt of the TREE(S).
+            </li>
+            <li>
+              You understand that you are responsible for choosing the appropriate tree, soil and
+              location for the Living Legacy Tree. You are also responsible for providing security,
+              care and maintenance of the tree and the site where the tree is located and with
+              exception of the warranties provided herein you indemnify and hold Living Legacy
+              harmless from and against any and all claims resulting from incidents occurring after
+              delivery of the LIVING LEGACY TREE, or in relation to the maintenance and care of the
+              tree.
+            </li>
+          </ol>
+          <p>
+            Living Legacy’s sole and exclusive remedy for failed infusion or other breach of
+            contract is to replace the tree(s) originally selected for infusion and re-supply the
+            LIVING LEGACY TREE. You acknowledge that Living Legacy is not responsible for and will
+            in no circumstances be responsible for retaining part of the ashes as a contingency if a
+            new tree is to be planted under warranty.
+          </p>
+        </Prose>
+      </div>
+    </div>
+
+    <section
+      data-reveal
+      class="mt-16 max-w-3xl lg:ml-[calc(12rem+4rem)]"
+      aria-labelledby="terms-location-heading"
+    >
       <Separator className="mb-12" />
       <p class="eyebrow">Information</p>
       <h2 id="terms-location-heading" class="section-title mt-4">Wellington Dam Memorial Forest</h2>
-
       <dl class="divide-bark/15 border-bark/15 mt-8 divide-y border-y text-base">
         <div class="flex items-baseline justify-between gap-6 py-3.5">
           <dt class="text-ink-soft shrink-0">Address</dt>

@@ -110,10 +110,9 @@ All are optimised through `astro:assets` (`<Image>` / `<Picture>`) when used in 
 
 ## terms/ — /terms-and-conditions/
 
-| Local file                 | Live source                                                                                       |
-| -------------------------- | ------------------------------------------------------------------------------------------------- |
-| `terms/logo-animation.gif` | https://livinglegacyforest.com/wp-content/uploads/2018/12/living_legacy_new_logo_animation_02.gif |
-| `terms/waiver-photo.jpg`   | https://livinglegacyforest.com/wp-content/uploads/2019/04/merge_from_ofoct.jpg                    |
+No images: the page's waiver photo (a picture of the PDF's text) was replaced
+by the terms as real text, transcribed from
+`public/documents/customer-waiver-for-conservation-zone.pdf`.
 
 ## Reused across pages (not duplicated on disk)
 

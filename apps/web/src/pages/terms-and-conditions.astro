@@ -35,42 +35,52 @@ const PURCHASE_PLOT_HREF = 'https://livinglegacy.com.au/wellington-legacy-sanctu
 
 <BaseLayout title={title} description={description}>
   <div class="mx-auto max-w-3xl px-6 py-20 sm:px-10 lg:py-28">
-    <img src={logoAnimation.src} alt="" width="120" height="120" class="mb-6 h-24 w-24" />
+    <header class="rise-children">
+      <img src={logoAnimation.src} alt="" width="120" height="120" class="mb-6 h-24 w-24" />
 
-    <p class="eyebrow">Wellington Dam memorial sanctuary event</p>
-    <h1 class="display-title mt-4">Terms and conditions</h1>
+      <p class="eyebrow">Wellington Dam memorial sanctuary event</p>
+      <h1 class="display-title mt-4">Terms and conditions</h1>
 
-    <p class="lead mt-6">
-      All customers must agree to the standard terms and conditions and waiver to take part in this
-      memorial sanctuary event. By purchasing your plot you agree to be bound by these terms and
-      conditions.
-    </p>
+      <p class="lead mt-6">
+        All customers must agree to the standard terms and conditions and waiver to take part in
+        this memorial sanctuary event. By purchasing your plot you agree to be bound by these terms
+        and conditions.
+      </p>
 
-    <div class="mt-8 flex flex-wrap gap-4">
-      <a href={PURCHASE_PLOT_HREF} class={buttonVariants()}>Purchase your plot</a>
-      <a
-        href={WAIVER_PDF_HREF}
-        target="_blank"
-        rel="noopener noreferrer"
-        class={buttonVariants({ variant: 'outline' })}
-      >
-        Customer waiver PDF download
-      </a>
-    </div>
+      <div class="mt-8 flex flex-wrap gap-4">
+        <a href={PURCHASE_PLOT_HREF} class={buttonVariants()}>Purchase your plot</a>
+        <a
+          href={WAIVER_PDF_HREF}
+          target="_blank"
+          rel="noopener noreferrer"
+          class={buttonVariants({ variant: 'outline' })}
+        >
+          Customer waiver PDF download
+        </a>
+      </div>
+    </header>
 
-    <div class="border-bark/20 mt-10 overflow-hidden rounded-2xl border">
-      <Image src={waiverPhoto} alt="" width={900} class="h-full w-full object-cover" />
-    </div>
+    <Image
+      src={waiverPhoto}
+      alt=""
+      width={900}
+      data-reveal
+      class="border-bark/20 mt-10 h-auto w-full rounded-2xl border"
+    />
 
-    <div class="mt-16">
+    <section data-reveal class="mt-16" aria-labelledby="terms-location-heading">
       <Separator className="mb-12" />
       <p class="eyebrow">Information</p>
-      <h2 class="section-title mt-4">Wellington Dam Memorial Forest</h2>
+      <h2 id="terms-location-heading" class="section-title mt-4">Wellington Dam Memorial Forest</h2>
 
-      <div class="mt-6 flex flex-col gap-1">
-        <h3 class="text-ink font-medium">1 Wellington Dam Rd</h3>
-        <p class="text-ink-soft">1 Wellington Dam Road, Worsley, Western Australia, Australia</p>
-      </div>
-    </div>
+      <dl class="divide-bark/15 border-bark/15 mt-8 divide-y border-y text-base">
+        <div class="flex items-baseline justify-between gap-6 py-3.5">
+          <dt class="text-ink-soft shrink-0">Address</dt>
+          <dd class="text-ink text-right">
+            1 Wellington Dam Road, Worsley, Western Australia, Australia
+          </dd>
+        </div>
+      </dl>
+    </section>
   </div>
 </BaseLayout>

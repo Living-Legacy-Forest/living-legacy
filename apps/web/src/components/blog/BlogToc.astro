@@ -18,11 +18,13 @@ import type { BlogHeading } from '@/lib/blog';
 
 interface Props {
   headings: BlogHeading[];
+  /** The list's heading; legal pages say "On this page". */
+  label?: string;
   variant?: 'sidebar' | 'collapsible';
   class?: string;
 }
 
-const { headings, variant = 'sidebar', class: className } = Astro.props;
+const { headings, variant = 'sidebar', label = 'In this article', class: className } = Astro.props;
 
 // Plain text, no underlines: a column of underlined links reads as noise. The
 // section being read is marked by colour and weight alone.
@@ -42,7 +44,7 @@ const linkClass =
           class="bg-moss pointer-events-none absolute top-0 -left-px h-0 w-[3px] rounded-full opacity-0 transition-[transform,height,opacity] duration-300 ease-[var(--ease-grow)]"
         />
         <div class="flex flex-col gap-4">
-          <p class="eyebrow">In this article</p>
+          <p class="eyebrow">{label}</p>
           <ol class="flex flex-col gap-2.5">
             {headings.map((h) => (
               <li>
@@ -61,7 +63,7 @@ const linkClass =
         data-toc-collapsible
       >
         <summary class="flex cursor-pointer list-none items-center justify-between gap-4 px-5 py-4 [&::-webkit-details-marker]:hidden">
-          <span class="eyebrow">In this article</span>
+          <span class="eyebrow">{label}</span>
           <HugeIcon
             icon={ArrowDown01Icon}
             class="text-bark size-5 transition-transform duration-200 group-open:rotate-180"

@@ -22,8 +22,29 @@ import { Image } from 'astro:assets';
 import BaseLayout from '@/layouts/BaseLayout.astro';
 import { Card, CardContent } from '@/components/ui/card';
 import { Separator } from '@/components/ui/separator';
+import BlogToc from '@/components/blog/BlogToc.astro';
+import Prose from '@/components/Prose.astro';
 import locationWellingtonDam from '@/assets/home/location-wellington-dam.png';
 import locationMorningtonGreen from '@/assets/home/location-mornington-green.png';
+
+// The policy's sections, for the contents list. Ids match the h2s below.
+const headings = [
+  { id: 'what-information-do-we-collect', text: 'What information do we collect?' },
+  {
+    id: 'why-do-we-gather-the-information-and-how-will-we-use-it',
+    text: 'Why do we gather the information and how will we use it?',
+  },
+  { id: 'security', text: 'Security' },
+  { id: 'links-to-other-websites', text: 'Links to other websites' },
+  { id: 'cookies', text: 'Cookies' },
+  {
+    id: 'access-and-correcting-personal-information',
+    text: 'Access and correcting personal information',
+  },
+  { id: 'complaints', text: 'Complaints' },
+  { id: 'changes-to-this-privacy-policy', text: 'Changes to this privacy policy' },
+  { id: 'contact', text: 'Contact' },
+];
 
 const title = 'Privacy policy';
 const description =
@@ -50,257 +71,271 @@ const relatedLocations = [
 ---
 
 <BaseLayout title={title} description={description}>
-  <div class="mx-auto max-w-3xl px-6 py-20 sm:px-10 lg:py-28">
-    <p class="eyebrow">Legal</p>
-    <h1 class="display-title mt-4">Privacy policy</h1>
+  <div class="mx-auto max-w-6xl px-6 py-20 sm:px-10 lg:py-28">
+    <header class="rise-children max-w-3xl">
+      <p class="eyebrow">Legal</p>
+      <h1 class="display-title mt-4">Privacy policy</h1>
+    </header>
 
-    <div class="text-ink-soft mt-10 flex flex-col gap-5 leading-relaxed">
-      <p>
-        Living Legacy recognises that your privacy is important to you and we always strive to
-        provide the best possible service, which includes protecting our customers' privacy. The
-        Privacy Act 1988 (Cth) (Privacy Act), Australian Privacy Principles and registered privacy
-        codes govern the way in which we must manage your personal information and set out a number
-        of principles concerning the protection of your personal information.
-      </p>
-      <p>
-        The following is the information that the Privacy Act requires us to communicate to our
-        clients.
-      </p>
-      <p>
-        By submitting personal information to us, clients confirm their acceptance of the terms of
-        this Privacy Policy and consent to the use of their personal information in the manner set
-        out in this Privacy Policy. By consenting to the disclosure of your information, Australian
-        Privacy Principle 8.1 will not apply and you agree that we do have to take reasonable steps
-        to ensure the information is treated in accordance with the APPs, and our related entities
-        and other organisations with whom we have affiliations, so that those organisations may
-        provide you with information about services and various promotions.
-      </p>
+    <!-- Contents beside the policy from lg, as on a blog post; a collapsible
+         panel above it on smaller screens. -->
+    <div class="mt-14 lg:grid lg:grid-cols-[12rem_minmax(0,1fr)] lg:items-start lg:gap-16">
+      <div class="hidden lg:sticky lg:top-28 lg:block">
+        <BlogToc headings={headings} label="On this page" />
+      </div>
 
-      <h2 class="text-ink mt-6 text-2xl">What information do we collect?</h2>
-      <p>
-        We collect a variety of personal information from clients to enable us to provide and tailor
-        our products or services to meet their needs. This may include contact information such as
-        names, addresses, phone numbers and email addresses and credit or debit card information and
-        the card's expiry date.
-      </p>
-      <p>
-        We may collect personal information by various means, for example, when clients complete an
-        application, enter into an agreement with us, or contact us by phone, send us a letter,
-        visit one of our websites or when they visit us in person.
-      </p>
-      <p>
-        If you access our website, we may collect additional personal information about you in the
-        form of your IP address or domain name. Our website may use cookies from time to time. The
-        main purpose of cookies is to identify users and to prepare customised web pages for them.
-        We may collect and store information about your visit to our website, including the name of
-        the domain from which you accessed the internet, the date and time you accessed the website,
-        the internet address of the website from which you linked directly to the website and the
-        pages you accessed while visiting the website. This information does not in itself identify
-        you and is used to measure the number of visitors to the website and how it was navigated.
-        This information assists us to make the website more useful to you.
-      </p>
-      <p>
-        We also collect information from subscribers (persons registering their details with us
-        through the website) or website visitors for the purpose of improving our quality and
-        effectiveness and to provide you with information. We welcome feedback from you about all
-        aspects of its website. We store feedback that users send to us. This feedback is used to
-        administer and refine our service. We may also use the information to improve or promote
-        this site. We will not publish your name in connection with any information you provide
-        without your permission.
-      </p>
-      <p>
-        There may, however, be some instances where personal information about you will be collected
-        indirectly because it is unreasonable or impractical to collect personal information
-        directly from you. We will usually notify you about these instances in advance, or where
-        that is not possible, as soon as reasonably practicable after the information has been
-        collected.
-      </p>
-      <p>
-        Personal information may also be collected via cameras installed in venues or chapels for
-        the purpose of providing requested services to our clients.
-      </p>
-      <p>
-        Whilst the choice of how much personal information is disclosed to us is left completely up
-        to the client and, from time to time, clients may be able to deal with us anonymously or by
-        pseudonym, if clients do not provide us with certain personal information we may not be able
-        to provide clients with the services and products that they seek.
-      </p>
+      <div class="max-w-[68ch]">
+        <BlogToc
+          headings={headings}
+          label="On this page"
+          variant="collapsible"
+          class="mb-10 lg:hidden"
+        />
+        <Prose>
+          <p>
+            Living Legacy recognises that your privacy is important to you and we always strive to
+            provide the best possible service, which includes protecting our customers' privacy. The
+            Privacy Act 1988 (Cth) (Privacy Act), Australian Privacy Principles and registered
+            privacy codes govern the way in which we must manage your personal information and set
+            out a number of principles concerning the protection of your personal information.
+          </p>
+          <p>
+            The following is the information that the Privacy Act requires us to communicate to our
+            clients.
+          </p>
+          <p>
+            By submitting personal information to us, clients confirm their acceptance of the terms
+            of this Privacy Policy and consent to the use of their personal information in the
+            manner set out in this Privacy Policy. By consenting to the disclosure of your
+            information, Australian Privacy Principle 8.1 will not apply and you agree that we do
+            have to take reasonable steps to ensure the information is treated in accordance with
+            the APPs, and our related entities and other organisations with whom we have
+            affiliations, so that those organisations may provide you with information about
+            services and various promotions.
+          </p>
 
-      <h2 class="text-ink mt-6 text-2xl">
-        Why do we gather the information and how will we use it?
-      </h2>
-      <p>
-        The personal information that we collect and hold about you depends on your interaction with
-        us. Generally, we collect, use and hold your personal information for the purposes of:
-      </p>
-      <ul class="flex [list-style-type:disc] flex-col gap-2 pl-5">
-        <li>providing products or services to you or someone else you know;</li>
-        <li>providing you with newsletters, information and other communications;</li>
-        <li>
-          providing you with information about other products or services that we offer that may be
-          of interest to you;
-        </li>
-        <li>involving you in promotions and other initiatives undertaken by us;</li>
-        <li>
-          facilitating our internal business operations, including the fulfilment of any legal
-          requirements; and
-        </li>
-        <li>analysing our services and customer needs with a view to improving those services.</li>
-      </ul>
-      <p>
-        By submitting personal information to us, clients agree that Living Legacy Tree may obtain,
-        hold and use the personal information for the purposes of providing clients with its
-        products or services, and for its internal business purposes.
-      </p>
-      <p>
-        We gather personal information to enable us to provide our clients with the personalised
-        services that they request. We may also use or disclose personal information for related
-        purposes, such as servicing and managing our relationship with clients, our internal
-        accounting or business management processes and in order to comply with our regulatory
-        reporting and legal obligations.
-      </p>
-      <p>
-        In the future, we may use the information to provide clients with personalised information
-        about our products and services. If at any time a client does not wish to receive any
-        communications about our products or services, they can opt out by indicating so in the
-        initial application process or by contacting our Privacy Officer.
-      </p>
-      <p>
-        As with other business organisations, we also rely on third party service providers, agents,
-        suppliers and contractors to provide some of our services, such as memorialisation services,
-        transfer services and bereavement registers. Any personal information provided to these
-        agents and contractors is provided only to perform their agreed tasks. To protect our
-        clients' personal information we require these organisations to be bound by strict
-        confidentiality and non-disclosure agreements with us in respect of any personal information
-        we disclose to them.
-      </p>
+          <h2 id="what-information-do-we-collect">What information do we collect?</h2>
+          <p>
+            We collect a variety of personal information from clients to enable us to provide and
+            tailor our products or services to meet their needs. This may include contact
+            information such as names, addresses, phone numbers and email addresses and credit or
+            debit card information and the card's expiry date.
+          </p>
+          <p>
+            We may collect personal information by various means, for example, when clients complete
+            an application, enter into an agreement with us, or contact us by phone, send us a
+            letter, visit one of our websites or when they visit us in person.
+          </p>
+          <p>
+            If you access our website, we may collect additional personal information about you in
+            the form of your IP address or domain name. Our website may use cookies from time to
+            time. The main purpose of cookies is to identify users and to prepare customised web
+            pages for them. We may collect and store information about your visit to our website,
+            including the name of the domain from which you accessed the internet, the date and time
+            you accessed the website, the internet address of the website from which you linked
+            directly to the website and the pages you accessed while visiting the website. This
+            information does not in itself identify you and is used to measure the number of
+            visitors to the website and how it was navigated. This information assists us to make
+            the website more useful to you.
+          </p>
+          <p>
+            We also collect information from subscribers (persons registering their details with us
+            through the website) or website visitors for the purpose of improving our quality and
+            effectiveness and to provide you with information. We welcome feedback from you about
+            all aspects of its website. We store feedback that users send to us. This feedback is
+            used to administer and refine our service. We may also use the information to improve or
+            promote this site. We will not publish your name in connection with any information you
+            provide without your permission.
+          </p>
+          <p>
+            There may, however, be some instances where personal information about you will be
+            collected indirectly because it is unreasonable or impractical to collect personal
+            information directly from you. We will usually notify you about these instances in
+            advance, or where that is not possible, as soon as reasonably practicable after the
+            information has been collected.
+          </p>
+          <p>
+            Personal information may also be collected via cameras installed in venues or chapels
+            for the purpose of providing requested services to our clients.
+          </p>
+          <p>
+            Whilst the choice of how much personal information is disclosed to us is left completely
+            up to the client and, from time to time, clients may be able to deal with us anonymously
+            or by pseudonym, if clients do not provide us with certain personal information we may
+            not be able to provide clients with the services and products that they seek.
+          </p>
 
-      <h2 class="text-ink mt-6 text-2xl">Security</h2>
-      <p>
-        Consistent with our commitment to protecting personal information, we make all reasonable
-        endeavours to protect such information securely against unauthorised access, use,
-        modification or disclosure. Client information will be recorded, amended and used only by
-        authorised personnel who are instructed to keep your information confidential.
-      </p>
-      <p>
-        We take care to ensure that the personal information you give us is protected. For example,
-        all systems we use to digitally store and process your personal information to service your
-        needs have electronic security systems in place, including the use of firewalls, user
-        identifiers, passwords or other access codes to control access to your personal information.
-      </p>
-      <p>
-        These digital security measures are augmented with document storage security policies,
-        security measures for systems access, providing a discreet environment for confidential
-        discussions, only allowing access to personal information where the individual seeking
-        access has satisfied our identification requirements, and access control for our buildings
-        and sensitive infrastructure.
-      </p>
+          <h2 id="why-do-we-gather-the-information-and-how-will-we-use-it">
+            Why do we gather the information and how will we use it?
+          </h2>
+          <p>
+            The personal information that we collect and hold about you depends on your interaction
+            with us. Generally, we collect, use and hold your personal information for the purposes
+            of:
+          </p>
+          <ul>
+            <li>providing products or services to you or someone else you know;</li>
+            <li>providing you with newsletters, information and other communications;</li>
+            <li>
+              providing you with information about other products or services that we offer that may
+              be of interest to you;
+            </li>
+            <li>involving you in promotions and other initiatives undertaken by us;</li>
+            <li>
+              facilitating our internal business operations, including the fulfilment of any legal
+              requirements; and
+            </li>
+            <li>
+              analysing our services and customer needs with a view to improving those services.
+            </li>
+          </ul>
+          <p>
+            By submitting personal information to us, clients agree that Living Legacy Tree may
+            obtain, hold and use the personal information for the purposes of providing clients with
+            its products or services, and for its internal business purposes.
+          </p>
+          <p>
+            We gather personal information to enable us to provide our clients with the personalised
+            services that they request. We may also use or disclose personal information for related
+            purposes, such as servicing and managing our relationship with clients, our internal
+            accounting or business management processes and in order to comply with our regulatory
+            reporting and legal obligations.
+          </p>
+          <p>
+            In the future, we may use the information to provide clients with personalised
+            information about our products and services. If at any time a client does not wish to
+            receive any communications about our products or services, they can opt out by
+            indicating so in the initial application process or by contacting our Privacy Officer.
+          </p>
+          <p>
+            As with other business organisations, we also rely on third party service providers,
+            agents, suppliers and contractors to provide some of our services, such as
+            memorialisation services, transfer services and bereavement registers. Any personal
+            information provided to these agents and contractors is provided only to perform their
+            agreed tasks. To protect our clients' personal information we require these
+            organisations to be bound by strict confidentiality and non-disclosure agreements with
+            us in respect of any personal information we disclose to them.
+          </p>
 
-      <h2 class="text-ink mt-6 text-2xl">Links to other websites</h2>
-      <p>
-        Our website may contain links to other websites. We are not responsible for the privacy
-        practices or content of linked websites. It is your responsibility to investigate the
-        privacy policies of those other sites.
-      </p>
+          <h2 id="security">Security</h2>
+          <p>
+            Consistent with our commitment to protecting personal information, we make all
+            reasonable endeavours to protect such information securely against unauthorised access,
+            use, modification or disclosure. Client information will be recorded, amended and used
+            only by authorised personnel who are instructed to keep your information confidential.
+          </p>
+          <p>
+            We take care to ensure that the personal information you give us is protected. For
+            example, all systems we use to digitally store and process your personal information to
+            service your needs have electronic security systems in place, including the use of
+            firewalls, user identifiers, passwords or other access codes to control access to your
+            personal information.
+          </p>
+          <p>
+            These digital security measures are augmented with document storage security policies,
+            security measures for systems access, providing a discreet environment for confidential
+            discussions, only allowing access to personal information where the individual seeking
+            access has satisfied our identification requirements, and access control for our
+            buildings and sensitive infrastructure.
+          </p>
 
-      <h2 class="text-ink mt-6 text-2xl">Cookies</h2>
-      <p>To improve your experience on our websites, we may use cookies.</p>
-      <p>
-        A cookie is a small text file that our websites may place on your computer or device as a
-        tool to remember your preferences. You may refuse the use of cookies by selecting the
-        appropriate settings on your browser, however, please note that if you do this, you may not
-        be able to use the full functionality of our websites.
-      </p>
-      <p>
-        Our websites use Google Analytics, a service which transmits website traffic data to Google
-        servers in the United States. Google Analytics does not identify individual users or
-        associate your IP address with any other data held by Google. We use reports provided by
-        Google Analytics to help us understand website traffic and website usage.
-      </p>
-      <p>
-        In particular, we use the following Google Analytics services in relation to display
-        advertising: re-marketing, Google Analytics demographics and interest reporting. These
-        services use first party and third party cookies so that, when you visit third party
-        websites, advertisements may be displayed for services and products which you viewed on our
-        website(s).
-      </p>
-      <p>
-        You can opt out of Google Analytics if you disable or refuse cookies or use the opt out
-        service provided by Google Analytics at
-        <a
-          href="https://tools.google.com/dlpage/gaoptout/"
-          class="text-moss-deep underline underline-offset-2"
-          target="_blank"
-          rel="noopener noreferrer">https://tools.google.com/dlpage/gaoptout/</a
-        >.
-      </p>
+          <h2 id="links-to-other-websites">Links to other websites</h2>
+          <p>
+            Our website may contain links to other websites. We are not responsible for the privacy
+            practices or content of linked websites. It is your responsibility to investigate the
+            privacy policies of those other sites.
+          </p>
 
-      <h2 class="text-ink mt-6 text-2xl">Access and correcting personal information</h2>
-      <p>
-        Living Legacy aims to take such steps as are reasonable, in the circumstances, to ensure
-        that the personal information we collect, hold, use and disclose about our clients is
-        accurate, complete and up to date. However, the accuracy of the personal information is
-        largely reliant on the quality of personal information that our clients provide to us.
-      </p>
-      <p>
-        Clients may request details (in writing) of the personal information that our company holds
-        about them or they may correct or update information we hold about them by contacting our
-        Privacy Officer. We will endeavour to respond to a client's request for access or correction
-        within a reasonable period after the request is made and we may charge a reasonable fee for
-        responding to the request. We may also collect personal information about you from third
-        parties acting on your behalf (for instance, agents).
-      </p>
-      <p>
-        There are some exceptions specified by law where we may refuse a client's request for access
-        or correction. However, if one of these circumstances applies, we will provide the client
-        with a written explanation of the reasons for refusal, unless it would be unreasonable to
-        provide that notice.
-      </p>
+          <h2 id="cookies">Cookies</h2>
+          <p>To improve your experience on our websites, we may use cookies.</p>
+          <p>
+            A cookie is a small text file that our websites may place on your computer or device as
+            a tool to remember your preferences. You may refuse the use of cookies by selecting the
+            appropriate settings on your browser, however, please note that if you do this, you may
+            not be able to use the full functionality of our websites.
+          </p>
+          <p>
+            Our websites use Google Analytics, a service which transmits website traffic data to
+            Google servers in the United States. Google Analytics does not identify individual users
+            or associate your IP address with any other data held by Google. We use reports provided
+            by Google Analytics to help us understand website traffic and website usage.
+          </p>
+          <p>
+            In particular, we use the following Google Analytics services in relation to display
+            advertising: re-marketing, Google Analytics demographics and interest reporting. These
+            services use first party and third party cookies so that, when you visit third party
+            websites, advertisements may be displayed for services and products which you viewed on
+            our website(s).
+          </p>
+          <p>
+            You can opt out of Google Analytics if you disable or refuse cookies or use the opt out
+            service provided by Google Analytics at
+            <a
+              href="https://tools.google.com/dlpage/gaoptout/"
+              target="_blank"
+              rel="noopener noreferrer">https://tools.google.com/dlpage/gaoptout/</a
+            >.
+          </p>
 
-      <h2 class="text-ink mt-6 text-2xl">Complaints</h2>
-      <p>
-        Complaints about the way we collect, use or disclose client personal information are to be
-        directed to our Privacy Officer. Our Privacy Officer will confirm receipt of a complaint
-        within 10 business days after the complaint is received and will then investigate the
-        complaint and provide a response within a reasonable time.
-      </p>
-      <p>
-        If, after receiving our response, there are still concerns that the privacy complaint
-        remains unresolved, clients may then, for example, take the complaint to the Office of the
-        Australian Information Commissioner.
-      </p>
+          <h2 id="access-and-correcting-personal-information">
+            Access and correcting personal information
+          </h2>
+          <p>
+            Living Legacy aims to take such steps as are reasonable, in the circumstances, to ensure
+            that the personal information we collect, hold, use and disclose about our clients is
+            accurate, complete and up to date. However, the accuracy of the personal information is
+            largely reliant on the quality of personal information that our clients provide to us.
+          </p>
+          <p>
+            Clients may request details (in writing) of the personal information that our company
+            holds about them or they may correct or update information we hold about them by
+            contacting our Privacy Officer. We will endeavour to respond to a client's request for
+            access or correction within a reasonable period after the request is made and we may
+            charge a reasonable fee for responding to the request. We may also collect personal
+            information about you from third parties acting on your behalf (for instance, agents).
+          </p>
+          <p>
+            There are some exceptions specified by law where we may refuse a client's request for
+            access or correction. However, if one of these circumstances applies, we will provide
+            the client with a written explanation of the reasons for refusal, unless it would be
+            unreasonable to provide that notice.
+          </p>
 
-      <h2 class="text-ink mt-6 text-2xl">Changes to this privacy policy</h2>
-      <p>
-        We may make changes to this Privacy Policy from time to time for any reason. We will publish
-        those changes on our website at
-        <a
-          href="https://livinglegacy.com.au"
-          class="text-moss-deep underline underline-offset-2"
-          target="_blank"
-          rel="noopener noreferrer">www.livinglegacy.com.au</a
-        >.
-      </p>
+          <h2 id="complaints">Complaints</h2>
+          <p>
+            Complaints about the way we collect, use or disclose client personal information are to
+            be directed to our Privacy Officer. Our Privacy Officer will confirm receipt of a
+            complaint within 10 business days after the complaint is received and will then
+            investigate the complaint and provide a response within a reasonable time.
+          </p>
+          <p>
+            If, after receiving our response, there are still concerns that the privacy complaint
+            remains unresolved, clients may then, for example, take the complaint to the Office of
+            the Australian Information Commissioner.
+          </p>
 
-      <h2 class="text-ink mt-6 text-2xl">Contact</h2>
-      <p class="flex flex-col gap-1">
-        <span>Street address: Level 4, 349 Collins Street, Melbourne VIC 3000</span>
-        <span>
-          Email address:
-          <a
-            href="mailto:contact@livinglegacy.com.au"
-            class="text-moss-deep underline underline-offset-2">contact@livinglegacy.com.au</a
-          >
-        </span>
-        <span>
-          Telephone: <a href="tel:0370196142" class="text-moss-deep underline underline-offset-2"
-            >03 7019 6142</a
-          >
-        </span>
-      </p>
+          <h2 id="changes-to-this-privacy-policy">Changes to this privacy policy</h2>
+          <p>
+            We may make changes to this Privacy Policy from time to time for any reason. We will
+            publish those changes on our website at
+            <a href="https://livinglegacy.com.au" target="_blank" rel="noopener noreferrer"
+              >www.livinglegacy.com.au</a
+            >.
+          </p>
+
+          <h2 id="contact">Contact</h2>
+          <p>
+            Street address: Level 4, 349 Collins Street, Melbourne VIC 3000<br />
+            Email address: <a href="mailto:contact@livinglegacy.com.au"
+              >contact@livinglegacy.com.au</a
+            ><br />
+            Telephone: <a href="tel:0370196142">03 7019 6142</a>
+          </p>
+        </Prose>
+      </div>
     </div>
 
-    <div class="mt-16">
+    <div class="mt-16 max-w-3xl lg:ml-[calc(12rem+4rem)]">
       <Separator className="mb-12" />
       <p class="eyebrow">Our locations</p>
       <div class="mt-6 grid gap-6 sm:grid-cols-2">

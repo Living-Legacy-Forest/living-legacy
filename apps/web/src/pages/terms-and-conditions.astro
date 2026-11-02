@@ -19,6 +19,9 @@
 // made at within 21 from purchase"); fixing them is the client's call. The
 // PDF's blank form fields and signature line are left to the PDF itself.
 //
+// The event label and the "Purchase your plot" button were removed at the
+// client's request; the waiver download is the page's one action.
+//
 // Dropped as noise rather than content: live repeats the waiver PDF link
 // and the "Purchase your plot" button a second time each further down the
 // page, an about:blank map iframe with nothing to embed, a Facebook/
@@ -37,7 +40,6 @@ const description =
   'Terms and conditions and the customer waiver for the Wellington Dam Memorial Forest conservation zone.';
 
 const WAIVER_PDF_HREF = '/documents/customer-waiver-for-conservation-zone.pdf';
-const PURCHASE_PLOT_HREF = 'https://livinglegacy.com.au/wellington-legacy-sanctuary-event/';
 
 // The document's sections, for the contents list. Ids match the h2s below.
 const headings = [
@@ -51,7 +53,7 @@ const headings = [
 <BaseLayout title={title} description={description}>
   <div class="mx-auto max-w-6xl px-6 py-20 sm:px-10 lg:py-28">
     <header class="rise-children max-w-3xl">
-      <p class="eyebrow">Wellington Dam memorial sanctuary event</p>
+      <p class="eyebrow">Legal</p>
       <h1 class="display-title mt-4">Terms and conditions</h1>
       <p class="lead mt-6">
         All customers must agree to the standard terms and conditions and waiver to take part in
@@ -59,12 +61,11 @@ const headings = [
         and conditions.
       </p>
       <div class="mt-8 flex flex-wrap gap-4">
-        <a href={PURCHASE_PLOT_HREF} class={buttonVariants()}>Purchase your plot</a>
         <a
           href={WAIVER_PDF_HREF}
           target="_blank"
           rel="noopener noreferrer"
-          class={buttonVariants({ variant: 'outline' })}
+          class={buttonVariants()}
         >
           Customer waiver PDF download
         </a>

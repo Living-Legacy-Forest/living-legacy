@@ -9,7 +9,7 @@ import HugeIcon from '@/components/ui/HugeIcon.astro';
 import { Search01Icon } from '@hugeicons/core-free-icons';
 import { Input } from '@/components/ui/input';
 import { buttonVariants } from '@/components/ui/button';
-import type { BlogTagCount } from '@/lib/sanity';
+import type { BlogTagCount } from '@/lib/blog-posts';
 
 interface Props {
   q?: string;
@@ -82,11 +82,11 @@ const chipActive = 'border-moss-deep bg-moss-deep text-paper';
             </a>
           </li>
           {tags.map((t) => {
-            const active = t.slug.current === tag;
+            const active = t.slug === tag;
             return (
               <li>
                 <a
-                  href={href({ q, tag: t.slug.current })}
+                  href={href({ q, tag: t.slug })}
                   aria-current={active ? 'page' : undefined}
                   aria-label={`${sentenceCase(t.title)}, ${t.count} ${t.count === 1 ? 'article' : 'articles'}`}
                   class:list={[chipClass, active ? chipActive : chipIdle]}

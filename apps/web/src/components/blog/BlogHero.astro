@@ -9,20 +9,17 @@ import {
   BreadcrumbPage,
   BreadcrumbSeparator,
 } from '@/components/ui/breadcrumb';
-import { formatBlogDate, lastUpdatedAt } from '@/lib/blog';
-import { imageDimensions, imageUrl } from '@/lib/sanity';
-import type { SanityBlogPost } from '@/types';
+import { type BlogPost, formatBlogDate, lastUpdatedAt } from '@/lib/blog';
 
 interface Props {
-  post: SanityBlogPost;
+  post: BlogPost;
   shareUrl: string;
 }
 
 const { post, shareUrl } = Astro.props;
-const { title, publishedAt, category, author, featuredImage, readingTime } = post;
+const { title, publishedAt, category, author, image, readingTime } = post;
 
-const heroSrc = imageUrl(featuredImage, { width: 1600, fit: 'max' });
-const heroDim = imageDimensions(featuredImage?.asset?._ref);
+const heroSrc = image?.url;
 
 // Only worth a second line when the last edit happened on a different day.
 const updatedAt = lastUpdatedAt(post);
@@ -50,7 +47,7 @@ const showUpdated = new Date(updatedAt).toDateString() !== new Date(publishedAt)
     <div class="flex max-w-3xl flex-col gap-5">
       {
         category && (
-          <a href={`/blog/category/${category.slug.current}/`} class="eyebrow text-moss-deep">
+          <a href={`/blog/category/${category.slug}/`} class="eyebrow text-moss-deep">
             {category.title}
           </a>
         )
@@ -73,7 +70,7 @@ const showUpdated = new Date(updatedAt).toDateString() !== new Date(publishedAt)
           {
             author && (
               <a
-                href={`/blog/author/${author.slug.current}/`}
+                href={`/blog/author/${author.slug}/`}
                 class="text-ink hover:text-moss-deep font-medium transition-colors duration-300"
               >
                 {author.name}
@@ -104,9 +101,9 @@ const showUpdated = new Date(updatedAt).toDateString() !== new Date(publishedAt)
       <div class="mx-auto mt-10 max-w-6xl px-6 sm:px-10">
         <img
           src={heroSrc}
-          alt={featuredImage?.alt ?? ''}
-          width={heroDim?.width ?? 1600}
-          height={heroDim?.height ?? 900}
+          alt={image?.alt ?? ''}
+          width={image?.width ?? 1600}
+          height={image?.height ?? 900}
           fetchpriority="high"
           class="aspect-[16/9] w-full rounded-xl object-cover"
         />

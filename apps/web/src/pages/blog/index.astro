@@ -21,7 +21,7 @@ import {
 import { buttonVariants } from '@/components/ui/button';
 import { Separator } from '@/components/ui/separator';
 import { formatBlogDate } from '@/lib/blog';
-import { getBlogPage, getBlogTags, imageUrl, searchBlogPosts, searchTerms } from '@/lib/sanity';
+import { getBlogPage, getBlogTags, searchBlogPosts, searchTerms } from '@/lib/blog-posts';
 
 export const prerender = false;
 
@@ -47,7 +47,7 @@ if (filtering && pageCount > 0 && requestedPage > pageCount) {
   return Astro.rewrite('/404');
 }
 
-const activeTag = tags.find((t) => t.slug.current === tagSlug);
+const activeTag = tags.find((t) => t.slug === tagSlug);
 
 function resultsHref(page: number): string {
   const search = new URLSearchParams();
@@ -76,10 +76,8 @@ const resultsTitle = [searching && `“${q}”`, tagSlug && topicLabel].filter(B
 // not as emphasis.
 const showFeatured = !filtering && posts.length > 3;
 const featured = showFeatured ? (posts.find((p) => p.isFeatured) ?? posts[0]) : null;
-const rest = featured ? posts.filter((p) => p._id !== featured._id) : posts;
-const featuredImgSrc = featured
-  ? imageUrl(featured.featuredImage, { width: 1200, height: 800, fit: 'crop' })
-  : null;
+const rest = featured ? posts.filter((p) => p.id !== featured.id) : posts;
+const featuredImgSrc = featured ? (featured.image?.url ?? null) : null;
 
 const description =
   'Stories, insights, and reflections on nature, healing, remembrance, and the powerful connection between life and the forest.';
@@ -161,7 +159,7 @@ const description =
                   <div class="bg-paper-deep aspect-[3/2] w-full overflow-hidden rounded-lg">
                     <img
                       src={featuredImgSrc}
-                      alt={featured.featuredImage?.alt ?? ''}
+                      alt={featured.image?.alt ?? ''}
                       width="1200"
                       height="800"
                       fetchpriority="high"
@@ -185,7 +183,7 @@ const description =
 
                   <h2 class="text-2xl leading-snug text-balance md:text-3xl">
                     <a
-                      href={`/blog/${featured.slug.current}/`}
+                      href={`/blog/${featured.slug}/`}
                       class="group-hover:text-moss-deep transition-colors duration-300 after:absolute after:inset-0 after:content-['']"
                     >
                       {featured.title}

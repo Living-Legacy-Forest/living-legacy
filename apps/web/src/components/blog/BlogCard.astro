@@ -25,18 +25,16 @@
 //   and the photo zoom.
 import { Card, CardHeader, CardFooter, CardDescription } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { formatBlogDate } from '@/lib/blog';
-import { imageUrl } from '@/lib/sanity';
-import type { SanityBlogPost } from '@/types';
+import { type BlogPost, formatBlogDate } from '@/lib/blog';
 
 interface Props {
-  post: SanityBlogPost;
+  post: BlogPost;
 }
 
 const { post } = Astro.props;
-const { title, slug, excerpt, publishedAt, featuredImage, category, readingTime } = post;
+const { title, slug, excerpt, publishedAt, image, category, readingTime } = post;
 
-const imgSrc = imageUrl(featuredImage, { width: 800, height: 534, fit: 'crop' });
+const imgSrc = image?.cardUrl ?? image?.url;
 ---
 
 <article class="group h-full">
@@ -53,7 +51,7 @@ const imgSrc = imageUrl(featuredImage, { width: 800, height: 534, fit: 'crop' })
         <div class="bg-paper-deep aspect-[3/2] w-full overflow-hidden">
           <img
             src={imgSrc}
-            alt={featuredImage?.alt ?? ''}
+            alt={image?.alt ?? ''}
             width="800"
             height="534"
             loading="lazy"
@@ -67,7 +65,7 @@ const imgSrc = imageUrl(featuredImage, { width: 800, height: 534, fit: 'crop' })
     <CardHeader className="flex-1 content-start gap-2.5">
       {
         category && (
-          <a href={`/blog/category/${category.slug.current}/`} class="relative z-10 w-fit">
+          <a href={`/blog/category/${category.slug}/`} class="relative z-10 w-fit">
             <Badge variant="outline" className="hover:border-moss hover:text-moss-deep">
               {category.title}
             </Badge>
@@ -77,7 +75,7 @@ const imgSrc = imageUrl(featuredImage, { width: 800, height: 534, fit: 'crop' })
 
       <h3 class="font-heading text-lg leading-snug font-normal tracking-tight text-balance">
         <a
-          href={`/blog/${slug.current}/`}
+          href={`/blog/${slug}/`}
           class="group-hover:text-moss-deep transition-colors duration-300 outline-none after:absolute after:inset-0 after:content-['']"
         >
           {title}

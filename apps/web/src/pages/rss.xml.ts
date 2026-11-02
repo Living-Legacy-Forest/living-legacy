@@ -1,7 +1,7 @@
 import rss from '@astrojs/rss';
 import type { APIRoute } from 'astro';
 
-import { getAllBlogPosts } from '@/lib/sanity';
+import { getAllBlogPosts } from '@/lib/blog-posts';
 
 export const prerender = false;
 
@@ -17,7 +17,7 @@ export const GET: APIRoute = async ({ site }) => {
       title: post.title,
       pubDate: new Date(post.publishedAt),
       description: post.excerpt,
-      link: `/blog/${post.slug.current}/`,
+      link: `/blog/${post.slug}/`,
       categories: post.category ? [post.category.title] : undefined,
       author: post.author?.name,
     })),

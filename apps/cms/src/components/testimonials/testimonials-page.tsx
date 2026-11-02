@@ -649,7 +649,7 @@ function TestimonialForm({
           rows={4}
           value={quote}
           onChange={(e) => setQuote(e.target.value)}
-          placeholder="It felt like we were giving something back…"
+          placeholder="What they said, in their own words…"
         />
       </div>
       <div className="grid grid-cols-2 gap-3">
@@ -669,7 +669,7 @@ function TestimonialForm({
             id="t-relationship"
             value={relationship}
             onChange={(e) => setRelationship(e.target.value)}
-            placeholder="Daughter"
+            placeholder="Customer"
           />
         </div>
       </div>

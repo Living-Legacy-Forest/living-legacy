@@ -315,6 +315,16 @@
   transition-delay: var(--reveal-delay, 0ms);
 }
 
+/* Printing never waits for a scroll: anything still pending prints in full. */
+@media print {
+  [data-reveal-state='pending'] {
+    opacity: 1 !important;
+    transform: none !important;
+    filter: none !important;
+    clip-path: none !important;
+  }
+}
+
 /* How far through an article the reader is: a thin bar driven by scrolling
    itself, so it costs no script. Spans the article only (its view timeline is
    named on the post page), from its top reaching the top of the screen to its

@@ -1,19 +1,12 @@
 ---
-// Page not found. Kept minimal: what happened, one way home, and the few
-// pages people most often go looking for. Also served for missing blog
-// posts and for redirects marked as gone (src/middleware.ts).
+// Page not found. Kept minimal: what happened and one way home. Also served
+// for missing blog posts and for redirects marked as gone (src/middleware.ts).
 import HugeIcon from '@/components/ui/HugeIcon.astro';
 import { ArrowRight02Icon } from '@hugeicons/core-free-icons';
 import BaseLayout from '@/layouts/BaseLayout.astro';
 import { buttonVariants } from '@/components/ui/button';
 
 Astro.response.status = 404;
-
-const helpful = [
-  { label: 'Blog', href: '/blog/' },
-  { label: 'FAQs', href: '/faqs/' },
-  { label: 'Contact', href: '/contact/' },
-];
 ---
 
 <BaseLayout title="Page not found" noindex>
@@ -22,8 +15,7 @@ const helpful = [
   <div
     class="rise-children mx-auto flex min-h-[calc(100svh-81px)] max-w-xl flex-col items-center justify-center px-6 py-20 text-center"
   >
-    <p class="eyebrow">404</p>
-    <h1 class="section-title mt-4">Page not found</h1>
+    <h1 class="section-title">Page not found</h1>
     <p class="text-ink-soft mt-4 text-lg text-pretty">
       The page you're looking for may have moved or no longer exists.
     </p>
@@ -32,22 +24,5 @@ const helpful = [
       Back home
       <HugeIcon icon={ArrowRight02Icon} data-icon="inline-end" aria-hidden="true" />
     </a>
-
-    <nav aria-label="Helpful pages" class="mt-10">
-      <ul class="text-ink-soft flex flex-wrap justify-center gap-x-6 gap-y-2 text-base">
-        {
-          helpful.map((link) => (
-            <li>
-              <a
-                href={link.href}
-                class="hover:text-moss-deep underline-offset-4 transition-colors duration-200 hover:underline"
-              >
-                {link.label}
-              </a>
-            </li>
-          ))
-        }
-      </ul>
-    </nav>
   </div>
 </BaseLayout>

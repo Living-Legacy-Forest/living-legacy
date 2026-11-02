@@ -26,6 +26,7 @@ import {
   loadPost,
   loadTermsFor,
   publishValues,
+  saveEdits,
   uniqueSlug,
 } from './post-store';
 
@@ -282,35 +283,8 @@ export const savePost = createServerFn({ method: 'POST' })
 
     const row = await loadPost(db, data.id);
     assertCanEdit(row, context.user);
-    if (row.deletedAt) throw new Error('Restore this post from the trash before editing it.');
     assertVersion(row, data.expectedUpdatedAt);
-    const now = new Date();
-
-    // Published: park the edits in `draft` so the live version is untouched.
-    if (row.status === 'published') {
-      await db
-        .update(posts)
-        .set({ draft: data.values, updatedAt: now, updatedBy: userId })
-        .where(eq(posts.id, row.id));
-      return { id: row.id, updatedAt: now.getTime(), slug: data.values.slug };
-    }
-
-    // A scheduled post must stay publishable, or the scheduler would fail.
-    if (row.scheduledAt && publishErrors(data.values).length) {
-      throw new Error(
-        `${publishErrors(data.values).join(' ')} This post is scheduled, so it needs both.`
-      );
-    }
-    const slug = await uniqueSlug(db, data.values.slug || slugify(data.values.title), row.id);
-    const { columns, termStatements } = await columnWrites(db, row.id, data.values);
-    await db.batch([
-      db
-        .update(posts)
-        .set({ ...columns, slug, draft: null, updatedAt: now, updatedBy: userId })
-        .where(eq(posts.id, row.id)),
-      ...termStatements,
-    ]);
-    return { id: row.id, updatedAt: now.getTime(), slug };
+    return saveEdits(db, row, data.values, userId);
   });
 
 export const publishPost = createServerFn({ method: 'POST' })

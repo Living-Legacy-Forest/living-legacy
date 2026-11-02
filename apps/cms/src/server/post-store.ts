@@ -1,4 +1,4 @@
-import { type PostInput, blogPath, slugify } from '@llf/content';
+import { type PostInput, blogPath, publishErrors, slugify } from '@llf/content';
 import { type Db, schema } from '@llf/db';
 import { and, asc, eq, inArray, isNull, ne } from 'drizzle-orm';
 import type { BatchItem } from 'drizzle-orm/batch';
@@ -136,6 +136,40 @@ export async function columnWrites(db: Db, id: string, input: PostInput) {
       : []),
   ];
   return { columns, termStatements };
+}
+
+/**
+ * Saves editor input to an existing post, as the editor's Save button and the
+ * API's PATCH both do. A published post keeps its live version and parks the
+ * edits in `draft`; anything else is written to its columns directly.
+ */
+export async function saveEdits(db: Db, row: PostRow, values: PostInput, userId: string) {
+  if (row.deletedAt) throw new Error('Restore this post from the trash before editing it.');
+  const now = new Date();
+
+  // Published: park the edits in `draft` so the live version is untouched.
+  if (row.status === 'published') {
+    await db
+      .update(posts)
+      .set({ draft: values, updatedAt: now, updatedBy: userId })
+      .where(eq(posts.id, row.id));
+    return { id: row.id, updatedAt: now.getTime(), slug: values.slug };
+  }
+
+  // A scheduled post must stay publishable, or the scheduler would fail.
+  if (row.scheduledAt && publishErrors(values).length) {
+    throw new Error(`${publishErrors(values).join(' ')} This post is scheduled, so it needs both.`);
+  }
+  const slug = await uniqueSlug(db, values.slug || slugify(values.title), row.id);
+  const { columns, termStatements } = await columnWrites(db, row.id, values);
+  await db.batch([
+    db
+      .update(posts)
+      .set({ ...columns, slug, draft: null, updatedAt: now, updatedBy: userId })
+      .where(eq(posts.id, row.id)),
+    ...termStatements,
+  ]);
+  return { id: row.id, updatedAt: now.getTime(), slug };
 }
 
 /** Creates a new draft row from input and returns it. */

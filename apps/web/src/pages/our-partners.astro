@@ -1,5 +1,6 @@
 ---
-// Our partners. Carries the live page's hero, four partner cards, three
+// Our partners. Carries the live page's hero (as text beside a photo, not text over
+// the stretched community icon live used), four partner cards, three
 // benefit cards, the become-a-partner form (kept at id="become-a-partner-form"
 // so /our-partners/#become-a-partner-form keeps working) and the eight-image
 // gallery (live/out/our-partners.txt).
@@ -18,7 +19,6 @@ import { Separator } from '@/components/ui/separator';
 import { buttonVariants } from '@/components/ui/button';
 import { PartnerForm } from '@/components/forms/PartnerForm';
 
-import heroPhoto from '@/assets/partners/hero-photo.png';
 import newsTheSenior from '@/assets/media/news-the-senior.webp';
 import morningtonGreenLogo from '@/assets/partners/mornington-green-logo.webp';
 import morningtonGreenTeam from '@/assets/partners/mornington-green-team.jpg';
@@ -79,23 +79,32 @@ const description =
 ---
 
 <BaseLayout title={title} description={description}>
-  <!-- Hero -->
-  <section class="relative overflow-hidden">
-    <div class="absolute inset-0">
-      <Image src={heroPhoto} alt="" width={1600} class="h-full w-full object-cover" />
-      <div class="bg-ink/70 absolute inset-0"></div>
-    </div>
-    <div class="relative mx-auto max-w-6xl px-6 py-28 sm:px-10 lg:py-40">
-      <p class="eyebrow text-paper/80">Join our mission</p>
-      <h1 class="display-title text-paper mt-4 max-w-2xl">Partner with Living Legacy</h1>
-      <p class="text-paper/85 lead mt-6 max-w-xl">
-        Be a leader of industry. Partner with us to offer your clients an affordable, eco-friendly
-        memorial option: a meaningful resting place that reflects care, value, and lasting legacy.
-      </p>
-      <a href="#become-a-partner-form" class:list={[buttonVariants(), 'mt-9']}>
-        Become a partner
-        <HugeIcon icon={ArrowRight02Icon} data-icon="inline-end" aria-hidden="true" />
-      </a>
+  <!-- Hero: text beside a photo, as in the home page's sections -->
+  <section class="mx-auto max-w-6xl px-6 pt-16 pb-8 sm:px-10 lg:pt-24 lg:pb-12">
+    <div class="grid items-center gap-12 lg:grid-cols-12 lg:gap-16">
+      <div class="lg:col-span-6">
+        <p class="eyebrow">Join our mission</p>
+        <h1 class="display-title mt-4 text-balance">Partner with Living Legacy</h1>
+        <p class="lead mt-6 max-w-xl text-pretty">
+          Be a leader of industry. Partner with us to offer your clients an affordable, eco-friendly
+          memorial option: a meaningful resting place that reflects care, value, and lasting legacy.
+        </p>
+        <a href="#become-a-partner-form" class:list={[buttonVariants(), 'mt-9']}>
+          Become a partner
+          <HugeIcon icon={ArrowRight02Icon} data-icon="inline-end" aria-hidden="true" />
+        </a>
+      </div>
+      <div class="lg:col-span-6">
+        <Image
+          src={galleryWellingtonTreeSection}
+          alt="A memorial marker among the trees of a memorial forest"
+          widths={[480, 720, 960, 1200]}
+          sizes="(min-width: 1024px) 34rem, 100vw"
+          loading="eager"
+          fetchpriority="high"
+          class="aspect-[4/3] w-full rounded-2xl object-cover shadow-[0_30px_60px_-30px_rgb(23_35_28/0.55)] outline outline-black/10 lg:aspect-[4/5]"
+        />
+      </div>
     </div>
   </section>
 

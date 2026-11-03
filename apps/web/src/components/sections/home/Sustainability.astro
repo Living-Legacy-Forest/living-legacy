@@ -1,10 +1,6 @@
 ---
 import { Image } from 'astro:assets';
-import HugeIcon from '@/components/ui/HugeIcon.astro';
-import { ArrowRight02Icon } from '@hugeicons/core-free-icons';
-import { buttonVariants } from '@/components/ui/button';
 import photo from '@/assets/home/sustainability-photo.webp';
-import { FLODESK_HREF } from './constants';
 ---
 
 <section class="border-bark/20 scroll-mt-24 border-t py-24 lg:py-32">
@@ -20,15 +16,6 @@ import { FLODESK_HREF } from './constants';
         growth and vitality of the tree, contributing to a sustainable ecosystem for generations to
         come.
       </p>
-      <a
-        href={FLODESK_HREF}
-        target="_blank"
-        rel="noopener noreferrer"
-        class:list={[buttonVariants(), 'mt-8']}
-      >
-        Get more info
-        <HugeIcon icon={ArrowRight02Icon} data-icon="inline-end" aria-hidden="true" />
-      </a>
     </div>
 
     <div class="lg:col-span-7">

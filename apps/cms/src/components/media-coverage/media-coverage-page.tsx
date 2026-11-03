@@ -89,6 +89,9 @@ type Search = { selected?: string };
 
 const NOUN: [string, string] = ['item', 'items'];
 
+/** Where the published items appear. */
+const PAGE_URL = 'https://livinglegacy.com.au/about/in-the-media/';
+
 const kindItems = (Object.keys(mediaCoverageKindLabels) as MediaCoverageKind[]).map((value) => ({
   value,
   label: mediaCoverageKindLabels[value],
@@ -160,6 +163,15 @@ export function MediaCoveragePage({
             onChange={setQuery}
           />
         )}
+        <Button
+          size="sm"
+          variant="outline"
+          render={<a href={PAGE_URL} target="_blank" rel="noreferrer" />}
+          nativeButton={false}
+        >
+          <ExternalLink aria-hidden data-icon="inline-start" />
+          View on website
+        </Button>
         {canWrite && (
           <Button size="sm" onClick={openNew}>
             <PlusIcon aria-hidden data-icon="inline-start" />

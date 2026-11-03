@@ -53,14 +53,13 @@ type Row = {
   image_height: number | null;
 };
 
-/** How long an isolate reuses the list before reading it again. */
-const CACHE_MS = 60_000;
-let cache: { items: CoverageItem[]; expires: number } | undefined;
+// Read fresh on every request, so publishing in the CMS shows at once; it is one
+// small query. The last good list is kept only to ride out a database error.
+let lastGood: CoverageItem[] = [];
 
 /** Published coverage in page order: featured first, then by Order, newest first. */
 export async function getMediaCoverage(): Promise<CoverageItem[]> {
   if (!db) return [];
-  if (cache && cache.expires > Date.now()) return cache.items;
 
   try {
     const { results } = await db
@@ -96,12 +95,12 @@ export async function getMediaCoverage(): Promise<CoverageItem[]> {
         : null,
       featured: r.featured === 1,
     }));
-    cache = { items, expires: Date.now() + CACHE_MS };
+    lastGood = items;
     return items;
   } catch (error) {
     // A database hiccup must not take the site down; serve the last known
     // list, or none, and try again on the next request.
     console.error('[media-coverage] could not load list', error);
-    return cache?.items ?? [];
+    return lastGood;
   }
 }

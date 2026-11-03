@@ -2,7 +2,7 @@
  * Serves an uploaded file. Deliberately public (no auth): the public website
  * loads images straight from here in plain <img> tags.
  */
-import { schema } from '@llf/db';
+import { schema } from '@ll/db';
 import { createFileRoute } from '@tanstack/react-router';
 import { env } from 'cloudflare:workers';
 import { eq } from 'drizzle-orm';

@@ -7,7 +7,7 @@
  * and kept per isolate for ten minutes. WordPress being slow or down must not
  * take the blog with it: the last good list is served, or none at all.
  */
-import { slugify } from '@llf/content';
+import { slugify } from '@ll/content';
 import { WORDPRESS_URL } from 'astro:env/server';
 import { type BlogPost, type BlogTerm, getReadingTime } from '@/lib/blog';
 

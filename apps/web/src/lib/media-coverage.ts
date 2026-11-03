@@ -3,7 +3,7 @@
  * (Media coverage page) and read from the shared D1 database. Uploaded
  * images are served by the CMS, so their paths are pointed at it.
  */
-import { type MediaCoverageKind, youtubeId } from '@llf/content';
+import { type MediaCoverageKind, youtubeId } from '@ll/content';
 import { CMS_URL } from 'astro:env/server';
 import { env } from 'cloudflare:workers';
 

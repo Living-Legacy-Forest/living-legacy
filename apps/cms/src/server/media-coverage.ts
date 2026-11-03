@@ -1,5 +1,5 @@
-import { mediaCoverageKinds, slugify } from '@llf/content';
-import { mediaCoverage } from '@llf/db/schema';
+import { mediaCoverageKinds, slugify } from '@ll/content';
+import { mediaCoverage } from '@ll/db/schema';
 import { createServerFn } from '@tanstack/react-start';
 import { and, asc, desc, eq, inArray, isNull, ne } from 'drizzle-orm';
 import { z } from 'zod';

@@ -4,8 +4,8 @@
  * the shared Media library. An admin may send a `userId` to set someone
  * else's. A raw handler, since multipart can't go through createServerFn.
  */
-import { type Role, can } from '@llf/content';
-import { schema } from '@llf/db';
+import { type Role, can } from '@ll/content';
+import { schema } from '@ll/db';
 import { createFileRoute } from '@tanstack/react-router';
 import { env } from 'cloudflare:workers';
 import { eq } from 'drizzle-orm';

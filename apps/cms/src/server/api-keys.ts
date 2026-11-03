@@ -1,5 +1,5 @@
-import { apiKeyScopes } from '@llf/db/enums';
-import { apiKeys, user } from '@llf/db/schema';
+import { apiKeyScopes } from '@ll/db/enums';
+import { apiKeys, user } from '@ll/db/schema';
 import { createServerFn } from '@tanstack/react-start';
 import { and, desc, eq, isNull } from 'drizzle-orm';
 import { z } from 'zod';

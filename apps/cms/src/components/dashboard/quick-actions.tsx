@@ -1,4 +1,4 @@
-import { type Permission, can } from '@llf/content';
+import { type Permission, can } from '@ll/content';
 import { Link } from '@tanstack/react-router';
 import {
   FilePlus2Icon,

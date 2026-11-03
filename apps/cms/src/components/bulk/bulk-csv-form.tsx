@@ -1,4 +1,4 @@
-import { readCsvRecords } from '@llf/content';
+import { readCsvRecords } from '@ll/content';
 import { useState } from 'react';
 import { DownloadIcon, UploadIcon } from '@/components/icons';
 import { Button } from '@/components/ui/button';

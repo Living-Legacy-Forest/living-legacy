@@ -1,5 +1,5 @@
-import { canReceiveMagicLink, normaliseEmail, resolveSignupRole } from '@llf/content';
-import { schema } from '@llf/db';
+import { canReceiveMagicLink, normaliseEmail, resolveSignupRole } from '@ll/content';
+import { schema } from '@ll/db';
 import { betterAuth } from 'better-auth';
 import { drizzleAdapter } from 'better-auth/adapters/drizzle';
 import { APIError } from 'better-auth/api';

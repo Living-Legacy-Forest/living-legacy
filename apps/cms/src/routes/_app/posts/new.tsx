@@ -1,4 +1,4 @@
-import { can } from '@llf/content';
+import { can } from '@ll/content';
 import { createFileRoute, redirect } from '@tanstack/react-router';
 import { PostEditor, postAccessFor } from '@/components/posts/post-editor';
 import { getPostEditorData } from '@/server/posts';

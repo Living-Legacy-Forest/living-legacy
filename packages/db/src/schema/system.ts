@@ -6,7 +6,7 @@ import { id, timestamps } from './columns';
 export { activityActions, apiKeyScopes, entityTypes };
 export type { ActivityAction, ApiKeyScope, EntityType } from '../enums';
 
-// Single row (id = 'site'); the JSON shape is validated by @llf/content.
+// Single row (id = 'site'); the JSON shape is validated by @ll/content.
 export const siteSettings = sqliteTable('site_settings', {
   id: text('id').primaryKey(),
   data: text('data', { mode: 'json' }).$type<Record<string, unknown>>().notNull(),

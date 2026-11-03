@@ -1,4 +1,4 @@
-import { type Role } from '@llf/content';
+import { type Role } from '@ll/content';
 import { CameraIcon, Trash2Icon, UserPlusIcon } from '@/components/icons';
 import { useState } from 'react';
 import {

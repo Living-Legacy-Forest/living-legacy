@@ -11,8 +11,8 @@ import {
   markdownToRichText,
   postInputSchema,
   richTextSchema,
-} from '@llf/content';
-import type { Db } from '@llf/db';
+} from '@ll/content';
+import type { Db } from '@ll/db';
 import { z } from 'zod';
 import type { ApiActor } from '@/lib/api-keys';
 import { cmsOrigin } from '@/lib/email';

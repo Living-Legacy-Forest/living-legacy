@@ -6,7 +6,7 @@ import {
   publishErrors,
   roles,
   slugify,
-} from '@llf/content';
+} from '@ll/content';
 import {
   posts,
   postTerms,
@@ -15,7 +15,7 @@ import {
   teamMembers,
   terms,
   user,
-} from '@llf/db/schema';
+} from '@ll/db/schema';
 import { createServerFn } from '@tanstack/react-start';
 import { and, asc, count, desc, eq, inArray, isNotNull, isNull, like, ne, sql } from 'drizzle-orm';
 import { z } from 'zod';

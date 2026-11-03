@@ -32,7 +32,7 @@ bun run dev:web            # http://localhost:4321
 
 ```sh
 cp apps/cms/.dev.vars.example apps/cms/.dev.vars   # fill in the values
-bun run --filter @llf/cms db:migrate:local
+bun run --filter @ll/cms db:migrate:local
 bun run dev:cms            # http://localhost:3100
 ```
 
@@ -42,10 +42,10 @@ in as the first Admin.
 ## Database changes
 
 1. Edit the schema in `packages/db/src/schema/`.
-2. `bun run --filter @llf/db generate -- --name <what-changed>` writes a migration to
+2. `bun run --filter @ll/db generate -- --name <what-changed>` writes a migration to
    `packages/db/migrations/`.
-3. `bun run --filter @llf/cms db:migrate:local` applies it locally.
-4. After `wrangler.jsonc` binding changes, run `bun run --filter @llf/cms cf-typegen`.
+3. `bun run --filter @ll/cms db:migrate:local` applies it locally.
+4. After `wrangler.jsonc` binding changes, run `bun run --filter @ll/cms cf-typegen`.
 
 ## Checks (same as CI)
 

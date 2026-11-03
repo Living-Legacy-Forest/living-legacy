@@ -14,7 +14,7 @@ import { PostImage } from './post-image';
 /**
  * Content extensions shared by the post editor and the preview renderer, so
  * both agree on what a post body can contain. Keep in step with the
- * allowlist in @llf/content (isAllowedRichText).
+ * allowlist in @ll/content (isAllowedRichText).
  */
 export const postContentExtensions: Extensions = [
   StarterKit.configure({ gapcursor: false, heading: { levels: [1, 2, 3] }, link: false }),

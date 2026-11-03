@@ -1,4 +1,4 @@
-import { teamMembers } from '@llf/db/schema';
+import { teamMembers } from '@ll/db/schema';
 import { createServerFn } from '@tanstack/react-start';
 import { asc, eq, inArray, isNull, sql } from 'drizzle-orm';
 import { z } from 'zod';

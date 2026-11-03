@@ -1,6 +1,6 @@
-import { type PostInput, blogPath, publishErrors, slugify } from '@llf/content';
-import type { Db } from '@llf/db';
-import { postTerms, posts, publishEvents, redirects, revisions, terms, user } from '@llf/db/schema';
+import { type PostInput, blogPath, publishErrors, slugify } from '@ll/content';
+import type { Db } from '@ll/db';
+import { postTerms, posts, publishEvents, redirects, revisions, terms, user } from '@ll/db/schema';
 import { and, asc, eq, inArray, isNull, ne } from 'drizzle-orm';
 import type { BatchItem } from 'drizzle-orm/batch';
 import { logActivity } from './activity-log';

@@ -1,4 +1,4 @@
-import type { Role } from '@llf/content';
+import type { Role } from '@ll/content';
 import { env } from 'cloudflare:workers';
 import { formatDateTime, zoneName } from './format';
 import { readSiteSettings } from './site-settings';

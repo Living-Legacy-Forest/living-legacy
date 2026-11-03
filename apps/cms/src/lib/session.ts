@@ -1,4 +1,4 @@
-import { type Permission, type Role, can } from '@llf/content';
+import { type Permission, type Role, can } from '@ll/content';
 import { createMiddleware, createServerFn } from '@tanstack/react-start';
 import { getRequest } from '@tanstack/react-start/server';
 import { env } from 'cloudflare:workers';

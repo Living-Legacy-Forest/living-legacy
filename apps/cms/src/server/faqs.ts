@@ -1,5 +1,5 @@
-import { MAX_FAQ_TAGS, slugify, toTags } from '@llf/content';
-import { faqGroups, faqs } from '@llf/db/schema';
+import { MAX_FAQ_TAGS, slugify, toTags } from '@ll/content';
+import { faqGroups, faqs } from '@ll/db/schema';
 import { createServerFn } from '@tanstack/react-start';
 import { asc, eq, inArray, isNull, sql } from 'drizzle-orm';
 import { z } from 'zod';

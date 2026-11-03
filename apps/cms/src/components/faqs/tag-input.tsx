@@ -1,4 +1,4 @@
-import { toTags } from '@llf/content';
+import { toTags } from '@ll/content';
 import { useState } from 'react';
 import { XIcon } from '@/components/icons';
 import { Badge } from '@/components/ui/badge';

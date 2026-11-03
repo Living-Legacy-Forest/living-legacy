@@ -1,4 +1,4 @@
-import { checkRedirect } from '@llf/content';
+import { checkRedirect } from '@ll/content';
 import { BulkCsvForm } from '@/components/bulk/bulk-csv-form';
 import {
   BulkPane,

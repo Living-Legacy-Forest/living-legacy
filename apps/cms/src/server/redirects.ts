@@ -1,5 +1,5 @@
-import { type RedirectRule, isWildcard, redirectStatusCodes, traceRedirect } from '@llf/content';
-import { redirects } from '@llf/db/schema';
+import { type RedirectRule, isWildcard, redirectStatusCodes, traceRedirect } from '@ll/content';
+import { redirects } from '@ll/db/schema';
 import { createServerFn } from '@tanstack/react-start';
 import { desc, eq, inArray } from 'drizzle-orm';
 import { z } from 'zod';

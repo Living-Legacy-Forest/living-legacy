@@ -1,4 +1,4 @@
-import { MAX_FAQ_TAGS, slugify, splitTags } from '@llf/content';
+import { MAX_FAQ_TAGS, slugify, splitTags } from '@ll/content';
 import { useState } from 'react';
 import { BulkCsvForm } from '@/components/bulk/bulk-csv-form';
 import {

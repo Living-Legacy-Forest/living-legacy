@@ -4,7 +4,7 @@
  * failed. The form itself stays on screen behind it with every value the
  * visitor typed still in place; this never replaces the form.
  */
-import { telHref } from '@llf/content';
+import { telHref } from '@ll/content';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import type { FallbackContact } from '@/lib/forms';
 

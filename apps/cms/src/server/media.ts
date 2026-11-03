@@ -1,4 +1,4 @@
-import { media } from '@llf/db/schema';
+import { media } from '@ll/db/schema';
 import { createServerFn } from '@tanstack/react-start';
 import { env } from 'cloudflare:workers';
 import { desc, eq, inArray } from 'drizzle-orm';

@@ -1,4 +1,4 @@
-import type { Permission } from '@llf/content';
+import type { Permission } from '@ll/content';
 import {
   ActivityIcon,
   ArrowRightLeft,

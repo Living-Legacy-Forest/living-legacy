@@ -4,32 +4,26 @@ import {
   type SiteSettings,
   TITLE_TOKENS,
   type Theme,
+  type TimeZone,
   can,
   formatAbn,
   isValidAbn,
   locales,
-  parseSiteSettings,
   themes,
+  timeZones,
 } from '@llf/content';
 import { schema } from '@llf/db';
 import { createServerFn } from '@tanstack/react-start';
-import { eq } from 'drizzle-orm';
 import { z } from 'zod';
 import { getDb } from '@/lib/db';
 import { authMiddleware, requirePermission } from '@/lib/session';
+import { readSiteSettings } from '@/lib/site-settings';
 import { logActivity } from './activity-log';
 
 const { siteSettings } = schema;
 
-export { TITLE_TOKENS, locales, themes };
-export type { Locale, SiteSettings, Theme };
-
-async function readSiteSettings(): Promise<SiteSettings> {
-  const row = await getDb().query.siteSettings.findFirst({
-    where: eq(siteSettings.id, 'site'),
-  });
-  return parseSiteSettings(row?.data);
-}
+export { TITLE_TOKENS, locales, themes, timeZones };
+export type { Locale, SiteSettings, Theme, TimeZone };
 
 export const getSiteSettings = createServerFn({ method: 'GET' })
   .middleware([authMiddleware])
@@ -42,6 +36,12 @@ export const getSiteSettings = createServerFn({ method: 'GET' })
 export const getSiteTheme = createServerFn({ method: 'GET' }).handler(async () => {
   const { theme } = await readSiteSettings();
   return theme;
+});
+
+/** Just the time zone, with no auth: scheduling UI needs it on every page. */
+export const getSiteTimeZone = createServerFn({ method: 'GET' }).handler(async () => {
+  const { timeZone } = await readSiteSettings();
+  return timeZone;
 });
 
 const text = (max: number) => z.string().trim().max(max).default('');
@@ -79,6 +79,7 @@ const settingsSchema = z.object({
   bingVerification: verification,
   locale: z.enum(locales),
   theme: z.enum(themes),
+  timeZone: z.enum(timeZones),
 });
 
 /** The Search & sharing settings, which SEO people may change on their own. */

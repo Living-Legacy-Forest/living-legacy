@@ -33,6 +33,8 @@ import { Route as ApiMediaIndexRouteImport } from './routes/api/media/index'
 import { Route as ApiMediaIdRouteImport } from './routes/api/media/$id'
 import { Route as ApiV1TermsRouteImport } from './routes/api/v1/terms'
 import { Route as PreviewPostsPostIdRouteImport } from './routes/preview/posts/$postId'
+import { Route as AppPostsCategoriesIndexRouteImport } from './routes/_app/posts/categories/index'
+import { Route as AppPostsTagsIndexRouteImport } from './routes/_app/posts/tags/index'
 import { Route as ApiV1PostsIndexRouteImport } from './routes/api/v1/posts/index'
 import { Route as ApiV1PostsIdRouteImport } from './routes/api/v1/posts/$id'
 
@@ -155,6 +157,16 @@ const PreviewPostsPostIdRoute = PreviewPostsPostIdRouteImport.update({
   path: '/preview/posts/$postId',
   getParentRoute: () => rootRouteImport,
 } as any)
+const AppPostsCategoriesIndexRoute = AppPostsCategoriesIndexRouteImport.update({
+  id: '/posts/categories/',
+  path: '/posts/categories/',
+  getParentRoute: () => AppRoute,
+} as any)
+const AppPostsTagsIndexRoute = AppPostsTagsIndexRouteImport.update({
+  id: '/posts/tags/',
+  path: '/posts/tags/',
+  getParentRoute: () => AppRoute,
+} as any)
 const ApiV1PostsIndexRoute = ApiV1PostsIndexRouteImport.update({
   id: '/api/v1/posts/',
   path: '/api/v1/posts/',
@@ -191,6 +203,8 @@ export interface FileRoutesByFullPath {
   '/api/avatar/': typeof ApiAvatarIndexRoute
   '/api/media/': typeof ApiMediaIndexRoute
   '/api/v1/posts/$id': typeof ApiV1PostsIdRoute
+  '/posts/categories/': typeof AppPostsCategoriesIndexRoute
+  '/posts/tags/': typeof AppPostsTagsIndexRoute
   '/api/v1/posts/': typeof ApiV1PostsIndexRoute
 }
 export interface FileRoutesByTo {
@@ -218,6 +232,8 @@ export interface FileRoutesByTo {
   '/api/avatar': typeof ApiAvatarIndexRoute
   '/api/media': typeof ApiMediaIndexRoute
   '/api/v1/posts/$id': typeof ApiV1PostsIdRoute
+  '/posts/categories': typeof AppPostsCategoriesIndexRoute
+  '/posts/tags': typeof AppPostsTagsIndexRoute
   '/api/v1/posts': typeof ApiV1PostsIndexRoute
 }
 export interface FileRoutesById {
@@ -247,6 +263,8 @@ export interface FileRoutesById {
   '/api/avatar/': typeof ApiAvatarIndexRoute
   '/api/media/': typeof ApiMediaIndexRoute
   '/api/v1/posts/$id': typeof ApiV1PostsIdRoute
+  '/_app/posts/categories/': typeof AppPostsCategoriesIndexRoute
+  '/_app/posts/tags/': typeof AppPostsTagsIndexRoute
   '/api/v1/posts/': typeof ApiV1PostsIndexRoute
 }
 export interface FileRouteTypes {
@@ -276,6 +294,8 @@ export interface FileRouteTypes {
     | '/api/avatar/'
     | '/api/media/'
     | '/api/v1/posts/$id'
+    | '/posts/categories/'
+    | '/posts/tags/'
     | '/api/v1/posts/'
   fileRoutesByTo: FileRoutesByTo
   to:
@@ -303,6 +323,8 @@ export interface FileRouteTypes {
     | '/api/avatar'
     | '/api/media'
     | '/api/v1/posts/$id'
+    | '/posts/categories'
+    | '/posts/tags'
     | '/api/v1/posts'
   id:
     | '__root__'
@@ -331,6 +353,8 @@ export interface FileRouteTypes {
     | '/api/avatar/'
     | '/api/media/'
     | '/api/v1/posts/$id'
+    | '/_app/posts/categories/'
+    | '/_app/posts/tags/'
     | '/api/v1/posts/'
   fileRoutesById: FileRoutesById
 }
@@ -518,6 +542,20 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof PreviewPostsPostIdRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/_app/posts/categories/': {
+      id: '/_app/posts/categories/'
+      path: '/posts/categories'
+      fullPath: '/posts/categories/'
+      preLoaderRoute: typeof AppPostsCategoriesIndexRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/_app/posts/tags/': {
+      id: '/_app/posts/tags/'
+      path: '/posts/tags'
+      fullPath: '/posts/tags/'
+      preLoaderRoute: typeof AppPostsTagsIndexRouteImport
+      parentRoute: typeof AppRoute
+    }
     '/api/v1/posts/': {
       id: '/api/v1/posts/'
       path: '/api/v1/posts'
@@ -551,6 +589,8 @@ interface AppRouteChildren {
   AppTeamIndexRoute: typeof AppTeamIndexRoute
   AppTestimonialsIndexRoute: typeof AppTestimonialsIndexRoute
   AppUsersIndexRoute: typeof AppUsersIndexRoute
+  AppPostsCategoriesIndexRoute: typeof AppPostsCategoriesIndexRoute
+  AppPostsTagsIndexRoute: typeof AppPostsTagsIndexRoute
 }
 
 const AppRouteChildren: AppRouteChildren = {
@@ -569,6 +609,8 @@ const AppRouteChildren: AppRouteChildren = {
   AppTeamIndexRoute: AppTeamIndexRoute,
   AppTestimonialsIndexRoute: AppTestimonialsIndexRoute,
   AppUsersIndexRoute: AppUsersIndexRoute,
+  AppPostsCategoriesIndexRoute: AppPostsCategoriesIndexRoute,
+  AppPostsTagsIndexRoute: AppPostsTagsIndexRoute,
 }
 
 const AppRouteWithChildren = AppRoute._addFileChildren(AppRouteChildren)

@@ -15,6 +15,7 @@ import {
   EmptyDescription,
 } from '@/components/ui/empty';
 import { formatDateTime, formatRelative } from '@/lib/format';
+import { useTimeZone } from '@/lib/use-time-zone';
 import type { ActivityLogData, ActivityLogEntry } from '@/server/activity-log';
 
 const icons: Record<string, LucideIcon> = {
@@ -30,6 +31,7 @@ function iconFor(action: ActivityLogEntry['action']): LucideIcon {
 }
 
 export function ActivityPage({ data }: { data: ActivityLogData }) {
+  const timeZone = useTimeZone();
   return (
     <div className="mx-auto w-full max-w-2xl">
       <div className="mb-8 space-y-1">
@@ -69,7 +71,7 @@ export function ActivityPage({ data }: { data: ActivityLogData }) {
                   </p>
                   <p
                     className="text-muted-foreground mt-0.5 text-xs tabular-nums"
-                    title={formatDateTime(entry.createdAt)}
+                    title={formatDateTime(entry.createdAt, timeZone)}
                   >
                     {formatRelative(entry.createdAt)}
                   </p>

@@ -46,6 +46,7 @@ import {
 import { formatDate } from '@/lib/format';
 import { reportInvalid } from '@/lib/form-validation';
 import { useAction } from '@/lib/use-action';
+import { useTimeZone } from '@/lib/use-time-zone';
 import { cn } from '@/lib/utils';
 import {
   type TeamData,
@@ -124,6 +125,7 @@ export function UsersPage({ data }: { data: TeamData }) {
 
 function UsersTable({ data }: { data: TeamData }) {
   const { run, pending } = useAction();
+  const timeZone = useTimeZone();
 
   return (
     <Table className={tableCellPadding}>
@@ -186,7 +188,7 @@ function UsersTable({ data }: { data: TeamData }) {
                 </Select>
               </TableCell>
               <TableCell className="text-muted-foreground text-sm">
-                {formatDate(u.createdAt)}
+                {formatDate(u.createdAt, timeZone)}
               </TableCell>
               <TableCell>
                 <RemoveUser
@@ -345,6 +347,7 @@ function InviteDialog() {
 
 function InvitationsTable({ invitations }: { invitations: TeamData['invitations'] }) {
   const { run, pending } = useAction();
+  const timeZone = useTimeZone();
 
   return (
     <Table className={tableCellPadding}>
@@ -366,7 +369,7 @@ function InvitationsTable({ invitations }: { invitations: TeamData['invitations'
               </Badge>
             </TableCell>
             <TableCell className="text-muted-foreground text-sm">
-              {formatDate(invite.createdAt)}
+              {formatDate(invite.createdAt, timeZone)}
             </TableCell>
             <TableCell>
               <Button

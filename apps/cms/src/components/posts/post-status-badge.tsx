@@ -1,4 +1,5 @@
 import { formatDateTime } from '@/lib/format';
+import { useTimeZone } from '@/lib/use-time-zone';
 import { cn } from '@/lib/utils';
 
 const styles = {
@@ -43,6 +44,7 @@ export function PostStatusBadge({
           ? 'scheduled'
           : 'draft';
   const { dot, label } = styles[key];
+  const timeZone = useTimeZone();
   return (
     <span
       className={cn('text-muted-foreground inline-flex items-center gap-1.5 text-xs', className)}
@@ -50,7 +52,7 @@ export function PostStatusBadge({
       <span aria-hidden className={cn('size-1.5 shrink-0 rounded-full', dot)} />
       {label}
       {key === 'scheduled' && showDate && scheduledAt && (
-        <span className="text-muted-foreground">· {formatDateTime(scheduledAt)}</span>
+        <span className="text-muted-foreground">· {formatDateTime(scheduledAt, timeZone)}</span>
       )}
     </span>
   );

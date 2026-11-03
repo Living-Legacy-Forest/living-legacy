@@ -1,6 +1,7 @@
 import { ClientOnly } from '@tanstack/react-router';
 import { Suspense, lazy } from 'react';
 import { formatDate } from '@/lib/format';
+import { useTimeZone } from '@/lib/use-time-zone';
 import { cn } from '@/lib/utils';
 import type { PostPreviewData } from '@/server/posts';
 
@@ -20,6 +21,7 @@ export function PostArticle({
   size?: 'page' | 'pane';
 }) {
   const pane = size === 'pane';
+  const timeZone = useTimeZone();
   return (
     <article className={cn('mx-auto', pane ? 'max-w-xl px-8 py-10' : 'max-w-2xl px-6 py-16')}>
       {post.categories.length > 0 && (
@@ -44,9 +46,9 @@ export function PostArticle({
         {[
           post.author,
           post.publishedAt
-            ? formatDate(post.publishedAt)
+            ? formatDate(post.publishedAt, timeZone)
             : post.scheduledAt
-              ? `Scheduled for ${formatDate(post.scheduledAt)}`
+              ? `Scheduled for ${formatDate(post.scheduledAt, timeZone)}`
               : 'Not published yet',
         ]
           .filter(Boolean)

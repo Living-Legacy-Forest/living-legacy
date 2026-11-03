@@ -15,6 +15,12 @@ import {
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import {
+  CodeBlock,
+  CodeBlockActions,
+  CodeBlockContent,
+  CodeBlockCopyButton,
+} from '@/components/ui/code-block';
+import {
   Dialog,
   DialogContent,
   DialogDescription,
@@ -37,6 +43,7 @@ import {
 import { formatDate, formatRelative } from '@/lib/format';
 import { reportInvalid } from '@/lib/form-validation';
 import { useAction } from '@/lib/use-action';
+import { useTimeZone } from '@/lib/use-time-zone';
 import { cn } from '@/lib/utils';
 import { type ApiKeyRow, createApiKey, revokeApiKey } from '@/server/api-keys';
 
@@ -105,6 +112,7 @@ export function ApiKeysPage({ keys }: { keys: ApiKeyRow[] }) {
 
 function KeysTable({ keys }: { keys: ApiKeyRow[] }) {
   const { run } = useAction();
+  const timeZone = useTimeZone();
 
   return (
     <Table className={tableCellPadding}>
@@ -123,7 +131,8 @@ function KeysTable({ keys }: { keys: ApiKeyRow[] }) {
               <div className="min-w-0">
                 <div className="truncate text-sm font-medium">{k.name}</div>
                 <div className="text-muted-foreground truncate text-xs">
-                  <code className="font-mono">{k.prefix}…</code> · created {formatDate(k.createdAt)}
+                  <code className="font-mono">{k.prefix}…</code> · created{' '}
+                  {formatDate(k.createdAt, timeZone)}
                   {k.createdByName ? ` by ${k.createdByName}` : ''}
                 </div>
               </div>
@@ -135,7 +144,7 @@ function KeysTable({ keys }: { keys: ApiKeyRow[] }) {
             </TableCell>
             <TableCell className="text-muted-foreground text-sm">
               {k.revokedAt
-                ? `Revoked ${formatDate(k.revokedAt)}`
+                ? `Revoked ${formatDate(k.revokedAt, timeZone)}`
                 : k.lastUsedAt
                   ? formatRelative(k.lastUsedAt)
                   : 'Never'}
@@ -360,7 +369,12 @@ function UsageGuide() {
           <code className="font-mono text-xs">seoTitle</code>,{' '}
           <code className="font-mono text-xs">seoDescription</code>.
         </p>
-        <pre className="bg-muted overflow-x-auto rounded-md p-3 font-mono text-xs">{example}</pre>
+        <CodeBlock>
+          <CodeBlockActions>
+            <CodeBlockCopyButton value={example} />
+          </CodeBlockActions>
+          <CodeBlockContent wrap>{example}</CodeBlockContent>
+        </CodeBlock>
       </div>
     </section>
   );

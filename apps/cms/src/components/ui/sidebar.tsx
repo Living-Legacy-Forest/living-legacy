@@ -34,6 +34,9 @@ type SidebarContextProps = {
   setOpenMobile: (open: boolean) => void;
   isMobile: boolean;
   toggleSidebar: () => void;
+  /** Collapsed, but temporarily shown full-width because the pointer is over it. */
+  isHoverExpanded: boolean;
+  setHoverExpanded: (value: boolean) => void;
 };
 
 const SidebarContext = React.createContext<SidebarContextProps | null>(null);
@@ -62,6 +65,7 @@ function SidebarProvider({
 }) {
   const isMobile = useIsMobile();
   const [openMobile, setOpenMobile] = React.useState(false);
+  const [isHoverExpanded, setHoverExpanded] = React.useState(false);
 
   // This is the internal state of the sidebar.
   // We use openProp and setOpenProp for control from outside the component.
@@ -113,8 +117,10 @@ function SidebarProvider({
       openMobile,
       setOpenMobile,
       toggleSidebar,
+      isHoverExpanded,
+      setHoverExpanded,
     }),
-    [state, open, setOpen, isMobile, openMobile, setOpenMobile, toggleSidebar]
+    [state, open, setOpen, isMobile, openMobile, setOpenMobile, toggleSidebar, isHoverExpanded]
   );
 
   return (
@@ -153,7 +159,25 @@ function Sidebar({
   variant?: 'sidebar' | 'floating' | 'inset';
   collapsible?: 'offcanvas' | 'icon' | 'none';
 }) {
-  const { isMobile, state, openMobile, setOpenMobile } = useSidebar();
+  const { isMobile, state, openMobile, setOpenMobile, isHoverExpanded, setHoverExpanded } =
+    useSidebar();
+  const hoverCloseTimeout = React.useRef<ReturnType<typeof setTimeout> | null>(null);
+  const hovering = collapsible === 'icon' && state === 'collapsed' && isHoverExpanded;
+
+  const onPointerEnter = () => {
+    if (collapsible !== 'icon') return;
+    if (hoverCloseTimeout.current) clearTimeout(hoverCloseTimeout.current);
+    setHoverExpanded(true);
+  };
+  const onPointerLeave = () => {
+    if (collapsible !== 'icon') return;
+    hoverCloseTimeout.current = setTimeout(() => setHoverExpanded(false), 150);
+  };
+  React.useEffect(() => {
+    return () => {
+      if (hoverCloseTimeout.current) clearTimeout(hoverCloseTimeout.current);
+    };
+  }, []);
 
   if (collapsible === 'none') {
     return (
@@ -200,32 +224,46 @@ function Sidebar({
     <div
       className="group peer text-sidebar-foreground hidden md:block"
       data-state={state}
-      data-collapsible={state === 'collapsed' ? collapsible : ''}
+      data-collapsible={state === 'collapsed' && !hovering ? collapsible : ''}
+      data-hover-expanded={hovering ? 'true' : 'false'}
       data-variant={variant}
       data-side={side}
       data-slot="sidebar"
+      onPointerEnter={onPointerEnter}
+      onPointerLeave={onPointerLeave}
     >
-      {/* This is what handles the sidebar gap on desktop */}
+      {/*
+       * The gap reserves layout space and always reflects the real
+       * collapsed/expanded state, not the hover peek, so the page underneath
+       * never shifts while the sidebar is floating open on hover.
+       */}
       <div
         data-slot="sidebar-gap"
         className={cn(
-          'relative w-(--sidebar-width) bg-transparent transition-[width] duration-200 ease-linear',
-          'group-data-[collapsible=offcanvas]:w-0',
+          'relative bg-transparent transition-[width] duration-200 ease-linear',
           'group-data-[side=right]:rotate-180',
-          variant === 'floating' || variant === 'inset'
-            ? 'group-data-[collapsible=icon]:w-[calc(var(--sidebar-width-icon)+(--spacing(4)))]'
-            : 'group-data-[collapsible=icon]:w-(--sidebar-width-icon)'
+          state === 'collapsed' && collapsible === 'offcanvas'
+            ? 'w-0'
+            : state === 'collapsed' && collapsible === 'icon'
+              ? variant === 'floating' || variant === 'inset'
+                ? 'w-[calc(var(--sidebar-width-icon)+(--spacing(4)))]'
+                : 'w-(--sidebar-width-icon)'
+              : 'w-(--sidebar-width)'
         )}
       />
       <div
         data-slot="sidebar-container"
         data-side={side}
         className={cn(
-          'fixed inset-y-0 z-10 hidden h-svh w-(--sidebar-width) transition-[left,right,width] duration-200 ease-linear data-[side=left]:left-0 data-[side=left]:group-data-[collapsible=offcanvas]:left-[calc(var(--sidebar-width)*-1)] data-[side=right]:right-0 data-[side=right]:group-data-[collapsible=offcanvas]:right-[calc(var(--sidebar-width)*-1)] md:flex',
+          'fixed inset-y-0 z-10 hidden h-svh w-(--sidebar-width) transition-[left,right,width,box-shadow] duration-200 ease-linear data-[side=left]:left-0 data-[side=left]:group-data-[collapsible=offcanvas]:left-[calc(var(--sidebar-width)*-1)] data-[side=right]:right-0 data-[side=right]:group-data-[collapsible=offcanvas]:right-[calc(var(--sidebar-width)*-1)] md:flex',
           // Adjust the padding for floating and inset variants.
           variant === 'floating' || variant === 'inset'
             ? 'p-2 group-data-[collapsible=icon]:w-[calc(var(--sidebar-width-icon)+(--spacing(4))+2px)]'
             : 'group-data-[collapsible=icon]:w-(--sidebar-width-icon) group-data-[side=left]:border-r group-data-[side=right]:border-l',
+          // Floating open on hover: above the (translucent, blurred) app header
+          // too, so its opaque background fully covers it instead of bleeding
+          // through, and read as an overlay rather than the pinned panel.
+          'group-data-[hover-expanded=true]:z-30 group-data-[hover-expanded=true]:shadow-lg',
           className
         )}
         {...props}
@@ -233,7 +271,7 @@ function Sidebar({
         <div
           data-sidebar="sidebar"
           data-slot="sidebar-inner"
-          className="bg-sidebar group-data-[variant=floating]:ring-sidebar-border flex size-full flex-col group-data-[variant=floating]:rounded-lg group-data-[variant=floating]:shadow-sm group-data-[variant=floating]:ring-1"
+          className="bg-sidebar group-data-[variant=floating]:ring-sidebar-border group-data-[hover-expanded=true]:ring-sidebar-border flex size-full flex-col transition-[border-radius,box-shadow] group-data-[hover-expanded=true]:rounded-lg group-data-[hover-expanded=true]:ring-1 group-data-[variant=floating]:rounded-lg group-data-[variant=floating]:shadow-sm group-data-[variant=floating]:ring-1"
         >
           {children}
         </div>
@@ -487,7 +525,7 @@ function SidebarMenuButton({
     isActive?: boolean;
     tooltip?: string | React.ComponentProps<typeof TooltipContent>;
   } & VariantProps<typeof sidebarMenuButtonVariants>) {
-  const { isMobile, state } = useSidebar();
+  const { isMobile, state, isHoverExpanded } = useSidebar();
   const comp = useRender({
     defaultTagName: 'button',
     props: mergeProps<'button'>(
@@ -521,7 +559,7 @@ function SidebarMenuButton({
       <TooltipContent
         side="right"
         align="center"
-        hidden={state !== 'collapsed' || isMobile}
+        hidden={state !== 'collapsed' || isMobile || isHoverExpanded}
         {...tooltip}
       />
     </Tooltip>

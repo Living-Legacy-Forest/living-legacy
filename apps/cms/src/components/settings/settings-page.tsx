@@ -25,6 +25,7 @@ import {
 import { Spinner } from '@/components/ui/spinner';
 import { Textarea } from '@/components/ui/textarea';
 import { reportInvalid } from '@/lib/form-validation';
+import { zoneOffset } from '@/lib/format';
 import { useAction } from '@/lib/use-action';
 import { setTheme, useThemeSync } from '@/lib/use-theme-sync';
 import { cn } from '@/lib/utils';
@@ -33,7 +34,9 @@ import {
   type SiteSettings,
   TITLE_TOKENS,
   type Theme,
+  type TimeZone,
   saveSiteSettings,
+  timeZones,
 } from '@/server/settings';
 
 const rootRoute = getRouteApi('__root__');
@@ -59,6 +62,24 @@ const themeLabels: Record<Theme, string> = {
   light: 'Light',
   dark: 'Dark',
 };
+
+const timeZoneLabels: Record<TimeZone, string> = {
+  'Australia/Perth': 'Perth',
+  'Australia/Darwin': 'Darwin',
+  'Australia/Brisbane': 'Brisbane',
+  'Australia/Adelaide': 'Adelaide',
+  'Australia/Sydney': 'Sydney',
+  'Australia/Melbourne': 'Melbourne',
+  'Australia/Hobart': 'Hobart',
+};
+
+/** Offsets vary by zone and, for zones that observe it, by daylight saving. */
+function timeZoneItems(): { value: TimeZone; label: string }[] {
+  return timeZones.map((value) => ({
+    value,
+    label: `${timeZoneLabels[value]} (${zoneOffset(value)})`,
+  }));
+}
 
 const themeItems: { value: Theme; label: ReactNode }[] = (Object.keys(themeLabels) as Theme[]).map(
   (value) => ({
@@ -119,7 +140,7 @@ export function SettingsPage({
 
   // Leaving without saving must not leave an unsaved preview applied
   // app-wide, so restore whatever is actually persisted on unmount.
-  const persistedTheme = rootRoute.useLoaderData();
+  const persistedTheme = rootRoute.useLoaderData().theme;
   const persistedThemeRef = useRef(persistedTheme);
   persistedThemeRef.current = persistedTheme;
   useEffect(() => () => setTheme(persistedThemeRef.current), []);
@@ -402,7 +423,7 @@ export function SettingsPage({
             <SettingsSection
               id="appearance"
               title="Language & appearance"
-              description="The site's language and the CMS colour theme."
+              description="The site's language, time zone and the CMS colour theme."
             >
               <SettingsRow id="settings-locale" title="Language">
                 <Select
@@ -415,6 +436,28 @@ export function SettingsPage({
                   </SelectTrigger>
                   <SelectContent>
                     {localeItems.map((item) => (
+                      <SelectItem key={item.value} value={item.value}>
+                        {item.label}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </SettingsRow>
+              <SettingsRow
+                id="settings-time-zone"
+                title="Time zone"
+                description="Used to interpret opening hours and to schedule posts and announcements."
+              >
+                <Select
+                  items={timeZoneItems()}
+                  value={values.timeZone}
+                  onValueChange={(value) => value && patch({ timeZone: value as TimeZone })}
+                >
+                  <SelectTrigger id="settings-time-zone" className="w-56">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {timeZoneItems().map((item) => (
                       <SelectItem key={item.value} value={item.value}>
                         {item.label}
                       </SelectItem>

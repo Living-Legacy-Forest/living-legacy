@@ -9,6 +9,18 @@ export type Theme = (typeof themes)[number];
 export const locales = ['en-AU', 'en-US', 'en-GB'] as const;
 export type Locale = (typeof locales)[number];
 
+/** Where the organisation operates from, for scheduling posts/announcements and the dashboard. */
+export const timeZones = [
+  'Australia/Perth',
+  'Australia/Darwin',
+  'Australia/Brisbane',
+  'Australia/Adelaide',
+  'Australia/Sydney',
+  'Australia/Melbourne',
+  'Australia/Hobart',
+] as const;
+export type TimeZone = (typeof timeZones)[number];
+
 /** Placeholders the title pattern may use. */
 export const TITLE_TOKENS = { page: '{page}', site: '{site}' } as const;
 
@@ -35,6 +47,7 @@ export const SITE_SETTINGS_DEFAULTS = {
   bingVerification: '',
   locale: 'en-AU' as Locale,
   theme: 'system' as Theme,
+  timeZone: 'Australia/Melbourne' as TimeZone,
 };
 
 export type SiteSettings = typeof SITE_SETTINGS_DEFAULTS;

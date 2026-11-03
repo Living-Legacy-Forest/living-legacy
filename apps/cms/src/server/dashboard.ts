@@ -3,15 +3,12 @@ import { createServerFn } from '@tanstack/react-start';
 import { and, count, desc, eq, gte, isNull, sql, sum } from 'drizzle-orm';
 import { getDb } from '@/lib/db';
 import { authMiddleware } from '@/lib/session';
+import { readSiteSettings } from '@/lib/site-settings';
 
 const { posts, media, faqs, terms, postTerms } = schema;
 
 const DAY_MS = 86_400_000;
 export const ACTIVITY_DAYS = 90;
-// Days are bucketed in the editors' timezone, not UTC.
-const TIME_ZONE = 'Australia/Melbourne';
-
-const dayKey = (date: Date) => date.toLocaleDateString('en-CA', { timeZone: TIME_ZONE });
 
 export type PostSummary = { id: string; title: string; at: number };
 
@@ -20,6 +17,9 @@ export const getDashboardData = createServerFn({ method: 'GET' })
   .handler(async () => {
     const db = getDb();
     const now = Date.now();
+    // Days are bucketed in the organisation's configured timezone, not UTC.
+    const { timeZone } = await readSiteSettings();
+    const dayKey = (date: Date) => date.toLocaleDateString('en-CA', { timeZone });
     const notTrashed = isNull(posts.deletedAt);
     const isPublished = and(eq(posts.status, 'published'), notTrashed);
     const since = (days: number) => new Date(now - days * DAY_MS);

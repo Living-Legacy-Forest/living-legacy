@@ -75,6 +75,7 @@ import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover
 import { Switch } from '@/components/ui/switch';
 import { Textarea } from '@/components/ui/textarea';
 import { formatDateTime, formatRelative } from '@/lib/format';
+import { useTimeZone } from '@/lib/use-time-zone';
 import { readableError } from '@/lib/errors';
 import { cn } from '@/lib/utils';
 import {
@@ -158,6 +159,7 @@ export function PostEditor({
   const contentLocked = access === 'seo' || access === 'readonly';
   const router = useRouter();
   const navigate = useNavigate();
+  const timeZone = useTimeZone();
   const initial = data.post?.values ?? emptyPostInput;
 
   const [values, setValues] = useState<PostInput>(initial);
@@ -292,7 +294,7 @@ export function PostEditor({
         updatedAt: result.updatedAt,
         scheduledAt: result.scheduledAt,
       }));
-      toast.success(`Scheduled for ${formatDateTime(result.scheduledAt)}.`);
+      toast.success(`Scheduled for ${formatDateTime(result.scheduledAt, timeZone)}.`);
       if (!meta.id) {
         skipBlockRef.current = true;
         await navigate({ to: '/posts/$postId', params: { postId: result.id }, replace: true });
@@ -883,13 +885,13 @@ export function PostEditor({
                 </Property>
                 {meta.scheduledAt && (
                   <Property label="Goes live" icon={CalendarClockIcon}>
-                    <span className="px-2">{formatDateTime(meta.scheduledAt)}</span>
+                    <span className="px-2">{formatDateTime(meta.scheduledAt, timeZone)}</span>
                   </Property>
                 )}
                 {meta.publishedAt && (
                   <Property label="Published" icon={GlobeIcon}>
                     <span className="text-muted-foreground px-2">
-                      {formatDateTime(meta.publishedAt)}
+                      {formatDateTime(meta.publishedAt, timeZone)}
                     </span>
                   </Property>
                 )}
@@ -911,7 +913,7 @@ export function PostEditor({
                       className="hover:bg-accent flex min-h-8 items-center justify-between gap-2 rounded-md px-2"
                     >
                       <span className="min-w-0 truncate">
-                        {formatDateTime(revision.createdAt)}
+                        {formatDateTime(revision.createdAt, timeZone)}
                         <span className="text-muted-foreground"> · {revision.by}</span>
                       </span>
                       {index === 0 ? (

@@ -15,37 +15,41 @@ import {
   toZoned,
   zoneName,
 } from '@/lib/format';
+import { useTimeZone } from '@/lib/use-time-zone';
 import { cn } from '@/lib/utils';
 
 const MIN_LEAD_MS = 60_000;
 
 const pad = (n: number) => String(n).padStart(2, '0');
 
-// The calendar works in plain calendar days; times are Melbourne wall-clock
-// times, converted to an instant only when scheduling.
+// The calendar works in plain calendar days; times are the site's configured
+// wall-clock times, converted to an instant only when scheduling.
 const dayOf = (wall: WallTime) => new Date(wall.year, wall.month, wall.day);
 const timeOf = (wall: WallTime) => `${pad(wall.hour)}:${pad(wall.minute)}`;
 
-function instant(day: Date, time: string) {
+function instant(day: Date, time: string, zone: string) {
   const [hour = 0, minute = 0] = time.split(':').map(Number);
-  return fromZoned({
-    year: day.getFullYear(),
-    month: day.getMonth(),
-    day: day.getDate(),
-    hour,
-    minute,
-  });
+  return fromZoned(
+    {
+      year: day.getFullYear(),
+      month: day.getMonth(),
+      day: day.getDate(),
+      hour,
+      minute,
+    },
+    zone
+  );
 }
 
-/** Quick picks, in Melbourne time. */
-function presets(now = Date.now()) {
-  const today = toZoned(now);
+/** Quick picks, in the site's configured time zone. */
+function presets(zone: string, now = Date.now()) {
+  const today = toZoned(now, zone);
   const at9 = (offsetDays: number) => {
     const day = new Date(today.year, today.month, today.day + offsetDays);
-    return toZoned(instant(day, '09:00'));
+    return toZoned(instant(day, '09:00', zone), zone);
   };
   const weekday = new Date(today.year, today.month, today.day).getDay();
-  const soon = toZoned(now + 60 * 60_000);
+  const soon = toZoned(now + 60 * 60_000, zone);
   soon.minute = Math.min(55, Math.ceil(soon.minute / 5) * 5);
   return [
     { label: 'In an hour', at: soon },
@@ -56,7 +60,8 @@ function presets(now = Date.now()) {
 
 /**
  * Chevron next to the Publish button that opens a date and time picker.
- * Times are Melbourne time, whatever the editor's own time zone.
+ * Times are in the site's configured time zone, whatever the editor's own
+ * time zone.
  */
 export function SchedulePopover({
   scheduledAt,
@@ -69,6 +74,7 @@ export function SchedulePopover({
   onSchedule: (at: number) => Promise<boolean>;
   onUnschedule: () => Promise<void>;
 }) {
+  const zone = useTimeZone();
   const [open, setOpen] = useState(false);
   const [day, setDay] = useState<Date | undefined>();
   const [time, setTime] = useState('09:00');
@@ -81,13 +87,13 @@ export function SchedulePopover({
     setTimeText(displayTime(next));
   };
   const reset = () => {
-    const base = scheduledAt ? toZoned(scheduledAt) : presets()[1]!.at;
+    const base = scheduledAt ? toZoned(scheduledAt, zone) : presets(zone)[1]!.at;
     setDay(dayOf(base));
     applyTime(timeOf(base));
   };
 
   const timeValid = parseTime(timeText) !== null;
-  const target = day && timeValid ? instant(day, time) : null;
+  const target = day && timeValid ? instant(day, time, zone) : null;
   const tooSoon = target === null || target < Date.now() + MIN_LEAD_MS;
 
   async function submit() {
@@ -124,7 +130,7 @@ export function SchedulePopover({
           {scheduledAt ? 'Reschedule' : 'Schedule for later'}
         </div>
         <div className="grid grid-cols-3 gap-1.5 px-3 pt-3">
-          {presets().map((preset) => (
+          {presets(zone).map((preset) => (
             <Button
               key={preset.label}
               variant="outline"
@@ -143,7 +149,7 @@ export function SchedulePopover({
           mode="single"
           selected={day}
           onSelect={setDay}
-          disabled={{ before: dayOf(toZoned(Date.now())) }}
+          disabled={{ before: dayOf(toZoned(Date.now(), zone)) }}
           className="w-full px-3"
           classNames={{ root: 'w-full' }}
         />
@@ -173,7 +179,7 @@ export function SchedulePopover({
               className="h-8 w-28"
             />
             <span className="text-muted-foreground text-xs">
-              Melbourne time ({zoneName(target ?? undefined)})
+              {zoneName(zone, target ?? undefined)}
             </span>
           </div>
           <p
@@ -188,7 +194,7 @@ export function SchedulePopover({
                 ? 'Enter a time like 9:30 am or 21:30.'
                 : tooSoon || target === null
                   ? 'Pick a time at least a minute from now.'
-                  : `Publishes ${formatDateTime(target)} ${zoneName(target)}.`}
+                  : `Publishes ${formatDateTime(target, zone)} ${zoneName(zone, target)}.`}
           </p>
           <div className="flex justify-end gap-2">
             {scheduledAt && (

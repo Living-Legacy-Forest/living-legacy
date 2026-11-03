@@ -1,6 +1,4 @@
 export const LOCALE = 'en-AU';
-// Fixed so server and browser render the same dates (no hydration mismatch).
-export const TIME_ZONE = 'Australia/Melbourne';
 
 /** Noon anchor avoids off-by-one labels around timezone boundaries for ISO date strings. */
 export function parseIsoCalendarDate(isoDate: string): Date {
@@ -56,18 +54,19 @@ export function formatRelative(timestamp: number, now = Date.now()) {
   return 'just now';
 }
 
-export function formatDate(timestamp: number) {
+/** `zone` is the site's configured time zone (Settings → Language & appearance). */
+export function formatDate(timestamp: number, zone: string) {
   return new Date(timestamp).toLocaleDateString(LOCALE, {
-    timeZone: TIME_ZONE,
+    timeZone: zone,
     day: 'numeric',
     month: 'short',
     year: 'numeric',
   });
 }
 
-export function formatDateTime(timestamp: number) {
+export function formatDateTime(timestamp: number, zone: string) {
   return new Date(timestamp).toLocaleString(LOCALE, {
-    timeZone: TIME_ZONE,
+    timeZone: zone,
     day: 'numeric',
     month: 'short',
     year: 'numeric',
@@ -78,10 +77,10 @@ export function formatDateTime(timestamp: number) {
 
 export type WallTime = { year: number; month: number; day: number; hour: number; minute: number };
 
-/** Calendar date and clock time of `timestamp` in the CMS time zone. */
-export function toZoned(timestamp: number): WallTime {
+/** Calendar date and clock time of `timestamp` in `zone`. */
+export function toZoned(timestamp: number, zone: string): WallTime {
   const parts = new Intl.DateTimeFormat('en-US', {
-    timeZone: TIME_ZONE,
+    timeZone: zone,
     hourCycle: 'h23',
     year: 'numeric',
     month: 'numeric',
@@ -99,23 +98,35 @@ export function toZoned(timestamp: number): WallTime {
   };
 }
 
-/** Timestamp for a calendar date and clock time in the CMS time zone (handles daylight saving). */
-export function fromZoned(wall: WallTime): number {
+/** Timestamp for a calendar date and clock time in `zone` (handles daylight saving). */
+export function fromZoned(wall: WallTime, zone: string): number {
   const asUtc = Date.UTC(wall.year, wall.month, wall.day, wall.hour, wall.minute);
   let guess = asUtc;
   // Two passes settle the offset, including across a daylight saving change.
   for (let i = 0; i < 2; i++) {
-    const seen = toZoned(guess);
+    const seen = toZoned(guess, zone);
     const seenAsUtc = Date.UTC(seen.year, seen.month, seen.day, seen.hour, seen.minute);
     guess += asUtc - seenAsUtc;
   }
   return guess;
 }
 
-/** Short name of the CMS time zone right now, for example "AEDT". */
-export function zoneName(timestamp = Date.now()) {
+/** Short name of `zone` right now, for example "AEDT". */
+export function zoneName(zone: string, timestamp = Date.now()) {
   return (
-    new Intl.DateTimeFormat(LOCALE, { timeZone: TIME_ZONE, timeZoneName: 'short' })
+    new Intl.DateTimeFormat(LOCALE, { timeZone: zone, timeZoneName: 'short' })
+      .formatToParts(new Date(timestamp))
+      .find((p) => p.type === 'timeZoneName')?.value ?? ''
+  );
+}
+
+/**
+ * GMT offset of `zone` right now, for example "GMT+11" or "GMT+9:30".
+ * Varies by zone and, for zones that observe it, by daylight saving.
+ */
+export function zoneOffset(zone: string, timestamp = Date.now()) {
+  return (
+    new Intl.DateTimeFormat(LOCALE, { timeZone: zone, timeZoneName: 'shortOffset' })
       .formatToParts(new Date(timestamp))
       .find((p) => p.type === 'timeZoneName')?.value ?? ''
   );

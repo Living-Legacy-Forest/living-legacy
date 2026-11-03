@@ -71,7 +71,7 @@ export const deleteMedia = createServerFn({ method: 'POST' })
       .select({ id: media.id, r2Key: media.r2Key })
       .from(media)
       .where(inArray(media.id, data.ids));
-    // Anything using this image (a post, team member or testimonial) is set to
+    // Anything using this image (a post, team member, testimonial or media coverage) is set to
     // null by the FK;
     // the R2 object itself has no such guard, so delete it ourselves.
     await Promise.allSettled(rows.map((r) => env.MEDIA.delete(r.r2Key)));

@@ -303,3 +303,4 @@ export const CircleHelpIcon = animated(AnimatedHelpCircleIcon);
 export const FolderPlusIcon = animated(AnimatedFolderAddIcon);
 export const MailIcon = animated(AnimatedMail01Icon);
 export const SunMoonIcon = animated(AnimatedSun01Icon);
+export const NewspaperIcon = make(H.NewsIcon);

@@ -1,99 +1,45 @@
 ---
-// In the media. Carries all 7 live items (live/out/about__in-the-media.txt),
-// deduplicated: live repeats several cards further down the page as a
-// second, apparently accidental pass, which is dropped here.
+// In the media. Managed in the CMS (Media coverage) and read on each request,
+// so a new article or video shows within a minute of publishing.
 //
-// The All/Video/News filter is a shadcn ToggleGroup island (MediaFilter.tsx)
-// that also renders the grid; every item is present in its server-rendered
-// HTML regardless of the active filter, since the island's own initial
-// render starts on "All". Typo fixed per house style: "Tripple M" -> "Triple M".
-import { getImage } from 'astro:assets';
+// The topic filter is a shadcn ToggleGroup island (MediaFilter.tsx) that also
+// renders the grid; every item is present in its server-rendered HTML
+// regardless of the active filter, since the island's own initial render
+// starts on "All".
 import BaseLayout from '@/layouts/BaseLayout.astro';
 import { MediaFilter, type MediaItem } from '@/components/sections/media/MediaFilter';
-import newsTheSenior from '@/assets/media/news-the-senior.webp';
-import newsHeraldSun from '@/assets/media/news-herald-sun.webp';
-import newsDailyMail from '@/assets/media/news-daily-mail.webp';
+import { getMediaCoverage } from '@/lib/media-coverage';
+import { getSiteSettings } from '@/lib/settings';
 
-type RawNewsItem = {
-  type: 'news';
-  title: string;
-  outlet: string;
-  href: string;
-  thumb: ImageMetadata;
-};
+export const prerender = false;
 
-type RawVideoItem = {
-  type: 'video';
-  title: string;
-  outlet: string;
-  youtubeId: string;
-};
+const [coverage, { timeZone }] = await Promise.all([getMediaCoverage(), getSiteSettings()]);
 
-const rawItems: Array<RawNewsItem | RawVideoItem> = [
-  {
-    type: 'news',
-    title: 'How human ashes can be treated to become part of living memorials',
-    outlet: 'The Senior',
-    href: 'https://www.thesenior.com.au/story/8816635/how-human-ashes-can-be-treated-to-become-part-of-living-memorials/',
-    thumb: newsTheSenior,
-  },
-  {
-    type: 'video',
-    title: 'Living Legacy, Western Australia',
-    outlet: 'Today Tonight',
-    youtubeId: '_fxvSz2XfU8',
-  },
-  {
-    type: 'news',
-    title: 'Weird science brings eternal life to Peninsula',
-    outlet: 'Herald Sun',
-    href: 'https://www.heraldsun.com.au/leader/south-east/funeral-cost-living-legacy-forest-opens-mornington-green/news-story/b378415dba3f734ccd9ff571442d9630',
-    thumb: newsHeraldSun,
-  },
-  {
-    type: 'video',
-    title: 'Studio 10',
-    outlet: 'Network 10',
-    youtubeId: 'TZTP7yN7kfE',
-  },
-  {
-    type: 'news',
-    title: 'Australian scientists in Melbourne turn human cremated ashes into plant food',
-    outlet: 'Daily Mail',
-    href: 'https://www.dailymail.co.uk/news/article-3597861/Australian-scientists-Melbourne-turn-humans-cremated-ashes-turned-plant-food.html',
-    thumb: newsDailyMail,
-  },
-  {
-    type: 'video',
-    title: 'The Project',
-    outlet: 'Studio 10',
-    youtubeId: 'IpvLFePdRlQ',
-  },
-  {
-    type: 'video',
-    title: 'Allan for Breakfast',
-    outlet: 'Triple M',
-    youtubeId: 'b_yZqCOx3EU',
-  },
-];
-
-// React islands cannot use astro:assets, so every news thumbnail is
-// optimised here and handed down as a plain src/width/height.
-const items: MediaItem[] = await Promise.all(
-  rawItems.map(async (item) => {
-    if (item.type === 'video') return item;
-    const optimized = await getImage({ src: item.thumb, width: 480 });
-    return {
-      type: 'news' as const,
-      title: item.title,
-      outlet: item.outlet,
-      href: item.href,
-      thumbSrc: optimized.src,
-      thumbWidth: optimized.attributes.width as number,
-      thumbHeight: optimized.attributes.height as number,
-    };
-  })
-);
+const items: MediaItem[] = coverage.map((item) => {
+  const meta = [
+    item.date &&
+      new Date(item.date).toLocaleDateString('en-AU', {
+        timeZone,
+        day: 'numeric',
+        month: 'long',
+        year: 'numeric',
+      }),
+    item.readingMinutes && `${item.readingMinutes} min read`,
+  ].filter(Boolean);
+  return {
+    id: item.id,
+    kind: item.kind,
+    title: item.title,
+    source: item.source,
+    category: item.category,
+    excerpt: item.excerpt,
+    meta: meta.length ? meta.join(' · ') : null,
+    href: item.href,
+    youtubeId: item.youtubeId,
+    image: item.image,
+    featured: item.featured,
+  };
+});
 
 const title = 'In the media';
 const description =
@@ -106,7 +52,13 @@ const description =
     <h1 class="display-title mt-4">In the media</h1>
 
     <div class="mt-10">
-      <MediaFilter client:visible items={items} />
+      {
+        items.length > 0 ? (
+          <MediaFilter client:visible items={items} />
+        ) : (
+          <p class="text-ink-soft text-lg">Coverage will appear here soon.</p>
+        )
+      }
     </div>
   </div>
 </BaseLayout>

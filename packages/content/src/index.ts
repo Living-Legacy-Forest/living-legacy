@@ -8,3 +8,4 @@ export * from './announcements';
 export * from './settings';
 export * from './rich-text-html';
 export * from './markdown';
+export * from './media-coverage';

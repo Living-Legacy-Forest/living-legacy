@@ -2,7 +2,14 @@ import { index, integer, sqliteTable, text } from 'drizzle-orm/sqlite-core';
 import { user } from './auth';
 import { id, timestamps } from './columns';
 
-export const entityTypes = ['post', 'faq', 'testimonial', 'team_member', 'settings'] as const;
+export const entityTypes = [
+  'post',
+  'faq',
+  'testimonial',
+  'team_member',
+  'media_coverage',
+  'settings',
+] as const;
 export type EntityType = (typeof entityTypes)[number];
 
 // Single row (id = 'site'); the JSON shape is validated by @llf/content.

@@ -1,0 +1,107 @@
+/**
+ * Press and broadcast coverage for /about/in-the-media/, managed in the CMS
+ * (Media coverage page) and read from the shared D1 database. Uploaded
+ * images are served by the CMS, so their paths are pointed at it.
+ */
+import { type MediaCoverageKind, youtubeId } from '@llf/content';
+import { CMS_URL } from 'astro:env/server';
+import { env } from 'cloudflare:workers';
+
+/** The slice of the D1 binding used here, so the site needs no Workers type package. */
+interface D1 {
+  prepare(query: string): {
+    all<T>(): Promise<{ results: T[] }>;
+  };
+}
+
+const db = (env as { DB?: D1 }).DB;
+const MEDIA_ORIGIN = CMS_URL.replace(/\/+$/, '');
+
+export interface CoverageItem {
+  id: string;
+  slug: string;
+  kind: MediaCoverageKind;
+  title: string;
+  source: string;
+  category: string | null;
+  /** ISO date the outlet ran it, if known. */
+  date: string | null;
+  excerpt: string | null;
+  readingMinutes: number | null;
+  href: string;
+  /** Set for YouTube videos, which play in place. */
+  youtubeId: string | null;
+  image: { src: string; alt: string; width?: number; height?: number } | null;
+  featured: boolean;
+}
+
+type Row = {
+  id: string;
+  slug: string;
+  kind: MediaCoverageKind;
+  title: string;
+  source: string;
+  category: string | null;
+  coverage_date: number | null;
+  excerpt: string | null;
+  reading_minutes: number | null;
+  external_url: string;
+  featured: number;
+  image_id: string | null;
+  image_alt: string | null;
+  image_width: number | null;
+  image_height: number | null;
+};
+
+/** How long an isolate reuses the list before reading it again. */
+const CACHE_MS = 60_000;
+let cache: { items: CoverageItem[]; expires: number } | undefined;
+
+/** Published coverage in page order: featured first, then by Order, newest first. */
+export async function getMediaCoverage(): Promise<CoverageItem[]> {
+  if (!db) return [];
+  if (cache && cache.expires > Date.now()) return cache.items;
+
+  try {
+    const { results } = await db
+      .prepare(
+        `SELECT c.id, c.slug, c.kind, c.title, c.source, c.category, c.coverage_date,
+                c.excerpt, c.reading_minutes, c.external_url, c.featured,
+                m.id AS image_id, m.alt AS image_alt, m.width AS image_width, m.height AS image_height
+         FROM media_coverage c
+         LEFT JOIN media m ON m.id = c.image_media_id
+         WHERE c.status = 'published' AND c.deleted_at IS NULL
+         ORDER BY c.featured DESC, c.sort_order ASC, c.coverage_date DESC`
+      )
+      .all<Row>();
+    const items = results.map((r): CoverageItem => ({
+      id: r.id,
+      slug: r.slug,
+      kind: r.kind,
+      title: r.title,
+      source: r.source,
+      category: r.category,
+      date: r.coverage_date === null ? null : new Date(r.coverage_date).toISOString(),
+      excerpt: r.excerpt,
+      readingMinutes: r.reading_minutes,
+      href: r.external_url,
+      youtubeId: r.kind === 'video' ? youtubeId(r.external_url) : null,
+      image: r.image_id
+        ? {
+            src: `${MEDIA_ORIGIN}/api/media/${r.image_id}`,
+            alt: r.image_alt ?? '',
+            width: r.image_width ?? undefined,
+            height: r.image_height ?? undefined,
+          }
+        : null,
+      featured: r.featured === 1,
+    }));
+    cache = { items, expires: Date.now() + CACHE_MS };
+    return items;
+  } catch (error) {
+    // A database hiccup must not take the site down; serve the last known
+    // list, or none, and try again on the next request.
+    console.error('[media-coverage] could not load list', error);
+    return cache?.items ?? [];
+  }
+}

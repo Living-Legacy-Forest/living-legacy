@@ -127,6 +127,37 @@ export const testimonials = sqliteTable('testimonials', {
   ...lifecycle(),
 });
 
+// Press and broadcast coverage for the "In the media" page.
+export const mediaCoverage = sqliteTable(
+  'media_coverage',
+  {
+    id: id(),
+    title: text('title').notNull(),
+    slug: text('slug').notNull(),
+    kind: text('kind', { enum: ['article', 'video'] })
+      .notNull()
+      .default('article'),
+    /** Drives the topic filter on the page, e.g. Science or Broadcast. */
+    category: text('category'),
+    /** The outlet, e.g. Herald Sun. */
+    source: text('source').notNull(),
+    /** When the outlet ran it. Not to be confused with `publishedAt`, when it went live here. */
+    coverageDate: integer('coverage_date', { mode: 'timestamp_ms' }),
+    excerpt: text('excerpt'),
+    readingMinutes: integer('reading_minutes'),
+    imageMediaId: text('image_media_id').references(() => media.id, { onDelete: 'set null' }),
+    externalUrl: text('external_url').notNull(),
+    featured: integer('featured', { mode: 'boolean' }).notNull().default(false),
+    sortOrder: integer('sort_order').notNull().default(0),
+    ...lifecycle(),
+  },
+  (t) => [
+    uniqueIndex('media_coverage_slug_live')
+      .on(t.slug)
+      .where(sql`${t.deletedAt} IS NULL`),
+  ]
+);
+
 // Site-wide notice bars. Several can be prepared ahead; the website shows the
 // one whose window covers now (see currentAnnouncement in @llf/content).
 export const announcements = sqliteTable(

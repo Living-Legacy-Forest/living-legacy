@@ -39,6 +39,7 @@ function createAuth() {
       additionalFields: {
         role: { type: 'string', required: false, defaultValue: 'editor', input: false },
         bio: { type: 'string', required: false },
+        imageAlt: { type: 'string', required: false },
       },
       // The new address must be confirmed before it takes effect: there is no
       // password, so the magic-link email itself is how identity is proven.

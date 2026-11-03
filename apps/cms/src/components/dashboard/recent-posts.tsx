@@ -1,4 +1,4 @@
-import { type LucideIcon, PencilLineIcon, SendIcon } from '@/components/icons';
+import { ImageIcon, type LucideIcon, PencilLineIcon, SendIcon } from '@/components/icons';
 import { Link } from '@tanstack/react-router';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import {
@@ -8,7 +8,14 @@ import {
   EmptyMedia,
   EmptyTitle,
 } from '@/components/ui/empty';
-import { Item, ItemContent, ItemDescription, ItemGroup, ItemTitle } from '@/components/ui/item';
+import {
+  Item,
+  ItemContent,
+  ItemDescription,
+  ItemGroup,
+  ItemMedia,
+  ItemTitle,
+} from '@/components/ui/item';
 import { formatRelative } from '@/lib/format';
 import type { PostSummary } from '@/server/dashboard';
 
@@ -83,6 +90,13 @@ function PostList({
               className="-mx-2 px-2"
               render={<Link to="/posts/$postId" params={{ postId: post.id }} />}
             >
+              <ItemMedia variant="image" className="bg-muted text-muted-foreground border">
+                {post.imageId ? (
+                  <img src={`/api/media/${post.imageId}`} alt="" loading="lazy" />
+                ) : (
+                  <ImageIcon aria-hidden className="size-3.5" />
+                )}
+              </ItemMedia>
               <ItemContent>
                 <ItemTitle className="line-clamp-1">{post.title || 'Untitled'}</ItemTitle>
                 <ItemDescription>

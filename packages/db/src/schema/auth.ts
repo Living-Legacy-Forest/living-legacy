@@ -9,6 +9,8 @@ export const user = sqliteTable('user', {
   email: text('email').notNull().unique(),
   emailVerified: integer('email_verified', { mode: 'boolean' }).notNull().default(false),
   image: text('image'),
+  /** Describes the photo for screen readers; set on the profile or by an admin. */
+  imageAlt: text('image_alt'),
   bio: text('bio'),
   role: text('role', { enum: ['admin', 'editor', 'author', 'seo', 'viewer'] })
     .notNull()

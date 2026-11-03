@@ -1,5 +1,5 @@
 import { type Role } from '@llf/content';
-import { Trash2Icon, UserPlusIcon } from '@/components/icons';
+import { CameraIcon, Trash2Icon, UserPlusIcon } from '@/components/icons';
 import { useState } from 'react';
 import {
   AlertDialog,
@@ -26,6 +26,7 @@ import {
   DialogTrigger,
 } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
+import { UserPhotoDialog } from '@/components/users/user-photo-dialog';
 import { Label } from '@/components/ui/label';
 import {
   Select,
@@ -146,12 +147,7 @@ function UsersTable({ data }: { data: TeamData }) {
             <TableRow key={u.id}>
               <TableCell className="py-2.5">
                 <div className="flex items-center gap-3">
-                  <Avatar className="size-8">
-                    {u.image && <AvatarImage src={u.image} alt="" />}
-                    <AvatarFallback className="bg-muted text-xs font-medium">
-                      {initials(u.name || u.email)}
-                    </AvatarFallback>
-                  </Avatar>
+                  <UserAvatar user={u} isSelf={isSelf} />
                   <div className="min-w-0">
                     <div className="flex items-center gap-2 text-sm font-medium">
                       <span className="truncate">{u.name || u.email}</span>
@@ -175,12 +171,12 @@ function UsersTable({ data }: { data: TeamData }) {
                     }
                   }}
                 >
-                  <SelectTrigger size="sm" className="w-28">
+                  <SelectTrigger size="sm" className="w-28 text-[13px]">
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
                     {roleItems.map((item) => (
-                      <SelectItem key={item.value} value={item.value}>
+                      <SelectItem key={item.value} value={item.value} className="text-[13px]">
                         {item.label}
                       </SelectItem>
                     ))}
@@ -204,6 +200,38 @@ function UsersTable({ data }: { data: TeamData }) {
         })}
       </TableBody>
     </Table>
+  );
+}
+
+function UserAvatar({ user, isSelf }: { user: TeamUser; isSelf: boolean }) {
+  const [open, setOpen] = useState(false);
+  const label = user.name || user.email;
+  return (
+    <>
+      <button
+        type="button"
+        aria-label={`Change ${label}'s photo`}
+        onClick={() => setOpen(true)}
+        className="group focus-visible:ring-ring relative shrink-0 rounded-full outline-none focus-visible:ring-2"
+      >
+        <Avatar className="size-8">
+          {user.image && <AvatarImage src={user.image} alt={user.imageAlt ?? ''} />}
+          <AvatarFallback className="bg-muted text-xs font-medium">
+            {initials(label)}
+          </AvatarFallback>
+        </Avatar>
+        <span className="bg-background/85 absolute inset-0 flex items-center justify-center rounded-full opacity-0 transition-opacity group-hover:opacity-100">
+          <CameraIcon aria-hidden className="size-3.5" />
+        </span>
+      </button>
+      <UserPhotoDialog
+        user={user}
+        isSelf={isSelf}
+        initials={initials(label)}
+        open={open}
+        onOpenChange={setOpen}
+      />
+    </>
   );
 }
 

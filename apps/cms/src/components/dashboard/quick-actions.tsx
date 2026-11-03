@@ -22,7 +22,7 @@ import type { SessionUser } from '@/lib/session';
 type Action = {
   title: string;
   /** Set once the destination exists; otherwise the action shows as "Soon". */
-  to?: '/posts/new';
+  to?: '/posts/new' | '/media' | '/faqs' | '/users';
   description: string;
   icon: LucideIcon;
   permission: Permission;
@@ -38,19 +38,22 @@ const actions: Action[] = [
   },
   {
     title: 'Upload media',
-    description: 'Add photos and documents.',
+    description: 'Add photos for posts and pages.',
+    to: '/media',
     icon: UploadIcon,
     permission: 'media:write',
   },
   {
     title: 'Add an FAQ',
     description: 'Answer a common question.',
+    to: '/faqs',
     icon: MessageCircleQuestionIcon,
     permission: 'content:write',
   },
   {
     title: 'Invite someone',
     description: 'Give a colleague access.',
+    to: '/users',
     icon: UserPlusIcon,
     permission: 'users:manage',
   },

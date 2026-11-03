@@ -9,6 +9,7 @@ import { Color, TextStyle } from '@tiptap/extension-text-style';
 import { StarterKit } from '@tiptap/starter-kit';
 import { Link } from '@/components/editor';
 import { Table } from '@/components/extensions/table';
+import { PostImage } from './post-image';
 
 /**
  * Content extensions shared by the post editor and the preview renderer, so
@@ -27,4 +28,5 @@ export const postContentExtensions: Extensions = [
   TaskList.configure({ HTMLAttributes: { class: 'rte-task-list' } }),
   TaskItem.configure({ nested: true }),
   TextAlign.configure({ types: ['heading', 'paragraph'] }),
+  PostImage,
 ];

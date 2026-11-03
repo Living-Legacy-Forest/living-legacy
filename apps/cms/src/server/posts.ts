@@ -447,7 +447,7 @@ export const duplicatePost = createServerFn({ method: 'POST' })
   });
 
 const seoSchema = postInputSchema
-  .pick({ seoTitle: true, seoDescription: true, noindex: true })
+  .pick({ seoTitle: true, seoDescription: true, noindex: true, ogMediaId: true })
   .extend({ id: z.string(), expectedUpdatedAt: z.number().optional() });
 
 /**
@@ -467,6 +467,7 @@ export const savePostSeo = createServerFn({ method: 'POST' })
       seoTitle: data.seoTitle || null,
       seoDescription: data.seoDescription || null,
       noindex: data.noindex,
+      ogMediaId: data.ogMediaId,
     };
     const now = new Date();
     const statements: Statement[] = [
@@ -480,6 +481,7 @@ export const savePostSeo = createServerFn({ method: 'POST' })
                 seoTitle: data.seoTitle,
                 seoDescription: data.seoDescription,
                 noindex: data.noindex,
+                ogMediaId: data.ogMediaId,
               }
             : null,
           updatedAt: now,

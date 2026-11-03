@@ -8,6 +8,7 @@ import {
   Baseline,
   ChevronDown,
   Code2,
+  ImageIcon,
   IndentDecrease,
   IndentIncrease,
   ListTodo,
@@ -17,6 +18,7 @@ import {
   Table as TableIcon,
 } from '@/components/icons';
 
+import { MediaPicker } from '@/components/media/image-field';
 import { Button } from '@/components/ui/button';
 import {
   DropdownMenu,
@@ -28,6 +30,7 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { cn } from '@/lib/utils';
+import { useState } from 'react';
 
 import {
   ACTIVE_ITEM,
@@ -215,9 +218,15 @@ const InsertMenu = ({ editor }: { editor: Editor | null }) => {
       command(editor.chain().focus());
     }
   };
+  const [pickingImage, setPickingImage] = useState(false);
   const items = [
-    // Image returns with the media library: the placeholder upload tab embeds
-    // files as base64 in the post body instead of storing them in R2.
+    // From the Media library, so the file lives in storage rather than as
+    // base64 in the post body.
+    {
+      Icon: ImageIcon,
+      label: 'Image',
+      onSelect: () => setPickingImage(true),
+    },
     {
       Icon: TableIcon,
       label: 'Table',
@@ -240,27 +249,40 @@ const InsertMenu = ({ editor }: { editor: Editor | null }) => {
     },
   ];
   return (
-    <DropdownMenu>
-      <DropdownMenuTrigger
-        render={<Button className="h-8 gap-1 px-2 text-[13px]" size="sm" variant="ghost" />}
-      >
-        <Plus className="size-4" />
-        Insert
-        <ChevronDown className="text-muted-foreground size-3.5" />
-      </DropdownMenuTrigger>
-      <DropdownMenuContent align="end" className="min-w-36 p-1">
-        {items.map(({ Icon, label, onSelect }) => (
-          <DropdownMenuItem
-            key={label}
-            className="rounded-md py-1 text-[13px] [&_svg]:size-3.5!"
-            onClick={onSelect}
-          >
-            <Icon />
-            {label}
-          </DropdownMenuItem>
-        ))}
-      </DropdownMenuContent>
-    </DropdownMenu>
+    <>
+      <DropdownMenu>
+        <DropdownMenuTrigger
+          render={<Button className="h-8 gap-1 px-2 text-[13px]" size="sm" variant="ghost" />}
+        >
+          <Plus className="size-4" />
+          Insert
+          <ChevronDown className="text-muted-foreground size-3.5" />
+        </DropdownMenuTrigger>
+        <DropdownMenuContent align="end" className="min-w-36 p-1">
+          {items.map(({ Icon, label, onSelect }) => (
+            <DropdownMenuItem
+              key={label}
+              className="rounded-md py-1 text-[13px] [&_svg]:size-3.5!"
+              onClick={onSelect}
+            >
+              <Icon />
+              {label}
+            </DropdownMenuItem>
+          ))}
+        </DropdownMenuContent>
+      </DropdownMenu>
+      <MediaPicker
+        open={pickingImage}
+        onOpenChange={setPickingImage}
+        selectedId={null}
+        onSelect={(item) => {
+          setPickingImage(false);
+          run((c) =>
+            c.setImage({ src: item.url, alt: item.alt, title: item.caption || undefined }).run()
+          );
+        }}
+      />
+    </>
   );
 };
 

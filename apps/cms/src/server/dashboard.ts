@@ -10,7 +10,13 @@ const { posts, media, faqs, terms, postTerms } = schema;
 const DAY_MS = 86_400_000;
 export const ACTIVITY_DAYS = 90;
 
-export type PostSummary = { id: string; title: string; at: number };
+export type PostSummary = {
+  id: string;
+  title: string;
+  at: number;
+  /** The featured image, for a thumbnail. */
+  imageId: string | null;
+};
 
 export const getDashboardData = createServerFn({ method: 'GET' })
   .middleware([authMiddleware])
@@ -35,7 +41,13 @@ export const getDashboardData = createServerFn({ method: 'GET' })
           })
           .from(posts)
           .where(notTrashed),
-        db.select({ files: count(), bytes: sum(media.size) }).from(media),
+        db
+          .select({
+            files: count(),
+            bytes: sum(media.size),
+            missingAlt: sql<number>`coalesce(sum(${media.alt} is null or trim(${media.alt}) = ''), 0)`,
+          })
+          .from(media),
         db
           .select({ total: count() })
           .from(faqs)
@@ -53,13 +65,23 @@ export const getDashboardData = createServerFn({ method: 'GET' })
           .groupBy(terms.id)
           .orderBy(desc(count())),
         db
-          .select({ id: posts.id, title: posts.title, at: posts.updatedAt })
+          .select({
+            id: posts.id,
+            title: posts.title,
+            at: posts.updatedAt,
+            imageId: posts.featuredMediaId,
+          })
           .from(posts)
           .where(and(eq(posts.status, 'draft'), notTrashed))
           .orderBy(desc(posts.updatedAt))
           .limit(5),
         db
-          .select({ id: posts.id, title: posts.title, at: posts.publishedAt })
+          .select({
+            id: posts.id,
+            title: posts.title,
+            at: posts.publishedAt,
+            imageId: posts.featuredMediaId,
+          })
           .from(posts)
           .where(isPublished)
           .orderBy(desc(posts.publishedAt))
@@ -76,10 +98,16 @@ export const getDashboardData = createServerFn({ method: 'GET' })
     }
 
     const counts = postCounts[0];
-    const toSummary = (row: { id: string; title: string; at: Date | null }): PostSummary => ({
+    const toSummary = (row: {
+      id: string;
+      title: string;
+      at: Date | null;
+      imageId: string | null;
+    }): PostSummary => ({
       id: row.id,
       title: row.title,
       at: row.at?.getTime() ?? 0,
+      imageId: row.imageId,
     });
 
     return {
@@ -92,6 +120,7 @@ export const getDashboardData = createServerFn({ method: 'GET' })
       media: {
         files: mediaTotals[0]?.files ?? 0,
         bytes: Number(mediaTotals[0]?.bytes ?? 0),
+        missingAlt: Number(mediaTotals[0]?.missingAlt ?? 0),
       },
       publishedFaqs: faqCount[0]?.total ?? 0,
       activity: [...perDay].map(([date, published]) => ({ date, published })),

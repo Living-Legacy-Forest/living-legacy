@@ -1,14 +1,40 @@
 import type { RichTextDoc } from '@llf/content';
 import { Placeholder } from '@tiptap/extension-placeholder';
-import { useEditor, useEditorState } from '@tiptap/react';
+import { type Editor, useEditor, useEditorState } from '@tiptap/react';
+import { useRef } from 'react';
+import { toast } from 'sonner';
 import { RichTextEditor } from '@/components/editor';
 import { TableHoverOverlay } from '@/components/extensions/table/table-hover-overlay';
 import { CANVAS, SCROLLBAR } from '@/components/templates/simple-document-editor/constants';
 import { ShortcutsPopover } from '@/components/templates/simple-document-editor/shortcuts';
 import { Toolbar } from '@/components/templates/simple-document-editor/toolbar';
 import { readState } from '@/components/templates/simple-document-editor/utils';
+import { readableError } from '@/lib/errors';
+import { uploadMedia } from '@/lib/upload-media';
 import { cn } from '@/lib/utils';
 import { postContentExtensions } from './post-extensions';
+
+const imageFiles = (files: FileList | null | undefined) =>
+  Array.from(files ?? []).filter((f) => f.type.startsWith('image/'));
+
+/** Uploads pasted or dropped images to Media, then puts them in the body. */
+async function insertUploads(editor: Editor, files: File[], at?: number) {
+  const id = toast.loading(files.length === 1 ? 'Uploading image…' : 'Uploading images…');
+  try {
+    for (const file of files) {
+      const item = await uploadMedia(file);
+      const pos = at ?? editor.state.selection.from;
+      editor
+        .chain()
+        .focus()
+        .insertContentAt(pos, { type: 'image', attrs: { src: item.url, alt: item.alt } })
+        .run();
+    }
+    toast.success(files.length === 1 ? 'Image added.' : 'Images added.', { id });
+  } catch (error) {
+    toast.error(readableError(error), { id });
+  }
+}
 
 type Props = {
   title: string;
@@ -35,9 +61,26 @@ export function DocumentEditor({
   onBodyChange,
   readOnly = false,
 }: Props) {
+  const editorRef = useRef<Editor | null>(null);
   const editor = useEditor({
     content: body ?? '',
     editable: !readOnly,
+    editorProps: {
+      handlePaste: (view, event) => {
+        const files = imageFiles(event.clipboardData?.files);
+        if (!view.editable || !files.length || !editorRef.current) return false;
+        void insertUploads(editorRef.current, files);
+        return true;
+      },
+      handleDrop: (view, event, _slice, moved) => {
+        const files = imageFiles(event.dataTransfer?.files);
+        if (moved || !view.editable || !files.length || !editorRef.current) return false;
+        event.preventDefault();
+        const at = view.posAtCoords({ left: event.clientX, top: event.clientY })?.pos;
+        void insertUploads(editorRef.current, files, at);
+        return true;
+      },
+    },
     extensions: [
       ...postContentExtensions,
       Placeholder.configure({ placeholder: 'Start writing…' }),
@@ -46,6 +89,7 @@ export function DocumentEditor({
     shouldRerenderOnTransaction: false,
     onUpdate: ({ editor: e }) => onBodyChange(e.isEmpty ? null : (e.getJSON() as RichTextDoc)),
   });
+  editorRef.current = editor;
 
   const state =
     useEditorState({

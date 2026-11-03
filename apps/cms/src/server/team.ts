@@ -18,6 +18,7 @@ export const listTeamMembers = createServerFn({ method: 'GET' })
         role: teamMembers.role,
         bio: teamMembers.bio,
         status: teamMembers.status,
+        photoMediaId: teamMembers.photoMediaId,
         sortOrder: teamMembers.sortOrder,
         createdAt: teamMembers.createdAt,
       })
@@ -40,6 +41,8 @@ const memberSchema = z.object({
   role: z.string().trim().max(60).optional(),
   bio: z.string().trim().max(2000).optional(),
   status: z.enum(['draft', 'published']),
+  /** Left out (as in a CSV import) keeps the current photo; null removes it. */
+  photoMediaId: z.string().nullable().optional(),
 });
 
 export const saveTeamMember = createServerFn({ method: 'POST' })
@@ -62,6 +65,7 @@ export const saveTeamMember = createServerFn({ method: 'POST' })
           role,
           bio,
           status: data.status,
+          photoMediaId: data.photoMediaId ?? null,
           sortOrder: Number(maxOrder) + 1,
           publishedAt: data.status === 'published' ? now : null,
           createdBy: context.user.id,
@@ -79,6 +83,7 @@ export const saveTeamMember = createServerFn({ method: 'POST' })
         role,
         bio,
         status: data.status,
+        ...(data.photoMediaId !== undefined && { photoMediaId: data.photoMediaId }),
         // Keep the original publish time if it was already live.
         publishedAt: data.status === 'published' ? (existing?.publishedAt ?? now) : null,
         updatedAt: now,

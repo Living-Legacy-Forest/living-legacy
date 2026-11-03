@@ -9,6 +9,7 @@ export type SessionUser = {
   name: string;
   email: string;
   image: string | null;
+  imageAlt: string | null;
   bio: string | null;
   role: Role;
 };
@@ -16,12 +17,13 @@ export type SessionUser = {
 async function loadUser(): Promise<SessionUser | null> {
   const session = await getAuth().api.getSession({ headers: getRequest().headers });
   if (!session) return null;
-  const { id, name, email, image, bio, role } = session.user;
+  const { id, name, email, image, imageAlt, bio, role } = session.user;
   return {
     id,
     name,
     email,
     image: image ?? null,
+    imageAlt: (imageAlt as string | null) ?? null,
     bio: (bio as string | null) ?? null,
     role: role as Role,
   };

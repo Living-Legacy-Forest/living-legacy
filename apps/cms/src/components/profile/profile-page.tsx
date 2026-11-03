@@ -34,6 +34,7 @@ export function ProfilePage({
   const router = useRouter();
   const [name, setName] = useState(user.name);
   const [bio, setBio] = useState(user.bio ?? '');
+  const [imageAlt, setImageAlt] = useState(user.imageAlt ?? '');
   const [avatarUploading, setAvatarUploading] = useState(false);
   const fileInput = useRef<HTMLInputElement>(null);
   const { run, pending } = useAction();
@@ -68,13 +69,18 @@ export function ProfilePage({
     }
   }
 
-  const dirty = name !== user.name || bio !== (user.bio ?? '');
+  const dirty =
+    name !== user.name || bio !== (user.bio ?? '') || imageAlt !== (user.imageAlt ?? '');
 
   async function saveProfile(e: React.FormEvent) {
     e.preventDefault();
     if (!reportInvalid(e.currentTarget)) return;
     await run(async () => {
-      const { error } = await authClient.updateUser({ name, bio: bio || null });
+      const { error } = await authClient.updateUser({
+        name,
+        bio: bio || null,
+        imageAlt: imageAlt.trim() || null,
+      });
       if (error) throw new Error(error.message ?? 'Could not save your profile.');
       await refresh();
     }, 'Profile saved.');
@@ -93,7 +99,7 @@ export function ProfilePage({
         <div className="flex items-center gap-4">
           <div className="group relative">
             <Avatar size="lg" className="size-16">
-              {user.image && <AvatarImage src={user.image} alt="" />}
+              {user.image && <AvatarImage src={user.image} alt={user.imageAlt ?? ''} />}
               <AvatarFallback className="text-base">{initials}</AvatarFallback>
             </Avatar>
             <button
@@ -148,6 +154,19 @@ export function ProfilePage({
               placeholder="A line or two about you"
             />
           </div>
+          {user.image && (
+            <div className="space-y-1.5">
+              <Label htmlFor="profile-photo-alt">Photo alt text</Label>
+              <Input
+                id="profile-photo-alt"
+                maxLength={300}
+                value={imageAlt}
+                onChange={(e) => setImageAlt(e.target.value)}
+                placeholder="Describe your photo"
+              />
+              <p className="text-muted-foreground text-xs">Read out by screen readers.</p>
+            </div>
+          )}
           <Button type="submit" variant="outline" disabled={pending || !dirty}>
             {pending ? <Spinner /> : null}
             Save

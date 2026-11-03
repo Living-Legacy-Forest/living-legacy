@@ -43,6 +43,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
+import { ImageField } from '@/components/media/image-field';
 import { Button } from '@/components/ui/button';
 import { Spinner } from '@/components/ui/spinner';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
@@ -77,6 +78,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { formatDateTime, formatRelative } from '@/lib/format';
 import { useTimeZone } from '@/lib/use-time-zone';
 import { readableError } from '@/lib/errors';
+import { uploadMedia } from '@/lib/upload-media';
 import { cn } from '@/lib/utils';
 import {
   type PostEditorData,
@@ -397,11 +399,18 @@ export function PostEditor({
     if (!meta.id) return;
     setBusy('save');
     try {
-      const { seoTitle, seoDescription, noindex } = values;
+      const { seoTitle, seoDescription, noindex, ogMediaId } = values;
       const result = await savePostSeo({
-        data: { id: meta.id, seoTitle, seoDescription, noindex, expectedUpdatedAt: meta.updatedAt },
+        data: {
+          id: meta.id,
+          seoTitle,
+          seoDescription,
+          noindex,
+          ogMediaId,
+          expectedUpdatedAt: meta.updatedAt,
+        },
       });
-      setSaved((s) => ({ ...s, seoTitle, seoDescription, noindex }));
+      setSaved((s) => ({ ...s, seoTitle, seoDescription, noindex, ogMediaId }));
       setMeta((m) => ({ ...m, updatedAt: result.updatedAt }));
       setLastSavedAt(result.updatedAt);
       toast.success(
@@ -448,17 +457,33 @@ export function PostEditor({
       const [{ default: mammoth }, { generateJSON }, { postContentExtensions }] = await Promise.all(
         [import('mammoth'), import('@tiptap/core'), import('./post-extensions')]
       );
+      // The document's images go into Media; any that fail to upload are left
+      // out (an empty src) and counted, so the editor can say so.
       let imageCount = 0;
       const { value: html } = await mammoth.convertToHtml(
         { arrayBuffer: await file.arrayBuffer() },
         {
-          convertImage: mammoth.images.imgElement(async () => {
-            imageCount += 1;
-            return { src: '' };
+          convertImage: mammoth.images.imgElement(async (image) => {
+            const ext = image.contentType.split('/')[1] ?? 'png';
+            const upload = new File(
+              [await image.readAsArrayBuffer()],
+              `${slugify(file.name.replace(/\.docx$/i, '')) || 'image'}.${ext}`,
+              { type: image.contentType }
+            );
+            try {
+              return { src: (await uploadMedia(upload)).url };
+            } catch {
+              imageCount += 1;
+              return { src: '' };
+            }
           }),
         }
       );
-      update({ body: generateJSON(html, postContentExtensions) as RichTextDoc });
+      const body = generateJSON(
+        html.replace(/<img\b[^>]*\bsrc=""[^>]*>/g, ''),
+        postContentExtensions
+      );
+      update({ body: body as RichTextDoc });
       setBodyKey((k) => k + 1);
       toast.success(
         imageCount > 0
@@ -898,6 +923,19 @@ export function PostEditor({
               </fieldset>
             </Section>
 
+            <Section title="Featured image" defaultOpen>
+              <fieldset disabled={contentLocked} className="min-w-0 disabled:opacity-70">
+                <ImageField
+                  id="post-featured"
+                  label="Featured image"
+                  hideLabel
+                  description="Shown at the top of the post and on blog cards."
+                  mediaId={values.featuredMediaId}
+                  onChange={(featuredMediaId) => update({ featuredMediaId })}
+                />
+              </fieldset>
+            </Section>
+
             <Section title="Search listing">
               <fieldset disabled={access === 'readonly'} className="min-w-0">
                 <SeoFields values={values} onChange={update} />
@@ -1305,6 +1343,13 @@ function SeoFields({
         placeholder={values.excerpt || 'Summarise the post in a sentence or two.'}
         multiline
         onChange={(seoDescription) => onChange({ seoDescription })}
+      />
+      <ImageField
+        id="seo-share-image"
+        label="Share image"
+        description="Shown when the post is shared on social media. Uses the featured image if left empty."
+        mediaId={values.ogMediaId}
+        onChange={(ogMediaId) => onChange({ ogMediaId })}
       />
       <div className="flex items-center justify-between gap-3">
         <Label htmlFor="seo-noindex" className="text-[13px] font-normal">

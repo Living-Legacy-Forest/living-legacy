@@ -30,6 +30,7 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from '@/components/ui/alert-dialog';
+import { ImageField } from '@/components/media/image-field';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import {
@@ -616,6 +617,7 @@ function TestimonialForm({
   const [location, setLocation] = useState(testimonial?.location ?? '');
   const [featured, setFeatured] = useState(testimonial?.featured ?? false);
   const [published, setPublished] = useState(testimonial?.status === 'published');
+  const [photoMediaId, setPhotoMediaId] = useState(testimonial?.photoMediaId ?? null);
   const { run, pending } = useAction();
 
   async function submit(e: React.FormEvent) {
@@ -632,6 +634,7 @@ function TestimonialForm({
             location: location || undefined,
             featured,
             status: published ? 'published' : 'draft',
+            photoMediaId,
           },
         }),
       testimonial ? 'Testimonial updated.' : 'Testimonial added.'
@@ -682,6 +685,14 @@ function TestimonialForm({
           placeholder="Melbourne"
         />
       </div>
+      <ImageField
+        id="t-photo"
+        label="Photo"
+        description="Optional. A photo of the person, with their permission."
+        shape="square"
+        mediaId={photoMediaId}
+        onChange={setPhotoMediaId}
+      />
       <div className="flex items-center justify-between rounded-lg border p-3">
         <div className="space-y-0.5">
           <div className="text-sm font-medium">Featured</div>

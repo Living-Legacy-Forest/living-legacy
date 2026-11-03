@@ -11,6 +11,8 @@ import {
 } from '@/components/bulk/list-tools';
 import { DateTimePicker } from '@/components/date-time-picker';
 import {
+  CheckIcon,
+  ChevronDownIcon,
   ExternalLink,
   NewspaperIcon,
   PanelRightIcon,
@@ -18,6 +20,7 @@ import {
   PlusIcon,
   StarIcon,
   Trash2Icon,
+  XIcon,
 } from '@/components/icons';
 import { ImageField, useMediaItem } from '@/components/media/image-field';
 import {
@@ -33,6 +36,14 @@ import {
 } from '@/components/ui/alert-dialog';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
+import {
+  Command,
+  CommandEmpty,
+  CommandGroup,
+  CommandInput,
+  CommandItem,
+  CommandList,
+} from '@/components/ui/command';
 import {
   Dialog,
   DialogClose,
@@ -52,6 +63,7 @@ import {
 } from '@/components/ui/empty';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import {
   Select,
   SelectContent,
@@ -552,6 +564,95 @@ function CoveragePane({
   );
 }
 
+/**
+ * One category, picked from those already in use or typed new. Styled as a
+ * select so it matches Kind beside it.
+ */
+function CategoryPicker({
+  id,
+  value,
+  options,
+  onChange,
+}: {
+  id: string;
+  value: string;
+  options: string[];
+  onChange: (value: string) => void;
+}) {
+  const [open, setOpen] = useState(false);
+  const [search, setSearch] = useState('');
+  const query = search.trim().slice(0, 40);
+  const exists = options.some((o) => o.toLowerCase() === query.toLowerCase());
+  const pick = (next: string) => {
+    onChange(next);
+    setOpen(false);
+  };
+
+  return (
+    <Popover
+      open={open}
+      onOpenChange={(next) => {
+        setOpen(next);
+        if (!next) setSearch('');
+      }}
+    >
+      <PopoverTrigger
+        render={
+          <Button
+            id={id}
+            type="button"
+            variant="outline"
+            className={cn(
+              'w-full justify-between pr-2 pl-2.5 font-normal',
+              !value && 'text-muted-foreground'
+            )}
+          />
+        }
+      >
+        <span className="truncate">{value || 'None'}</span>
+        <ChevronDownIcon aria-hidden className="text-muted-foreground size-4" />
+      </PopoverTrigger>
+      <PopoverContent align="start" className="w-60 p-0">
+        <Command>
+          <CommandInput
+            placeholder="Find or create a category…"
+            value={search}
+            onValueChange={setSearch}
+          />
+          <CommandList>
+            <CommandEmpty className="text-muted-foreground p-4 text-center text-xs">
+              No categories yet. Type one to create it.
+            </CommandEmpty>
+            <CommandGroup>
+              {options.map((option) => (
+                <CommandItem key={option} value={option} onSelect={() => pick(option)}>
+                  <CheckIcon
+                    aria-hidden
+                    className={cn('size-3.5', option === value ? 'opacity-100' : 'opacity-0')}
+                  />
+                  {option}
+                </CommandItem>
+              ))}
+              {query && !exists && (
+                <CommandItem value={`create ${query}`} onSelect={() => pick(query)}>
+                  <PlusIcon aria-hidden className="size-3.5" />
+                  Create “{query}”
+                </CommandItem>
+              )}
+              {value && (
+                <CommandItem value="clear category" onSelect={() => pick('')}>
+                  <XIcon aria-hidden className="size-3.5" />
+                  No category
+                </CommandItem>
+              )}
+            </CommandGroup>
+          </CommandList>
+        </Command>
+      </PopoverContent>
+    </Popover>
+  );
+}
+
 function Hint({ children }: { children: React.ReactNode }) {
   return <p className="text-muted-foreground text-xs">{children}</p>;
 }
@@ -672,19 +773,12 @@ function CoverageForm({
         </div>
         <div className="space-y-1.5">
           <Label htmlFor="mc-category">Category</Label>
-          <Input
+          <CategoryPicker
             id="mc-category"
-            list="mc-categories"
-            maxLength={40}
             value={category}
-            onChange={(e) => setCategory(e.target.value)}
-            placeholder="News"
+            options={categories}
+            onChange={setCategory}
           />
-          <datalist id="mc-categories">
-            {categories.map((c) => (
-              <option key={c} value={c} />
-            ))}
-          </datalist>
         </div>
       </div>
       <Hint>The category drives the topic filter on the page, e.g. Science or Broadcast.</Hint>

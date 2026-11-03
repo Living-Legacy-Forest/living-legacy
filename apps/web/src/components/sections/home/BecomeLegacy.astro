@@ -1,9 +1,8 @@
 ---
 /**
- * "Become a Living Legacy": the pitch, a link to the Flodesk info form, and
- * the process video. Autoplay is applied by script rather than the HTML
- * attribute, so a visitor who prefers reduced motion gets the poster frame
- * instead of a moving video (see the inline script below). A pause and play
+ * "Become a Living Legacy": the pitch and the process video. Autoplay is
+ * applied by script rather than the HTML attribute, so a visitor who prefers
+ * reduced motion gets the poster frame instead of a moving video (see the inline script below). A pause and play
  * button sits on the video, since moving content that runs longer than five
  * seconds needs a way to stop it (WCAG 2.2.2).
  *
@@ -12,9 +11,7 @@
  * running twice its height.
  */
 import HugeIcon from '@/components/ui/HugeIcon.astro';
-import { ArrowRight02Icon, PauseIcon, PlayIcon } from '@hugeicons/core-free-icons';
-import { buttonVariants } from '@/components/ui/button';
-import { FLODESK_HREF } from './constants';
+import { PauseIcon, PlayIcon } from '@hugeicons/core-free-icons';
 ---
 
 <section class="border-bark/20 scroll-mt-24 border-t py-24 lg:py-32">
@@ -35,16 +32,6 @@ import { FLODESK_HREF } from './constants';
         only honours the memory of loved ones but empowers individuals to heal, creating a lasting
         legacy of love and hope for future generations.
       </p>
-      <a
-        href={FLODESK_HREF}
-        target="_blank"
-        rel="noopener noreferrer"
-        class:list={[buttonVariants(), 'mt-9']}
-      >
-        Get more info
-        <HugeIcon icon={ArrowRight02Icon} data-icon="inline-end" aria-hidden="true" />
-        <span class="sr-only">(opens in new tab)</span>
-      </a>
     </div>
 
     <div class="relative lg:col-span-7" data-video-frame data-reveal="clip">

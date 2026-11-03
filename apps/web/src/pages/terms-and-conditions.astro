@@ -28,12 +28,12 @@
 // Twitter/LinkedIn share widget with no working share targets without its
 // original plugin, and a page-specific 2018 mini footer (address,
 // copyright, social links) that would sit directly above this site's real,
-// current footer and only contradict it.
+// current footer and only contradict it. The Wellington Dam address block
+// that followed the terms is dropped too.
 import BaseLayout from '@/layouts/BaseLayout.astro';
 import BlogToc from '@/components/blog/BlogToc.astro';
 import Prose from '@/components/Prose.astro';
 import { buttonVariants } from '@/components/ui/button';
-import { Separator } from '@/components/ui/separator';
 
 const title = 'Terms and conditions';
 const description =
@@ -257,23 +257,5 @@ const headings = [
         </Prose>
       </div>
     </div>
-
-    <section
-      data-reveal
-      class="mt-16 max-w-3xl lg:ml-[calc(12rem+4rem)]"
-      aria-labelledby="terms-location-heading"
-    >
-      <Separator className="mb-12" />
-      <p class="eyebrow">Information</p>
-      <h2 id="terms-location-heading" class="section-title mt-4">Wellington Dam Memorial Forest</h2>
-      <dl class="divide-bark/15 border-bark/15 mt-8 divide-y border-y text-base">
-        <div class="flex items-baseline justify-between gap-6 py-3.5">
-          <dt class="text-ink-soft shrink-0">Address</dt>
-          <dd class="text-ink text-right">
-            1 Wellington Dam Road, Worsley, Western Australia, Australia
-          </dd>
-        </div>
-      </dl>
-    </section>
   </div>
 </BaseLayout>

@@ -1,5 +1,6 @@
+import { mediaVariantWidths } from '@ll/db/enums';
 import type { MediaItem } from '@/server/media';
-import { prepareImage } from './prepare-image';
+import { makeSizes, prepareImage } from './prepare-image';
 
 export const IMAGE_ACCEPT = 'image/jpeg,image/png,image/webp,image/gif';
 
@@ -28,6 +29,9 @@ export async function uploadMedia(original: File): Promise<MediaItem> {
     form.set('width', String(size.width));
     form.set('height', String(size.height));
   }
+  // Best effort: without them the website loads the full-size image instead.
+  const sizes = await makeSizes(file, mediaVariantWidths).catch(() => []);
+  for (const s of sizes) form.set(`size-${s.width}`, s.file);
   const res = await fetch('/api/media', { method: 'POST', body: form });
   const body = (await res.json().catch(() => null)) as (MediaItem & { error?: string }) | null;
   if (!res.ok || !body?.id) throw new Error(body?.error ?? 'Upload failed.');

@@ -31,7 +31,6 @@ import { Route as ApiAuthSplatRouteImport } from './routes/api/auth/$'
 import { Route as ApiAvatarIndexRouteImport } from './routes/api/avatar/index'
 import { Route as ApiAvatarKeyRouteImport } from './routes/api/avatar/$key'
 import { Route as ApiMediaIndexRouteImport } from './routes/api/media/index'
-import { Route as ApiMediaIdRouteImport } from './routes/api/media/$id'
 import { Route as ApiV1TermsRouteImport } from './routes/api/v1/terms'
 import { Route as PreviewPostsPostIdRouteImport } from './routes/preview/posts/$postId'
 import { Route as AppPostsCategoriesIndexRouteImport } from './routes/_app/posts/categories/index'
@@ -148,11 +147,6 @@ const ApiMediaIndexRoute = ApiMediaIndexRouteImport.update({
   path: '/api/media/',
   getParentRoute: () => rootRouteImport,
 } as any)
-const ApiMediaIdRoute = ApiMediaIdRouteImport.update({
-  id: '/api/media/$id',
-  path: '/api/media/$id',
-  getParentRoute: () => rootRouteImport,
-} as any)
 const ApiV1TermsRoute = ApiV1TermsRouteImport.update({
   id: '/api/v1/terms',
   path: '/api/v1/terms',
@@ -191,7 +185,6 @@ export interface FileRoutesByFullPath {
   '/posts/new': typeof AppPostsNewRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
   '/api/avatar/$key': typeof ApiAvatarKeyRoute
-  '/api/media/$id': typeof ApiMediaIdRoute
   '/api/v1/terms': typeof ApiV1TermsRoute
   '/preview/posts/$postId': typeof PreviewPostsPostIdRoute
   '/activity/': typeof AppActivityIndexRoute
@@ -221,7 +214,6 @@ export interface FileRoutesByTo {
   '/posts/new': typeof AppPostsNewRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
   '/api/avatar/$key': typeof ApiAvatarKeyRoute
-  '/api/media/$id': typeof ApiMediaIdRoute
   '/api/v1/terms': typeof ApiV1TermsRoute
   '/preview/posts/$postId': typeof PreviewPostsPostIdRoute
   '/activity': typeof AppActivityIndexRoute
@@ -253,7 +245,6 @@ export interface FileRoutesById {
   '/_app/posts/new': typeof AppPostsNewRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
   '/api/avatar/$key': typeof ApiAvatarKeyRoute
-  '/api/media/$id': typeof ApiMediaIdRoute
   '/api/v1/terms': typeof ApiV1TermsRoute
   '/preview/posts/$postId': typeof PreviewPostsPostIdRoute
   '/_app/activity/': typeof AppActivityIndexRoute
@@ -285,7 +276,6 @@ export interface FileRouteTypes {
     | '/posts/new'
     | '/api/auth/$'
     | '/api/avatar/$key'
-    | '/api/media/$id'
     | '/api/v1/terms'
     | '/preview/posts/$postId'
     | '/activity/'
@@ -315,7 +305,6 @@ export interface FileRouteTypes {
     | '/posts/new'
     | '/api/auth/$'
     | '/api/avatar/$key'
-    | '/api/media/$id'
     | '/api/v1/terms'
     | '/preview/posts/$postId'
     | '/activity'
@@ -346,7 +335,6 @@ export interface FileRouteTypes {
     | '/_app/posts/new'
     | '/api/auth/$'
     | '/api/avatar/$key'
-    | '/api/media/$id'
     | '/api/v1/terms'
     | '/preview/posts/$postId'
     | '/_app/activity/'
@@ -375,7 +363,6 @@ export interface RootRouteChildren {
   LoginRoute: typeof LoginRoute
   ApiAuthSplatRoute: typeof ApiAuthSplatRoute
   ApiAvatarKeyRoute: typeof ApiAvatarKeyRoute
-  ApiMediaIdRoute: typeof ApiMediaIdRoute
   ApiV1TermsRoute: typeof ApiV1TermsRoute
   PreviewPostsPostIdRoute: typeof PreviewPostsPostIdRoute
   ApiAvatarIndexRoute: typeof ApiAvatarIndexRoute
@@ -540,13 +527,6 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiMediaIndexRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/api/media/$id': {
-      id: '/api/media/$id'
-      path: '/api/media/$id'
-      fullPath: '/api/media/$id'
-      preLoaderRoute: typeof ApiMediaIdRouteImport
-      parentRoute: typeof rootRouteImport
-    }
     '/api/v1/terms': {
       id: '/api/v1/terms'
       path: '/api/v1/terms'
@@ -641,7 +621,6 @@ const rootRouteChildren: RootRouteChildren = {
   LoginRoute: LoginRoute,
   ApiAuthSplatRoute: ApiAuthSplatRoute,
   ApiAvatarKeyRoute: ApiAvatarKeyRoute,
-  ApiMediaIdRoute: ApiMediaIdRoute,
   ApiV1TermsRoute: ApiV1TermsRoute,
   PreviewPostsPostIdRoute: PreviewPostsPostIdRoute,
   ApiAvatarIndexRoute: ApiAvatarIndexRoute,

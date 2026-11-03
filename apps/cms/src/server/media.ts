@@ -1,10 +1,12 @@
 import { media } from '@ll/db/schema';
 import { createServerFn } from '@tanstack/react-start';
+import { getRequest } from '@tanstack/react-start/server';
 import { env } from 'cloudflare:workers';
 import { desc, eq, inArray } from 'drizzle-orm';
 import { z } from 'zod';
 import { getDb } from '@/lib/db';
 import { authMiddleware, requirePermission } from '@/lib/session';
+import { forgetCachedMedia } from './media-delivery';
 
 function toItem(r: typeof media.$inferSelect) {
   return {
@@ -66,13 +68,19 @@ export const deleteMedia = createServerFn({ method: 'POST' })
   .handler(async ({ data }) => {
     const db = getDb();
     const rows = await db
-      .select({ id: media.id, r2Key: media.r2Key })
+      .select({ id: media.id, r2Key: media.r2Key, variants: media.variants })
       .from(media)
       .where(inArray(media.id, data.ids));
     // Anything using this image (a post, team member, testimonial or media coverage) is set to
     // null by the FK;
     // the R2 object itself has no such guard, so delete it ourselves.
-    await Promise.allSettled(rows.map((r) => env.MEDIA.delete(r.r2Key)));
+    await Promise.allSettled(
+      rows.map((r) => env.MEDIA.delete([r.r2Key, ...(r.variants ?? []).map((v) => v.key)]))
+    );
     await db.delete(media).where(inArray(media.id, data.ids));
+    await forgetCachedMedia(
+      new URL(getRequest().url).origin,
+      rows.map((r) => r.id)
+    );
     return { removed: rows.length };
   });

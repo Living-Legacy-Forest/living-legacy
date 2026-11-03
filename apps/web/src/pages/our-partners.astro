@@ -1,6 +1,7 @@
 ---
-// Our partners. Carries the live page's hero (as text beside a photo, not text over
-// the stretched community icon live used), four partner cards, three
+// Our partners. Carries the live page's hero (as text beside its team photo, not
+// text over the stretched community icon live used; the photo was live's banner
+// under "Our partners", so that banner is dropped), four partner cards, three
 // benefit cards, the become-a-partner form (kept at id="become-a-partner-form"
 // so /our-partners/#become-a-partner-form keeps working) and the eight-image
 // gallery (live/out/our-partners.txt).
@@ -96,13 +97,13 @@ const description =
       </div>
       <div class="lg:col-span-6">
         <Image
-          src={galleryWellingtonTreeSection}
-          alt="A memorial marker among the trees of a memorial forest"
+          src={newsTheSenior}
+          alt="Two people standing in a memorial garden beside a memorial marker"
           widths={[480, 720, 960, 1200]}
           sizes="(min-width: 1024px) 34rem, 100vw"
           loading="eager"
           fetchpriority="high"
-          class="aspect-[4/3] w-full rounded-2xl object-cover shadow-[0_30px_60px_-30px_rgb(23_35_28/0.55)] outline outline-black/10 lg:aspect-[4/5]"
+          class="aspect-[4/3] w-full rounded-2xl object-cover shadow-[0_30px_60px_-30px_rgb(23_35_28/0.55)] outline outline-black/10"
         />
       </div>
     </div>
@@ -114,10 +115,6 @@ const description =
       <Separator className="mb-24 lg:mb-32" />
       <p class="eyebrow">Our network</p>
       <h2 class="section-title mt-4">Our partners</h2>
-
-      <div class="border-bark/20 mt-10 aspect-[21/9] overflow-hidden rounded-2xl border">
-        <Image src={newsTheSenior} alt="" width={1200} class="h-full w-full object-cover" />
-      </div>
 
       <div class="mt-10 grid gap-6 sm:grid-cols-2">
         {

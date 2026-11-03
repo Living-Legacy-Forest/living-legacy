@@ -24,6 +24,8 @@ export type NavItem = {
     | '/'
     | '/posts'
     | '/posts/new'
+    | '/posts/categories'
+    | '/posts/tags'
     | '/activity'
     | '/api-keys'
     | '/announcements'
@@ -56,8 +58,8 @@ export const navGroups: NavGroup[] = [
         items: [
           { title: 'All posts', to: '/posts' },
           { title: 'Add new', to: '/posts/new' },
-          { title: 'Categories' },
-          { title: 'Tags' },
+          { title: 'Categories', to: '/posts/categories' },
+          { title: 'Tags', to: '/posts/tags' },
         ],
       },
       { title: 'Media', icon: ImageIcon, to: '/media', permission: 'media:write' },

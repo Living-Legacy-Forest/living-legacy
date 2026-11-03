@@ -129,17 +129,20 @@
   --brand: #8fb08c;
 }
 
-/* Sidebar collapse eases out instead of moving linearly, and is instant when
-   the user asks for reduced motion. Unlayered so it wins over the utilities. */
+/* Sidebar collapse (and the hover-to-peek flyout, which shares the same
+   elements) eases out instead of moving linearly, and is instant when the
+   user asks for reduced motion. Unlayered so it wins over the utilities. */
 [data-slot='sidebar-gap'],
-[data-slot='sidebar-container'] {
+[data-slot='sidebar-container'],
+[data-slot='sidebar-inner'] {
   transition-duration: 220ms;
   transition-timing-function: cubic-bezier(0.25, 1, 0.5, 1);
 }
 
 @media (prefers-reduced-motion: reduce) {
   [data-slot='sidebar-gap'],
-  [data-slot='sidebar-container'] {
+  [data-slot='sidebar-container'],
+  [data-slot='sidebar-inner'] {
     transition-duration: 0ms;
   }
 }
@@ -151,6 +154,8 @@
 
   html {
     color-scheme: light;
+    /* Stops the elastic rubber-band bounce past the top/bottom of the page. */
+    overscroll-behavior-y: none;
   }
 
   html.dark {

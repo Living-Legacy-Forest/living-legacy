@@ -21,6 +21,7 @@ import {
   MegaphoneIcon,
   PanelRightIcon,
   PlusIcon,
+  SendIcon,
   TriangleAlertIcon,
 } from '@/components/icons';
 import { Badge } from '@/components/ui/badge';
@@ -50,6 +51,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { formatDateTime, zoneName } from '@/lib/format';
 import { reportInvalid } from '@/lib/form-validation';
 import { useAction } from '@/lib/use-action';
+import { useTimeZone } from '@/lib/use-time-zone';
 import { cn } from '@/lib/utils';
 import {
   type Announcement,
@@ -78,9 +80,9 @@ const statusLabels: Record<AnnouncementStatus, string> = {
 /** Live first, then upcoming in date order, then switched off, then finished. */
 const statusOrder: Record<AnnouncementStatus, number> = { live: 0, scheduled: 1, off: 2, ended: 3 };
 
-function windowLabel(a: Pick<Announcement, 'startsAt' | 'endsAt'>) {
-  const from = a.startsAt === null ? 'Now' : formatDateTime(a.startsAt);
-  const to = a.endsAt === null ? 'no end' : formatDateTime(a.endsAt);
+function windowLabel(a: Pick<Announcement, 'startsAt' | 'endsAt'>, zone: string) {
+  const from = a.startsAt === null ? 'Now' : formatDateTime(a.startsAt, zone);
+  const to = a.endsAt === null ? 'no end' : formatDateTime(a.endsAt, zone);
   return `${from} to ${to}`;
 }
 
@@ -130,6 +132,15 @@ export function AnnouncementsPage({
     if (!result) return;
     if (paneTarget?.kind === 'edit' && ids.includes(paneTarget.id)) setPaneTarget(null);
     selection.clear();
+  }
+
+  async function quickPublish(a: Announcement, currentStatus: AnnouncementStatus) {
+    // Ended means its expiry already passed; clear it so publishing actually goes live.
+    const endsAt = currentStatus === 'ended' ? null : a.endsAt;
+    await run(
+      () => saveAnnouncement({ data: { ...a, enabled: true, endsAt } }),
+      'Announcement published.'
+    );
   }
 
   const form = (
@@ -224,8 +235,10 @@ export function AnnouncementsPage({
                     canWrite={canWrite}
                     checked={selection.isChecked(a.id)}
                     selecting={selection.checkedIds.length > 0}
+                    pending={pending}
                     onToggle={() => selection.toggle(a.id)}
                     onSelect={() => canWrite && open({ kind: 'edit', id: a.id })}
+                    onPublish={() => quickPublish(a, status(a))}
                   />
                 ))}
               </ul>
@@ -345,8 +358,10 @@ function AnnouncementListItem({
   canWrite,
   checked,
   selecting,
+  pending,
   onToggle,
   onSelect,
+  onPublish,
 }: {
   announcement: Announcement;
   status: AnnouncementStatus;
@@ -355,10 +370,13 @@ function AnnouncementListItem({
   canWrite: boolean;
   checked: boolean;
   selecting: boolean;
+  pending: boolean;
   onToggle: () => void;
   onSelect: () => void;
+  onPublish: () => void;
 }) {
   const colour = backgrounds.find((b) => b.value === a.background)!;
+  const timeZone = useTimeZone();
 
   return (
     <li
@@ -403,9 +421,24 @@ function AnnouncementListItem({
         </span>
         <span className="text-muted-foreground mt-0.5 block truncate text-xs">{a.message}</span>
         <span className="text-muted-foreground mt-0.5 block truncate text-xs tabular-nums">
-          {windowLabel(a)}
+          {windowLabel(a, timeZone)}
         </span>
       </button>
+      {canWrite && (status === 'off' || status === 'ended') && (
+        <Button
+          variant="ghost"
+          size="sm"
+          disabled={pending}
+          onClick={(e) => {
+            e.stopPropagation();
+            onPublish();
+          }}
+          className="mt-1.5 shrink-0"
+        >
+          <SendIcon aria-hidden data-icon="inline-start" />
+          Publish
+        </Button>
+      )}
     </li>
   );
 }
@@ -462,7 +495,8 @@ function AnnouncementForm({
     (announcementClashes([...rest, draft], now).get(draft.id) ?? []).map((o) => o.id)
   );
   const overlaps = values.enabled ? rest.filter((o) => overlapIds.has(o.id)) : [];
-  const zone = zoneName();
+  const timeZone = useTimeZone();
+  const zone = zoneName(timeZone);
 
   async function submit(e: React.FormEvent) {
     e.preventDefault();
@@ -626,7 +660,7 @@ function AnnouncementForm({
       </fieldset>
 
       <fieldset className="space-y-3">
-        <legend className="mb-2 text-sm font-medium">Schedule ({zone}, Melbourne time)</legend>
+        <legend className="mb-2 text-sm font-medium">Schedule ({zone})</legend>
         <div className="grid gap-3 sm:grid-cols-2">
           <div className="space-y-1.5">
             <Label htmlFor="a-start">Go live</Label>
@@ -728,7 +762,7 @@ function AnnouncementForm({
         {announcement && (
           <p className="text-muted-foreground text-center text-xs">
             {statusLabels[announcementStatus({ ...draft, id: announcement.id }, now)]}:{' '}
-            {windowLabel({ startsAt, endsAt })}
+            {windowLabel({ startsAt, endsAt }, timeZone)}
           </p>
         )}
       </div>

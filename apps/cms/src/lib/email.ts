@@ -1,6 +1,7 @@
 import type { Role } from '@llf/content';
 import { env } from 'cloudflare:workers';
-import { formatDateTime } from './format';
+import { formatDateTime, zoneName } from './format';
+import { readSiteSettings } from './site-settings';
 
 const RESEND_ENDPOINT = 'https://api.resend.com/emails';
 
@@ -175,7 +176,9 @@ const textFooter = [
 
 export async function sendMagicLinkEmail(to: string, url: string): Promise<void> {
   const subject = 'Your sign-in link for Living Legacy';
-  const requested = `${formatDateTime(Date.now())} (Melbourne time)`;
+  const { timeZone } = await readSiteSettings();
+  const now = Date.now();
+  const requested = `${formatDateTime(now, timeZone)} (${zoneName(timeZone, now)})`;
   const text = [
     'Sign in to the Living Legacy CMS with this link:',
     '',

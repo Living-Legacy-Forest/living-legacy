@@ -58,6 +58,7 @@ import {
 import { formatDate, formatRelative } from '@/lib/format';
 import type { SessionUser } from '@/lib/session';
 import { useAction } from '@/lib/use-action';
+import { useTimeZone } from '@/lib/use-time-zone';
 import { cn } from '@/lib/utils';
 import {
   POSTS_PAGE_SIZE,
@@ -450,6 +451,7 @@ function PostListItem({
   onSelect: () => void;
 }) {
   const navigate = useNavigate();
+  const timeZone = useTimeZone();
   const date = inTrash
     ? row.deletedAt
     : row.status === 'published'
@@ -499,7 +501,7 @@ function PostListItem({
             {row.title || 'Untitled'}
           </span>
           <span className="text-muted-foreground shrink-0 text-xs tabular-nums">
-            {date ? formatDate(date) : ''}
+            {date ? formatDate(date, timeZone) : ''}
           </span>
         </span>
         <span className="text-muted-foreground mt-0.5 flex min-w-0 items-center gap-1 text-xs">

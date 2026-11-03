@@ -6,13 +6,15 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { displayTime, formatDateTime, fromZoned, parseTime, toZoned, zoneName } from '@/lib/format';
+import { useTimeZone } from '@/lib/use-time-zone';
 import { cn } from '@/lib/utils';
 
 const pad = (n: number) => String(n).padStart(2, '0');
 
 /**
- * A date and time in Melbourne time, picked from a calendar with the time typed
- * the way people write it ("9am", "5:30 pm"). Optional: it can be cleared.
+ * A date and time in the site's configured time zone, picked from a calendar
+ * with the time typed the way people write it ("9am", "5:30 pm"). Optional:
+ * it can be cleared.
  */
 export function DateTimePicker({
   id,
@@ -32,22 +34,26 @@ export function DateTimePicker({
   /** Days before this timestamp's day cannot be picked. */
   minDate?: number | null;
 }) {
-  const wall = value === null ? null : toZoned(value);
+  const zone = useTimeZone();
+  const wall = value === null ? null : toZoned(value, zone);
   const day = wall ? new Date(wall.year, wall.month, wall.day) : undefined;
   const time = wall ? `${pad(wall.hour)}:${pad(wall.minute)}` : defaultTime;
   const [timeText, setTimeText] = useState(displayTime(time));
   const [open, setOpen] = useState(false);
-  const minWall = minDate === null || minDate === undefined ? null : toZoned(minDate);
+  const minWall = minDate === null || minDate === undefined ? null : toZoned(minDate, zone);
 
   const at = (nextDay: Date, nextTime: string) => {
     const [hour = 0, minute = 0] = nextTime.split(':').map(Number);
-    return fromZoned({
-      year: nextDay.getFullYear(),
-      month: nextDay.getMonth(),
-      day: nextDay.getDate(),
-      hour,
-      minute,
-    });
+    return fromZoned(
+      {
+        year: nextDay.getFullYear(),
+        month: nextDay.getMonth(),
+        day: nextDay.getDate(),
+        hour,
+        minute,
+      },
+      zone
+    );
   };
 
   return (
@@ -73,7 +79,9 @@ export function DateTimePicker({
           }
         >
           <CalendarClockIcon aria-hidden data-icon="inline-start" />
-          <span className="truncate">{value === null ? placeholder : formatDateTime(value)}</span>
+          <span className="truncate">
+            {value === null ? placeholder : formatDateTime(value, zone)}
+          </span>
         </PopoverTrigger>
         <PopoverContent align="start" className="w-[20rem] p-0">
           <Calendar
@@ -114,7 +122,9 @@ export function DateTimePicker({
               }}
               className="h-8 w-28"
             />
-            <span className="text-muted-foreground text-xs">{zoneName(value ?? undefined)}</span>
+            <span className="text-muted-foreground text-xs">
+              {zoneName(zone, value ?? undefined)}
+            </span>
             <Button type="button" size="sm" className="ml-auto" onClick={() => setOpen(false)}>
               Done
             </Button>

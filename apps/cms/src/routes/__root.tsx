@@ -13,7 +13,7 @@ import {
 import { Toaster } from '@/components/ui/sonner';
 import { TooltipProvider } from '@/components/ui/tooltip';
 import { useThemeSync } from '@/lib/use-theme-sync';
-import { getSiteTheme } from '@/server/settings';
+import { getSiteTheme, getSiteTimeZone } from '@/server/settings';
 import styles from '../styles.css?url';
 
 // Runs before hydration so a "system" preference never flashes the wrong
@@ -22,7 +22,10 @@ import styles from '../styles.css?url';
 const THEME_INIT_SCRIPT = `(function(){try{var d=document.documentElement;if(d.dataset.themePref==='system'&&window.matchMedia('(prefers-color-scheme: dark)').matches){d.classList.add('dark');}}catch(e){}})();`;
 
 export const Route = createRootRoute({
-  loader: () => getSiteTheme(),
+  loader: async () => {
+    const [theme, timeZone] = await Promise.all([getSiteTheme(), getSiteTimeZone()]);
+    return { theme, timeZone };
+  },
   head: () => ({
     meta: [
       { charSet: 'utf-8' },
@@ -44,7 +47,7 @@ export const Route = createRootRoute({
 });
 
 function RootDocument({ children }: { children: ReactNode }) {
-  const theme = Route.useLoaderData();
+  const { theme } = Route.useLoaderData();
   useThemeSync(theme);
 
   return (

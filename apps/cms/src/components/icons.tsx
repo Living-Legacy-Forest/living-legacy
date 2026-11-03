@@ -80,6 +80,7 @@ import { LeftToRightListNumberIcon as AnimatedLeftToRightListNumberIcon } from '
 import { LinkOffIcon as AnimatedLinkOffIcon } from '@animateicons/react/huge/link-off-icon';
 import { Message01Icon as AnimatedMessage01Icon } from '@animateicons/react/huge/message-0-1-icon';
 import { MinusSignIcon as AnimatedMinusSignIcon } from '@animateicons/react/huge/minus-sign-icon';
+import { NewspaperIcon as AnimatedNewspaperIcon } from '@animateicons/react/huge/newspaper-icon';
 import { Pen01Icon as AnimatedPen01Icon } from '@animateicons/react/huge/pen-0-1-icon';
 import { QuoteIcon as AnimatedQuoteIcon } from '@animateicons/react/huge/quote-icon';
 import { SendIcon as AnimatedSendIcon } from '@animateicons/react/huge/send-icon';
@@ -303,4 +304,4 @@ export const CircleHelpIcon = animated(AnimatedHelpCircleIcon);
 export const FolderPlusIcon = animated(AnimatedFolderAddIcon);
 export const MailIcon = animated(AnimatedMail01Icon);
 export const SunMoonIcon = animated(AnimatedSun01Icon);
-export const NewspaperIcon = make(H.NewsIcon);
+export const NewspaperIcon = animated(AnimatedNewspaperIcon);

@@ -115,7 +115,7 @@ export function ImageField({
           >
             {item ? (
               <img
-                src={item.url}
+                src={`${item.url}?w=640`}
                 alt={item.alt || item.filename}
                 className="size-full object-cover"
               />
@@ -352,7 +352,7 @@ export function MediaPicker({
                     )}
                   >
                     <img
-                      src={m.url}
+                      src={`${m.url}?w=640`}
                       alt={m.alt || m.filename}
                       loading="lazy"
                       className="size-full object-cover"

@@ -56,16 +56,52 @@ export async function prepareImage(file: File, area?: PixelArea): Promise<File> 
     canvas.height
   );
   bitmap.close();
+  return encode(canvas, file);
+}
 
+/**
+ * Smaller copies of an already prepared image, one per width it is wider
+ * than, for the website to load where it shows the image small.
+ */
+export async function makeSizes(
+  file: File,
+  widths: readonly number[]
+): Promise<{ width: number; file: File }[]> {
+  if (!canCrop(file)) return [];
+  let bitmap: ImageBitmap;
+  try {
+    bitmap = await createImageBitmap(file);
+  } catch {
+    return [];
+  }
+  const sizes: { width: number; file: File }[] = [];
+  try {
+    for (const width of widths) {
+      if (width >= bitmap.width) continue;
+      const canvas = document.createElement('canvas');
+      canvas.width = width;
+      canvas.height = Math.max(1, Math.round((bitmap.height * width) / bitmap.width));
+      const ctx = canvas.getContext('2d')!;
+      ctx.imageSmoothingQuality = 'high';
+      ctx.drawImage(bitmap, 0, 0, canvas.width, canvas.height);
+      sizes.push({ width, file: await encode(canvas, file) });
+    }
+  } finally {
+    bitmap.close();
+  }
+  return sizes;
+}
+
+async function encode(canvas: HTMLCanvasElement, source: File): Promise<File> {
   // Safari cannot write WebP and hands back a PNG instead; JPEG is far smaller
   // for photos there, and PNG is kept only for a PNG, which may be transparent.
   let blob = await toBlob(canvas, 'image/webp');
   if (!blob || blob.type !== 'image/webp') {
-    blob = await toBlob(canvas, file.type === 'image/png' ? 'image/png' : 'image/jpeg');
+    blob = await toBlob(canvas, source.type === 'image/png' ? 'image/png' : 'image/jpeg');
   }
   if (!blob) throw new Error('Could not process this image.');
 
   const ext = blob.type.split('/')[1]!.replace('jpeg', 'jpg');
-  const name = `${file.name.replace(/\.[^.]+$/, '') || 'image'}.${ext}`;
+  const name = `${source.name.replace(/\.[^.]+$/, '') || 'image'}.${ext}`;
   return new File([blob], name, { type: blob.type });
 }

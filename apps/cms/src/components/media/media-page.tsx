@@ -234,7 +234,7 @@ function MediaTile({
         className="focus-visible:ring-ring absolute inset-0 outline-none focus-visible:ring-2"
       >
         <img
-          src={item.url}
+          src={`${item.url}?w=640`}
           alt={item.alt || item.filename}
           loading="lazy"
           className="size-full object-cover transition-opacity group-hover:opacity-80"
@@ -317,7 +317,7 @@ function MediaEditForm({
         </SheetHeader>
         <div className="grid flex-1 auto-rows-min gap-6 overflow-y-auto px-4">
           <img
-            src={item.url}
+            src={`${item.url}?w=1280`}
             alt={item.alt || item.filename}
             className="bg-muted max-h-72 w-full rounded-md border object-contain"
           />

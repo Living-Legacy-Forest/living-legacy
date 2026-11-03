@@ -4,6 +4,7 @@
  */
 import { type Role, can } from '@ll/content';
 import { schema } from '@ll/db';
+import { type MediaVariant, mediaVariantWidths } from '@ll/db/enums';
 import { createFileRoute } from '@tanstack/react-router';
 import { env } from 'cloudflare:workers';
 import { getAuth } from '@/lib/auth';
@@ -47,10 +48,32 @@ export const Route = createFileRoute('/api/media/')({
         };
 
         const ext = file.name.includes('.') ? file.name.split('.').pop() : undefined;
-        const r2Key = `${crypto.randomUUID()}${ext ? `.${ext}` : ''}`;
-        await env.MEDIA.put(r2Key, await file.arrayBuffer(), {
-          httpMetadata: { contentType: file.type },
-        });
+        const base = crypto.randomUUID();
+        const r2Key = `${base}${ext ? `.${ext}` : ''}`;
+        const width = dimension('width');
+
+        // Smaller copies made in the browser. One that is not actually smaller
+        // than the original would only waste space, so it is dropped.
+        const sizes: { variant: MediaVariant; file: File }[] = [];
+        for (const w of mediaVariantWidths) {
+          const copy = form.get(`size-${w}`);
+          if (!(copy instanceof File) || !ALLOWED_MIME.has(copy.type)) continue;
+          if (copy.type === 'image/gif' || copy.size >= file.size) continue;
+          if (width !== null && w >= width) continue;
+          const key = `${base}-w${w}.${copy.type.split('/')[1]!.replace('jpeg', 'jpg')}`;
+          sizes.push({ variant: { width: w, key, mime: copy.type }, file: copy });
+        }
+
+        await Promise.all([
+          env.MEDIA.put(r2Key, await file.arrayBuffer(), {
+            httpMetadata: { contentType: file.type },
+          }),
+          ...sizes.map(async (s) =>
+            env.MEDIA.put(s.variant.key, await s.file.arrayBuffer(), {
+              httpMetadata: { contentType: s.variant.mime },
+            })
+          ),
+        ]);
 
         const db = getDb();
         const [row] = await db
@@ -60,8 +83,9 @@ export const Route = createFileRoute('/api/media/')({
             filename: file.name || r2Key,
             mime: file.type,
             size: file.size,
-            width: dimension('width'),
+            width,
             height: dimension('height'),
+            variants: sizes.length ? sizes.map((s) => s.variant) : null,
             uploadedBy: session.user.id,
           })
           .returning();

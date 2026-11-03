@@ -8,6 +8,7 @@ import {
   uniqueIndex,
 } from 'drizzle-orm/sqlite-core';
 import { sql } from 'drizzle-orm';
+import type { MediaVariant } from '../enums';
 import { user } from './auth';
 import { id, lifecycle, richText, timestamps } from './columns';
 
@@ -19,6 +20,9 @@ export const media = sqliteTable('media', {
   size: integer('size').notNull(),
   width: integer('width'),
   height: integer('height'),
+  // Smaller copies made in the browser at upload, served for `?w=`. Images
+  // uploaded before these existed have none and are served full size.
+  variants: text('variants', { mode: 'json' }).$type<MediaVariant[]>(),
   alt: text('alt'),
   caption: text('caption'),
   uploadedBy: text('uploaded_by').references(() => user.id, { onDelete: 'set null' }),

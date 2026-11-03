@@ -11,7 +11,6 @@ import {
 } from '@/components/bulk/list-tools';
 import { DateTimePicker } from '@/components/date-time-picker';
 import {
-  CheckIcon,
   ChevronDownIcon,
   ExternalLink,
   NewspaperIcon,
@@ -625,11 +624,12 @@ function CategoryPicker({
             </CommandEmpty>
             <CommandGroup>
               {options.map((option) => (
-                <CommandItem key={option} value={option} onSelect={() => pick(option)}>
-                  <CheckIcon
-                    aria-hidden
-                    className={cn('size-3.5', option === value ? 'opacity-100' : 'opacity-0')}
-                  />
+                <CommandItem
+                  key={option}
+                  value={option}
+                  data-checked={option === value}
+                  onSelect={() => pick(option)}
+                >
                   {option}
                 </CommandItem>
               ))}

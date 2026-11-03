@@ -927,6 +927,7 @@ export function PostEditor({
               <fieldset disabled={contentLocked} className="min-w-0 disabled:opacity-70">
                 <ImageField
                   id="post-featured"
+                  aspect={3 / 2}
                   label="Featured image"
                   hideLabel
                   description="Shown at the top of the post and on blog cards."
@@ -1346,6 +1347,7 @@ function SeoFields({
       />
       <ImageField
         id="seo-share-image"
+        aspect={1.91}
         label="Share image"
         description="Shown when the post is shared on social media. Uses the featured image if left empty."
         mediaId={values.ogMediaId}

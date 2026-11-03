@@ -2,6 +2,7 @@ import { useRouter } from '@tanstack/react-router';
 import { useRef, useState } from 'react';
 import { toast } from 'sonner';
 import { CameraIcon } from '@/components/icons';
+import { useImageUpload } from '@/components/media/image-crop-dialog';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import {
@@ -91,6 +92,15 @@ export function UserPhotoDialog({
       'Photo updated.'
     );
 
+  // Photos are cropped square first; they show in a circle.
+  const crop = useImageUpload<void>({
+    aspect: 1,
+    upload: async (file) => {
+      await upload(file);
+    },
+    onUploaded: () => {},
+  });
+
   const remove = () =>
     act(
       'remove',
@@ -112,96 +122,99 @@ export function UserPhotoDialog({
   }
 
   return (
-    <Dialog
-      open={open}
-      onOpenChange={(next) => {
-        if (next) setAlt(user.imageAlt ?? '');
-        onOpenChange(next);
-      }}
-    >
-      <DialogContent className="sm:max-w-sm">
-        <form onSubmit={save}>
-          <DialogHeader>
-            <DialogTitle>{isSelf ? 'Your photo' : `${label}'s photo`}</DialogTitle>
-            <DialogDescription>Shown next to their name across the CMS.</DialogDescription>
-          </DialogHeader>
+    <>
+      <Dialog
+        open={open}
+        onOpenChange={(next) => {
+          if (next) setAlt(user.imageAlt ?? '');
+          onOpenChange(next);
+        }}
+      >
+        <DialogContent className="sm:max-w-sm">
+          <form onSubmit={save}>
+            <DialogHeader>
+              <DialogTitle>{isSelf ? 'Your photo' : `${label}'s photo`}</DialogTitle>
+              <DialogDescription>Shown next to their name across the CMS.</DialogDescription>
+            </DialogHeader>
 
-          <div className="my-5 space-y-5">
-            <div className="flex items-center gap-4">
-              <Avatar className="size-16">
-                {user.image && <AvatarImage src={user.image} alt={user.imageAlt ?? ''} />}
-                <AvatarFallback className="bg-muted text-base font-medium">
-                  {initials}
-                </AvatarFallback>
-              </Avatar>
-              <div className="flex flex-wrap gap-2">
-                <input
-                  ref={fileInput}
-                  type="file"
-                  accept={IMAGE_ACCEPT}
-                  className="hidden"
-                  onChange={(e) => {
-                    const file = e.target.files?.[0];
-                    if (file) void upload(file);
-                    e.target.value = '';
-                  }}
-                />
-                <Button
-                  type="button"
-                  variant="outline"
-                  size="sm"
-                  disabled={busy !== null}
-                  onClick={() => fileInput.current?.click()}
-                >
-                  {busy === 'upload' ? (
-                    <Spinner />
-                  ) : (
-                    <CameraIcon aria-hidden data-icon="inline-start" />
-                  )}
-                  {user.image ? 'Replace' : 'Upload'}
-                </Button>
-                {user.image && (
+            <div className="my-5 space-y-5">
+              <div className="flex items-center gap-4">
+                <Avatar className="size-16">
+                  {user.image && <AvatarImage src={user.image} alt={user.imageAlt ?? ''} />}
+                  <AvatarFallback className="bg-muted text-base font-medium">
+                    {initials}
+                  </AvatarFallback>
+                </Avatar>
+                <div className="flex flex-wrap gap-2">
+                  <input
+                    ref={fileInput}
+                    type="file"
+                    accept={IMAGE_ACCEPT}
+                    className="hidden"
+                    onChange={(e) => {
+                      const file = e.target.files?.[0];
+                      if (file) crop.start(file);
+                      e.target.value = '';
+                    }}
+                  />
                   <Button
                     type="button"
-                    variant="ghost"
+                    variant="outline"
                     size="sm"
-                    className="text-muted-foreground hover:text-destructive"
                     disabled={busy !== null}
-                    onClick={remove}
+                    onClick={() => fileInput.current?.click()}
                   >
-                    {busy === 'remove' && <Spinner />}
-                    Remove
+                    {busy === 'upload' ? (
+                      <Spinner />
+                    ) : (
+                      <CameraIcon aria-hidden data-icon="inline-start" />
+                    )}
+                    {user.image ? 'Replace' : 'Upload'}
                   </Button>
-                )}
+                  {user.image && (
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="sm"
+                      className="text-muted-foreground hover:text-destructive"
+                      disabled={busy !== null}
+                      onClick={remove}
+                    >
+                      {busy === 'remove' && <Spinner />}
+                      Remove
+                    </Button>
+                  )}
+                </div>
+              </div>
+
+              <div className="space-y-1.5">
+                <Label htmlFor="user-photo-alt">Alt text</Label>
+                <Input
+                  id="user-photo-alt"
+                  maxLength={300}
+                  value={alt}
+                  disabled={!user.image}
+                  onChange={(e) => setAlt(e.target.value)}
+                  placeholder={user.image ? 'Describe the photo' : 'Upload a photo first'}
+                />
+                <p className="text-muted-foreground text-xs">Read out by screen readers.</p>
               </div>
             </div>
 
-            <div className="space-y-1.5">
-              <Label htmlFor="user-photo-alt">Alt text</Label>
-              <Input
-                id="user-photo-alt"
-                maxLength={300}
-                value={alt}
-                disabled={!user.image}
-                onChange={(e) => setAlt(e.target.value)}
-                placeholder={user.image ? 'Describe the photo' : 'Upload a photo first'}
-              />
-              <p className="text-muted-foreground text-xs">Read out by screen readers.</p>
-            </div>
-          </div>
-
-          <DialogFooter>
-            <DialogClose render={<Button type="button" variant="outline" />}>Close</DialogClose>
-            <Button
-              type="submit"
-              disabled={busy !== null || !user.image || alt === (user.imageAlt ?? '')}
-            >
-              {busy === 'save' && <Spinner />}
-              Save
-            </Button>
-          </DialogFooter>
-        </form>
-      </DialogContent>
-    </Dialog>
+            <DialogFooter>
+              <DialogClose render={<Button type="button" variant="outline" />}>Close</DialogClose>
+              <Button
+                type="submit"
+                disabled={busy !== null || !user.image || alt === (user.imageAlt ?? '')}
+              >
+                {busy === 'save' && <Spinner />}
+                Save
+              </Button>
+            </DialogFooter>
+          </form>
+        </DialogContent>
+      </Dialog>
+      {crop.dialog}
+    </>
   );
 }

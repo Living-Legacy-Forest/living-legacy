@@ -2,6 +2,7 @@ import { useRouter } from '@tanstack/react-router';
 import { useEffect, useRef, useState } from 'react';
 import { toast } from 'sonner';
 import { CameraIcon, MailIcon } from '@/components/icons';
+import { useImageUpload } from '@/components/media/image-crop-dialog';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -69,6 +70,9 @@ export function ProfilePage({
     }
   }
 
+  // Photos are cropped square first; they show in a circle.
+  const crop = useImageUpload<void>({ aspect: 1, upload: uploadPicked, onUploaded: () => {} });
+
   const dirty =
     name !== user.name || bio !== (user.bio ?? '') || imageAlt !== (user.imageAlt ?? '');
 
@@ -118,10 +122,11 @@ export function ProfilePage({
               className="hidden"
               onChange={(e) => {
                 const file = e.target.files?.[0];
-                if (file) void uploadPicked(file);
+                if (file) crop.start(file);
                 e.target.value = '';
               }}
             />
+            {crop.dialog}
           </div>
           <div>
             <p className="text-sm font-medium">{user.name}</p>

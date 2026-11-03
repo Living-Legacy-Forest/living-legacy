@@ -1,4 +1,6 @@
+import { useRouter } from '@tanstack/react-router';
 import { useRef, useState } from 'react';
+import { toast } from 'sonner';
 import {
   ConfirmBulkDelete,
   RowCheckbox,
@@ -7,7 +9,8 @@ import {
   matchesSearch,
   useSelection,
 } from '@/components/bulk/list-tools';
-import { ImageIcon, Trash2Icon, UploadIcon } from '@/components/icons';
+import { CropIcon, ImageIcon, Trash2Icon, UploadIcon } from '@/components/icons';
+import { ImageCropDialog } from '@/components/media/image-crop-dialog';
 import { Button } from '@/components/ui/button';
 import {
   Empty,
@@ -30,7 +33,9 @@ import {
 } from '@/components/ui/sheet';
 import { Spinner } from '@/components/ui/spinner';
 import { Textarea } from '@/components/ui/textarea';
+import { readableError } from '@/lib/errors';
 import { formatBytes } from '@/lib/format';
+import { canCrop } from '@/lib/prepare-image';
 import { IMAGE_ACCEPT, uploadMedia } from '@/lib/upload-media';
 import { useAction } from '@/lib/use-action';
 import { cn } from '@/lib/utils';
@@ -183,7 +188,12 @@ export function MediaPage({ data }: { data: MediaListData }) {
       <Sheet open={editing !== null} onOpenChange={(open) => !open && setEditingId(null)}>
         <SheetContent>
           {editing && (
-            <MediaEditForm key={editing.id} item={editing} onClose={() => setEditingId(null)} />
+            <MediaEditForm
+              key={editing.id}
+              item={editing}
+              onClose={() => setEditingId(null)}
+              onOpen={setEditingId}
+            />
           )}
         </SheetContent>
       </Sheet>
@@ -234,9 +244,22 @@ function MediaTile({
   );
 }
 
-function MediaEditForm({ item, onClose }: { item: MediaItem; onClose: () => void }) {
+function MediaEditForm({
+  item,
+  onClose,
+  onOpen,
+}: {
+  item: MediaItem;
+  onClose: () => void;
+  /** Shows another file in the panel, e.g. a cropped copy. */
+  onOpen: (id: string) => void;
+}) {
+  const router = useRouter();
   const [alt, setAlt] = useState(item.alt);
   const [caption, setCaption] = useState(item.caption);
+  // The file being cropped, fetched back from the library.
+  const [cropping, setCropping] = useState<File | null>(null);
+  const [loadingCrop, setLoadingCrop] = useState(false);
   // Deleting asks again in the footer itself, rather than in a second modal.
   const [confirmingDelete, setConfirmingDelete] = useState(false);
   const { run, pending } = useAction();
@@ -250,87 +273,132 @@ function MediaEditForm({ item, onClose }: { item: MediaItem; onClose: () => void
     if (result !== undefined) onClose();
   }
 
+  async function startCrop() {
+    setLoadingCrop(true);
+    try {
+      const res = await fetch(item.url);
+      if (!res.ok) throw new Error('Could not load this image.');
+      const blob = await res.blob();
+      setCropping(new File([blob], item.filename, { type: blob.type || item.mime }));
+    } catch (error) {
+      toast.error(readableError(error));
+    } finally {
+      setLoadingCrop(false);
+    }
+  }
+
+  // A crop is saved as a new file, so anything already using this one keeps
+  // it as it is. The copy takes over the alt text and caption.
+  async function saveCopy(file: File) {
+    const copy = await uploadMedia(file);
+    if (item.alt || item.caption) {
+      await updateMedia({ data: { id: copy.id, alt: item.alt, caption: item.caption } });
+    }
+    setCropping(null);
+    await router.invalidate();
+    toast.success('Cropped copy saved. The original is unchanged.');
+    onOpen(copy.id);
+  }
+
   async function remove() {
     const result = await run(() => deleteMedia({ data: { ids: [item.id] } }), 'File removed.');
     if (result) onClose();
   }
 
   return (
-    <form onSubmit={save} className="flex min-h-0 flex-1 flex-col gap-4">
-      <SheetHeader>
-        <SheetTitle className="truncate pr-8">{item.filename}</SheetTitle>
-        <SheetDescription>
-          {formatBytes(item.size)}
-          {item.width && item.height ? ` · ${item.width}×${item.height}` : ''}
-        </SheetDescription>
-      </SheetHeader>
-      <div className="grid flex-1 auto-rows-min gap-6 overflow-y-auto px-4">
-        <img
-          src={item.url}
-          alt={item.alt || item.filename}
-          className="bg-muted max-h-72 w-full rounded-md border object-contain"
-        />
-        <div className="grid gap-3">
-          <Label htmlFor="m-alt">Alt text</Label>
-          <Input
-            id="m-alt"
-            maxLength={300}
-            value={alt}
-            onChange={(e) => setAlt(e.target.value)}
-            placeholder="Describes the image for screen readers and SEO"
+    <>
+      <form onSubmit={save} className="flex min-h-0 flex-1 flex-col gap-4">
+        <SheetHeader>
+          <SheetTitle className="truncate pr-8">{item.filename}</SheetTitle>
+          <SheetDescription>
+            {formatBytes(item.size)}
+            {item.width && item.height ? ` · ${item.width}×${item.height}` : ''}
+          </SheetDescription>
+        </SheetHeader>
+        <div className="grid flex-1 auto-rows-min gap-6 overflow-y-auto px-4">
+          <img
+            src={item.url}
+            alt={item.alt || item.filename}
+            className="bg-muted max-h-72 w-full rounded-md border object-contain"
           />
+          {canCrop({ type: item.mime }) && (
+            <div className="-mt-3 flex items-center gap-3">
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                disabled={loadingCrop || pending}
+                onClick={startCrop}
+              >
+                {loadingCrop ? <Spinner /> : <CropIcon aria-hidden data-icon="inline-start" />}
+                Crop a copy
+              </Button>
+              <p className="text-muted-foreground text-xs">The original stays as it is.</p>
+            </div>
+          )}
+          <div className="grid gap-3">
+            <Label htmlFor="m-alt">Alt text</Label>
+            <Input
+              id="m-alt"
+              maxLength={300}
+              value={alt}
+              onChange={(e) => setAlt(e.target.value)}
+              placeholder="Describes the image for screen readers and SEO"
+            />
+          </div>
+          <div className="grid gap-3">
+            <Label htmlFor="m-caption">Caption</Label>
+            <Textarea
+              id="m-caption"
+              rows={2}
+              maxLength={500}
+              value={caption}
+              onChange={(e) => setCaption(e.target.value)}
+            />
+          </div>
         </div>
-        <div className="grid gap-3">
-          <Label htmlFor="m-caption">Caption</Label>
-          <Textarea
-            id="m-caption"
-            rows={2}
-            maxLength={500}
-            value={caption}
-            onChange={(e) => setCaption(e.target.value)}
-          />
-        </div>
-      </div>
-      <SheetFooter>
-        {confirmingDelete ? (
-          <>
-            <p className="text-sm">
-              Delete this file for good? Anything using it, like a post or a team member, loses that
-              image.
-            </p>
-            <Button type="button" variant="destructive" disabled={pending} onClick={remove}>
-              {pending ? <Spinner /> : null}
-              Delete
-            </Button>
-            <Button
-              type="button"
-              variant="outline"
-              disabled={pending}
-              onClick={() => setConfirmingDelete(false)}
-            >
-              Cancel
-            </Button>
-          </>
-        ) : (
-          <>
-            <Button type="submit" disabled={pending}>
-              {pending ? <Spinner /> : null}
-              Save changes
-            </Button>
-            <SheetClose render={<Button type="button" variant="outline" />}>Close</SheetClose>
-            <Button
-              type="button"
-              variant="ghost"
-              className="text-destructive hover:text-destructive"
-              disabled={pending}
-              onClick={() => setConfirmingDelete(true)}
-            >
-              <Trash2Icon aria-hidden data-icon="inline-start" />
-              Delete
-            </Button>
-          </>
-        )}
-      </SheetFooter>
-    </form>
+        <SheetFooter>
+          {confirmingDelete ? (
+            <>
+              <p className="text-sm">
+                Delete this file for good? Anything using it, like a post or a team member, loses
+                that image.
+              </p>
+              <Button type="button" variant="destructive" disabled={pending} onClick={remove}>
+                {pending ? <Spinner /> : null}
+                Delete
+              </Button>
+              <Button
+                type="button"
+                variant="outline"
+                disabled={pending}
+                onClick={() => setConfirmingDelete(false)}
+              >
+                Cancel
+              </Button>
+            </>
+          ) : (
+            <>
+              <Button type="submit" disabled={pending}>
+                {pending ? <Spinner /> : null}
+                Save changes
+              </Button>
+              <SheetClose render={<Button type="button" variant="outline" />}>Close</SheetClose>
+              <Button
+                type="button"
+                variant="ghost"
+                className="text-destructive hover:text-destructive"
+                disabled={pending}
+                onClick={() => setConfirmingDelete(true)}
+              >
+                <Trash2Icon aria-hidden data-icon="inline-start" />
+                Delete
+              </Button>
+            </>
+          )}
+        </SheetFooter>
+      </form>
+      <ImageCropDialog file={cropping} onCancel={() => setCropping(null)} onDone={saveCopy} />
+    </>
   );
 }

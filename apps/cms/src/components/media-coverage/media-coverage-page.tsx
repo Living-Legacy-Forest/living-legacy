@@ -842,6 +842,7 @@ function CoverageForm({
       </div>
       <ImageField
         id="mc-image"
+        aspect={16 / 9}
         label="Image"
         description="Used for news articles and as the thumbnail for video cards."
         mediaId={imageMediaId}

@@ -1,0 +1,12 @@
+{
+  "$schema": "https://raw.githubusercontent.com/googleapis/release-please/main/schemas/config.json",
+  "bootstrap-sha": "fcd7151ba7408076b833c978bc6983bd3c82a2e8",
+  "include-component-in-tag": true,
+  "packages": {
+    "apps/cms": {
+      "release-type": "simple",
+      "component": "cms",
+      "changelog-path": "CHANGELOG.md"
+    }
+  }
+}

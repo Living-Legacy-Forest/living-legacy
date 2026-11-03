@@ -24,3 +24,6 @@ docs/superpowers/specs/
 apps/cms/src/routeTree.gen.ts
 apps/cms/worker-configuration.d.ts
 .wrangler/
+
+# Written by release-please
+apps/cms/CHANGELOG.md

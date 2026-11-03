@@ -1,0 +1,27 @@
+name: Release
+
+# Keeps a release pull request open that collects the CMS's changes since its
+# last release, from the Conventional Commit messages. Merging that pull
+# request bumps apps/cms/version.txt, writes the changelog and publishes a
+# GitHub release tagged cms-vX.Y.Z. The dashboard shows the version.
+on:
+  push:
+    branches: [master]
+
+permissions:
+  contents: write
+  pull-requests: write
+
+concurrency:
+  group: release
+  cancel-in-progress: false
+
+jobs:
+  release-please:
+    name: Release pull request
+    runs-on: ubuntu-latest
+    steps:
+      - uses: googleapis/release-please-action@v4
+        with:
+          config-file: release-please-config.json
+          manifest-file: .release-please-manifest.json

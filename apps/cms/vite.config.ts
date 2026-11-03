@@ -20,14 +20,14 @@ function commitSha(): string {
   }
 }
 
+// Passed as VITE_ variables rather than `define` globals: Vite fills
+// import.meta.env in dev as well as in builds, where bare globals are only
+// replaced at build time and are "not defined" under `vite dev`.
+process.env.VITE_APP_VERSION = readFileSync(new URL('version.txt', import.meta.url), 'utf8').trim();
+process.env.VITE_APP_COMMIT = commitSha();
+process.env.VITE_APP_BUILT_AT = new Date().toISOString();
+
 export default defineConfig({
-  define: {
-    __APP_VERSION__: JSON.stringify(
-      readFileSync(new URL('version.txt', import.meta.url), 'utf8').trim()
-    ),
-    __APP_COMMIT__: JSON.stringify(commitSha()),
-    __APP_BUILT_AT__: JSON.stringify(new Date().toISOString()),
-  },
   resolve: { tsconfigPaths: true },
   plugins: [
     cloudflare({ viteEnvironment: { name: 'ssr' } }),

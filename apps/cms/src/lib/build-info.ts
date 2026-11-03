@@ -4,8 +4,8 @@
 // commit is what says exactly what is live.
 const REPO_URL = 'https://github.com/Living-Legacy-Forest/living-legacy';
 
-const version = __APP_VERSION__;
-const commit = __APP_COMMIT__;
+const version = import.meta.env.VITE_APP_VERSION;
+const commit = import.meta.env.VITE_APP_COMMIT;
 
 export const buildInfo = {
   version,
@@ -13,7 +13,7 @@ export const buildInfo = {
   /** The first 7 characters, as GitHub shows them. */
   commit: commit === 'dev' ? null : commit.slice(0, 7),
   commitUrl: commit === 'dev' ? null : `${REPO_URL}/commit/${commit}`,
-  builtAt: Date.parse(__APP_BUILT_AT__),
+  builtAt: Date.parse(import.meta.env.VITE_APP_BUILT_AT),
   /** A local `vite dev` session rather than a deployed build. */
   isDev: import.meta.env.DEV,
 };

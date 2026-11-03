@@ -8,6 +8,9 @@
   "compatibility_flags": ["nodejs_compat"],
   "observability": { "enabled": true },
   "routes": [{ "pattern": "cms.livinglegacy.com.au", "custom_domain": true }],
+  // Listing a route turns workers.dev off unless kept on. Kept: the old address
+  // forwards to the domain (src/server.ts), and PR previews use workers.dev.
+  "workers_dev": true,
   "d1_databases": [
     {
       "binding": "DB",

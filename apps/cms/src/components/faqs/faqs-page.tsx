@@ -1,4 +1,4 @@
-import { MAX_FAQ_TAGS, splitTags } from '@llf/content';
+import { MAX_FAQ_TAGS, slugify, splitTags } from '@llf/content';
 import { useState } from 'react';
 import { BulkCsvForm } from '@/components/bulk/bulk-csv-form';
 import {
@@ -18,6 +18,7 @@ import {
   FolderPlusIcon,
   MoreHorizontalIcon,
   PanelRightIcon,
+  PencilIcon,
   PlusIcon,
   Trash2Icon,
   UploadIcon,
@@ -90,18 +91,24 @@ import { TagInput } from './tag-input';
 
 const UNGROUPED = 'ungrouped';
 
-/** What the editing surface shows: an FAQ, a blank FAQ (maybe pre-grouped) or a new group. */
+/** What the editing surface shows: an FAQ, a blank FAQ (maybe pre-grouped) or a group. */
 type Target =
   | { kind: 'faq'; id: string }
   | { kind: 'new'; groupId?: string }
-  | { kind: 'group' }
+  | { kind: 'group'; id?: string }
   | { kind: 'bulk' };
 
 /** The targets that open a single FAQ or group form. */
 type FormTarget = Exclude<Target, { kind: 'bulk' }>;
 
 const targetKey = (t: Target) =>
-  t.kind === 'faq' ? t.id : t.kind === 'new' ? `new-${t.groupId ?? UNGROUPED}` : t.kind;
+  t.kind === 'faq'
+    ? t.id
+    : t.kind === 'new'
+      ? `new-${t.groupId ?? UNGROUPED}`
+      : t.kind === 'group'
+        ? `group-${t.id ?? 'new'}`
+        : t.kind;
 
 const NOUN: [string, string] = ['FAQ', 'FAQs'];
 
@@ -338,6 +345,7 @@ export function FaqsPage({ data, canWrite }: { data: FaqData; canWrite: boolean 
                     searching={searching}
                     onSelect={(faq) => canWrite && open({ kind: 'faq', id: faq.id })}
                     onAdd={() => open({ kind: 'new', groupId: section.group?.id })}
+                    onEditGroup={(id) => open({ kind: 'group', id })}
                   />
                 ))}
               </div>
@@ -473,7 +481,7 @@ export function FaqsPage({ data, canWrite }: { data: FaqData; canWrite: boolean 
 }
 
 function targetTitle(target: FormTarget) {
-  if (target.kind === 'group') return 'New group';
+  if (target.kind === 'group') return target.id ? 'Edit group' : 'New group';
   return target.kind === 'new' ? 'New FAQ' : 'Edit FAQ';
 }
 
@@ -486,6 +494,7 @@ function FaqSection({
   searching,
   onSelect,
   onAdd,
+  onEditGroup,
 }: {
   group: FaqGroup | null;
   faqs: Faq[];
@@ -496,6 +505,7 @@ function FaqSection({
   searching: boolean;
   onSelect: (faq: Faq) => void;
   onAdd: () => void;
+  onEditGroup: (id: string) => void;
 }) {
   const { run } = useAction();
 
@@ -532,6 +542,10 @@ function FaqSection({
                   <MoreHorizontalIcon aria-hidden className="size-4" />
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="end">
+                  <DropdownMenuItem onClick={() => onEditGroup(group.id)}>
+                    <PencilIcon aria-hidden />
+                    Edit group
+                  </DropdownMenuItem>
                   <DropdownMenuItem
                     variant="destructive"
                     onClick={() =>
@@ -667,7 +681,7 @@ function SubmitButton({ pending, target }: { pending: boolean; target: FormTarge
           <Spinner />
           Saving…
         </>
-      ) : target.kind === 'group' ? (
+      ) : target.kind === 'group' && !target.id ? (
         'Add group'
       ) : target.kind === 'new' ? (
         'Add FAQ'
@@ -797,7 +811,15 @@ function TargetForm({
   onSaved: (saved: Target | null) => void;
   footer: (pending: boolean) => React.ReactNode;
 }) {
-  if (target.kind === 'group') return <GroupForm onSaved={() => onSaved(null)} footer={footer} />;
+  if (target.kind === 'group') {
+    return (
+      <GroupForm
+        group={groups.find((g) => g.id === target.id) ?? null}
+        onSaved={() => onSaved(null)}
+        footer={footer}
+      />
+    );
+  }
   return (
     <FaqForm
       faq={faq}
@@ -879,6 +901,9 @@ function FaqForm({
           onChange={(e) => setAnswer(e.target.value)}
           placeholder="A clear, helpful answer…"
         />
+        <p className="text-muted-foreground text-xs">
+          Leave a blank line between paragraphs. For a link, write [the words](https://…).
+        </p>
       </div>
       <div className="space-y-1.5">
         <Label htmlFor="faq-group">Group</Label>
@@ -922,19 +947,26 @@ function FaqForm({
 }
 
 function GroupForm({
+  group,
   onSaved,
   footer,
 }: {
+  group: FaqGroup | null;
   onSaved: () => void;
   footer: (pending: boolean) => React.ReactNode;
 }) {
-  const [name, setName] = useState('');
+  const [name, setName] = useState(group?.name ?? '');
+  const [navLabel, setNavLabel] = useState(group?.navLabel ?? '');
+  const [slug, setSlug] = useState(group?.slug ?? '');
   const { run, pending } = useAction();
 
   async function submit(e: React.FormEvent) {
     e.preventDefault();
     if (!reportInvalid(e.currentTarget)) return;
-    const result = await run(() => saveFaqGroup({ data: { name } }), 'Group added.');
+    const result = await run(
+      () => saveFaqGroup({ data: { id: group?.id, name, navLabel, slug } }),
+      group ? 'Group updated.' : 'Group added.'
+    );
     if (result) onSaved();
   }
 
@@ -945,12 +977,40 @@ function GroupForm({
         <Input
           id="group-name"
           required
+          maxLength={80}
           value={name}
           onChange={(e) => setName(e.target.value)}
           placeholder="Pricing"
         />
+        <p className="text-muted-foreground text-xs">The heading on the FAQs page.</p>
+      </div>
+      <div className="space-y-1.5">
+        <Label htmlFor="group-nav-label">Menu label</Label>
+        <Input
+          id="group-nav-label"
+          maxLength={40}
+          value={navLabel}
+          onChange={(e) => setNavLabel(e.target.value)}
+          placeholder={name || 'Same as the name'}
+        />
         <p className="text-muted-foreground text-xs">
-          Groups organise FAQs on the website, e.g. "Pricing".
+          Optional. A shorter name for the page's side menu.
+        </p>
+      </div>
+      <div className="space-y-1.5">
+        <Label htmlFor="group-slug">Anchor</Label>
+        <Input
+          id="group-slug"
+          maxLength={60}
+          value={slug}
+          onChange={(e) => setSlug(e.target.value)}
+          onBlur={() => setSlug(slugify(slug))}
+          placeholder={slugify(name) || 'made-from-the-name'}
+          className="font-mono text-[13px]"
+        />
+        <p className="text-muted-foreground text-xs">
+          Links straight to the group, as /faqs/#{slug || slugify(name) || 'anchor'}. Changing it
+          breaks links that use the old one.
         </p>
       </div>
       {footer(pending)}

@@ -22,6 +22,7 @@ import { buttonVariants } from '@/components/ui/button';
 import { Separator } from '@/components/ui/separator';
 import { formatBlogDate } from '@/lib/blog';
 import { getBlogPage, getBlogTags, searchBlogPosts, searchTerms } from '@/lib/blog-posts';
+import { FEATURE_SIZES } from '@/lib/media-srcset';
 
 export const prerender = false;
 
@@ -164,6 +165,8 @@ const description =
                   <div class="bg-paper-deep aspect-[3/2] w-full overflow-hidden rounded-lg">
                     <img
                       src={featuredImgSrc}
+                      srcset={featured.image?.srcset}
+                      sizes={featured.image?.srcset ? FEATURE_SIZES : undefined}
                       alt={featured.image?.alt ?? ''}
                       width="1200"
                       height="800"

@@ -14,6 +14,7 @@ import {
 import { CMS_URL } from 'astro:env/server';
 import { env } from 'cloudflare:workers';
 import { type BlogPost, type BlogTerm, getReadingTime } from '@/lib/blog';
+import { mediaSources } from '@/lib/media-srcset';
 
 /** The slice of the D1 binding used here, so the site needs no Workers type package. */
 interface D1 {
@@ -45,6 +46,7 @@ type PostRow = {
   image_alt: string | null;
   image_width: number | null;
   image_height: number | null;
+  image_variants: string | null;
   og_image_id: string | null;
   author_name: string | null;
   author_role: string | null;
@@ -58,6 +60,19 @@ type TermRow = {
   slug: string;
   description: string | null;
 };
+
+function cmsImage(row: PostRow, imageId: string) {
+  const url = mediaUrl(imageId);
+  const { srcset, smallUrl } = mediaSources(url, row.image_width, row.image_variants);
+  return {
+    url,
+    alt: row.image_alt ?? '',
+    width: row.image_width ?? undefined,
+    height: row.image_height ?? undefined,
+    cardUrl: smallUrl,
+    srcset,
+  };
+}
 
 const parseDoc = (json: string | null): RichTextDoc | null => {
   if (!json) return null;
@@ -73,6 +88,7 @@ async function load(): Promise<BlogPost[]> {
         `SELECT p.id, p.title, p.slug, p.excerpt, p.body, p.seo_title, p.seo_description,
                 p.noindex, p.published_at,
                 fm.id AS image_id, fm.alt AS image_alt, fm.width AS image_width, fm.height AS image_height,
+                fm.variants AS image_variants,
                 p.og_media_id AS og_image_id,
                 a.name AS author_name, a.role AS author_role, a.bio AS author_bio
          FROM posts p
@@ -120,14 +136,7 @@ async function load(): Promise<BlogPost[]> {
       seoTitle: row.seo_title || undefined,
       seoDescription: row.seo_description || undefined,
       noindex: row.noindex === 1,
-      image: row.image_id
-        ? {
-            url: mediaUrl(row.image_id),
-            alt: row.image_alt ?? '',
-            width: row.image_width ?? undefined,
-            height: row.image_height ?? undefined,
-          }
-        : undefined,
+      image: row.image_id ? cmsImage(row, row.image_id) : undefined,
       ogImageUrl: row.og_image_id ? mediaUrl(row.og_image_id) : undefined,
       category: categories[0],
       categories,

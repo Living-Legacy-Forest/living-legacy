@@ -63,6 +63,16 @@ export function renderRichText(
   const imageSrc = (src: string) =>
     options.mediaOrigin && /^\/(?!\/)/.test(src) ? `${options.mediaOrigin}${src}` : src;
 
+  // CMS uploads have 640px and 1280px copies (the CMS serves the original when
+  // an older upload has none), and the article column is under 720px wide.
+  const sizedImage = (src: string) => {
+    if (!options.mediaOrigin || !/^\/api\/media\/[\w-]+$/.test(src)) {
+      return `src="${escapeHtml(imageSrc(src))}"`;
+    }
+    const url = escapeHtml(imageSrc(src));
+    return `src="${url}?w=1280" srcset="${url}?w=640 640w, ${url}?w=1280 1280w" sizes="(min-width: 768px) 720px, 100vw"`;
+  };
+
   const renderText = (node: Node) => {
     let html = escapeHtml(node.text ?? '');
     for (const mark of node.marks ?? []) {
@@ -162,7 +172,7 @@ export function renderRichText(
         if (!src) return '';
         const alt = escapeHtml(String(node.attrs?.alt ?? ''));
         const caption = String(node.attrs?.title ?? '');
-        return `<figure><img src="${escapeHtml(imageSrc(src))}" alt="${alt}" loading="lazy" decoding="async" />${
+        return `<figure><img ${sizedImage(src)} alt="${alt}" loading="lazy" decoding="async" />${
           caption ? `<figcaption>${escapeHtml(caption)}</figcaption>` : ''
         }</figure>`;
       }

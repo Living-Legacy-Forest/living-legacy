@@ -36,10 +36,24 @@ describe('renderRichText', () => {
   });
 
   it('loads site-path images from the media origin', () => {
+    const image = { type: 'image', attrs: { src: '/uploads/old.jpg', alt: 'A tree' } };
+    expect(renderRichText(doc(image), { mediaOrigin: 'https://cms.test' }).html).toContain(
+      'src="https://cms.test/uploads/old.jpg" alt="A tree"'
+    );
+  });
+
+  it('serves media library images at the sizes the CMS keeps', () => {
     const image = { type: 'image', attrs: { src: '/api/media/abc', alt: 'A tree' } };
     expect(renderRichText(doc(image), { mediaOrigin: 'https://cms.test' }).html).toContain(
-      'src="https://cms.test/api/media/abc" alt="A tree"'
+      'src="https://cms.test/api/media/abc?w=1280" ' +
+        'srcset="https://cms.test/api/media/abc?w=640 640w, https://cms.test/api/media/abc?w=1280 1280w" ' +
+        'sizes="(min-width: 768px) 720px, 100vw" alt="A tree"'
     );
+  });
+
+  it('leaves media paths alone without a media origin', () => {
+    const image = { type: 'image', attrs: { src: '/api/media/abc', alt: '' } };
+    expect(renderRichText(doc(image)).html).toContain('<img src="/api/media/abc" alt=""');
   });
 
   it('skips unknown nodes but keeps their text', () => {

@@ -8,6 +8,7 @@ import {
   BreadcrumbSeparator,
 } from '@/components/ui/breadcrumb';
 import { type BlogPost, formatBlogDate, lastUpdatedAt } from '@/lib/blog';
+import { HERO_SIZES } from '@/lib/media-srcset';
 
 interface Props {
   post: BlogPost;
@@ -85,6 +86,8 @@ const showUpdated = new Date(updatedAt).toDateString() !== new Date(publishedAt)
       <div class="rise mx-auto mt-10 max-w-6xl px-6 [animation-delay:320ms] sm:px-10">
         <img
           src={heroSrc}
+          srcset={image?.srcset}
+          sizes={image?.srcset ? HERO_SIZES : undefined}
           alt={image?.alt ?? ''}
           width={image?.width ?? 1600}
           height={image?.height ?? 900}

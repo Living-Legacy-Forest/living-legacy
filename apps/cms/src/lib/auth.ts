@@ -50,6 +50,10 @@ function createAuth() {
         await sendChangeEmailVerificationEmail(normaliseEmail(user.email), url);
       },
     },
+    // Saves the session and user lookups on every server function call. The
+    // tradeoff: removing a user or changing their role reaches their open
+    // sessions only once this expires.
+    session: { cookieCache: { enabled: true, maxAge: 5 * 60 } },
     // A refused sign-in lands back on the login page with ?error=...
     onAPIError: { errorURL: '/login' },
     databaseHooks: {

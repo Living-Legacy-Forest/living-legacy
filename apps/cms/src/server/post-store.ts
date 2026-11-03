@@ -1,13 +1,12 @@
 import { type PostInput, blogPath, publishErrors, slugify } from '@llf/content';
-import { type Db, schema } from '@llf/db';
+import type { Db } from '@llf/db';
+import { postTerms, posts, publishEvents, redirects, revisions, terms, user } from '@llf/db/schema';
 import { and, asc, eq, inArray, isNull, ne } from 'drizzle-orm';
 import type { BatchItem } from 'drizzle-orm/batch';
 import { logActivity } from './activity-log';
 
 // Database operations for posts, shared by the server functions and the
 // scheduler (which runs outside any request, so nothing here reads one).
-
-const { posts, terms, postTerms, revisions, publishEvents, redirects, user } = schema;
 
 export type PostRow = typeof posts.$inferSelect;
 export type Statement = BatchItem<'sqlite'>;

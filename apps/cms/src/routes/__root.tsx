@@ -13,7 +13,7 @@ import {
 import { Toaster } from '@/components/ui/sonner';
 import { TooltipProvider } from '@/components/ui/tooltip';
 import { useThemeSync } from '@/lib/use-theme-sync';
-import { getSiteTheme, getSiteTimeZone } from '@/server/settings';
+import { getRootSettings } from '@/server/settings';
 import styles from '../styles.css?url';
 
 // Runs before hydration so a "system" preference never flashes the wrong
@@ -22,10 +22,9 @@ import styles from '../styles.css?url';
 const THEME_INIT_SCRIPT = `(function(){try{var d=document.documentElement;if(d.dataset.themePref==='system'&&window.matchMedia('(prefers-color-scheme: dark)').matches){d.classList.add('dark');}}catch(e){}})();`;
 
 export const Route = createRootRoute({
-  loader: async () => {
-    const [theme, timeZone] = await Promise.all([getSiteTheme(), getSiteTimeZone()]);
-    return { theme, timeZone };
-  },
+  loader: () => getRootSettings(),
+  // Otherwise this reloads on every navigation. Saving settings invalidates it.
+  staleTime: 5 * 60_000,
   head: () => ({
     meta: [
       { charSet: 'utf-8' },

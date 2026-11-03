@@ -1,9 +1,7 @@
 import { type SiteSettings, parseSiteSettings } from '@llf/content';
-import { schema } from '@llf/db';
+import { siteSettings } from '@llf/db/schema';
 import { eq } from 'drizzle-orm';
 import { getDb } from './db';
-
-const { siteSettings } = schema;
 
 // No dependency on session/auth, unlike @/server/settings: email.ts (called
 // from the auth plugin) needs this without creating an import cycle back to

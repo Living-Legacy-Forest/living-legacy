@@ -7,7 +7,15 @@ import {
   roles,
   slugify,
 } from '@llf/content';
-import { schema } from '@llf/db';
+import {
+  posts,
+  postTerms,
+  publishEvents,
+  revisions,
+  teamMembers,
+  terms,
+  user,
+} from '@llf/db/schema';
 import { createServerFn } from '@tanstack/react-start';
 import { and, asc, count, desc, eq, inArray, isNotNull, isNull, like, ne, sql } from 'drizzle-orm';
 import { z } from 'zod';
@@ -29,8 +37,6 @@ import {
   saveEdits,
   uniqueSlug,
 } from './post-store';
-
-const { posts, terms, postTerms, teamMembers, revisions, publishEvents, user } = schema;
 
 /** Authors may only change posts they started; publishers may change any. */
 function assertCanEdit(row: PostRow, actor: SessionUser) {

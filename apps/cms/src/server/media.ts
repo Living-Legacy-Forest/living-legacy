@@ -1,12 +1,10 @@
-import { schema } from '@llf/db';
+import { media } from '@llf/db/schema';
 import { createServerFn } from '@tanstack/react-start';
 import { env } from 'cloudflare:workers';
 import { desc, eq, inArray } from 'drizzle-orm';
 import { z } from 'zod';
 import { getDb } from '@/lib/db';
 import { authMiddleware, requirePermission } from '@/lib/session';
-
-const { media } = schema;
 
 function toItem(r: typeof media.$inferSelect) {
   return {

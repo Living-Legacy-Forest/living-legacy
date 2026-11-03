@@ -1,10 +1,8 @@
-import { schema } from '@llf/db';
+import { posts, revisions, user } from '@llf/db/schema';
 import { createServerFn } from '@tanstack/react-start';
 import { desc, eq, sql } from 'drizzle-orm';
 import { getDb } from '@/lib/db';
 import { authMiddleware } from '@/lib/session';
-
-const { posts, revisions, user } = schema;
 
 /**
  * Recent team activity for the notifications menu. Every publish writes a

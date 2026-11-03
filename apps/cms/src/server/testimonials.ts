@@ -1,12 +1,10 @@
-import { schema } from '@llf/db';
+import { testimonials } from '@llf/db/schema';
 import { createServerFn } from '@tanstack/react-start';
 import { desc, eq, inArray, isNull } from 'drizzle-orm';
 import { z } from 'zod';
 import { type BulkResult, firstIssue } from '@/lib/bulk-import';
 import { getDb } from '@/lib/db';
 import { authMiddleware, requirePermission } from '@/lib/session';
-
-const { testimonials } = schema;
 
 export const listTestimonials = createServerFn({ method: 'GET' })
   .middleware([authMiddleware])

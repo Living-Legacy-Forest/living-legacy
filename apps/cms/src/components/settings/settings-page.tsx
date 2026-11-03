@@ -1,5 +1,5 @@
 import { SEO_DESCRIPTION_LIMIT, isValidAbn } from '@llf/content';
-import { getRouteApi, useBlocker } from '@tanstack/react-router';
+import { getRouteApi, useBlocker, useRouter } from '@tanstack/react-router';
 import { type ReactNode, useEffect, useRef, useState } from 'react';
 import { toast } from 'sonner';
 import {
@@ -133,6 +133,7 @@ export function SettingsPage({
   const [saved, setSaved] = useState(data);
   const [values, setValues] = useState(data);
   const { run, pending } = useAction();
+  const router = useRouter();
   const dirty = JSON.stringify(values) !== JSON.stringify(saved);
 
   // Preview the theme as soon as it's picked, not only once Save succeeds.
@@ -167,6 +168,8 @@ export function SettingsPage({
     if (result) {
       setSaved(result);
       setValues(result);
+      // The root loader caches the theme and time zone; pick up the new ones.
+      await router.invalidate();
     }
   }
 

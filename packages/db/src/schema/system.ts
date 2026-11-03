@@ -1,16 +1,10 @@
 import { index, integer, sqliteTable, text } from 'drizzle-orm/sqlite-core';
+import { activityActions, apiKeyScopes, entityTypes } from '../enums';
 import { user } from './auth';
 import { id, timestamps } from './columns';
 
-export const entityTypes = [
-  'post',
-  'faq',
-  'testimonial',
-  'team_member',
-  'media_coverage',
-  'settings',
-] as const;
-export type EntityType = (typeof entityTypes)[number];
+export { activityActions, apiKeyScopes, entityTypes };
+export type { ActivityAction, ApiKeyScope, EntityType } from '../enums';
 
 // Single row (id = 'site'); the JSON shape is validated by @llf/content.
 export const siteSettings = sqliteTable('site_settings', {
@@ -74,25 +68,6 @@ export const publishEvents = sqliteTable(
   (t) => [index('publish_events_created_at').on(t.createdAt)]
 );
 
-export const activityActions = [
-  'post.published',
-  'post.scheduled',
-  'post.unpublished',
-  'user.invited',
-  'user.role_changed',
-  'user.removed',
-  'user.photo_changed',
-  'redirect.created',
-  'redirect.updated',
-  'redirect.deleted',
-  'settings.updated',
-  'api_key.created',
-  'api_key.revoked',
-  'post.created_via_api',
-  'post.updated_via_api',
-] as const;
-export type ActivityAction = (typeof activityActions)[number];
-
 // Human-readable audit trail, distinct from publish_events (which is a cache
 // purge feed). The actor's name is a snapshot, so the entry still reads
 // correctly after that person is removed.
@@ -110,9 +85,6 @@ export const activityLog = sqliteTable(
   },
   (t) => [index('activity_log_created_at').on(t.createdAt)]
 );
-
-export const apiKeyScopes = ['read', 'write'] as const;
-export type ApiKeyScope = (typeof apiKeyScopes)[number];
 
 // Keys for the CMS API (/api/v1). Only a SHA-256 hash of each key is stored;
 // the key itself is shown once, when it is created. A key acts as the admin

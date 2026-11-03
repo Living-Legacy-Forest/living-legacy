@@ -22,7 +22,14 @@ function buildStats({ posts, media, publishedFaqs }: DashboardData): Stat[] {
         : { hint: `${formatInteger(last)} in the last 30 days` }),
     },
     { label: 'Drafts', value: posts.drafts, hint: 'Waiting to be published' },
-    { label: 'Media files', value: media.files, hint: `${formatBytes(media.bytes)} stored` },
+    {
+      label: 'Media files',
+      value: media.files,
+      hint:
+        media.missingAlt > 0
+          ? `${formatInteger(media.missingAlt)} ${media.missingAlt === 1 ? 'needs' : 'need'} alt text`
+          : `${formatBytes(media.bytes)} stored`,
+    },
     { label: 'Published FAQs', value: publishedFaqs, hint: 'Shown on the FAQ page' },
   ];
 }

@@ -20,6 +20,7 @@ export const listTestimonials = createServerFn({ method: 'GET' })
         location: testimonials.location,
         featured: testimonials.featured,
         status: testimonials.status,
+        photoMediaId: testimonials.photoMediaId,
         createdAt: testimonials.createdAt,
       })
       .from(testimonials)
@@ -39,6 +40,8 @@ const testimonialSchema = z.object({
   location: z.string().trim().max(80).optional(),
   featured: z.boolean(),
   status: z.enum(['draft', 'published']),
+  /** Left out (as in a CSV import) keeps the current photo; null removes it. */
+  photoMediaId: z.string().nullable().optional(),
 });
 
 export const saveTestimonial = createServerFn({ method: 'POST' })
@@ -54,6 +57,7 @@ export const saveTestimonial = createServerFn({ method: 'POST' })
       location: data.location || null,
       featured: data.featured,
       status: data.status,
+      ...(data.photoMediaId !== undefined && { photoMediaId: data.photoMediaId }),
     };
 
     if (!data.id) {

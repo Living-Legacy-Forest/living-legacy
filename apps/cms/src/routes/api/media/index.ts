@@ -39,6 +39,13 @@ export const Route = createFileRoute('/api/media/')({
           return Response.json({ error: 'That file is larger than 10 MB.' }, { status: 400 });
         }
 
+        // Measured in the browser before upload; the website uses them to
+        // reserve space for the image. Optional, and ignored if implausible.
+        const dimension = (key: string) => {
+          const n = Number(form.get(key));
+          return Number.isInteger(n) && n > 0 && n <= 20_000 ? n : null;
+        };
+
         const ext = file.name.includes('.') ? file.name.split('.').pop() : undefined;
         const r2Key = `${crypto.randomUUID()}${ext ? `.${ext}` : ''}`;
         await env.MEDIA.put(r2Key, await file.arrayBuffer(), {
@@ -53,6 +60,8 @@ export const Route = createFileRoute('/api/media/')({
             filename: file.name || r2Key,
             mime: file.type,
             size: file.size,
+            width: dimension('width'),
+            height: dimension('height'),
             uploadedBy: session.user.id,
           })
           .returning();
@@ -63,6 +72,11 @@ export const Route = createFileRoute('/api/media/')({
           filename: row.filename,
           mime: row.mime,
           size: row.size,
+          width: row.width,
+          height: row.height,
+          alt: '',
+          caption: '',
+          createdAt: row.createdAt.getTime(),
           url: `/api/media/${row.id}`,
         });
       },

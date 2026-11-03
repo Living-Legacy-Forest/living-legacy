@@ -1,12 +1,20 @@
 /**
  * Avatar upload. Separate from /api/media: any signed-in person can set
  * their own avatar, not just those with media:write, and it never appears in
- * the shared Media library. A raw handler, since multipart can't go through
- * createServerFn.
+ * the shared Media library. An admin may send a `userId` to set someone
+ * else's. A raw handler, since multipart can't go through createServerFn.
  */
+import { type Role, can } from '@llf/content';
+import { schema } from '@llf/db';
 import { createFileRoute } from '@tanstack/react-router';
 import { env } from 'cloudflare:workers';
+import { eq } from 'drizzle-orm';
 import { getAuth } from '@/lib/auth';
+import { deleteOwnAvatar } from '@/lib/avatars';
+import { getDb } from '@/lib/db';
+import { logActivity } from '@/server/activity-log';
+
+const { user } = schema;
 
 const MAX_BYTES = 5 * 1024 * 1024;
 const ALLOWED_MIME = new Set(['image/jpeg', 'image/png', 'image/webp', 'image/gif']);
@@ -19,6 +27,17 @@ export const Route = createFileRoute('/api/avatar/')({
         if (!session) return new Response('Unauthorized', { status: 401 });
 
         const form = await request.formData();
+        const forUserId = form.get('userId');
+        const isSelf = typeof forUserId !== 'string' || forUserId === session.user.id;
+        if (!isSelf && !can(session.user.role as Role, 'users:manage')) {
+          return new Response('Forbidden', { status: 403 });
+        }
+        const db = getDb();
+        const target = isSelf
+          ? session.user
+          : await db.query.user.findFirst({ where: eq(user.id, forUserId as string) });
+        if (!target)
+          return Response.json({ error: 'That user no longer exists.' }, { status: 404 });
         const file = form.get('file');
         if (!(file instanceof File)) {
           return Response.json({ error: 'No file was uploaded.' }, { status: 400 });
@@ -37,27 +56,29 @@ export const Route = createFileRoute('/api/avatar/')({
         const key = `avatar-${crypto.randomUUID()}${ext ? `.${ext}` : ''}`;
         await env.MEDIA.put(key, await file.arrayBuffer(), {
           httpMetadata: { contentType: file.type },
-          customMetadata: { userId: session.user.id },
+          customMetadata: { userId: target.id },
         });
 
-        // user.image is client-settable (better-auth's own /update-user), so it
-        // could point at someone else's object; only delete what we tagged as
-        // this user's own upload.
-        const previousKey = avatarKey(session.user.image);
-        if (previousKey) {
-          const previous = await env.MEDIA.head(previousKey);
-          if (previous?.customMetadata?.userId === session.user.id) {
-            await env.MEDIA.delete(previousKey);
-          }
+        await deleteOwnAvatar(target.image, target.id);
+
+        const url = `/api/avatar/${key}`;
+        // Your own photo is saved by the browser through Better Auth, which
+        // also refreshes your session; someone else's is saved here.
+        if (!isSelf) {
+          await db
+            .update(user)
+            .set({ image: url, updatedAt: new Date() })
+            .where(eq(user.id, target.id));
+          await logActivity(db, {
+            actorId: session.user.id,
+            actorName: session.user.name,
+            action: 'user.photo_changed',
+            summary: `Changed ${target.name}'s photo`,
+          });
         }
 
-        return Response.json({ url: `/api/avatar/${key}` });
+        return Response.json({ url });
       },
     },
   },
 });
-
-function avatarKey(image: string | null | undefined): string | null {
-  const match = image?.match(/^\/api\/avatar\/(avatar-[^/]+)$/);
-  return match?.[1] ?? null;
-}

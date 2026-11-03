@@ -10,15 +10,6 @@ import {
 import { ImageIcon, Trash2Icon, UploadIcon } from '@/components/icons';
 import { Button } from '@/components/ui/button';
 import {
-  Dialog,
-  DialogClose,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from '@/components/ui/dialog';
-import {
   Empty,
   EmptyContent,
   EmptyDescription,
@@ -28,24 +19,24 @@ import {
 } from '@/components/ui/empty';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import {
+  Sheet,
+  SheetClose,
+  SheetContent,
+  SheetDescription,
+  SheetFooter,
+  SheetHeader,
+  SheetTitle,
+} from '@/components/ui/sheet';
 import { Spinner } from '@/components/ui/spinner';
 import { Textarea } from '@/components/ui/textarea';
 import { formatBytes } from '@/lib/format';
+import { IMAGE_ACCEPT, uploadMedia } from '@/lib/upload-media';
 import { useAction } from '@/lib/use-action';
 import { cn } from '@/lib/utils';
 import { type MediaItem, type MediaListData, deleteMedia, updateMedia } from '@/server/media';
 
 const NOUN: [string, string] = ['file', 'files'];
-
-async function uploadFile(file: File) {
-  const form = new FormData();
-  form.set('file', file);
-  const res = await fetch('/api/media', { method: 'POST', body: form });
-  if (!res.ok) {
-    const body = (await res.json().catch(() => null)) as { error?: string } | null;
-    throw new Error(body?.error ?? 'Upload failed.');
-  }
-}
 
 export function MediaPage({ data }: { data: MediaListData }) {
   const [query, setQuery] = useState('');
@@ -64,7 +55,7 @@ export function MediaPage({ data }: { data: MediaListData }) {
     if (list.length === 0) return;
     await run(
       async () => {
-        for (const file of list) await uploadFile(file);
+        for (const file of list) await uploadMedia(file);
         return list.length;
       },
       (n) => `${n} ${n === 1 ? 'file' : 'files'} uploaded.`
@@ -109,7 +100,7 @@ export function MediaPage({ data }: { data: MediaListData }) {
         <input
           ref={fileInput}
           type="file"
-          accept="image/jpeg,image/png,image/webp,image/gif"
+          accept={IMAGE_ACCEPT}
           multiple
           className="hidden"
           onChange={(e) => {
@@ -131,8 +122,7 @@ export function MediaPage({ data }: { data: MediaListData }) {
             </EmptyMedia>
             <EmptyTitle>No media yet</EmptyTitle>
             <EmptyDescription>
-              Upload images to use as featured images or social-sharing previews. Drag and drop
-              works too.
+              Upload images for posts, team members and testimonials. Drag and drop works too.
             </EmptyDescription>
           </EmptyHeader>
           <EmptyContent>
@@ -186,17 +176,17 @@ export function MediaPage({ data }: { data: MediaListData }) {
         onOpenChange={setConfirmDelete}
         count={selection.checkedIds.length}
         noun={NOUN}
-        description="They are removed for good. Any post using one as its featured or social image loses that image."
+        description="They are removed for good. Anything using one, like a post or a team member, loses that image."
         onConfirm={removeChecked}
       />
 
-      <Dialog open={editing !== null} onOpenChange={(open) => !open && setEditingId(null)}>
-        <DialogContent className="sm:max-w-md">
+      <Sheet open={editing !== null} onOpenChange={(open) => !open && setEditingId(null)}>
+        <SheetContent>
           {editing && (
             <MediaEditForm key={editing.id} item={editing} onClose={() => setEditingId(null)} />
           )}
-        </DialogContent>
-      </Dialog>
+        </SheetContent>
+      </Sheet>
     </div>
   );
 }
@@ -247,7 +237,8 @@ function MediaTile({
 function MediaEditForm({ item, onClose }: { item: MediaItem; onClose: () => void }) {
   const [alt, setAlt] = useState(item.alt);
   const [caption, setCaption] = useState(item.caption);
-  const [confirmDelete, setConfirmDelete] = useState(false);
+  // Deleting asks again in the footer itself, rather than in a second modal.
+  const [confirmingDelete, setConfirmingDelete] = useState(false);
   const { run, pending } = useAction();
 
   async function save(e: React.FormEvent) {
@@ -265,21 +256,21 @@ function MediaEditForm({ item, onClose }: { item: MediaItem; onClose: () => void
   }
 
   return (
-    <form onSubmit={save}>
-      <DialogHeader>
-        <DialogTitle className="truncate">{item.filename}</DialogTitle>
-        <DialogDescription>
+    <form onSubmit={save} className="flex min-h-0 flex-1 flex-col gap-4">
+      <SheetHeader>
+        <SheetTitle className="truncate pr-8">{item.filename}</SheetTitle>
+        <SheetDescription>
           {formatBytes(item.size)}
           {item.width && item.height ? ` · ${item.width}×${item.height}` : ''}
-        </DialogDescription>
-      </DialogHeader>
-      <div className="my-4 space-y-4">
+        </SheetDescription>
+      </SheetHeader>
+      <div className="grid flex-1 auto-rows-min gap-6 overflow-y-auto px-4">
         <img
           src={item.url}
           alt={item.alt || item.filename}
-          className="max-h-64 w-full rounded-md border object-contain"
+          className="bg-muted max-h-72 w-full rounded-md border object-contain"
         />
-        <div className="space-y-1.5">
+        <div className="grid gap-3">
           <Label htmlFor="m-alt">Alt text</Label>
           <Input
             id="m-alt"
@@ -289,7 +280,7 @@ function MediaEditForm({ item, onClose }: { item: MediaItem; onClose: () => void
             placeholder="Describes the image for screen readers and SEO"
           />
         </div>
-        <div className="space-y-1.5">
+        <div className="grid gap-3">
           <Label htmlFor="m-caption">Caption</Label>
           <Textarea
             id="m-caption"
@@ -300,33 +291,46 @@ function MediaEditForm({ item, onClose }: { item: MediaItem; onClose: () => void
           />
         </div>
       </div>
-      <DialogFooter className="gap-2 sm:justify-between">
-        <Button
-          type="button"
-          variant="outline"
-          className="text-destructive hover:text-destructive"
-          disabled={pending}
-          onClick={() => setConfirmDelete(true)}
-        >
-          <Trash2Icon aria-hidden data-icon="inline-start" />
-          Delete
-        </Button>
-        <div className="flex gap-2">
-          <DialogClose render={<Button type="button" variant="outline" />}>Close</DialogClose>
-          <Button type="submit" disabled={pending}>
-            {pending ? <Spinner /> : null}
-            Save
-          </Button>
-        </div>
-      </DialogFooter>
-      <ConfirmBulkDelete
-        open={confirmDelete}
-        onOpenChange={setConfirmDelete}
-        count={1}
-        noun={NOUN}
-        description="It is removed for good. Any post using it as its featured or social image loses that image."
-        onConfirm={remove}
-      />
+      <SheetFooter>
+        {confirmingDelete ? (
+          <>
+            <p className="text-sm">
+              Delete this file for good? Anything using it, like a post or a team member, loses that
+              image.
+            </p>
+            <Button type="button" variant="destructive" disabled={pending} onClick={remove}>
+              {pending ? <Spinner /> : null}
+              Delete
+            </Button>
+            <Button
+              type="button"
+              variant="outline"
+              disabled={pending}
+              onClick={() => setConfirmingDelete(false)}
+            >
+              Cancel
+            </Button>
+          </>
+        ) : (
+          <>
+            <Button type="submit" disabled={pending}>
+              {pending ? <Spinner /> : null}
+              Save changes
+            </Button>
+            <SheetClose render={<Button type="button" variant="outline" />}>Close</SheetClose>
+            <Button
+              type="button"
+              variant="ghost"
+              className="text-destructive hover:text-destructive"
+              disabled={pending}
+              onClick={() => setConfirmingDelete(true)}
+            >
+              <Trash2Icon aria-hidden data-icon="inline-start" />
+              Delete
+            </Button>
+          </>
+        )}
+      </SheetFooter>
     </form>
   );
 }

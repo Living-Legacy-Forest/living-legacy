@@ -29,6 +29,7 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from '@/components/ui/alert-dialog';
+import { ImageField } from '@/components/media/image-field';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import {
@@ -382,19 +383,29 @@ function MemberListItem({
         <button
           type="button"
           onClick={onSelect}
-          className="min-w-0 flex-1 rounded-md px-1.5 py-1.5 text-left outline-none"
+          className="flex min-w-0 flex-1 items-center gap-2.5 rounded-md px-1.5 py-1.5 text-left outline-none"
         >
-          <div className="flex items-center gap-2">
-            <span className="truncate text-[13px] font-medium">{member.name}</span>
-            {member.status === 'draft' && (
-              <Badge variant="outline" className="shrink-0">
-                Draft
-              </Badge>
+          {member.photoMediaId && (
+            <img
+              src={`/api/media/${member.photoMediaId}`}
+              alt=""
+              loading="lazy"
+              className="size-8 shrink-0 rounded-full border object-cover"
+            />
+          )}
+          <div className="min-w-0 flex-1">
+            <div className="flex items-center gap-2">
+              <span className="truncate text-[13px] font-medium">{member.name}</span>
+              {member.status === 'draft' && (
+                <Badge variant="outline" className="shrink-0">
+                  Draft
+                </Badge>
+              )}
+            </div>
+            {member.role && (
+              <div className="text-muted-foreground truncate text-xs">{member.role}</div>
             )}
           </div>
-          {member.role && (
-            <div className="text-muted-foreground truncate text-xs">{member.role}</div>
-          )}
         </button>
         {canWrite && (
           <div className="flex shrink-0 items-center gap-0.5">
@@ -548,6 +559,7 @@ function MemberForm({
   const [role, setRole] = useState(member?.role ?? '');
   const [bio, setBio] = useState(member?.bio ?? '');
   const [published, setPublished] = useState(member?.status === 'published');
+  const [photoMediaId, setPhotoMediaId] = useState(member?.photoMediaId ?? null);
   const { run, pending } = useAction();
 
   async function submit(e: React.FormEvent) {
@@ -562,6 +574,7 @@ function MemberForm({
             role: role || undefined,
             bio: bio || undefined,
             status: published ? 'published' : 'draft',
+            photoMediaId,
           },
         }),
       member ? 'Member updated.' : 'Member added.'
@@ -590,6 +603,14 @@ function MemberForm({
           placeholder="Founder"
         />
       </div>
+      <ImageField
+        id="member-photo"
+        label="Photo"
+        description="A square portrait works best."
+        shape="square"
+        mediaId={photoMediaId}
+        onChange={setPhotoMediaId}
+      />
       <div className="space-y-1.5">
         <Label htmlFor="member-bio">Bio</Label>
         <Textarea

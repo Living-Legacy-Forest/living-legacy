@@ -4,6 +4,11 @@ import { createAuthClient } from 'better-auth/react';
 export const authClient = createAuthClient({
   plugins: [
     magicLinkClient(),
-    inferAdditionalFields({ user: { bio: { type: 'string', required: false } } }),
+    inferAdditionalFields({
+      user: {
+        bio: { type: 'string', required: false },
+        imageAlt: { type: 'string', required: false },
+      },
+    }),
   ],
 });

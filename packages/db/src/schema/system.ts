@@ -74,6 +74,7 @@ export const activityActions = [
   'user.invited',
   'user.role_changed',
   'user.removed',
+  'user.photo_changed',
   'redirect.created',
   'redirect.updated',
   'redirect.deleted',

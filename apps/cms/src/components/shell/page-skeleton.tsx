@@ -28,7 +28,15 @@ export function usePendingPathname(delay = 120) {
   return target && shown === target ? target : null;
 }
 
-const splitSections = ['posts', 'team', 'testimonials', 'faqs', 'redirects', 'announcements'];
+const splitSections = [
+  'posts',
+  'team',
+  'testimonials',
+  'media-coverage',
+  'faqs',
+  'redirects',
+  'announcements',
+];
 
 /** A placeholder shaped like the page at `pathname`. */
 export function PageSkeleton({ pathname }: { pathname: string }) {

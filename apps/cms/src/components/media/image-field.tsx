@@ -28,7 +28,7 @@ import { type MediaItem, getMediaItems, listMedia, updateMedia } from '@/server/
 const known = new Map<string, MediaItem>();
 const remember = (item: MediaItem) => known.set(item.id, item);
 
-function useMediaItem(id: string | null) {
+export function useMediaItem(id: string | null) {
   const [item, setItem] = useState<MediaItem | null>(id ? (known.get(id) ?? null) : null);
   const [missing, setMissing] = useState(false);
 

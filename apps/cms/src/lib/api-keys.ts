@@ -7,9 +7,9 @@
  * that person is removed, or when they can no longer do what the key's scope
  * allows (read needs any role; write needs posts:write).
  */
-import { type Role, can } from '@llf/content';
-import type { ApiKeyScope } from '@llf/db/enums';
-import { apiKeys, user } from '@llf/db/schema';
+import { type Role, can } from '@ll/content';
+import type { ApiKeyScope } from '@ll/db/enums';
+import { apiKeys, user } from '@ll/db/schema';
 import { and, eq, isNull } from 'drizzle-orm';
 import { getDb } from './db';
 

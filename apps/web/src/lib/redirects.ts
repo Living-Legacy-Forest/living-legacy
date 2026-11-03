@@ -13,7 +13,7 @@ import {
   type RedirectRule,
   type RedirectStatusCode,
   resolveRedirect,
-} from '@llf/content';
+} from '@ll/content';
 import { env } from 'cloudflare:workers';
 
 /** The slice of the D1 binding used here, so the site needs no Workers type package. */

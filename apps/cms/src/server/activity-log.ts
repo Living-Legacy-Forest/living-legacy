@@ -1,6 +1,6 @@
-import type { Db } from '@llf/db';
-import type { ActivityAction } from '@llf/db/enums';
-import { activityLog } from '@llf/db/schema';
+import type { Db } from '@ll/db';
+import type { ActivityAction } from '@ll/db/enums';
+import { activityLog } from '@ll/db/schema';
 import { createServerFn } from '@tanstack/react-start';
 import { desc } from 'drizzle-orm';
 import { getDb } from '@/lib/db';

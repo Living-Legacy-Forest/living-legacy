@@ -1,5 +1,5 @@
-import { guardRemoval, guardRoleChange, normaliseEmail, roleSchema } from '@llf/content';
-import { invitation, user } from '@llf/db/schema';
+import { guardRemoval, guardRoleChange, normaliseEmail, roleSchema } from '@ll/content';
+import { invitation, user } from '@ll/db/schema';
 import { createServerFn } from '@tanstack/react-start';
 import { env } from 'cloudflare:workers';
 import { count, desc, eq } from 'drizzle-orm';

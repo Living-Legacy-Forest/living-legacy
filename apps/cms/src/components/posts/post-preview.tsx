@@ -1,4 +1,4 @@
-import type { RichTextDoc } from '@llf/content';
+import type { RichTextDoc } from '@ll/content';
 import { FileTextIcon } from '@/components/icons';
 import {
   Empty,

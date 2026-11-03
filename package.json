@@ -11,8 +11,8 @@
     "packages/*"
   ],
   "scripts": {
-    "dev:web": "bun run --filter @llf/web dev",
-    "dev:cms": "bun run --filter @llf/cms dev",
+    "dev:web": "bun run --filter @ll/web dev",
+    "dev:cms": "bun run --filter @ll/cms dev",
     "build": "bun run --filter \"*\" build",
     "type-check": "bun run --filter \"*\" type-check",
     "lint": "bun run --filter \"*\" lint",

@@ -10,7 +10,7 @@ import {
   renderRichText,
   richTextPlainText,
   slugify,
-} from '@llf/content';
+} from '@ll/content';
 import { CMS_URL } from 'astro:env/server';
 import { env } from 'cloudflare:workers';
 import { type BlogPost, type BlogTerm, getReadingTime } from '@/lib/blog';

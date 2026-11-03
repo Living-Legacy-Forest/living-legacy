@@ -7,7 +7,7 @@
  * a blank line starts a new paragraph and [text](https://…) makes a link.
  * They are rendered with the same rules as post bodies.
  */
-import { markdownToRichText, renderRichText, richTextPlainText, slugify } from '@llf/content';
+import { markdownToRichText, renderRichText, richTextPlainText, slugify } from '@ll/content';
 import { env } from 'cloudflare:workers';
 
 /** The slice of the D1 binding used here, so the site needs no Workers type package. */

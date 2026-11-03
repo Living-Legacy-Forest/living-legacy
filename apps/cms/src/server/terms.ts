@@ -1,5 +1,5 @@
-import { slugify } from '@llf/content';
-import { posts, postTerms, terms } from '@llf/db/schema';
+import { slugify } from '@ll/content';
+import { posts, postTerms, terms } from '@ll/db/schema';
 import { createServerFn } from '@tanstack/react-start';
 import { and, asc, count, eq, inArray, isNull, ne } from 'drizzle-orm';
 import { z } from 'zod';

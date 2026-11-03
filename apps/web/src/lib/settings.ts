@@ -2,10 +2,10 @@
  * Site-wide settings, managed in the CMS (Settings page) and stored as one
  * JSON row in the shared D1 database: contact and business details, social
  * links, the page title pattern and the search defaults. Parsed by
- * parseSiteSettings from @llf/content, the same rule the CMS uses, so a key
+ * parseSiteSettings from @ll/content, the same rule the CMS uses, so a key
  * the row lacks always reads as its default.
  */
-import { type SiteSettings, parseSiteSettings } from '@llf/content';
+import { type SiteSettings, parseSiteSettings } from '@ll/content';
 import { env } from 'cloudflare:workers';
 
 /** The slice of the D1 binding used here, so the site needs no Workers type package. */

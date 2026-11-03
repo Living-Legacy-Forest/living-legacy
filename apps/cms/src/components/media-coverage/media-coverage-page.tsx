@@ -1,4 +1,4 @@
-import { type MediaCoverageKind, mediaCoverageKindLabels, slugify, youtubeId } from '@llf/content';
+import { type MediaCoverageKind, mediaCoverageKindLabels, slugify, youtubeId } from '@ll/content';
 import { useNavigate } from '@tanstack/react-router';
 import { useState } from 'react';
 import {

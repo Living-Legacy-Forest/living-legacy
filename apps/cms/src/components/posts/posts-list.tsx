@@ -1,4 +1,4 @@
-import { can } from '@llf/content';
+import { can } from '@ll/content';
 import { Link, useNavigate } from '@tanstack/react-router';
 import {
   CalendarClockIcon,

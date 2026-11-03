@@ -1,4 +1,4 @@
-import { faqs, media, posts, postTerms, terms } from '@llf/db/schema';
+import { faqs, media, posts, postTerms, terms } from '@ll/db/schema';
 import { createServerFn } from '@tanstack/react-start';
 import { and, count, desc, eq, gte, isNull, sql, sum } from 'drizzle-orm';
 import { getDb } from '@/lib/db';

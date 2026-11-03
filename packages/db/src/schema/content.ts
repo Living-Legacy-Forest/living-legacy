@@ -164,7 +164,7 @@ export const mediaCoverage = sqliteTable(
 );
 
 // Site-wide notice bars. Several can be prepared ahead; the website shows the
-// one whose window covers now (see currentAnnouncement in @llf/content).
+// one whose window covers now (see currentAnnouncement in @ll/content).
 export const announcements = sqliteTable(
   'announcements',
   {

@@ -2,8 +2,8 @@
  * Upload. A raw handler rather than a server function, since a server
  * function's validator expects JSON and this receives multipart form data.
  */
-import { type Role, can } from '@llf/content';
-import { schema } from '@llf/db';
+import { type Role, can } from '@ll/content';
+import { schema } from '@ll/db';
 import { createFileRoute } from '@tanstack/react-router';
 import { env } from 'cloudflare:workers';
 import { getAuth } from '@/lib/auth';

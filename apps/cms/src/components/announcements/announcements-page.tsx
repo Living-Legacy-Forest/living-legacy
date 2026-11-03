@@ -4,7 +4,7 @@ import {
   type AnnouncementStatus,
   announcementClashes,
   announcementStatus,
-} from '@llf/content';
+} from '@ll/content';
 import { useState } from 'react';
 import { DateTimePicker } from '@/components/date-time-picker';
 import {

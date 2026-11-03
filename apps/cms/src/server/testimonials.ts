@@ -1,4 +1,4 @@
-import { testimonials } from '@llf/db/schema';
+import { testimonials } from '@ll/db/schema';
 import { createServerFn } from '@tanstack/react-start';
 import { desc, eq, inArray, isNull } from 'drizzle-orm';
 import { z } from 'zod';

@@ -1,4 +1,4 @@
-import type { RichTextDoc } from '@llf/content';
+import type { RichTextDoc } from '@ll/content';
 import { Placeholder } from '@tiptap/extension-placeholder';
 import { type Editor, useEditor, useEditorState } from '@tiptap/react';
 import { useRef } from 'react';

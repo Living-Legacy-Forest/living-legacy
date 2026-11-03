@@ -31,7 +31,7 @@ A reference for the technical stack, third-party services, conventions, and buil
 | Hosting   | Cloudflare Workers (static assets)      |
 | Animation | Motion One (`motion`)                   |
 | Icons     | `@hugeicons/react`                      |
-| Rich text | `renderRichText` (`@llf/content`)       |
+| Rich text | `renderRichText` (`@ll/content`)        |
 | Analytics | PostHog (`posthog-js` + `posthog-node`) |
 
 ---
@@ -53,7 +53,7 @@ A reference for the technical stack, third-party services, conventions, and buil
 Astro 7's `@astrojs/cloudflare` v14 **dropped Cloudflare Pages support**, so the site deploys as a Worker with static assets. `dist/server/` is the Worker, `dist/client/` is served through the `ASSETS` binding.
 
 - Adapter: `@astrojs/cloudflare` with `imageService: 'compile'`.
-- Build command: `bun run --filter @llf/web build`
+- Build command: `bun run --filter @ll/web build`
 - Build output: `dist/` (`server/` + `client/`)
 
 ### Wrangler config (`wrangler.jsonc`)

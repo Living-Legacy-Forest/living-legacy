@@ -1,4 +1,4 @@
-import { can } from '@llf/content';
+import { can } from '@ll/content';
 import { createFileRoute, redirect } from '@tanstack/react-router';
 import { ApiKeysPage } from '@/components/api-keys/api-keys-page';
 import { listApiKeys } from '@/server/api-keys';

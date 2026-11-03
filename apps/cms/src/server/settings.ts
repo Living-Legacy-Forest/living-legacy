@@ -11,8 +11,8 @@ import {
   locales,
   themes,
   timeZones,
-} from '@llf/content';
-import { siteSettings } from '@llf/db/schema';
+} from '@ll/content';
+import { siteSettings } from '@ll/db/schema';
 import { createServerFn } from '@tanstack/react-start';
 import { z } from 'zod';
 import { getDb } from '@/lib/db';

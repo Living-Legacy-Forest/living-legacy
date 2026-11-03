@@ -2,7 +2,7 @@
  * GET /api/v1/terms  Categories and tags (read key). Send category ids, and
  * tag names, when creating or editing a post; unknown tags are created.
  */
-import { schema } from '@llf/db';
+import { schema } from '@ll/db';
 import { createFileRoute } from '@tanstack/react-router';
 import { asc } from 'drizzle-orm';
 import { authenticateApiRequest } from '@/lib/api-keys';

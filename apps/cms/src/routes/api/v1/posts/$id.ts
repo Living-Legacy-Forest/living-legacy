@@ -4,8 +4,8 @@
  *       A published post keeps its live version; the edits wait as
  *       unpublished changes for someone to publish in the CMS.
  */
-import type { PostInput } from '@llf/content';
-import { schema } from '@llf/db';
+import type { PostInput } from '@ll/content';
+import { schema } from '@ll/db';
 import { createFileRoute } from '@tanstack/react-router';
 import { eq } from 'drizzle-orm';
 import { ZodError } from 'zod';

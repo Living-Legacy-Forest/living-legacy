@@ -8,7 +8,7 @@ import {
   emptyPostInput,
   publishErrors,
   slugify,
-} from '@llf/content';
+} from '@ll/content';
 import { ClientOnly, Link, useBlocker, useNavigate, useRouter } from '@tanstack/react-router';
 import {
   CalendarClockIcon,

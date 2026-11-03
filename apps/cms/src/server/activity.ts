@@ -1,4 +1,4 @@
-import { posts, revisions, user } from '@llf/db/schema';
+import { posts, revisions, user } from '@ll/db/schema';
 import { createServerFn } from '@tanstack/react-start';
 import { desc, eq, sql } from 'drizzle-orm';
 import { getDb } from '@/lib/db';

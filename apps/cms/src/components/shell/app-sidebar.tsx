@@ -1,4 +1,4 @@
-import { can } from '@llf/content';
+import { can } from '@ll/content';
 import { Link } from '@tanstack/react-router';
 import logoMark from '@/assets/brand/logo-mark.webp';
 import {

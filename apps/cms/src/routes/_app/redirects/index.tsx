@@ -1,4 +1,4 @@
-import { can } from '@llf/content';
+import { can } from '@ll/content';
 import { createFileRoute, redirect } from '@tanstack/react-router';
 import { RedirectsPage } from '@/components/redirects/redirects-page';
 import { listRedirects } from '@/server/redirects';

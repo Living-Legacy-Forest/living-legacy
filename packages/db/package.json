@@ -1,5 +1,5 @@
 {
-  "name": "@llf/db",
+  "name": "@ll/db",
   "private": true,
   "type": "module",
   "sideEffects": false,

@@ -1,5 +1,5 @@
-import { announcementBackgrounds } from '@llf/content';
-import { announcements } from '@llf/db/schema';
+import { announcementBackgrounds } from '@ll/content';
+import { announcements } from '@ll/db/schema';
 import { createServerFn } from '@tanstack/react-start';
 import { desc, eq, inArray } from 'drizzle-orm';
 import { z } from 'zod';

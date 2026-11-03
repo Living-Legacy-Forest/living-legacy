@@ -1,14 +1,14 @@
 /**
  * The announcement bar, managed in the CMS (Announcements page) and stored in
  * the shared D1 database. Which one is live, if any, is decided by
- * currentAnnouncement from @llf/content — the same rule the CMS uses to show
+ * currentAnnouncement from @ll/content — the same rule the CMS uses to show
  * status and flag clashes, so the site and the admin never disagree.
  */
 import {
   type AnnouncementBackground,
   type AnnouncementWindow,
   currentAnnouncement,
-} from '@llf/content';
+} from '@ll/content';
 import { env } from 'cloudflare:workers';
 
 /** The slice of the D1 binding used here, so the site needs no Workers type package. */

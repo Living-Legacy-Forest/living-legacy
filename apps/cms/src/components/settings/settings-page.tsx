@@ -1,4 +1,4 @@
-import { SEO_DESCRIPTION_LIMIT, isValidAbn } from '@llf/content';
+import { SEO_DESCRIPTION_LIMIT, isValidAbn } from '@ll/content';
 import { getRouteApi, useBlocker, useRouter } from '@tanstack/react-router';
 import { type ReactNode, useEffect, useRef, useState } from 'react';
 import { toast } from 'sonner';

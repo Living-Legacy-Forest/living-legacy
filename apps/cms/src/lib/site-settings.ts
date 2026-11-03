@@ -1,5 +1,5 @@
-import { type SiteSettings, parseSiteSettings } from '@llf/content';
-import { siteSettings } from '@llf/db/schema';
+import { type SiteSettings, parseSiteSettings } from '@ll/content';
+import { siteSettings } from '@ll/db/schema';
 import { eq } from 'drizzle-orm';
 import { getDb } from './db';
 

@@ -4,8 +4,8 @@
  *      ?q=words in the title  ?page=1  ?pageSize=20 (up to 100)
  * POST /api/v1/posts  Create a draft (write key). See src/server/api-v1.ts.
  */
-import { emptyPostInput } from '@llf/content';
-import { schema } from '@llf/db';
+import { emptyPostInput } from '@ll/content';
+import { schema } from '@ll/db';
 import { createFileRoute } from '@tanstack/react-router';
 import { type SQL, and, count, desc, eq, isNotNull, isNull, like } from 'drizzle-orm';
 import { apiError, authenticateApiRequest, readJson } from '@/lib/api-keys';

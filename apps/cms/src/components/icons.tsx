@@ -189,6 +189,7 @@ export const SendIcon = animated(AnimatedSendIcon);
 // Rich text editor (bare, unsuffixed names as the editor imports them)
 export const Bold = animated(AnimatedTextBoldIcon);
 export const Code = animated(AnimatedCodeIcon);
+export const CropIcon = make(H.CropIcon);
 export const Heading1 = make(H.Heading01Icon);
 export const Heading2 = make(H.Heading02Icon);
 export const Heading3 = make(H.Heading03Icon);

@@ -1,4 +1,5 @@
 import type { MediaItem } from '@/server/media';
+import { prepareImage } from './prepare-image';
 
 export const IMAGE_ACCEPT = 'image/jpeg,image/png,image/webp,image/gif';
 
@@ -14,8 +15,12 @@ async function measure(file: File): Promise<{ width: number; height: number } | 
   }
 }
 
-/** Uploads one image to the Media library and returns it. */
-export async function uploadMedia(file: File): Promise<MediaItem> {
+/**
+ * Uploads one image to the Media library and returns it. Images larger than
+ * the website ever shows are scaled down first (see prepare-image.ts).
+ */
+export async function uploadMedia(original: File): Promise<MediaItem> {
+  const file = await prepareImage(original);
   const form = new FormData();
   form.set('file', file);
   const size = await measure(file);

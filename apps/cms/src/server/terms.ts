@@ -79,7 +79,9 @@ export const saveTerm = createServerFn({ method: 'POST' })
 
 export const deleteTerms = createServerFn({ method: 'POST' })
   .middleware([requirePermission('content:write')])
-  .validator(z.object({ type: z.enum(['category', 'tag']), ids: z.array(z.string()).min(1).max(200) }))
+  .validator(
+    z.object({ type: z.enum(['category', 'tag']), ids: z.array(z.string()).min(1).max(200) })
+  )
   .handler(async ({ data }) => {
     await getDb()
       .delete(terms)

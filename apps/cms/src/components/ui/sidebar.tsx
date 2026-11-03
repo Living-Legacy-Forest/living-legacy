@@ -271,7 +271,7 @@ function Sidebar({
         <div
           data-sidebar="sidebar"
           data-slot="sidebar-inner"
-          className="bg-sidebar group-data-[variant=floating]:ring-sidebar-border flex size-full flex-col transition-[border-radius,box-shadow] group-data-[variant=floating]:rounded-lg group-data-[variant=floating]:shadow-sm group-data-[variant=floating]:ring-1 group-data-[hover-expanded=true]:rounded-lg group-data-[hover-expanded=true]:ring-1 group-data-[hover-expanded=true]:ring-sidebar-border"
+          className="bg-sidebar group-data-[variant=floating]:ring-sidebar-border group-data-[hover-expanded=true]:ring-sidebar-border flex size-full flex-col transition-[border-radius,box-shadow] group-data-[hover-expanded=true]:rounded-lg group-data-[hover-expanded=true]:ring-1 group-data-[variant=floating]:rounded-lg group-data-[variant=floating]:shadow-sm group-data-[variant=floating]:ring-1"
         >
           {children}
         </div>

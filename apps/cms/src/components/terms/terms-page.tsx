@@ -403,12 +403,13 @@ function DeleteTerm({
           <AlertDialogCancel>Cancel</AlertDialogCancel>
           <AlertDialogAction
             onClick={() =>
-              run(async () => {
-                await deleteTerms({ data: { type, ids: [term.id] } });
-                return true;
-              }, `${type === 'category' ? 'Category' : 'Tag'} deleted.`).then(
-                (removed) => removed && onRemoved()
-              )
+              run(
+                async () => {
+                  await deleteTerms({ data: { type, ids: [term.id] } });
+                  return true;
+                },
+                `${type === 'category' ? 'Category' : 'Tag'} deleted.`
+              ).then((removed) => removed && onRemoved())
             }
           >
             Delete
@@ -440,7 +441,9 @@ function TermForm({
     if (!reportInvalid(e.currentTarget)) return;
     const result = await run(
       () => saveTerm({ data: { id: term?.id, type, name, description } }),
-      term ? `${type === 'category' ? 'Category' : 'Tag'} saved.` : `${type === 'category' ? 'Category' : 'Tag'} created.`
+      term
+        ? `${type === 'category' ? 'Category' : 'Tag'} saved.`
+        : `${type === 'category' ? 'Category' : 'Tag'} created.`
     );
     if (result) onSaved(result.id);
   }

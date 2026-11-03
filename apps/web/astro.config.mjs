@@ -124,7 +124,7 @@ export default defineConfig({
       CMS_URL: envField.string({
         context: 'server',
         access: 'public',
-        default: 'https://living-legacy-cms.living-legacy.workers.dev',
+        default: 'https://cms.livinglegacy.com.au',
       }),
       PUBLIC_HUBSPOT_PORTAL_ID: envField.string({
         context: 'client',

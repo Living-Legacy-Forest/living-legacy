@@ -7,6 +7,7 @@
   "compatibility_date": "2026-10-20",
   "compatibility_flags": ["nodejs_compat"],
   "observability": { "enabled": true },
+  "routes": [{ "pattern": "cms.livinglegacy.com.au", "custom_domain": true }],
   "d1_databases": [
     {
       "binding": "DB",
@@ -23,7 +24,9 @@
   ],
   "vars": {
     // Local dev overrides this with http://localhost:3100 in .dev.vars.
-    "BETTER_AUTH_URL": "https://living-legacy-cms.living-legacy.workers.dev",
+    // Sign-in links and Google's callback are built from this, so it must be
+    // the address people use; the workers.dev one redirects here (src/server.ts).
+    "BETTER_AUTH_URL": "https://cms.livinglegacy.com.au",
     // Magic-link sender. The domain must be verified in Resend.
     "EMAIL_FROM": "Living Legacy <login@livinglegacy.earth>"
   }

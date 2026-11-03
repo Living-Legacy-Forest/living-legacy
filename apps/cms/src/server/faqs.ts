@@ -1,4 +1,4 @@
-import { MAX_FAQ_TAGS, toTags } from '@llf/content';
+import { MAX_FAQ_TAGS, slugify, toTags } from '@llf/content';
 import { schema } from '@llf/db';
 import { createServerFn } from '@tanstack/react-start';
 import { asc, eq, inArray, isNull, sql } from 'drizzle-orm';
@@ -15,7 +15,13 @@ export const listFaqs = createServerFn({ method: 'GET' })
     const db = getDb();
     const [groups, rows] = await Promise.all([
       db
-        .select({ id: faqGroups.id, name: faqGroups.name, sortOrder: faqGroups.sortOrder })
+        .select({
+          id: faqGroups.id,
+          name: faqGroups.name,
+          navLabel: faqGroups.navLabel,
+          slug: faqGroups.slug,
+          sortOrder: faqGroups.sortOrder,
+        })
         .from(faqGroups)
         .orderBy(asc(faqGroups.sortOrder), asc(faqGroups.name)),
       db
@@ -137,26 +143,37 @@ export const moveFaq = createServerFn({ method: 'POST' })
     ]);
   });
 
-const groupSchema = z.object({ id: z.string().optional(), name: z.string().trim().min(1).max(80) });
+const groupSchema = z.object({
+  id: z.string().optional(),
+  name: z.string().trim().min(1).max(80),
+  navLabel: z.string().trim().max(40).optional(),
+  /** Blank is made from the name. */
+  slug: z.string().trim().max(60).optional(),
+});
 
 export const saveFaqGroup = createServerFn({ method: 'POST' })
   .middleware([requirePermission('content:write')])
   .validator(groupSchema)
   .handler(async ({ data }) => {
     const db = getDb();
+    const values = {
+      name: data.name,
+      navLabel: data.navLabel || null,
+      slug: slugify(data.slug || data.name) || null,
+    };
     if (!data.id) {
       const [{ maxOrder } = { maxOrder: -1 }] = await db
         .select({ maxOrder: sql<number>`coalesce(max(${faqGroups.sortOrder}), -1)` })
         .from(faqGroups);
       const [row] = await db
         .insert(faqGroups)
-        .values({ name: data.name, sortOrder: Number(maxOrder) + 1 })
+        .values({ ...values, sortOrder: Number(maxOrder) + 1 })
         .returning({ id: faqGroups.id });
       return { id: row!.id };
     }
     await db
       .update(faqGroups)
-      .set({ name: data.name, updatedAt: new Date() })
+      .set({ ...values, updatedAt: new Date() })
       .where(eq(faqGroups.id, data.id));
     return { id: data.id };
   });

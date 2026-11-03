@@ -7,9 +7,8 @@
  * they remain indexable and findable with the browser's find-in-page before
  * this island ever hydrates.
  *
- * Each answer is one or more paragraphs of trusted, static HTML authored in
- * faqs.astro (a handful carry an inline link to a sister site's own booking
- * form), rendered here the same way Astro's set:html does.
+ * Answers are HTML rendered from the CMS by the shared rich-text renderer
+ * (paragraphs and links only), so they are safe to set as HTML.
  */
 import {
   Accordion,
@@ -17,29 +16,16 @@ import {
   AccordionItem,
   AccordionTrigger,
 } from '@/components/ui/accordion';
-
-export interface FaqItem {
-  q: string;
-  a: string[];
-}
-
-export interface FaqGroup {
-  id: string;
-  heading: string;
-  items: FaqItem[];
-}
+import type { FaqGroup } from '@/lib/faqs';
 
 export function FaqAccordion({ group }: { group: FaqGroup }) {
   return (
-    <Accordion multiple defaultValue={[`${group.id}-0`]}>
-      {group.items.map((item, i) => (
-        <AccordionItem key={item.q} value={`${group.id}-${i}`}>
-          <AccordionTrigger>{item.q}</AccordionTrigger>
+    <Accordion multiple defaultValue={[group.faqs[0]?.id ?? '']}>
+      {group.faqs.map((faq) => (
+        <AccordionItem key={faq.id} value={faq.id}>
+          <AccordionTrigger>{faq.question}</AccordionTrigger>
           <AccordionContent>
-            {item.a.map((paragraph, pi) => (
-              // Trusted, page-authored HTML (inline links); see faqs.astro.
-              <p key={pi} dangerouslySetInnerHTML={{ __html: paragraph }} />
-            ))}
+            <div dangerouslySetInnerHTML={{ __html: faq.answerHtml }} />
           </AccordionContent>
         </AccordionItem>
       ))}

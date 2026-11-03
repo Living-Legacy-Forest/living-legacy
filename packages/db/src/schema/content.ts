@@ -99,7 +99,12 @@ export const postTerms = sqliteTable(
 
 export const faqGroups = sqliteTable('faq_groups', {
   id: id(),
+  /** The heading on the FAQs page. */
   name: text('name').notNull(),
+  /** A shorter name for the page's side menu; blank uses the heading. */
+  navLabel: text('nav_label'),
+  /** The #anchor on the FAQs page; blank is made from the heading. */
+  slug: text('slug'),
   sortOrder: integer('sort_order').notNull().default(0),
   ...timestamps(),
 });

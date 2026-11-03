@@ -1,69 +1,44 @@
 ---
 /**
- * The five home-page FAQ entries, as accordions, with FAQPage JSON-LD for
- * these five only (the full ~30-question set lives at /faqs/).
+ * The home page's FAQs: those tagged "home" in the CMS, as accordions, with
+ * FAQPage JSON-LD for these only (the full set lives at /faqs/). Hidden when
+ * none are tagged.
  */
 import HugeIcon from '@/components/ui/HugeIcon.astro';
 import { ArrowRight02Icon } from '@hugeicons/core-free-icons';
 import { buttonVariants } from '@/components/ui/button';
+import { faqJsonLd, getFaqsByTag } from '@/lib/faqs';
 import { cn } from '@/lib/utils';
 import HomeFaq from './HomeFaq';
 
-const faqs = [
-  {
-    question: 'How much does a Living Legacy tree cost?',
-    answer:
-      'Living Legacy trees start from $7,000 including GST. There are no hidden fees or inflation costs. Price ranges can vary based on different factors such as the size and type of the tree, location, quantity of ashes infused into the tree, inclusions and more.',
-  },
-  {
-    question: 'What happens if the tree dies?',
-    answer:
-      'Our Living Legacy was carefully chosen for its excellent conditions and low risk for fire, flood and drought. If a tree does die, it is replaced by us at our cost. We use mulch where possible to pass on the energy from the tree.',
-  },
-  {
-    question: 'I have pet ashes. Can my fur babies have a memorial in the forest?',
-    answer:
-      "Yes, our families love that their pets' ashes and memorial can be placed with their tree.",
-  },
-  {
-    question: 'Are the trees protected?',
-    answer:
-      'Living Legacy has a council permit, a conservation and heritage covenant, and a member review committee. Customers are also protected under Australian Consumer Law. In addition, 20% of the tree sales fund a trust, dedicated to ongoing tree care and maintenance.',
-  },
-  {
-    question:
-      'I have kept the ashes of a loved one in an urn, can I still create a Legacy Tree for them?',
-    answer:
-      'While cremation methods have changed over time, ashes do not have a used-by date. The Living Legacy procedure has been proven to work with cremated ashes dating back to the 1960s.',
-  },
-] as const;
-
-const faqJsonLd = {
-  '@context': 'https://schema.org',
-  '@type': 'FAQPage',
-  mainEntity: faqs.map((faq) => ({
-    '@type': 'Question',
-    name: faq.question,
-    acceptedAnswer: {
-      '@type': 'Answer',
-      text: faq.answer,
-    },
-  })),
-};
+const faqs = await getFaqsByTag('home');
+const jsonLd = faqJsonLd(faqs);
 ---
 
-<section class="border-bark/20 border-t py-24 lg:py-32">
-  <p data-reveal class="eyebrow">Questions</p>
-  <h2 data-reveal class="section-title mt-4">Frequently asked questions</h2>
+{
+  faqs.length > 0 && (
+    <section class="border-bark/20 border-t py-24 lg:py-32">
+      <p data-reveal class="eyebrow">
+        Questions
+      </p>
+      <h2 data-reveal class="section-title mt-4">
+        Frequently asked questions
+      </h2>
 
-  <div data-reveal>
-    <HomeFaq faqs={faqs} client:visible />
-  </div>
+      <div data-reveal>
+        <HomeFaq faqs={faqs} client:visible />
+      </div>
 
-  <a href="/faqs/" class={cn(buttonVariants({ variant: 'link' }), 'mt-10')}>
-    More FAQs
-    <HugeIcon icon={ArrowRight02Icon} data-icon="inline-end" aria-hidden="true" />
-  </a>
-</section>
+      <a href="/faqs/" class={cn(buttonVariants({ variant: 'link' }), 'mt-10')}>
+        More FAQs
+        <HugeIcon icon={ArrowRight02Icon} data-icon="inline-end" aria-hidden="true" />
+      </a>
+    </section>
+  )
+}
 
-<script type="application/ld+json" is:inline set:html={JSON.stringify(faqJsonLd)} />
+{
+  faqs.length > 0 && (
+    <script type="application/ld+json" is:inline set:html={JSON.stringify(jsonLd)} />
+  )
+}

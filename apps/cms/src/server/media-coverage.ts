@@ -1,12 +1,10 @@
 import { mediaCoverageKinds, slugify } from '@llf/content';
-import { schema } from '@llf/db';
+import { mediaCoverage } from '@llf/db/schema';
 import { createServerFn } from '@tanstack/react-start';
 import { and, asc, desc, eq, inArray, isNull, ne } from 'drizzle-orm';
 import { z } from 'zod';
 import { getDb } from '@/lib/db';
 import { authMiddleware, requirePermission } from '@/lib/session';
-
-const { mediaCoverage } = schema;
 
 export const listMediaCoverage = createServerFn({ method: 'GET' })
   .middleware([authMiddleware])

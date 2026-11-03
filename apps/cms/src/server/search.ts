@@ -1,11 +1,9 @@
-import { schema } from '@llf/db';
+import { posts, postTerms, terms } from '@llf/db/schema';
 import { createServerFn } from '@tanstack/react-start';
 import { and, asc, desc, eq, isNull, or, sql } from 'drizzle-orm';
 import { z } from 'zod';
 import { getDb } from '@/lib/db';
 import { authMiddleware } from '@/lib/session';
-
-const { posts, terms, postTerms } = schema;
 
 const RESULT_LIMIT = 12;
 

@@ -1,15 +1,15 @@
-import { type Db, schema } from '@llf/db';
+import type { Db } from '@llf/db';
+import type { ActivityAction } from '@llf/db/enums';
+import { activityLog } from '@llf/db/schema';
 import { createServerFn } from '@tanstack/react-start';
 import { desc } from 'drizzle-orm';
 import { getDb } from '@/lib/db';
 import { requirePermission } from '@/lib/session';
 
-const { activityLog } = schema;
-
 export type LogEntry = {
   actorId: string | null;
   actorName: string;
-  action: (typeof schema.activityActions)[number];
+  action: ActivityAction;
   summary: string;
 };
 

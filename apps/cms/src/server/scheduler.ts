@@ -1,9 +1,8 @@
 import { publishErrors } from '@llf/content';
-import { createDb, schema } from '@llf/db';
+import { createDb } from '@llf/db';
+import { posts } from '@llf/db/schema';
 import { and, eq, isNull, lte } from 'drizzle-orm';
 import { liveInput, publishValues } from './post-store';
-
-const { posts } = schema;
 
 /**
  * Publishes every scheduled draft that is due. Called by the Worker's cron

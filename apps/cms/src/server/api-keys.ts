@@ -1,4 +1,5 @@
-import { schema } from '@llf/db';
+import { apiKeyScopes } from '@llf/db/enums';
+import { apiKeys, user } from '@llf/db/schema';
 import { createServerFn } from '@tanstack/react-start';
 import { and, desc, eq, isNull } from 'drizzle-orm';
 import { z } from 'zod';
@@ -6,8 +7,6 @@ import { generateApiKey, hashApiKey } from '@/lib/api-keys';
 import { getDb } from '@/lib/db';
 import { requirePermission } from '@/lib/session';
 import { logActivity } from './activity-log';
-
-const { apiKeys, user } = schema;
 
 /** Every key, newest first, including revoked ones (shown as such). */
 export const listApiKeys = createServerFn({ method: 'GET' })
@@ -43,7 +42,7 @@ export const createApiKey = createServerFn({ method: 'POST' })
   .validator(
     z.object({
       name: z.string().trim().min(1, 'Give the key a name.').max(80),
-      scope: z.enum(schema.apiKeyScopes),
+      scope: z.enum(apiKeyScopes),
     })
   )
   .handler(async ({ data, context }) => {

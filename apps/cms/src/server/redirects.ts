@@ -1,5 +1,5 @@
 import { type RedirectRule, isWildcard, redirectStatusCodes, traceRedirect } from '@llf/content';
-import { schema } from '@llf/db';
+import { redirects } from '@llf/db/schema';
 import { createServerFn } from '@tanstack/react-start';
 import { desc, eq, inArray } from 'drizzle-orm';
 import { z } from 'zod';
@@ -7,8 +7,6 @@ import { type BulkResult, firstIssue } from '@/lib/bulk-import';
 import { getDb } from '@/lib/db';
 import { requirePermission } from '@/lib/session';
 import { logActivity } from './activity-log';
-
-const { redirects } = schema;
 
 /** The public website, checked so a redirect does not hide a page that still exists. */
 const SITE_URL = 'https://livinglegacy.com.au';

@@ -1,12 +1,10 @@
 import { slugify } from '@llf/content';
-import { schema } from '@llf/db';
+import { posts, postTerms, terms } from '@llf/db/schema';
 import { createServerFn } from '@tanstack/react-start';
 import { and, asc, count, eq, inArray, isNull, ne } from 'drizzle-orm';
 import { z } from 'zod';
 import { getDb } from '@/lib/db';
 import { authMiddleware, requirePermission } from '@/lib/session';
-
-const { terms, postTerms, posts } = schema;
 
 const typeSchema = z.object({ type: z.enum(['category', 'tag']) });
 

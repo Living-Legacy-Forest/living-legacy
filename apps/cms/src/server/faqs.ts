@@ -1,13 +1,11 @@
 import { MAX_FAQ_TAGS, slugify, toTags } from '@llf/content';
-import { schema } from '@llf/db';
+import { faqGroups, faqs } from '@llf/db/schema';
 import { createServerFn } from '@tanstack/react-start';
 import { asc, eq, inArray, isNull, sql } from 'drizzle-orm';
 import { z } from 'zod';
 import { type BulkResult, firstIssue } from '@/lib/bulk-import';
 import { getDb } from '@/lib/db';
 import { authMiddleware, requirePermission } from '@/lib/session';
-
-const { faqs, faqGroups } = schema;
 
 export const listFaqs = createServerFn({ method: 'GET' })
   .middleware([authMiddleware])

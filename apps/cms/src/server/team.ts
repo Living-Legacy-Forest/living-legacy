@@ -1,12 +1,10 @@
-import { schema } from '@llf/db';
+import { teamMembers } from '@llf/db/schema';
 import { createServerFn } from '@tanstack/react-start';
 import { asc, eq, inArray, isNull, sql } from 'drizzle-orm';
 import { z } from 'zod';
 import { type BulkResult, firstIssue } from '@/lib/bulk-import';
 import { getDb } from '@/lib/db';
 import { authMiddleware, requirePermission } from '@/lib/session';
-
-const { teamMembers } = schema;
 
 export const listTeamMembers = createServerFn({ method: 'GET' })
   .middleware([authMiddleware])

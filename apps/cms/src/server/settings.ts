@@ -12,15 +12,13 @@ import {
   themes,
   timeZones,
 } from '@llf/content';
-import { schema } from '@llf/db';
+import { siteSettings } from '@llf/db/schema';
 import { createServerFn } from '@tanstack/react-start';
 import { z } from 'zod';
 import { getDb } from '@/lib/db';
 import { authMiddleware, requirePermission } from '@/lib/session';
 import { readSiteSettings } from '@/lib/site-settings';
 import { logActivity } from './activity-log';
-
-const { siteSettings } = schema;
 
 export { TITLE_TOKENS, locales, themes, timeZones };
 export type { Locale, SiteSettings, Theme, TimeZone };
@@ -30,18 +28,13 @@ export const getSiteSettings = createServerFn({ method: 'GET' })
   .handler(() => readSiteSettings());
 
 /**
- * Just the theme, with no auth: the root document needs it to render the
- * right colour scheme server-side, before a session is known (e.g. login).
+ * The settings every page needs, with no auth: the theme renders the right
+ * colour scheme server-side before a session is known (e.g. login), and
+ * scheduling UI needs the time zone everywhere.
  */
-export const getSiteTheme = createServerFn({ method: 'GET' }).handler(async () => {
-  const { theme } = await readSiteSettings();
-  return theme;
-});
-
-/** Just the time zone, with no auth: scheduling UI needs it on every page. */
-export const getSiteTimeZone = createServerFn({ method: 'GET' }).handler(async () => {
-  const { timeZone } = await readSiteSettings();
-  return timeZone;
+export const getRootSettings = createServerFn({ method: 'GET' }).handler(async () => {
+  const { theme, timeZone } = await readSiteSettings();
+  return { theme, timeZone };
 });
 
 const text = (max: number) => z.string().trim().max(max).default('');

@@ -1,0 +1,34 @@
+// No drizzle imports here: browser code (form validators) imports these, and
+// must not pull the table definitions into the client bundle.
+
+export const entityTypes = [
+  'post',
+  'faq',
+  'testimonial',
+  'team_member',
+  'media_coverage',
+  'settings',
+] as const;
+export type EntityType = (typeof entityTypes)[number];
+
+export const activityActions = [
+  'post.published',
+  'post.scheduled',
+  'post.unpublished',
+  'user.invited',
+  'user.role_changed',
+  'user.removed',
+  'user.photo_changed',
+  'redirect.created',
+  'redirect.updated',
+  'redirect.deleted',
+  'settings.updated',
+  'api_key.created',
+  'api_key.revoked',
+  'post.created_via_api',
+  'post.updated_via_api',
+] as const;
+export type ActivityAction = (typeof activityActions)[number];
+
+export const apiKeyScopes = ['read', 'write'] as const;
+export type ApiKeyScope = (typeof apiKeyScopes)[number];

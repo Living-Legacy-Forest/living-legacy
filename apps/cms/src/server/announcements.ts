@@ -1,12 +1,10 @@
 import { announcementBackgrounds } from '@llf/content';
-import { schema } from '@llf/db';
+import { announcements } from '@llf/db/schema';
 import { createServerFn } from '@tanstack/react-start';
 import { desc, eq, inArray } from 'drizzle-orm';
 import { z } from 'zod';
 import { getDb } from '@/lib/db';
 import { authMiddleware, requirePermission } from '@/lib/session';
-
-const { announcements } = schema;
 
 export const listAnnouncements = createServerFn({ method: 'GET' })
   .middleware([authMiddleware])

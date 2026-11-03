@@ -14,8 +14,12 @@ export type SessionUser = {
   role: Role;
 };
 
-async function loadUser(): Promise<SessionUser | null> {
-  const session = await getAuth().api.getSession({ headers: getRequest().headers });
+/** `fresh` skips the session cookie cache, for when stale details would show. */
+async function loadUser({ fresh = false } = {}): Promise<SessionUser | null> {
+  const session = await getAuth().api.getSession({
+    headers: getRequest().headers,
+    query: { disableCookieCache: fresh },
+  });
   if (!session) return null;
   const { id, name, email, image, imageAlt, bio, role } = session.user;
   return {
@@ -29,11 +33,14 @@ async function loadUser(): Promise<SessionUser | null> {
   };
 }
 
-export const getCurrentUser = createServerFn({ method: 'GET' }).handler(() => loadUser());
+export const getCurrentUser = createServerFn({ method: 'GET' }).handler(() =>
+  loadUser({ fresh: true })
+);
 
 /**
  * The signed-in user as last seen by the browser, so changing pages does not wait
- * on a session check. Server functions still check the session on every call.
+ * on a session check. Server functions still check the session on every call
+ * (through the 5-minute session cookie cache).
  */
 let browserUser: SessionUser | undefined;
 

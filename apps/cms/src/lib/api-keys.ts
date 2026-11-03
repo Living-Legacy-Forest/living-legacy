@@ -8,13 +8,12 @@
  * allows (read needs any role; write needs posts:write).
  */
 import { type Role, can } from '@llf/content';
-import { schema } from '@llf/db';
+import type { ApiKeyScope } from '@llf/db/enums';
+import { apiKeys, user } from '@llf/db/schema';
 import { and, eq, isNull } from 'drizzle-orm';
 import { getDb } from './db';
 
-const { apiKeys, user } = schema;
-
-export type ApiKeyScope = (typeof schema.apiKeyScopes)[number];
+export type { ApiKeyScope };
 
 const KEY_PREFIX = 'llk_';
 /** Characters shown in the CMS so people can tell their keys apart. */

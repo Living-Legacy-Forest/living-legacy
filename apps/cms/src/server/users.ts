@@ -1,5 +1,5 @@
 import { guardRemoval, guardRoleChange, normaliseEmail, roleSchema } from '@llf/content';
-import { schema } from '@llf/db';
+import { invitation, user } from '@llf/db/schema';
 import { createServerFn } from '@tanstack/react-start';
 import { env } from 'cloudflare:workers';
 import { count, desc, eq } from 'drizzle-orm';
@@ -9,8 +9,6 @@ import { getDb } from '@/lib/db';
 import { sendInviteEmail } from '@/lib/email';
 import { requirePermission } from '@/lib/session';
 import { logActivity } from './activity-log';
-
-const { user, invitation } = schema;
 
 async function adminCount(db: ReturnType<typeof getDb>): Promise<number> {
   const [row] = await db.select({ n: count() }).from(user).where(eq(user.role, 'admin'));

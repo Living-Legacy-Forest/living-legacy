@@ -15,7 +15,7 @@ export type Statements = [Statement, ...Statement[]];
 // ---------------------------------------------------------------------------
 // Helpers
 
-export function conflictError() {
+function conflictError() {
   return new Error(
     'Someone else saved this post while you were editing. Reload to see their changes.'
   );
@@ -84,7 +84,7 @@ export async function uniqueSlug(db: Db, base: string, excludeId?: string) {
 }
 
 /** Term IDs for the given tag names, creating tags that do not exist yet. */
-export async function resolveTagIds(db: Db, names: string[]) {
+async function resolveTagIds(db: Db, names: string[]) {
   const wanted = new Map<string, string>();
   for (const name of names) {
     const slug = slugify(name);
@@ -102,7 +102,7 @@ export async function resolveTagIds(db: Db, names: string[]) {
   return rows.map((r) => r.id);
 }
 
-export async function validCategoryIds(db: Db, ids: string[]) {
+async function validCategoryIds(db: Db, ids: string[]) {
   if (ids.length === 0) return [];
   const rows = await db
     .select({ id: terms.id })

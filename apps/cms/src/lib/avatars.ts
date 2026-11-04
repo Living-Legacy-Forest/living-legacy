@@ -1,7 +1,7 @@
 import { env } from 'cloudflare:workers';
 
 /** The storage key behind an avatar URL, or null for anything else. */
-export function avatarKey(image: string | null | undefined): string | null {
+function avatarKey(image: string | null | undefined): string | null {
   const match = image?.match(/^\/api\/avatar\/(avatar-[^/]+)$/);
   return match?.[1] ?? null;
 }

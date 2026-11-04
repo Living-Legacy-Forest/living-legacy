@@ -20,7 +20,7 @@ import { authMiddleware, requirePermission } from '@/lib/session';
 import { readSiteSettings } from '@/lib/site-settings';
 import { logActivity } from './activity-log';
 
-export { TITLE_TOKENS, locales, themes, timeZones };
+export { TITLE_TOKENS, timeZones };
 export type { Locale, SiteSettings, Theme, TimeZone };
 
 export const getSiteSettings = createServerFn({ method: 'GET' })

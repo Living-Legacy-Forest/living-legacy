@@ -32,7 +32,9 @@ import {
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
 import { Button } from '@/components/ui/button';
-import { Checkbox } from '@/components/ui/checkbox';
+import { isDesktop } from '@/components/list/list-page';
+import { ListRow } from '@/components/list/list-row';
+import { useSelection } from '@/components/list/list-tools';
 import {
   Empty,
   EmptyContent,
@@ -105,7 +107,7 @@ export function PostsList({
 }) {
   const navigate = useNavigate({ from: '/posts/' });
   const { run, pending } = useAction();
-  const [checked, setChecked] = useState<Set<string>>(new Set());
+  const selection = useSelection(data.rows.map((r) => r.id));
   const [confirmDelete, setConfirmDelete] = useState<string[] | null>(null);
   const [query, setQuery] = useState(search.q ?? '');
   const inTrash = search.status === 'trash';
@@ -119,7 +121,8 @@ export function PostsList({
   const select = (id: string) =>
     navigate({ search: (prev) => ({ ...prev, selected: id }), replace: true });
 
-  useEffect(() => setChecked(new Set()), [data.rows]);
+  // A new page of rows starts with nothing ticked.
+  useEffect(() => selection.clear(), [data.rows]);
 
   // Debounced search: update the URL once typing pauses.
   useEffect(() => {
@@ -137,14 +140,6 @@ export function PostsList({
     }, 300);
     return () => clearTimeout(timer);
   }, [query, search.q, navigate]);
-
-  const toggle = (id: string) =>
-    setChecked((prev) => {
-      const next = new Set(prev);
-      if (next.has(id)) next.delete(id);
-      else next.add(id);
-      return next;
-    });
 
   const mutate = async (action: () => Promise<{ count: number }>, verb: string) => {
     clearPostPreviews();
@@ -173,7 +168,7 @@ export function PostsList({
   const page = search.page ?? 1;
   const from = data.total === 0 ? 0 : (page - 1) * POSTS_PAGE_SIZE + 1;
   const to = Math.min(page * POSTS_PAGE_SIZE, data.total);
-  const checkedIds = [...checked];
+  const checkedIds = selection.checkedIds;
   const selectedRow = data.rows.find((r) => r.id === selectedId) ?? null;
 
   return (
@@ -235,17 +230,17 @@ export function PostsList({
       <div className="grid min-h-0 flex-1 grid-cols-1 overflow-hidden rounded-lg border lg:grid-cols-[minmax(20rem,2fr)_minmax(0,3fr)]">
         <section aria-label="Post list" className="flex min-h-0 flex-col lg:border-r">
           <div className="flex h-11 shrink-0 items-center gap-1 border-b px-2">
-            {checked.size > 0 ? (
+            {checkedIds.length > 0 ? (
               <>
                 <Button
                   variant="ghost"
                   size="icon-sm"
                   aria-label="Clear selection"
-                  onClick={() => setChecked(new Set())}
+                  onClick={selection.clear}
                 >
                   <XIcon aria-hidden />
                 </Button>
-                <span className="mr-auto text-[13px]">{checked.size} selected</span>
+                <span className="mr-auto text-[13px]">{checkedIds.length} selected</span>
                 {inTrash ? (
                   <>
                     <Button
@@ -310,6 +305,16 @@ export function PostsList({
                 })}
               </nav>
             )}
+            {canPublish && checkedIds.length === 0 && (
+              <Button
+                variant="ghost"
+                size="sm"
+                className="text-brand touch:inline-flex ml-auto hidden min-h-11 shrink-0 text-[0.9375rem] font-medium"
+                onClick={selection.selecting ? selection.clear : selection.startEditing}
+              >
+                {selection.selecting ? 'Done' : 'Edit'}
+              </Button>
+            )}
           </div>
 
           {data.rows.length === 0 ? (
@@ -322,10 +327,25 @@ export function PostsList({
                   row={row}
                   inTrash={inTrash}
                   selected={row.id === selectedId}
-                  checked={checked.has(row.id)}
-                  selecting={checked.size > 0}
-                  selectable={canPublish}
-                  onToggle={() => toggle(row.id)}
+                  select={
+                    canPublish
+                      ? {
+                          label: `Select ${row.title || 'Untitled'}`,
+                          checked: selection.isChecked(row.id),
+                          selecting: selection.selecting,
+                          onToggle: () => selection.toggle(row.id),
+                        }
+                      : undefined
+                  }
+                  swipe={
+                    inTrash
+                      ? canPurge
+                        ? { label: 'Delete', onAction: () => setConfirmDelete([row.id]) }
+                        : undefined
+                      : canPublish
+                        ? { label: 'Trash', onAction: () => trash([row.id]) }
+                        : undefined
+                  }
                   onSelect={() => select(row.id)}
                 />
               ))}
@@ -436,20 +456,16 @@ function PostListItem({
   row,
   inTrash,
   selected,
-  checked,
-  selecting,
-  selectable,
-  onToggle,
+  select,
+  swipe,
   onSelect,
 }: {
   row: PostListRow;
   inTrash: boolean;
   selected: boolean;
-  checked: boolean;
-  selecting: boolean;
   /** Only people who may trash or restore get tick boxes. */
-  selectable: boolean;
-  onToggle: () => void;
+  select?: React.ComponentProps<typeof ListRow>['select'];
+  swipe?: React.ComponentProps<typeof ListRow>['swipe'];
   onSelect: () => void;
 }) {
   const navigate = useNavigate();
@@ -465,59 +481,39 @@ function PostListItem({
     inTrash ? undefined : navigate({ to: '/posts/$postId', params: { postId: row.id } });
 
   return (
-    <li
-      className={cn(
-        'group has-[[data-row]:focus-visible]:ring-ring relative flex items-start gap-1 rounded-md pl-1.5 transition-colors has-[[data-row]:focus-visible]:ring-1',
-        selected ? 'bg-accent' : 'hover:bg-muted/60'
-      )}
+    <ListRow
+      align="start"
+      current={selected}
+      select={select}
+      swipe={swipe}
+      // Below lg there is no preview pane: a tap opens the editor instead.
+      onOpen={() => (isDesktop() ? onSelect() : open())}
+      onDoubleClick={open}
+      buttonProps={{
+        'data-row': true,
+        onKeyDown: onRowKeyDown,
+        onPointerEnter: () => void loadPostPreview(row.id),
+      }}
     >
-      {selectable && (
-        <Checkbox
-          aria-label={`Select ${row.title || 'Untitled'}`}
-          checked={checked}
-          onCheckedChange={onToggle}
-          className={cn(
-            'mt-3 transition-opacity',
-            checked || selecting
-              ? 'opacity-100'
-              : 'opacity-0 group-hover:opacity-100 focus-visible:opacity-100'
-          )}
+      <span className="flex items-baseline gap-3">
+        <span className="min-w-0 flex-1 truncate text-[13px] font-medium">
+          {row.title || 'Untitled'}
+        </span>
+        <span className="text-muted-foreground shrink-0 text-xs tabular-nums">
+          {date ? formatDate(date, timeZone) : ''}
+        </span>
+      </span>
+      <span className="text-muted-foreground mt-0.5 flex min-w-0 items-center gap-1 text-xs">
+        <PostStatusBadge
+          status={row.status}
+          hasDraft={row.hasDraft}
+          trashed={inTrash}
+          inReview={row.reviewRequestedAt !== null}
+          scheduledAt={row.scheduledAt}
         />
-      )}
-      <button
-        type="button"
-        data-row
-        aria-current={selected ? 'true' : undefined}
-        onClick={() => {
-          // Below lg there is no preview pane: open the editor instead.
-          if (window.matchMedia('(min-width: 1024px)').matches) onSelect();
-          else open();
-        }}
-        onDoubleClick={open}
-        onKeyDown={onRowKeyDown}
-        onPointerEnter={() => void loadPostPreview(row.id)}
-        className="min-w-0 flex-1 rounded-md px-1.5 py-2 text-left outline-none"
-      >
-        <span className="flex items-baseline gap-3">
-          <span className="min-w-0 flex-1 truncate text-[13px] font-medium">
-            {row.title || 'Untitled'}
-          </span>
-          <span className="text-muted-foreground shrink-0 text-xs tabular-nums">
-            {date ? formatDate(date, timeZone) : ''}
-          </span>
-        </span>
-        <span className="text-muted-foreground mt-0.5 flex min-w-0 items-center gap-1 text-xs">
-          <PostStatusBadge
-            status={row.status}
-            hasDraft={row.hasDraft}
-            trashed={inTrash}
-            inReview={row.reviewRequestedAt !== null}
-            scheduledAt={row.scheduledAt}
-          />
-          {meta.length > 0 && <span className="min-w-0 truncate">{['', ...meta].join(' · ')}</span>}
-        </span>
-      </button>
-    </li>
+        {meta.length > 0 && <span className="min-w-0 truncate">{['', ...meta].join(' · ')}</span>}
+      </span>
+    </ListRow>
   );
 }
 

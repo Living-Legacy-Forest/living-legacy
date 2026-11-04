@@ -1,23 +1,34 @@
 import { useState } from 'react';
 import { BulkCsvForm } from '@/components/bulk/bulk-csv-form';
 import {
-  BulkPane,
-  ConfirmBulkDelete,
-  RowCheckbox,
-  SearchInput,
-  SelectionBar,
-  matchesSearch,
-  useSelection,
-} from '@/components/bulk/list-tools';
-import {
   ChevronDownIcon,
   ChevronUpIcon,
-  PanelRightIcon,
   PlusIcon,
   Trash2Icon,
   UploadIcon,
   UsersIcon,
 } from '@/components/icons';
+import {
+  DialogActions,
+  ListColumn,
+  ListDialog,
+  ListPageLayout,
+  ListRows,
+  NoMatches,
+  PaneActions,
+  PaneColumn,
+  PaneEmpty,
+  PaneFrame,
+  useListPane,
+} from '@/components/list/list-page';
+import { ListRow } from '@/components/list/list-row';
+import {
+  ConfirmBulkDelete,
+  SearchInput,
+  SelectionBar,
+  matchesSearch,
+  useSelection,
+} from '@/components/list/list-tools';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -32,15 +43,6 @@ import {
 import { ImageField } from '@/components/media/image-field';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import {
-  Dialog,
-  DialogClose,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from '@/components/ui/dialog';
 import {
   Empty,
   EmptyContent,
@@ -57,7 +59,6 @@ import { Textarea } from '@/components/ui/textarea';
 import { readStatus } from '@/lib/bulk-import';
 import { reportInvalid } from '@/lib/form-validation';
 import { useAction } from '@/lib/use-action';
-import { cn } from '@/lib/utils';
 import {
   type TeamListData,
   type TeamMember,
@@ -67,9 +68,6 @@ import {
   moveTeamMember,
   saveTeamMember,
 } from '@/server/team';
-
-const isDesktop = () =>
-  typeof window !== 'undefined' && window.matchMedia('(min-width: 1024px)').matches;
 
 const NOUN: [string, string] = ['team member', 'team members'];
 
@@ -84,36 +82,43 @@ function memberFromCsv(values: Record<string, string>) {
   return { name: values.name, role: values.role, bio: values.bio, status };
 }
 
+/** What the pane (or, on smaller screens, the dialog) shows. */
+type Target = { kind: 'edit'; id: string } | { kind: 'new' } | { kind: 'bulk' };
+
 export function TeamPage({ data, canWrite }: { data: TeamListData; canWrite: boolean }) {
-  // Desktop: who the right-hand pane is editing. Mobile has no pane, so the
-  // same form opens in a dialog instead (set independently, see openNew/openEdit).
-  const [editingId, setEditingId] = useState<string | 'new' | 'bulk' | null>(null);
-  const [dialogTarget, setDialogTarget] = useState<TeamMember | 'new' | 'bulk' | null>(null);
+  const view = useListPane<Target>();
   const [query, setQuery] = useState('');
-  const [confirmDelete, setConfirmDelete] = useState(false);
+  const [toDelete, setToDelete] = useState<string[] | null>(null);
   const selection = useSelection(data.map((m) => m.id));
   const { run, pending } = useAction();
 
-  const selected = data.find((m) => m.id === editingId) ?? null;
+  const memberFor = (target: Target | null) =>
+    target?.kind === 'edit' ? (data.find((m) => m.id === target.id) ?? null) : null;
+  // A member removed elsewhere closes the pane.
+  const pane = view.pane?.kind === 'edit' && !memberFor(view.pane) ? null : view.pane;
   const visible = data.filter((m) => matchesSearch(query, [m.name, m.role, m.bio]));
 
-  const openNew = () => (isDesktop() ? setEditingId('new') : setDialogTarget('new'));
-  const openBulk = () => (isDesktop() ? setEditingId('bulk') : setDialogTarget('bulk'));
-  const openEdit = (member: TeamMember) =>
-    isDesktop() ? setEditingId(member.id) : setDialogTarget(member);
-
-  async function removeChecked() {
-    const ids = selection.checkedIds;
+  async function remove(ids: string[]) {
     const result = await run(
       () => deleteTeamMembers({ data: { ids } }),
       `${ids.length} ${ids.length === 1 ? NOUN[0] : NOUN[1]} removed.`
     );
     if (!result) return;
-    if (editingId && ids.includes(editingId)) setEditingId(null);
+    if (view.pane?.kind === 'edit' && ids.includes(view.pane.id)) view.closePane();
     selection.clear();
   }
 
-  const bulkForm = (onDone: () => void, footer: (submit: React.ReactNode) => React.ReactNode) => (
+  const deleteButton = (member: TeamMember, onRemoved: () => void) => (
+    <DeleteMember
+      member={member}
+      disabled={pending}
+      onConfirm={() =>
+        run(() => deleteTeamMember({ data: { id: member.id } }), 'Member removed.').then(onRemoved)
+      }
+    />
+  );
+
+  const bulkForm = (onDone: () => void, actions: (submit: React.ReactNode) => React.ReactNode) => (
     <BulkCsvForm
       noun={NOUN}
       fileName="team"
@@ -134,9 +139,38 @@ export function TeamPage({ data, canWrite }: { data: TeamListData; canWrite: boo
       toRow={memberFromCsv}
       apply={(rows) => importTeamMembers({ data: { rows } })}
       onDone={onDone}
-      footer={footer}
+      footer={actions}
     />
   );
+
+  const memberForm = (
+    target: Target,
+    onSaved: (id: string) => void,
+    actions: (submit: React.ReactNode) => React.ReactNode
+  ) => (
+    <MemberForm
+      key={target.kind === 'edit' ? target.id : target.kind}
+      member={memberFor(target)}
+      onSaved={onSaved}
+      footer={(formPending, isNew) => actions(<SubmitButton pending={formPending} isNew={isNew} />)}
+    />
+  );
+
+  const addButtons = (
+    <>
+      <Button size="sm" variant="outline" onClick={() => view.open({ kind: 'bulk' })}>
+        <UploadIcon aria-hidden data-icon="inline-start" />
+        Bulk update
+      </Button>
+      <Button size="sm" onClick={() => view.open({ kind: 'new' })}>
+        <PlusIcon aria-hidden data-icon="inline-start" />
+        Add member
+      </Button>
+    </>
+  );
+
+  const paneMember = memberFor(pane);
+  const dialogMember = memberFor(view.dialog);
 
   return (
     <div className="flex flex-1 flex-col gap-4 lg:h-[calc(100svh-7.5rem)] lg:flex-none">
@@ -152,21 +186,10 @@ export function TeamPage({ data, canWrite }: { data: TeamListData; canWrite: boo
             onChange={setQuery}
           />
         )}
-        {canWrite && (
-          <>
-            <Button size="sm" variant="outline" onClick={openBulk}>
-              <UploadIcon aria-hidden data-icon="inline-start" />
-              Bulk update
-            </Button>
-            <Button size="sm" onClick={openNew}>
-              <PlusIcon aria-hidden data-icon="inline-start" />
-              Add member
-            </Button>
-          </>
-        )}
+        {canWrite && addButtons}
       </div>
 
-      {data.length === 0 && editingId === null ? (
+      {data.length === 0 && pane === null ? (
         <Empty className="flex-1 rounded-lg border">
           <EmptyHeader>
             <EmptyMedia variant="icon">
@@ -179,264 +202,203 @@ export function TeamPage({ data, canWrite }: { data: TeamListData; canWrite: boo
           </EmptyHeader>
           {canWrite && (
             <EmptyContent>
-              <div className="flex gap-2">
-                <Button size="sm" variant="outline" onClick={openBulk}>
-                  <UploadIcon aria-hidden data-icon="inline-start" />
-                  Bulk update
-                </Button>
-                <Button size="sm" onClick={openNew}>
-                  <PlusIcon aria-hidden data-icon="inline-start" />
-                  Add member
-                </Button>
-              </div>
+              <div className="flex gap-2">{addButtons}</div>
             </EmptyContent>
           )}
         </Empty>
       ) : (
-        <div className="grid min-h-0 flex-1 grid-cols-1 overflow-hidden rounded-lg border lg:grid-cols-[minmax(20rem,1fr)_minmax(0,1fr)]">
-          <section aria-label="Team members" className="flex min-h-0 flex-col lg:border-r">
-            {canWrite ? (
+        <ListPageLayout>
+          <ListColumn
+            label="Team members"
+            header={
               <SelectionBar
                 selection={selection}
                 visibleIds={visible.map((m) => m.id)}
                 title="Members"
                 total={data.length}
                 pending={pending}
-                onDelete={() => setConfirmDelete(true)}
+                onDelete={canWrite ? () => setToDelete(selection.checkedIds) : undefined}
               />
-            ) : (
-              <div className="flex h-11 shrink-0 items-center gap-2 border-b px-3">
-                <span className="text-[13px] font-medium">Members</span>
-                <span className="text-muted-foreground text-xs tabular-nums">{data.length}</span>
-              </div>
-            )}
+            }
+          >
             {visible.length === 0 ? (
-              <NoMatches onClear={() => setQuery('')} />
+              <NoMatches onClear={() => setQuery('')}>Nobody matches that search.</NoMatches>
             ) : (
-              <ul className="min-h-0 flex-1 space-y-px overflow-y-auto p-1.5">
+              <ListRows>
                 {visible.map((member) => {
                   const index = data.indexOf(member);
                   return (
-                    <MemberListItem
+                    <ListRow
                       key={member.id}
-                      member={member}
-                      selected={member.id === editingId}
-                      checked={selection.isChecked(member.id)}
-                      selecting={selection.checkedIds.length > 0}
-                      onToggle={() => selection.toggle(member.id)}
-                      // Reordering a filtered list would be confusing, so it waits for a clear search.
-                      canMoveUp={!query && index > 0}
-                      canMoveDown={!query && index < data.length - 1}
-                      canWrite={canWrite}
-                      onSelect={() => openEdit(member)}
-                    />
+                      current={pane?.kind === 'edit' && pane.id === member.id}
+                      select={
+                        canWrite
+                          ? {
+                              label: `Select ${member.name}`,
+                              checked: selection.isChecked(member.id),
+                              selecting: selection.selecting,
+                              onToggle: () => selection.toggle(member.id),
+                            }
+                          : undefined
+                      }
+                      swipe={
+                        canWrite
+                          ? { label: 'Delete', onAction: () => setToDelete([member.id]) }
+                          : undefined
+                      }
+                      actions={
+                        canWrite && (
+                          <MoveButtons
+                            member={member}
+                            // Reordering a filtered list would be confusing, so it waits for a clear search.
+                            canMoveUp={!query && index > 0}
+                            canMoveDown={!query && index < data.length - 1}
+                          />
+                        )
+                      }
+                      onOpen={() => canWrite && view.open({ kind: 'edit', id: member.id })}
+                    >
+                      <MemberSummary member={member} />
+                    </ListRow>
                   );
                 })}
-              </ul>
+              </ListRows>
             )}
-          </section>
+          </ListColumn>
 
-          <section aria-label="Edit member" className="hidden min-h-0 flex-col lg:flex">
-            {!canWrite || editingId === null ? (
-              <Empty>
-                <EmptyHeader>
-                  <EmptyMedia variant="icon">
-                    <PanelRightIcon aria-hidden />
-                  </EmptyMedia>
-                  <EmptyTitle>No member selected</EmptyTitle>
-                  <EmptyDescription>
-                    Choose someone from the list, or add a new member.
-                  </EmptyDescription>
-                </EmptyHeader>
-              </Empty>
-            ) : editingId === 'bulk' ? (
-              <BulkPane title="Bulk update team members">
-                {bulkForm(
-                  () => setEditingId(null),
+          <PaneColumn label="Edit member">
+            {!canWrite || pane === null ? (
+              <PaneEmpty
+                title="No member selected"
+                description="Choose someone from the list, or add a new member."
+              />
+            ) : pane.kind === 'bulk' ? (
+              <PaneFrame title="Bulk update team members" width="lg">
+                {bulkForm(view.closePane, (submit) => (
+                  <PaneActions onCancel={view.closePane}>{submit}</PaneActions>
+                ))}
+              </PaneFrame>
+            ) : (
+              <PaneFrame
+                title={paneMember ? paneMember.name : 'New member'}
+                actions={paneMember && deleteButton(paneMember, view.closePane)}
+              >
+                {memberForm(
+                  pane,
+                  (id) => view.setPane({ kind: 'edit', id }),
                   (submit) => (
-                    <div className="flex justify-end gap-2">
-                      <Button type="button" variant="outline" onClick={() => setEditingId(null)}>
-                        Cancel
-                      </Button>
-                      {submit}
-                    </div>
+                    <PaneActions onCancel={view.closePane}>{submit}</PaneActions>
                   )
                 )}
-              </BulkPane>
-            ) : (
-              <MemberPane
-                key={editingId}
-                member={editingId === 'new' ? null : selected}
-                onSaved={(id) => setEditingId(id)}
-                onClose={() => setEditingId(null)}
-              />
+              </PaneFrame>
             )}
-          </section>
-        </div>
+          </PaneColumn>
+        </ListPageLayout>
       )}
 
       <ConfirmBulkDelete
-        open={confirmDelete}
-        onOpenChange={setConfirmDelete}
-        count={selection.checkedIds.length}
+        open={toDelete !== null}
+        onOpenChange={(open) => !open && setToDelete(null)}
+        count={toDelete?.length ?? 0}
         noun={NOUN}
         description="They are removed from the website. Posts they authored keep their content."
-        onConfirm={removeChecked}
+        onConfirm={() => toDelete && remove(toDelete)}
       />
 
       {canWrite && (
-        <Dialog
-          open={dialogTarget !== null}
-          onOpenChange={(open) => !open && setDialogTarget(null)}
+        <ListDialog
+          open={view.dialog !== null}
+          onClose={view.closeDialog}
+          size={view.dialog?.kind === 'bulk' ? 'lg' : 'sm'}
+          title={
+            view.dialog?.kind === 'bulk'
+              ? 'Bulk update team members'
+              : view.dialog?.kind === 'new'
+                ? 'Add member'
+                : 'Edit member'
+          }
+          description={
+            view.dialog?.kind === 'bulk'
+              ? 'Add or update many members at once from a CSV file.'
+              : 'Shown on the website and available as a post author.'
+          }
         >
-          <DialogContent className={dialogTarget === 'bulk' ? 'sm:max-w-lg' : 'sm:max-w-sm'}>
-            <DialogHeader>
-              <DialogTitle>
-                {dialogTarget === 'bulk'
-                  ? 'Bulk update team members'
-                  : dialogTarget === 'new'
-                    ? 'Add member'
-                    : 'Edit member'}
-              </DialogTitle>
-              <DialogDescription>
-                {dialogTarget === 'bulk'
-                  ? 'Add or update many members at once from a CSV file.'
-                  : 'Shown on the website and available as a post author.'}
-              </DialogDescription>
-            </DialogHeader>
-            {dialogTarget === 'bulk' ? (
-              bulkForm(
-                () => setDialogTarget(null),
-                (submit) => (
-                  <DialogFooter>
-                    <DialogClose render={<Button type="button" variant="outline" />}>
-                      Cancel
-                    </DialogClose>
-                    {submit}
-                  </DialogFooter>
-                )
-              )
-            ) : (
-              <MemberForm
-                member={dialogTarget === 'new' ? null : dialogTarget}
-                onSaved={() => setDialogTarget(null)}
-                footer={(pending) => (
-                  <DialogFooter>
-                    <DialogClose render={<Button type="button" variant="outline" />}>
-                      Cancel
-                    </DialogClose>
-                    <SubmitButton pending={pending} isNew={dialogTarget === 'new'} />
-                  </DialogFooter>
-                )}
-              />
-            )}
-          </DialogContent>
-        </Dialog>
+          {view.dialog?.kind === 'bulk'
+            ? bulkForm(view.closeDialog, (submit) => <DialogActions>{submit}</DialogActions>)
+            : view.dialog &&
+              memberForm(view.dialog, view.closeDialog, (submit) => (
+                <DialogActions start={dialogMember && deleteButton(dialogMember, view.closeDialog)}>
+                  {submit}
+                </DialogActions>
+              ))}
+        </ListDialog>
       )}
     </div>
   );
 }
 
-function NoMatches({ onClear }: { onClear: () => void }) {
+function MemberSummary({ member }: { member: TeamMember }) {
   return (
-    <div className="text-muted-foreground flex flex-1 flex-col items-center justify-center gap-2 p-6 text-center text-sm">
-      Nobody matches that search.
-      <Button variant="ghost" size="sm" onClick={onClear}>
-        Clear search
-      </Button>
-    </div>
+    <span className="flex min-w-0 items-center gap-2.5">
+      {member.photoMediaId && (
+        <img
+          src={`/api/media/${member.photoMediaId}?w=640`}
+          alt=""
+          loading="lazy"
+          className="size-8 shrink-0 rounded-full border object-cover"
+        />
+      )}
+      <span className="min-w-0 flex-1">
+        <span className="flex items-center gap-2">
+          <span className="truncate text-[13px] font-medium">{member.name}</span>
+          {member.status === 'draft' && (
+            <Badge variant="outline" className="shrink-0">
+              Draft
+            </Badge>
+          )}
+        </span>
+        {member.role && (
+          <span className="text-muted-foreground block truncate text-xs">{member.role}</span>
+        )}
+      </span>
+    </span>
   );
 }
 
-function MemberListItem({
+function MoveButtons({
   member,
-  selected,
-  checked,
-  selecting,
-  onToggle,
   canMoveUp,
   canMoveDown,
-  canWrite,
-  onSelect,
 }: {
   member: TeamMember;
-  selected: boolean;
-  checked: boolean;
-  selecting: boolean;
-  onToggle: () => void;
   canMoveUp: boolean;
   canMoveDown: boolean;
-  canWrite: boolean;
-  onSelect: () => void;
 }) {
   const { run, pending } = useAction();
+  const move = (direction: 'up' | 'down') =>
+    run(() => moveTeamMember({ data: { id: member.id, direction } }));
 
   return (
-    <li className={cn('group rounded-md', selected ? 'bg-accent' : 'hover:bg-muted/60')}>
-      <div className="flex items-center gap-1 px-1.5 py-1">
-        {canWrite && (
-          <RowCheckbox
-            label={`Select ${member.name}`}
-            checked={checked}
-            selecting={selecting}
-            onToggle={onToggle}
-          />
-        )}
-        <button
-          type="button"
-          onClick={onSelect}
-          className="flex min-w-0 flex-1 items-center gap-2.5 rounded-md px-1.5 py-1.5 text-left outline-none"
-        >
-          {member.photoMediaId && (
-            <img
-              src={`/api/media/${member.photoMediaId}`}
-              alt=""
-              loading="lazy"
-              className="size-8 shrink-0 rounded-full border object-cover"
-            />
-          )}
-          <div className="min-w-0 flex-1">
-            <div className="flex items-center gap-2">
-              <span className="truncate text-[13px] font-medium">{member.name}</span>
-              {member.status === 'draft' && (
-                <Badge variant="outline" className="shrink-0">
-                  Draft
-                </Badge>
-              )}
-            </div>
-            {member.role && (
-              <div className="text-muted-foreground truncate text-xs">{member.role}</div>
-            )}
-          </div>
-        </button>
-        {canWrite && (
-          <div className="flex shrink-0 items-center gap-0.5">
-            <Button
-              variant="ghost"
-              size="icon-sm"
-              aria-label={`Move ${member.name} up`}
-              disabled={!canMoveUp || pending}
-              onClick={() =>
-                run(() => moveTeamMember({ data: { id: member.id, direction: 'up' } }))
-              }
-            >
-              <ChevronUpIcon aria-hidden className="size-4" />
-            </Button>
-            <Button
-              variant="ghost"
-              size="icon-sm"
-              aria-label={`Move ${member.name} down`}
-              disabled={!canMoveDown || pending}
-              onClick={() =>
-                run(() => moveTeamMember({ data: { id: member.id, direction: 'down' } }))
-              }
-            >
-              <ChevronDownIcon aria-hidden className="size-4" />
-            </Button>
-          </div>
-        )}
-      </div>
-    </li>
+    <>
+      <Button
+        variant="ghost"
+        size="icon-sm"
+        aria-label={`Move ${member.name} up`}
+        disabled={!canMoveUp || pending}
+        onClick={() => move('up')}
+      >
+        <ChevronUpIcon aria-hidden className="size-4" />
+      </Button>
+      <Button
+        variant="ghost"
+        size="icon-sm"
+        aria-label={`Move ${member.name} down`}
+        disabled={!canMoveDown || pending}
+        onClick={() => move('down')}
+      >
+        <ChevronDownIcon aria-hidden className="size-4" />
+      </Button>
+    </>
   );
 }
 
@@ -454,56 +416,6 @@ function SubmitButton({ pending, isNew }: { pending: boolean; isNew: boolean }) 
         'Save'
       )}
     </Button>
-  );
-}
-
-/** The inline desktop pane: header with delete, scrollable form body. */
-function MemberPane({
-  member,
-  onSaved,
-  onClose,
-}: {
-  member: TeamMember | null;
-  onSaved: (id: string) => void;
-  onClose: () => void;
-}) {
-  const { run, pending } = useAction();
-
-  return (
-    <>
-      <div className="flex h-11 shrink-0 items-center gap-1.5 border-b px-3">
-        <span className="text-sm font-medium">{member ? member.name : 'New member'}</span>
-        {member && (
-          <div className="ml-auto">
-            <DeleteMember
-              member={member}
-              disabled={pending}
-              onConfirm={() =>
-                run(() => deleteTeamMember({ data: { id: member.id } }), 'Member removed.').then(
-                  onClose
-                )
-              }
-            />
-          </div>
-        )}
-      </div>
-      <div className="min-h-0 flex-1 overflow-y-auto px-4 py-6">
-        <div className="mx-auto max-w-md">
-          <MemberForm
-            member={member}
-            onSaved={onSaved}
-            footer={(formPending, isNew) => (
-              <div className="flex justify-end gap-2">
-                <Button type="button" variant="outline" onClick={onClose}>
-                  Cancel
-                </Button>
-                <SubmitButton pending={formPending} isNew={isNew} />
-              </div>
-            )}
-          />
-        </div>
-      </div>
-    </>
   );
 }
 

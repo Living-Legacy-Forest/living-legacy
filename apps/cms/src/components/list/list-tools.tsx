@@ -50,13 +50,21 @@ export function matchesSearch(query: string, values: (string | null | undefined)
   return !q || values.some((v) => v?.toLowerCase().includes(q));
 }
 
-/** Ticked rows. `ids` are the rows that still exist, so deleted ones drop out. */
+/**
+ * Ticked rows. `ids` are the rows that still exist, so deleted ones drop out.
+ *
+ * `selecting` is true while anything is ticked, or while Edit mode is on: on
+ * touch screens there is no hover to reveal the tick boxes, so the list header
+ * offers Edit / Done instead (as in iOS Mail).
+ */
 export function useSelection(ids: string[]) {
   const [checked, setChecked] = useState<Set<string>>(new Set());
+  const [editing, setEditing] = useState(false);
   const checkedIds = ids.filter((id) => checked.has(id));
 
   return {
     checkedIds,
+    selecting: editing || checkedIds.length > 0,
     isChecked: (id: string) => checked.has(id),
     toggle: (id: string) =>
       setChecked((prev) => {
@@ -66,13 +74,21 @@ export function useSelection(ids: string[]) {
         return next;
       }),
     set: (next: string[]) => setChecked(new Set(next)),
-    clear: () => setChecked(new Set()),
+    startEditing: () => setEditing(true),
+    /** Unticks everything and leaves Edit mode. */
+    clear: () => {
+      setChecked(new Set());
+      setEditing(false);
+    },
   };
 }
 
 export type Selection = ReturnType<typeof useSelection>;
 
-/** The list header: a select-all box, then either the count or the selection's actions. */
+/**
+ * The list header: a select-all box, then either the count or the selection's
+ * actions. Without `onDelete` (people who cannot edit) it is just the count.
+ */
 export function SelectionBar({
   selection,
   visibleIds,
@@ -86,11 +102,22 @@ export function SelectionBar({
   title: string;
   total: number;
   pending: boolean;
-  onDelete: () => void;
+  onDelete?: () => void;
 }) {
   const count = selection.checkedIds.length;
   const allChecked = visibleIds.length > 0 && visibleIds.every(selection.isChecked);
   const filtered = visibleIds.length !== total;
+
+  if (!onDelete) {
+    return (
+      <div className="flex h-11 shrink-0 items-center gap-2 border-b px-3">
+        <span className="text-[13px] font-medium">{filtered ? 'Shown' : title}</span>
+        <span className="text-muted-foreground text-xs tabular-nums">
+          {filtered ? `${visibleIds.length} of ${total}` : total}
+        </span>
+      </div>
+    );
+  }
 
   return (
     <div className="flex h-11 shrink-0 items-center gap-2 border-b pr-2 pl-3">
@@ -99,6 +126,7 @@ export function SelectionBar({
         checked={allChecked}
         disabled={visibleIds.length === 0}
         onCheckedChange={() => (allChecked ? selection.clear() : selection.set(visibleIds))}
+        className={cn(!selection.selecting && 'touch:hidden')}
       />
       {count > 0 ? (
         <>
@@ -128,13 +156,26 @@ export function SelectionBar({
           <span className="text-muted-foreground text-xs tabular-nums">
             {filtered ? `${visibleIds.length} of ${total}` : total}
           </span>
+          {/* Touch screens: the way into ticking rows, in place of hover. */}
+          <Button
+            variant="ghost"
+            size="sm"
+            className="text-brand touch:inline-flex ml-auto hidden min-h-11 text-[0.9375rem] font-medium"
+            onClick={selection.selecting ? selection.clear : selection.startEditing}
+          >
+            {selection.selecting ? 'Done' : 'Edit'}
+          </Button>
         </>
       )}
     </div>
   );
 }
 
-/** A row's tick box: hidden until hover, and always shown once anything is ticked. */
+/**
+ * A row's tick box: hidden until hover, and always shown once anything is
+ * ticked. Touch screens have no hover, so there it takes no space at all until
+ * Edit mode.
+ */
 export function RowCheckbox({
   label,
   checked,
@@ -157,7 +198,7 @@ export function RowCheckbox({
         'shrink-0 transition-opacity',
         checked || selecting
           ? 'opacity-100'
-          : 'opacity-0 group-hover:opacity-100 focus-visible:opacity-100',
+          : 'touch:hidden opacity-0 group-hover:opacity-100 focus-visible:opacity-100',
         className
       )}
     />
@@ -196,19 +237,5 @@ export function ConfirmBulkDelete({
         </AlertDialogFooter>
       </AlertDialogContent>
     </AlertDialog>
-  );
-}
-
-/** The desktop pane around a bulk form: title bar and a scrolling, centred body. */
-export function BulkPane({ title, children }: { title: string; children: React.ReactNode }) {
-  return (
-    <>
-      <div className="flex h-11 shrink-0 items-center border-b px-3">
-        <span className="text-sm font-medium">{title}</span>
-      </div>
-      <div className="min-h-0 flex-1 overflow-y-auto px-4 py-6">
-        <div className="mx-auto max-w-lg">{children}</div>
-      </div>
-    </>
   );
 }

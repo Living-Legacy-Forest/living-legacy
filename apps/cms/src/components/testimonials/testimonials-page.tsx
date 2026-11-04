@@ -2,14 +2,26 @@ import { useNavigate } from '@tanstack/react-router';
 import { useState } from 'react';
 import { BulkCsvForm } from '@/components/bulk/bulk-csv-form';
 import {
-  BulkPane,
+  DialogActions,
+  ListColumn,
+  ListDialog,
+  ListPageLayout,
+  ListRows,
+  NoMatches,
+  PaneActions,
+  PaneColumn,
+  PaneFrame,
+  isDesktop,
+  useListPane,
+} from '@/components/list/list-page';
+import { ListRow } from '@/components/list/list-row';
+import {
   ConfirmBulkDelete,
-  RowCheckbox,
   SearchInput,
   SelectionBar,
   matchesSearch,
   useSelection,
-} from '@/components/bulk/list-tools';
+} from '@/components/list/list-tools';
 import {
   MessageSquareQuoteIcon,
   PanelRightIcon,
@@ -34,15 +46,6 @@ import { ImageField } from '@/components/media/image-field';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import {
-  Dialog,
-  DialogClose,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from '@/components/ui/dialog';
-import {
   Empty,
   EmptyContent,
   EmptyDescription,
@@ -58,7 +61,6 @@ import { Textarea } from '@/components/ui/textarea';
 import { readStatus, readYesNo } from '@/lib/bulk-import';
 import { reportInvalid } from '@/lib/form-validation';
 import { useAction } from '@/lib/use-action';
-import { cn } from '@/lib/utils';
 import {
   type Testimonial,
   type TestimonialsData,
@@ -98,8 +100,8 @@ function testimonialFromCsv(values: Record<string, string>) {
   };
 }
 
-const isDesktop = () =>
-  typeof window !== 'undefined' && window.matchMedia('(min-width: 1024px)').matches;
+/** What the pane edits in place of the preview (or the dialog shows, on smaller screens). */
+type Target = { kind: 'edit'; id: string } | { kind: 'new' } | { kind: 'bulk' };
 
 export function TestimonialsPage({
   data,
@@ -112,42 +114,38 @@ export function TestimonialsPage({
 }) {
   const navigate = useNavigate({ from: '/testimonials/' });
   const { run, pending } = useAction();
-  // Desktop: what the right-hand pane is editing, in place of the preview. Mobile
-  // has no pane, so the same form opens in a dialog instead (as on the team page).
-  const [editingId, setEditingId] = useState<string | 'new' | 'bulk' | null>(null);
-  const [dialogTarget, setDialogTarget] = useState<Testimonial | 'new' | 'bulk' | null>(null);
+  const view = useListPane<Target>();
   const [query, setQuery] = useState('');
-  const [confirmDelete, setConfirmDelete] = useState(false);
+  const [toDelete, setToDelete] = useState<string[] | null>(null);
   const selection = useSelection(data.map((t) => t.id));
   const visible = data.filter((t) =>
     matchesSearch(query, [t.name, t.quote, t.relationship, t.location])
   );
 
+  const testimonialFor = (target: Target | null) =>
+    target?.kind === 'edit' ? (data.find((t) => t.id === target.id) ?? null) : null;
+  // Without anything being edited, the pane previews the selected testimonial.
   const selectedId = data.find((t) => t.id === search.selected)?.id ?? data[0]?.id ?? null;
   const selected = data.find((t) => t.id === selectedId) ?? null;
   const select = (id: string) => {
-    setEditingId(null);
+    view.closePane();
     navigate({ search: (prev) => ({ ...prev, selected: id }), replace: true });
   };
-
-  const openNew = () => (isDesktop() ? setEditingId('new') : setDialogTarget('new'));
-  const openBulk = () => (isDesktop() ? setEditingId('bulk') : setDialogTarget('bulk'));
-  const openEdit = (t: Testimonial) => (isDesktop() ? setEditingId(t.id) : setDialogTarget(t));
+  const pane = canWrite ? view.pane : null;
   const remove = (id: string) =>
     run(() => deleteTestimonial({ data: { id } }), 'Testimonial removed.');
 
-  async function removeChecked() {
-    const ids = selection.checkedIds;
+  async function removeMany(ids: string[]) {
     const result = await run(
       () => deleteTestimonials({ data: { ids } }),
       `${ids.length} ${ids.length === 1 ? NOUN[0] : NOUN[1]} removed.`
     );
     if (!result) return;
-    if (editingId && ids.includes(editingId)) setEditingId(null);
+    if (view.pane?.kind === 'edit' && ids.includes(view.pane.id)) view.closePane();
     selection.clear();
   }
 
-  const bulkForm = (onDone: () => void, footer: (submit: React.ReactNode) => React.ReactNode) => (
+  const bulkForm = (onDone: () => void, actions: (submit: React.ReactNode) => React.ReactNode) => (
     <BulkCsvForm
       noun={NOUN}
       fileName="testimonials"
@@ -172,9 +170,38 @@ export function TestimonialsPage({
       toRow={testimonialFromCsv}
       apply={(rows) => importTestimonials({ data: { rows } })}
       onDone={onDone}
-      footer={footer}
+      footer={actions}
     />
   );
+
+  const testimonialForm = (
+    target: Target,
+    onSaved: (id: string) => void,
+    actions: (submit: React.ReactNode) => React.ReactNode
+  ) => (
+    <TestimonialForm
+      key={target.kind === 'edit' ? target.id : target.kind}
+      testimonial={testimonialFor(target)}
+      onSaved={onSaved}
+      footer={(formPending, isNew) => actions(<SubmitButton pending={formPending} isNew={isNew} />)}
+    />
+  );
+
+  const addButtons = (
+    <>
+      <Button size="sm" variant="outline" onClick={() => view.open({ kind: 'bulk' })}>
+        <UploadIcon aria-hidden data-icon="inline-start" />
+        Bulk update
+      </Button>
+      <Button size="sm" onClick={() => view.open({ kind: 'new' })}>
+        <PlusIcon aria-hidden data-icon="inline-start" />
+        Add testimonial
+      </Button>
+    </>
+  );
+
+  const paneTestimonial = testimonialFor(pane);
+  const dialogTestimonial = testimonialFor(view.dialog);
 
   return (
     <div className="flex flex-col gap-4 lg:h-[calc(100svh-7.5rem)]">
@@ -190,21 +217,10 @@ export function TestimonialsPage({
             onChange={setQuery}
           />
         )}
-        {canWrite && (
-          <>
-            <Button size="sm" variant="outline" onClick={openBulk}>
-              <UploadIcon aria-hidden data-icon="inline-start" />
-              Bulk update
-            </Button>
-            <Button size="sm" onClick={openNew}>
-              <PlusIcon aria-hidden data-icon="inline-start" />
-              Add testimonial
-            </Button>
-          </>
-        )}
+        {canWrite && addButtons}
       </div>
 
-      {data.length === 0 && editingId === null ? (
+      {data.length === 0 && pane === null ? (
         <Empty className="flex-1 rounded-lg border">
           <EmptyHeader>
             <EmptyMedia variant="icon">
@@ -215,225 +231,160 @@ export function TestimonialsPage({
           </EmptyHeader>
           {canWrite && (
             <EmptyContent>
-              <div className="flex gap-2">
-                <Button size="sm" variant="outline" onClick={openBulk}>
-                  <UploadIcon aria-hidden data-icon="inline-start" />
-                  Bulk update
-                </Button>
-                <Button size="sm" onClick={openNew}>
-                  <PlusIcon aria-hidden data-icon="inline-start" />
-                  Add testimonial
-                </Button>
-              </div>
+              <div className="flex gap-2">{addButtons}</div>
             </EmptyContent>
           )}
         </Empty>
       ) : (
-        <div className="grid min-h-0 flex-1 grid-cols-1 overflow-hidden rounded-lg border lg:grid-cols-[minmax(20rem,1fr)_minmax(0,1fr)]">
-          <section aria-label="Testimonials" className="flex min-h-0 flex-col lg:border-r">
-            {canWrite ? (
+        <ListPageLayout>
+          <ListColumn
+            label="Testimonials"
+            header={
               <SelectionBar
                 selection={selection}
                 visibleIds={visible.map((t) => t.id)}
                 title="All"
                 total={data.length}
                 pending={pending}
-                onDelete={() => setConfirmDelete(true)}
+                onDelete={canWrite ? () => setToDelete(selection.checkedIds) : undefined}
               />
-            ) : (
-              <div className="flex h-11 shrink-0 items-center gap-2 border-b px-3">
-                <span className="text-[13px] font-medium">All</span>
-                <span className="text-muted-foreground text-xs tabular-nums">{data.length}</span>
-              </div>
-            )}
+            }
+          >
             {visible.length === 0 ? (
-              <div className="text-muted-foreground flex flex-1 flex-col items-center justify-center gap-2 p-6 text-center text-sm">
-                No testimonials match that search.
-                <Button variant="ghost" size="sm" onClick={() => setQuery('')}>
-                  Clear search
-                </Button>
-              </div>
+              <NoMatches onClear={() => setQuery('')}>No testimonials match that search.</NoMatches>
             ) : (
-              <ul className="min-h-0 flex-1 space-y-px overflow-y-auto p-1.5">
+              <ListRows>
                 {visible.map((t) => (
-                  <TestimonialListItem
+                  <ListRow
                     key={t.id}
-                    testimonial={t}
-                    selected={editingId === null ? t.id === selectedId : t.id === editingId}
-                    canWrite={canWrite}
-                    checked={selection.isChecked(t.id)}
-                    selecting={selection.checkedIds.length > 0}
-                    onToggle={() => selection.toggle(t.id)}
-                    onSelect={() => select(t.id)}
-                    onOpen={() => (canWrite ? openEdit(t) : select(t.id))}
-                  />
+                    align="start"
+                    current={
+                      pane === null ? t.id === selectedId : pane.kind === 'edit' && pane.id === t.id
+                    }
+                    select={
+                      canWrite
+                        ? {
+                            label: `Select the quote from ${t.name}`,
+                            checked: selection.isChecked(t.id),
+                            selecting: selection.selecting,
+                            onToggle: () => selection.toggle(t.id),
+                          }
+                        : undefined
+                    }
+                    swipe={
+                      canWrite
+                        ? { label: 'Delete', onAction: () => setToDelete([t.id]) }
+                        : undefined
+                    }
+                    // Large screens preview on a click and edit on a double click; smaller
+                    // ones have no preview, so a tap edits.
+                    onOpen={() =>
+                      isDesktop() ? select(t.id) : canWrite && view.open({ kind: 'edit', id: t.id })
+                    }
+                    onDoubleClick={() => canWrite && view.open({ kind: 'edit', id: t.id })}
+                  >
+                    <TestimonialSummary testimonial={t} />
+                  </ListRow>
                 ))}
-              </ul>
+              </ListRows>
             )}
-          </section>
+          </ListColumn>
 
-          {canWrite && editingId === 'bulk' ? (
-            <section aria-label="Bulk update" className="hidden min-h-0 flex-col lg:flex">
-              <BulkPane title="Bulk update testimonials">
-                {bulkForm(
-                  () => setEditingId(null),
-                  (submit) => (
-                    <div className="flex justify-end gap-2">
-                      <Button type="button" variant="outline" onClick={() => setEditingId(null)}>
-                        Cancel
-                      </Button>
-                      {submit}
-                    </div>
-                  )
-                )}
-              </BulkPane>
-            </section>
-          ) : canWrite && editingId !== null ? (
-            <section aria-label="Edit testimonial" className="hidden min-h-0 flex-col lg:flex">
-              <TestimonialPane
-                key={editingId}
-                testimonial={data.find((t) => t.id === editingId) ?? null}
-                onSaved={select}
-                onClose={() => setEditingId(null)}
-              />
-            </section>
+          {pane?.kind === 'bulk' ? (
+            <PaneColumn label="Bulk update">
+              <PaneFrame title="Bulk update testimonials" width="lg">
+                {bulkForm(view.closePane, (submit) => (
+                  <PaneActions onCancel={view.closePane}>{submit}</PaneActions>
+                ))}
+              </PaneFrame>
+            </PaneColumn>
+          ) : pane !== null ? (
+            <PaneColumn label="Edit testimonial">
+              <PaneFrame
+                title={paneTestimonial ? `Edit ${paneTestimonial.name}` : 'New testimonial'}
+              >
+                {testimonialForm(pane, select, (submit) => (
+                  <PaneActions onCancel={view.closePane}>{submit}</PaneActions>
+                ))}
+              </PaneFrame>
+            </PaneColumn>
           ) : (
             <PreviewPane
               testimonial={selected}
               canWrite={canWrite}
               pending={pending}
-              onEdit={openEdit}
+              onEdit={(t) => view.open({ kind: 'edit', id: t.id })}
               onDelete={remove}
             />
           )}
-        </div>
+        </ListPageLayout>
       )}
 
       <ConfirmBulkDelete
-        open={confirmDelete}
-        onOpenChange={setConfirmDelete}
-        count={selection.checkedIds.length}
+        open={toDelete !== null}
+        onOpenChange={(open) => !open && setToDelete(null)}
+        count={toDelete?.length ?? 0}
         noun={NOUN}
         description="Their quotes are removed from the website. This cannot be undone."
-        onConfirm={removeChecked}
+        onConfirm={() => toDelete && removeMany(toDelete)}
       />
 
       {canWrite && (
-        <Dialog
-          open={dialogTarget !== null}
-          onOpenChange={(open) => !open && setDialogTarget(null)}
+        <ListDialog
+          open={view.dialog !== null}
+          onClose={view.closeDialog}
+          size={view.dialog?.kind === 'bulk' ? 'lg' : 'md'}
+          title={
+            view.dialog?.kind === 'bulk'
+              ? 'Bulk update testimonials'
+              : view.dialog?.kind === 'new'
+                ? 'Add testimonial'
+                : 'Edit testimonial'
+          }
+          description={
+            view.dialog?.kind === 'bulk'
+              ? 'Add or update many testimonials at once from a CSV file.'
+              : 'A quote from a family, shown on the website.'
+          }
         >
-          <DialogContent className={dialogTarget === 'bulk' ? 'sm:max-w-lg' : 'sm:max-w-md'}>
-            <DialogHeader>
-              <DialogTitle>
-                {dialogTarget === 'bulk'
-                  ? 'Bulk update testimonials'
-                  : dialogTarget === 'new'
-                    ? 'Add testimonial'
-                    : 'Edit testimonial'}
-              </DialogTitle>
-              <DialogDescription>
-                {dialogTarget === 'bulk'
-                  ? 'Add or update many testimonials at once from a CSV file.'
-                  : 'A quote from a family, shown on the website.'}
-              </DialogDescription>
-            </DialogHeader>
-            {dialogTarget === 'bulk' ? (
-              bulkForm(
-                () => setDialogTarget(null),
-                (submit) => (
-                  <DialogFooter>
-                    <DialogClose render={<Button type="button" variant="outline" />}>
-                      Cancel
-                    </DialogClose>
-                    {submit}
-                  </DialogFooter>
-                )
-              )
-            ) : (
-              <TestimonialForm
-                key={dialogTarget === 'new' ? 'new' : dialogTarget?.id}
-                testimonial={dialogTarget === 'new' ? null : dialogTarget}
-                onSaved={() => setDialogTarget(null)}
-                footer={(formPending, isNew) => (
-                  <DialogFooter>
-                    <DialogClose render={<Button type="button" variant="outline" />}>
-                      Cancel
-                    </DialogClose>
-                    <SubmitButton pending={formPending} isNew={isNew} />
-                  </DialogFooter>
-                )}
-              />
-            )}
-          </DialogContent>
-        </Dialog>
+          {view.dialog?.kind === 'bulk'
+            ? bulkForm(view.closeDialog, (submit) => <DialogActions>{submit}</DialogActions>)
+            : view.dialog &&
+              testimonialForm(view.dialog, view.closeDialog, (submit) => (
+                <DialogActions
+                  start={
+                    dialogTestimonial && (
+                      <DeleteTestimonial
+                        testimonial={dialogTestimonial}
+                        disabled={pending}
+                        onConfirm={() => remove(dialogTestimonial.id).then(view.closeDialog)}
+                      />
+                    )
+                  }
+                >
+                  {submit}
+                </DialogActions>
+              ))}
+        </ListDialog>
       )}
     </div>
   );
 }
 
-function TestimonialListItem({
-  testimonial,
-  selected,
-  canWrite,
-  checked,
-  selecting,
-  onToggle,
-  onSelect,
-  onOpen,
-}: {
-  testimonial: Testimonial;
-  selected: boolean;
-  canWrite: boolean;
-  checked: boolean;
-  selecting: boolean;
-  onToggle: () => void;
-  onSelect: () => void;
-  onOpen: () => void;
-}) {
+function TestimonialSummary({ testimonial }: { testimonial: Testimonial }) {
   return (
-    <li
-      className={cn(
-        'group flex items-start gap-1 rounded-md transition-colors',
-        canWrite && 'pl-1.5',
-        selected ? 'bg-accent' : 'hover:bg-muted/60'
-      )}
-    >
-      {canWrite && (
-        <RowCheckbox
-          label={`Select the quote from ${testimonial.name}`}
-          checked={checked}
-          selecting={selecting}
-          onToggle={onToggle}
-          className="mt-2.5"
-        />
-      )}
-      <button
-        type="button"
-        aria-current={selected || undefined}
-        onClick={() => {
-          if (window.matchMedia('(min-width: 1024px)').matches) onSelect();
-          else onOpen();
-        }}
-        onDoubleClick={onOpen}
-        className="focus-visible:ring-ring min-w-0 flex-1 rounded-md px-2.5 py-2 text-left outline-none focus-visible:ring-1"
-      >
-        <span className="flex items-center gap-2">
-          <span className="min-w-0 flex-1 truncate text-[13px] font-medium">
-            {testimonial.name}
-          </span>
-          {testimonial.featured && (
-            <StarIcon aria-label="Featured" className="size-3 shrink-0 fill-current" />
-          )}
-          {testimonial.status === 'draft' && (
-            <span className="text-muted-foreground shrink-0 text-xs">Draft</span>
-          )}
-        </span>
-        <span className="text-muted-foreground mt-0.5 line-clamp-1 text-xs">
-          {testimonial.quote}
-        </span>
-      </button>
-    </li>
+    <>
+      <span className="flex items-center gap-2">
+        <span className="min-w-0 flex-1 truncate text-[13px] font-medium">{testimonial.name}</span>
+        {testimonial.featured && (
+          <StarIcon aria-label="Featured" className="size-3 shrink-0 fill-current" />
+        )}
+        {testimonial.status === 'draft' && (
+          <span className="text-muted-foreground shrink-0 text-xs">Draft</span>
+        )}
+      </span>
+      <span className="text-muted-foreground mt-0.5 line-clamp-1 text-xs">{testimonial.quote}</span>
+    </>
   );
 }
 
@@ -567,42 +518,6 @@ function SubmitButton({ pending, isNew }: { pending: boolean; isNew: boolean }) 
 }
 
 /** The inline desktop pane: header, scrollable form body, cancel back to the preview. */
-function TestimonialPane({
-  testimonial,
-  onSaved,
-  onClose,
-}: {
-  testimonial: Testimonial | null;
-  onSaved: (id: string) => void;
-  onClose: () => void;
-}) {
-  return (
-    <>
-      <div className="flex h-11 shrink-0 items-center gap-1.5 border-b px-3">
-        <span className="text-sm font-medium">
-          {testimonial ? `Edit ${testimonial.name}` : 'New testimonial'}
-        </span>
-      </div>
-      <div className="min-h-0 flex-1 overflow-y-auto px-4 py-6">
-        <div className="mx-auto max-w-md">
-          <TestimonialForm
-            testimonial={testimonial}
-            onSaved={onSaved}
-            footer={(pending, isNew) => (
-              <div className="flex justify-end gap-2">
-                <Button type="button" variant="outline" onClick={onClose}>
-                  Cancel
-                </Button>
-                <SubmitButton pending={pending} isNew={isNew} />
-              </div>
-            )}
-          />
-        </div>
-      </div>
-    </>
-  );
-}
-
 /** Shared fields + submit logic, used inline (desktop pane) and in the mobile dialog. */
 function TestimonialForm({
   testimonial,

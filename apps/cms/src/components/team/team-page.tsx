@@ -193,7 +193,7 @@ export function TeamPage({ data, canWrite }: { data: TeamListData; canWrite: boo
           )}
         </Empty>
       ) : (
-        <div className="grid min-h-0 flex-1 overflow-hidden rounded-lg border lg:grid-cols-[minmax(20rem,1fr)_1fr]">
+        <div className="grid min-h-0 flex-1 grid-cols-1 overflow-hidden rounded-lg border lg:grid-cols-[minmax(20rem,1fr)_minmax(0,1fr)]">
           <section aria-label="Team members" className="flex min-h-0 flex-col lg:border-r">
             {canWrite ? (
               <SelectionBar

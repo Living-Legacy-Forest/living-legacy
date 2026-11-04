@@ -102,7 +102,7 @@ function Section({
 
 export function UsersPage({ data }: { data: TeamData }) {
   return (
-    <div className="mx-auto max-w-3xl space-y-8">
+    <div className="mx-auto w-full max-w-3xl space-y-8">
       <div className="flex items-start justify-between gap-4">
         <div className="space-y-1">
           <h1 data-slot="page-title" className="text-xl font-semibold tracking-tight">
@@ -136,7 +136,7 @@ function UsersTable({ data }: { data: TeamData }) {
         <TableRow className="hover:bg-transparent">
           <TableHead>Name</TableHead>
           <TableHead className="w-32">Role</TableHead>
-          <TableHead className="w-28">Joined</TableHead>
+          <TableHead className="w-28 max-sm:hidden">Joined</TableHead>
           <TableHead className="w-0" />
         </TableRow>
       </TableHeader>
@@ -147,7 +147,7 @@ function UsersTable({ data }: { data: TeamData }) {
           const locked = isSelf || isLastAdmin;
           return (
             <TableRow key={u.id}>
-              <TableCell className="py-2.5">
+              <TableCell className="w-full max-w-0 py-2.5">
                 <div className="flex items-center gap-3">
                   <UserAvatar user={u} isSelf={isSelf} />
                   <div className="min-w-0">
@@ -185,7 +185,7 @@ function UsersTable({ data }: { data: TeamData }) {
                   </SelectContent>
                 </Select>
               </TableCell>
-              <TableCell className="text-muted-foreground text-sm">
+              <TableCell className="text-muted-foreground text-sm max-sm:hidden">
                 {formatDate(u.createdAt, timeZone)}
               </TableCell>
               <TableCell>
@@ -385,20 +385,20 @@ function InvitationsTable({ invitations }: { invitations: TeamData['invitations'
         <TableRow className="hover:bg-transparent">
           <TableHead>Email</TableHead>
           <TableHead className="w-32">Role</TableHead>
-          <TableHead className="w-28">Invited</TableHead>
+          <TableHead className="w-28 max-sm:hidden">Invited</TableHead>
           <TableHead className="w-0" />
         </TableRow>
       </TableHeader>
       <TableBody>
         {invitations.map((invite) => (
           <TableRow key={invite.email}>
-            <TableCell className="py-2.5 text-sm">{invite.email}</TableCell>
+            <TableCell className="w-full max-w-0 truncate py-2.5 text-sm">{invite.email}</TableCell>
             <TableCell>
               <Badge variant="outline" className="capitalize">
                 {invite.role}
               </Badge>
             </TableCell>
-            <TableCell className="text-muted-foreground text-sm">
+            <TableCell className="text-muted-foreground text-sm max-sm:hidden">
               {formatDate(invite.createdAt, timeZone)}
             </TableCell>
             <TableCell>

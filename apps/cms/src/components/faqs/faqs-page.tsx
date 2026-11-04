@@ -301,7 +301,7 @@ export function FaqsPage({ data, canWrite }: { data: FaqData; canWrite: boolean 
           )}
         </Empty>
       ) : (
-        <div className="grid min-h-0 flex-1 overflow-hidden rounded-lg border lg:grid-cols-[minmax(20rem,1fr)_1fr]">
+        <div className="grid min-h-0 flex-1 grid-cols-1 overflow-hidden rounded-lg border lg:grid-cols-[minmax(20rem,1fr)_minmax(0,1fr)]">
           <section aria-label="FAQs" className="flex min-h-0 flex-col lg:border-r">
             {canWrite ? (
               <SelectionBar

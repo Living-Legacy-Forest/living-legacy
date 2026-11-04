@@ -232,7 +232,7 @@ export function PostsList({
         )}
       </div>
 
-      <div className="grid min-h-0 flex-1 overflow-hidden rounded-lg border lg:grid-cols-[minmax(20rem,2fr)_3fr]">
+      <div className="grid min-h-0 flex-1 grid-cols-1 overflow-hidden rounded-lg border lg:grid-cols-[minmax(20rem,2fr)_minmax(0,3fr)]">
         <section aria-label="Post list" className="flex min-h-0 flex-col lg:border-r">
           <div className="flex h-11 shrink-0 items-center gap-1 border-b px-2">
             {checked.size > 0 ? (

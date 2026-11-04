@@ -80,7 +80,7 @@ function SplitSkeleton() {
         <Skeleton className="mr-auto h-7 w-32" />
         <Skeleton className="h-8 w-28" />
       </div>
-      <div className="grid min-h-0 flex-1 overflow-hidden rounded-lg border lg:grid-cols-[minmax(20rem,2fr)_3fr]">
+      <div className="grid min-h-0 flex-1 grid-cols-1 overflow-hidden rounded-lg border lg:grid-cols-[minmax(20rem,2fr)_minmax(0,3fr)]">
         <section className="flex min-h-0 flex-col lg:border-r">
           <div className="flex h-11 shrink-0 items-center gap-2 border-b px-3">
             <Skeleton className="h-6 w-full max-w-56" />

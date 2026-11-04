@@ -22,6 +22,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
+import { useIsMobile } from '@/hooks/use-mobile';
 import { formatChartAxisTick, formatChartTooltipDate, formatInteger } from '@/lib/format';
 import type { DashboardData } from '@/server/dashboard';
 
@@ -44,6 +45,7 @@ const chartConfig = {
 export function PublishingChart({ activity }: { activity: DashboardData['activity'] }) {
   const gradientId = `publishing-grad-${useId().replace(/:/g, '')}`;
   const [periodDays, setPeriodDays] = useState<PeriodDays>(30);
+  const isMobile = useIsMobile();
 
   const rows = useMemo(() => activity.slice(-periodDays), [activity, periodDays]);
   const total = rows.reduce((sum, row) => sum + row.published, 0);
@@ -103,8 +105,10 @@ export function PublishingChart({ activity }: { activity: DashboardData['activit
               <XAxis
                 axisLine={false}
                 dataKey="date"
-                interval={xAxisIntervalByPeriod[periodDays]}
-                minTickGap={16}
+                // A phone has too little width for a fixed spacing; let the
+                // chart drop labels that would collide, keeping first and last.
+                interval={isMobile ? 'preserveStartEnd' : xAxisIntervalByPeriod[periodDays]}
+                minTickGap={isMobile ? 28 : 16}
                 tickFormatter={(value) => formatChartAxisTick(String(value), periodDays)}
                 tickLine={false}
                 tickMargin={8}

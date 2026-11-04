@@ -1,6 +1,9 @@
-import { useLocation } from '@tanstack/react-router';
+import { Link, useLocation } from '@tanstack/react-router';
+import { useEffect, useState } from 'react';
+import { ChevronLeftIcon } from '@/components/icons';
 import { Separator } from '@/components/ui/separator';
-import { findNavItem } from '@/lib/nav';
+import { useIsMobile } from '@/hooks/use-mobile';
+import { findNavItem, isEditorPath } from '@/lib/nav';
 import type { SessionUser } from '@/lib/session';
 import { AppBreadcrumbs } from './app-breadcrumbs';
 import { CommandMenu } from './command-menu';
@@ -12,25 +15,100 @@ export function AppHeader({ user }: { user: SessionUser }) {
   const { pathname } = useLocation();
   const item = findNavItem(pathname);
   const current = item && item.to !== pathname ? 'Edit' : undefined;
+  const { collapsed, scrolled, title } = useLargeTitle(pathname);
+
+  // Phones have no sidebar or breadcrumb: a page below a tab gets a back button.
+  const back = isEditorPath(pathname)
+    ? { to: '/posts' as const, label: 'Posts' }
+    : item?.to && item.to !== pathname
+      ? { to: item.to, label: item.title }
+      : null;
 
   return (
-    <header className="bg-background/80 sticky top-0 z-20 flex h-14 shrink-0 items-center gap-3 rounded-t-[inherit] border-b px-4 backdrop-blur md:px-6">
-      <div className="flex min-w-0 items-center gap-3">
+    <header
+      data-slot="app-header"
+      data-scrolled={scrolled || undefined}
+      className="bg-background/80 max-md:data-scrolled:border-border/70 sticky top-0 z-20 flex h-14 shrink-0 items-center gap-3 rounded-t-[inherit] border-b px-4 backdrop-blur max-md:h-[calc(3.5rem+env(safe-area-inset-top))] max-md:border-transparent max-md:pt-[env(safe-area-inset-top)] max-md:pr-[max(0.5rem,env(safe-area-inset-right))] max-md:pl-[max(0.5rem,env(safe-area-inset-left))] max-md:backdrop-blur-xl max-md:backdrop-saturate-150 max-md:transition-colors md:px-6"
+    >
+      <div className="flex min-w-0 items-center gap-3 max-md:hidden">
         <CustomSidebarTrigger />
         <Separator className="h-4 data-[orientation=vertical]:self-center" orientation="vertical" />
         <AppBreadcrumbs item={item} current={current} />
       </div>
-      <div className="ml-auto flex items-center gap-1.5">
+
+      {back && (
+        <Link
+          to={back.to}
+          className="text-brand relative z-10 -ml-1 flex min-h-11 max-w-[30%] min-w-0 items-center gap-0.5 pr-2 text-[1.0625rem] active:opacity-50 md:hidden [&_svg]:size-6 [&_svg]:shrink-0"
+        >
+          <ChevronLeftIcon aria-hidden />
+          <span className="truncate">{back.label}</span>
+        </Link>
+      )}
+
+      {/* The large title's compact twin, shown once the large one scrolls away. */}
+      <div
+        aria-hidden
+        className="pointer-events-none absolute inset-x-0 bottom-0 flex h-14 items-center justify-center px-28 transition-opacity duration-200 md:hidden"
+        style={{ opacity: collapsed ? 1 : 0 }}
+      >
+        <span className="truncate text-[1.0625rem] font-semibold">{title}</span>
+      </div>
+
+      <div className="relative z-10 ml-auto flex items-center gap-1.5 max-md:gap-0">
         <div className="hidden md:block">
           <CommandMenu user={user} />
         </div>
         <Notifications user={user} />
         <Separator
-          className="mx-1.5 h-4 data-[orientation=vertical]:self-center"
+          className="mx-1.5 h-4 data-[orientation=vertical]:self-center max-md:hidden"
           orientation="vertical"
         />
         <NavUser user={user} />
       </div>
     </header>
   );
+}
+
+/**
+ * Whether the page's large title ([data-slot="page-title"]) has scrolled
+ * under the header, and whether the page has scrolled at all. Phones only.
+ */
+function useLargeTitle(pathname: string) {
+  const isMobile = useIsMobile();
+  const [state, setState] = useState({ collapsed: false, scrolled: false, title: '' });
+
+  useEffect(() => {
+    if (!isMobile) return;
+    let frame = 0;
+    const update = () => {
+      frame = 0;
+      const heading = document.querySelector<HTMLElement>('[data-slot="page-title"]');
+      const header = document.querySelector<HTMLElement>('[data-slot="app-header"]');
+      const headerBottom = header?.getBoundingClientRect().bottom ?? 0;
+      const next = {
+        collapsed: !!heading && heading.getBoundingClientRect().bottom <= headerBottom,
+        scrolled: window.scrollY > 0,
+        title: heading?.textContent?.trim() ?? '',
+      };
+      setState((prev) =>
+        prev.collapsed === next.collapsed &&
+        prev.scrolled === next.scrolled &&
+        prev.title === next.title
+          ? prev
+          : next
+      );
+    };
+    const onScroll = () => {
+      frame ||= requestAnimationFrame(update);
+    };
+    update();
+    window.addEventListener('scroll', onScroll, { passive: true });
+    return () => {
+      window.removeEventListener('scroll', onScroll);
+      cancelAnimationFrame(frame);
+    };
+  }, [isMobile, pathname]);
+
+  return state;
 }

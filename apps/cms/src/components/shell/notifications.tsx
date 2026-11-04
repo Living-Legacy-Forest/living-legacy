@@ -77,7 +77,7 @@ export function Notifications({ user }: { user: SessionUser }) {
             variant="ghost"
             size="icon-sm"
             aria-label={unread.length ? `Notifications, ${unread.length} new` : 'Notifications'}
-            className="text-muted-foreground relative"
+            className="text-muted-foreground relative max-md:size-11 max-md:[&_svg]:size-5.5"
           />
         }
       >
@@ -85,7 +85,7 @@ export function Notifications({ user }: { user: SessionUser }) {
         {unread.length > 0 && (
           <span
             aria-hidden
-            className="ring-background absolute top-1.5 right-1.5 size-1.5 rounded-full bg-sky-500 ring-2"
+            className="ring-background absolute top-1.5 right-1.5 size-1.5 rounded-full bg-sky-500 ring-2 max-md:top-2.5 max-md:right-2.5 max-md:size-2"
           />
         )}
       </PopoverTrigger>

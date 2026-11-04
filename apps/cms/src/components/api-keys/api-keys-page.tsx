@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { toast } from 'sonner';
 import { CheckIcon, CopyIcon, KeyIcon, PlusIcon, Trash2Icon } from '@/components/icons';
 import {
@@ -65,10 +65,12 @@ export function ApiKeysPage({ keys }: { keys: ApiKeyRow[] }) {
   const revoked = keys.filter((k) => k.revokedAt);
 
   return (
-    <div className="mx-auto max-w-3xl space-y-8">
+    <div className="mx-auto w-full max-w-3xl space-y-8">
       <div className="flex items-start justify-between gap-4">
         <div className="space-y-1">
-          <h1 className="text-xl font-semibold tracking-tight">API keys</h1>
+          <h1 data-slot="page-title" className="text-xl font-semibold tracking-tight">
+            API keys
+          </h1>
           <p className="text-muted-foreground text-sm">
             Let other tools read posts and write drafts through the CMS API. A key acts as the admin
             who created it.
@@ -120,14 +122,14 @@ function KeysTable({ keys }: { keys: ApiKeyRow[] }) {
         <TableRow className="hover:bg-transparent">
           <TableHead>Name</TableHead>
           <TableHead className="w-32">Access</TableHead>
-          <TableHead className="w-32">Last used</TableHead>
+          <TableHead className="w-32 max-sm:hidden">Last used</TableHead>
           <TableHead className="w-0" />
         </TableRow>
       </TableHeader>
       <TableBody>
         {keys.map((k) => (
           <TableRow key={k.id} className={cn(k.revokedAt && 'text-muted-foreground')}>
-            <TableCell className="py-2.5">
+            <TableCell className="w-full max-w-0 py-2.5">
               <div className="min-w-0">
                 <div className="truncate text-sm font-medium">{k.name}</div>
                 <div className="text-muted-foreground truncate text-xs">
@@ -142,7 +144,7 @@ function KeysTable({ keys }: { keys: ApiKeyRow[] }) {
                 {k.scope === 'write' ? 'Read and write' : 'Read only'}
               </Badge>
             </TableCell>
-            <TableCell className="text-muted-foreground text-sm">
+            <TableCell className="text-muted-foreground text-sm max-sm:hidden">
               {k.revokedAt
                 ? `Revoked ${formatDate(k.revokedAt, timeZone)}`
                 : k.lastUsedAt
@@ -336,7 +338,9 @@ function CopyableKey({ value }: { value: string }) {
 }
 
 function UsageGuide() {
-  const base = typeof window === 'undefined' ? '' : window.location.origin;
+  // Filled in after hydration: the server does not know the address the page is on.
+  const [base, setBase] = useState('');
+  useEffect(() => setBase(window.location.origin), []);
   const example = `curl -X POST ${base}/api/v1/posts \\
   -H "Authorization: Bearer llk_…" \\
   -H "Content-Type: application/json" \\

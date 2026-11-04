@@ -180,7 +180,9 @@ export function SettingsPage({
   return (
     <div className="mx-auto w-full max-w-4xl">
       <div className="mb-8 space-y-1">
-        <h1 className="text-xl font-semibold tracking-tight">Settings</h1>
+        <h1 data-slot="page-title" className="text-xl font-semibold tracking-tight">
+          Settings
+        </h1>
         <p className="text-muted-foreground text-sm">
           Site-wide details used across the CMS and, once connected, the public website.
         </p>
@@ -492,7 +494,7 @@ export function SettingsPage({
           {/* Only there while something is unsaved, so it never nags. */}
           <div
             className={cn(
-              'bg-background/95 sticky bottom-4 z-10 flex items-center gap-3 rounded-lg border px-4 py-3 shadow-lg backdrop-blur transition-all',
+              'bg-background/95 sticky bottom-[calc(var(--tab-bar-height)+1rem)] z-10 flex items-center gap-3 rounded-lg border px-4 py-3 shadow-lg backdrop-blur transition-all',
               dirty ? 'translate-y-0 opacity-100' : 'pointer-events-none translate-y-2 opacity-0'
             )}
             aria-hidden={!dirty}

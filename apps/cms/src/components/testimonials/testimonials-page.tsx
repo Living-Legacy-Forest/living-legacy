@@ -179,7 +179,9 @@ export function TestimonialsPage({
   return (
     <div className="flex flex-col gap-4 lg:h-[calc(100svh-7.5rem)]">
       <div className="flex flex-wrap items-center gap-3">
-        <h1 className="mr-auto text-xl">Testimonials</h1>
+        <h1 data-slot="page-title" className="mr-auto text-xl">
+          Testimonials
+        </h1>
         {data.length > 0 && (
           <SearchInput
             label="Search testimonials"
@@ -227,7 +229,7 @@ export function TestimonialsPage({
           )}
         </Empty>
       ) : (
-        <div className="grid min-h-0 flex-1 overflow-hidden rounded-lg border lg:grid-cols-[minmax(20rem,1fr)_1fr]">
+        <div className="grid min-h-0 flex-1 grid-cols-1 overflow-hidden rounded-lg border lg:grid-cols-[minmax(20rem,1fr)_minmax(0,1fr)]">
           <section aria-label="Testimonials" className="flex min-h-0 flex-col lg:border-r">
             {canWrite ? (
               <SelectionBar

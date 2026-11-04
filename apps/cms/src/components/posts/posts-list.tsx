@@ -179,7 +179,9 @@ export function PostsList({
   return (
     <div className="flex flex-col gap-4 lg:h-[calc(100svh-7.5rem)]">
       <div className="flex flex-wrap items-center gap-3">
-        <h1 className="mr-auto text-xl">Posts</h1>
+        <h1 data-slot="page-title" className="mr-auto text-xl">
+          Posts
+        </h1>
         <div className="relative w-full sm:w-56">
           <SearchIcon
             aria-hidden
@@ -230,7 +232,7 @@ export function PostsList({
         )}
       </div>
 
-      <div className="grid min-h-0 flex-1 overflow-hidden rounded-lg border lg:grid-cols-[minmax(20rem,2fr)_3fr]">
+      <div className="grid min-h-0 flex-1 grid-cols-1 overflow-hidden rounded-lg border lg:grid-cols-[minmax(20rem,2fr)_minmax(0,3fr)]">
         <section aria-label="Post list" className="flex min-h-0 flex-col lg:border-r">
           <div className="flex h-11 shrink-0 items-center gap-1 border-b px-2">
             {checked.size > 0 ? (

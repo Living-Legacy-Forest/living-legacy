@@ -13,13 +13,25 @@ import {
 import { Toaster } from '@/components/ui/sonner';
 import { TooltipProvider } from '@/components/ui/tooltip';
 import { useThemeSync } from '@/lib/use-theme-sync';
-import { getRootSettings } from '@/server/settings';
+import { type Theme, getRootSettings } from '@/server/settings';
 import styles from '../styles.css?url';
 
 // Runs before hydration so a "system" preference never flashes the wrong
 // colour scheme: the explicit light/dark cases are already resolved
 // server-side via the <html class> below.
 const THEME_INIT_SCRIPT = `(function(){try{var d=document.documentElement;if(d.dataset.themePref==='system'&&window.matchMedia('(prefers-color-scheme: dark)').matches){d.classList.add('dark');}}catch(e){}})();`;
+
+// The phone's status bar and browser chrome take this colour; it matches the
+// top bar's background (--background) in each scheme.
+const THEME_COLORS = { light: '#ffffff', dark: '#0a0a0a' };
+
+function themeColorMeta(theme: Theme): { content: string; media?: string }[] {
+  if (theme === 'light' || theme === 'dark') return [{ content: THEME_COLORS[theme] }];
+  return [
+    { media: '(prefers-color-scheme: light)', content: THEME_COLORS.light },
+    { media: '(prefers-color-scheme: dark)', content: THEME_COLORS.dark },
+  ];
+}
 
 export const Route = createRootRoute({
   loader: () => getRootSettings(),
@@ -28,7 +40,9 @@ export const Route = createRootRoute({
   head: () => ({
     meta: [
       { charSet: 'utf-8' },
-      { name: 'viewport', content: 'width=device-width, initial-scale=1' },
+      // viewport-fit=cover lets the app paint under the notch and home bar;
+      // the header and tab bar pad themselves back with the safe-area insets.
+      { name: 'viewport', content: 'width=device-width, initial-scale=1, viewport-fit=cover' },
       { name: 'robots', content: 'noindex, nofollow' },
       { title: 'Living Legacy CMS' },
     ],
@@ -59,10 +73,15 @@ function RootDocument({ children }: { children: ReactNode }) {
       <head>
         <script dangerouslySetInnerHTML={{ __html: THEME_INIT_SCRIPT }} />
         <HeadContent />
+        {/* Here, not in head(): it keeps one meta per name, and "system" needs two. */}
+        {themeColorMeta(theme).map((meta) => (
+          <meta key={meta.media ?? 'all'} name="theme-color" {...meta} />
+        ))}
       </head>
       <body>
         <TooltipProvider>{children}</TooltipProvider>
-        <Toaster />
+        {/* On phones toasts sit at the bottom, above the tab bar. */}
+        <Toaster mobileOffset={{ bottom: 'calc(var(--tab-bar-height) + 16px)' }} />
         <Scripts />
       </body>
     </html>

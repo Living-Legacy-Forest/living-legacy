@@ -580,7 +580,7 @@ export function PostEditor({
           showProperties && 'lg:mr-6'
         )}
       >
-        <header className="flex h-12 shrink-0 items-center gap-3 border-b px-3">
+        <header className="flex h-12 shrink-0 items-center gap-3 border-b px-3 max-md:h-auto max-md:min-h-12 max-md:flex-wrap max-md:gap-y-1.5 max-md:py-2">
           <PostStatusBadge
             status={meta.status}
             hasDraft={meta.hasDraft}
@@ -592,7 +592,7 @@ export function PostEditor({
           <span className="text-muted-foreground text-xs" aria-live="polite">
             {saveState}
           </span>
-          <div className="ml-auto flex items-center gap-1">
+          <div className="ml-auto flex items-center gap-1 max-md:flex-wrap max-md:justify-end">
             {access === 'full' ? (
               <>
                 {meta.hasDraft && !dirty && meta.id && (
@@ -608,7 +608,7 @@ export function PostEditor({
                     }
                   >
                     <Undo2Icon aria-hidden data-icon="inline-start" />
-                    Discard changes
+                    <span className="max-md:sr-only">Discard changes</span>
                   </Button>
                 )}
                 <Button
@@ -734,7 +734,7 @@ export function PostEditor({
                     }
                   >
                     <Undo2Icon aria-hidden data-icon="inline-start" />
-                    Discard changes
+                    <span className="max-md:sr-only">Discard changes</span>
                   </Button>
                 )}
                 {access === 'readonly' && (

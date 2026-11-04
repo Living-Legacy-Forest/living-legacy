@@ -93,7 +93,9 @@ export function ProfilePage({
   return (
     <div className="mx-auto w-full max-w-lg">
       <div className="mb-8 space-y-1">
-        <h1 className="text-xl font-semibold tracking-tight">Your profile</h1>
+        <h1 data-slot="page-title" className="text-xl font-semibold tracking-tight">
+          Your profile
+        </h1>
         <p className="text-muted-foreground text-sm">
           How you appear and sign in to the Living Legacy CMS.
         </p>

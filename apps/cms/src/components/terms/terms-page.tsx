@@ -128,7 +128,9 @@ export function TermsPage({
   return (
     <div className="flex flex-1 flex-col gap-4 lg:h-[calc(100svh-7.5rem)] lg:flex-none">
       <div className="flex flex-wrap items-center gap-3">
-        <h1 className="mr-auto text-xl">{title}</h1>
+        <h1 data-slot="page-title" className="mr-auto text-xl">
+          {title}
+        </h1>
         {data.length > 0 && (
           <SearchInput
             label={`Search ${noun[1]}`}
@@ -164,7 +166,7 @@ export function TermsPage({
           )}
         </Empty>
       ) : (
-        <div className="grid min-h-0 flex-1 overflow-hidden rounded-lg border lg:grid-cols-[minmax(20rem,1fr)_1fr]">
+        <div className="grid min-h-0 flex-1 grid-cols-1 overflow-hidden rounded-lg border lg:grid-cols-[minmax(20rem,1fr)_minmax(0,1fr)]">
           <section aria-label={title} className="flex min-h-0 flex-col lg:border-r">
             {canWrite ? (
               <SelectionBar

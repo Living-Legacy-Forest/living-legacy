@@ -3,7 +3,7 @@
 // chosen here is the one the site serves.
 
 /** The longest side kept; larger images are scaled down to it. */
-export const MAX_IMAGE_SIDE = 2560;
+const MAX_IMAGE_SIDE = 2560;
 
 /** A crop in the source image's own pixels. */
 export type PixelArea = { x: number; y: number; width: number; height: number };

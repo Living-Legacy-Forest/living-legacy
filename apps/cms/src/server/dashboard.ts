@@ -6,7 +6,7 @@ import { authMiddleware } from '@/lib/session';
 import { readSiteSettings } from '@/lib/site-settings';
 
 const DAY_MS = 86_400_000;
-export const ACTIVITY_DAYS = 90;
+const ACTIVITY_DAYS = 90;
 
 export type PostSummary = {
   id: string;

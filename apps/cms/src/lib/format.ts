@@ -1,7 +1,7 @@
-export const LOCALE = 'en-AU';
+const LOCALE = 'en-AU';
 
 /** Noon anchor avoids off-by-one labels around timezone boundaries for ISO date strings. */
-export function parseIsoCalendarDate(isoDate: string): Date {
+function parseIsoCalendarDate(isoDate: string): Date {
   return new Date(`${isoDate}T12:00:00`);
 }
 

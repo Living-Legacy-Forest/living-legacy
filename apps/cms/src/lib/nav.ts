@@ -1,4 +1,4 @@
-import type { Permission } from '@ll/content';
+import { type Permission, type Role, can } from '@ll/content';
 import {
   ActivityIcon,
   ArrowRightLeft,
@@ -88,6 +88,28 @@ export const navGroups: NavGroup[] = [
     ],
   },
 ];
+
+/** Whether someone with `role` sees this item. */
+export function isNavItemAllowed(item: NavItem, role: Role) {
+  return !item.permission || [item.permission].flat().some((p) => can(role, p));
+}
+
+/** The phone tab bar, in place of the sidebar. Every other page is under More. */
+export const phoneTabs: (NavItem & { to: NonNullable<NavItem['to']>; icon: LucideIcon })[] = [
+  { title: 'Dashboard', icon: LayoutDashboard, to: '/' },
+  { title: 'Posts', icon: FileText, to: '/posts' },
+  { title: 'Media', icon: ImageIcon, to: '/media', permission: 'media:write' },
+  { title: 'FAQs', icon: CircleHelp, to: '/faqs' },
+];
+
+/** The post editor, which has the whole screen on phones (no tab bar). */
+export const isEditorPath = (pathname: string) =>
+  /^\/posts\/(?!categories$|tags$)[^/]+$/.test(pathname);
+
+/** Whether a tab is the current section: its page or anything under it. */
+export function isTabActive(to: string, pathname: string) {
+  return to === '/' ? pathname === '/' : pathname === to || pathname.startsWith(`${to}/`);
+}
 
 export const footerLinks: { title: string; href: string; icon: LucideIcon }[] = [
   { title: 'View website', href: 'https://livinglegacy.com.au', icon: ExternalLink },

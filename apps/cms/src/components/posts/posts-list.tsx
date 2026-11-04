@@ -179,7 +179,9 @@ export function PostsList({
   return (
     <div className="flex flex-col gap-4 lg:h-[calc(100svh-7.5rem)]">
       <div className="flex flex-wrap items-center gap-3">
-        <h1 className="mr-auto text-xl">Posts</h1>
+        <h1 data-slot="page-title" className="mr-auto text-xl">
+          Posts
+        </h1>
         <div className="relative w-full sm:w-56">
           <SearchIcon
             aria-hidden

@@ -105,7 +105,9 @@ export function UsersPage({ data }: { data: TeamData }) {
     <div className="mx-auto max-w-3xl space-y-8">
       <div className="flex items-start justify-between gap-4">
         <div className="space-y-1">
-          <h1 className="text-xl font-semibold tracking-tight">Users</h1>
+          <h1 data-slot="page-title" className="text-xl font-semibold tracking-tight">
+            Users
+          </h1>
           <p className="text-muted-foreground text-sm">People who can sign in to the CMS.</p>
         </div>
         <InviteDialog />

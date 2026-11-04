@@ -35,7 +35,9 @@ export function ActivityPage({ data }: { data: ActivityLogData }) {
   return (
     <div className="mx-auto w-full max-w-2xl">
       <div className="mb-8 space-y-1">
-        <h1 className="text-xl font-semibold tracking-tight">Activity</h1>
+        <h1 data-slot="page-title" className="text-xl font-semibold tracking-tight">
+          Activity
+        </h1>
         <p className="text-muted-foreground text-sm">
           Who published, invited, redirected or changed settings, most recent first.
         </p>

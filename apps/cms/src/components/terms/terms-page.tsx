@@ -128,7 +128,9 @@ export function TermsPage({
   return (
     <div className="flex flex-1 flex-col gap-4 lg:h-[calc(100svh-7.5rem)] lg:flex-none">
       <div className="flex flex-wrap items-center gap-3">
-        <h1 className="mr-auto text-xl">{title}</h1>
+        <h1 data-slot="page-title" className="mr-auto text-xl">
+          {title}
+        </h1>
         {data.length > 0 && (
           <SearchInput
             label={`Search ${noun[1]}`}

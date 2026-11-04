@@ -93,7 +93,9 @@ export function MediaPage({ data }: { data: MediaListData }) {
       }}
     >
       <div className="flex flex-wrap items-center gap-3">
-        <h1 className="mr-auto text-xl">Media</h1>
+        <h1 data-slot="page-title" className="mr-auto text-xl">
+          Media
+        </h1>
         {data.length > 0 && (
           <SearchInput
             label="Search media"

@@ -1,4 +1,3 @@
-import { can } from '@ll/content';
 import { Link } from '@tanstack/react-router';
 import logoMark from '@/assets/brand/logo-mark.webp';
 import {
@@ -10,15 +9,14 @@ import {
   SidebarMenuButton,
   SidebarMenuItem,
 } from '@/components/ui/sidebar';
-import { type NavItem, footerLinks, navGroups } from '@/lib/nav';
+import { type NavItem, footerLinks, isNavItemAllowed, navGroups } from '@/lib/nav';
 import type { SessionUser } from '@/lib/session';
 import { cn } from '@/lib/utils';
 import { NavGroup } from './nav-group';
 import { navItemClass } from './nav-styles';
 
 export function AppSidebar({ user }: { user: SessionUser }) {
-  const allowed = (item: NavItem) =>
-    !item.permission || [item.permission].flat().some((permission) => can(user.role, permission));
+  const allowed = (item: NavItem) => isNavItemAllowed(item, user.role);
 
   return (
     <Sidebar collapsible="icon" variant="inset">

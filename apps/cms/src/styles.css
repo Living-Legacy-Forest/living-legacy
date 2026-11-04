@@ -156,6 +156,17 @@
     color-scheme: light;
     /* Stops the elastic rubber-band bounce past the top/bottom of the page. */
     overscroll-behavior-y: none;
+    /* Phones paint a grey flash over anything tapped; controls give their own feedback. */
+    -webkit-tap-highlight-color: transparent;
+    -webkit-text-size-adjust: 100%;
+    /* Height of the phone tab bar, so content, toasts and bottom bars clear it. */
+    --tab-bar-height: 0px;
+  }
+
+  @media (width < 48rem) {
+    :root:has([data-tab-bar='shown']) {
+      --tab-bar-height: calc(3.0625rem + env(safe-area-inset-bottom, 0px));
+    }
   }
 
   html.dark {
@@ -164,5 +175,57 @@
 
   body {
     @apply bg-background text-foreground font-sans antialiased;
+  }
+
+  /* No double-tap-to-zoom wait on controls, so taps register at once. */
+  button,
+  a,
+  label,
+  summary,
+  [role='button'],
+  [role='tab'],
+  [role='menuitem'],
+  [role='option'] {
+    touch-action: manipulation;
+  }
+
+  /* A long press on a control should not select its label. Content stays selectable. */
+  button,
+  [role='button'],
+  [role='tab'] {
+    -webkit-user-select: none;
+    user-select: none;
+    -webkit-touch-callout: none;
+  }
+
+  /* Reaching the end of a panel's scroll must not scroll the page behind it. */
+  [data-slot='sheet-content'],
+  [data-slot='dialog-content'],
+  [data-slot='popover-content'],
+  [data-slot='sidebar-content'],
+  [cmdk-list] {
+    overscroll-behavior: contain;
+  }
+}
+
+/* Outside any layer, so these win over the elements' own utility classes. */
+
+/* The frosted top bar and tab bar go solid for people who turn off transparency. */
+@media (prefers-reduced-transparency: reduce) {
+  [data-slot='app-header'],
+  [data-slot='tab-bar'] {
+    background: var(--background);
+    backdrop-filter: none;
+  }
+}
+
+/* iOS large titles: the page heading is big on phones and shrinks into the top
+   bar once scrolled past (see AppHeader). */
+@media (width < 48rem) {
+  [data-slot='page-title'] {
+    font-size: 2.125rem;
+    line-height: 1.12;
+    font-weight: 700;
+    letter-spacing: -0.022em;
   }
 }

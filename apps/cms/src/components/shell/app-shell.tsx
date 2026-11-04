@@ -4,6 +4,7 @@ import type { SessionUser } from '@/lib/session';
 import { AppHeader } from './app-header';
 import { AppSidebar } from './app-sidebar';
 import { PageSkeleton, usePendingPathname } from './page-skeleton';
+import { TabBar } from './tab-bar';
 
 export function AppShell({ user, children }: { user: SessionUser; children: ReactNode }) {
   const pendingPathname = usePendingPathname();
@@ -13,12 +14,14 @@ export function AppShell({ user, children }: { user: SessionUser; children: Reac
       <AppSidebar user={user} />
       <SidebarInset>
         <AppHeader user={user} />
-        <div className="flex flex-1 flex-col gap-4 p-4 md:p-6">
+        {/* On phones: clear the tab bar, and the notch in landscape. */}
+        <div className="flex flex-1 flex-col gap-4 p-4 max-md:pr-[max(1rem,env(safe-area-inset-right))] max-md:pb-[calc(var(--tab-bar-height)+1.5rem)] max-md:pl-[max(1rem,env(safe-area-inset-left))] md:p-6">
           {pendingPathname && <PageSkeleton pathname={pendingPathname} />}
           {/* Hidden, not unmounted, so a cancelled navigation keeps the page's state. */}
           <div className={pendingPathname ? 'hidden' : 'contents'}>{children}</div>
         </div>
       </SidebarInset>
+      <TabBar user={user} />
     </SidebarProvider>
   );
 }

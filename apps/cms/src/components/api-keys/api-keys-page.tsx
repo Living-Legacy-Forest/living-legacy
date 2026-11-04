@@ -68,7 +68,9 @@ export function ApiKeysPage({ keys }: { keys: ApiKeyRow[] }) {
     <div className="mx-auto max-w-3xl space-y-8">
       <div className="flex items-start justify-between gap-4">
         <div className="space-y-1">
-          <h1 className="text-xl font-semibold tracking-tight">API keys</h1>
+          <h1 data-slot="page-title" className="text-xl font-semibold tracking-tight">
+            API keys
+          </h1>
           <p className="text-muted-foreground text-sm">
             Let other tools read posts and write drafts through the CMS API. A key acts as the admin
             who created it.

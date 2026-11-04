@@ -154,7 +154,9 @@ export function MediaCoveragePage({
   return (
     <div className="flex flex-col gap-4 lg:h-[calc(100svh-7.5rem)]">
       <div className="flex flex-wrap items-center gap-3">
-        <h1 className="mr-auto text-xl">Media coverage</h1>
+        <h1 data-slot="page-title" className="mr-auto text-xl">
+          Media coverage
+        </h1>
         {data.length > 0 && (
           <SearchInput
             label="Search media coverage"

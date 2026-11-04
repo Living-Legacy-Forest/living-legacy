@@ -59,9 +59,9 @@ export function NavUser({ user }: { user: SessionUser }) {
       <DropdownMenu>
         <DropdownMenuTrigger
           aria-label="Account menu"
-          className="focus-visible:ring-ring rounded-full outline-none focus-visible:ring-2"
+          className="focus-visible:ring-ring rounded-full outline-none focus-visible:ring-2 max-md:flex max-md:size-11 max-md:items-center max-md:justify-center max-md:active:opacity-60"
         >
-          <Avatar className="size-7">{avatar}</Avatar>
+          <Avatar className="size-7 max-md:size-8">{avatar}</Avatar>
         </DropdownMenuTrigger>
         <DropdownMenuContent align="end" className="w-60">
           <DropdownMenuGroup>

@@ -2,22 +2,32 @@ import { MAX_FAQ_TAGS, slugify, splitTags } from '@ll/content';
 import { useState } from 'react';
 import { BulkCsvForm } from '@/components/bulk/bulk-csv-form';
 import {
-  BulkPane,
+  DialogActions,
+  ListColumn,
+  ListDialog,
+  ListPageLayout,
+  NoMatches,
+  PaneActions,
+  PaneColumn,
+  PaneEmpty,
+  PaneFrame,
+  useListPane,
+} from '@/components/list/list-page';
+import { ListRow } from '@/components/list/list-row';
+import {
   ConfirmBulkDelete,
-  RowCheckbox,
   SearchInput,
   type Selection,
   SelectionBar,
   matchesSearch,
   useSelection,
-} from '@/components/bulk/list-tools';
+} from '@/components/list/list-tools';
 import {
   ChevronDownIcon,
   ChevronUpIcon,
   CircleHelpIcon,
   FolderPlusIcon,
   MoreHorizontalIcon,
-  PanelRightIcon,
   PencilIcon,
   PlusIcon,
   Trash2Icon,
@@ -36,15 +46,6 @@ import {
 } from '@/components/ui/alert-dialog';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import {
-  Dialog,
-  DialogClose,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from '@/components/ui/dialog';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -74,7 +75,6 @@ import { Textarea } from '@/components/ui/textarea';
 import { readStatus } from '@/lib/bulk-import';
 import { reportInvalid } from '@/lib/form-validation';
 import { useAction } from '@/lib/use-action';
-import { cn } from '@/lib/utils';
 import {
   type Faq,
   type FaqData,
@@ -136,27 +136,19 @@ function faqFromCsv(values: Record<string, string>) {
   };
 }
 
-const isDesktop = () =>
-  typeof window !== 'undefined' && window.matchMedia('(min-width: 1024px)').matches;
-
 export function FaqsPage({ data, canWrite }: { data: FaqData; canWrite: boolean }) {
-  // Desktop: what the right-hand pane is editing. Mobile has no pane, so the
-  // same form opens in a dialog instead (as on the team page).
-  const [paneTarget, setPaneTarget] = useState<Target | null>(null);
-  const [dialogTarget, setDialogTarget] = useState<Target | null>(null);
+  const view = useListPane<Target>();
   const [query, setQuery] = useState('');
   const [tagFilter, setTagFilter] = useState(ALL_TAGS);
-  const [confirmDelete, setConfirmDelete] = useState(false);
+  const [toDelete, setToDelete] = useState<string[] | null>(null);
   const selection = useSelection(data.faqs.map((f) => f.id));
   const { run, pending } = useAction();
 
-  const open = (target: Target) => (isDesktop() ? setPaneTarget(target) : setDialogTarget(target));
   // Targets hold an id, so the form always edits the live row.
   const faqFor = (target: Target | null) =>
     target?.kind === 'faq' ? (data.faqs.find((f) => f.id === target.id) ?? null) : null;
   // An FAQ removed elsewhere closes the pane.
-  const pane = paneTarget?.kind === 'faq' && !faqFor(paneTarget) ? null : paneTarget;
-  const dialogFaq = faqFor(dialogTarget);
+  const pane = view.pane?.kind === 'faq' && !faqFor(view.pane) ? null : view.pane;
 
   const ungrouped = data.faqs.filter((f) => !f.groupId);
   const sections = [
@@ -184,18 +176,17 @@ export function FaqsPage({ data, canWrite }: { data: FaqData; canWrite: boolean 
   const visibleIds = visibleSections.flatMap((s) => s.faqs.map((f) => f.id));
   const groupName = new Map(data.groups.map((g) => [g.id, g.name]));
 
-  async function removeChecked() {
-    const ids = selection.checkedIds;
+  async function remove(ids: string[]) {
     const result = await run(
       () => deleteFaqs({ data: { ids } }),
       `${ids.length} ${ids.length === 1 ? NOUN[0] : NOUN[1]} removed.`
     );
     if (!result) return;
-    if (paneTarget?.kind === 'faq' && ids.includes(paneTarget.id)) setPaneTarget(null);
+    if (view.pane?.kind === 'faq' && ids.includes(view.pane.id)) view.closePane();
     selection.clear();
   }
 
-  const bulkForm = (onDone: () => void, footer: (submit: React.ReactNode) => React.ReactNode) => (
+  const bulkForm = (onDone: () => void, actions: (submit: React.ReactNode) => React.ReactNode) => (
     <BulkCsvForm
       noun={NOUN}
       fileName="faqs"
@@ -218,9 +209,30 @@ export function FaqsPage({ data, canWrite }: { data: FaqData; canWrite: boolean 
       toRow={faqFromCsv}
       apply={(rows) => importFaqs({ data: { rows } })}
       onDone={onDone}
-      footer={footer}
+      footer={actions}
     />
   );
+
+  const targetForm = (
+    target: FormTarget,
+    onSaved: (saved: Target | null) => void,
+    actions: (submit: React.ReactNode, formPending: boolean) => React.ReactNode
+  ) => (
+    <TargetForm
+      key={targetKey(target)}
+      target={target}
+      faq={faqFor(target)}
+      groups={data.groups}
+      knownTags={knownTags}
+      onSaved={onSaved}
+      footer={(formPending) =>
+        actions(<SubmitButton pending={formPending} target={target} />, formPending)
+      }
+    />
+  );
+
+  const paneFaq = faqFor(pane);
+  const dialogFaq = faqFor(view.dialog);
 
   return (
     <div className="flex flex-1 flex-col gap-4 lg:h-[calc(100svh-7.5rem)] lg:flex-none">
@@ -260,15 +272,15 @@ export function FaqsPage({ data, canWrite }: { data: FaqData; canWrite: boolean 
         )}
         {canWrite && (
           <>
-            <Button size="sm" variant="outline" onClick={() => open({ kind: 'bulk' })}>
+            <Button size="sm" variant="outline" onClick={() => view.open({ kind: 'bulk' })}>
               <UploadIcon aria-hidden data-icon="inline-start" />
               Bulk update
             </Button>
-            <Button size="sm" variant="outline" onClick={() => open({ kind: 'group' })}>
+            <Button size="sm" variant="outline" onClick={() => view.open({ kind: 'group' })}>
               <FolderPlusIcon aria-hidden data-icon="inline-start" />
               New group
             </Button>
-            <Button size="sm" onClick={() => open({ kind: 'new' })}>
+            <Button size="sm" onClick={() => view.open({ kind: 'new' })}>
               <PlusIcon aria-hidden data-icon="inline-start" />
               Add FAQ
             </Button>
@@ -288,11 +300,11 @@ export function FaqsPage({ data, canWrite }: { data: FaqData; canWrite: boolean 
           {canWrite && (
             <EmptyContent>
               <div className="flex gap-2">
-                <Button size="sm" variant="outline" onClick={() => open({ kind: 'bulk' })}>
+                <Button size="sm" variant="outline" onClick={() => view.open({ kind: 'bulk' })}>
                   <UploadIcon aria-hidden data-icon="inline-start" />
                   Bulk update
                 </Button>
-                <Button size="sm" onClick={() => open({ kind: 'new' })}>
+                <Button size="sm" onClick={() => view.open({ kind: 'new' })}>
                   <PlusIcon aria-hidden data-icon="inline-start" />
                   Add FAQ
                 </Button>
@@ -301,39 +313,30 @@ export function FaqsPage({ data, canWrite }: { data: FaqData; canWrite: boolean 
           )}
         </Empty>
       ) : (
-        <div className="grid min-h-0 flex-1 grid-cols-1 overflow-hidden rounded-lg border lg:grid-cols-[minmax(20rem,1fr)_minmax(0,1fr)]">
-          <section aria-label="FAQs" className="flex min-h-0 flex-col lg:border-r">
-            {canWrite ? (
+        <ListPageLayout>
+          <ListColumn
+            label="FAQs"
+            header={
               <SelectionBar
                 selection={selection}
                 visibleIds={visibleIds}
                 title="All"
                 total={data.faqs.length}
                 pending={pending}
-                onDelete={() => setConfirmDelete(true)}
+                onDelete={canWrite ? () => setToDelete(selection.checkedIds) : undefined}
               />
-            ) : (
-              <div className="flex h-11 shrink-0 items-center gap-2 border-b px-3">
-                <span className="text-[13px] font-medium">All</span>
-                <span className="text-muted-foreground text-xs tabular-nums">
-                  {data.faqs.length}
-                </span>
-              </div>
-            )}
+            }
+          >
             {visibleSections.length === 0 ? (
-              <div className="text-muted-foreground flex flex-1 flex-col items-center justify-center gap-2 p-6 text-center text-sm">
+              <NoMatches
+                clearLabel="Clear search and filter"
+                onClear={() => {
+                  setQuery('');
+                  setTagFilter(ALL_TAGS);
+                }}
+              >
                 No FAQs match.
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => {
-                    setQuery('');
-                    setTagFilter(ALL_TAGS);
-                  }}
-                >
-                  Clear search and filter
-                </Button>
-              </div>
+              </NoMatches>
             ) : (
               <div className="min-h-0 flex-1 space-y-3 overflow-y-auto p-1.5">
                 {visibleSections.map((section) => (
@@ -345,138 +348,90 @@ export function FaqsPage({ data, canWrite }: { data: FaqData; canWrite: boolean 
                     canWrite={canWrite}
                     selection={selection}
                     searching={searching}
-                    onSelect={(faq) => canWrite && open({ kind: 'faq', id: faq.id })}
-                    onAdd={() => open({ kind: 'new', groupId: section.group?.id })}
-                    onEditGroup={(id) => open({ kind: 'group', id })}
+                    onSelect={(faq) => canWrite && view.open({ kind: 'faq', id: faq.id })}
+                    onDelete={(faq) => setToDelete([faq.id])}
+                    onAdd={() => view.open({ kind: 'new', groupId: section.group?.id })}
+                    onEditGroup={(id) => view.open({ kind: 'group', id })}
                   />
                 ))}
               </div>
             )}
-          </section>
+          </ListColumn>
 
-          <section aria-label="Edit FAQ" className="hidden min-h-0 flex-col lg:flex">
+          <PaneColumn label="Edit FAQ">
             {!canWrite || pane === null ? (
-              <Empty>
-                <EmptyHeader>
-                  <EmptyMedia variant="icon">
-                    <PanelRightIcon aria-hidden />
-                  </EmptyMedia>
-                  <EmptyTitle>No FAQ selected</EmptyTitle>
-                  <EmptyDescription>Choose one from the list, or add a new FAQ.</EmptyDescription>
-                </EmptyHeader>
-              </Empty>
-            ) : pane.kind === 'bulk' ? (
-              <BulkPane title="Bulk update FAQs">
-                {bulkForm(
-                  () => setPaneTarget(null),
-                  (submit) => (
-                    <div className="flex justify-end gap-2">
-                      <Button type="button" variant="outline" onClick={() => setPaneTarget(null)}>
-                        Cancel
-                      </Button>
-                      {submit}
-                    </div>
-                  )
-                )}
-              </BulkPane>
-            ) : (
-              <EditPane
-                key={targetKey(pane)}
-                target={pane}
-                faq={faqFor(pane)}
-                groups={data.groups}
-                knownTags={knownTags}
-                onSaved={(saved) => setPaneTarget(saved)}
-                onClose={() => setPaneTarget(null)}
+              <PaneEmpty
+                title="No FAQ selected"
+                description="Choose one from the list, or add a new FAQ."
               />
+            ) : pane.kind === 'bulk' ? (
+              <PaneFrame title="Bulk update FAQs" width="lg">
+                {bulkForm(view.closePane, (submit) => (
+                  <PaneActions onCancel={view.closePane}>{submit}</PaneActions>
+                ))}
+              </PaneFrame>
+            ) : (
+              <PaneFrame
+                title={paneFaq ? paneFaq.question : targetTitle(pane)}
+                actions={paneFaq && <DeleteFaq faq={paneFaq} onRemoved={view.closePane} />}
+              >
+                {targetForm(pane, view.setPane, (submit) => (
+                  <PaneActions onCancel={view.closePane}>{submit}</PaneActions>
+                ))}
+              </PaneFrame>
             )}
-          </section>
-        </div>
+          </PaneColumn>
+        </ListPageLayout>
       )}
 
       <ConfirmBulkDelete
-        open={confirmDelete}
-        onOpenChange={setConfirmDelete}
-        count={selection.checkedIds.length}
+        open={toDelete !== null}
+        onOpenChange={(open) => !open && setToDelete(null)}
+        count={toDelete?.length ?? 0}
         noun={NOUN}
         description="They are removed from the website. This cannot be undone."
-        onConfirm={removeChecked}
+        onConfirm={() => toDelete && remove(toDelete)}
       />
 
       {canWrite && (
-        <Dialog
-          open={dialogTarget !== null}
-          onOpenChange={(isOpen) => !isOpen && setDialogTarget(null)}
+        <ListDialog
+          open={view.dialog !== null}
+          onClose={view.closeDialog}
+          size={view.dialog?.kind === 'group' ? 'sm' : view.dialog?.kind === 'bulk' ? 'lg' : 'md'}
+          title={
+            view.dialog?.kind === 'bulk'
+              ? 'Bulk update FAQs'
+              : view.dialog
+                ? targetTitle(view.dialog)
+                : ''
+          }
+          description={
+            view.dialog?.kind === 'bulk'
+              ? 'Add or update many FAQs at once from a CSV file.'
+              : view.dialog?.kind === 'group'
+                ? 'Groups organise FAQs on the website, e.g. "Pricing".'
+                : 'A question and answer, shown on the website.'
+          }
         >
-          <DialogContent
-            className={
-              dialogTarget?.kind === 'group'
-                ? 'sm:max-w-sm'
-                : dialogTarget?.kind === 'bulk'
-                  ? 'sm:max-w-lg'
-                  : 'sm:max-w-md'
-            }
-          >
-            {dialogTarget?.kind === 'bulk' && (
-              <>
-                <DialogHeader>
-                  <DialogTitle>Bulk update FAQs</DialogTitle>
-                  <DialogDescription>
-                    Add or update many FAQs at once from a CSV file.
-                  </DialogDescription>
-                </DialogHeader>
-                {bulkForm(
-                  () => setDialogTarget(null),
-                  (submit) => (
-                    <DialogFooter>
-                      <DialogClose render={<Button type="button" variant="outline" />}>
-                        Cancel
-                      </DialogClose>
-                      {submit}
-                    </DialogFooter>
-                  )
-                )}
-              </>
-            )}
-            {dialogTarget && dialogTarget.kind !== 'bulk' && (
-              <>
-                <DialogHeader>
-                  <DialogTitle>{targetTitle(dialogTarget)}</DialogTitle>
-                  <DialogDescription>
-                    {dialogTarget.kind === 'group'
-                      ? 'Groups organise FAQs on the website, e.g. "Pricing".'
-                      : 'A question and answer, shown on the website.'}
-                  </DialogDescription>
-                </DialogHeader>
-                <TargetForm
-                  key={targetKey(dialogTarget)}
-                  target={dialogTarget}
-                  faq={dialogFaq}
-                  groups={data.groups}
-                  knownTags={knownTags}
-                  onSaved={() => setDialogTarget(null)}
-                  footer={(pending) => (
-                    <DialogFooter>
-                      {dialogFaq && (
-                        <div className="mr-auto">
-                          <DeleteFaq
-                            faq={dialogFaq}
-                            disabled={pending}
-                            onRemoved={() => setDialogTarget(null)}
-                          />
-                        </div>
-                      )}
-                      <DialogClose render={<Button type="button" variant="outline" />}>
-                        Cancel
-                      </DialogClose>
-                      <SubmitButton pending={pending} target={dialogTarget} />
-                    </DialogFooter>
-                  )}
-                />
-              </>
-            )}
-          </DialogContent>
-        </Dialog>
+          {view.dialog?.kind === 'bulk'
+            ? bulkForm(view.closeDialog, (submit) => <DialogActions>{submit}</DialogActions>)
+            : view.dialog &&
+              targetForm(view.dialog, view.closeDialog, (submit, formPending) => (
+                <DialogActions
+                  start={
+                    dialogFaq && (
+                      <DeleteFaq
+                        faq={dialogFaq}
+                        disabled={formPending}
+                        onRemoved={view.closeDialog}
+                      />
+                    )
+                  }
+                >
+                  {submit}
+                </DialogActions>
+              ))}
+        </ListDialog>
       )}
     </div>
   );
@@ -495,6 +450,7 @@ function FaqSection({
   selection,
   searching,
   onSelect,
+  onDelete,
   onAdd,
   onEditGroup,
 }: {
@@ -506,6 +462,7 @@ function FaqSection({
   /** While searching the list is partial, so reordering waits. */
   searching: boolean;
   onSelect: (faq: Faq) => void;
+  onDelete: (faq: Faq) => void;
   onAdd: () => void;
   onEditGroup: (id: string) => void;
 }) {
@@ -571,18 +528,33 @@ function FaqSection({
       ) : (
         <ul className="space-y-px">
           {faqs.map((faq, index) => (
-            <FaqListItem
+            <ListRow
               key={faq.id}
-              faq={faq}
-              selected={faq.id === selectedId}
-              canWrite={canWrite}
-              checked={selection.isChecked(faq.id)}
-              selecting={selection.checkedIds.length > 0}
-              onToggle={() => selection.toggle(faq.id)}
-              canMoveUp={!searching && index > 0}
-              canMoveDown={!searching && index < faqs.length - 1}
-              onSelect={() => onSelect(faq)}
-            />
+              current={faq.id === selectedId}
+              select={
+                canWrite
+                  ? {
+                      label: `Select ${faq.question}`,
+                      checked: selection.isChecked(faq.id),
+                      selecting: selection.selecting,
+                      onToggle: () => selection.toggle(faq.id),
+                    }
+                  : undefined
+              }
+              swipe={canWrite ? { label: 'Delete', onAction: () => onDelete(faq) } : undefined}
+              actions={
+                canWrite && (
+                  <MoveButtons
+                    faq={faq}
+                    canMoveUp={!searching && index > 0}
+                    canMoveDown={!searching && index < faqs.length - 1}
+                  />
+                )
+              }
+              onOpen={() => onSelect(faq)}
+            >
+              <FaqSummary faq={faq} />
+            </ListRow>
           ))}
         </ul>
       )}
@@ -590,88 +562,65 @@ function FaqSection({
   );
 }
 
-function FaqListItem({
+function FaqSummary({ faq }: { faq: Faq }) {
+  return (
+    <>
+      <span className="flex items-center gap-2">
+        <span className="truncate text-[13px] font-medium">{faq.question}</span>
+        {faq.status === 'draft' && (
+          <Badge variant="outline" className="shrink-0">
+            Draft
+          </Badge>
+        )}
+      </span>
+      <span className="text-muted-foreground block truncate text-xs">{faq.answer}</span>
+      {faq.tags.length > 0 && (
+        <span className="mt-1 flex flex-wrap gap-1">
+          {faq.tags.map((tag) => (
+            <Badge key={tag} variant="outline" className="font-mono text-[11px]">
+              {tag}
+            </Badge>
+          ))}
+        </span>
+      )}
+    </>
+  );
+}
+
+function MoveButtons({
   faq,
-  selected,
-  canWrite,
-  checked,
-  selecting,
-  onToggle,
   canMoveUp,
   canMoveDown,
-  onSelect,
 }: {
   faq: Faq;
-  selected: boolean;
-  canWrite: boolean;
-  checked: boolean;
-  selecting: boolean;
-  onToggle: () => void;
   canMoveUp: boolean;
   canMoveDown: boolean;
-  onSelect: () => void;
 }) {
   const { run, pending } = useAction();
+  const move = (direction: 'up' | 'down') =>
+    run(() => moveFaq({ data: { id: faq.id, direction } }));
 
   return (
-    <li className={cn('group rounded-md', selected ? 'bg-accent' : 'hover:bg-muted/60')}>
-      <div className="flex items-center gap-1 px-1.5 py-1">
-        {canWrite && (
-          <RowCheckbox
-            label={`Select ${faq.question}`}
-            checked={checked}
-            selecting={selecting}
-            onToggle={onToggle}
-          />
-        )}
-        <button
-          type="button"
-          onClick={onSelect}
-          className="min-w-0 flex-1 rounded-md px-1.5 py-1.5 text-left outline-none"
-        >
-          <div className="flex items-center gap-2">
-            <span className="truncate text-[13px] font-medium">{faq.question}</span>
-            {faq.status === 'draft' && (
-              <Badge variant="outline" className="shrink-0">
-                Draft
-              </Badge>
-            )}
-          </div>
-          <div className="text-muted-foreground truncate text-xs">{faq.answer}</div>
-          {faq.tags.length > 0 && (
-            <div className="mt-1 flex flex-wrap gap-1">
-              {faq.tags.map((tag) => (
-                <Badge key={tag} variant="outline" className="font-mono text-[11px]">
-                  {tag}
-                </Badge>
-              ))}
-            </div>
-          )}
-        </button>
-        {canWrite && (
-          <div className="flex shrink-0 items-center gap-0.5">
-            <Button
-              variant="ghost"
-              size="icon-sm"
-              aria-label="Move up"
-              disabled={!canMoveUp || pending}
-              onClick={() => run(() => moveFaq({ data: { id: faq.id, direction: 'up' } }))}
-            >
-              <ChevronUpIcon aria-hidden className="size-4" />
-            </Button>
-            <Button
-              variant="ghost"
-              size="icon-sm"
-              aria-label="Move down"
-              disabled={!canMoveDown || pending}
-              onClick={() => run(() => moveFaq({ data: { id: faq.id, direction: 'down' } }))}
-            >
-              <ChevronDownIcon aria-hidden className="size-4" />
-            </Button>
-          </div>
-        )}
-      </div>
-    </li>
+    <>
+      <Button
+        variant="ghost"
+        size="icon-sm"
+        aria-label="Move up"
+        disabled={!canMoveUp || pending}
+        onClick={() => move('up')}
+      >
+        <ChevronUpIcon aria-hidden className="size-4" />
+      </Button>
+      <Button
+        variant="ghost"
+        size="icon-sm"
+        aria-label="Move down"
+        disabled={!canMoveDown || pending}
+        onClick={() => move('down')}
+      >
+        <ChevronDownIcon aria-hidden className="size-4" />
+      </Button>
+    </>
   );
 }
 
@@ -691,57 +640,6 @@ function SubmitButton({ pending, target }: { pending: boolean; target: FormTarge
         'Save'
       )}
     </Button>
-  );
-}
-
-/** The inline desktop pane: header with delete, scrollable form body. */
-function EditPane({
-  target,
-  faq,
-  groups,
-  knownTags,
-  onSaved,
-  onClose,
-}: {
-  target: FormTarget;
-  faq: Faq | null;
-  groups: FaqGroup[];
-  knownTags: string[];
-  onSaved: (saved: Target | null) => void;
-  onClose: () => void;
-}) {
-  return (
-    <>
-      <div className="flex h-11 shrink-0 items-center gap-1.5 border-b px-3">
-        <span className="truncate text-sm font-medium">
-          {faq ? faq.question : targetTitle(target)}
-        </span>
-        {faq && (
-          <div className="ml-auto">
-            <DeleteFaq faq={faq} onRemoved={onClose} />
-          </div>
-        )}
-      </div>
-      <div className="min-h-0 flex-1 overflow-y-auto px-4 py-6">
-        <div className="mx-auto max-w-md">
-          <TargetForm
-            target={target}
-            faq={faq}
-            groups={groups}
-            knownTags={knownTags}
-            onSaved={onSaved}
-            footer={(pending) => (
-              <div className="flex justify-end gap-2">
-                <Button type="button" variant="outline" onClick={onClose}>
-                  Cancel
-                </Button>
-                <SubmitButton pending={pending} target={target} />
-              </div>
-            )}
-          />
-        </div>
-      </div>
-    </>
   );
 }
 

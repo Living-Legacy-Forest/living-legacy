@@ -8,7 +8,7 @@ import {
   SelectionBar,
   matchesSearch,
   useSelection,
-} from '@/components/bulk/list-tools';
+} from '@/components/list/list-tools';
 import { CropIcon, ImageIcon, Trash2Icon, UploadIcon } from '@/components/icons';
 import { ImageCropDialog } from '@/components/media/image-crop-dialog';
 import { Button } from '@/components/ui/button';

@@ -7,7 +7,7 @@
 // cropped to the shape the website shows it in before it is uploaded.
 import { useEffect, useState } from 'react';
 import { toast } from 'sonner';
-import { SearchInput, matchesSearch } from '@/components/bulk/list-tools';
+import { SearchInput, matchesSearch } from '@/components/list/list-tools';
 import { UploadIcon } from '@/components/icons';
 import { useImageUpload } from '@/components/media/image-crop-dialog';
 import { ImageDropZone, useFileChooser, useImageDrop } from '@/components/media/image-drop-zone';

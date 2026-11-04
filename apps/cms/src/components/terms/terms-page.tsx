@@ -10,27 +10,30 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from '@/components/ui/alert-dialog';
+import { FolderIcon, PlusIcon, TagIcon, Trash2Icon } from '@/components/icons';
 import {
-  BulkPane,
+  DialogActions,
+  ListColumn,
+  ListDialog,
+  ListPageLayout,
+  ListRows,
+  NoMatches,
+  PaneActions,
+  PaneColumn,
+  PaneEmpty,
+  PaneFrame,
+  useListPane,
+} from '@/components/list/list-page';
+import { ListRow } from '@/components/list/list-row';
+import {
   ConfirmBulkDelete,
-  RowCheckbox,
   SearchInput,
   SelectionBar,
   matchesSearch,
   useSelection,
-} from '@/components/bulk/list-tools';
-import { FolderIcon, PanelRightIcon, PlusIcon, TagIcon, Trash2Icon } from '@/components/icons';
+} from '@/components/list/list-tools';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import {
-  Dialog,
-  DialogClose,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from '@/components/ui/dialog';
 import {
   Empty,
   EmptyContent,
@@ -45,7 +48,6 @@ import { Spinner } from '@/components/ui/spinner';
 import { Textarea } from '@/components/ui/textarea';
 import { reportInvalid } from '@/lib/form-validation';
 import { useAction } from '@/lib/use-action';
-import { cn } from '@/lib/utils';
 import { type Term, type TermsData, deleteTerms, saveTerm } from '@/server/terms';
 
 type TermType = 'category' | 'tag';
@@ -68,9 +70,6 @@ const copy: Record<
   },
 };
 
-const isDesktop = () =>
-  typeof window !== 'undefined' && window.matchMedia('(min-width: 1024px)').matches;
-
 /** What the pane edits: a saved term, or a new one. */
 type Target = { kind: 'edit'; id: string } | { kind: 'new' };
 
@@ -84,46 +83,47 @@ export function TermsPage({
   canWrite: boolean;
 }) {
   const { title, noun, icon: Icon, emptyBody } = copy[type];
-  const [paneTarget, setPaneTarget] = useState<Target | null>(null);
-  const [dialogTarget, setDialogTarget] = useState<Target | null>(null);
+  const view = useListPane<Target>();
   const [query, setQuery] = useState('');
-  const [confirmDelete, setConfirmDelete] = useState(false);
+  const [toDelete, setToDelete] = useState<string[] | null>(null);
   const selection = useSelection(data.map((t) => t.id));
   const { run, pending } = useAction();
 
   const sorted = [...data].sort((a, b) => a.name.localeCompare(b.name));
   const visible = sorted.filter((t) => matchesSearch(query, [t.name, t.slug, t.description]));
 
-  const open = (target: Target) => (isDesktop() ? setPaneTarget(target) : setDialogTarget(target));
   const editing = (target: Target | null) =>
     target?.kind === 'edit' ? (data.find((t) => t.id === target.id) ?? null) : null;
   // A term removed elsewhere closes the pane.
-  const pane = paneTarget?.kind === 'edit' && !editing(paneTarget) ? null : paneTarget;
+  const pane = view.pane?.kind === 'edit' && !editing(view.pane) ? null : view.pane;
 
-  async function removeChecked() {
-    const ids = selection.checkedIds;
+  async function remove(ids: string[]) {
     const result = await run(
       () => deleteTerms({ data: { type, ids } }),
       `${ids.length} ${ids.length === 1 ? noun[0] : noun[1]} removed.`
     );
     if (!result) return;
-    if (paneTarget?.kind === 'edit' && ids.includes(paneTarget.id)) setPaneTarget(null);
+    if (view.pane?.kind === 'edit' && ids.includes(view.pane.id)) view.closePane();
     selection.clear();
   }
 
-  const form = (
-    target: Target,
-    onDone: (id: string | null) => void,
-    footer: (submit: React.ReactNode) => React.ReactNode
-  ) => (
-    <TermForm
-      key={target.kind === 'edit' ? target.id : 'new'}
-      type={type}
-      term={editing(target)}
-      onSaved={onDone}
-      footer={footer}
-    />
-  );
+  const form = (target: Target, onDone: (id: string | null) => void, actions: Actions) => {
+    const term = editing(target);
+    return (
+      <TermForm
+        key={target.kind === 'edit' ? target.id : 'new'}
+        type={type}
+        term={term}
+        onSaved={onDone}
+        footer={(submit) =>
+          actions(
+            submit,
+            term && <DeleteTerm type={type} term={term} onRemoved={() => onDone(null)} />
+          )
+        }
+      />
+    );
+  };
 
   return (
     <div className="flex flex-1 flex-col gap-4 lg:h-[calc(100svh-7.5rem)] lg:flex-none">
@@ -140,7 +140,7 @@ export function TermsPage({
           />
         )}
         {canWrite && (
-          <Button size="sm" onClick={() => open({ kind: 'new' })}>
+          <Button size="sm" onClick={() => view.open({ kind: 'new' })}>
             <PlusIcon aria-hidden data-icon="inline-start" />
             New {noun[0]}
           </Button>
@@ -158,7 +158,7 @@ export function TermsPage({
           </EmptyHeader>
           {canWrite && (
             <EmptyContent>
-              <Button size="sm" onClick={() => open({ kind: 'new' })}>
+              <Button size="sm" onClick={() => view.open({ kind: 'new' })}>
                 <PlusIcon aria-hidden data-icon="inline-start" />
                 New {noun[0]}
               </Button>
@@ -166,202 +166,127 @@ export function TermsPage({
           )}
         </Empty>
       ) : (
-        <div className="grid min-h-0 flex-1 grid-cols-1 overflow-hidden rounded-lg border lg:grid-cols-[minmax(20rem,1fr)_minmax(0,1fr)]">
-          <section aria-label={title} className="flex min-h-0 flex-col lg:border-r">
-            {canWrite ? (
+        <ListPageLayout>
+          <ListColumn
+            label={title}
+            header={
               <SelectionBar
                 selection={selection}
                 visibleIds={visible.map((t) => t.id)}
                 title="All"
                 total={data.length}
                 pending={pending}
-                onDelete={() => setConfirmDelete(true)}
+                onDelete={canWrite ? () => setToDelete(selection.checkedIds) : undefined}
+              />
+            }
+          >
+            {visible.length === 0 ? (
+              <NoMatches onClear={() => setQuery('')}>No {noun[1]} match that search.</NoMatches>
+            ) : (
+              <ListRows>
+                {visible.map((t) => (
+                  <ListRow
+                    key={t.id}
+                    current={pane?.kind === 'edit' && pane.id === t.id}
+                    align="start"
+                    select={
+                      canWrite
+                        ? {
+                            label: `Select ${t.name}`,
+                            checked: selection.isChecked(t.id),
+                            selecting: selection.selecting,
+                            onToggle: () => selection.toggle(t.id),
+                          }
+                        : undefined
+                    }
+                    swipe={
+                      canWrite
+                        ? { label: 'Delete', onAction: () => setToDelete([t.id]) }
+                        : undefined
+                    }
+                    onOpen={() => canWrite && view.open({ kind: 'edit', id: t.id })}
+                  >
+                    <TermSummary term={t} />
+                  </ListRow>
+                ))}
+              </ListRows>
+            )}
+          </ListColumn>
+
+          <PaneColumn label={`Edit ${noun[0]}`}>
+            {!canWrite || pane === null ? (
+              <PaneEmpty
+                title={`No ${noun[0]} selected`}
+                description={`Choose one from the list, or create a new ${noun[0]}.`}
               />
             ) : (
-              <div className="flex h-11 shrink-0 items-center gap-2 border-b px-3">
-                <span className="text-[13px] font-medium">All</span>
-                <span className="text-muted-foreground text-xs tabular-nums">{data.length}</span>
-              </div>
-            )}
-            {visible.length === 0 ? (
-              <div className="text-muted-foreground flex flex-1 flex-col items-center justify-center gap-2 p-6 text-center text-sm">
-                No {noun[1]} match that search.
-                <Button variant="ghost" size="sm" onClick={() => setQuery('')}>
-                  Clear search
-                </Button>
-              </div>
-            ) : (
-              <ul className="min-h-0 flex-1 space-y-px overflow-y-auto p-1.5">
-                {visible.map((t) => (
-                  <TermListItem
-                    key={t.id}
-                    term={t}
-                    selected={pane?.kind === 'edit' && pane.id === t.id}
-                    canWrite={canWrite}
-                    checked={selection.isChecked(t.id)}
-                    selecting={selection.checkedIds.length > 0}
-                    onToggle={() => selection.toggle(t.id)}
-                    onSelect={() => canWrite && open({ kind: 'edit', id: t.id })}
-                  />
-                ))}
-              </ul>
-            )}
-          </section>
-
-          <section aria-label={`Edit ${noun[0]}`} className="hidden min-h-0 flex-col lg:flex">
-            {!canWrite || pane === null ? (
-              <Empty>
-                <EmptyHeader>
-                  <EmptyMedia variant="icon">
-                    <PanelRightIcon aria-hidden />
-                  </EmptyMedia>
-                  <EmptyTitle>No {noun[0]} selected</EmptyTitle>
-                  <EmptyDescription>
-                    Choose one from the list, or create a new {noun[0]}.
-                  </EmptyDescription>
-                </EmptyHeader>
-              </Empty>
-            ) : (
-              <BulkPane
+              <PaneFrame
                 title={pane.kind === 'edit' ? (editing(pane)?.name ?? title) : `New ${noun[0]}`}
               >
                 {form(
                   pane,
-                  (id) => setPaneTarget(id ? { kind: 'edit', id } : null),
-                  (submit) => (
-                    <div className="flex items-center gap-2">
-                      {pane.kind === 'edit' && editing(pane) && (
-                        <div className="mr-auto">
-                          <DeleteTerm
-                            type={type}
-                            term={editing(pane)!}
-                            onRemoved={() => setPaneTarget(null)}
-                          />
-                        </div>
-                      )}
-                      <Button type="button" variant="outline" onClick={() => setPaneTarget(null)}>
-                        Cancel
-                      </Button>
+                  (id) => view.setPane(id ? { kind: 'edit', id } : null),
+                  (submit, start) => (
+                    <PaneActions start={start} onCancel={view.closePane}>
                       {submit}
-                    </div>
+                    </PaneActions>
                   )
                 )}
-              </BulkPane>
+              </PaneFrame>
             )}
-          </section>
-        </div>
+          </PaneColumn>
+        </ListPageLayout>
       )}
 
       <ConfirmBulkDelete
-        open={confirmDelete}
-        onOpenChange={setConfirmDelete}
-        count={selection.checkedIds.length}
+        open={toDelete !== null}
+        onOpenChange={(open) => !open && setToDelete(null)}
+        count={toDelete?.length ?? 0}
         noun={noun}
         description="Posts using them keep their content, but lose this label. This cannot be undone."
-        onConfirm={removeChecked}
+        onConfirm={() => toDelete && remove(toDelete)}
       />
 
       {canWrite && (
-        <Dialog
-          open={dialogTarget !== null}
-          onOpenChange={(isOpen) => !isOpen && setDialogTarget(null)}
+        <ListDialog
+          open={view.dialog !== null}
+          onClose={view.closeDialog}
+          title={view.dialog?.kind === 'edit' ? `Edit ${noun[0]}` : `New ${noun[0]}`}
+          description={
+            type === 'category'
+              ? 'Groups posts into a section of the site.'
+              : 'Labels posts with a topic readers can browse by.'
+          }
         >
-          <DialogContent className="sm:max-w-md">
-            <DialogHeader>
-              <DialogTitle>
-                {dialogTarget?.kind === 'edit' ? `Edit ${noun[0]}` : `New ${noun[0]}`}
-              </DialogTitle>
-              <DialogDescription>
-                {type === 'category'
-                  ? 'Groups posts into a section of the site.'
-                  : 'Labels posts with a topic readers can browse by.'}
-              </DialogDescription>
-            </DialogHeader>
-            {dialogTarget &&
-              form(
-                dialogTarget,
-                () => setDialogTarget(null),
-                (submit) => (
-                  <DialogFooter>
-                    {dialogTarget.kind === 'edit' && editing(dialogTarget) && (
-                      <div className="mr-auto">
-                        <DeleteTerm
-                          type={type}
-                          term={editing(dialogTarget)!}
-                          onRemoved={() => setDialogTarget(null)}
-                        />
-                      </div>
-                    )}
-                    <DialogClose render={<Button type="button" variant="outline" />}>
-                      Cancel
-                    </DialogClose>
-                    {submit}
-                  </DialogFooter>
-                )
-              )}
-          </DialogContent>
-        </Dialog>
+          {view.dialog &&
+            form(view.dialog, view.closeDialog, (submit, start) => (
+              <DialogActions start={start}>{submit}</DialogActions>
+            ))}
+        </ListDialog>
       )}
     </div>
   );
 }
 
-function TermListItem({
-  term: t,
-  selected,
-  canWrite,
-  checked,
-  selecting,
-  onToggle,
-  onSelect,
-}: {
-  term: Term;
-  selected: boolean;
-  canWrite: boolean;
-  checked: boolean;
-  selecting: boolean;
-  onToggle: () => void;
-  onSelect: () => void;
-}) {
+/** The form's buttons, laid out for the pane or the dialog; `start` is the delete button. */
+type Actions = (submit: React.ReactNode, start: React.ReactNode) => React.ReactNode;
+
+function TermSummary({ term: t }: { term: Term }) {
   return (
-    <li
-      className={cn(
-        'group flex items-start gap-1 rounded-md',
-        canWrite && 'pl-1.5',
-        selected ? 'bg-accent' : 'hover:bg-muted/60'
+    <>
+      <span className="flex items-center gap-2">
+        <span className="min-w-0 flex-1 truncate text-[13px] font-medium">{t.name}</span>
+        <Badge variant="outline" className="shrink-0 tabular-nums">
+          {t.postCount} {t.postCount === 1 ? 'post' : 'posts'}
+        </Badge>
+      </span>
+      <span className="text-muted-foreground mt-0.5 block truncate font-mono text-xs">
+        /{t.slug}
+      </span>
+      {t.description && (
+        <span className="text-muted-foreground mt-0.5 block truncate text-xs">{t.description}</span>
       )}
-    >
-      {canWrite && (
-        <RowCheckbox
-          label={`Select ${t.name}`}
-          checked={checked}
-          selecting={selecting}
-          onToggle={onToggle}
-          className="mt-2.5"
-        />
-      )}
-      <button
-        type="button"
-        aria-current={selected || undefined}
-        onClick={onSelect}
-        className="focus-visible:ring-ring min-w-0 flex-1 rounded-md px-1.5 py-2 text-left outline-none focus-visible:ring-1"
-      >
-        <span className="flex items-center gap-2">
-          <span className="min-w-0 flex-1 truncate text-[13px] font-medium">{t.name}</span>
-          <Badge variant="outline" className="shrink-0 tabular-nums">
-            {t.postCount} {t.postCount === 1 ? 'post' : 'posts'}
-          </Badge>
-        </span>
-        <span className="text-muted-foreground mt-0.5 block truncate font-mono text-xs">
-          /{t.slug}
-        </span>
-        {t.description && (
-          <span className="text-muted-foreground mt-0.5 block truncate text-xs">
-            {t.description}
-          </span>
-        )}
-      </button>
-    </li>
+    </>
   );
 }
 

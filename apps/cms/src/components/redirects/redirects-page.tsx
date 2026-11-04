@@ -1,21 +1,27 @@
 import { checkRedirect } from '@ll/content';
 import { BulkCsvForm } from '@/components/bulk/bulk-csv-form';
 import {
-  BulkPane,
+  DialogActions,
+  ListColumn,
+  ListDialog,
+  ListPageLayout,
+  ListRows,
+  NoMatches,
+  PaneActions,
+  PaneColumn,
+  PaneEmpty,
+  PaneFrame,
+  useListPane,
+} from '@/components/list/list-page';
+import { ListRow } from '@/components/list/list-row';
+import {
   ConfirmBulkDelete,
-  RowCheckbox,
   SearchInput,
   SelectionBar,
   matchesSearch,
   useSelection,
-} from '@/components/bulk/list-tools';
-import {
-  ArrowRightIcon,
-  PanelRightIcon,
-  PlusIcon,
-  Trash2Icon,
-  UploadIcon,
-} from '@/components/icons';
+} from '@/components/list/list-tools';
+import { ArrowRightIcon, PlusIcon, Trash2Icon, UploadIcon } from '@/components/icons';
 import { useState } from 'react';
 import { toast } from 'sonner';
 import {
@@ -31,15 +37,6 @@ import {
 } from '@/components/ui/alert-dialog';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import {
-  Dialog,
-  DialogClose,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from '@/components/ui/dialog';
 import {
   Empty,
   EmptyContent,
@@ -128,30 +125,36 @@ function redirectFromCsv(values: Record<string, string>) {
   };
 }
 
-const isDesktop = () =>
-  typeof window !== 'undefined' && window.matchMedia('(min-width: 1024px)').matches;
+/** What the pane (or, on smaller screens, the dialog) shows. */
+type Target = { kind: 'edit'; id: string } | { kind: 'new' } | { kind: 'bulk' };
 
 export function RedirectsPage({ data }: { data: RedirectsData }) {
-  // Desktop: what the right-hand pane is editing. Mobile has no pane, so the
-  // same form opens in a dialog instead (as on the team page).
-  const [editingId, setEditingId] = useState<string | 'new' | 'bulk' | null>(null);
-  const [dialogTarget, setDialogTarget] = useState<Redirect | 'new' | 'bulk' | null>(null);
+  const view = useListPane<Target>();
   const [query, setQuery] = useState('');
   const [filter, setFilter] = useState<Filter>('all');
-  const [confirmDelete, setConfirmDelete] = useState(false);
+  const [toDelete, setToDelete] = useState<string[] | null>(null);
   const selection = useSelection(data.map((r) => r.id));
   const { run, pending } = useAction();
 
-  const selected = data.find((r) => r.id === editingId) ?? null;
+  const redirectFor = (target: Target | null) =>
+    target?.kind === 'edit' ? (data.find((r) => r.id === target.id) ?? null) : null;
+  // A redirect removed elsewhere closes the pane.
+  const pane = view.pane?.kind === 'edit' && !redirectFor(view.pane) ? null : view.pane;
   const visible = data.filter(
     (r) => matchesFilter(r, filter) && matchesSearch(query, [r.fromPath, r.toPath, r.note])
   );
 
-  const openNew = () => (isDesktop() ? setEditingId('new') : setDialogTarget('new'));
-  const openBulk = () => (isDesktop() ? setEditingId('bulk') : setDialogTarget('bulk'));
-  const openEdit = (r: Redirect) => (isDesktop() ? setEditingId(r.id) : setDialogTarget(r));
+  async function remove(ids: string[]) {
+    const result = await run(
+      () => deleteRedirects({ data: { ids } }),
+      `${ids.length} ${ids.length === 1 ? 'redirect' : 'redirects'} removed.`
+    );
+    if (!result) return;
+    if (view.pane?.kind === 'edit' && ids.includes(view.pane.id)) view.closePane();
+    selection.clear();
+  }
 
-  const bulkForm = (onDone: () => void, footer: (submit: React.ReactNode) => React.ReactNode) => (
+  const bulkForm = (onDone: () => void, actions: (submit: React.ReactNode) => React.ReactNode) => (
     <BulkCsvForm
       noun={NOUN}
       fileName="redirects"
@@ -176,20 +179,40 @@ export function RedirectsPage({ data }: { data: RedirectsData }) {
       toRow={redirectFromCsv}
       apply={(rows) => importRedirects({ data: { rows } })}
       onDone={onDone}
-      footer={footer}
+      footer={actions}
     />
   );
 
-  async function removeChecked() {
-    const ids = selection.checkedIds;
-    const result = await run(
-      () => deleteRedirects({ data: { ids } }),
-      `${ids.length} ${ids.length === 1 ? 'redirect' : 'redirects'} removed.`
-    );
-    if (!result) return;
-    if (editingId && ids.includes(editingId)) setEditingId(null);
-    selection.clear();
-  }
+  const redirectForm = (
+    target: Target,
+    onSaved: (id: string) => void,
+    actions: (submit: React.ReactNode, formPending: boolean) => React.ReactNode
+  ) => (
+    <RedirectForm
+      key={target.kind === 'edit' ? target.id : target.kind}
+      redirect={redirectFor(target)}
+      onSaved={onSaved}
+      footer={(formPending, isNew) =>
+        actions(<SubmitButton pending={formPending} isNew={isNew} />, formPending)
+      }
+    />
+  );
+
+  const addButtons = (
+    <>
+      <Button size="sm" variant="outline" onClick={() => view.open({ kind: 'bulk' })}>
+        <UploadIcon aria-hidden data-icon="inline-start" />
+        Bulk update
+      </Button>
+      <Button size="sm" onClick={() => view.open({ kind: 'new' })}>
+        <PlusIcon aria-hidden data-icon="inline-start" />
+        Add redirect
+      </Button>
+    </>
+  );
+
+  const paneRedirect = redirectFor(pane);
+  const dialogRedirect = redirectFor(view.dialog);
 
   return (
     <div className="flex flex-1 flex-col gap-4 lg:h-[calc(100svh-7.5rem)] lg:flex-none">
@@ -227,17 +250,10 @@ export function RedirectsPage({ data }: { data: RedirectsData }) {
             </Select>
           </>
         )}
-        <Button size="sm" variant="outline" onClick={openBulk}>
-          <UploadIcon aria-hidden data-icon="inline-start" />
-          Bulk update
-        </Button>
-        <Button size="sm" onClick={openNew}>
-          <PlusIcon aria-hidden data-icon="inline-start" />
-          Add redirect
-        </Button>
+        {addButtons}
       </div>
 
-      {data.length === 0 && editingId === null ? (
+      {data.length === 0 && pane === null ? (
         <Empty className="flex-1 rounded-lg border">
           <EmptyHeader>
             <EmptyMedia variant="icon">
@@ -247,229 +263,173 @@ export function RedirectsPage({ data }: { data: RedirectsData }) {
             <EmptyDescription>Add one to point an old path at its new home.</EmptyDescription>
           </EmptyHeader>
           <EmptyContent>
-            <div className="flex gap-2">
-              <Button size="sm" variant="outline" onClick={openBulk}>
-                <UploadIcon aria-hidden data-icon="inline-start" />
-                Bulk update
-              </Button>
-              <Button size="sm" onClick={openNew}>
-                <PlusIcon aria-hidden data-icon="inline-start" />
-                Add redirect
-              </Button>
-            </div>
+            <div className="flex gap-2">{addButtons}</div>
           </EmptyContent>
         </Empty>
       ) : (
-        <div className="grid min-h-0 flex-1 grid-cols-1 overflow-hidden rounded-lg border lg:grid-cols-[minmax(20rem,1fr)_minmax(0,1fr)]">
-          <section aria-label="Redirects" className="flex min-h-0 flex-col lg:border-r">
-            <SelectionBar
-              selection={selection}
-              visibleIds={visible.map((r) => r.id)}
-              title="All"
-              total={data.length}
-              pending={pending}
-              onDelete={() => setConfirmDelete(true)}
-            />
+        <ListPageLayout>
+          <ListColumn
+            label="Redirects"
+            header={
+              <SelectionBar
+                selection={selection}
+                visibleIds={visible.map((r) => r.id)}
+                title="All"
+                total={data.length}
+                pending={pending}
+                onDelete={() => setToDelete(selection.checkedIds)}
+              />
+            }
+          >
             {visible.length === 0 ? (
-              <div className="text-muted-foreground flex flex-1 flex-col items-center justify-center gap-2 p-6 text-center text-sm">
+              <NoMatches
+                clearLabel="Clear search and filter"
+                onClear={() => {
+                  setQuery('');
+                  setFilter('all');
+                }}
+              >
                 No redirects match.
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => {
-                    setQuery('');
-                    setFilter('all');
-                  }}
-                >
-                  Clear search and filter
-                </Button>
-              </div>
+              </NoMatches>
             ) : (
-              <ul className="min-h-0 flex-1 space-y-px overflow-y-auto p-1.5">
+              <ListRows>
                 {visible.map((r) => (
-                  <RedirectListItem
+                  <ListRow
                     key={r.id}
-                    redirect={r}
-                    selected={r.id === editingId}
-                    checked={selection.isChecked(r.id)}
-                    selecting={selection.checkedIds.length > 0}
-                    onToggle={() => selection.toggle(r.id)}
-                    onSelect={() => openEdit(r)}
-                  />
+                    align="start"
+                    current={pane?.kind === 'edit' && pane.id === r.id}
+                    select={{
+                      label: `Select ${r.fromPath}`,
+                      checked: selection.isChecked(r.id),
+                      selecting: selection.selecting,
+                      onToggle: () => selection.toggle(r.id),
+                    }}
+                    swipe={{ label: 'Delete', onAction: () => setToDelete([r.id]) }}
+                    onOpen={() => view.open({ kind: 'edit', id: r.id })}
+                  >
+                    <RedirectSummary redirect={r} />
+                  </ListRow>
                 ))}
-              </ul>
+              </ListRows>
             )}
-          </section>
+          </ListColumn>
 
-          <section aria-label="Edit redirect" className="hidden min-h-0 flex-col lg:flex">
-            {editingId === null ? (
-              <Empty>
-                <EmptyHeader>
-                  <EmptyMedia variant="icon">
-                    <PanelRightIcon aria-hidden />
-                  </EmptyMedia>
-                  <EmptyTitle>No redirect selected</EmptyTitle>
-                  <EmptyDescription>
-                    Choose one from the list, or add a new redirect.
-                  </EmptyDescription>
-                </EmptyHeader>
-              </Empty>
-            ) : editingId === 'bulk' ? (
-              <BulkPane title="Bulk update redirects">
-                {bulkForm(
-                  () => setEditingId(null),
+          <PaneColumn label="Edit redirect">
+            {pane === null ? (
+              <PaneEmpty
+                title="No redirect selected"
+                description="Choose one from the list, or add a new redirect."
+              />
+            ) : pane.kind === 'bulk' ? (
+              <PaneFrame title="Bulk update redirects" width="lg">
+                {bulkForm(view.closePane, (submit) => (
+                  <PaneActions onCancel={view.closePane}>{submit}</PaneActions>
+                ))}
+              </PaneFrame>
+            ) : (
+              <PaneFrame
+                title={
+                  paneRedirect ? (
+                    <span className="font-mono">{paneRedirect.fromPath}</span>
+                  ) : (
+                    'New redirect'
+                  )
+                }
+                actions={
+                  paneRedirect && (
+                    <DeleteRedirect redirect={paneRedirect} onRemoved={view.closePane} />
+                  )
+                }
+              >
+                {redirectForm(
+                  pane,
+                  (id) => view.setPane({ kind: 'edit', id }),
                   (submit) => (
-                    <div className="flex justify-end gap-2">
-                      <Button type="button" variant="outline" onClick={() => setEditingId(null)}>
-                        Cancel
-                      </Button>
-                      {submit}
-                    </div>
+                    <PaneActions onCancel={view.closePane}>{submit}</PaneActions>
                   )
                 )}
-              </BulkPane>
-            ) : (
-              <RedirectPane
-                key={editingId}
-                redirect={editingId === 'new' ? null : selected}
-                onSaved={(id) => setEditingId(id)}
-                onClose={() => setEditingId(null)}
-              />
+              </PaneFrame>
             )}
-          </section>
-        </div>
+          </PaneColumn>
+        </ListPageLayout>
       )}
 
       <ConfirmBulkDelete
-        open={confirmDelete}
-        onOpenChange={setConfirmDelete}
-        count={selection.checkedIds.length}
+        open={toDelete !== null}
+        onOpenChange={(open) => !open && setToDelete(null)}
+        count={toDelete?.length ?? 0}
         noun={NOUN}
         description="Those old paths will no longer redirect. This cannot be undone."
-        onConfirm={removeChecked}
+        onConfirm={() => toDelete && remove(toDelete)}
       />
 
-      <Dialog open={dialogTarget !== null} onOpenChange={(open) => !open && setDialogTarget(null)}>
-        <DialogContent className={dialogTarget === 'bulk' ? 'sm:max-w-lg' : 'sm:max-w-md'}>
-          <DialogHeader>
-            <DialogTitle>
-              {dialogTarget === 'bulk'
-                ? 'Bulk update redirects'
-                : dialogTarget === 'new'
-                  ? 'Add redirect'
-                  : 'Edit redirect'}
-            </DialogTitle>
-            <DialogDescription>
-              {dialogTarget === 'bulk'
-                ? 'Add or update many redirects at once from a CSV file.'
-                : 'Send one URL to another.'}
-            </DialogDescription>
-          </DialogHeader>
-          {dialogTarget === 'bulk' ? (
-            bulkForm(
-              () => setDialogTarget(null),
-              (submit) => (
-                <DialogFooter>
-                  <DialogClose render={<Button type="button" variant="outline" />}>
-                    Cancel
-                  </DialogClose>
-                  {submit}
-                </DialogFooter>
-              )
-            )
-          ) : (
-            <RedirectForm
-              key={dialogTarget === 'new' ? 'new' : dialogTarget?.id}
-              redirect={dialogTarget === 'new' ? null : dialogTarget}
-              onSaved={() => setDialogTarget(null)}
-              footer={(formPending, isNew) => (
-                <DialogFooter>
-                  {dialogTarget && dialogTarget !== 'new' && (
-                    <div className="mr-auto">
-                      <DeleteRedirect
-                        redirect={dialogTarget}
-                        disabled={formPending}
-                        onRemoved={() => setDialogTarget(null)}
-                      />
-                    </div>
-                  )}
-                  <DialogClose render={<Button type="button" variant="outline" />}>
-                    Cancel
-                  </DialogClose>
-                  <SubmitButton pending={formPending} isNew={isNew} />
-                </DialogFooter>
-              )}
-            />
-          )}
-        </DialogContent>
-      </Dialog>
+      <ListDialog
+        open={view.dialog !== null}
+        onClose={view.closeDialog}
+        size={view.dialog?.kind === 'bulk' ? 'lg' : 'md'}
+        title={
+          view.dialog?.kind === 'bulk'
+            ? 'Bulk update redirects'
+            : view.dialog?.kind === 'new'
+              ? 'Add redirect'
+              : 'Edit redirect'
+        }
+        description={
+          view.dialog?.kind === 'bulk'
+            ? 'Add or update many redirects at once from a CSV file.'
+            : 'Send one URL to another.'
+        }
+      >
+        {view.dialog?.kind === 'bulk'
+          ? bulkForm(view.closeDialog, (submit) => <DialogActions>{submit}</DialogActions>)
+          : view.dialog &&
+            redirectForm(view.dialog, view.closeDialog, (submit, formPending) => (
+              <DialogActions
+                start={
+                  dialogRedirect && (
+                    <DeleteRedirect
+                      redirect={dialogRedirect}
+                      disabled={formPending}
+                      onRemoved={view.closeDialog}
+                    />
+                  )
+                }
+              >
+                {submit}
+              </DialogActions>
+            ))}
+      </ListDialog>
     </div>
   );
 }
 
-function RedirectListItem({
-  redirect,
-  selected,
-  checked,
-  selecting,
-  onToggle,
-  onSelect,
-}: {
-  redirect: Redirect;
-  selected: boolean;
-  checked: boolean;
-  selecting: boolean;
-  onToggle: () => void;
-  onSelect: () => void;
-}) {
+function RedirectSummary({ redirect }: { redirect: Redirect }) {
   return (
-    <li
-      className={cn(
-        'group flex items-start gap-1 rounded-md pl-1.5',
-        selected ? 'bg-accent' : 'hover:bg-muted/60'
-      )}
-    >
-      <RowCheckbox
-        label={`Select ${redirect.fromPath}`}
-        checked={checked}
-        selecting={selecting}
-        onToggle={onToggle}
-        className="mt-2.5"
-      />
-      <button
-        type="button"
-        aria-current={selected || undefined}
-        onClick={onSelect}
-        className={cn(
-          'focus-visible:ring-ring min-w-0 flex-1 rounded-md px-1.5 py-2 text-left outline-none focus-visible:ring-1',
-          !redirect.enabled && 'opacity-60'
+    <span className={cn('block', !redirect.enabled && 'opacity-60')}>
+      <span className="flex items-center gap-2">
+        <span className="min-w-0 flex-1 truncate font-mono text-[13px]">{redirect.fromPath}</span>
+        {redirect.enabled ? (
+          <Badge variant={redirect.statusCode === 301 ? 'secondary' : 'outline'}>
+            {redirect.statusCode}
+          </Badge>
+        ) : (
+          <Badge variant="outline">Off</Badge>
         )}
-      >
-        <span className="flex items-center gap-2">
-          <span className="min-w-0 flex-1 truncate font-mono text-[13px]">{redirect.fromPath}</span>
-          {redirect.enabled ? (
-            <Badge variant={redirect.statusCode === 301 ? 'secondary' : 'outline'}>
-              {redirect.statusCode}
-            </Badge>
-          ) : (
-            <Badge variant="outline">Off</Badge>
-          )}
+      </span>
+      <span className="text-muted-foreground mt-0.5 flex items-center gap-1.5 text-xs">
+        {redirect.statusCode === 410 ? (
+          <span className="min-w-0 flex-1 truncate">Removed</span>
+        ) : (
+          <>
+            <ArrowRightIcon aria-hidden className="size-3 shrink-0" />
+            <span className="min-w-0 flex-1 truncate font-mono">{redirect.toPath}</span>
+          </>
+        )}
+        <span className="shrink-0 tabular-nums">
+          {redirect.hits} {redirect.hits === 1 ? 'hit' : 'hits'}
         </span>
-        <span className="text-muted-foreground mt-0.5 flex items-center gap-1.5 text-xs">
-          {redirect.statusCode === 410 ? (
-            <span className="min-w-0 flex-1 truncate">Removed</span>
-          ) : (
-            <>
-              <ArrowRightIcon aria-hidden className="size-3 shrink-0" />
-              <span className="min-w-0 flex-1 truncate font-mono">{redirect.toPath}</span>
-            </>
-          )}
-          <span className="shrink-0 tabular-nums">
-            {redirect.hits} {redirect.hits === 1 ? 'hit' : 'hits'}
-          </span>
-        </span>
-      </button>
-    </li>
+      </span>
+    </span>
   );
 }
 
@@ -487,48 +447,6 @@ function SubmitButton({ pending, isNew }: { pending: boolean; isNew: boolean }) 
         'Save'
       )}
     </Button>
-  );
-}
-
-/** The inline desktop pane: header with delete, scrollable form body. */
-function RedirectPane({
-  redirect,
-  onSaved,
-  onClose,
-}: {
-  redirect: Redirect | null;
-  onSaved: (id: string) => void;
-  onClose: () => void;
-}) {
-  return (
-    <>
-      <div className="flex h-11 shrink-0 items-center gap-1.5 border-b px-3">
-        <span className="truncate text-sm font-medium">
-          {redirect ? <span className="font-mono">{redirect.fromPath}</span> : 'New redirect'}
-        </span>
-        {redirect && (
-          <div className="ml-auto">
-            <DeleteRedirect redirect={redirect} onRemoved={onClose} />
-          </div>
-        )}
-      </div>
-      <div className="min-h-0 flex-1 overflow-y-auto px-4 py-6">
-        <div className="mx-auto max-w-md">
-          <RedirectForm
-            redirect={redirect}
-            onSaved={onSaved}
-            footer={(pending, isNew) => (
-              <div className="flex justify-end gap-2">
-                <Button type="button" variant="outline" onClick={onClose}>
-                  Cancel
-                </Button>
-                <SubmitButton pending={pending} isNew={isNew} />
-              </div>
-            )}
-          />
-        </div>
-      </div>
-    </>
   );
 }
 

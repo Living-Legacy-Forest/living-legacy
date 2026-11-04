@@ -8,33 +8,29 @@ import {
 import { useState } from 'react';
 import { DateTimePicker } from '@/components/date-time-picker';
 import {
-  BulkPane,
+  DialogActions,
+  ListColumn,
+  ListDialog,
+  ListPageLayout,
+  ListRows,
+  NoMatches,
+  PaneActions,
+  PaneColumn,
+  PaneEmpty,
+  PaneFrame,
+  useListPane,
+} from '@/components/list/list-page';
+import { ListRow } from '@/components/list/list-row';
+import {
   ConfirmBulkDelete,
-  RowCheckbox,
   SearchInput,
   SelectionBar,
   matchesSearch,
   useSelection,
-} from '@/components/bulk/list-tools';
-import {
-  CopyIcon,
-  MegaphoneIcon,
-  PanelRightIcon,
-  PlusIcon,
-  SendIcon,
-  TriangleAlertIcon,
-} from '@/components/icons';
+} from '@/components/list/list-tools';
+import { CopyIcon, MegaphoneIcon, PlusIcon, SendIcon, TriangleAlertIcon } from '@/components/icons';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import {
-  Dialog,
-  DialogClose,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from '@/components/ui/dialog';
 import {
   Empty,
   EmptyContent,
@@ -86,10 +82,6 @@ function windowLabel(a: Pick<Announcement, 'startsAt' | 'endsAt'>, zone: string)
   return `${from} to ${to}`;
 }
 
-const isDesktop = () =>
-  typeof window !== 'undefined' && window.matchMedia('(min-width: 1024px)').matches;
-
-/** What the pane edits: a saved announcement, or a new one (maybe copied). */
 type Target = { kind: 'edit'; id: string } | { kind: 'new'; from?: Announcement };
 
 export function AnnouncementsPage({
@@ -99,10 +91,9 @@ export function AnnouncementsPage({
   data: AnnouncementsData;
   canWrite: boolean;
 }) {
-  const [paneTarget, setPaneTarget] = useState<Target | null>(null);
-  const [dialogTarget, setDialogTarget] = useState<Target | null>(null);
+  const view = useListPane<Target>();
   const [query, setQuery] = useState('');
-  const [confirmDelete, setConfirmDelete] = useState(false);
+  const [toDelete, setToDelete] = useState<string[] | null>(null);
   const selection = useSelection(data.map((a) => a.id));
   const { run, pending } = useAction();
 
@@ -117,20 +108,18 @@ export function AnnouncementsPage({
     matchesSearch(query, [a.title, a.message, a.messageTablet, a.messageDesktop])
   );
 
-  const open = (target: Target) => (isDesktop() ? setPaneTarget(target) : setDialogTarget(target));
   const editing = (target: Target | null) =>
     target?.kind === 'edit' ? (data.find((a) => a.id === target.id) ?? null) : null;
   // An announcement removed elsewhere closes the pane.
-  const pane = paneTarget?.kind === 'edit' && !editing(paneTarget) ? null : paneTarget;
+  const pane = view.pane?.kind === 'edit' && !editing(view.pane) ? null : view.pane;
 
-  async function removeChecked() {
-    const ids = selection.checkedIds;
+  async function remove(ids: string[]) {
     const result = await run(
       () => deleteAnnouncements({ data: { ids } }),
       `${ids.length} ${ids.length === 1 ? NOUN[0] : NOUN[1]} removed.`
     );
     if (!result) return;
-    if (paneTarget?.kind === 'edit' && ids.includes(paneTarget.id)) setPaneTarget(null);
+    if (view.pane?.kind === 'edit' && ids.includes(view.pane.id)) view.closePane();
     selection.clear();
   }
 
@@ -158,6 +147,13 @@ export function AnnouncementsPage({
     />
   );
 
+  const newButton = (
+    <Button size="sm" onClick={() => view.open({ kind: 'new' })}>
+      <PlusIcon aria-hidden data-icon="inline-start" />
+      New announcement
+    </Button>
+  );
+
   return (
     <div className="flex flex-1 flex-col gap-4 lg:h-[calc(100svh-7.5rem)] lg:flex-none">
       <div className="flex flex-wrap items-center gap-3">
@@ -172,12 +168,7 @@ export function AnnouncementsPage({
             onChange={setQuery}
           />
         )}
-        {canWrite && (
-          <Button size="sm" onClick={() => open({ kind: 'new' })}>
-            <PlusIcon aria-hidden data-icon="inline-start" />
-            New announcement
-          </Button>
-        )}
+        {canWrite && newButton}
       </div>
 
       {data.length === 0 && pane === null ? (
@@ -191,77 +182,87 @@ export function AnnouncementsPage({
               Prepare a banner for the top of the website, and schedule when it shows.
             </EmptyDescription>
           </EmptyHeader>
-          {canWrite && (
-            <EmptyContent>
-              <Button size="sm" onClick={() => open({ kind: 'new' })}>
-                <PlusIcon aria-hidden data-icon="inline-start" />
-                New announcement
-              </Button>
-            </EmptyContent>
-          )}
+          {canWrite && <EmptyContent>{newButton}</EmptyContent>}
         </Empty>
       ) : (
-        <div className="grid min-h-0 flex-1 grid-cols-1 overflow-hidden rounded-lg border lg:grid-cols-[minmax(20rem,1fr)_minmax(0,1fr)]">
-          <section aria-label="Announcements" className="flex min-h-0 flex-col lg:border-r">
-            {canWrite ? (
+        <ListPageLayout>
+          <ListColumn
+            label="Announcements"
+            header={
               <SelectionBar
                 selection={selection}
                 visibleIds={visible.map((a) => a.id)}
                 title="All"
                 total={data.length}
                 pending={pending}
-                onDelete={() => setConfirmDelete(true)}
+                onDelete={canWrite ? () => setToDelete(selection.checkedIds) : undefined}
+              />
+            }
+          >
+            {visible.length === 0 ? (
+              <NoMatches onClear={() => setQuery('')}>
+                No announcements match that search.
+              </NoMatches>
+            ) : (
+              <ListRows>
+                {visible.map((a) => {
+                  const rowStatus = status(a);
+                  return (
+                    <ListRow
+                      key={a.id}
+                      align="start"
+                      current={pane?.kind === 'edit' && pane.id === a.id}
+                      select={
+                        canWrite
+                          ? {
+                              label: `Select ${a.title}`,
+                              checked: selection.isChecked(a.id),
+                              selecting: selection.selecting,
+                              onToggle: () => selection.toggle(a.id),
+                            }
+                          : undefined
+                      }
+                      swipe={
+                        canWrite
+                          ? { label: 'Delete', onAction: () => setToDelete([a.id]) }
+                          : undefined
+                      }
+                      trailing={
+                        canWrite &&
+                        (rowStatus === 'off' || rowStatus === 'ended') && (
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            disabled={pending}
+                            onClick={() => quickPublish(a, rowStatus)}
+                          >
+                            <SendIcon aria-hidden data-icon="inline-start" />
+                            Publish
+                          </Button>
+                        )
+                      }
+                      onOpen={() => canWrite && view.open({ kind: 'edit', id: a.id })}
+                    >
+                      <AnnouncementSummary
+                        announcement={a}
+                        status={rowStatus}
+                        clashesWith={clashes.get(a.id) ?? []}
+                      />
+                    </ListRow>
+                  );
+                })}
+              </ListRows>
+            )}
+          </ListColumn>
+
+          <PaneColumn label="Edit announcement">
+            {!canWrite || pane === null ? (
+              <PaneEmpty
+                title="No announcement selected"
+                description="Choose one from the list, or prepare a new one."
               />
             ) : (
-              <div className="flex h-11 shrink-0 items-center gap-2 border-b px-3">
-                <span className="text-[13px] font-medium">All</span>
-                <span className="text-muted-foreground text-xs tabular-nums">{data.length}</span>
-              </div>
-            )}
-            {visible.length === 0 ? (
-              <div className="text-muted-foreground flex flex-1 flex-col items-center justify-center gap-2 p-6 text-center text-sm">
-                No announcements match that search.
-                <Button variant="ghost" size="sm" onClick={() => setQuery('')}>
-                  Clear search
-                </Button>
-              </div>
-            ) : (
-              <ul className="min-h-0 flex-1 space-y-px overflow-y-auto p-1.5">
-                {visible.map((a) => (
-                  <AnnouncementListItem
-                    key={a.id}
-                    announcement={a}
-                    status={status(a)}
-                    clashesWith={clashes.get(a.id) ?? []}
-                    selected={pane?.kind === 'edit' && pane.id === a.id}
-                    canWrite={canWrite}
-                    checked={selection.isChecked(a.id)}
-                    selecting={selection.checkedIds.length > 0}
-                    pending={pending}
-                    onToggle={() => selection.toggle(a.id)}
-                    onSelect={() => canWrite && open({ kind: 'edit', id: a.id })}
-                    onPublish={() => quickPublish(a, status(a))}
-                  />
-                ))}
-              </ul>
-            )}
-          </section>
-
-          <section aria-label="Edit announcement" className="hidden min-h-0 flex-col lg:flex">
-            {!canWrite || pane === null ? (
-              <Empty>
-                <EmptyHeader>
-                  <EmptyMedia variant="icon">
-                    <PanelRightIcon aria-hidden />
-                  </EmptyMedia>
-                  <EmptyTitle>No announcement selected</EmptyTitle>
-                  <EmptyDescription>
-                    Choose one from the list, or prepare a new one.
-                  </EmptyDescription>
-                </EmptyHeader>
-              </Empty>
-            ) : (
-              <BulkPane
+              <PaneFrame
                 title={
                   pane.kind === 'edit'
                     ? (editing(pane)?.title ?? 'Announcement')
@@ -275,7 +276,7 @@ export function AnnouncementsPage({
                     <Button
                       variant="outline"
                       size="sm"
-                      onClick={() => setPaneTarget({ kind: 'new', from: editing(pane)! })}
+                      onClick={() => view.setPane({ kind: 'new', from: editing(pane)! })}
                     >
                       <CopyIcon aria-hidden data-icon="inline-start" />
                       Duplicate for next time
@@ -284,58 +285,39 @@ export function AnnouncementsPage({
                 )}
                 {form(
                   pane,
-                  (id) => setPaneTarget(id ? { kind: 'edit', id } : null),
+                  (id) => view.setPane(id ? { kind: 'edit', id } : null),
                   (submit) => (
-                    <div className="flex justify-end gap-2">
-                      <Button type="button" variant="outline" onClick={() => setPaneTarget(null)}>
-                        Cancel
-                      </Button>
-                      {submit}
-                    </div>
+                    <PaneActions onCancel={view.closePane}>{submit}</PaneActions>
                   )
                 )}
-              </BulkPane>
+              </PaneFrame>
             )}
-          </section>
-        </div>
+          </PaneColumn>
+        </ListPageLayout>
       )}
 
       <ConfirmBulkDelete
-        open={confirmDelete}
-        onOpenChange={setConfirmDelete}
-        count={selection.checkedIds.length}
+        open={toDelete !== null}
+        onOpenChange={(open) => !open && setToDelete(null)}
+        count={toDelete?.length ?? 0}
         noun={NOUN}
         description="They are deleted for good. Live ones disappear from the website."
-        onConfirm={removeChecked}
+        onConfirm={() => toDelete && remove(toDelete)}
       />
 
       {canWrite && (
-        <Dialog
-          open={dialogTarget !== null}
-          onOpenChange={(isOpen) => !isOpen && setDialogTarget(null)}
+        <ListDialog
+          open={view.dialog !== null}
+          onClose={view.closeDialog}
+          size="lg"
+          title={view.dialog?.kind === 'edit' ? 'Edit announcement' : 'New announcement'}
+          description="A banner across the top of the website."
         >
-          <DialogContent className="sm:max-w-lg">
-            <DialogHeader>
-              <DialogTitle>
-                {dialogTarget?.kind === 'edit' ? 'Edit announcement' : 'New announcement'}
-              </DialogTitle>
-              <DialogDescription>A banner across the top of the website.</DialogDescription>
-            </DialogHeader>
-            {dialogTarget &&
-              form(
-                dialogTarget,
-                () => setDialogTarget(null),
-                (submit) => (
-                  <DialogFooter>
-                    <DialogClose render={<Button type="button" variant="outline" />}>
-                      Cancel
-                    </DialogClose>
-                    {submit}
-                  </DialogFooter>
-                )
-              )}
-          </DialogContent>
-        </Dialog>
+          {view.dialog &&
+            form(view.dialog, view.closeDialog, (submit) => (
+              <DialogActions>{submit}</DialogActions>
+            ))}
+        </ListDialog>
       )}
     </div>
   );
@@ -352,96 +334,40 @@ function StatusBadge({ status }: { status: AnnouncementStatus }) {
   );
 }
 
-function AnnouncementListItem({
+function AnnouncementSummary({
   announcement: a,
   status,
   clashesWith,
-  selected,
-  canWrite,
-  checked,
-  selecting,
-  pending,
-  onToggle,
-  onSelect,
-  onPublish,
 }: {
   announcement: Announcement;
   status: AnnouncementStatus;
   clashesWith: Announcement[];
-  selected: boolean;
-  canWrite: boolean;
-  checked: boolean;
-  selecting: boolean;
-  pending: boolean;
-  onToggle: () => void;
-  onSelect: () => void;
-  onPublish: () => void;
 }) {
   const colour = backgrounds.find((b) => b.value === a.background)!;
   const timeZone = useTimeZone();
 
   return (
-    <li
-      className={cn(
-        'group flex items-start gap-1 rounded-md',
-        canWrite && 'pl-1.5',
-        selected ? 'bg-accent' : 'hover:bg-muted/60'
-      )}
-    >
-      {canWrite && (
-        <RowCheckbox
-          label={`Select ${a.title}`}
-          checked={checked}
-          selecting={selecting}
-          onToggle={onToggle}
-          className="mt-2.5"
+    <span className={cn('block', (status === 'ended' || status === 'off') && 'opacity-60')}>
+      <span className="flex items-center gap-2">
+        <span
+          aria-hidden
+          className="ring-border size-2.5 shrink-0 rounded-full ring-1"
+          style={{ background: colour.bg }}
         />
-      )}
-      <button
-        type="button"
-        aria-current={selected || undefined}
-        onClick={onSelect}
-        className={cn(
-          'focus-visible:ring-ring min-w-0 flex-1 rounded-md px-1.5 py-2 text-left outline-none focus-visible:ring-1',
-          (status === 'ended' || status === 'off') && 'opacity-60'
-        )}
-      >
-        <span className="flex items-center gap-2">
-          <span
-            aria-hidden
-            className="ring-border size-2.5 shrink-0 rounded-full ring-1"
-            style={{ background: colour.bg }}
+        <span className="min-w-0 flex-1 truncate text-[13px] font-medium">{a.title}</span>
+        {clashesWith.length > 0 && (
+          <TriangleAlertIcon
+            aria-label={`Overlaps with ${clashesWith.map((c) => c.title).join(', ')}`}
+            className="size-3.5 shrink-0 text-amber-600"
           />
-          <span className="min-w-0 flex-1 truncate text-[13px] font-medium">{a.title}</span>
-          {clashesWith.length > 0 && (
-            <TriangleAlertIcon
-              aria-label={`Overlaps with ${clashesWith.map((c) => c.title).join(', ')}`}
-              className="size-3.5 shrink-0 text-amber-600"
-            />
-          )}
-          <StatusBadge status={status} />
-        </span>
-        <span className="text-muted-foreground mt-0.5 block truncate text-xs">{a.message}</span>
-        <span className="text-muted-foreground mt-0.5 block truncate text-xs tabular-nums">
-          {windowLabel(a, timeZone)}
-        </span>
-      </button>
-      {canWrite && (status === 'off' || status === 'ended') && (
-        <Button
-          variant="ghost"
-          size="sm"
-          disabled={pending}
-          onClick={(e) => {
-            e.stopPropagation();
-            onPublish();
-          }}
-          className="mt-1.5 shrink-0"
-        >
-          <SendIcon aria-hidden data-icon="inline-start" />
-          Publish
-        </Button>
-      )}
-    </li>
+        )}
+        <StatusBadge status={status} />
+      </span>
+      <span className="text-muted-foreground mt-0.5 block truncate text-xs">{a.message}</span>
+      <span className="text-muted-foreground mt-0.5 block truncate text-xs tabular-nums">
+        {windowLabel(a, timeZone)}
+      </span>
+    </span>
   );
 }
 

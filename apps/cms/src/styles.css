@@ -12,6 +12,10 @@
    site's Theme setting (and client-side for "system"); see __root.tsx. */
 @custom-variant dark (&:where(.dark, .dark *));
 
+/* `touch:` utilities apply on devices that cannot hover (phones, tablets),
+   where anything revealed on hover needs another way in. */
+@custom-variant touch (@media (hover: none));
+
 /* One typeface for the whole CMS. Mono is pointed at Inter too, so code,
    paths and keys (font-mono, var(--font-mono)) never fall back to the
    system's monospace font; tabular figures keep numbers aligned instead. */

@@ -2,13 +2,26 @@ import { type MediaCoverageKind, mediaCoverageKindLabels, slugify, youtubeId } f
 import { useNavigate } from '@tanstack/react-router';
 import { useState } from 'react';
 import {
+  DialogActions,
+  ListColumn,
+  ListDialog,
+  ListPageLayout,
+  ListRows,
+  NoMatches,
+  PaneActions,
+  PaneColumn,
+  PaneFrame,
+  isDesktop,
+  useListPane,
+} from '@/components/list/list-page';
+import { ListRow } from '@/components/list/list-row';
+import {
   ConfirmBulkDelete,
-  RowCheckbox,
   SearchInput,
   SelectionBar,
   matchesSearch,
   useSelection,
-} from '@/components/bulk/list-tools';
+} from '@/components/list/list-tools';
 import { DateTimePicker } from '@/components/date-time-picker';
 import {
   ChevronDownIcon,
@@ -43,15 +56,6 @@ import {
   CommandItem,
   CommandList,
 } from '@/components/ui/command';
-import {
-  Dialog,
-  DialogClose,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from '@/components/ui/dialog';
 import {
   Empty,
   EmptyContent,
@@ -97,8 +101,8 @@ const kindItems = (Object.keys(mediaCoverageKindLabels) as MediaCoverageKind[]).
   label: mediaCoverageKindLabels[value],
 }));
 
-const isDesktop = () =>
-  typeof window !== 'undefined' && window.matchMedia('(min-width: 1024px)').matches;
+/** What the pane edits in place of the preview (or the dialog shows, on smaller screens). */
+type Target = { kind: 'edit'; id: string } | { kind: 'new' };
 
 export function MediaCoveragePage({
   data,
@@ -111,12 +115,9 @@ export function MediaCoveragePage({
 }) {
   const navigate = useNavigate({ from: '/media-coverage/' });
   const { run, pending } = useAction();
-  // Desktop edits in the right-hand pane; mobile has no pane, so the same form
-  // opens in a dialog instead (as on the testimonials page).
-  const [editingId, setEditingId] = useState<string | 'new' | null>(null);
-  const [dialogTarget, setDialogTarget] = useState<MediaCoverageItem | 'new' | null>(null);
+  const view = useListPane<Target>();
   const [query, setQuery] = useState('');
-  const [confirmDelete, setConfirmDelete] = useState(false);
+  const [toDelete, setToDelete] = useState<string[] | null>(null);
   const selection = useSelection(data.map((m) => m.id));
   const visible = data.filter((m) =>
     matchesSearch(query, [m.title, m.source, m.category, m.excerpt])
@@ -124,32 +125,56 @@ export function MediaCoveragePage({
   // Offered as suggestions, so the page's topic filter stays tidy.
   const categories = [...new Set(data.map((m) => m.category).filter(Boolean))] as string[];
 
+  const itemFor = (target: Target | null) =>
+    target?.kind === 'edit' ? (data.find((m) => m.id === target.id) ?? null) : null;
+  // Without anything being edited, the pane previews the selected item.
   const selectedId = data.find((m) => m.id === search.selected)?.id ?? data[0]?.id ?? null;
   const selected = data.find((m) => m.id === selectedId) ?? null;
   const select = (id: string) => {
-    setEditingId(null);
+    view.closePane();
     navigate({ search: (prev) => ({ ...prev, selected: id }), replace: true });
   };
-
-  const openNew = () => (isDesktop() ? setEditingId('new') : setDialogTarget('new'));
-  const openEdit = (m: MediaCoverageItem) =>
-    isDesktop() ? setEditingId(m.id) : setDialogTarget(m);
+  const pane = canWrite ? view.pane : null;
   const remove = (id: string) =>
     run(() => deleteMediaCoverage({ data: { ids: [id] } }), 'Item removed.');
 
-  async function removeChecked() {
-    const ids = selection.checkedIds;
+  async function removeMany(ids: string[]) {
     const result = await run(
       () => deleteMediaCoverage({ data: { ids } }),
       `${ids.length} ${ids.length === 1 ? NOUN[0] : NOUN[1]} removed.`
     );
     if (!result) return;
-    if (editingId && ids.includes(editingId)) setEditingId(null);
+    if (view.pane?.kind === 'edit' && ids.includes(view.pane.id)) view.closePane();
     selection.clear();
   }
 
   // Shown after the last item, so a new one lands at the end by default.
   const nextOrder = Math.max(0, ...data.map((m) => m.sortOrder)) + 1;
+
+  const coverageForm = (
+    target: Target,
+    onSaved: (id: string) => void,
+    actions: (submit: React.ReactNode) => React.ReactNode
+  ) => (
+    <CoverageForm
+      key={target.kind === 'edit' ? target.id : 'new'}
+      item={itemFor(target)}
+      categories={categories}
+      nextOrder={nextOrder}
+      onSaved={onSaved}
+      footer={(formPending, isNew) => actions(<SubmitButton pending={formPending} isNew={isNew} />)}
+    />
+  );
+
+  const addButton = (
+    <Button size="sm" onClick={() => view.open({ kind: 'new' })}>
+      <PlusIcon aria-hidden data-icon="inline-start" />
+      Add coverage
+    </Button>
+  );
+
+  const paneItem = itemFor(pane);
+  const dialogItem = itemFor(view.dialog);
 
   return (
     <div className="flex flex-col gap-4 lg:h-[calc(100svh-7.5rem)]">
@@ -174,15 +199,10 @@ export function MediaCoveragePage({
           <ExternalLink aria-hidden data-icon="inline-start" />
           View on website
         </Button>
-        {canWrite && (
-          <Button size="sm" onClick={openNew}>
-            <PlusIcon aria-hidden data-icon="inline-start" />
-            Add coverage
-          </Button>
-        )}
+        {canWrite && addButton}
       </div>
 
-      {data.length === 0 && editingId === null ? (
+      {data.length === 0 && pane === null ? (
         <Empty className="flex-1 rounded-lg border">
           <EmptyHeader>
             <EmptyMedia variant="icon">
@@ -193,181 +213,138 @@ export function MediaCoveragePage({
               Add a news article or video and it appears on the In the media page.
             </EmptyDescription>
           </EmptyHeader>
-          {canWrite && (
-            <EmptyContent>
-              <Button size="sm" onClick={openNew}>
-                <PlusIcon aria-hidden data-icon="inline-start" />
-                Add coverage
-              </Button>
-            </EmptyContent>
-          )}
+          {canWrite && <EmptyContent>{addButton}</EmptyContent>}
         </Empty>
       ) : (
-        <div className="grid min-h-0 flex-1 grid-cols-1 overflow-hidden rounded-lg border lg:grid-cols-[minmax(20rem,1fr)_minmax(0,1fr)]">
-          <section aria-label="Media coverage" className="flex min-h-0 flex-col lg:border-r">
-            {canWrite ? (
+        <ListPageLayout>
+          <ListColumn
+            label="Media coverage"
+            header={
               <SelectionBar
                 selection={selection}
                 visibleIds={visible.map((m) => m.id)}
                 title="All"
                 total={data.length}
                 pending={pending}
-                onDelete={() => setConfirmDelete(true)}
+                onDelete={canWrite ? () => setToDelete(selection.checkedIds) : undefined}
               />
-            ) : (
-              <div className="flex h-11 shrink-0 items-center gap-2 border-b px-3">
-                <span className="text-[13px] font-medium">All</span>
-                <span className="text-muted-foreground text-xs tabular-nums">{data.length}</span>
-              </div>
-            )}
+            }
+          >
             {visible.length === 0 ? (
-              <div className="text-muted-foreground flex flex-1 flex-col items-center justify-center gap-2 p-6 text-center text-sm">
-                Nothing matches that search.
-                <Button variant="ghost" size="sm" onClick={() => setQuery('')}>
-                  Clear search
-                </Button>
-              </div>
+              <NoMatches onClear={() => setQuery('')}>Nothing matches that search.</NoMatches>
             ) : (
-              <ul className="min-h-0 flex-1 space-y-px overflow-y-auto p-1.5">
+              <ListRows>
                 {visible.map((m) => (
-                  <CoverageListItem
+                  <ListRow
                     key={m.id}
-                    item={m}
-                    selected={editingId === null ? m.id === selectedId : m.id === editingId}
-                    canWrite={canWrite}
-                    checked={selection.isChecked(m.id)}
-                    selecting={selection.checkedIds.length > 0}
-                    onToggle={() => selection.toggle(m.id)}
-                    onSelect={() => select(m.id)}
-                    onOpen={() => (canWrite ? openEdit(m) : select(m.id))}
-                  />
+                    align="start"
+                    current={
+                      pane === null ? m.id === selectedId : pane.kind === 'edit' && pane.id === m.id
+                    }
+                    select={
+                      canWrite
+                        ? {
+                            label: `Select ${m.title}`,
+                            checked: selection.isChecked(m.id),
+                            selecting: selection.selecting,
+                            onToggle: () => selection.toggle(m.id),
+                          }
+                        : undefined
+                    }
+                    swipe={
+                      canWrite
+                        ? { label: 'Delete', onAction: () => setToDelete([m.id]) }
+                        : undefined
+                    }
+                    // Large screens preview on a click and edit on a double click; smaller
+                    // ones have no preview, so a tap edits.
+                    onOpen={() =>
+                      isDesktop() ? select(m.id) : canWrite && view.open({ kind: 'edit', id: m.id })
+                    }
+                    onDoubleClick={() => canWrite && view.open({ kind: 'edit', id: m.id })}
+                  >
+                    <CoverageSummary item={m} />
+                  </ListRow>
                 ))}
-              </ul>
+              </ListRows>
             )}
-          </section>
+          </ListColumn>
 
-          {canWrite && editingId !== null ? (
-            <section aria-label="Edit coverage" className="hidden min-h-0 flex-col lg:flex">
-              <CoveragePane
-                key={editingId}
-                item={data.find((m) => m.id === editingId) ?? null}
-                categories={categories}
-                nextOrder={nextOrder}
-                onSaved={select}
-                onClose={() => setEditingId(null)}
-              />
-            </section>
+          {pane !== null ? (
+            <PaneColumn label="Edit coverage">
+              <PaneFrame title={paneItem ? `Edit ${paneItem.title}` : 'New coverage'}>
+                {coverageForm(pane, select, (submit) => (
+                  <PaneActions onCancel={view.closePane}>{submit}</PaneActions>
+                ))}
+              </PaneFrame>
+            </PaneColumn>
           ) : (
             <PreviewPane
               item={selected}
               canWrite={canWrite}
               pending={pending}
-              onEdit={openEdit}
+              onEdit={(m) => view.open({ kind: 'edit', id: m.id })}
               onDelete={remove}
             />
           )}
-        </div>
+        </ListPageLayout>
       )}
 
       <ConfirmBulkDelete
-        open={confirmDelete}
-        onOpenChange={setConfirmDelete}
-        count={selection.checkedIds.length}
+        open={toDelete !== null}
+        onOpenChange={(open) => !open && setToDelete(null)}
+        count={toDelete?.length ?? 0}
         noun={NOUN}
         description="They are removed from the In the media page. This cannot be undone."
-        onConfirm={removeChecked}
+        onConfirm={() => toDelete && removeMany(toDelete)}
       />
 
       {canWrite && (
-        <Dialog
-          open={dialogTarget !== null}
-          onOpenChange={(open) => !open && setDialogTarget(null)}
+        <ListDialog
+          open={view.dialog !== null}
+          onClose={view.closeDialog}
+          title={view.dialog?.kind === 'new' ? 'Add coverage' : 'Edit coverage'}
+          description="A news article or video, shown on In the media."
         >
-          <DialogContent className="max-h-[90svh] overflow-y-auto sm:max-w-md">
-            <DialogHeader>
-              <DialogTitle>{dialogTarget === 'new' ? 'Add coverage' : 'Edit coverage'}</DialogTitle>
-              <DialogDescription>A news article or video, shown on In the media.</DialogDescription>
-            </DialogHeader>
-            <CoverageForm
-              key={dialogTarget === 'new' ? 'new' : dialogTarget?.id}
-              item={dialogTarget === 'new' ? null : dialogTarget}
-              categories={categories}
-              nextOrder={nextOrder}
-              onSaved={() => setDialogTarget(null)}
-              footer={(formPending, isNew) => (
-                <DialogFooter>
-                  <DialogClose render={<Button type="button" variant="outline" />}>
-                    Cancel
-                  </DialogClose>
-                  <SubmitButton pending={formPending} isNew={isNew} />
-                </DialogFooter>
-              )}
-            />
-          </DialogContent>
-        </Dialog>
+          {view.dialog &&
+            coverageForm(view.dialog, view.closeDialog, (submit) => (
+              <DialogActions
+                start={
+                  dialogItem && (
+                    <DeleteCoverage
+                      item={dialogItem}
+                      disabled={pending}
+                      onConfirm={() => remove(dialogItem.id).then(view.closeDialog)}
+                    />
+                  )
+                }
+              >
+                {submit}
+              </DialogActions>
+            ))}
+        </ListDialog>
       )}
     </div>
   );
 }
 
-function CoverageListItem({
-  item,
-  selected,
-  canWrite,
-  checked,
-  selecting,
-  onToggle,
-  onSelect,
-  onOpen,
-}: {
-  item: MediaCoverageItem;
-  selected: boolean;
-  canWrite: boolean;
-  checked: boolean;
-  selecting: boolean;
-  onToggle: () => void;
-  onSelect: () => void;
-  onOpen: () => void;
-}) {
+function CoverageSummary({ item }: { item: MediaCoverageItem }) {
   return (
-    <li
-      className={cn(
-        'group flex items-start gap-1 rounded-md transition-colors',
-        canWrite && 'pl-1.5',
-        selected ? 'bg-accent' : 'hover:bg-muted/60'
-      )}
-    >
-      {canWrite && (
-        <RowCheckbox
-          label={`Select ${item.title}`}
-          checked={checked}
-          selecting={selecting}
-          onToggle={onToggle}
-          className="mt-2.5"
-        />
-      )}
-      <button
-        type="button"
-        aria-current={selected || undefined}
-        onClick={() => (isDesktop() ? onSelect() : onOpen())}
-        onDoubleClick={onOpen}
-        className="focus-visible:ring-ring min-w-0 flex-1 rounded-md px-2.5 py-2 text-left outline-none focus-visible:ring-1"
-      >
-        <span className="flex items-center gap-2">
-          <span className="min-w-0 flex-1 truncate text-[13px] font-medium">{item.title}</span>
-          {item.featured && (
-            <StarIcon aria-label="Featured" className="size-3 shrink-0 fill-current" />
-          )}
-          {item.status === 'draft' && (
-            <span className="text-muted-foreground shrink-0 text-xs">Draft</span>
-          )}
-        </span>
-        <span className="text-muted-foreground mt-0.5 line-clamp-1 text-xs">
-          {item.source} · {mediaCoverageKindLabels[item.kind]}
-          {item.category && ` · ${item.category}`}
-        </span>
-      </button>
-    </li>
+    <>
+      <span className="flex items-center gap-2">
+        <span className="min-w-0 flex-1 truncate text-[13px] font-medium">{item.title}</span>
+        {item.featured && (
+          <StarIcon aria-label="Featured" className="size-3 shrink-0 fill-current" />
+        )}
+        {item.status === 'draft' && (
+          <span className="text-muted-foreground shrink-0 text-xs">Draft</span>
+        )}
+      </span>
+      <span className="text-muted-foreground mt-0.5 line-clamp-1 text-xs">
+        {item.source} · {mediaCoverageKindLabels[item.kind]}
+        {item.category && ` · ${item.category}`}
+      </span>
+    </>
   );
 }
 
@@ -535,48 +512,6 @@ function SubmitButton({ pending, isNew }: { pending: boolean; isNew: boolean }) 
 }
 
 /** The inline desktop pane: header, scrollable form body, cancel back to the preview. */
-function CoveragePane({
-  item,
-  categories,
-  nextOrder,
-  onSaved,
-  onClose,
-}: {
-  item: MediaCoverageItem | null;
-  categories: string[];
-  nextOrder: number;
-  onSaved: (id: string) => void;
-  onClose: () => void;
-}) {
-  return (
-    <>
-      <div className="flex h-11 shrink-0 items-center gap-1.5 border-b px-3">
-        <span className="truncate text-sm font-medium">
-          {item ? `Edit ${item.title}` : 'New coverage'}
-        </span>
-      </div>
-      <div className="min-h-0 flex-1 overflow-y-auto px-4 py-6">
-        <div className="mx-auto max-w-md">
-          <CoverageForm
-            item={item}
-            categories={categories}
-            nextOrder={nextOrder}
-            onSaved={onSaved}
-            footer={(pending, isNew) => (
-              <div className="flex justify-end gap-2">
-                <Button type="button" variant="outline" onClick={onClose}>
-                  Cancel
-                </Button>
-                <SubmitButton pending={pending} isNew={isNew} />
-              </div>
-            )}
-          />
-        </div>
-      </div>
-    </>
-  );
-}
-
 /**
  * One category, picked from those already in use or typed new. Styled as a
  * select so it matches Kind beside it.

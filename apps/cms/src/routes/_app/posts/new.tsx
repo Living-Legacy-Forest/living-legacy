@@ -1,6 +1,7 @@
 import { can } from '@ll/content';
 import { createFileRoute, redirect } from '@tanstack/react-router';
-import { PostEditor, postAccessFor } from '@/components/posts/post-editor';
+import { postAccessFor } from '@/components/posts/post-editor/post-access';
+import { PostEditor } from '@/components/posts/post-editor/post-editor';
 import { getPostEditorData } from '@/server/posts';
 
 export const Route = createFileRoute('/_app/posts/new')({

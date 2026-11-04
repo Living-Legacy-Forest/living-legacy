@@ -12,7 +12,7 @@ import { readState } from '@/components/templates/simple-document-editor/utils';
 import { readableError } from '@/lib/errors';
 import { uploadMedia } from '@/lib/upload-media';
 import { cn } from '@/lib/utils';
-import { postContentExtensions } from './post-extensions';
+import { postContentExtensions } from '../post-extensions';
 
 const imageFiles = (files: FileList | null | undefined) =>
   Array.from(files ?? []).filter((f) => f.type.startsWith('image/'));

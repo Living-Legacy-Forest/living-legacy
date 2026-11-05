@@ -222,9 +222,10 @@ export function ListDialog({
   return (
     <Dialog open={open} onOpenChange={(isOpen) => !isOpen && onClose()}>
       <DialogContent
-        // Long forms scroll inside the dialog rather than running off a phone screen.
+        // Long forms scroll inside the dialog rather than running off the screen. Phones
+        // get a sheet, which already does.
         className={cn(
-          'max-h-[90svh] overflow-y-auto',
+          'md:max-h-[90svh] md:overflow-y-auto',
           size === 'sm' ? 'sm:max-w-sm' : size === 'lg' ? 'sm:max-w-lg' : 'sm:max-w-md'
         )}
       >

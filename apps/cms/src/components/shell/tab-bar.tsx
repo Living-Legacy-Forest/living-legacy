@@ -7,7 +7,7 @@ import {
   MoreHorizontalIcon,
   TagIcon,
 } from '@/components/icons';
-import { Sheet, SheetContent, SheetTitle } from '@/components/ui/sheet';
+import { Drawer, DrawerBody, DrawerContent, DrawerTitle } from '@/components/ui/drawer';
 import {
   type NavItem,
   footerLinks,
@@ -51,6 +51,14 @@ export function TabBar({ user }: { user: SessionUser }) {
               key={tab.to}
               to={tab.to}
               aria-current={active ? 'page' : undefined}
+              onClick={(event) => {
+                // As on iOS: tapping the open tab scrolls its page to the top. From a page
+                // under it (Categories under Posts) the link goes back up to the section.
+                if (active && pathname === tab.to) {
+                  event.preventDefault();
+                  window.scrollTo({ top: 0, behavior: 'smooth' });
+                }
+              }}
               className={cn(tabClass, active ? 'text-brand' : 'text-muted-foreground')}
             >
               <tab.icon aria-hidden />
@@ -121,14 +129,10 @@ function MoreSheet({
   sections.push({ label: '', rows: footerLinks });
 
   return (
-    <Sheet open={open} onOpenChange={onOpenChange}>
-      <SheetContent
-        side="bottom"
-        showCloseButton={false}
-        className="bg-muted/95 max-h-[85dvh] gap-0 overflow-y-auto rounded-t-2xl border-t-0 p-0 pb-[env(safe-area-inset-bottom)] backdrop-blur-xl"
-      >
-        <div className="bg-muted/95 sticky top-0 z-10 flex items-center justify-between px-4 pt-3 pb-2 backdrop-blur-xl">
-          <SheetTitle className="text-[1.0625rem] font-semibold">More</SheetTitle>
+    <Drawer open={open} onOpenChange={onOpenChange}>
+      <DrawerContent className="bg-muted">
+        <div className="flex shrink-0 items-center justify-between px-4 pt-1 pb-2">
+          <DrawerTitle className="text-[1.0625rem] font-semibold">More</DrawerTitle>
           <button
             type="button"
             onClick={() => onOpenChange(false)}
@@ -137,7 +141,7 @@ function MoreSheet({
             Done
           </button>
         </div>
-        <div className="flex flex-col gap-6 px-4 pt-2 pb-6">
+        <DrawerBody className="flex flex-col gap-6 pb-[calc(env(safe-area-inset-bottom)+1.5rem)]">
           {sections.map((section) => (
             <section key={section.label || 'links'}>
               {section.label && (
@@ -158,9 +162,9 @@ function MoreSheet({
               </ul>
             </section>
           ))}
-        </div>
-      </SheetContent>
-    </Sheet>
+        </DrawerBody>
+      </DrawerContent>
+    </Drawer>
   );
 }
 

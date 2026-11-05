@@ -3,8 +3,26 @@ import { AlertDialog as AlertDialogPrimitive } from '@base-ui/react/alert-dialog
 import { cn } from '@/lib/utils';
 
 import { Button } from '@/components/ui/button';
+import {
+  Drawer,
+  DrawerBody,
+  DrawerContent,
+  type DrawerContentProps,
+  type DrawerProps,
+  sheetFooterClass,
+  useInSheet,
+} from '@/components/ui/drawer';
+import { useIsMobile } from '@/hooks/use-mobile';
 
-function AlertDialog({ ...props }: AlertDialogPrimitive.Root.Props) {
+/** A centred alert, or a bottom sheet on phones, where Cancel sits nearest the thumb. */
+function AlertDialog({
+  ...props
+}: Omit<AlertDialogPrimitive.Root.Props, 'children' | 'handle'> & {
+  children?: React.ReactNode;
+}) {
+  const isPhone = useIsMobile();
+  // Drawer is a Dialog with swipe gestures; its props only add to the Dialog's.
+  if (isPhone) return <Drawer {...(props as DrawerProps)} />;
   return <AlertDialogPrimitive.Root data-slot="alert-dialog" {...props} />;
 }
 
@@ -36,6 +54,21 @@ function AlertDialogContent({
 }: AlertDialogPrimitive.Popup.Props & {
   size?: 'default' | 'sm';
 }) {
+  const inSheet = useInSheet();
+  if (inSheet) {
+    const { children, ...popupProps } = props;
+    return (
+      <DrawerContent role="alertdialog" {...(popupProps as DrawerContentProps)}>
+        <DrawerBody
+          data-slot="alert-dialog-content"
+          data-size={size}
+          className={cn('group/alert-dialog-content grid gap-4', className)}
+        >
+          {children}
+        </DrawerBody>
+      </DrawerContent>
+    );
+  }
   return (
     <AlertDialogPortal>
       <AlertDialogOverlay />
@@ -66,11 +99,13 @@ function AlertDialogHeader({ className, ...props }: React.ComponentProps<'div'>)
 }
 
 function AlertDialogFooter({ className, ...props }: React.ComponentProps<'div'>) {
+  const inSheet = useInSheet();
   return (
     <div
       data-slot="alert-dialog-footer"
       className={cn(
         'bg-muted/50 -mx-4 -mb-4 flex flex-col-reverse gap-2 rounded-b-xl border-t p-4 group-data-[size=sm]/alert-dialog-content:grid group-data-[size=sm]/alert-dialog-content:grid-cols-2 sm:flex-row sm:justify-end',
+        inSheet && sheetFooterClass,
         className
       )}
       {...props}

@@ -437,7 +437,7 @@ function LocationCard({ item }: { item: LocationItem }) {
           </div>
         )}
       </div>
-      <p className="text-muted-foreground mt-4 text-xs font-medium tracking-wide uppercase">
+      <p className="text-muted-foreground mt-4 text-xs font-medium">
         {[australianStateLabels[item.state], item.region].filter(Boolean).join(' · ')}
       </p>
       <h2 className="mt-1.5 text-lg leading-snug font-medium text-balance">{item.name}</h2>

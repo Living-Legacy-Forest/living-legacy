@@ -242,6 +242,8 @@ export const CalendarClockIcon = animated(AnimatedCalendar01Icon);
 export const FileTextIcon = animated(AnimatedFile01Icon);
 export const GlobeIcon = animated(AnimatedGlobe02Icon);
 export const CheckIcon = animated(AnimatedCheckIcon);
+/** The tick inside a checkbox: static, since it sits in every list row. */
+export const CheckboxTickIcon = make(H.Tick02Icon);
 export const ChevronUpIcon = animated(AnimatedChevronUpIcon);
 export const ChevronDownIcon = animated(AnimatedChevronDownIcon);
 export const ChevronLeftIcon = animated(AnimatedChevronLeftIcon);

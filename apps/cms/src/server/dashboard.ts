@@ -1,6 +1,6 @@
-import { faqs, media, posts, postTerms, terms } from '@ll/db/schema';
+import { faqs, locations, media, posts } from '@ll/db/schema';
 import { createServerFn } from '@tanstack/react-start';
-import { and, count, desc, eq, gte, isNull, sql, sum } from 'drizzle-orm';
+import { and, asc, count, desc, eq, gte, isNull, sql, sum } from 'drizzle-orm';
 import { getDb } from '@/lib/db';
 import { authMiddleware } from '@/lib/session';
 import { readSiteSettings } from '@/lib/site-settings';
@@ -28,7 +28,7 @@ export const getDashboardData = createServerFn({ method: 'GET' })
     const isPublished = and(eq(posts.status, 'published'), notTrashed);
     const since = (days: number) => new Date(now - days * DAY_MS);
 
-    const [postCounts, mediaTotals, faqCount, activityRows, categoryRows, drafts, published] =
+    const [postCounts, mediaTotals, faqCount, activityRows, locationRows, drafts, published] =
       await Promise.all([
         db
           .select({
@@ -55,13 +55,17 @@ export const getDashboardData = createServerFn({ method: 'GET' })
           .from(posts)
           .where(and(isPublished, gte(posts.publishedAt, since(ACTIVITY_DAYS)))),
         db
-          .select({ category: terms.name, posts: count() })
-          .from(postTerms)
-          .innerJoin(terms, eq(terms.id, postTerms.termId))
-          .innerJoin(posts, eq(posts.id, postTerms.postId))
-          .where(and(eq(terms.type, 'category'), isPublished))
-          .groupBy(terms.id)
-          .orderBy(desc(count())),
+          .select({
+            id: locations.id,
+            name: locations.name,
+            stage: locations.stage,
+            latitude: locations.latitude,
+            longitude: locations.longitude,
+            heroMediaId: locations.heroMediaId,
+          })
+          .from(locations)
+          .where(isNull(locations.deletedAt))
+          .orderBy(asc(locations.sortOrder), asc(locations.name)),
         db
           .select({
             id: posts.id,
@@ -122,7 +126,7 @@ export const getDashboardData = createServerFn({ method: 'GET' })
       },
       publishedFaqs: faqCount[0]?.total ?? 0,
       activity: [...perDay].map(([date, published]) => ({ date, published })),
-      categories: categoryRows,
+      locations: locationRows,
       recentDrafts: drafts.map(toSummary),
       recentlyPublished: published.map(toSummary),
     };

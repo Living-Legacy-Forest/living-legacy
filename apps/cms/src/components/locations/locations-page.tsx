@@ -130,7 +130,8 @@ export function LocationsPage({
   // one, from the list or its pin, opens its details in a sheet.
   const selectedId = data.find((l) => l.id === search.selected)?.id ?? null;
   const selected = data.find((l) => l.id === selectedId) ?? null;
-  const [sheetOpen, setSheetOpen] = useState(false);
+  // Open on arrival when a location is already chosen, e.g. from the dashboard map.
+  const [sheetOpen, setSheetOpen] = useState(search.selected !== undefined);
   const select = (id: string) => {
     view.closePane();
     navigate({ search: (prev) => ({ ...prev, selected: id }), replace: true });

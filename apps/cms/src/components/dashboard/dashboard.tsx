@@ -14,8 +14,9 @@ import { DashboardStats } from './stats';
 const PublishingChart = lazy(() =>
   import('./publishing-chart').then((m) => ({ default: m.PublishingChart }))
 );
-const CategoryChart = lazy(() =>
-  import('./category-chart').then((m) => ({ default: m.CategoryChart }))
+// The map library is heavy too.
+const LocationsCard = lazy(() =>
+  import('./locations-card').then((m) => ({ default: m.LocationsCard }))
 );
 
 export function Dashboard({ data, user }: { data: DashboardData; user: SessionUser }) {
@@ -36,14 +37,10 @@ export function Dashboard({ data, user }: { data: DashboardData; user: SessionUs
       </Suspense>
       <Suspense
         fallback={
-          <ChartPlaceholder
-            title="Posts by category"
-            className="col-span-2"
-            chartClassName="h-72"
-          />
+          <ChartPlaceholder title="Locations" className="col-span-2" chartClassName="h-72" footer />
         }
       >
-        <CategoryChart categories={data.categories} />
+        <LocationsCard locations={data.locations} />
       </Suspense>
       <RecentPosts drafts={data.recentDrafts} published={data.recentlyPublished} />
       <QuickActions user={user} />

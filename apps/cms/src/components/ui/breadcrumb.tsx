@@ -2,7 +2,7 @@ import * as React from 'react';
 import { mergeProps } from '@base-ui/react/merge-props';
 import { useRender } from '@base-ui/react/use-render';
 import { cn } from '@/lib/utils';
-import { ChevronRightIcon, MoreHorizontalIcon } from '@/components/icons';
+import { BreadcrumbChevronIcon, MoreHorizontalIcon } from '@/components/icons';
 
 function Breadcrumb({ className, ...props }: React.ComponentProps<'nav'>) {
   return (
@@ -68,10 +68,10 @@ function BreadcrumbSeparator({ children, className, ...props }: React.ComponentP
       data-slot="breadcrumb-separator"
       role="presentation"
       aria-hidden="true"
-      className={cn('[&>svg]:size-3.5', className)}
+      className={cn('text-muted-foreground/60 [&>svg]:size-3.5', className)}
       {...props}
     >
-      {children ?? <ChevronRightIcon />}
+      {children ?? <BreadcrumbChevronIcon />}
     </li>
   );
 }

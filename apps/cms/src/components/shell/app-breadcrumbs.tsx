@@ -22,7 +22,13 @@ export function AppBreadcrumbs({ item, current }: { item?: NavItem; current?: st
       <BreadcrumbList className="text-[13px]">
         <BreadcrumbItem>
           {current && item.to ? (
-            <BreadcrumbLink render={<Link to={item.to} />}>{item.title}</BreadcrumbLink>
+            <BreadcrumbLink
+              render={<Link to={item.to} activeOptions={{ exact: true }} />}
+              className="flex items-center gap-2 [&>svg]:size-3.5"
+            >
+              {Icon && <Icon aria-hidden />}
+              {item.title}
+            </BreadcrumbLink>
           ) : (
             <BreadcrumbPage className="flex items-center gap-2 [&>svg]:size-3.5">
               {Icon && <Icon aria-hidden />}

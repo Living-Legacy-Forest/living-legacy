@@ -10,3 +10,5 @@ export * from './rich-text-html';
 export * from './markdown';
 export * from './locations';
 export * from './media-coverage';
+export * from './image-size';
+export * from './media-sweep';

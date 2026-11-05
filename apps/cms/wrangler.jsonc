@@ -2,8 +2,10 @@
   "$schema": "node_modules/wrangler/config-schema.json",
   "name": "living-legacy-cms",
   "main": "./src/server.ts",
-  // Publishes scheduled posts. Times are UTC; every five minutes.
-  "triggers": { "crons": ["*/5 * * * *"] },
+  // Times are UTC. Every five minutes: publish scheduled posts. Daily at
+  // 17:00 (early morning in Melbourne): delete stored files nothing uses
+  // (src/server/media-sweep.ts). src/server.ts tells them apart by schedule.
+  "triggers": { "crons": ["*/5 * * * *", "0 17 * * *"] },
   "compatibility_date": "2026-10-20",
   "compatibility_flags": ["nodejs_compat"],
   "observability": { "enabled": true },

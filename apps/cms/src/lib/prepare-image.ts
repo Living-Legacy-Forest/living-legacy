@@ -1,9 +1,9 @@
 // Images are cropped and scaled in the browser before upload: phone photos
 // are often 4000px or more, far beyond what the website ever shows, and a crop
-// chosen here is the one the site serves.
+// chosen here is the one the site serves. The server refuses anything larger
+// than maxImageSide, so this is what keeps big uploads working.
 
-/** The longest side kept; larger images are scaled down to it. */
-const MAX_IMAGE_SIDE = 2560;
+import { maxImageSide } from '@ll/db/enums';
 
 /** A crop in the source image's own pixels. */
 export type PixelArea = { x: number; y: number; width: number; height: number };
@@ -19,7 +19,7 @@ function toBlob(canvas: HTMLCanvasElement, type: string): Promise<Blob | null> {
 
 /**
  * The image cropped to `area` (if given) and scaled so its longest side is at
- * most MAX_IMAGE_SIDE, as WebP where the browser can write it. An image that
+ * most maxImageSide, as WebP where the browser can write it. An image that
  * needs neither is returned untouched, so it is not compressed twice.
  */
 export async function prepareImage(file: File, area?: PixelArea): Promise<File> {
@@ -33,7 +33,7 @@ export async function prepareImage(file: File, area?: PixelArea): Promise<File> 
     return file;
   }
   const region = area ?? { x: 0, y: 0, width: bitmap.width, height: bitmap.height };
-  const scale = Math.min(1, MAX_IMAGE_SIDE / Math.max(region.width, region.height));
+  const scale = Math.min(1, maxImageSide / Math.max(region.width, region.height));
   if (!area && scale === 1) {
     bitmap.close();
     return file;

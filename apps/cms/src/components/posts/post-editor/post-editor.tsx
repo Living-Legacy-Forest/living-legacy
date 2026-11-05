@@ -31,6 +31,7 @@ import {
 } from '@/components/ui/empty';
 import { cn } from '@/lib/utils';
 import type { PostEditorData } from '@/server/posts';
+import { DocumentEditorSkeleton } from './document-editor-skeleton';
 import { EditorToolbar } from './editor-toolbar';
 import type { PostAccess } from './post-access';
 import { PropertiesPanel } from './properties-panel';
@@ -80,8 +81,8 @@ export function PostEditor({
           onToggleProperties={() => setShowProperties((v) => !v)}
         />
         <div className="min-h-[32rem] flex-1 lg:min-h-0">
-          <ClientOnly fallback={<EditorFallback />}>
-            <Suspense fallback={<EditorFallback />}>
+          <ClientOnly fallback={<DocumentEditorSkeleton />}>
+            <Suspense fallback={<DocumentEditorSkeleton />}>
               <DocumentEditor
                 key={editor.bodyKey}
                 title={values.title}
@@ -154,8 +155,4 @@ function TrashedPost({ editor }: { editor: PostEditorState }) {
       </EmptyContent>
     </Empty>
   );
-}
-
-function EditorFallback() {
-  return <div className="bg-muted/50 ml-8 h-64 animate-pulse rounded-md" />;
 }

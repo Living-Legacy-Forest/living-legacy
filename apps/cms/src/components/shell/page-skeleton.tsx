@@ -1,6 +1,7 @@
 import { useRouterState } from '@tanstack/react-router';
 import { useEffect, useState } from 'react';
 import { DashboardSkeleton } from '@/components/dashboard/dashboard-skeleton';
+import { DocumentEditorSkeleton } from '@/components/posts/post-editor/document-editor-skeleton';
 import { Skeleton } from '@/components/ui/skeleton';
 
 /**
@@ -168,38 +169,46 @@ function SettingsSkeleton() {
   );
 }
 
-/** The post editor: the document beside its metadata sidebar. */
+/** The post editor: the document beside its properties sidebar. */
 function EditorSkeleton() {
   return (
     <div className="grid flex-1 gap-6 lg:grid-cols-[minmax(0,1fr)_17rem] lg:gap-0">
       <div className="flex min-w-0 flex-col overflow-hidden rounded-lg border lg:mr-6 lg:h-[calc(100svh-7.5rem)]">
         <div className="flex h-12 shrink-0 items-center gap-3 border-b px-3">
-          <Skeleton className="h-5 w-24" />
-          <div className="ml-auto flex gap-1.5">
-            <Skeleton className="h-8 w-16" />
-            <Skeleton className="h-8 w-20" />
+          <Skeleton className="h-4 w-20" />
+          <Skeleton className="h-4 w-28" />
+          <div className="ml-auto flex items-center gap-1.5">
+            <Skeleton className="h-7 w-24" />
+            <Skeleton className="h-7 w-20" />
+            <Skeleton className="size-7" />
+            <Skeleton className="size-7" />
           </div>
         </div>
-        <div className="flex h-10 shrink-0 items-center gap-1.5 border-b px-3">
-          {Array.from({ length: 9 }, (_, i) => (
-            <Skeleton key={i} className="size-6" />
-          ))}
-        </div>
-        <div className="mx-auto w-full max-w-3xl space-y-5 p-8">
-          <Skeleton className="h-9 w-3/4" />
-          <Lines count={4} className="space-y-2.5" />
-          <Lines count={5} className="space-y-2.5" />
+        <div className="min-h-[32rem] flex-1 lg:min-h-0">
+          <DocumentEditorSkeleton />
         </div>
       </div>
       <aside className="space-y-6 lg:border-l lg:pl-6">
-        {[2, 3, 2].map((rows, s) => (
-          <div key={s} className="space-y-2.5">
-            <Skeleton className="h-3.5 w-20" />
-            {Array.from({ length: rows }, (_, i) => (
-              <Skeleton key={i} className="h-8 w-full" />
-            ))}
-          </div>
-        ))}
+        <div className="space-y-4">
+          <Skeleton className="h-3.5 w-20" />
+          {[24, 20, 16, 28, 32].map((w, i) => (
+            <div key={i} className="flex items-center gap-3">
+              <Skeleton className="h-4 w-24" />
+              <Skeleton className="h-4" style={{ width: `${w * 3}px` }} />
+            </div>
+          ))}
+        </div>
+        <div className="space-y-3 border-t pt-6">
+          <Skeleton className="h-3.5 w-28" />
+          <Skeleton className="h-3 w-full" />
+          <Skeleton className="h-52 w-full rounded-lg" />
+        </div>
+        <div className="border-t pt-6">
+          <Skeleton className="h-3.5 w-24" />
+        </div>
+        <div className="border-t pt-6">
+          <Skeleton className="h-3.5 w-20" />
+        </div>
       </aside>
     </div>
   );

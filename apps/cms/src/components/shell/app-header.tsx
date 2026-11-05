@@ -38,11 +38,11 @@ export function AppHeader({ user }: { user: SessionUser }) {
       {back && (
         <Link
           to={back.to}
-          className="text-brand relative z-10 -ml-2 flex min-h-11 max-w-[30%] min-w-0 items-center pr-2 text-[1.0625rem] active:opacity-50 md:hidden"
+          className="text-brand relative z-10 -ml-1 flex min-h-11 max-w-[30%] min-w-0 items-center pr-2 text-[0.9375rem] active:opacity-50 md:hidden"
         >
-          {/* Sized and weighted like the iOS back chevron; the drawing has empty
-              space either side, which the negative margin takes back. */}
-          <ChevronLeftIcon aria-hidden strokeWidth={2.25} className="-mr-1.5 size-7" />
+          {/* Small and quiet, so it stays out of the large title's way. The
+              drawing has empty space either side, which the margin takes back. */}
+          <ChevronLeftIcon aria-hidden strokeWidth={2} className="-mr-0.5 size-5" />
           <span className="truncate">{back.label}</span>
         </Link>
       )}

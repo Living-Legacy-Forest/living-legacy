@@ -12,6 +12,7 @@ import {
 import { type NavItem, footerLinks, isNavItemAllowed, navGroups } from '@/lib/nav';
 import type { SessionUser } from '@/lib/session';
 import { cn } from '@/lib/utils';
+import { CommandMenu } from './command-menu';
 import { NavGroup } from './nav-group';
 import { navItemClass } from './nav-styles';
 
@@ -41,6 +42,7 @@ export function AppSidebar({ user }: { user: SessionUser }) {
               <span>Living Legacy</span>
             </SidebarMenuButton>
           </SidebarMenuItem>
+          <CommandMenu user={user} />
         </SidebarMenu>
       </SidebarHeader>
 

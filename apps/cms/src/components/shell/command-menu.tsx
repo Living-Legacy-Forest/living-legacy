@@ -32,7 +32,7 @@ import {
 } from '@/components/ui/empty';
 import { Kbd } from '@/components/ui/kbd';
 import { Spinner } from '@/components/ui/spinner';
-import { useSidebar } from '@/components/ui/sidebar';
+import { SidebarMenuButton, SidebarMenuItem, useSidebar } from '@/components/ui/sidebar';
 import { formatRelative } from '@/lib/format';
 import { footerLinks } from '@/lib/nav';
 import type { SessionUser } from '@/lib/session';
@@ -194,15 +194,18 @@ export function CommandMenu({ user }: { user: SessionUser }) {
 
   return (
     <>
-      <button
-        type="button"
-        onClick={() => setOpen(true)}
-        className="bg-muted/60 text-muted-foreground hover:bg-muted flex h-8 w-full items-center gap-2 rounded-md px-2.5 text-[13px] transition-colors sm:w-64"
-      >
-        <SearchIcon aria-hidden className="size-3.5" />
-        <span className="flex-1 text-left">Search or jump to…</span>
-        <Kbd className="hidden sm:inline-flex">⌘K</Kbd>
-      </button>
+      {/* Lives at the top of the sidebar, so it never sits beside a page's own search. */}
+      <SidebarMenuItem>
+        <SidebarMenuButton
+          tooltip="Search (⌘K)"
+          onClick={() => setOpen(true)}
+          className="bg-sidebar-accent/60 text-muted-foreground hover:text-sidebar-foreground h-8 text-[13px]"
+        >
+          <SearchIcon aria-hidden />
+          <span className="flex-1 text-left">Search…</span>
+          <Kbd className="group-data-[collapsible=icon]:hidden">⌘K</Kbd>
+        </SidebarMenuButton>
+      </SidebarMenuItem>
 
       <CommandDialog
         open={open}

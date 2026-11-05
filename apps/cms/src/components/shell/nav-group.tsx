@@ -12,12 +12,17 @@ import {
   SidebarMenuSubItem,
 } from '@/components/ui/sidebar';
 import { type NavGroup as NavGroupType, type NavItem, isNavItemActive } from '@/lib/nav';
+import { type SidebarState, rememberSection } from '@/lib/sidebar-state';
 import { cn } from '@/lib/utils';
 import { navItemClass, navItemSoonClass } from './nav-styles';
 
 const isSoon = (item: NavItem) => !item.to && !item.items?.some((sub) => sub.to);
 
-export function NavGroup({ label, items }: NavGroupType) {
+export function NavGroup({
+  label,
+  items,
+  sections,
+}: NavGroupType & { sections: SidebarState['sections'] }) {
   const { pathname } = useLocation();
 
   return (
@@ -55,7 +60,9 @@ export function NavGroup({ label, items }: NavGroupType) {
               <Collapsible
                 key={item.title}
                 className="group/collapsible"
-                defaultOpen={active}
+                // As last left; otherwise open when it holds the current page.
+                defaultOpen={sections[item.title] ?? active}
+                onOpenChange={(open) => rememberSection(item.title, open)}
                 render={<SidebarMenuItem />}
               >
                 <CollapsibleTrigger

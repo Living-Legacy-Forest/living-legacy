@@ -7,7 +7,7 @@ import {
   MoreHorizontalIcon,
   TagIcon,
 } from '@/components/icons';
-import { Drawer, DrawerBody, DrawerContent, DrawerTitle } from '@/components/ui/drawer';
+import { Drawer, DrawerBody, DrawerContent } from '@/components/ui/drawer';
 import {
   type NavItem,
   footerLinks,
@@ -19,6 +19,7 @@ import {
 } from '@/lib/nav';
 import type { SessionUser } from '@/lib/session';
 import { cn } from '@/lib/utils';
+import { SheetHeader, sheetGroupClass, sheetRowClass } from './sheet-parts';
 
 const tabClass =
   'flex min-w-0 flex-col items-center justify-center gap-0.5 text-[0.625rem] font-medium tracking-tight transition-opacity active:opacity-50 [&_svg]:size-6';
@@ -131,16 +132,7 @@ function MoreSheet({
   return (
     <Drawer open={open} onOpenChange={onOpenChange}>
       <DrawerContent className="bg-muted">
-        <div className="flex shrink-0 items-center justify-between px-4 pt-1 pb-2">
-          <DrawerTitle className="text-[1.0625rem] font-semibold">More</DrawerTitle>
-          <button
-            type="button"
-            onClick={() => onOpenChange(false)}
-            className="text-brand -mr-2 min-h-11 px-2 text-[1.0625rem] font-semibold active:opacity-50"
-          >
-            Done
-          </button>
-        </div>
+        <SheetHeader title="More" onDone={() => onOpenChange(false)} />
         <DrawerBody className="flex flex-col gap-6 pb-[calc(env(safe-area-inset-bottom)+1.5rem)]">
           {sections.map((section) => (
             <section key={section.label || 'links'}>
@@ -149,7 +141,7 @@ function MoreSheet({
                   {section.label}
                 </h2>
               )}
-              <ul className="bg-background divide-border/70 divide-y overflow-hidden rounded-xl">
+              <ul className={sheetGroupClass}>
                 {section.rows.map((row) => (
                   <li key={row.to ?? row.href}>
                     <MoreRow
@@ -177,8 +169,7 @@ function MoreRow({
   active: boolean;
   onNavigate: () => void;
 }) {
-  const className =
-    'flex min-h-11 items-center gap-3 px-4 text-[1.0625rem] transition-colors active:bg-muted [&_svg]:size-5.5';
+  const className = sheetRowClass;
   const content = (
     <>
       {row.icon ? (

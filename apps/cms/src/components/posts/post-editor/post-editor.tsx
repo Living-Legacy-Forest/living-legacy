@@ -80,7 +80,7 @@ export function PostEditor({
           showProperties={showProperties}
           onToggleProperties={() => setShowProperties((v) => !v)}
         />
-        <div className="min-h-[32rem] flex-1 lg:min-h-0">
+        <div className="min-h-[24rem] flex-1 md:min-h-[32rem] lg:min-h-0">
           <ClientOnly fallback={<DocumentEditorSkeleton />}>
             <Suspense fallback={<DocumentEditorSkeleton />}>
               <DocumentEditor
@@ -101,10 +101,12 @@ export function PostEditor({
       <aside
         className={cn(
           'min-w-0 space-y-6 text-[13px] lg:sticky lg:top-6 lg:self-start lg:overflow-hidden lg:transition-[padding] lg:duration-150 motion-reduce:lg:transition-none',
-          showProperties ? 'lg:border-l lg:pl-6' : 'lg:border-l-0 lg:pl-0'
+          // Hidden only on lg and up: below that the panel sits under the editor
+          // and has no toggle.
+          showProperties ? 'lg:border-l lg:pl-6' : 'lg:hidden'
         )}
       >
-        {showProperties && <PropertiesPanel editor={editor} />}
+        <PropertiesPanel editor={editor} />
       </aside>
 
       <AlertDialog open={editor.blocker.status === 'blocked'}>

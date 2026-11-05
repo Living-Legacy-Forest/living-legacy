@@ -57,7 +57,8 @@ export function EditorToolbar({
       <span className="text-muted-foreground text-xs" aria-live="polite">
         {editor.saveState}
       </span>
-      <div className="ml-auto flex items-center gap-1 max-md:flex-wrap max-md:justify-end">
+      {/* On phones the actions take a row of their own, with Save and Publish sharing it. */}
+      <div className="ml-auto flex items-center gap-1 max-md:w-full max-md:flex-wrap max-md:justify-end">
         {access === 'full' && (
           <PublisherActions editor={editor} canDiscard={canDiscard} onImport={chooseDocx} />
         )}
@@ -85,6 +86,8 @@ export function EditorToolbar({
           size="icon-sm"
           aria-label={showProperties ? 'Hide properties panel' : 'Show properties panel'}
           onClick={onToggleProperties}
+          // Below lg the properties sit under the editor, where hiding them helps no one.
+          className="max-lg:hidden"
         >
           <PanelRightIcon aria-hidden />
         </Button>
@@ -111,13 +114,18 @@ function PublisherActions({ editor, canDiscard, onImport }: ActionsProps) {
   return (
     <>
       {canDiscard && <DiscardButton editor={editor} />}
-      <SaveButton editor={editor} label={isLive ? 'Save changes' : 'Save draft'} />
-      <div className="flex">
+      <SaveButton
+        editor={editor}
+        label={isLive ? 'Save changes' : 'Save draft'}
+        // A plain text button reads as a label on a phone; outline it there.
+        className="max-md:bg-background max-md:flex-1 max-md:border max-md:shadow-xs"
+      />
+      <div className="flex max-md:flex-1">
         <Button
           size="sm"
           disabled={working || (isLive && !dirty && !meta.hasDraft)}
           onClick={editor.publish}
-          className={cn(!isLive && 'rounded-r-none')}
+          className={cn('max-md:flex-1', !isLive && 'rounded-r-none')}
         >
           {editor.busy === 'publish' ? (
             <>
@@ -234,11 +242,20 @@ function DiscardButton({ editor }: { editor: PostEditorState }) {
   );
 }
 
-function SaveButton({ editor, label }: { editor: PostEditorState; label: string }) {
+function SaveButton({
+  editor,
+  label,
+  className,
+}: {
+  editor: PostEditorState;
+  label: string;
+  className?: string;
+}) {
   return (
     <Button
       variant="ghost"
       size="sm"
+      className={className}
       disabled={editor.working || (!editor.dirty && editor.meta.id !== null)}
       onClick={editor.save}
     >

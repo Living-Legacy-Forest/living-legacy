@@ -99,7 +99,8 @@ export function DocumentEditor({
   const words = state?.words ?? 0;
 
   return (
-    <div className="bg-background flex h-full min-h-[32rem] flex-col overflow-hidden rounded-lg border">
+    // No border of its own: it sits inside the editor page's bordered card.
+    <div className="bg-background flex h-full min-h-[24rem] flex-col overflow-hidden md:min-h-[32rem]">
       <RichTextEditor
         editor={editor}
         variant="subtle"
@@ -140,8 +141,9 @@ export function DocumentEditor({
       <footer className="text-muted-foreground flex h-9 shrink-0 items-center gap-3 border-t px-3 text-xs tabular-nums">
         <span>{words.toLocaleString('en-AU')} words</span>
         <span>{(state?.characters ?? 0).toLocaleString('en-AU')} characters</span>
-        <span className="hidden sm:inline">{Math.max(1, Math.ceil(words / 200))} min read</span>
-        <div className="ml-auto">
+        <span>{Math.max(1, Math.ceil(words / 200))} min read</span>
+        {/* Keyboard shortcuts mean nothing on a phone. */}
+        <div className="ml-auto max-md:hidden">
           <ShortcutsPopover />
         </div>
       </footer>

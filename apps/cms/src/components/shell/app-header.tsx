@@ -38,9 +38,17 @@ export function AppHeader({ user }: { user: SessionUser }) {
       {back && (
         <Link
           to={back.to}
-          className="text-brand relative z-10 -ml-1 flex min-h-11 max-w-[30%] min-w-0 items-center gap-0.5 pr-2 text-[1.0625rem] active:opacity-50 md:hidden [&_svg]:size-6 [&_svg]:shrink-0"
+          className="text-brand relative z-10 -ml-1 flex min-h-11 max-w-[30%] min-w-0 items-center pr-2 text-sm active:opacity-50 md:hidden"
         >
-          <ChevronLeftIcon aria-hidden />
+          {/* Sized in em so it stays in proportion with the label: a little taller
+              than the capitals, with a stroke close to the letters' weight. The
+              drawing has empty space either side, which the margin takes back, and
+              it reads slightly low against the capitals, which the nudge corrects. */}
+          <ChevronLeftIcon
+            aria-hidden
+            strokeWidth={1.7}
+            className="-mr-[0.22em] size-[1.4em] -translate-y-[0.05em]"
+          />
           <span className="truncate">{back.label}</span>
         </Link>
       )}

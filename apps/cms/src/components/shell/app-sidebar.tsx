@@ -11,18 +11,25 @@ import {
 } from '@/components/ui/sidebar';
 import { type NavItem, footerLinks, isNavItemAllowed, navGroups } from '@/lib/nav';
 import type { SessionUser } from '@/lib/session';
+import type { SidebarState } from '@/lib/sidebar-state';
 import { cn } from '@/lib/utils';
 import { CommandMenu } from './command-menu';
 import { NavGroup } from './nav-group';
 import { navItemClass } from './nav-styles';
 
-export function AppSidebar({ user }: { user: SessionUser }) {
+export function AppSidebar({
+  user,
+  sections,
+}: {
+  user: SessionUser;
+  sections: SidebarState['sections'];
+}) {
   const allowed = (item: NavItem) => isNavItemAllowed(item, user.role);
 
   return (
     <Sidebar collapsible="icon" variant="inset">
       <SidebarHeader className="pb-1">
-        <SidebarMenu>
+        <SidebarMenu className="gap-1.5">
           <SidebarMenuItem>
             <SidebarMenuButton
               tooltip="Living Legacy"
@@ -50,7 +57,12 @@ export function AppSidebar({ user }: { user: SessionUser }) {
         {navGroups.map((group) => {
           const items = group.items.filter(allowed);
           return items.length ? (
-            <NavGroup key={group.label || 'top'} label={group.label} items={items} />
+            <NavGroup
+              key={group.label || 'top'}
+              label={group.label}
+              items={items}
+              sections={sections}
+            />
           ) : null;
         })}
       </SidebarContent>

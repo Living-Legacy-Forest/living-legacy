@@ -6,6 +6,7 @@
 import { type MediaCoverageKind, youtubeId } from '@ll/content';
 import { CMS_URL } from 'astro:env/server';
 import { env } from 'cloudflare:workers';
+import { mediaSources } from '@/lib/media-srcset';
 
 /** The slice of the D1 binding used here, so the site needs no Workers type package. */
 interface D1 {
@@ -31,7 +32,7 @@ export interface CoverageItem {
   href: string;
   /** Set for YouTube videos, which play in place. */
   youtubeId: string | null;
-  image: { src: string; alt: string; width?: number; height?: number } | null;
+  image: { src: string; alt: string; width?: number; height?: number; srcset?: string } | null;
   featured: boolean;
 }
 
@@ -51,7 +52,18 @@ type Row = {
   image_alt: string | null;
   image_width: number | null;
   image_height: number | null;
+  image_variants: string | null;
 };
+
+function coverageImage(r: Row, src: string): NonNullable<CoverageItem['image']> {
+  return {
+    src,
+    alt: r.image_alt ?? '',
+    width: r.image_width ?? undefined,
+    height: r.image_height ?? undefined,
+    srcset: mediaSources(src, r.image_width, r.image_variants).srcset,
+  };
+}
 
 // Read fresh on every request, so publishing in the CMS shows at once; it is one
 // small query. The last good list is kept only to ride out a database error.
@@ -66,7 +78,8 @@ export async function getMediaCoverage(): Promise<CoverageItem[]> {
       .prepare(
         `SELECT c.id, c.slug, c.kind, c.title, c.source, c.category, c.coverage_date,
                 c.excerpt, c.reading_minutes, c.external_url, c.featured,
-                m.id AS image_id, m.alt AS image_alt, m.width AS image_width, m.height AS image_height
+                m.id AS image_id, m.alt AS image_alt, m.width AS image_width, m.height AS image_height,
+                m.variants AS image_variants
          FROM media_coverage c
          LEFT JOIN media m ON m.id = c.image_media_id
          WHERE c.status = 'published' AND c.deleted_at IS NULL
@@ -85,14 +98,7 @@ export async function getMediaCoverage(): Promise<CoverageItem[]> {
       readingMinutes: r.reading_minutes,
       href: r.external_url,
       youtubeId: r.kind === 'video' ? youtubeId(r.external_url) : null,
-      image: r.image_id
-        ? {
-            src: `${MEDIA_ORIGIN}/api/media/${r.image_id}`,
-            alt: r.image_alt ?? '',
-            width: r.image_width ?? undefined,
-            height: r.image_height ?? undefined,
-          }
-        : null,
+      image: r.image_id ? coverageImage(r, `${MEDIA_ORIGIN}/api/media/${r.image_id}`) : null,
       featured: r.featured === 1,
     }));
     lastGood = items;

@@ -17,6 +17,7 @@
 // Nothing moves or scales. Keyboard focus rings the photo, the card's
 // clearest edge, rather than the title text alone.
 import { type BlogPost, formatBlogDate } from '@/lib/blog';
+import { CARD_SIZES } from '@/lib/media-srcset';
 
 interface Props {
   post: BlogPost;
@@ -38,6 +39,8 @@ const imgSrc = image?.cardUrl ?? image?.url;
       <div class="bg-paper-deep group-has-[h3_a:focus-visible]:ring-moss mb-5 aspect-[3/2] overflow-hidden rounded-xl ring-offset-2 ring-offset-[var(--color-paper)] group-has-[h3_a:focus-visible]:ring-2">
         <img
           src={imgSrc}
+          srcset={image?.srcset}
+          sizes={image?.srcset ? CARD_SIZES : undefined}
           alt={image?.alt ?? ''}
           width="800"
           height="534"

@@ -14,6 +14,7 @@ import { useState } from 'react';
 import { HugeiconsIcon } from '@hugeicons/react';
 import { PlayIcon } from '@hugeicons/core-free-icons';
 import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
+import { CARD_SIZES } from '@/lib/media-srcset';
 import { cn } from '@/lib/utils';
 
 export interface MediaItem {
@@ -27,7 +28,7 @@ export interface MediaItem {
   meta: string | null;
   href: string;
   youtubeId: string | null;
-  image: { src: string; alt: string; width?: number; height?: number } | null;
+  image: { src: string; alt: string; width?: number; height?: number; srcset?: string } | null;
   featured: boolean;
 }
 
@@ -118,6 +119,8 @@ function LinkCard({ item }: { item: MediaItem }) {
         {item.image ? (
           <img
             src={item.image.src}
+            srcSet={item.image.srcset}
+            sizes={item.image.srcset ? CARD_SIZES : undefined}
             width={item.image.width}
             height={item.image.height}
             alt={item.image.alt}

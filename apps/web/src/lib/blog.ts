@@ -25,6 +25,8 @@ export interface BlogImage {
   height?: number;
   /** A smaller rendition for cards, when the source offers one. */
   cardUrl?: string;
+  /** Smaller renditions with their widths, as an `srcset`, when the source has them. */
+  srcset?: string;
 }
 
 export interface BlogHeading {

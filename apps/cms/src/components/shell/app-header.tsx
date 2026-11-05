@@ -42,8 +42,13 @@ export function AppHeader({ user }: { user: SessionUser }) {
         >
           {/* Sized in em so it stays in proportion with the label: a little taller
               than the capitals, with a stroke close to the letters' weight. The
-              drawing has empty space either side, which the margin takes back. */}
-          <ChevronLeftIcon aria-hidden strokeWidth={1.7} className="-mr-[0.25em] size-[1.5em]" />
+              drawing has empty space either side, which the margin takes back, and
+              it reads slightly low against the capitals, which the nudge corrects. */}
+          <ChevronLeftIcon
+            aria-hidden
+            strokeWidth={1.7}
+            className="-mr-[0.25em] size-[1.5em] -translate-y-[0.05em]"
+          />
           <span className="truncate">{back.label}</span>
         </Link>
       )}

@@ -22,6 +22,8 @@ export const listLocations = createServerFn({ method: 'GET' })
         intro: locations.intro,
         about: locations.about,
         address: locations.address,
+        latitude: locations.latitude,
+        longitude: locations.longitude,
         mapUrl: locations.mapUrl,
         hours: locations.hours,
         phone: locations.phone,
@@ -44,6 +46,11 @@ const webLink = z
   .trim()
   .refine((u) => u === '' || /^https?:\/\/\S+$/.test(u), 'Use a web link starting with https://');
 
+/** Where the map pin goes: both coordinates, or neither. */
+const pinSchema = z
+  .object({ latitude: z.number().min(-90).max(90), longitude: z.number().min(-180).max(180) })
+  .nullable();
+
 const locationSchema = z.object({
   id: z.string().optional(),
   name: z.string().trim().min(1).max(120),
@@ -57,6 +64,7 @@ const locationSchema = z.object({
   intro: z.string().trim().max(400),
   about: z.string().trim().max(10000),
   address: z.string().trim().max(200),
+  pin: pinSchema,
   mapUrl: webLink,
   hours: z.string().trim().max(400),
   phone: z.string().trim().max(40),
@@ -109,6 +117,8 @@ export const saveLocation = createServerFn({ method: 'POST' })
       intro: data.intro || null,
       about: data.about || null,
       address: data.address || null,
+      latitude: data.pin?.latitude ?? null,
+      longitude: data.pin?.longitude ?? null,
       mapUrl: data.mapUrl || null,
       hours: data.hours || null,
       phone: data.phone || null,

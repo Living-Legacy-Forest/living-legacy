@@ -1,7 +1,7 @@
 {
   "version": "6",
   "dialect": "sqlite",
-  "id": "6123726e-2cb4-4c0c-87e3-ae3518d59825",
+  "id": "1c9f36a9-82ed-4148-817b-4d19d741c002",
   "prevId": "e579439d-e44a-4740-8227-7ce85dee9e8b",
   "tables": {
     "account": {
@@ -795,6 +795,20 @@
         "address": {
           "name": "address",
           "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "latitude": {
+          "name": "latitude",
+          "type": "real",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "longitude": {
+          "name": "longitude",
+          "type": "real",
           "primaryKey": false,
           "notNull": false,
           "autoincrement": false

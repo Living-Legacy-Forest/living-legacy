@@ -3,6 +3,7 @@ import {
   index,
   integer,
   primaryKey,
+  real,
   sqliteTable,
   text,
   uniqueIndex,
@@ -191,6 +192,9 @@ export const locations = sqliteTable(
     /** The local introduction on its page, in Markdown. */
     about: text('about'),
     address: text('address'),
+    /** Where the map pin goes. */
+    latitude: real('latitude'),
+    longitude: real('longitude'),
     mapUrl: text('map_url'),
     /** Free text, one line per day or range. */
     hours: text('hours'),

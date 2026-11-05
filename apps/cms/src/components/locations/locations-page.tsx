@@ -36,6 +36,7 @@ import {
   PlusIcon,
   Trash2Icon,
 } from '@/components/icons';
+import { LocationMap, PinPicker, type Pin } from '@/components/locations/location-map';
 import { ImageField, useMediaItem } from '@/components/media/image-field';
 import {
   AlertDialog,
@@ -416,6 +417,11 @@ function PreviewPane({
   );
 }
 
+const pinOf = (l: { latitude: number | null; longitude: number | null }): Pin | null =>
+  l.latitude !== null && l.longitude !== null
+    ? { latitude: l.latitude, longitude: l.longitude }
+    : null;
+
 /** The details the directory and the location's page draw on. */
 function LocationCard({ item }: { item: LocationItem }) {
   const { item: image } = useMediaItem(item.heroMediaId);
@@ -428,15 +434,7 @@ function LocationCard({ item }: { item: LocationItem }) {
 
   return (
     <article>
-      <div className="bg-muted relative aspect-[3/2] overflow-hidden rounded-xl border">
-        {image ? (
-          <img src={image.url} alt={image.alt} className="size-full object-cover" />
-        ) : (
-          <div className="text-muted-foreground flex size-full items-center justify-center p-4 text-center text-xs">
-            No hero photo yet
-          </div>
-        )}
-      </div>
+      <LocationMap pin={pinOf(item)} photoUrl={image?.url} className="aspect-[3/2]" />
       <p className="text-muted-foreground mt-4 text-xs font-medium">
         {[australianStateLabels[item.state], item.region].filter(Boolean).join(' · ')}
       </p>
@@ -553,6 +551,7 @@ function LocationForm({
   const [intro, setIntro] = useState(item?.intro ?? '');
   const [about, setAbout] = useState(item?.about ?? '');
   const [address, setAddress] = useState(item?.address ?? '');
+  const [pin, setPin] = useState<Pin | null>(item ? pinOf(item) : null);
   const [mapUrl, setMapUrl] = useState(item?.mapUrl ?? '');
   const [hours, setHours] = useState(item?.hours ?? '');
   const [phone, setPhone] = useState(item?.phone ?? '');
@@ -561,6 +560,7 @@ function LocationForm({
   const [sortOrder, setSortOrder] = useState(String(item?.sortOrder ?? nextOrder));
   const [published, setPublished] = useState(item ? item.status === 'published' : true);
   const { run, pending } = useAction();
+  const heroUrl = useMediaItem(heroMediaId).item?.url;
 
   async function submit(e: React.FormEvent) {
     e.preventDefault();
@@ -580,6 +580,7 @@ function LocationForm({
             intro,
             about,
             address,
+            pin,
             mapUrl,
             hours,
             phone,
@@ -736,6 +737,11 @@ function LocationForm({
           value={address}
           onChange={(e) => setAddress(e.target.value)}
         />
+      </div>
+      <div className="space-y-1.5">
+        <Label htmlFor="loc-pin">Map pin</Label>
+        <PinPicker id="loc-pin" pin={pin} address={address} photoUrl={heroUrl} onChange={setPin} />
+        <Hint>Find it from the address, then drag the pin or click the map to fine-tune it.</Hint>
       </div>
       <div className="space-y-1.5">
         <Label htmlFor="loc-map">Map link</Label>

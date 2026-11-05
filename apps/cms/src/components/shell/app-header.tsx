@@ -38,7 +38,7 @@ export function AppHeader({ user }: { user: SessionUser }) {
       {back && (
         <Link
           to={back.to}
-          className="text-brand relative z-10 -ml-1 flex min-h-11 max-w-[30%] min-w-0 items-center pr-2 text-[0.9375rem] active:opacity-50 md:hidden"
+          className="text-brand relative z-10 -ml-1 flex min-h-11 max-w-[30%] min-w-0 items-center pr-2 text-sm active:opacity-50 md:hidden"
         >
           {/* Sized in em so it stays in proportion with the label: a little taller
               than the capitals, with a stroke close to the letters' weight. The
@@ -47,7 +47,7 @@ export function AppHeader({ user }: { user: SessionUser }) {
           <ChevronLeftIcon
             aria-hidden
             strokeWidth={1.7}
-            className="-mr-[0.25em] size-[1.5em] -translate-y-[0.05em]"
+            className="-mr-[0.22em] size-[1.4em] -translate-y-[0.05em]"
           />
           <span className="truncate">{back.label}</span>
         </Link>

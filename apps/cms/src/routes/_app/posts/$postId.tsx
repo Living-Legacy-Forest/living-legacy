@@ -1,6 +1,7 @@
 import { createFileRoute, useRouter } from '@tanstack/react-router';
-import { useState } from 'react';
-import { PostEditor, postAccessFor } from '@/components/posts/post-editor';
+import { useEffect, useRef, useState } from 'react';
+import { postAccessFor } from '@/components/posts/post-editor/post-access';
+import { PostEditor } from '@/components/posts/post-editor/post-editor';
 import { getPostEditorData } from '@/server/posts';
 
 export const Route = createFileRoute('/_app/posts/$postId')({
@@ -19,9 +20,17 @@ function EditPostPage() {
   const data = Route.useLoaderData();
   const { user } = Route.useRouteContext();
   const router = useRouter();
-  // Bumped after server-side changes (discard, unpublish) to rebuild the form
-  // from fresh loader data.
+  // Bumped after server-side changes (discard, unpublish, restore) to rebuild
+  // the form from fresh loader data. It waits for that data to render:
+  // `invalidate()` resolves a render before the new data reaches components,
+  // so bumping straight after it rebuilt the form from the old data.
   const [version, setVersion] = useState(0);
+  const reloading = useRef(false);
+  useEffect(() => {
+    if (!reloading.current) return;
+    reloading.current = false;
+    setVersion((v) => v + 1);
+  }, [data]);
 
   return (
     <PostEditor
@@ -29,8 +38,8 @@ function EditPostPage() {
       data={data}
       access={postAccessFor(user, data.post?.createdBy ?? null)}
       onReload={async () => {
+        reloading.current = true;
         await router.invalidate();
-        setVersion((v) => v + 1);
       }}
     />
   );

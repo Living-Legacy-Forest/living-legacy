@@ -1,0 +1,453 @@
+import { type PostInput, emptyPostInput, publishErrors, slugify } from '@ll/content';
+import { useBlocker, useNavigate, useRouter } from '@tanstack/react-router';
+import { useEffect, useRef, useState } from 'react';
+import { toast } from 'sonner';
+import { readableError } from '@/lib/errors';
+import { formatDateTime, formatRelative } from '@/lib/format';
+import { useTimeZone } from '@/lib/use-time-zone';
+import {
+  type PostEditorData,
+  createCategory,
+  discardChanges,
+  duplicatePost,
+  getRevision,
+  publishPost,
+  requestReview,
+  restorePosts,
+  savePost,
+  savePostSeo,
+  schedulePost,
+  trashPosts,
+  unpublishPost,
+  unschedulePost,
+} from '@/server/posts';
+import { clearPostPreviews } from '../use-post-preview';
+import { docxToBody } from './import-docx';
+import type { PostAccess } from './post-access';
+import type { Option } from './property-pickers';
+
+type Meta = {
+  id: string | null;
+  status: 'draft' | 'published';
+  hasDraft: boolean;
+  updatedAt: number | undefined;
+  publishedAt: number | null;
+  trashed: boolean;
+  /** When this draft is due to publish itself; null if not scheduled. */
+  scheduledAt: number | null;
+  /** When an author asked for review; publishing clears it. */
+  reviewRequestedAt: number | null;
+};
+
+export type PostEditorState = ReturnType<typeof usePostEditor>;
+
+/**
+ * Everything the post editor knows and can do: the form values, what the
+ * server last saved, and every action from Save to Move to trash. The
+ * components only render it.
+ */
+export function usePostEditor({
+  data,
+  access,
+  onReload,
+}: {
+  data: PostEditorData;
+  access: PostAccess;
+  onReload: () => Promise<void>;
+}) {
+  const router = useRouter();
+  const navigate = useNavigate();
+  const timeZone = useTimeZone();
+  const initial = data.post?.values ?? emptyPostInput;
+
+  const [values, setValues] = useState<PostInput>(initial);
+  const [saved, setSaved] = useState<PostInput>(initial);
+  const [meta, setMeta] = useState<Meta>({
+    id: data.post?.id ?? null,
+    status: data.post?.status ?? 'draft',
+    hasDraft: data.post?.hasDraft ?? false,
+    updatedAt: data.post?.updatedAt,
+    publishedAt: data.post?.publishedAt ?? null,
+    trashed: data.post?.trashed ?? false,
+    scheduledAt: data.post?.scheduledAt ?? null,
+    reviewRequestedAt: data.post?.reviewRequestedAt ?? null,
+  });
+  // The permalink follows the title until it is edited by hand or the post goes live.
+  const [slugTouched, setSlugTouched] = useState(
+    meta.status === 'published' || (data.post !== null && initial.slug !== slugify(initial.title))
+  );
+  // Bumped to remount the body editor when its content is replaced wholesale.
+  const [bodyKey, setBodyKey] = useState(0);
+  const [categories, setCategories] = useState<Option[]>(data.categories);
+  const [busy, setBusy] = useState<null | 'save' | 'publish' | 'other'>(null);
+  const [lastSavedAt, setLastSavedAt] = useState<number | null>(data.post?.updatedAt ?? null);
+  const [importingDocx, setImportingDocx] = useState(false);
+
+  const dirty = JSON.stringify(values) !== JSON.stringify(saved);
+  const dirtyRef = useRef(dirty);
+  dirtyRef.current = dirty;
+  const skipBlockRef = useRef(false);
+
+  const blocker = useBlocker({
+    shouldBlockFn: () => dirtyRef.current && !skipBlockRef.current,
+    enableBeforeUnload: () => dirtyRef.current,
+    withResolver: true,
+  });
+
+  const update = (patch: Partial<PostInput>) => setValues((v) => ({ ...v, ...patch }));
+  const setTitle = (title: string) =>
+    update(slugTouched ? { title } : { title, slug: slugify(title) });
+  const setSlug = (slug: string) => {
+    setSlugTouched(true);
+    update({ slug });
+  };
+
+  /** The next navigation skips the unsaved-changes prompt. */
+  const allowLeaving = () => {
+    skipBlockRef.current = true;
+  };
+
+  /** The server's copy is now the saved one. It may have changed the permalink to keep it unique. */
+  function markSaved(slug: string, updatedAt: number) {
+    clearPostPreviews();
+    const next = { ...values, slug };
+    setValues(next);
+    setSaved(next);
+    setLastSavedAt(updatedAt);
+  }
+
+  /** A new post moves to its own URL; an existing one reloads. */
+  async function refresh(id: string) {
+    if (meta.id) return router.invalidate();
+    allowLeaving();
+    await navigate({ to: '/posts/$postId', params: { postId: id }, replace: true });
+  }
+
+  /** Publishing needs a title, body and so on; says what is missing. */
+  function readyToPublish() {
+    const errors = publishErrors(values);
+    if (errors.length) toast.error(errors.join(' '));
+    return errors.length === 0;
+  }
+
+  /** Saves or publishes; resolves to the post ID, or null if it failed. */
+  async function persist(
+    kind: 'save' | 'publish',
+    { quiet = false }: { quiet?: boolean } = {}
+  ): Promise<string | null> {
+    if (kind === 'publish' && !readyToPublish()) return null;
+    setBusy(kind);
+    try {
+      const fn = kind === 'publish' ? publishPost : savePost;
+      const result = await fn({
+        data: { id: meta.id ?? undefined, values, expectedUpdatedAt: meta.updatedAt },
+      });
+      markSaved(result.slug, result.updatedAt);
+      setMeta((m) => ({
+        ...m,
+        id: result.id,
+        updatedAt: result.updatedAt,
+        status: kind === 'publish' ? 'published' : m.status,
+        hasDraft: kind === 'save' && m.status === 'published',
+        publishedAt: kind === 'publish' ? (m.publishedAt ?? result.updatedAt) : m.publishedAt,
+        scheduledAt: kind === 'publish' ? null : m.scheduledAt,
+        reviewRequestedAt: kind === 'publish' ? null : m.reviewRequestedAt,
+      }));
+      if (kind === 'publish') setSlugTouched(true);
+
+      if (!quiet) {
+        toast.success(
+          kind === 'publish'
+            ? meta.status === 'published'
+              ? 'Post updated.'
+              : meta.scheduledAt
+                ? 'Post published now. The schedule was cleared.'
+                : 'Post published.'
+            : meta.status === 'published'
+              ? 'Changes saved. They go live when you update the post.'
+              : 'Draft saved.'
+        );
+      }
+      await refresh(result.id);
+      return result.id;
+    } catch (error) {
+      toast.error(readableError(error));
+      return null;
+    } finally {
+      setBusy(null);
+    }
+  }
+
+  /** Saves the current values and schedules the post; true on success. */
+  async function schedule(at: number): Promise<boolean> {
+    if (!readyToPublish()) return false;
+    setBusy('publish');
+    try {
+      const result = await schedulePost({
+        data: {
+          id: meta.id ?? undefined,
+          values,
+          expectedUpdatedAt: meta.updatedAt,
+          scheduledAt: at,
+        },
+      });
+      markSaved(result.slug, result.updatedAt);
+      setMeta((m) => ({
+        ...m,
+        id: result.id,
+        updatedAt: result.updatedAt,
+        scheduledAt: result.scheduledAt,
+      }));
+      toast.success(`Scheduled for ${formatDateTime(result.scheduledAt, timeZone)}.`);
+      await refresh(result.id);
+      return true;
+    } catch (error) {
+      toast.error(readableError(error));
+      return false;
+    } finally {
+      setBusy(null);
+    }
+  }
+
+  async function unschedule() {
+    if (!meta.id) return;
+    try {
+      const result = await unschedulePost({ data: { id: meta.id } });
+      clearPostPreviews();
+      setMeta((m) => ({ ...m, scheduledAt: null, updatedAt: result.updatedAt }));
+      toast.success('Unscheduled. The post is a draft again.');
+      await router.invalidate();
+    } catch (error) {
+      toast.error(readableError(error));
+    }
+  }
+
+  /** Opens the preview in a new tab, saving unsaved changes first. */
+  async function preview() {
+    // Open synchronously so the browser treats it as a user action, not a popup.
+    const tab = window.open('', '_blank');
+    if (tab) tab.opener = null;
+    const canSave = access === 'full' || access === 'author';
+    const id = canSave && (dirty || !meta.id) ? await persist('save', { quiet: true }) : meta.id;
+    if (!id) {
+      tab?.close();
+      return;
+    }
+    if (tab) tab.location.href = `/preview/posts/${id}`;
+    else toast.error('Allow pop-ups for this site to open the preview.');
+  }
+
+  /** Runs a server action on the saved post, then reloads it (or does `after`). */
+  async function act(
+    action: (id: string) => Promise<unknown>,
+    success: string,
+    after?: () => Promise<void>
+  ) {
+    if (!meta.id) return;
+    setBusy('other');
+    try {
+      await action(meta.id);
+      clearPostPreviews();
+      toast.success(success);
+      await (after ? after() : onReload());
+    } catch (error) {
+      toast.error(readableError(error));
+    } finally {
+      setBusy(null);
+    }
+  }
+
+  const discard = () => act((id) => discardChanges({ data: { id } }), 'Changes discarded.');
+  const unpublish = () =>
+    act((id) => unpublishPost({ data: { id } }), 'Post unpublished. It is a draft again.');
+  const restore = () =>
+    act((id) => restorePosts({ data: { ids: [id] } }), 'Post restored as a draft.');
+  const trash = () =>
+    act(
+      (id) => trashPosts({ data: { ids: [id] } }),
+      'Post moved to the trash.',
+      async () => {
+        allowLeaving();
+        await navigate({ to: '/posts' });
+      }
+    );
+
+  /** Copies the post into a new draft and opens it. */
+  async function duplicate() {
+    if (!meta.id) return;
+    setBusy('other');
+    try {
+      const result = await duplicatePost({ data: { id: meta.id } });
+      toast.success('Post duplicated.');
+      allowLeaving();
+      await navigate({ to: '/posts/$postId', params: { postId: result.id } });
+    } catch (error) {
+      toast.error(readableError(error));
+    } finally {
+      setBusy(null);
+    }
+  }
+
+  /** Saves if needed, then hands the post to a reviewer. */
+  async function submitForReview(reviewerId: string | null): Promise<boolean> {
+    const id = dirty || !meta.id ? await persist('save', { quiet: true }) : meta.id;
+    if (!id) return false;
+    setBusy('other');
+    try {
+      const result = await requestReview({ data: { id, reviewerId } });
+      setMeta((m) => ({ ...m, ...result }));
+      toast.success(
+        reviewerId ? 'Sent for review.' : 'Sent for review. Anyone who can publish was notified.'
+      );
+      await router.invalidate();
+      return true;
+    } catch (error) {
+      toast.error(readableError(error));
+      return false;
+    } finally {
+      setBusy(null);
+    }
+  }
+
+  /** Saves only the search listing, for people with SEO access. */
+  async function saveSeo() {
+    if (!meta.id) return;
+    setBusy('save');
+    try {
+      const { seoTitle, seoDescription, noindex, ogMediaId } = values;
+      const result = await savePostSeo({
+        data: {
+          id: meta.id,
+          seoTitle,
+          seoDescription,
+          noindex,
+          ogMediaId,
+          expectedUpdatedAt: meta.updatedAt,
+        },
+      });
+      setSaved((s) => ({ ...s, seoTitle, seoDescription, noindex, ogMediaId }));
+      setMeta((m) => ({ ...m, updatedAt: result.updatedAt }));
+      setLastSavedAt(result.updatedAt);
+      toast.success(
+        meta.status === 'published'
+          ? 'Search listing updated on the live post.'
+          : 'Search listing saved.'
+      );
+      await router.invalidate();
+    } catch (error) {
+      toast.error(readableError(error));
+    } finally {
+      setBusy(null);
+    }
+  }
+
+  async function loadRevision(id: string) {
+    try {
+      const revision = await getRevision({ data: { id } });
+      setValues(revision);
+      setSlugTouched(true);
+      setBodyKey((k) => k + 1);
+      toast.success(
+        meta.status === 'published'
+          ? 'Revision loaded. Update the post to make it live.'
+          : 'Revision loaded. Save to keep it.'
+      );
+    } catch (error) {
+      toast.error(readableError(error));
+    }
+  }
+
+  /** Replaces the body with a Word document's content, after asking. */
+  async function importDocx(file: File) {
+    if (values.body && !window.confirm(`Replace the current content with ${file.name}?`)) {
+      return;
+    }
+    setImportingDocx(true);
+    try {
+      const { body, failedImages } = await docxToBody(file);
+      update({ body });
+      setBodyKey((k) => k + 1);
+      toast.success(
+        failedImages > 0
+          ? `Imported ${file.name}. ${failedImages} image${failedImages === 1 ? '' : 's'} could not be imported; add ${failedImages === 1 ? 'it' : 'them'} manually.`
+          : `Imported ${file.name}.`
+      );
+    } catch {
+      toast.error('Could not read that file. Make sure it is a .docx document.');
+    } finally {
+      setImportingDocx(false);
+    }
+  }
+
+  async function addCategory(name: string) {
+    try {
+      const category = await createCategory({ data: { name } });
+      setCategories((list) =>
+        list.some((c) => c.id === category.id)
+          ? list
+          : [...list, category].sort((a, b) => a.name.localeCompare(b.name))
+      );
+      setValues((v) => ({ ...v, categoryIds: [...new Set([...v.categoryIds, category.id])] }));
+    } catch (error) {
+      toast.error(readableError(error));
+    }
+  }
+
+  // Cmd/Ctrl+S saves.
+  const persistRef = useRef(persist);
+  persistRef.current = persist;
+  useEffect(() => {
+    const onKey = (event: KeyboardEvent) => {
+      if ((event.metaKey || event.ctrlKey) && event.key.toLowerCase() === 's') {
+        event.preventDefault();
+        if (dirtyRef.current) void persistRef.current('save');
+      }
+    };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, []);
+
+  return {
+    access,
+    reviewers: data.reviewers,
+    authors: data.authors,
+    tags: data.tags,
+    revisions: data.revisions,
+    values,
+    saved,
+    meta,
+    categories,
+    bodyKey,
+    dirty,
+    busy,
+    working: busy !== null,
+    isLive: meta.status === 'published',
+    /** SEO and read-only access can't change the content. */
+    contentLocked: access === 'seo' || access === 'readonly',
+    importingDocx,
+    saveState: dirty
+      ? 'Unsaved changes'
+      : lastSavedAt
+        ? `Saved ${formatRelative(lastSavedAt)}`
+        : 'Not saved yet',
+    blocker,
+    update,
+    setTitle,
+    setSlug,
+    save: () => persist('save'),
+    publish: () => persist('publish'),
+    schedule,
+    unschedule,
+    preview,
+    discard,
+    unpublish,
+    restore,
+    trash,
+    duplicate,
+    submitForReview,
+    saveSeo,
+    loadRevision,
+    importDocx,
+    addCategory,
+  };
+}

@@ -99,7 +99,7 @@ export const listPosts = createServerFn({ method: 'GET' })
         : undefined
     );
 
-    const [tabCounts, [{ total } = { total: 0 }], rows, categories, reviewers] = await Promise.all([
+    const [tabCounts, [{ total } = { total: 0 }], rows, categories, reviewers] = await db.batch([
       db
         .select({
           all: sql<number>`coalesce(sum(${posts.deletedAt} is null), 0)`,
@@ -193,7 +193,7 @@ export const getPostEditorData = createServerFn({ method: 'GET' })
   .handler(async ({ data }) => {
     const db = getDb();
 
-    const [categories, tags, authors, reviewers] = await Promise.all([
+    const [categories, tags, authors, reviewers] = await db.batch([
       db
         .select({ id: terms.id, name: terms.name })
         .from(terms)

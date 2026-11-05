@@ -36,7 +36,9 @@ export function formatBytes(bytes: number) {
   return `${new Intl.NumberFormat(LOCALE, { maximumFractionDigits: 1 }).format(value)} ${units[unit]}`;
 }
 
-const relative = new Intl.RelativeTimeFormat(LOCALE, { numeric: 'auto' });
+// Made on first use: building it loads locale data, which at module load would
+// slow every Worker start, including ones that never format a date.
+let relative: Intl.RelativeTimeFormat | undefined;
 const steps: [Intl.RelativeTimeFormatUnit, number][] = [
   ['year', 365 * 86_400_000],
   ['month', 30 * 86_400_000],
@@ -49,7 +51,10 @@ const steps: [Intl.RelativeTimeFormatUnit, number][] = [
 export function formatRelative(timestamp: number, now = Date.now()) {
   const diff = timestamp - now;
   for (const [unit, ms] of steps) {
-    if (Math.abs(diff) >= ms) return relative.format(Math.round(diff / ms), unit);
+    if (Math.abs(diff) >= ms) {
+      relative ??= new Intl.RelativeTimeFormat(LOCALE, { numeric: 'auto' });
+      return relative.format(Math.round(diff / ms), unit);
+    }
   }
   return 'just now';
 }

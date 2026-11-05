@@ -1,0 +1,32 @@
+---
+/**
+ * The page's context, pushed onto the dataLayer before Tag Manager loads so
+ * every tag on the page can read `page_type` (and `location_slug` on a
+ * location's pages). Also listens for CTA clicks: any element with
+ * `data-cta="name"` sends a `cta_click` with that name, and phone and email
+ * links send one on their own, as `call` and `email`.
+ */
+import { pageContextFor } from '@/lib/analytics';
+
+const context = pageContextFor(Astro.url.pathname);
+---
+
+<script is:inline define:vars={{ context }}>
+  window.dataLayer = window.dataLayer || [];
+  window.dataLayer.push(context);
+</script>
+
+<script>
+  import { track } from '@/lib/analytics';
+
+  document.addEventListener('click', (e) => {
+    const target = e.target instanceof Element ? e.target : null;
+    const el = target?.closest<HTMLElement>('[data-cta], a[href^="tel:"], a[href^="mailto:"]');
+    if (!el) return;
+    const href = el.getAttribute('href') ?? '';
+    const name =
+      el.dataset.cta ??
+      (href.startsWith('tel:') ? 'call' : href.startsWith('mailto:') ? 'email' : '');
+    if (name) void track('cta_click', { cta_name: name });
+  });
+</script>

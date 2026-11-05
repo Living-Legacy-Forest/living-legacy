@@ -16,9 +16,12 @@ const firstId = ids[0];
 <script is:inline async src={`https://www.googletagmanager.com/gtag/js?id=${firstId}`}></script>
 <script define:vars={{ ids }}>
   window.dataLayer = window.dataLayer || [];
+  // define:vars wraps this script in a function, so gtag goes on window for
+  // the site's own events (src/lib/analytics.ts) to reach it.
   function gtag() {
     dataLayer.push(arguments);
   }
+  window.gtag = gtag;
   gtag('js', new Date());
   ids.forEach(function (id) {
     gtag('config', id);

@@ -9,6 +9,7 @@ import {
   ImageIcon,
   LayoutDashboard,
   MegaphoneIcon,
+  MapPinIcon,
   NewspaperIcon,
   type LucideIcon,
   Quote,
@@ -32,6 +33,7 @@ export type NavItem = {
     | '/announcements'
     | '/faqs'
     | '/media'
+    | '/locations'
     | '/media-coverage'
     | '/redirects'
     | '/settings'
@@ -68,6 +70,7 @@ export const navGroups: NavGroup[] = [
       { title: 'FAQs', icon: CircleHelp, to: '/faqs' },
       { title: 'Testimonials', icon: Quote, to: '/testimonials' },
       { title: 'Team', icon: Users, to: '/team' },
+      { title: 'Locations', icon: MapPinIcon, to: '/locations' },
       { title: 'Media coverage', icon: NewspaperIcon, to: '/media-coverage' },
       { title: 'Announcements', icon: MegaphoneIcon, to: '/announcements' },
     ],

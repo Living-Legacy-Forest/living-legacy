@@ -167,6 +167,47 @@ export const mediaCoverage = sqliteTable(
   ]
 );
 
+// The national location directory and each location's page.
+export const locations = sqliteTable(
+  'locations',
+  {
+    id: id(),
+    /** The public name, e.g. Living Legacy Mornington. */
+    name: text('name').notNull(),
+    /** The page lives at /locations/{slug}/. */
+    slug: text('slug').notNull(),
+    /** A filter in the directory, never a page of its own. */
+    state: text('state', { enum: ['QLD', 'NSW', 'VIC', 'WA', 'SA', 'TAS', 'ACT', 'NT'] }).notNull(),
+    /** e.g. Mornington Peninsula. */
+    region: text('region'),
+    stage: text('stage', { enum: ['live', 'external', 'coming_soon'] })
+      .notNull()
+      .default('coming_soon'),
+    /** The location's own website while it has not moved here. */
+    externalUrl: text('external_url'),
+    heroMediaId: text('hero_media_id').references(() => media.id, { onDelete: 'set null' }),
+    /** A sentence or two for the directory card. */
+    intro: text('intro'),
+    /** The local introduction on its page, in Markdown. */
+    about: text('about'),
+    address: text('address'),
+    mapUrl: text('map_url'),
+    /** Free text, one line per day or range. */
+    hours: text('hours'),
+    phone: text('phone'),
+    email: text('email'),
+    /** The HubSpot form its enquiries and tour bookings go to. */
+    hubspotFormId: text('hubspot_form_id'),
+    sortOrder: integer('sort_order').notNull().default(0),
+    ...lifecycle(),
+  },
+  (t) => [
+    uniqueIndex('locations_slug_live')
+      .on(t.slug)
+      .where(sql`${t.deletedAt} IS NULL`),
+  ]
+);
+
 // Site-wide notice bars. Several can be prepared ahead; the website shows the
 // one whose window covers now (see currentAnnouncement in @ll/content).
 export const announcements = sqliteTable(

@@ -16,6 +16,7 @@ import { Route as AppActivityIndexRouteImport } from './routes/_app/activity/ind
 import { Route as AppAnnouncementsIndexRouteImport } from './routes/_app/announcements/index'
 import { Route as AppApiKeysIndexRouteImport } from './routes/_app/api-keys/index'
 import { Route as AppFaqsIndexRouteImport } from './routes/_app/faqs/index'
+import { Route as AppLocationsIndexRouteImport } from './routes/_app/locations/index'
 import { Route as AppMediaCoverageIndexRouteImport } from './routes/_app/media-coverage/index'
 import { Route as AppMediaIndexRouteImport } from './routes/_app/media/index'
 import { Route as AppPostsIndexRouteImport } from './routes/_app/posts/index'
@@ -70,6 +71,11 @@ const AppApiKeysIndexRoute = AppApiKeysIndexRouteImport.update({
 const AppFaqsIndexRoute = AppFaqsIndexRouteImport.update({
   id: '/faqs/',
   path: '/faqs/',
+  getParentRoute: () => AppRoute,
+} as any)
+const AppLocationsIndexRoute = AppLocationsIndexRouteImport.update({
+  id: '/locations/',
+  path: '/locations/',
   getParentRoute: () => AppRoute,
 } as any)
 const AppMediaCoverageIndexRoute = AppMediaCoverageIndexRouteImport.update({
@@ -191,6 +197,7 @@ export interface FileRoutesByFullPath {
   '/announcements/': typeof AppAnnouncementsIndexRoute
   '/api-keys/': typeof AppApiKeysIndexRoute
   '/faqs/': typeof AppFaqsIndexRoute
+  '/locations/': typeof AppLocationsIndexRoute
   '/media-coverage/': typeof AppMediaCoverageIndexRoute
   '/media/': typeof AppMediaIndexRoute
   '/posts/': typeof AppPostsIndexRoute
@@ -220,6 +227,7 @@ export interface FileRoutesByTo {
   '/announcements': typeof AppAnnouncementsIndexRoute
   '/api-keys': typeof AppApiKeysIndexRoute
   '/faqs': typeof AppFaqsIndexRoute
+  '/locations': typeof AppLocationsIndexRoute
   '/media-coverage': typeof AppMediaCoverageIndexRoute
   '/media': typeof AppMediaIndexRoute
   '/posts': typeof AppPostsIndexRoute
@@ -251,6 +259,7 @@ export interface FileRoutesById {
   '/_app/announcements/': typeof AppAnnouncementsIndexRoute
   '/_app/api-keys/': typeof AppApiKeysIndexRoute
   '/_app/faqs/': typeof AppFaqsIndexRoute
+  '/_app/locations/': typeof AppLocationsIndexRoute
   '/_app/media-coverage/': typeof AppMediaCoverageIndexRoute
   '/_app/media/': typeof AppMediaIndexRoute
   '/_app/posts/': typeof AppPostsIndexRoute
@@ -282,6 +291,7 @@ export interface FileRouteTypes {
     | '/announcements/'
     | '/api-keys/'
     | '/faqs/'
+    | '/locations/'
     | '/media-coverage/'
     | '/media/'
     | '/posts/'
@@ -311,6 +321,7 @@ export interface FileRouteTypes {
     | '/announcements'
     | '/api-keys'
     | '/faqs'
+    | '/locations'
     | '/media-coverage'
     | '/media'
     | '/posts'
@@ -341,6 +352,7 @@ export interface FileRouteTypes {
     | '/_app/announcements/'
     | '/_app/api-keys/'
     | '/_app/faqs/'
+    | '/_app/locations/'
     | '/_app/media-coverage/'
     | '/_app/media/'
     | '/_app/posts/'
@@ -420,6 +432,13 @@ declare module '@tanstack/react-router' {
       path: '/faqs'
       fullPath: '/faqs/'
       preLoaderRoute: typeof AppFaqsIndexRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/_app/locations/': {
+      id: '/_app/locations/'
+      path: '/locations'
+      fullPath: '/locations/'
+      preLoaderRoute: typeof AppLocationsIndexRouteImport
       parentRoute: typeof AppRoute
     }
     '/_app/media-coverage/': {
@@ -580,6 +599,7 @@ interface AppRouteChildren {
   AppAnnouncementsIndexRoute: typeof AppAnnouncementsIndexRoute
   AppApiKeysIndexRoute: typeof AppApiKeysIndexRoute
   AppFaqsIndexRoute: typeof AppFaqsIndexRoute
+  AppLocationsIndexRoute: typeof AppLocationsIndexRoute
   AppMediaCoverageIndexRoute: typeof AppMediaCoverageIndexRoute
   AppMediaIndexRoute: typeof AppMediaIndexRoute
   AppPostsIndexRoute: typeof AppPostsIndexRoute
@@ -601,6 +621,7 @@ const AppRouteChildren: AppRouteChildren = {
   AppAnnouncementsIndexRoute: AppAnnouncementsIndexRoute,
   AppApiKeysIndexRoute: AppApiKeysIndexRoute,
   AppFaqsIndexRoute: AppFaqsIndexRoute,
+  AppLocationsIndexRoute: AppLocationsIndexRoute,
   AppMediaCoverageIndexRoute: AppMediaCoverageIndexRoute,
   AppMediaIndexRoute: AppMediaIndexRoute,
   AppPostsIndexRoute: AppPostsIndexRoute,

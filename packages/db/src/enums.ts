@@ -34,6 +34,9 @@ export type ActivityAction = (typeof activityActions)[number];
 export const apiKeyScopes = ['read', 'write'] as const;
 export type ApiKeyScope = (typeof apiKeyScopes)[number];
 
+/** The longest side an uploaded image may have; the CMS scales larger ones down first. */
+export const maxImageSide = 2560;
+
 /** Widths of the smaller copies made of each image at upload, for `?w=`. */
 export const mediaVariantWidths = [640, 1280] as const;
 export type MediaVariant = { width: number; key: string; mime: string };

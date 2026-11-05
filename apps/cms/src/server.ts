@@ -1,12 +1,16 @@
 import handler from '@tanstack/react-start/server-entry';
 import { env } from 'cloudflare:workers';
 import { mediaIdFromPath, serveMedia } from './server/media-delivery';
+import { sweepOrphanedMedia } from './server/media-sweep';
 import { publishDuePosts } from './server/scheduler';
+
+// Must match the second trigger in wrangler.jsonc.
+const MEDIA_SWEEP_CRON = '0 17 * * *';
 
 const OLD_HOST = 'living-legacy-cms.living-legacy.workers.dev';
 
-// Custom Worker entry: TanStack Start serves requests; the cron trigger in
-// wrangler.jsonc publishes scheduled posts.
+// Custom Worker entry: TanStack Start serves requests; the cron triggers in
+// wrangler.jsonc publish scheduled posts and clear out unused stored files.
 export default {
   // The app reads bindings via `cloudflare:workers`, so it only gets the request.
   fetch(request, _env, ctx) {
@@ -24,6 +28,11 @@ export default {
     return handler.fetch(request);
   },
   async scheduled(controller, env, ctx) {
-    ctx.waitUntil(publishDuePosts(env.DB, new Date(controller.scheduledTime)));
+    const now = new Date(controller.scheduledTime);
+    if (controller.cron === MEDIA_SWEEP_CRON) {
+      ctx.waitUntil(sweepOrphanedMedia(env.DB, env.MEDIA, now));
+      return;
+    }
+    ctx.waitUntil(publishDuePosts(env.DB, now));
   },
 } satisfies ExportedHandler<Cloudflare.Env>;

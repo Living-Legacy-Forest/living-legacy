@@ -643,7 +643,7 @@ function LocationForm({
             setName(e.target.value);
             if (!slugTouched) setSlug(slugify(e.target.value));
           }}
-          placeholder="Living Legacy Logan"
+          placeholder="The location’s public name"
         />
         <Hint>The public name, as it appears on signage.</Hint>
       </div>
@@ -658,10 +658,12 @@ function LocationForm({
             setSlugTouched(true);
           }}
           onBlur={() => setSlug(slugify(slug || name))}
-          placeholder="logan"
+          placeholder="made-from-the-name"
           className="font-mono text-[13px]"
         />
-        <Hint>Its page lives at /locations/{slug || 'slug'}/. Keep it short, e.g. logan.</Hint>
+        <Hint>
+          Its page lives at /locations/{slug || 'slug'}/. Keep it short, e.g. the town name.
+        </Hint>
       </div>
       <div className="grid grid-cols-2 gap-3">
         <div className="space-y-1.5">
@@ -690,7 +692,7 @@ function LocationForm({
             maxLength={80}
             value={region}
             onChange={(e) => setRegion(e.target.value)}
-            placeholder="Optional"
+            placeholder="Optional, e.g. a nearby town"
           />
         </div>
       </div>
@@ -745,6 +747,7 @@ function LocationForm({
           maxLength={400}
           value={intro}
           onChange={(e) => setIntro(e.target.value)}
+          placeholder="What makes this place special, in a sentence or two"
         />
         <Hint>A sentence or two for its card in the directory.</Hint>
       </div>
@@ -756,6 +759,7 @@ function LocationForm({
           maxLength={10000}
           value={about}
           onChange={(e) => setAbout(e.target.value)}
+          placeholder="Tell visitors about this place and what to expect when they visit"
         />
         <Hint>
           The local introduction on its page: the landscape, trees and what a visit is like. Leave a
@@ -771,6 +775,7 @@ function LocationForm({
           maxLength={200}
           value={address}
           onChange={(e) => setAddress(e.target.value)}
+          placeholder="Street, suburb, state and postcode"
         />
       </div>
       <div className="space-y-1.5">
@@ -785,7 +790,7 @@ function LocationForm({
           type="url"
           value={mapUrl}
           onChange={(e) => setMapUrl(e.target.value)}
-          placeholder="https://maps.google.com/…"
+          placeholder="https://"
         />
         <Hint>The Share link from Google Maps.</Hint>
       </div>
@@ -810,6 +815,7 @@ function LocationForm({
             maxLength={40}
             value={phone}
             onChange={(e) => setPhone(e.target.value)}
+            placeholder="Phone number"
           />
         </div>
         <div className="space-y-1.5">
@@ -820,6 +826,7 @@ function LocationForm({
             maxLength={120}
             value={email}
             onChange={(e) => setEmail(e.target.value)}
+            placeholder="name@example.com"
           />
         </div>
       </div>
@@ -832,12 +839,12 @@ function LocationForm({
           maxLength={36}
           value={hubspotFormId}
           onChange={(e) => setHubspotFormId(e.target.value)}
-          placeholder="1a2b3c4d-5e6f-…"
+          placeholder="Optional"
           className="font-mono text-[13px]"
         />
         <Hint>
-          Tour bookings and enquiries from its page go to this form, so they reach this location’s
-          team. Blank uses the general enquiry form.
+          Found in HubSpot under the form’s embed code. Tour bookings and enquiries from its page go
+          to this form, so they reach this location’s team. Blank uses the general enquiry form.
         </Hint>
       </div>
 

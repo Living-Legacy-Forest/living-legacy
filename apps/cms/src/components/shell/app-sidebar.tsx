@@ -22,7 +22,7 @@ export function AppSidebar({ user }: { user: SessionUser }) {
   return (
     <Sidebar collapsible="icon" variant="inset">
       <SidebarHeader className="pb-1">
-        <SidebarMenu>
+        <SidebarMenu className="gap-1.5">
           <SidebarMenuItem>
             <SidebarMenuButton
               tooltip="Living Legacy"

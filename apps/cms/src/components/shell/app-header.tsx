@@ -40,9 +40,10 @@ export function AppHeader({ user }: { user: SessionUser }) {
           to={back.to}
           className="text-brand relative z-10 -ml-1 flex min-h-11 max-w-[30%] min-w-0 items-center pr-2 text-[0.9375rem] active:opacity-50 md:hidden"
         >
-          {/* Small and quiet, so it stays out of the large title's way. The
+          {/* Sized in em so it stays in proportion with the label: a little taller
+              than the capitals, with a stroke close to the letters' weight. The
               drawing has empty space either side, which the margin takes back. */}
-          <ChevronLeftIcon aria-hidden strokeWidth={2} className="-mr-0.5 size-5" />
+          <ChevronLeftIcon aria-hidden strokeWidth={1.7} className="-mr-[0.25em] size-[1.5em]" />
           <span className="truncate">{back.label}</span>
         </Link>
       )}

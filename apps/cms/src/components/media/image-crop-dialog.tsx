@@ -129,7 +129,11 @@ function CropBody({
         </DialogDescription>
       </DialogHeader>
 
-      <div className="bg-muted relative h-[min(60vh,26rem)] overflow-hidden rounded-lg">
+      {/* Dragging the crop must not drag the phone sheet closed. */}
+      <div
+        data-base-ui-swipe-ignore
+        className="bg-muted relative h-[min(60vh,26rem)] overflow-hidden rounded-lg"
+      >
         {url && (
           <Cropper
             image={url}

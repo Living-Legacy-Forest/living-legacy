@@ -286,7 +286,7 @@ export function MediaPicker({
   return (
     <>
       <Dialog open={open} onOpenChange={onOpenChange}>
-        <DialogContent className="flex max-h-[85vh] flex-col sm:max-w-3xl">
+        <DialogContent className="flex flex-col sm:max-w-3xl md:max-h-[85vh]">
           <DialogHeader>
             <DialogTitle>Choose an image</DialogTitle>
             <DialogDescription>

@@ -5,9 +5,25 @@ import { Dialog as DialogPrimitive } from '@base-ui/react/dialog';
 import { cn } from '@/lib/utils';
 
 import { Button } from '@/components/ui/button';
+import {
+  Drawer,
+  DrawerBody,
+  DrawerContent,
+  type DrawerContentProps,
+  type DrawerProps,
+  sheetFooterClass,
+  useInSheet,
+} from '@/components/ui/drawer';
 import { XIcon } from '@/components/icons';
+import { useIsMobile } from '@/hooks/use-mobile';
 
-function Dialog({ ...props }: DialogPrimitive.Root.Props) {
+/** A centred dialog, or a bottom sheet on phones. Both share the Dialog parts. */
+function Dialog({
+  ...props
+}: Omit<DialogPrimitive.Root.Props, 'children' | 'handle'> & { children?: React.ReactNode }) {
+  const isPhone = useIsMobile();
+  // Drawer is a Dialog with swipe gestures; its props only add to the Dialog's.
+  if (isPhone) return <Drawer {...(props as DrawerProps)} />;
   return <DialogPrimitive.Root data-slot="dialog" {...props} />;
 }
 
@@ -44,6 +60,31 @@ function DialogContent({
 }: DialogPrimitive.Popup.Props & {
   showCloseButton?: boolean;
 }) {
+  const inSheet = useInSheet();
+  if (inSheet) {
+    return (
+      <DrawerContent {...(props as DrawerContentProps)}>
+        <DrawerBody data-slot="dialog-content" className={cn('grid gap-4', className)}>
+          {children}
+        </DrawerBody>
+        {showCloseButton && (
+          <DialogPrimitive.Close
+            data-slot="dialog-close"
+            render={
+              <Button
+                variant="secondary"
+                className="text-muted-foreground absolute top-3 right-3 z-20 rounded-full"
+                size="icon-sm"
+              />
+            }
+          >
+            <XIcon />
+            <span className="sr-only">Close</span>
+          </DialogPrimitive.Close>
+        )}
+      </DrawerContent>
+    );
+  }
   return (
     <DialogPortal>
       <DialogOverlay />
@@ -71,8 +112,14 @@ function DialogContent({
 }
 
 function DialogHeader({ className, ...props }: React.ComponentProps<'div'>) {
+  const inSheet = useInSheet();
   return (
-    <div data-slot="dialog-header" className={cn('flex flex-col gap-2', className)} {...props} />
+    <div
+      data-slot="dialog-header"
+      // In a sheet the close button sits over the header's top right.
+      className={cn('flex flex-col gap-2', inSheet && 'pr-9', className)}
+      {...props}
+    />
   );
 }
 
@@ -84,11 +131,13 @@ function DialogFooter({
 }: React.ComponentProps<'div'> & {
   showCloseButton?: boolean;
 }) {
+  const inSheet = useInSheet();
   return (
     <div
       data-slot="dialog-footer"
       className={cn(
         'bg-muted/50 -mx-4 -mb-4 flex flex-col-reverse gap-2 rounded-b-xl border-t p-4 sm:flex-row sm:justify-end',
+        inSheet && sheetFooterClass,
         className
       )}
       {...props}

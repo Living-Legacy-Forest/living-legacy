@@ -273,7 +273,8 @@ export function PinPicker({
 
   return (
     <div className="space-y-2">
-      <div id={id} className="h-56 overflow-hidden rounded-lg border">
+      {/* Panning the map must not drag the phone sheet closed. */}
+      <div id={id} data-base-ui-swipe-ignore className="h-56 overflow-hidden rounded-lg border">
         <MapView theme={theme} center={start.center} zoom={start.zoom}>
           <FollowPin pin={pin} />
           <FoldedAttribution />

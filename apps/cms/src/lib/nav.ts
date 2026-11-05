@@ -104,7 +104,7 @@ export const phoneTabs: (NavItem & { to: NonNullable<NavItem['to']>; icon: Lucid
   { title: 'Dashboard', icon: LayoutDashboard, to: '/' },
   { title: 'Posts', icon: FileText, to: '/posts' },
   { title: 'Media', icon: ImageIcon, to: '/media', permission: 'media:write' },
-  { title: 'FAQs', icon: CircleHelp, to: '/faqs' },
+  { title: 'Locations', icon: MapPinIcon, to: '/locations' },
 ];
 
 /** The post editor, which has the whole screen on phones (no tab bar). */

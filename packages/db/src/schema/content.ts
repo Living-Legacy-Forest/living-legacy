@@ -3,6 +3,7 @@ import {
   index,
   integer,
   primaryKey,
+  real,
   sqliteTable,
   text,
   uniqueIndex,
@@ -162,6 +163,50 @@ export const mediaCoverage = sqliteTable(
   },
   (t) => [
     uniqueIndex('media_coverage_slug_live')
+      .on(t.slug)
+      .where(sql`${t.deletedAt} IS NULL`),
+  ]
+);
+
+// The national location directory and each location's page.
+export const locations = sqliteTable(
+  'locations',
+  {
+    id: id(),
+    /** The public name, e.g. Living Legacy Mornington. */
+    name: text('name').notNull(),
+    /** The page lives at /locations/{slug}/. */
+    slug: text('slug').notNull(),
+    /** A filter in the directory, never a page of its own. */
+    state: text('state', { enum: ['QLD', 'NSW', 'VIC', 'WA', 'SA', 'TAS', 'ACT', 'NT'] }).notNull(),
+    /** e.g. Mornington Peninsula. */
+    region: text('region'),
+    stage: text('stage', { enum: ['live', 'external', 'coming_soon'] })
+      .notNull()
+      .default('coming_soon'),
+    /** The location's own website while it has not moved here. */
+    externalUrl: text('external_url'),
+    heroMediaId: text('hero_media_id').references(() => media.id, { onDelete: 'set null' }),
+    /** A sentence or two for the directory card. */
+    intro: text('intro'),
+    /** The local introduction on its page, in Markdown. */
+    about: text('about'),
+    address: text('address'),
+    /** Where the map pin goes. */
+    latitude: real('latitude'),
+    longitude: real('longitude'),
+    mapUrl: text('map_url'),
+    /** Free text, one line per day or range. */
+    hours: text('hours'),
+    phone: text('phone'),
+    email: text('email'),
+    /** The HubSpot form its enquiries and tour bookings go to. */
+    hubspotFormId: text('hubspot_form_id'),
+    sortOrder: integer('sort_order').notNull().default(0),
+    ...lifecycle(),
+  },
+  (t) => [
+    uniqueIndex('locations_slug_live')
       .on(t.slug)
       .where(sql`${t.deletedAt} IS NULL`),
   ]

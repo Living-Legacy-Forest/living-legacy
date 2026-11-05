@@ -32,6 +32,7 @@ const splitSections = [
   'posts',
   'team',
   'testimonials',
+  'locations',
   'media-coverage',
   'faqs',
   'redirects',

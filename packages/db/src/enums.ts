@@ -7,6 +7,7 @@ export const entityTypes = [
   'testimonial',
   'team_member',
   'media_coverage',
+  'location',
   'settings',
 ] as const;
 export type EntityType = (typeof entityTypes)[number];

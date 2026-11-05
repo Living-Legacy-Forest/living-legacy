@@ -6,7 +6,6 @@ import { useIsMobile } from '@/hooks/use-mobile';
 import { findNavItem, isEditorPath } from '@/lib/nav';
 import type { SessionUser } from '@/lib/session';
 import { AppBreadcrumbs } from './app-breadcrumbs';
-import { CommandMenu } from './command-menu';
 import { CustomSidebarTrigger } from './custom-sidebar-trigger';
 import { NavUser } from './nav-user';
 import { Notifications } from './notifications';
@@ -56,9 +55,6 @@ export function AppHeader({ user }: { user: SessionUser }) {
       </div>
 
       <div className="relative z-10 ml-auto flex items-center gap-1.5 max-md:gap-0">
-        <div className="hidden md:block">
-          <CommandMenu user={user} />
-        </div>
         <Notifications user={user} />
         <Separator
           className="mx-1.5 h-4 data-[orientation=vertical]:self-center max-md:hidden"

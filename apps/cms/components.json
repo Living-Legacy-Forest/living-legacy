@@ -20,6 +20,7 @@
   },
   "registries": {
     "@editorcn": "https://www.rtecn.space/r/{name}.json",
-    "@efferd": "https://efferd.com/r/{style}/{name}.json"
+    "@efferd": "https://efferd.com/r/{style}/{name}.json",
+    "@mapcn": "https://mapcn.dev/r/{name}.json"
   }
 }

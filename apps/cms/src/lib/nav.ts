@@ -15,6 +15,7 @@ import {
   Quote,
   Settings,
   UserCog,
+  UserIcon,
   Users,
 } from '@/components/icons';
 
@@ -28,6 +29,7 @@ export type NavItem = {
     | '/posts/new'
     | '/posts/categories'
     | '/posts/tags'
+    | '/profile'
     | '/activity'
     | '/api-keys'
     | '/announcements'
@@ -118,7 +120,19 @@ export const footerLinks: { title: string; href: string; icon: LucideIcon }[] = 
   { title: 'View website', href: 'https://livinglegacy.com.au', icon: ExternalLink },
 ];
 
-const allNavItems = navGroups.flatMap((g) => g.items.flatMap((i) => [i, ...(i.items ?? [])]));
+/** Pages reached from elsewhere (the account menu), with a breadcrumb but no sidebar entry. */
+const pageOnlyItems: NavItem[] = [{ title: 'Profile', icon: UserIcon, to: '/profile' }];
+
+const allNavItems = [
+  ...navGroups.flatMap((g) => g.items.flatMap((i) => [i, ...(i.items ?? [])])),
+  ...pageOnlyItems,
+];
+
+/** An item's icon, or for a child such as Categories, its parent's (Posts). */
+export function navItemIcon(item: NavItem): LucideIcon | undefined {
+  if (item.icon) return item.icon;
+  return navGroups.flatMap((g) => g.items).find((parent) => parent.items?.includes(item))?.icon;
+}
 
 /**
  * Nav item for the current path, used for the header breadcrumb. Falls back

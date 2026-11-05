@@ -7,7 +7,7 @@ import {
   BreadcrumbPage,
   BreadcrumbSeparator,
 } from '@/components/ui/breadcrumb';
-import type { NavItem } from '@/lib/nav';
+import { type NavItem, navItemIcon } from '@/lib/nav';
 
 /**
  * Current location in the header. On a page below a nav item (for example a
@@ -15,17 +15,23 @@ import type { NavItem } from '@/lib/nav';
  */
 export function AppBreadcrumbs({ item, current }: { item?: NavItem; current?: string }) {
   if (!item) return null;
-  const Icon = item.icon;
+  const Icon = navItemIcon(item);
 
   return (
     <Breadcrumb>
       <BreadcrumbList className="text-[13px]">
         <BreadcrumbItem>
           {current && item.to ? (
-            <BreadcrumbLink render={<Link to={item.to} />}>{item.title}</BreadcrumbLink>
+            <BreadcrumbLink
+              render={<Link to={item.to} activeOptions={{ exact: true }} />}
+              className="flex items-center gap-2"
+            >
+              {Icon && <Icon aria-hidden className="size-4" />}
+              {item.title}
+            </BreadcrumbLink>
           ) : (
-            <BreadcrumbPage className="flex items-center gap-2 [&>svg]:size-3.5">
-              {Icon && <Icon aria-hidden />}
+            <BreadcrumbPage className="flex items-center gap-2">
+              {Icon && <Icon aria-hidden className="size-4" />}
               {item.title}
             </BreadcrumbPage>
           )}

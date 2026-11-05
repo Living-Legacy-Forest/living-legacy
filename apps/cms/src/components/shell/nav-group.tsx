@@ -63,7 +63,13 @@ export function NavGroup({ label, items }: NavGroupType) {
                     <SidebarMenuButton
                       tooltip={item.title}
                       isActive={active}
-                      className={navItemClass}
+                      // Open, the current page below carries the highlight, so the
+                      // parent keeps its text but not a second filled row. Collapsed
+                      // to icons, it is the only sign of where you are, so it keeps it.
+                      className={cn(
+                        navItemClass,
+                        'data-active:data-panel-open:hover:bg-sidebar-accent group-data-[collapsible=icon]:data-active:bg-sidebar-accent! data-active:data-panel-open:bg-transparent'
+                      )}
                     />
                   }
                 >

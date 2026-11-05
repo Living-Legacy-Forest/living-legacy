@@ -188,6 +188,8 @@ export const SendIcon = animated(AnimatedSendIcon);
 export const Bold = animated(AnimatedTextBoldIcon);
 export const Code = animated(AnimatedCodeIcon);
 export const CropIcon = make(H.CropIcon);
+/** A breadcrumb separator: static, since it sits in every header. */
+export const BreadcrumbChevronIcon = make(H.ArrowRight01Icon);
 export const FullScreenIcon = make(H.FullScreenIcon);
 export const LocateIcon = make(H.Gps01Icon);
 export const Heading1 = make(H.Heading01Icon);

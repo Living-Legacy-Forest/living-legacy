@@ -38,9 +38,11 @@ export function AppHeader({ user }: { user: SessionUser }) {
       {back && (
         <Link
           to={back.to}
-          className="text-brand relative z-10 -ml-1 flex min-h-11 max-w-[30%] min-w-0 items-center gap-0.5 pr-2 text-[1.0625rem] active:opacity-50 md:hidden [&_svg]:size-6 [&_svg]:shrink-0"
+          className="text-brand relative z-10 -ml-2 flex min-h-11 max-w-[30%] min-w-0 items-center pr-2 text-[1.0625rem] active:opacity-50 md:hidden"
         >
-          <ChevronLeftIcon aria-hidden />
+          {/* Sized and weighted like the iOS back chevron; the drawing has empty
+              space either side, which the negative margin takes back. */}
+          <ChevronLeftIcon aria-hidden strokeWidth={2.25} className="-mr-1.5 size-7" />
           <span className="truncate">{back.label}</span>
         </Link>
       )}

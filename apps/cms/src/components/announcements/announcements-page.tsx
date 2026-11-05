@@ -371,8 +371,6 @@ function AnnouncementSummary({
   );
 }
 
-type Device = 'mobile' | 'tablet' | 'desktop';
-
 function AnnouncementForm({
   announcement,
   copyOf,
@@ -401,7 +399,6 @@ function AnnouncementForm({
     endsAt: announcement?.endsAt ?? null,
     hidePaths: (source?.hidePaths ?? []).join('\n'),
   });
-  const [device, setDevice] = useState<Device>('mobile');
   const { run, pending } = useAction();
   const patch = (next: Partial<typeof values>) => setValues((v) => ({ ...v, ...next }));
 
@@ -438,14 +435,6 @@ function AnnouncementForm({
     );
     if (result) onSaved(result.id);
   }
-
-  const shown =
-    device === 'desktop'
-      ? values.messageDesktop || values.messageTablet || values.message
-      : device === 'tablet'
-        ? values.messageTablet || values.message
-        : values.message;
-  const colour = backgrounds.find((b) => b.value === values.background)!;
 
   return (
     <form noValidate onSubmit={submit} className="space-y-5">
@@ -640,59 +629,6 @@ function AnnouncementForm({
           One path per line. End with * to hide a whole section, like /section/*. Leave empty to
           show everywhere.
         </p>
-      </div>
-
-      <div className="space-y-2">
-        <div className="flex items-center justify-between gap-2">
-          <p className="text-sm font-medium">Preview</p>
-          <div
-            className="bg-muted flex gap-0.5 rounded-md p-0.5"
-            role="group"
-            aria-label="Screen size"
-          >
-            {(['mobile', 'tablet', 'desktop'] as const).map((d) => (
-              <button
-                key={d}
-                type="button"
-                aria-pressed={device === d}
-                onClick={() => setDevice(d)}
-                className={cn(
-                  'text-muted-foreground rounded px-2 py-0.5 text-xs capitalize',
-                  device === d && 'bg-background text-foreground shadow-sm'
-                )}
-              >
-                {d === 'mobile' ? 'Phone' : d}
-              </button>
-            ))}
-          </div>
-        </div>
-        <div
-          className={cn(
-            'mx-auto flex items-center justify-center gap-x-3 gap-y-1 rounded-md px-4 py-2 text-center text-sm transition-[max-width]',
-            device === 'mobile'
-              ? 'max-w-[22rem] flex-wrap'
-              : device === 'tablet'
-                ? 'max-w-xl'
-                : 'max-w-full'
-          )}
-          style={{ background: colour.bg, color: colour.fg }}
-        >
-          <span>{shown || 'Your message shows here'}</span>
-          {values.ctaLabel && (
-            <span
-              className="rounded-full border px-2.5 py-0.5 text-xs font-medium"
-              style={{ borderColor: colour.fg }}
-            >
-              {values.ctaLabel}
-            </span>
-          )}
-        </div>
-        {announcement && (
-          <p className="text-muted-foreground text-center text-xs">
-            {statusLabels[announcementStatus({ ...draft, id: announcement.id }, now)]}:{' '}
-            {windowLabel({ startsAt, endsAt }, timeZone)}
-          </p>
-        )}
       </div>
 
       {footer(

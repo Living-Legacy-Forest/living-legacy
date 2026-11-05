@@ -1,5 +1,11 @@
 import { Link, useRouter } from '@tanstack/react-router';
-import { ExternalLinkIcon, KeyboardIcon, LogOutIcon, UserIcon } from '@/components/icons';
+import {
+  ChevronRightIcon,
+  ExternalLinkIcon,
+  KeyboardIcon,
+  LogOutIcon,
+  UserIcon,
+} from '@/components/icons';
 import { useState } from 'react';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import {
@@ -18,10 +24,14 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
+import { Drawer, DrawerBody, DrawerContent } from '@/components/ui/drawer';
 import { Kbd, KbdGroup } from '@/components/ui/kbd';
+import { useIsMobile } from '@/hooks/use-mobile';
 import { authClient } from '@/lib/auth-client';
 import { footerLinks } from '@/lib/nav';
 import { type SessionUser, forgetCachedUser } from '@/lib/session';
+import { cn } from '@/lib/utils';
+import { SheetHeader, sheetGroupClass, sheetRowClass } from './sheet-parts';
 
 const shortcuts: { keys: string[]; label: string }[] = [
   { keys: ['⌘', 'K'], label: 'Search or jump to a page' },
@@ -32,7 +42,9 @@ const shortcuts: { keys: string[]; label: string }[] = [
 
 export function NavUser({ user }: { user: SessionUser }) {
   const router = useRouter();
+  const isPhone = useIsMobile();
   const [showShortcuts, setShowShortcuts] = useState(false);
+  const [sheetOpen, setSheetOpen] = useState(false);
   const initials = user.name
     .split(' ')
     .map((part) => part[0])
@@ -54,6 +66,74 @@ export function NavUser({ user }: { user: SessionUser }) {
   );
   const website = footerLinks[0];
 
+  if (isPhone) {
+    const close = () => setSheetOpen(false);
+    return (
+      <>
+        <button
+          type="button"
+          aria-label="Account"
+          onClick={() => setSheetOpen(true)}
+          className="flex size-11 items-center justify-center rounded-full active:opacity-60"
+        >
+          <Avatar className="size-8">{avatar}</Avatar>
+        </button>
+        <Drawer open={sheetOpen} onOpenChange={setSheetOpen}>
+          <DrawerContent className="bg-muted">
+            <SheetHeader title="Account" onDone={close} />
+            <DrawerBody className="flex flex-col gap-6 pb-[calc(env(safe-area-inset-bottom)+1.5rem)]">
+              <div className="bg-background flex items-center gap-3 rounded-xl px-4 py-3">
+                <Avatar className="size-12">{avatar}</Avatar>
+                <div className="min-w-0 flex-1">
+                  <p className="truncate text-[1.0625rem] font-semibold">{user.name}</p>
+                  <p className="text-muted-foreground truncate text-[0.8125rem]">{user.email}</p>
+                </div>
+                <span className="bg-muted text-muted-foreground shrink-0 rounded px-1.5 py-0.5 text-xs capitalize">
+                  {user.role}
+                </span>
+              </div>
+              <ul className={sheetGroupClass}>
+                <li>
+                  <Link to="/profile" onClick={close} className={sheetRowClass}>
+                    <UserIcon aria-hidden className="text-muted-foreground" />
+                    <span className="flex-1">Edit profile</span>
+                    <ChevronRightIcon aria-hidden className="text-muted-foreground/60 size-4!" />
+                  </Link>
+                </li>
+                {website && (
+                  <li>
+                    <a
+                      href={website.href}
+                      target="_blank"
+                      rel="noreferrer"
+                      className={sheetRowClass}
+                    >
+                      <ExternalLinkIcon aria-hidden className="text-muted-foreground" />
+                      <span className="flex-1">View website</span>
+                    </a>
+                  </li>
+                )}
+              </ul>
+              <ul className={sheetGroupClass}>
+                <li>
+                  <button
+                    type="button"
+                    onClick={signOut}
+                    className={cn(sheetRowClass, 'text-destructive')}
+                  >
+                    <LogOutIcon aria-hidden />
+                    Sign out
+                  </button>
+                </li>
+              </ul>
+            </DrawerBody>
+          </DrawerContent>
+        </Drawer>
+      </>
+    );
+  }
+
+  // Keyboard shortcuts only on larger screens: a phone has no keyboard to use them with.
   return (
     <>
       <DropdownMenu>

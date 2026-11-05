@@ -224,7 +224,6 @@ export function LocationsPage({
                 {visible.map((l) => (
                   <ListRow
                     key={l.id}
-                    align="start"
                     current={
                       pane === null ? l.id === selectedId : pane.kind === 'edit' && pane.id === l.id
                     }
@@ -317,17 +316,32 @@ export function LocationsPage({
 
 function LocationSummary({ item }: { item: LocationItem }) {
   return (
-    <>
-      <span className="flex items-center gap-2">
-        <span className="min-w-0 flex-1 truncate text-[13px] font-medium">{item.name}</span>
-        {item.status === 'draft' && (
-          <span className="text-muted-foreground shrink-0 text-xs">Draft</span>
+    <span className="flex min-w-0 items-center gap-3">
+      {/* Locations without a hero photo keep the space, so the names line up. */}
+      <span className="bg-muted text-muted-foreground flex h-10 w-15 shrink-0 items-center justify-center overflow-hidden rounded-md border">
+        {item.heroMediaId ? (
+          <img
+            src={`/api/media/${item.heroMediaId}?w=640`}
+            alt=""
+            loading="lazy"
+            className="size-full object-cover"
+          />
+        ) : (
+          <MapPinIcon aria-hidden className="size-4" />
         )}
       </span>
-      <span className="text-muted-foreground mt-0.5 line-clamp-1 text-xs">
-        {australianStateLabels[item.state]} · {locationStageLabels[item.stage]}
+      <span className="min-w-0 flex-1">
+        <span className="flex items-center gap-2">
+          <span className="min-w-0 flex-1 truncate text-[13px] font-medium">{item.name}</span>
+          {item.status === 'draft' && (
+            <span className="text-muted-foreground shrink-0 text-xs">Draft</span>
+          )}
+        </span>
+        <span className="text-muted-foreground mt-0.5 line-clamp-1 text-xs">
+          {australianStateLabels[item.state]} · {locationStageLabels[item.stage]}
+        </span>
       </span>
-    </>
+    </span>
   );
 }
 

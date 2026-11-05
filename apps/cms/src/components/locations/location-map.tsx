@@ -1,11 +1,17 @@
-// Maps for a location: a pinned preview, and the picker that sets the pin.
-// The pin uses the hero photo when there is one, so the preview reads like
-// the directory card it stands in for.
+// Maps for locations: every location on one map, and the picker that sets a
+// location's pin. A pin wears the location's hero photo when it has one.
 import { useEffect, useState } from 'react';
 import { toast } from 'sonner';
 import { MapPinIcon } from '@/components/icons';
 import { Button } from '@/components/ui/button';
-import { Map as MapView, MapControls, MapMarker, MarkerContent, useMap } from '@/components/ui/map';
+import {
+  Map as MapView,
+  MapControls,
+  MapMarker,
+  MarkerContent,
+  MarkerTooltip,
+  useMap,
+} from '@/components/ui/map';
 import { Spinner } from '@/components/ui/spinner';
 import { cn } from '@/lib/utils';
 
@@ -14,23 +20,59 @@ export type Pin = { latitude: number; longitude: number };
 /** All of Australia, for a location that has no pin yet. */
 const AUSTRALIA = { center: [134, -28] as [number, number], zoom: 2.6 };
 const PIN_ZOOM = 13;
+/** The width of the location sheet, sm:max-w-md. */
+const SHEET_WIDTH = 448;
 
-function PinMarker({ pin, photoUrl, ...drag }: { pin: Pin; photoUrl?: string | null } & DragProps) {
+function PinMarker({
+  pin,
+  photoUrl,
+  name,
+  selected = false,
+  onClick,
+  ...drag
+}: {
+  pin: Pin;
+  photoUrl?: string | null;
+  /** Shown on hover. */
+  name?: string;
+  selected?: boolean;
+  onClick?: () => void;
+} & DragProps) {
   return (
-    <MapMarker longitude={pin.longitude} latitude={pin.latitude} {...drag}>
-      <MarkerContent>
+    <MapMarker
+      longitude={pin.longitude}
+      latitude={pin.latitude}
+      onClick={onClick && ((e) => (e.stopPropagation(), onClick()))}
+      {...drag}
+    >
+      <MarkerContent className={cn(selected && 'z-10')}>
         {photoUrl ? (
           <img
             src={photoUrl}
             alt=""
-            className="size-10 rounded-full border-2 border-white object-cover shadow-lg"
+            className={cn(
+              'size-10 rounded-full border-2 border-white object-cover shadow-lg transition-transform',
+              selected && 'ring-primary scale-110 ring-2 ring-offset-2'
+            )}
           />
         ) : (
-          <span className="bg-primary text-primary-foreground flex size-8 items-center justify-center rounded-full border-2 border-white shadow-lg">
+          <span
+            className={cn(
+              'bg-primary text-primary-foreground flex size-8 items-center justify-center rounded-full border-2 border-white shadow-lg transition-transform',
+              selected && 'ring-primary scale-125 ring-2 ring-offset-2'
+            )}
+          >
             <MapPinIcon aria-hidden className="size-4" />
           </span>
         )}
       </MarkerContent>
+      {name && (
+        <MarkerTooltip>
+          <span className="bg-popover text-popover-foreground rounded-md border px-2 py-1 text-xs font-medium shadow-md">
+            {name}
+          </span>
+        </MarkerTooltip>
+      )}
     </MapMarker>
   );
 }
@@ -81,37 +123,86 @@ function ClickToPin({ onPick }: { onPick: (pin: Pin) => void }) {
   return null;
 }
 
-/** The location pinned on a map, for the preview pane. */
-export function LocationMap({
-  pin,
-  photoUrl,
-  className,
-}: {
+export type MapLocation = {
+  id: string;
+  name: string;
   pin: Pin | null;
-  photoUrl?: string | null;
-  className?: string;
+  photoUrl: string | null;
+};
+
+/**
+ * Frames every pin on first load, and moves to the selected one whenever the
+ * selection changes after that.
+ */
+function FrameLocations({ pins, selected }: { pins: Pin[]; selected: Pin | null }) {
+  const { map, mapLib, isLoaded } = useMap();
+  const [framed, setFramed] = useState(false);
+
+  useEffect(() => {
+    if (!map || !mapLib || !isLoaded || framed) return;
+    setFramed(true);
+    if (pins.length === 0) return;
+    if (pins.length === 1) {
+      map.jumpTo({ center: [pins[0]!.longitude, pins[0]!.latitude], zoom: 11 });
+      return;
+    }
+    const bounds = new mapLib.LngLatBounds();
+    pins.forEach((p) => bounds.extend([p.longitude, p.latitude]));
+    map.fitBounds(bounds, { padding: 64, maxZoom: 11, duration: 0 });
+  }, [map, mapLib, isLoaded, framed, pins]);
+
+  useEffect(() => {
+    if (!map || !isLoaded || !framed || !selected) return;
+    // The details sheet covers the right of the screen, so centre the pin in
+    // the part of the map still showing.
+    const box = map.getContainer().getBoundingClientRect();
+    const covered = Math.max(0, box.right - (window.innerWidth - SHEET_WIDTH));
+    map.flyTo({
+      center: [selected.longitude, selected.latitude],
+      zoom: Math.max(map.getZoom(), 11),
+      offset: [-Math.min(covered, box.width - 80) / 2, 0],
+      duration: 900,
+    });
+  }, [map, isLoaded, framed, selected?.latitude, selected?.longitude]);
+
+  return null;
+}
+
+/** Every location with a pin, on one map. Clicking a pin selects it. */
+export function LocationsOverviewMap({
+  locations,
+  selectedId,
+  onSelect,
+}: {
+  locations: MapLocation[];
+  selectedId: string | null;
+  onSelect: (id: string) => void;
 }) {
-  if (!pin) {
-    return (
-      <div
-        className={cn(
-          'bg-muted text-muted-foreground flex flex-col items-center justify-center gap-2 rounded-xl border p-4 text-center text-xs',
-          className
-        )}
-      >
-        <MapPinIcon aria-hidden className="size-5" />
-        Not on the map yet
-      </div>
-    );
-  }
+  const pinned = locations.filter((l): l is MapLocation & { pin: Pin } => l.pin !== null);
+  const selected = pinned.find((l) => l.id === selectedId) ?? null;
+
   return (
-    <div className={cn('overflow-hidden rounded-xl border', className)}>
-      <MapView center={[pin.longitude, pin.latitude]} zoom={PIN_ZOOM}>
-        <FollowPin pin={pin} />
+    <div className="relative size-full">
+      <MapView center={AUSTRALIA.center} zoom={AUSTRALIA.zoom}>
+        <FrameLocations pins={pinned.map((l) => l.pin)} selected={selected?.pin ?? null} />
         <FoldedAttribution />
-        <PinMarker pin={pin} photoUrl={photoUrl} />
+        {pinned.map((l) => (
+          <PinMarker
+            key={l.id}
+            pin={l.pin}
+            photoUrl={l.photoUrl}
+            name={l.name}
+            selected={l.id === selectedId}
+            onClick={() => onSelect(l.id)}
+          />
+        ))}
         <MapControls />
       </MapView>
+      {pinned.length < locations.length && (
+        <div className="bg-background/90 text-muted-foreground absolute top-3 left-3 rounded-md border px-2.5 py-1.5 text-xs shadow-sm backdrop-blur">
+          {pinned.length} of {locations.length} on the map. Add a pin in Edit for the rest.
+        </div>
+      )}
     </div>
   );
 }

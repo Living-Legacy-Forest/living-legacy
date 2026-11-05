@@ -28,15 +28,8 @@ import {
   matchesSearch,
   useSelection,
 } from '@/components/list/list-tools';
-import {
-  ExternalLink,
-  MapPinIcon,
-  PanelRightIcon,
-  PencilIcon,
-  PlusIcon,
-  Trash2Icon,
-} from '@/components/icons';
-import { LocationMap, PinPicker, type Pin } from '@/components/locations/location-map';
+import { ExternalLink, MapPinIcon, PencilIcon, PlusIcon, Trash2Icon } from '@/components/icons';
+import { LocationsOverviewMap, PinPicker, type Pin } from '@/components/locations/location-map';
 import { ImageField, useMediaItem } from '@/components/media/image-field';
 import {
   AlertDialog,
@@ -69,6 +62,14 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { Separator } from '@/components/ui/separator';
+import {
+  Sheet,
+  SheetContent,
+  SheetDescription,
+  SheetFooter,
+  SheetHeader,
+  SheetTitle,
+} from '@/components/ui/sheet';
 import { Spinner } from '@/components/ui/spinner';
 import { Switch } from '@/components/ui/switch';
 import { Textarea } from '@/components/ui/textarea';
@@ -125,12 +126,15 @@ export function LocationsPage({
 
   const itemFor = (target: Target | null) =>
     target?.kind === 'edit' ? (data.find((l) => l.id === target.id) ?? null) : null;
-  // Without anything being edited, the pane previews the selected location.
-  const selectedId = data.find((l) => l.id === search.selected)?.id ?? data[0]?.id ?? null;
+  // Without anything being edited, the pane maps every location; selecting
+  // one, from the list or its pin, opens its details in a sheet.
+  const selectedId = data.find((l) => l.id === search.selected)?.id ?? null;
   const selected = data.find((l) => l.id === selectedId) ?? null;
+  const [sheetOpen, setSheetOpen] = useState(false);
   const select = (id: string) => {
     view.closePane();
     navigate({ search: (prev) => ({ ...prev, selected: id }), replace: true });
+    setSheetOpen(true);
   };
   const pane = canWrite ? view.pane : null;
   const remove = (id: string) =>
@@ -266,16 +270,37 @@ export function LocationsPage({
               </PaneFrame>
             </PaneColumn>
           ) : (
-            <PreviewPane
-              item={selected}
-              canWrite={canWrite}
-              pending={pending}
-              onEdit={(l) => view.open({ kind: 'edit', id: l.id })}
-              onDelete={remove}
-            />
+            <section aria-label="Map" className="relative hidden min-h-0 lg:flex">
+              <LocationsOverviewMap
+                locations={data.map((l) => ({
+                  id: l.id,
+                  name: l.name,
+                  pin: pinOf(l),
+                  photoUrl: l.heroMediaId ? `/api/media/${l.heroMediaId}?w=640` : null,
+                }))}
+                selectedId={selectedId}
+                onSelect={select}
+              />
+            </section>
           )}
         </ListPageLayout>
       )}
+
+      <LocationSheet
+        item={selected}
+        open={sheetOpen && selected !== null && pane === null}
+        onOpenChange={setSheetOpen}
+        canWrite={canWrite}
+        pending={pending}
+        onEdit={(l) => {
+          setSheetOpen(false);
+          view.open({ kind: 'edit', id: l.id });
+        }}
+        onDelete={(id) => {
+          setSheetOpen(false);
+          remove(id);
+        }}
+      />
 
       <ConfirmBulkDelete
         open={toDelete !== null}
@@ -346,74 +371,79 @@ function LocationSummary({ item }: { item: LocationItem }) {
   );
 }
 
-function PreviewPane({
+/** A location's details, opened from its row or its pin on the map. */
+function LocationSheet({
   item,
+  open,
+  onOpenChange,
   canWrite,
   pending,
   onEdit,
   onDelete,
 }: {
   item: LocationItem | null;
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
   canWrite: boolean;
   pending: boolean;
   onEdit: (l: LocationItem) => void;
   onDelete: (id: string) => void;
 }) {
-  if (!item) {
-    return (
-      <section aria-label="Preview" className="hidden lg:flex">
-        <Empty>
-          <EmptyHeader>
-            <EmptyMedia variant="icon">
-              <PanelRightIcon aria-hidden />
-            </EmptyMedia>
-            <EmptyTitle>Nothing selected</EmptyTitle>
-            <EmptyDescription>Choose a location from the list to see it here.</EmptyDescription>
-          </EmptyHeader>
-        </Empty>
-      </section>
-    );
-  }
-
   return (
-    <section aria-label="Preview" className="hidden min-h-0 flex-col lg:flex">
-      <div className="flex h-11 shrink-0 items-center gap-1.5 border-b px-3">
-        <Badge
-          variant={item.status === 'published' ? 'secondary' : 'outline'}
-          className="capitalize"
-        >
-          {item.status}
-        </Badge>
-        <Badge variant="outline">{locationStageLabels[item.stage]}</Badge>
-        <div className="ml-auto flex items-center gap-1.5">
-          {item.stage === 'external' && item.externalUrl && (
-            <Button
-              size="icon-sm"
-              variant="ghost"
-              render={<a href={item.externalUrl} target="_blank" rel="noopener noreferrer" />}
-              aria-label="Open its website"
-              nativeButton={false}
-            >
-              <ExternalLink aria-hidden className="size-4" />
-            </Button>
-          )}
-          {canWrite && (
-            <>
-              <Button size="sm" onClick={() => onEdit(item)}>
-                <PencilIcon aria-hidden data-icon="inline-start" />
-                Edit
-              </Button>
-              <DeleteLocation item={item} disabled={pending} onConfirm={() => onDelete(item.id)} />
-            </>
-          )}
-        </div>
-      </div>
-      <div className="min-h-0 flex-1 overflow-y-auto">
-        <div className="mx-auto max-w-sm px-6 py-10">
-          <LocationCard item={item} />
-        </div>
-      </div>
-    </section>
+    // Not modal, and with no backdrop, so the map stays in view and its other
+    // pins stay clickable while the sheet is open.
+    <Sheet open={open} onOpenChange={onOpenChange} modal={false}>
+      <SheetContent showOverlay={false} initialFocus={false} className="gap-0 sm:max-w-md">
+        {item && (
+          <>
+            <SheetHeader className="gap-2 border-b pr-12">
+              <div className="flex items-center gap-1.5">
+                <Badge
+                  variant={item.status === 'published' ? 'secondary' : 'outline'}
+                  className="capitalize"
+                >
+                  {item.status}
+                </Badge>
+                <Badge variant="outline">{locationStageLabels[item.stage]}</Badge>
+              </div>
+              <SheetTitle className="text-lg">{item.name}</SheetTitle>
+              <SheetDescription>
+                {[australianStateLabels[item.state], item.region].filter(Boolean).join(' · ')}
+              </SheetDescription>
+            </SheetHeader>
+            <div className="min-h-0 flex-1 overflow-y-auto p-4">
+              <LocationCard item={item} />
+            </div>
+            <SheetFooter className="flex-row items-center border-t">
+              {item.stage === 'external' && item.externalUrl && (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  render={<a href={item.externalUrl} target="_blank" rel="noopener noreferrer" />}
+                  nativeButton={false}
+                >
+                  <ExternalLink aria-hidden data-icon="inline-start" />
+                  Its website
+                </Button>
+              )}
+              {canWrite && (
+                <div className="ml-auto flex items-center gap-1.5">
+                  <DeleteLocation
+                    item={item}
+                    disabled={pending}
+                    onConfirm={() => onDelete(item.id)}
+                  />
+                  <Button size="sm" onClick={() => onEdit(item)}>
+                    <PencilIcon aria-hidden data-icon="inline-start" />
+                    Edit
+                  </Button>
+                </div>
+              )}
+            </SheetFooter>
+          </>
+        )}
+      </SheetContent>
+    </Sheet>
   );
 }
 
@@ -434,12 +464,16 @@ function LocationCard({ item }: { item: LocationItem }) {
 
   return (
     <article>
-      <LocationMap pin={pinOf(item)} photoUrl={image?.url} className="aspect-[3/2]" />
-      <p className="text-muted-foreground mt-4 text-xs font-medium">
-        {[australianStateLabels[item.state], item.region].filter(Boolean).join(' · ')}
-      </p>
-      <h2 className="mt-1.5 text-lg leading-snug font-medium text-balance">{item.name}</h2>
-      {item.intro && <p className="text-muted-foreground mt-2 text-sm">{item.intro}</p>}
+      <div className="bg-muted mb-4 aspect-[3/2] overflow-hidden rounded-xl border">
+        {image ? (
+          <img src={image.url} alt={image.alt} className="size-full object-cover" />
+        ) : (
+          <div className="text-muted-foreground flex size-full items-center justify-center p-4 text-center text-xs">
+            No hero photo yet
+          </div>
+        )}
+      </div>
+      {item.intro && <p className="text-muted-foreground text-sm">{item.intro}</p>}
       {item.stage === 'live' && (
         <p className="text-muted-foreground mt-3 font-mono text-xs">/locations/{item.slug}/</p>
       )}

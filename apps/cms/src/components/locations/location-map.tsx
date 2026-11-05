@@ -1,6 +1,6 @@
 // Maps for locations: every location on one map, and the picker that sets a
 // location's pin. A pin wears the location's hero photo when it has one.
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useSyncExternalStore } from 'react';
 import { toast } from 'sonner';
 import { MapPinIcon } from '@/components/icons';
 import { Button } from '@/components/ui/button';
@@ -51,15 +51,15 @@ function PinMarker({
             src={photoUrl}
             alt=""
             className={cn(
-              'size-10 rounded-full border-2 border-white object-cover shadow-lg transition-transform',
-              selected && 'ring-primary scale-110 ring-2 ring-offset-2'
+              'size-10 rounded-full border-2 border-white object-cover shadow-md transition-transform duration-200 ease-out hover:scale-110',
+              selected && 'ring-brand/35 scale-110 ring-4'
             )}
           />
         ) : (
           <span
             className={cn(
-              'bg-primary text-primary-foreground flex size-8 items-center justify-center rounded-full border-2 border-white shadow-lg transition-transform',
-              selected && 'ring-primary scale-125 ring-2 ring-offset-2'
+              'bg-brand dark:text-background flex size-8 items-center justify-center rounded-full border-2 border-white text-white shadow-md transition-transform duration-200 ease-out hover:scale-110',
+              selected && 'ring-brand/35 scale-110 ring-4'
             )}
           >
             <MapPinIcon aria-hidden className="size-4" />
@@ -67,10 +67,8 @@ function PinMarker({
         )}
       </MarkerContent>
       {name && (
-        <MarkerTooltip>
-          <span className="bg-popover text-popover-foreground rounded-md border px-2 py-1 text-xs font-medium shadow-md">
-            {name}
-          </span>
+        <MarkerTooltip anchor="bottom" offset={22} className="font-medium">
+          {name}
         </MarkerTooltip>
       )}
     </MapMarker>
@@ -81,6 +79,23 @@ type DragProps = {
   draggable?: boolean;
   onDragEnd?: (lngLat: { lng: number; lat: number }) => void;
 };
+
+/**
+ * The CMS theme, read from <html>.dark. The map only notices a `light` class,
+ * which the CMS never sets, so without this it would stay dark in light mode.
+ */
+function subscribeTheme(onChange: () => void) {
+  const observer = new MutationObserver(onChange);
+  observer.observe(document.documentElement, { attributes: true, attributeFilter: ['class'] });
+  return () => observer.disconnect();
+}
+function useCmsTheme(): 'light' | 'dark' {
+  return useSyncExternalStore(
+    subscribeTheme,
+    () => (document.documentElement.classList.contains('dark') ? 'dark' : 'light'),
+    () => 'light'
+  );
+}
 
 /** Moves the view to the pin whenever it changes from outside the map. */
 function FollowPin({ pin }: { pin: Pin | null }) {
@@ -178,12 +193,13 @@ export function LocationsOverviewMap({
   selectedId: string | null;
   onSelect: (id: string) => void;
 }) {
+  const theme = useCmsTheme();
   const pinned = locations.filter((l): l is MapLocation & { pin: Pin } => l.pin !== null);
   const selected = pinned.find((l) => l.id === selectedId) ?? null;
 
   return (
     <div className="relative size-full">
-      <MapView center={AUSTRALIA.center} zoom={AUSTRALIA.zoom}>
+      <MapView theme={theme} center={AUSTRALIA.center} zoom={AUSTRALIA.zoom}>
         <FrameLocations pins={pinned.map((l) => l.pin)} selected={selected?.pin ?? null} />
         <FoldedAttribution />
         {pinned.map((l) => (
@@ -224,6 +240,7 @@ export function PinPicker({
   photoUrl?: string | null;
   onChange: (pin: Pin | null) => void;
 }) {
+  const theme = useCmsTheme();
   const [finding, setFinding] = useState(false);
   const [start] = useState(() =>
     pin ? { center: [pin.longitude, pin.latitude] as [number, number], zoom: PIN_ZOOM } : AUSTRALIA
@@ -257,7 +274,7 @@ export function PinPicker({
   return (
     <div className="space-y-2">
       <div id={id} className="h-56 overflow-hidden rounded-lg border">
-        <MapView center={start.center} zoom={start.zoom}>
+        <MapView theme={theme} center={start.center} zoom={start.zoom}>
           <FollowPin pin={pin} />
           <FoldedAttribution />
           <ClickToPin onPick={onChange} />

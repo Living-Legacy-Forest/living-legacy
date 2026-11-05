@@ -11,7 +11,7 @@ export const listFaqs = createServerFn({ method: 'GET' })
   .middleware([authMiddleware])
   .handler(async () => {
     const db = getDb();
-    const [groups, rows] = await Promise.all([
+    const [groups, rows] = await db.batch([
       db
         .select({
           id: faqGroups.id,
@@ -218,7 +218,7 @@ export const importFaqs = createServerFn({ method: 'POST' })
       groups,
       [{ maxOrder } = { maxOrder: -1 }],
       [{ maxGroupOrder } = { maxGroupOrder: -1 }],
-    ] = await Promise.all([
+    ] = await db.batch([
       db
         .select({ id: faqs.id, publishedAt: faqs.publishedAt })
         .from(faqs)

@@ -1,4 +1,4 @@
-import { capacityProblem, eventInputSchema, slugify } from '@ll/content';
+import { capacityProblem, deleteEventProblem, eventInputSchema, slugify } from '@ll/content';
 import type { Db } from '@ll/db';
 import { eventBookings, events, locations } from '@ll/db/schema';
 import { createServerFn } from '@tanstack/react-start';
@@ -186,6 +186,16 @@ export const deleteEvent = createServerFn({ method: 'POST' })
     const db = getDb();
     const event = await db.query.events.findFirst({ where: eq(events.id, data.id) });
     if (!event) return;
+    const [row] = await db
+      .select({ n: sql<number>`count(*)` })
+      .from(eventBookings)
+      .where(and(eq(eventBookings.eventId, event.id), confirmed));
+    const problem = deleteEventProblem(
+      { status: event.status, endsAt: event.endsAt.getTime() },
+      Number(row?.n ?? 0),
+      Date.now()
+    );
+    if (problem) throw new Error(problem);
     // Bookings cascade with it: guest details go with the event.
     await db.batch([
       db.delete(events).where(eq(events.id, event.id)),

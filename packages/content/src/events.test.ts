@@ -4,6 +4,7 @@ import {
   bookingProblem,
   bookingReference,
   capacityProblem,
+  deleteEventProblem,
   seatsTaken,
 } from './events';
 
@@ -103,5 +104,19 @@ describe('bookingReference', () => {
     expect(bookingReference(crypto.getRandomValues(new Uint8Array(6)))).toMatch(
       /^LL-[ABCDEFGHJKMNPQRSTUVWXYZ2-9]{6}$/
     );
+  });
+});
+
+describe('deleteEventProblem', () => {
+  it('refuses an upcoming event that still has bookings, so its guests are told first', () => {
+    expect(deleteEventProblem(event(), 2, now)).toBe(
+      'This event has bookings. Cancel it first, so its guests are told.'
+    );
+  });
+
+  it('allows events with no bookings, cancelled events and past events', () => {
+    expect(deleteEventProblem(event(), 0, now)).toBeNull();
+    expect(deleteEventProblem(event({ status: 'cancelled' }), 5, now)).toBeNull();
+    expect(deleteEventProblem(event(), 5, now + 51 * HOUR)).toBeNull();
   });
 });

@@ -67,6 +67,20 @@ export function capacityProblem(capacity: number | null, taken: number): string 
   return `${taken} people are already booked. Set the capacity to at least ${taken}.`;
 }
 
+/**
+ * Deleting an upcoming event with bookings would drop its guests without them
+ * hearing; cancelling first lets HubSpot tell them. Past and cancelled events,
+ * and events nobody booked, can go.
+ */
+export function deleteEventProblem(
+  event: Pick<BookableEvent, 'status' | 'endsAt'>,
+  confirmedBookings: number,
+  now: number
+): string | null {
+  if (event.status === 'cancelled' || event.endsAt <= now || confirmedBookings === 0) return null;
+  return 'This event has bookings. Cancel it first, so its guests are told.';
+}
+
 // No 0/O, 1/I/L: references are read out over the phone.
 const REFERENCE_ALPHABET = 'ABCDEFGHJKMNPQRSTUVWXYZ23456789';
 

@@ -21,6 +21,9 @@ export const timeZones = [
 ] as const;
 export type TimeZone = (typeof timeZones)[number];
 
+/** How many idle days sign a CMS user out. */
+export const sessionDayOptions = [1, 7, 30] as const;
+
 /** Placeholders the title pattern may use. */
 export const TITLE_TOKENS = { page: '{page}', site: '{site}' } as const;
 
@@ -45,6 +48,14 @@ export const SITE_SETTINGS_DEFAULTS = {
   seoImageUrl: '',
   googleVerification: '',
   bingVerification: '',
+  /** Ask search engines to leave the whole website out of their results. */
+  hideFromSearch: false,
+  // CMS sign-in.
+  /** Comma-separated; invites go only to these domains. Empty allows any. */
+  allowedEmailDomains: '',
+  googleSignIn: true,
+  /** Idle days before a CMS session ends; one of sessionDayOptions. */
+  sessionDays: 7,
   locale: 'en-AU' as Locale,
   theme: 'system' as Theme,
   timeZone: 'Australia/Melbourne' as TimeZone,
@@ -75,4 +86,29 @@ export function formatPageTitle(pattern: string, page: string, site: string): st
 /** "03 7019 6142" → "tel:0370196142", keeping a leading + for international numbers. */
 export function telHref(phone: string): string {
   return `tel:${phone.trim().startsWith('+') ? '+' : ''}${phone.replace(/\D/g, '')}`;
+}
+
+/** "Living-Legacy.com.au, @sistercreatives.co" → ["living-legacy.com.au", "sistercreatives.co"]. */
+export function parseEmailDomains(text: string): string[] {
+  return [
+    ...new Set(
+      text
+        .split(/[\s,;]+/)
+        .map((d) => d.trim().toLowerCase().replace(/^@/, ''))
+        .filter(Boolean)
+    ),
+  ];
+}
+
+/** A bare domain such as "example.com.au": labels of letters, digits and hyphens. */
+export function isEmailDomain(domain: string): boolean {
+  return /^(?=.{1,253}$)([a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?\.)+[a-z]{2,63}$/.test(domain);
+}
+
+/** Whether an address may be invited. An empty list allows any domain. */
+export function isEmailDomainAllowed(email: string, allowed: string): boolean {
+  const domains = parseEmailDomains(allowed);
+  if (domains.length === 0) return true;
+  const domain = email.trim().toLowerCase().split('@').pop() ?? '';
+  return domains.includes(domain);
 }

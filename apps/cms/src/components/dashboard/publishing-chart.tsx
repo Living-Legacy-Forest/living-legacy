@@ -32,14 +32,15 @@ import {
 import { formatChartAxisTick, formatChartRange, formatInteger } from '@/lib/format';
 import type { DashboardData } from '@/server/dashboard';
 
-type PeriodDays = 30 | 60 | 90;
+/** Whole weeks, so every point on the chart covers seven days. */
+type PeriodWeeks = 4 | 8 | 12;
 type Week = { date: string; end: string; published: number };
 
 // Base UI's Select shows the raw value unless it is given the item labels.
 const periodItems = [
-  { value: '30', label: 'Last 30 days' },
-  { value: '60', label: 'Last 60 days' },
-  { value: '90', label: 'Last 90 days' },
+  { value: '4', label: 'Last 4 weeks' },
+  { value: '8', label: 'Last 8 weeks' },
+  { value: '12', label: 'Last 12 weeks' },
 ];
 
 const chartConfig = {
@@ -68,9 +69,9 @@ function byWeek(days: DashboardData['activity']): Week[] {
 // horizontal grid lines, a smooth curve over a gradient and a dot tooltip.
 export function PublishingChart({ activity }: { activity: DashboardData['activity'] }) {
   const gradientId = `publishing-grad-${useId().replace(/:/g, '')}`;
-  const [periodDays, setPeriodDays] = useState<PeriodDays>(30);
+  const [periodWeeks, setPeriodWeeks] = useState<PeriodWeeks>(4);
 
-  const weeks = useMemo(() => byWeek(activity.slice(-periodDays)), [activity, periodDays]);
+  const weeks = useMemo(() => byWeek(activity.slice(-periodWeeks * 7)), [activity, periodWeeks]);
   const total = weeks.reduce((sum, week) => sum + week.published, 0);
 
   return (
@@ -82,8 +83,8 @@ export function PublishingChart({ activity }: { activity: DashboardData['activit
         </div>
         <Select
           items={periodItems}
-          onValueChange={(v) => setPeriodDays(Number(v) as PeriodDays)}
-          value={String(periodDays)}
+          onValueChange={(v) => setPeriodWeeks(Number(v) as PeriodWeeks)}
+          value={String(periodWeeks)}
         >
           <SelectTrigger
             aria-label="Publishing activity time range"
@@ -110,17 +111,17 @@ export function PublishingChart({ activity }: { activity: DashboardData['activit
               </EmptyMedia>
               <EmptyTitle>Nothing published</EmptyTitle>
               <EmptyDescription>
-                No posts were published in the last {periodDays} days.
+                No posts were published in the last {periodWeeks} weeks.
               </EmptyDescription>
             </EmptyHeader>
           </Empty>
         ) : (
           <ChartContainer className="aspect-auto h-60 w-full" config={chartConfig}>
-            <AreaChart accessibilityLayer data={weeks} margin={{ left: 12, right: 12, top: 8 }}>
+            <AreaChart accessibilityLayer data={weeks} margin={{ left: 0, right: 12, top: 12 }}>
               <defs>
                 <linearGradient id={gradientId} x1="0" x2="0" y1="0" y2="1">
-                  <stop offset="5%" stopColor="var(--color-published)" stopOpacity={0.8} />
-                  <stop offset="95%" stopColor="var(--color-published)" stopOpacity={0.1} />
+                  <stop offset="0%" stopColor="var(--color-published)" stopOpacity={0.35} />
+                  <stop offset="100%" stopColor="var(--color-published)" stopOpacity={0.02} />
                 </linearGradient>
               </defs>
               <CartesianGrid vertical={false} />
@@ -132,7 +133,15 @@ export function PublishingChart({ activity }: { activity: DashboardData['activit
                 minTickGap={32}
                 tickFormatter={(value) => formatChartAxisTick(String(value))}
               />
-              <YAxis hide allowDecimals={false} domain={[0, (max: number) => Math.max(max, 2)]} />
+              {/* A small whole-number scale, so a run of single posts reads as 1 a week. */}
+              <YAxis
+                allowDecimals={false}
+                axisLine={false}
+                tickLine={false}
+                tickMargin={4}
+                width={28}
+                domain={[0, (max: number) => Math.max(max, 2)]}
+              />
               <ChartTooltip
                 cursor={false}
                 content={
@@ -153,6 +162,10 @@ export function PublishingChart({ activity }: { activity: DashboardData['activit
                 type="monotone"
                 fill={`url(#${gradientId})`}
                 stroke="var(--color-published)"
+                strokeWidth={2}
+                // A dot only on the week under the pointer.
+                dot={false}
+                activeDot={{ r: 5, stroke: 'var(--card)', strokeWidth: 2 }}
               />
             </AreaChart>
           </ChartContainer>
@@ -160,8 +173,8 @@ export function PublishingChart({ activity }: { activity: DashboardData['activit
       </CardContent>
       <CardFooter className="text-muted-foreground text-xs">
         {total === 0
-          ? `Nothing published in the last ${periodDays} days.`
-          : `${formatInteger(total)} ${total === 1 ? 'post' : 'posts'} published in the last ${periodDays} days.`}
+          ? `Nothing published in the last ${periodWeeks} weeks.`
+          : `${formatInteger(total)} ${total === 1 ? 'post' : 'posts'} published in the last ${periodWeeks} weeks.`}
       </CardFooter>
     </Card>
   );

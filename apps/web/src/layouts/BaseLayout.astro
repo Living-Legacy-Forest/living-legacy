@@ -42,8 +42,9 @@ const title = formatPageTitle(settings.titlePattern, pageTitle, settings.siteTit
 // Anything that is not the production domain is always blocked, so preview and
 // workers.dev URLs cannot be indexed. `noindex` can only add a block, never lift
 // it: pages pass `noindex={page > 1}`, and a plain `false` must not switch off
-// the host check.
-const blockIndexing = noindex === true || !isIndexableHost(Astro.url.host);
+// the host check. Settings can also hide the whole site (Hide from search engines).
+const blockIndexing =
+  noindex === true || settings.hideFromSearch || !isIndexableHost(Astro.url.host);
 ---
 
 <!doctype html>

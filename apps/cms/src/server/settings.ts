@@ -7,8 +7,11 @@ import {
   type TimeZone,
   can,
   formatAbn,
+  isEmailDomain,
   isValidAbn,
   locales,
+  parseEmailDomains,
+  sessionDayOptions,
   themes,
   timeZones,
 } from '@ll/content';
@@ -70,6 +73,17 @@ const settingsSchema = z.object({
   seoImageUrl: link,
   googleVerification: verification,
   bingVerification: verification,
+  hideFromSearch: z.boolean(),
+  allowedEmailDomains: text(500)
+    .refine(
+      (v) => parseEmailDomains(v).every(isEmailDomain),
+      'Enter domains such as example.com.au, separated by commas.'
+    )
+    .transform((v) => parseEmailDomains(v).join(', ')),
+  googleSignIn: z.boolean(),
+  sessionDays: z
+    .number()
+    .refine((n) => (sessionDayOptions as readonly number[]).includes(n), 'Pick 1, 7 or 30 days.'),
   locale: z.enum(locales),
   theme: z.enum(themes),
   timeZone: z.enum(timeZones),
@@ -82,6 +96,7 @@ const SEO_KEYS = [
   'seoImageUrl',
   'googleVerification',
   'bingVerification',
+  'hideFromSearch',
 ] as const satisfies readonly (keyof SiteSettings)[];
 
 export const saveSiteSettings = createServerFn({ method: 'POST' })

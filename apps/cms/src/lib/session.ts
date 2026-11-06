@@ -3,6 +3,7 @@ import { createMiddleware, createServerFn } from '@tanstack/react-start';
 import { getRequest } from '@tanstack/react-start/server';
 import { env } from 'cloudflare:workers';
 import { getAuth } from './auth';
+import { readSiteSettings } from './site-settings';
 
 export type SessionUser = {
   id: string;
@@ -56,8 +57,8 @@ export function forgetCachedUser() {
 }
 
 /** Which sign-in methods the login page should offer. */
-export const getLoginOptions = createServerFn({ method: 'GET' }).handler(() => ({
-  google: Boolean(env.GOOGLE_CLIENT_ID),
+export const getLoginOptions = createServerFn({ method: 'GET' }).handler(async () => ({
+  google: Boolean(env.GOOGLE_CLIENT_ID) && (await readSiteSettings()).googleSignIn,
 }));
 
 /** Every CMS server function goes through this: no session, no access. */

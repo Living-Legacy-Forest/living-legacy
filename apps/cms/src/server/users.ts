@@ -1,4 +1,11 @@
-import { guardRemoval, guardRoleChange, normaliseEmail, roleSchema } from '@ll/content';
+import {
+  guardRemoval,
+  guardRoleChange,
+  isEmailDomainAllowed,
+  normaliseEmail,
+  parseEmailDomains,
+  roleSchema,
+} from '@ll/content';
 import { invitation, session, user } from '@ll/db/schema';
 import { createServerFn } from '@tanstack/react-start';
 import { env } from 'cloudflare:workers';
@@ -7,6 +14,7 @@ import { z } from 'zod';
 import { deleteOwnAvatar } from '@/lib/avatars';
 import { getDb } from '@/lib/db';
 import { sendInviteEmail } from '@/lib/email';
+import { readSiteSettings } from '@/lib/site-settings';
 import { requirePermission } from '@/lib/session';
 import { logActivity } from './activity-log';
 
@@ -71,6 +79,12 @@ export const inviteUser = createServerFn({ method: 'POST' })
 
     const existing = await db.query.user.findFirst({ where: eq(user.email, email) });
     if (existing) throw new Error('That email already has an account.');
+
+    const { allowedEmailDomains } = await readSiteSettings();
+    if (!isEmailDomainAllowed(email, allowedEmailDomains)) {
+      const domains = parseEmailDomains(allowedEmailDomains).join(', ');
+      throw new Error(`Invites can only go to ${domains} addresses. Change this in Settings.`);
+    }
 
     await db
       .insert(invitation)

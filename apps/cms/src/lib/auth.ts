@@ -1,14 +1,29 @@
-import { canReceiveMagicLink, normaliseEmail, resolveSignupRole } from '@ll/content';
+import {
+  canReceiveMagicLink,
+  normaliseEmail,
+  resolveSignupRole,
+  sessionDayOptions,
+} from '@ll/content';
 import { schema } from '@ll/db';
 import { betterAuth } from 'better-auth';
 import { drizzleAdapter } from 'better-auth/adapters/drizzle';
-import { APIError } from 'better-auth/api';
+import { APIError, createAuthMiddleware } from 'better-auth/api';
 import { magicLink } from 'better-auth/plugins';
 import { tanstackStartCookies } from 'better-auth/tanstack-start';
 import { env } from 'cloudflare:workers';
 import { eq } from 'drizzle-orm';
 import { getDb } from './db';
 import { sendChangeEmailVerificationEmail, sendMagicLinkEmail } from './email';
+import { readSiteSettings } from './site-settings';
+
+const DAY_MS = 24 * 60 * 60 * 1000;
+
+/** When a session started or refreshed now should end, from Settings → Sign-in. */
+async function sessionEnd(): Promise<Date> {
+  const { sessionDays } = await readSiteSettings();
+  const days = (sessionDayOptions as readonly number[]).includes(sessionDays) ? sessionDays : 7;
+  return new Date(Date.now() + days * DAY_MS);
+}
 
 function createAuth() {
   const db = getDb();
@@ -53,10 +68,37 @@ function createAuth() {
     // Saves the session and user lookups on every server function call. The
     // tradeoff: removing a user or changing their role reaches their open
     // sessions only once this expires.
-    session: { cookieCache: { enabled: true, maxAge: 5 * 60 } },
+    //
+    // The longest idle limit Settings offers; the session hooks below cut each
+    // session to the one chosen. Better Auth judges a refresh against this, so
+    // with a shorter limit an active session is saved again at most every
+    // cookie-cache window, which keeps the limit sliding.
+    session: { expiresIn: 30 * 24 * 60 * 60, cookieCache: { enabled: true, maxAge: 5 * 60 } },
+    // Google sign-in can be switched off in Settings; refuse it on the server
+    // too, not only by hiding the button.
+    hooks: {
+      before: createAuthMiddleware(async (ctx) => {
+        const google =
+          (ctx.path === '/sign-in/social' && ctx.body?.provider === 'google') ||
+          ctx.path === '/callback/:id';
+        if (google && !(await readSiteSettings()).googleSignIn) {
+          throw new APIError('FORBIDDEN', { message: 'google_disabled' });
+        }
+      }),
+    },
     // A refused sign-in lands back on the login page with ?error=...
     onAPIError: { errorURL: '/login' },
     databaseHooks: {
+      session: {
+        create: {
+          before: async (session) => ({ data: { ...session, expiresAt: await sessionEnd() } }),
+        },
+        update: {
+          // Only a refresh moves the expiry; other updates leave it alone.
+          before: async (session) =>
+            session.expiresAt ? { data: { ...session, expiresAt: await sessionEnd() } } : undefined,
+        },
+      },
       user: {
         create: {
           // Invite-only: refuse any Google account that is neither invited nor

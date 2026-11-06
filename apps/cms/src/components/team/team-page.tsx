@@ -350,7 +350,7 @@ function MemberSummary({ member }: { member: TeamMember }) {
       )}
       <span className="min-w-0 flex-1">
         <span className="flex items-center gap-2">
-          <span className="truncate text-[13px] font-medium">{member.name}</span>
+          <span className="text-ui truncate font-medium">{member.name}</span>
           {member.status === 'draft' && (
             <Badge variant="outline" className="shrink-0">
               Draft

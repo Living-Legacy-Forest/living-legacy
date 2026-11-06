@@ -85,4 +85,4 @@ export const SCROLL_SHADOWS = {
 };
 
 export const ACTIVE_ITEM =
-  "rounded-md py-1 pl-2 text-[13px] data-[state=checked]:bg-accent data-[state=checked]:text-accent-foreground data-checked:bg-accent data-checked:text-accent-foreground [&>span:first-child]:hidden [&_svg:not([class*='size-'])]:size-3.5";
+  "rounded-md py-1 pl-2 text-ui data-[state=checked]:bg-accent data-[state=checked]:text-accent-foreground data-checked:bg-accent data-checked:text-accent-foreground [&>span:first-child]:hidden [&_svg:not([class*='size-'])]:size-3.5";

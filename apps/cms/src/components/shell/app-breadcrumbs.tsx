@@ -19,7 +19,7 @@ export function AppBreadcrumbs({ item, current }: { item?: NavItem; current?: st
 
   return (
     <Breadcrumb>
-      <BreadcrumbList className="text-[13px]">
+      <BreadcrumbList className="text-ui">
         <BreadcrumbItem>
           {current && item.to ? (
             <BreadcrumbLink

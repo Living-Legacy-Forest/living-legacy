@@ -199,7 +199,7 @@ export function CommandMenu({ user }: { user: SessionUser }) {
         <SidebarMenuButton
           tooltip="Search (⌘K)"
           onClick={() => setOpen(true)}
-          className="bg-sidebar-accent/60 text-muted-foreground hover:text-sidebar-foreground h-8 text-[13px]"
+          className="bg-sidebar-accent/60 text-muted-foreground hover:text-sidebar-foreground text-ui h-8"
         >
           <SearchIcon aria-hidden />
           <span className="flex-1 text-left">Search…</span>

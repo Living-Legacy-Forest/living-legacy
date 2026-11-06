@@ -236,13 +236,13 @@ export function RedirectsPage({ data }: { data: RedirectsData }) {
               <SelectTrigger
                 aria-label="Filter redirects"
                 size="sm"
-                className="bg-muted/60 w-40 border-0 text-[13px] shadow-none"
+                className="bg-muted/60 text-ui w-40 border-0 shadow-none"
               >
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
                 {filterItems.map((item) => (
-                  <SelectItem key={item.value} value={item.value} className="text-[13px]">
+                  <SelectItem key={item.value} value={item.value} className="text-ui">
                     {item.label}
                   </SelectItem>
                 ))}
@@ -407,7 +407,7 @@ function RedirectSummary({ redirect }: { redirect: Redirect }) {
   return (
     <span className={cn('block', !redirect.enabled && 'opacity-60')}>
       <span className="flex items-center gap-2">
-        <span className="min-w-0 flex-1 truncate font-mono text-[13px]">{redirect.fromPath}</span>
+        <span className="text-ui min-w-0 flex-1 truncate font-mono">{redirect.fromPath}</span>
         {redirect.enabled ? (
           <Badge variant={redirect.statusCode === 301 ? 'secondary' : 'outline'}>
             {redirect.statusCode}

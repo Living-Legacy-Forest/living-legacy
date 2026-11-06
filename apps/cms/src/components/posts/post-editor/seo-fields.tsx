@@ -56,7 +56,7 @@ export function SeoFields({
         onChange={(ogMediaId) => onChange({ ogMediaId })}
       />
       <div className="flex items-center justify-between gap-3">
-        <Label htmlFor="seo-noindex" className="text-[13px] font-normal">
+        <Label htmlFor="seo-noindex" className="text-ui font-normal">
           Hide from search engines
         </Label>
         <Switch
@@ -107,7 +107,7 @@ function CountedField({
           placeholder={placeholder}
           rows={3}
           onChange={(e) => onChange(e.target.value)}
-          className="text-[13px]"
+          className="text-ui"
         />
       ) : (
         <Input
@@ -115,7 +115,7 @@ function CountedField({
           value={value}
           placeholder={placeholder}
           onChange={(e) => onChange(e.target.value)}
-          className="h-8 text-[13px]"
+          className="text-ui h-8"
         />
       )}
     </div>

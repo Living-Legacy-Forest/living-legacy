@@ -52,7 +52,7 @@ export function EditorToolbar({
         inReview={meta.reviewRequestedAt !== null}
         scheduledAt={meta.scheduledAt}
         showDate
-        className="text-foreground text-[13px]"
+        className="text-foreground text-ui"
       />
       <span className="text-muted-foreground text-xs" aria-live="polite">
         {editor.saveState}

@@ -6,7 +6,7 @@ import {
   CircleHelp,
   ExternalLink,
   FileText,
-  ImageIcon,
+  MediaIcon,
   LayoutDashboard,
   MegaphoneIcon,
   MapPinIcon,
@@ -68,7 +68,7 @@ export const navGroups: NavGroup[] = [
           { title: 'Tags', to: '/posts/tags' },
         ],
       },
-      { title: 'Media', icon: ImageIcon, to: '/media', permission: 'media:write' },
+      { title: 'Media', icon: MediaIcon, to: '/media', permission: 'media:write' },
       { title: 'FAQs', icon: CircleHelp, to: '/faqs' },
       { title: 'Testimonials', icon: Quote, to: '/testimonials' },
       { title: 'Team', icon: Users, to: '/team' },
@@ -103,7 +103,7 @@ export function isNavItemAllowed(item: NavItem, role: Role) {
 export const phoneTabs: (NavItem & { to: NonNullable<NavItem['to']>; icon: LucideIcon })[] = [
   { title: 'Dashboard', icon: LayoutDashboard, to: '/' },
   { title: 'Posts', icon: FileText, to: '/posts' },
-  { title: 'Media', icon: ImageIcon, to: '/media', permission: 'media:write' },
+  { title: 'Media', icon: MediaIcon, to: '/media', permission: 'media:write' },
   { title: 'Locations', icon: MapPinIcon, to: '/locations' },
 ];
 

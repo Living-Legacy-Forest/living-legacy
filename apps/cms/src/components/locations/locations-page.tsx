@@ -359,7 +359,7 @@ function LocationSummary({ item }: { item: LocationItem }) {
       </span>
       <span className="min-w-0 flex-1">
         <span className="flex items-center gap-2">
-          <span className="min-w-0 flex-1 truncate text-[13px] font-medium">{item.name}</span>
+          <span className="text-ui min-w-0 flex-1 truncate font-medium">{item.name}</span>
           {item.status === 'draft' && (
             <span className="text-muted-foreground shrink-0 text-xs">Draft</span>
           )}
@@ -659,7 +659,7 @@ function LocationForm({
           }}
           onBlur={() => setSlug(slugify(slug || name))}
           placeholder="made-from-the-name"
-          className="font-mono text-[13px]"
+          className="text-ui font-mono"
         />
         <Hint>
           Its page lives at /locations/{slug || 'slug'}/. Keep it short, e.g. the town name.
@@ -840,7 +840,7 @@ function LocationForm({
           value={hubspotFormId}
           onChange={(e) => setHubspotFormId(e.target.value)}
           placeholder="Optional"
-          className="font-mono text-[13px]"
+          className="text-ui font-mono"
         />
         <Hint>
           Found in HubSpot under the form’s embed code. Tour bookings and enquiries from its page go

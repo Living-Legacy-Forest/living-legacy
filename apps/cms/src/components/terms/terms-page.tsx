@@ -275,7 +275,7 @@ function TermSummary({ term: t }: { term: Term }) {
   return (
     <>
       <span className="flex items-center gap-2">
-        <span className="min-w-0 flex-1 truncate text-[13px] font-medium">{t.name}</span>
+        <span className="text-ui min-w-0 flex-1 truncate font-medium">{t.name}</span>
         <Badge variant="outline" className="shrink-0 tabular-nums">
           {t.postCount} {t.postCount === 1 ? 'post' : 'posts'}
         </Badge>

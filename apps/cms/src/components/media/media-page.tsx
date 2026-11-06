@@ -9,7 +9,7 @@ import {
   matchesSearch,
   useSelection,
 } from '@/components/list/list-tools';
-import { CropIcon, ImageIcon, Trash2Icon, UploadIcon } from '@/components/icons';
+import { CropIcon, MediaIcon, Trash2Icon, UploadIcon } from '@/components/icons';
 import { ImageCropDialog } from '@/components/media/image-crop-dialog';
 import { Button } from '@/components/ui/button';
 import {
@@ -125,7 +125,7 @@ export function MediaPage({ data }: { data: MediaListData }) {
         <Empty className={cn('flex-1 rounded-lg border', dragOver && 'border-ring bg-accent/40')}>
           <EmptyHeader>
             <EmptyMedia variant="icon">
-              <ImageIcon aria-hidden />
+              <MediaIcon aria-hidden />
             </EmptyMedia>
             <EmptyTitle>No media yet</EmptyTitle>
             <EmptyDescription>

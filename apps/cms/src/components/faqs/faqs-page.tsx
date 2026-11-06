@@ -257,13 +257,13 @@ export function FaqsPage({ data, canWrite }: { data: FaqData; canWrite: boolean 
             <SelectTrigger
               aria-label="Filter by tag"
               size="sm"
-              className="bg-muted/60 w-40 border-0 text-[13px] shadow-none"
+              className="bg-muted/60 text-ui w-40 border-0 shadow-none"
             >
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
               {tagItems.map((item) => (
-                <SelectItem key={item.value} value={item.value} className="text-[13px]">
+                <SelectItem key={item.value} value={item.value} className="text-ui">
                   {item.label}
                 </SelectItem>
               ))}
@@ -566,7 +566,7 @@ function FaqSummary({ faq }: { faq: Faq }) {
   return (
     <>
       <span className="flex items-center gap-2">
-        <span className="truncate text-[13px] font-medium">{faq.question}</span>
+        <span className="text-ui truncate font-medium">{faq.question}</span>
         {faq.status === 'draft' && (
           <Badge variant="outline" className="shrink-0">
             Draft
@@ -906,7 +906,7 @@ function GroupForm({
           onChange={(e) => setSlug(e.target.value)}
           onBlur={() => setSlug(slugify(slug))}
           placeholder={slugify(name) || 'made-from-the-name'}
-          className="font-mono text-[13px]"
+          className="text-ui font-mono"
         />
         <p className="text-muted-foreground text-xs">
           Links straight to the group, as /faqs/#{slug || slugify(name) || 'anchor'}. Changing it

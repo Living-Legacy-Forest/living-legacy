@@ -47,11 +47,7 @@ const TextStyleMenu = ({ editor, value }: { editor: Editor | null; value: string
   <DropdownMenu>
     <DropdownMenuTrigger
       render={
-        <Button
-          className="h-8 w-[6.5rem] justify-between px-2 text-[13px]"
-          size="sm"
-          variant="ghost"
-        />
+        <Button className="text-ui h-8 w-[6.5rem] justify-between px-2" size="sm" variant="ghost" />
       }
     >
       {TEXT_STYLES.find((s) => s.value === value)?.label}
@@ -252,7 +248,7 @@ const InsertMenu = ({ editor }: { editor: Editor | null }) => {
     <>
       <DropdownMenu>
         <DropdownMenuTrigger
-          render={<Button className="h-8 gap-1 px-2 text-[13px]" size="sm" variant="ghost" />}
+          render={<Button className="text-ui h-8 gap-1 px-2" size="sm" variant="ghost" />}
         >
           <Plus className="size-4" />
           Insert
@@ -262,7 +258,7 @@ const InsertMenu = ({ editor }: { editor: Editor | null }) => {
           {items.map(({ Icon, label, onSelect }) => (
             <DropdownMenuItem
               key={label}
-              className="rounded-md py-1 text-[13px] [&_svg]:size-3.5!"
+              className="text-ui rounded-md py-1 [&_svg]:size-3.5!"
               onClick={onSelect}
             >
               <Icon />

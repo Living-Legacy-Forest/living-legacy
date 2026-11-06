@@ -67,7 +67,7 @@ export function ReviewerPopover({
         {size === 'sm' && 'Submit for review'}
       </PopoverTrigger>
       <PopoverContent align="end" className="w-72 space-y-3 p-3">
-        <p className="text-[13px] font-medium">Submit for review</p>
+        <p className="text-ui font-medium">Submit for review</p>
         <div className="space-y-1.5">
           <Label htmlFor="reviewer-select" className="text-muted-foreground text-xs">
             Reviewer

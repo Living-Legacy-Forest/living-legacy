@@ -20,7 +20,7 @@ function PreviewPage() {
 
   return (
     <div className="bg-background min-h-svh">
-      <div className="bg-background/80 sticky top-0 z-10 flex h-11 items-center gap-3 border-b px-4 text-[13px] backdrop-blur">
+      <div className="bg-background/80 text-ui sticky top-0 z-10 flex h-11 items-center gap-3 border-b px-4 backdrop-blur">
         <span className="font-medium">Preview</span>
         <PostStatusBadge
           status={post.status}

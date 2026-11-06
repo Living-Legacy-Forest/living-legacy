@@ -25,7 +25,7 @@ export function PostArticle({
   return (
     <article className={cn('mx-auto', pane ? 'max-w-xl px-8 py-10' : 'max-w-2xl px-6 py-16')}>
       {post.categories.length > 0 && (
-        <p className="text-muted-foreground mb-3 text-[13px]">{post.categories.join(' · ')}</p>
+        <p className="text-muted-foreground text-ui mb-3">{post.categories.join(' · ')}</p>
       )}
       <h1
         className={cn('leading-tight font-semibold tracking-tight', pane ? 'text-2xl' : 'text-4xl')}
@@ -42,7 +42,7 @@ export function PostArticle({
           {post.excerpt}
         </p>
       )}
-      <p className="text-muted-foreground mt-5 border-b pb-5 text-[13px]">
+      <p className="text-muted-foreground text-ui mt-5 border-b pb-5">
         {[
           post.author,
           post.publishedAt

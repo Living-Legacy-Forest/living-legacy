@@ -120,7 +120,7 @@ export function Notifications({ user }: { user: SessionUser }) {
     <Popover open={open} onOpenChange={onOpenChange}>
       <PopoverTrigger render={<Button {...triggerProps} />}>{bell}</PopoverTrigger>
       <PopoverContent align="end" className="w-80 p-0">
-        <div className="flex h-10 items-center border-b px-3 text-[13px] font-medium">Activity</div>
+        <div className="text-ui flex h-10 items-center border-b px-3 font-medium">Activity</div>
         {list}
       </PopoverContent>
     </Popover>
@@ -190,10 +190,7 @@ function ActivityList({
               </AvatarFallback>
             </Avatar>
             <span
-              className={cn(
-                'min-w-0 flex-1 leading-snug',
-                phone ? 'text-[0.9375rem]' : 'text-[13px]'
-              )}
+              className={cn('min-w-0 flex-1 leading-snug', phone ? 'text-[0.9375rem]' : 'text-ui')}
             >
               <span className="font-medium">{who}</span>{' '}
               <span className="text-muted-foreground">{item.action}</span>{' '}

@@ -161,6 +161,8 @@ export function EventForm({
   const [repeat, setRepeat] = useState<RepeatValue>(noRepeat);
   const [askScope, setAskScope] = useState(false);
   const [step, setStep] = useState(0);
+  // Which way the steps move, so the new one slides in from that side.
+  const [forward, setForward] = useState(true);
   const zone = useTimeZone();
   const patch = (next: Partial<Values>) => setValues((v) => ({ ...v, ...next }));
   const { run, pending } = useAction();
@@ -230,8 +232,10 @@ export function EventForm({
     e.preventDefault();
     if (!reportInvalid(e.currentTarget)) return;
     if (step === 1 && !timesReady()) return;
-    if (step < STEPS.length - 1) setStep(step + 1);
-    else void save('one');
+    if (step < STEPS.length - 1) {
+      setForward(true);
+      setStep(step + 1);
+    } else void save('one');
   }
 
   function submit(e: React.FormEvent) {
@@ -450,19 +454,27 @@ export function EventForm({
     return (
       <form noValidate onSubmit={next} className="space-y-5">
         <Steps current={step} />
-        {step === 0 && details}
-        {step === 1 && when}
-        {step === 2 && (
-          <>
-            {places}
-            <NewEventSummary
-              title={values.title}
-              where={values.venue || location?.name || ''}
-              times={times}
-              dates={dateCount}
-            />
-          </>
-        )}
+        <div
+          key={step}
+          className={cn(
+            'animate-in fade-in space-y-5 duration-200 ease-out motion-reduce:animate-none',
+            forward ? 'slide-in-from-right-3' : 'slide-in-from-left-3'
+          )}
+        >
+          {step === 0 && details}
+          {step === 1 && when}
+          {step === 2 && (
+            <>
+              {places}
+              <NewEventSummary
+                title={values.title}
+                where={values.venue || location?.name || ''}
+                times={times}
+                dates={dateCount}
+              />
+            </>
+          )}
+        </div>
         {actions(
           step < STEPS.length - 1 ? (
             <Button type="submit">Next</Button>
@@ -470,7 +482,15 @@ export function EventForm({
             saveButton('Create event')
           ),
           step > 0 && (
-            <Button type="button" variant="ghost" size="sm" onClick={() => setStep(step - 1)}>
+            <Button
+              type="button"
+              variant="ghost"
+              size="sm"
+              onClick={() => {
+                setForward(false);
+                setStep(step - 1);
+              }}
+            >
               Back
             </Button>
           )

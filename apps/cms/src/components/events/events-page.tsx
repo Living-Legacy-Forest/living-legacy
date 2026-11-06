@@ -317,7 +317,9 @@ function EventPanel({
           Guests
         </ToggleGroupItem>
       </ToggleGroup>
-      {view === 'details' ? details : <EventGuests event={event} />}
+      <div key={view} className="animate-in fade-in duration-200 motion-reduce:animate-none">
+        {view === 'details' ? details : <EventGuests event={event} />}
+      </div>
     </div>
   );
 }

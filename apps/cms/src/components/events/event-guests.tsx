@@ -27,6 +27,7 @@ import { useAction } from '@/lib/use-action';
 import { useTimeZone } from '@/lib/use-time-zone';
 import type { EventRow } from '@/server/events';
 import { type Guest, cancelGuest, getGuests, setCheckedIn } from '@/server/event-guests';
+import { Reveal } from '@/components/reveal';
 import { AddGuestDialog } from './add-guest-dialog';
 
 const fullName = (g: Guest) => [g.firstName, g.lastName].filter(Boolean).join(' ');
@@ -168,7 +169,10 @@ export function EventGuests({ event }: { event: EventRow }) {
       ) : (
         <ul className="divide-y rounded-lg border">
           {confirmed.filter(matches).map((g) => (
-            <li key={g.id} className="flex items-center gap-3 px-3 py-2.5">
+            <li
+              key={g.id}
+              className="animate-in fade-in slide-in-from-top-1 flex items-center gap-3 px-3 py-2.5 duration-200 motion-reduce:animate-none"
+            >
               <GuestDetails guest={g} />
               {editable && (
                 <>
@@ -214,7 +218,7 @@ export function EventGuests({ event }: { event: EventRow }) {
         </ul>
       )}
 
-      {cancelled.length > 0 && (
+      <Reveal show={cancelled.length > 0}>
         <section className="space-y-2">
           <h3 className="text-muted-foreground text-xs font-medium">Cancelled</h3>
           <ul className="divide-y rounded-lg border opacity-70">
@@ -225,7 +229,7 @@ export function EventGuests({ event }: { event: EventRow }) {
             ))}
           </ul>
         </section>
-      )}
+      </Reveal>
 
       <AddGuestDialog event={event} open={adding} onOpenChange={setAdding} onAdded={reload} />
 

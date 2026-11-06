@@ -22,6 +22,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
+import { Reveal } from '@/components/reveal';
 import { cn } from '@/lib/utils';
 import { useTimeZone } from '@/lib/use-time-zone';
 import { type EventTimes, dayLabel } from './event-dates-field';
@@ -127,7 +128,7 @@ export function RepeatField({
             </SelectContent>
           </Select>
         </div>
-        {value.repeat !== 'none' && !custom && (
+        <Reveal show={value.repeat !== 'none' && !custom}>
           <div className="space-y-1.5">
             <Label htmlFor="ev-repeat-ends">Ends</Label>
             <div className="flex max-w-sm gap-2">
@@ -203,10 +204,10 @@ export function RepeatField({
               )}
             </div>
           </div>
-        )}
+        </Reveal>
       </div>
 
-      {weekly && (
+      <Reveal show={weekly}>
         <fieldset className="space-y-1.5">
           <legend className="text-sm font-medium">On</legend>
           <div className="flex gap-1">
@@ -240,9 +241,9 @@ export function RepeatField({
             })}
           </div>
         </fieldset>
-      )}
+      </Reveal>
 
-      {custom && (
+      <Reveal show={custom}>
         <div className="space-y-1.5">
           <div className="flex items-baseline justify-between gap-3">
             <p className="text-sm font-medium">Dates</p>
@@ -250,7 +251,7 @@ export function RepeatField({
               <button
                 type="button"
                 onClick={() => patch({ picked: [] })}
-                className="text-muted-foreground hover:text-foreground text-xs"
+                className="text-muted-foreground hover:text-foreground animate-in fade-in text-xs duration-200 motion-reduce:animate-none"
               >
                 Clear
               </button>
@@ -286,9 +287,9 @@ export function RepeatField({
               : `${kept} dates, each with the same times and its own guest list.`}
           </p>
         </div>
-      )}
+      </Reveal>
 
-      {value.repeat !== 'none' && !custom && (
+      <Reveal show={value.repeat !== 'none' && !custom}>
         <div className="space-y-2">
           <p className="text-muted-foreground text-xs">
             {value.ends === 'until' && !value.until
@@ -311,7 +312,7 @@ export function RepeatField({
                       })
                     }
                     className={cn(
-                      'touch:min-h-11 rounded-md border px-2 py-1 text-xs tabular-nums transition-colors',
+                      'touch:min-h-11 animate-in fade-in zoom-in-95 rounded-md border px-2 py-1 text-xs tabular-nums transition-colors duration-200 motion-reduce:animate-none',
                       d.skipped
                         ? 'text-muted-foreground border-dashed line-through'
                         : 'bg-muted/60 border-transparent',
@@ -328,7 +329,7 @@ export function RepeatField({
             </ul>
           )}
         </div>
-      )}
+      </Reveal>
     </div>
   );
 }

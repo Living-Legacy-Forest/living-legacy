@@ -13,6 +13,8 @@ export const permissions = [
   'seo:write',
   // FAQs, testimonials, team, announcements and post categories.
   'content:write',
+  // Events and their guest lists (names, emails, phone numbers).
+  'events:manage',
   'media:write',
   // Permanent delete, from the trash or of media.
   'content:purge',
@@ -24,7 +26,14 @@ export type Permission = (typeof permissions)[number];
 
 const grants: Record<Role, readonly Permission[]> = {
   admin: permissions,
-  editor: ['posts:write', 'posts:publish', 'seo:write', 'content:write', 'media:write'],
+  editor: [
+    'posts:write',
+    'posts:publish',
+    'seo:write',
+    'content:write',
+    'media:write',
+    'events:manage',
+  ],
   author: ['posts:write', 'media:write'],
   seo: ['seo:write', 'redirects:write'],
   // Read-only: sees the content pages, changes nothing.

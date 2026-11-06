@@ -2,6 +2,7 @@ import { type Permission, type Role, can } from '@ll/content';
 import {
   ActivityIcon,
   ArrowRightLeft,
+  CalendarClockIcon,
   KeyIcon,
   CircleHelp,
   ExternalLink,
@@ -33,6 +34,7 @@ export type NavItem = {
     | '/activity'
     | '/api-keys'
     | '/announcements'
+    | '/events'
     | '/faqs'
     | '/media'
     | '/locations'
@@ -73,6 +75,7 @@ export const navGroups: NavGroup[] = [
       { title: 'Testimonials', icon: Quote, to: '/testimonials' },
       { title: 'Team', icon: Users, to: '/team' },
       { title: 'Locations', icon: MapPinIcon, to: '/locations' },
+      { title: 'Events', icon: CalendarClockIcon, to: '/events', permission: 'events:manage' },
       { title: 'Media coverage', icon: NewspaperIcon, to: '/media-coverage' },
       { title: 'Announcements', icon: MegaphoneIcon, to: '/announcements' },
     ],

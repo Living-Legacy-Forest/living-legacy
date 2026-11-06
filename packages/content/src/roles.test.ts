@@ -8,6 +8,14 @@ import {
 } from './roles';
 
 describe('can', () => {
+  it('lets admins and editors manage events and their guests', () => {
+    expect(can('admin', 'events:manage')).toBe(true);
+    expect(can('editor', 'events:manage')).toBe(true);
+    expect(can('author', 'events:manage')).toBe(false);
+    expect(can('seo', 'events:manage')).toBe(false);
+    expect(can('viewer', 'events:manage')).toBe(false);
+  });
+
   it('lets admins do everything', () => {
     expect(can('admin', 'users:manage')).toBe(true);
     expect(can('admin', 'content:purge')).toBe(true);

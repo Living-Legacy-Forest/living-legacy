@@ -36,8 +36,23 @@ bun run --filter @ll/cms db:migrate:local
 bun run dev:cms            # http://localhost:3100
 ```
 
-Sign-in is Google only and invite-only. Put your own email in `BOOTSTRAP_ADMIN_EMAILS` to get
-in as the first Admin.
+Sign-in is invite-only, by emailed link or, when it is set up, Google. Put your own email in
+`BOOTSTRAP_ADMIN_EMAILS` to get in as the first Admin.
+
+### Google sign-in
+
+1. In Google Cloud console, open APIs & Services > Credentials and create an OAuth client ID of
+   type "Web application".
+2. Add these authorised redirect URIs:
+   - `https://cms.livinglegacy.com.au/api/auth/callback/google`
+   - `http://localhost:3100/api/auth/callback/google`
+3. Set the client ID and secret as `GOOGLE_CLIENT_ID` and `GOOGLE_CLIENT_SECRET`: in
+   `apps/cms/.dev.vars` locally, and as secrets on the CMS Worker
+   (`bunx wrangler secret put GOOGLE_CLIENT_ID` from `apps/cms`, and the same for the secret).
+
+The button appears once both are set, and can be switched off under Settings > Sign-in & security.
+Someone already in the CMS who signs in with Google for the first time keeps their account and
+role; a new Google account still needs an invite.
 
 ## Database changes
 

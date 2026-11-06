@@ -1,9 +1,9 @@
 import { env } from 'cloudflare:workers';
 import { mediaIdFromPath, serveMedia } from './server/media-delivery';
 
-// The app, the scheduler and the sweep are loaded when first needed rather
-// than at startup. Most starts are the five-minute cron, which needs only the
-// scheduler, and loading the whole app for it made every one of them slower.
+// The app and the cron jobs are loaded when first needed rather than at
+// startup. Most starts are the five-minute cron, which needs only its jobs, and
+// loading the whole app for it made every one of them slower.
 const loadApp = () => import('@tanstack/react-start/server-entry').then((m) => m.default);
 
 // Must match the second trigger in wrangler.jsonc.
@@ -11,8 +11,10 @@ const MEDIA_SWEEP_CRON = '0 17 * * *';
 
 const OLD_HOST = 'living-legacy-cms.living-legacy.workers.dev';
 
-// Custom Worker entry: TanStack Start serves requests; the cron triggers in
-// wrangler.jsonc publish scheduled posts and clear out unused stored files.
+// Custom Worker entry: TanStack Start serves requests. The cron triggers in
+// wrangler.jsonc: every five minutes, publish scheduled posts and sync event
+// bookings to HubSpot (once connected; HubSpot sends the guest emails); daily,
+// clear out unused stored files and delete bookings a year after their event.
 export default {
   // The app reads bindings via `cloudflare:workers`, so it only gets the request.
   async fetch(request, _env, ctx) {
@@ -32,11 +34,19 @@ export default {
   async scheduled(controller, env, ctx) {
     const now = new Date(controller.scheduledTime);
     if (controller.cron === MEDIA_SWEEP_CRON) {
-      const { sweepOrphanedMedia } = await import('./server/media-sweep');
-      ctx.waitUntil(sweepOrphanedMedia(env.DB, env.MEDIA, now));
+      const [{ sweepOrphanedMedia }, { purgeOldBookings }] = await Promise.all([
+        import('./server/media-sweep'),
+        import('./server/event-jobs'),
+      ]);
+      ctx.waitUntil(
+        Promise.all([sweepOrphanedMedia(env.DB, env.MEDIA, now), purgeOldBookings(env.DB, now)])
+      );
       return;
     }
-    const { publishDuePosts } = await import('./server/scheduler');
-    ctx.waitUntil(publishDuePosts(env.DB, now));
+    const [{ publishDuePosts }, { syncPending }] = await Promise.all([
+      import('./server/scheduler'),
+      import('./server/event-crm'),
+    ]);
+    ctx.waitUntil(Promise.all([publishDuePosts(env.DB, now), syncPending(env.DB)]));
   },
 } satisfies ExportedHandler<Cloudflare.Env>;

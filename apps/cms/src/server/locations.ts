@@ -1,7 +1,7 @@
 import { australianStates, locationStages, slugify } from '@ll/content';
-import { locations } from '@ll/db/schema';
+import { eventBookings, events, locations } from '@ll/db/schema';
 import { createServerFn } from '@tanstack/react-start';
-import { and, asc, eq, inArray, isNull, ne } from 'drizzle-orm';
+import { and, asc, eq, gt, inArray, isNull, ne } from 'drizzle-orm';
 import { z } from 'zod';
 import { getDb } from '@/lib/db';
 import { authMiddleware, requirePermission } from '@/lib/session';
@@ -143,15 +143,37 @@ export const saveLocation = createServerFn({ method: 'POST' })
 
     const existing = await db.query.locations.findFirst({ where: eq(locations.id, data.id) });
     if (!existing) throw new Error('This location no longer exists.');
-    await db
-      .update(locations)
-      .set({
-        ...values,
-        publishedAt: data.status === 'published' ? (existing.publishedAt ?? now) : null,
-        updatedAt: now,
-        updatedBy: context.user.id,
-      })
-      .where(eq(locations.id, data.id));
+    // HubSpot tells event guests the location's name and address, so a change
+    // to either sends the bookings for its upcoming events again.
+    const moved =
+      existing.name !== values.name || (existing.address ?? '') !== (values.address ?? '');
+    await db.batch([
+      db
+        .update(locations)
+        .set({
+          ...values,
+          publishedAt: data.status === 'published' ? (existing.publishedAt ?? now) : null,
+          updatedAt: now,
+          updatedBy: context.user.id,
+        })
+        .where(eq(locations.id, data.id)),
+      ...(moved
+        ? [
+            db
+              .update(eventBookings)
+              .set({ crmSyncedAt: null })
+              .where(
+                inArray(
+                  eventBookings.eventId,
+                  db
+                    .select({ id: events.id })
+                    .from(events)
+                    .where(and(eq(events.locationId, data.id), gt(events.endsAt, now)))
+                )
+              ),
+          ]
+        : []),
+    ]);
     return { id: data.id };
   });
 

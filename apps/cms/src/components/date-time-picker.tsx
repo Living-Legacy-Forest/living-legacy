@@ -23,6 +23,7 @@ export function DateTimePicker({
   placeholder,
   defaultTime = '09:00',
   minDate,
+  zone: zoneOverride,
 }: {
   id: string;
   /** A timestamp, or null when not set. */
@@ -33,8 +34,11 @@ export function DateTimePicker({
   defaultTime?: string;
   /** Days before this timestamp's day cannot be picked. */
   minDate?: number | null;
+  /** A zone of its own (an event's), instead of the site's. */
+  zone?: string;
 }) {
-  const zone = useTimeZone();
+  const siteZone = useTimeZone();
+  const zone = zoneOverride ?? siteZone;
   const wall = value === null ? null : toZoned(value, zone);
   const day = wall ? new Date(wall.year, wall.month, wall.day) : undefined;
   const time = wall ? `${pad(wall.hour)}:${pad(wall.minute)}` : defaultTime;

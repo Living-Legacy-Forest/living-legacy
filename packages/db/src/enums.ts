@@ -28,6 +28,11 @@ export const activityActions = [
   'api_key.revoked',
   'post.created_via_api',
   'post.updated_via_api',
+  'event.saved',
+  'event.cancelled',
+  'event.deleted',
+  'event.guest_added',
+  'event.guest_cancelled',
 ] as const;
 export type ActivityAction = (typeof activityActions)[number];
 

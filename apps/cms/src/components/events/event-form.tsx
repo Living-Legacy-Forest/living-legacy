@@ -368,7 +368,7 @@ function CancelledEvent({
   return (
     <div className="space-y-4">
       <p className="bg-muted text-muted-foreground rounded-lg px-3 py-2.5 text-sm">
-        This event is cancelled. Its guests were emailed when it was cancelled.
+        This event is cancelled. Its bookings are kept for the record.
       </p>
       <dl className="grid grid-cols-[auto_1fr] gap-x-4 gap-y-1.5 text-sm">
         <dt className="text-muted-foreground">When</dt>
@@ -407,7 +407,7 @@ function CancelEvent({ event }: { event: EventRow }) {
           <AlertDialogDescription>
             {n === 0
               ? 'Nobody has booked yet.'
-              : `${n} ${n === 1 ? 'booking' : 'bookings'} will be told by email.`}{' '}
+              : `${n} ${n === 1 ? 'booking stays' : 'bookings stay'} on its guest list, and HubSpot tells the guests once it is connected.`}{' '}
             The event stays in the list, marked cancelled. This cannot be undone.
           </AlertDialogDescription>
         </AlertDialogHeader>
@@ -416,13 +416,10 @@ function CancelEvent({ event }: { event: EventRow }) {
           <AlertDialogAction
             onClick={() =>
               run(() => cancelEvent({ data: { id: event.id } }), {
-                success: (r) => ({
+                success: {
                   title: 'Event cancelled',
-                  description:
-                    r.notified === 1
-                      ? '1 guest was emailed.'
-                      : `${r.notified} guests were emailed.`,
-                }),
+                  description: 'It stays in the list, marked cancelled.',
+                },
                 error: 'Could not cancel the event',
               })
             }

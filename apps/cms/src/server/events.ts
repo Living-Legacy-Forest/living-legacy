@@ -1,4 +1,5 @@
 import { capacityProblem, eventInputSchema, slugify } from '@ll/content';
+import type { Db } from '@ll/db';
 import { eventBookings, events, locations } from '@ll/db/schema';
 import { createServerFn } from '@tanstack/react-start';
 import { and, asc, desc, eq, isNull, ne, sql } from 'drizzle-orm';
@@ -6,9 +7,12 @@ import { z } from 'zod';
 import { getDb } from '@/lib/db';
 import { requirePermission } from '@/lib/session';
 import { logActivity } from './activity-log';
-import { emailCancellation } from './event-mail';
 
 const confirmed = sql`${eventBookings.status} = 'confirmed'`;
+
+/** Marks an event's bookings as changed, so the HubSpot sync sends them again. */
+const resync = (db: Db, eventId: string) =>
+  db.update(eventBookings).set({ crmSyncedAt: null }).where(eq(eventBookings.eventId, eventId));
 
 export const listEvents = createServerFn({ method: 'GET' })
   .middleware([requirePermission('events:manage')])
@@ -116,13 +120,17 @@ export const saveEvent = createServerFn({ method: 'POST' })
         .where(and(eq(eventBookings.eventId, id), confirmed));
       const problem = capacityProblem(data.capacity, Number(row?.taken ?? 0));
       if (problem) throw new Error(problem);
-      // A new start time earns a fresh reminder.
-      const moved = current.startsAt.getTime() !== data.startsAt;
+      // HubSpot sends guests the details, so a change of time or place sends
+      // the bookings to it again.
+      const changed =
+        current.startsAt.getTime() !== data.startsAt ||
+        current.endsAt.getTime() !== data.endsAt ||
+        (current.venue ?? '') !== data.venue ||
+        current.locationId !== data.locationId ||
+        current.title !== data.title;
       await db.batch([
-        db
-          .update(events)
-          .set({ ...values, ...(moved ? { reminderSentAt: null } : {}) })
-          .where(eq(events.id, id)),
+        db.update(events).set(values).where(eq(events.id, id)),
+        ...(changed ? [resync(db, id)] : []),
         logActivity(db, {
           actorId: context.user.id,
           actorName: context.user.name,
@@ -153,13 +161,15 @@ export const cancelEvent = createServerFn({ method: 'POST' })
     const db = getDb();
     const event = await db.query.events.findFirst({ where: eq(events.id, data.id) });
     if (!event) throw new Error('That event no longer exists.');
-    if (event.status === 'cancelled') return { notified: 0 };
+    if (event.status === 'cancelled') return;
     const now = new Date();
     await db.batch([
       db
         .update(events)
         .set({ status: 'cancelled', cancelledAt: now, updatedAt: now, updatedBy: context.user.id })
         .where(eq(events.id, event.id)),
+      // HubSpot tells the guests, once it has the cancellation.
+      resync(db, event.id),
       logActivity(db, {
         actorId: context.user.id,
         actorName: context.user.name,
@@ -167,7 +177,6 @@ export const cancelEvent = createServerFn({ method: 'POST' })
         summary: `Cancelled the event ${event.title}`,
       }),
     ]);
-    return { notified: await emailCancellation(db, event.id) };
   });
 
 export const deleteEvent = createServerFn({ method: 'POST' })

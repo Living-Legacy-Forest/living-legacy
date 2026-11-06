@@ -1,6 +1,5 @@
 import { useState } from 'react';
 import { Button } from '@/components/ui/button';
-import { Checkbox } from '@/components/ui/checkbox';
 import {
   Dialog,
   DialogClose,
@@ -26,7 +25,6 @@ const empty = {
   phone: '',
   partySize: 1,
   note: '',
-  sendConfirmation: true,
 };
 
 /** A phone booking or a walk-in, added by staff. */
@@ -44,30 +42,17 @@ export function AddGuestDialog({
   const [values, setValues] = useState(empty);
   const patch = (next: Partial<typeof empty>) => setValues((v) => ({ ...v, ...next }));
   const { run, pending } = useAction();
-  const hasEmail = values.email.trim() !== '';
 
   async function submit(e: React.FormEvent) {
     e.preventDefault();
     if (!reportInvalid(e.currentTarget)) return;
-    const result = await run(
-      () =>
-        addGuest({
-          data: {
-            eventId: event.id,
-            ...values,
-            sendConfirmation: hasEmail && values.sendConfirmation,
-          },
-        }),
-      {
-        success: (r) => ({
-          title: 'Guest added',
-          description: r.emailed
-            ? `Booking ${r.reference}. A confirmation is on its way.`
-            : `Booking ${r.reference}.`,
-        }),
-        error: 'Could not add the guest',
-      }
-    );
+    const result = await run(() => addGuest({ data: { eventId: event.id, ...values } }), {
+      success: (r) => ({
+        title: 'Guest added',
+        description: `Booking ${r.reference}. HubSpot sends their emails once it is connected.`,
+      }),
+      error: 'Could not add the guest',
+    });
     if (result) {
       setValues(empty);
       onOpenChange(false);
@@ -156,18 +141,6 @@ export function AddGuestDialog({
               placeholder="Accessibility or dietary needs"
             />
           </div>
-          <label className="flex items-start gap-2.5 text-sm">
-            <Checkbox
-              checked={hasEmail && values.sendConfirmation}
-              disabled={!hasEmail}
-              onCheckedChange={(checked) => patch({ sendConfirmation: checked === true })}
-              className="mt-0.5"
-            />
-            <span className={hasEmail ? '' : 'text-muted-foreground'}>
-              Email them a confirmation
-              {!hasEmail && <span className="block text-xs">Add an email address first.</span>}
-            </span>
-          </label>
           <DialogFooter>
             <DialogClose render={<Button type="button" variant="outline" />}>Cancel</DialogClose>
             <Button type="submit" disabled={pending}>

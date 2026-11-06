@@ -12,9 +12,9 @@ const MEDIA_SWEEP_CRON = '0 17 * * *';
 const OLD_HOST = 'living-legacy-cms.living-legacy.workers.dev';
 
 // Custom Worker entry: TanStack Start serves requests. The cron triggers in
-// wrangler.jsonc: every five minutes, publish scheduled posts, send event
-// reminders and sync bookings to HubSpot (once connected); daily, clear out
-// unused stored files and delete bookings a year after their event.
+// wrangler.jsonc: every five minutes, publish scheduled posts and sync event
+// bookings to HubSpot (once connected; HubSpot sends the guest emails); daily,
+// clear out unused stored files and delete bookings a year after their event.
 export default {
   // The app reads bindings via `cloudflare:workers`, so it only gets the request.
   async fetch(request, _env, ctx) {
@@ -43,17 +43,10 @@ export default {
       );
       return;
     }
-    const [{ publishDuePosts }, { sendDueReminders }, { syncPending }] = await Promise.all([
+    const [{ publishDuePosts }, { syncPending }] = await Promise.all([
       import('./server/scheduler'),
-      import('./server/event-jobs'),
       import('./server/event-crm'),
     ]);
-    ctx.waitUntil(
-      Promise.all([
-        publishDuePosts(env.DB, now),
-        sendDueReminders(env.DB, now),
-        syncPending(env.DB),
-      ])
-    );
+    ctx.waitUntil(Promise.all([publishDuePosts(env.DB, now), syncPending(env.DB)]));
   },
 } satisfies ExportedHandler<Cloudflare.Env>;

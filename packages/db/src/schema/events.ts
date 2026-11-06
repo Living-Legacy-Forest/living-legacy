@@ -5,8 +5,9 @@ import { id, timestamps } from './columns';
 import { locations, media } from './content';
 
 // Free events (open days) and the places people book on them. The booking
-// rules live in @ll/content (events.ts); bookings are personal details and
-// are deleted a year after the event (CMS daily cron).
+// rules live in @ll/content (events.ts). Guest emails are sent by HubSpot, not
+// the CMS: bookings sync there (crm_* columns). Bookings are personal details
+// and are deleted a year after the event (CMS daily cron).
 
 export const events = sqliteTable(
   'events',
@@ -33,8 +34,6 @@ export const events = sqliteTable(
       .notNull()
       .default('draft'),
     cancelledAt: integer('cancelled_at', { mode: 'timestamp_ms' }),
-    /** Set when the day-before reminders are sent, so they go once. */
-    reminderSentAt: integer('reminder_sent_at', { mode: 'timestamp_ms' }),
     createdBy: text('created_by').references(() => user.id, { onDelete: 'set null' }),
     updatedBy: text('updated_by').references(() => user.id, { onDelete: 'set null' }),
     ...timestamps(),

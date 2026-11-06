@@ -79,53 +79,6 @@ export function bookingReference(bytes: Uint8Array): string {
   return `LL-${code}`;
 }
 
-const icsDate = (ms: number) =>
-  new Date(ms)
-    .toISOString()
-    .replace(/[-:]/g, '')
-    .replace(/\.\d{3}/, '');
-
-const icsText = (value: string) =>
-  value.replace(/\\/g, '\\\\').replace(/;/g, '\\;').replace(/,/g, '\\,').replace(/\r?\n/g, '\\n');
-
-/** Lines longer than 75 characters continue on the next line after a space (RFC 5545). */
-function fold(line: string): string {
-  if (line.length <= 75) return line;
-  const parts = [line.slice(0, 75)];
-  for (let i = 75; i < line.length; i += 74) parts.push(` ${line.slice(i, i + 74)}`);
-  return parts.join('\r\n');
-}
-
-/** An add-to-calendar file for one booking. */
-export function eventIcs(e: {
-  uid: string;
-  title: string;
-  startsAt: number;
-  endsAt: number;
-  location: string;
-  description: string;
-  now: number;
-}): string {
-  const lines = [
-    'BEGIN:VCALENDAR',
-    'VERSION:2.0',
-    'PRODID:-//Living Legacy//Events//EN',
-    'CALSCALE:GREGORIAN',
-    'METHOD:PUBLISH',
-    'BEGIN:VEVENT',
-    `UID:${e.uid}`,
-    `DTSTAMP:${icsDate(e.now)}`,
-    `DTSTART:${icsDate(e.startsAt)}`,
-    `DTEND:${icsDate(e.endsAt)}`,
-    `SUMMARY:${icsText(e.title)}`,
-    ...(e.location ? [`LOCATION:${icsText(e.location)}`] : []),
-    ...(e.description ? [`DESCRIPTION:${icsText(e.description)}`] : []),
-    'END:VEVENT',
-    'END:VCALENDAR',
-  ];
-  return `${lines.map(fold).join('\r\n')}\r\n`;
-}
-
 const optionalText = (max: number) => z.string().trim().max(max).default('');
 
 export const eventInputSchema = z
@@ -166,6 +119,5 @@ export const guestInputSchema = z.object({
   phone: optionalText(40),
   partySize: z.number().int().min(1).max(STAFF_MAX_PARTY_SIZE),
   note: optionalText(500),
-  sendConfirmation: z.boolean().default(false),
 });
 export type GuestInput = z.infer<typeof guestInputSchema>;

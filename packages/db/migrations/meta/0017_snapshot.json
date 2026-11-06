@@ -1,7 +1,7 @@
 {
   "version": "6",
   "dialect": "sqlite",
-  "id": "5bf4aec9-db0d-4209-8ec1-406bb60487fc",
+  "id": "62b44a2d-748f-48ce-b5e9-32d6bff4082d",
   "prevId": "1c9f36a9-82ed-4148-817b-4d19d741c002",
   "tables": {
     "account": {
@@ -2649,13 +2649,6 @@
         },
         "cancelled_at": {
           "name": "cancelled_at",
-          "type": "integer",
-          "primaryKey": false,
-          "notNull": false,
-          "autoincrement": false
-        },
-        "reminder_sent_at": {
-          "name": "reminder_sent_at",
           "type": "integer",
           "primaryKey": false,
           "notNull": false,

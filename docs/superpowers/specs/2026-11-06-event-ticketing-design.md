@@ -6,13 +6,12 @@ Status: approved; phase 1 (CMS only) being built
 ## 1. Goal
 
 Replace Eventbrite for free open days and information sessions. People book a
-place on the website and get a confirmation with a booking reference. Staff
+place on the website and get a booking reference; HubSpot sends their emails. Staff
 manage the guest list in the CMS and check people in on a phone.
 
 **Success criteria**
 
-- A visitor books a place in under a minute and gets a confirmation email with
-  an add-to-calendar file and a link to cancel.
+- A visitor books a place in under a minute; HubSpot then sends their emails.
 - An event never takes more people than its capacity, even with bookings made
   at the same moment.
 - On the day, a staff member finds a guest by name and checks them in with one
@@ -23,10 +22,9 @@ manage the guest list in the CMS and check people in on a phone.
 ## 2. Scope
 
 **Phases.** Phase 1 is the CMS only: events, the guest list and check-in,
-guests added by staff, emails, clean-up and the HubSpot hook. Phase 2 adds the
-website (sections 4 and 8): the public pages, online booking through the
-service binding and the self-cancel link. Until then, confirmation emails say
-to reply to cancel, and bookings come from staff (phone bookings, walk-ins).
+guests added by staff, clean-up and the HubSpot hook. Phase 2 adds the website
+(sections 4 and 8): the public pages and online booking through the service
+binding. HubSpot sends every guest email once it is connected.
 
 **In v1**
 
@@ -35,8 +33,8 @@ to reply to cancel, and bookings come from staff (phone bookings, walk-ins).
 - Capacity (total people) and a maximum party size per booking.
 - Guest list per event: search, counts, tap to check in, add a guest by hand,
   cancel a booking, CSV export.
-- Emails: confirmation (with .ics and cancel link), reminder the day before,
-  notice when an event is cancelled.
+- Guest emails are HubSpot's job: the CMS marks every booking and change for
+  the HubSpot sync (section 7).
 - Guests cancel their own booking from the email link.
 - Booking data deleted 12 months after the event.
 - A GA4 lead event for each booking.
@@ -69,7 +67,6 @@ Two tables in `packages/db/src/schema/events.ts`, added by a new migration.
 | `max_party_size` | Default 6, at least 1. |
 | `bookings_close_at` | Optional; bookings otherwise close when the event starts. |
 | `status` | `draft`, `published` or `cancelled`. |
-| `reminder_sent_at` | Set when the day-before reminders go out, so they send once. |
 
 **`event_bookings`**
 
@@ -98,7 +95,6 @@ Index on `(event_id, status)` for counts, and on `email`.
   null. Covers not published, cancelled, started or closed, party size out of
   range, and not enough places left ("Only 3 places are left.").
 - `bookingReference(random)`: the `LL-XXXXXX` format.
-- `eventIcs(event, booking, siteUrl)`: the calendar file text.
 - Zod schemas for the booking form and the event form, shared by both apps.
 
 ## 4. Booking flow
@@ -112,7 +108,7 @@ Index on `(event_id, status)` for counts, and on `email`.
    the booking with one conditional insert:
    `INSERT … SELECT … WHERE (seats taken) + party_size <= capacity`. If no row
    is written, the event filled up in the meantime and the visitor is told so.
-3. On success it sends the confirmation email and returns the reference. The
+3. On success it returns the reference (the booking waits for the HubSpot sync). The
    website shows a thank-you page with the reference and fires the GA4
    `generate_lead` event with `form_type: event_rsvp`.
 4. The same email booking twice for one event is refused with a message to use
@@ -129,9 +125,9 @@ against its hash, sets the booking to cancelled and frees the places.
   other list pages. Rows show date, title, location and "32 / 50 booked".
   Filters: upcoming, past, drafts.
 - **Event pane**: the fields in section 3, a link to the public page, and
-  Publish / Cancel event / Delete. Cancelling asks for confirmation, emails the
-  guests and keeps the event visible as cancelled on the website until it has
-  passed.
+  Publish / Cancel event / Delete. Cancelling asks for confirmation, marks the
+  bookings for the HubSpot sync (HubSpot tells the guests), and keeps the event
+  visible as cancelled on the website until it has passed.
 - **Guests** (a tab in the event pane, and full screen on phones):
   - counts: booked of capacity, bookings, checked in;
   - search by name, email or reference;
@@ -144,20 +140,13 @@ against its hash, sets the booking to cancelled and frees the places.
 
 ## 6. Emails and scheduled jobs
 
-Sent by the CMS through the existing Resend setup, from
-`Living Legacy <events@notify.livinglegacy.com.au>` (new `EVENTS_EMAIL_FROM`
-var), reply-to the location's email or the site contact email.
+**The CMS sends no guest emails.** It keeps the events and bookings; HubSpot
+sends confirmations, reminders and cancellation notices from the bookings
+synced to it (section 7). (Decided 2026-11-06, replacing CMS-sent emails.)
 
-- **Confirmation**: title, date and time, venue with a map link, party size,
-  reference, the `.ics` attached, and the cancel link.
-- **Reminder**: the 5-minute cron sends it once, about 24 hours before the
-  start, to confirmed bookings, then sets `reminder_sent_at`.
-- **Event cancelled**: to every confirmed booking.
+- **HubSpot sync**: the 5-minute cron calls `syncPending()`.
 - **Clean-up**: the daily cron deletes bookings for events that ended more than
-  12 months ago (the event row stays, with its totals in the activity log).
-
-A failed email never undoes a booking; it is logged, and the guest still sees
-the reference on the thank-you page.
+  12 months ago (the event row stays).
 
 ## 7. Ready for HubSpot
 
@@ -184,7 +173,7 @@ the reference on the thank-you page.
 ## 9. Testing
 
 - Unit tests for every rule in `packages/content/src/events.ts`, including
-  capacity edge cases and the `.ics` output.
+  capacity edge cases.
 - A test of the conditional insert against local D1: two bookings racing for
   the last places, only one succeeds.
 - Browser checks: book, cancel from the link, check in on a 390px touch screen,

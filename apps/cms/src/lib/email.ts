@@ -10,11 +10,6 @@ type Email = {
   subject: string;
   html: string;
   text: string;
-  /** Defaults to EMAIL_FROM (the CMS sender). */
-  from?: string;
-  replyTo?: string;
-  /** Base64 content, e.g. an .ics file. */
-  attachments?: { filename: string; content: string }[];
 };
 
 async function send(email: Email): Promise<void> {
@@ -37,15 +32,7 @@ async function send(email: Email): Promise<void> {
       authorization: `Bearer ${env.RESEND_API_KEY}`,
       'content-type': 'application/json',
     },
-    body: JSON.stringify({
-      from: email.from ?? env.EMAIL_FROM,
-      to: email.to,
-      subject: email.subject,
-      html: email.html,
-      text: email.text,
-      ...(email.replyTo ? { reply_to: email.replyTo } : {}),
-      ...(email.attachments ? { attachments: email.attachments } : {}),
-    }),
+    body: JSON.stringify({ from: env.EMAIL_FROM, ...email }),
   });
 
   if (!res.ok) {
@@ -93,12 +80,11 @@ function layout(opts: {
   heading: string;
   /** Paragraphs of HTML above the button. */
   intro: string[];
-  /** The one call to action; emails without one show none. */
-  button?: { label: string; url: string };
+  button: { label: string; url: string };
   /** HTML shown in a soft panel below the button, e.g. a security note. */
   note?: string;
 }) {
-  const url = opts.button ? escapeHtml(opts.button.url) : '';
+  const url = escapeHtml(opts.button.url);
   const paragraphs = opts.intro
     .map(
       (p) =>
@@ -144,9 +130,7 @@ function layout(opts: {
           <td style="background:${colours.white};border:1px solid ${colours.line};border-radius:12px;padding:40px 36px;">
             <h1 style="margin:0 0 16px;font-family:${serif};font-size:26px;line-height:32px;font-weight:normal;color:${colours.ink};">${opts.heading}</h1>
             ${paragraphs}
-            ${
-              opts.button
-                ? `<table role="presentation" cellpadding="0" cellspacing="0" border="0" style="margin:8px 0 24px;">
+            <table role="presentation" cellpadding="0" cellspacing="0" border="0" style="margin:8px 0 24px;">
               <tr>
                 <td style="border-radius:8px;background:${colours.moss};">
                   <a href="${url}" style="display:inline-block;padding:13px 28px;font-family:${sans};font-size:15px;font-weight:600;color:${colours.white};text-decoration:none;border-radius:8px;">${opts.button.label}</a>
@@ -154,9 +138,7 @@ function layout(opts: {
               </tr>
             </table>
             <p style="margin:0 0 6px;font-family:${sans};font-size:13px;line-height:20px;color:${colours.inkSoft};">If the button does not work, copy this link into your browser:</p>
-            <p style="margin:0;font-family:${sans};font-size:13px;line-height:20px;word-break:break-all;"><a href="${url}" style="color:${colours.moss};">${url}</a></p>`
-                : ''
-            }
+            <p style="margin:0;font-family:${sans};font-size:13px;line-height:20px;word-break:break-all;"><a href="${url}" style="color:${colours.moss};">${url}</a></p>
             ${
               opts.note
                 ? `<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="margin-top:28px;">
@@ -302,113 +284,4 @@ export async function sendInviteEmail(to: string, loginUrl: string, role: Role):
   });
 
   await send({ to, subject, html, text });
-}
-
-type BookingMail = {
-  firstName: string;
-  title: string;
-  /** Already formatted in the site time zone, e.g. "Sat 7 Nov 2026, 10:00 am AEDT". */
-  when: string;
-  venue: string;
-  mapUrl: string | null;
-  partySize: number;
-  reference: string;
-  replyTo: string;
-};
-
-const eventsFrom = () => env.EVENTS_EMAIL_FROM ?? env.EMAIL_FROM;
-const places = (n: number) => (n === 1 ? '1 place' : `${n} places`);
-const detailRows = (d: Pick<BookingMail, 'when' | 'venue'>) =>
-  [`<strong style="color:${colours.ink};">When:</strong> ${escapeHtml(d.when)}`].concat(
-    d.venue ? [`<strong style="color:${colours.ink};">Where:</strong> ${escapeHtml(d.venue)}`] : []
-  );
-
-export async function sendBookingConfirmation(
-  to: string,
-  d: BookingMail & { ics: string }
-): Promise<void> {
-  const subject = `You're booked: ${d.title}`;
-  const text = [
-    `Hi ${d.firstName},`,
-    '',
-    `You're booked for ${d.title}: ${places(d.partySize)}.`,
-    `When: ${d.when}`,
-    ...(d.venue ? [`Where: ${d.venue}`] : []),
-    `Booking reference: ${d.reference}`,
-    '',
-    'The calendar file attached adds it to your calendar.',
-    'Need to cancel or change your booking? Reply to this email and we will sort it out.',
-    ...textFooter,
-  ].join('\n');
-  const html = layout({
-    preheader: `Booking ${d.reference} for ${d.title}.`,
-    heading: `You're booked, ${escapeHtml(d.firstName)}`,
-    intro: [
-      `We look forward to seeing you at <strong style="color:${colours.ink};">${escapeHtml(d.title)}</strong>. Your booking is for ${places(d.partySize)}.`,
-      ...detailRows(d),
-      `<strong style="color:${colours.ink};">Booking reference:</strong> ${escapeHtml(d.reference)}`,
-    ],
-    button: d.mapUrl ? { label: 'Get directions', url: d.mapUrl } : undefined,
-    note: 'The calendar file attached adds the event to your calendar. Need to cancel or change your booking? Reply to this email and we will sort it out.',
-  });
-  await send({
-    to,
-    subject,
-    html,
-    text,
-    from: eventsFrom(),
-    replyTo: d.replyTo,
-    // nodejs_compat is on, so Buffer is available for the base64 Resend wants.
-    attachments: [{ filename: 'event.ics', content: Buffer.from(d.ics).toString('base64') }],
-  });
-}
-
-export async function sendEventReminder(to: string, d: BookingMail): Promise<void> {
-  const subject = `Tomorrow: ${d.title}`;
-  const text = [
-    `Hi ${d.firstName},`,
-    '',
-    `A reminder that ${d.title} is coming up. Your booking is for ${places(d.partySize)}.`,
-    `When: ${d.when}`,
-    ...(d.venue ? [`Where: ${d.venue}`] : []),
-    `Booking reference: ${d.reference}`,
-    '',
-    "Can't make it? Reply to this email so we can offer your place to someone else.",
-    ...textFooter,
-  ].join('\n');
-  const html = layout({
-    preheader: `${d.title} is coming up.`,
-    heading: 'See you soon',
-    intro: [
-      `A reminder that <strong style="color:${colours.ink};">${escapeHtml(d.title)}</strong> is coming up. Your booking is for ${places(d.partySize)}.`,
-      ...detailRows(d),
-      `<strong style="color:${colours.ink};">Booking reference:</strong> ${escapeHtml(d.reference)}`,
-    ],
-    button: d.mapUrl ? { label: 'Get directions', url: d.mapUrl } : undefined,
-    note: "Can't make it? Reply to this email so we can offer your place to someone else.",
-  });
-  await send({ to, subject, html, text, from: eventsFrom(), replyTo: d.replyTo });
-}
-
-export async function sendEventCancelled(
-  to: string,
-  d: Omit<BookingMail, 'reference' | 'partySize'>
-): Promise<void> {
-  const subject = `Cancelled: ${d.title}`;
-  const text = [
-    `Hi ${d.firstName},`,
-    '',
-    `We're sorry, but ${d.title} on ${d.when} has been cancelled, so your booking no longer stands.`,
-    'Reply to this email if you have any questions.',
-    ...textFooter,
-  ].join('\n');
-  const html = layout({
-    preheader: `${d.title} has been cancelled.`,
-    heading: 'This event has been cancelled',
-    intro: [
-      `Hi ${escapeHtml(d.firstName)}, we're sorry, but <strong style="color:${colours.ink};">${escapeHtml(d.title)}</strong> on ${escapeHtml(d.when)} has been cancelled, so your booking no longer stands.`,
-      'Reply to this email if you have any questions.',
-    ],
-  });
-  await send({ to, subject, html, text, from: eventsFrom(), replyTo: d.replyTo });
 }

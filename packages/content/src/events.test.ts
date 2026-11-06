@@ -4,7 +4,6 @@ import {
   bookingProblem,
   bookingReference,
   capacityProblem,
-  eventIcs,
   seatsTaken,
 } from './events';
 
@@ -104,45 +103,5 @@ describe('bookingReference', () => {
     expect(bookingReference(crypto.getRandomValues(new Uint8Array(6)))).toMatch(
       /^LL-[ABCDEFGHJKMNPQRSTUVWXYZ2-9]{6}$/
     );
-  });
-});
-
-describe('eventIcs', () => {
-  const ics = eventIcs({
-    uid: 'LL-ABC234@livinglegacy.com.au',
-    title: 'Open day, Mornington',
-    // 10:00 in Melbourne (AEDT, +11) on 7 Nov 2026 is 23:00 UTC on 6 Nov.
-    startsAt: Date.UTC(2026, 10, 6, 23, 0),
-    endsAt: Date.UTC(2026, 10, 7, 1, 0),
-    location: '1 Forest Rd; Somerville VIC',
-    description: 'Bring walking shoes.\nTea provided.',
-    now: Date.UTC(2026, 10, 1, 0, 0),
-  });
-
-  it('uses UTC times and CRLF lines', () => {
-    expect(ics).toContain('DTSTART:20261106T230000Z\r\n');
-    expect(ics).toContain('DTEND:20261107T010000Z\r\n');
-    expect(ics.startsWith('BEGIN:VCALENDAR\r\n')).toBe(true);
-    expect(ics.endsWith('END:VCALENDAR\r\n')).toBe(true);
-  });
-
-  it('escapes commas, semicolons and new lines', () => {
-    expect(ics).toContain('SUMMARY:Open day\\, Mornington');
-    expect(ics).toContain('LOCATION:1 Forest Rd\\; Somerville VIC');
-    expect(ics).toContain('DESCRIPTION:Bring walking shoes.\\nTea provided.');
-  });
-
-  it('folds lines longer than 75 characters', () => {
-    const long = eventIcs({
-      uid: 'x',
-      title: 'A'.repeat(120),
-      startsAt: 0,
-      endsAt: HOUR,
-      location: '',
-      description: '',
-      now: 0,
-    });
-    for (const line of long.split('\r\n')) expect(line.length).toBeLessThanOrEqual(75);
-    expect(long).toContain('\r\n A');
   });
 });

@@ -42,7 +42,6 @@ CREATE TABLE `events` (
 	`bookings_close_at` integer,
 	`status` text DEFAULT 'draft' NOT NULL,
 	`cancelled_at` integer,
-	`reminder_sent_at` integer,
 	`created_by` text,
 	`updated_by` text,
 	`created_at` integer NOT NULL,

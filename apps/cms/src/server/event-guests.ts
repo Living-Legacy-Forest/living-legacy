@@ -7,7 +7,6 @@ import { getDb } from '@/lib/db';
 import { requirePermission } from '@/lib/session';
 import { logActivity } from './activity-log';
 import { insertBooking } from './booking-store';
-import { emailConfirmation } from './event-mail';
 
 export const getGuests = createServerFn({ method: 'GET' })
   .middleware([requirePermission('events:manage')])
@@ -86,14 +85,8 @@ export const addGuest = createServerFn({ method: 'POST' })
       action: 'event.guest_added',
       summary: `Added ${data.firstName} (${data.partySize}) to ${event.title}`,
     });
-    let emailed = false;
-    if (data.sendConfirmation && data.email) {
-      const row = await db.query.eventBookings.findFirst({
-        where: eq(eventBookings.id, booking.id),
-      });
-      if (row) emailed = await emailConfirmation(db, row);
-    }
-    return { reference: booking.reference, emailed };
+    // New bookings start unsynced; the HubSpot sync picks them up.
+    return { reference: booking.reference };
   });
 
 export const cancelGuest = createServerFn({ method: 'POST' })
@@ -108,7 +101,8 @@ export const cancelGuest = createServerFn({ method: 'POST' })
     await db.batch([
       db
         .update(eventBookings)
-        .set({ status: 'cancelled', cancelledAt: new Date() })
+        // Unsynced again, so HubSpot hears about the cancellation.
+        .set({ status: 'cancelled', cancelledAt: new Date(), crmSyncedAt: null })
         .where(eq(eventBookings.id, booking.id)),
       logActivity(db, {
         actorId: context.user.id,

@@ -588,7 +588,7 @@ function SectionNav({ ids }: { ids: string[] }) {
                 setActive(section.id);
               }}
               className={cn(
-                'text-muted-foreground hover:text-foreground block rounded-md px-2.5 py-1.5 text-[13px] transition-colors',
+                'text-muted-foreground hover:text-foreground text-ui block rounded-md px-2.5 py-1.5 transition-colors',
                 active === section.id && 'bg-muted text-foreground font-medium'
               )}
             >

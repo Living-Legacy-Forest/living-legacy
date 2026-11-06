@@ -34,7 +34,7 @@ function PostImageView({ node, selected, editor, updateAttributes }: NodeViewPro
             value={alt ?? ''}
             onChange={(e) => updateAttributes({ alt: e.target.value })}
             placeholder="Alt text: describe the image"
-            className="text-[13px]"
+            className="text-ui"
           />
           <Input
             aria-label="Caption"
@@ -42,7 +42,7 @@ function PostImageView({ node, selected, editor, updateAttributes }: NodeViewPro
             value={title ?? ''}
             onChange={(e) => updateAttributes({ title: e.target.value || null })}
             placeholder="Caption (optional)"
-            className="text-[13px]"
+            className="text-ui"
           />
         </div>
       ) : title ? (

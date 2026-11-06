@@ -217,7 +217,7 @@ function ChangeEmail({ currentEmail }: { currentEmail: string }) {
     <div className="space-y-1.5">
       <Label htmlFor="profile-email">Email</Label>
       <div className="flex items-center gap-2">
-        <div className="bg-muted/60 text-muted-foreground flex h-8 max-w-xs flex-1 items-center gap-2 rounded-md px-3 text-[13px]">
+        <div className="bg-muted/60 text-muted-foreground text-ui flex h-8 max-w-xs flex-1 items-center gap-2 rounded-md px-3">
           <MailIcon aria-hidden className="size-3.5 shrink-0" />
           <span className="truncate">{currentEmail}</span>
         </div>

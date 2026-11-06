@@ -375,7 +375,7 @@ function TestimonialSummary({ testimonial }: { testimonial: Testimonial }) {
   return (
     <>
       <span className="flex items-center gap-2">
-        <span className="min-w-0 flex-1 truncate text-[13px] font-medium">{testimonial.name}</span>
+        <span className="text-ui min-w-0 flex-1 truncate font-medium">{testimonial.name}</span>
         {testimonial.featured && (
           <StarIcon aria-label="Featured" className="size-3 shrink-0 fill-current" />
         )}

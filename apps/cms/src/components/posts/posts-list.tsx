@@ -187,7 +187,7 @@ export function PostsList({
             placeholder="Filter by title"
             value={query}
             onChange={(e) => setQuery(e.target.value)}
-            className="bg-muted/60 placeholder:text-muted-foreground focus-visible:bg-background focus-visible:ring-ring h-8 w-full rounded-md pr-2 pl-8 text-[13px] outline-none focus-visible:ring-1"
+            className="bg-muted/60 placeholder:text-muted-foreground focus-visible:bg-background focus-visible:ring-ring text-ui h-8 w-full rounded-md pr-2 pl-8 outline-none focus-visible:ring-1"
           />
         </div>
         <Select
@@ -207,13 +207,13 @@ export function PostsList({
           <SelectTrigger
             aria-label="Filter by category"
             size="sm"
-            className="bg-muted/60 w-40 border-0 text-[13px] shadow-none"
+            className="bg-muted/60 text-ui w-40 border-0 shadow-none"
           >
             <SelectValue />
           </SelectTrigger>
           <SelectContent>
             {categoryItems.map((item) => (
-              <SelectItem key={item.value} value={item.value} className="text-[13px]">
+              <SelectItem key={item.value} value={item.value} className="text-ui">
                 {item.label}
               </SelectItem>
             ))}
@@ -240,7 +240,7 @@ export function PostsList({
                 >
                   <XIcon aria-hidden />
                 </Button>
-                <span className="mr-auto text-[13px]">{checkedIds.length} selected</span>
+                <span className="text-ui mr-auto">{checkedIds.length} selected</span>
                 {inTrash ? (
                   <>
                     <Button
@@ -292,7 +292,7 @@ export function PostsList({
                       })}
                       aria-current={active ? 'page' : undefined}
                       className={cn(
-                        'text-muted-foreground hover:text-foreground flex h-7 shrink-0 items-center gap-1.5 rounded-md px-2.5 text-[13px] whitespace-nowrap transition-colors',
+                        'text-muted-foreground hover:text-foreground text-ui flex h-7 shrink-0 items-center gap-1.5 rounded-md px-2.5 whitespace-nowrap transition-colors',
                         active && 'bg-muted text-foreground font-medium'
                       )}
                     >
@@ -496,7 +496,7 @@ function PostListItem({
       }}
     >
       <span className="flex items-baseline gap-3">
-        <span className="min-w-0 flex-1 truncate text-[13px] font-medium">
+        <span className="text-ui min-w-0 flex-1 truncate font-medium">
           {row.title || 'Untitled'}
         </span>
         <span className="text-muted-foreground shrink-0 text-xs tabular-nums">

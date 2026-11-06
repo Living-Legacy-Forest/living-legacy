@@ -33,7 +33,7 @@ export function AppSidebar({
           <SidebarMenuItem>
             <SidebarMenuButton
               tooltip="Living Legacy"
-              className="h-8 gap-2.5 px-1.5 text-[13px] font-semibold"
+              className="text-ui h-8 gap-2.5 px-1.5 font-semibold"
               render={<Link to="/" />}
             >
               {/* White artwork painted in the brand colour via a CSS mask, as on the site and login page. */}

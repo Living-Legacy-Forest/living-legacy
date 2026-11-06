@@ -38,7 +38,7 @@ export function SearchInput({
         placeholder={placeholder}
         value={value}
         onChange={(e) => onChange(e.target.value)}
-        className="bg-muted/60 placeholder:text-muted-foreground focus-visible:bg-background focus-visible:ring-ring h-8 w-full rounded-md pr-2 pl-8 text-[13px] outline-none focus-visible:ring-1"
+        className="bg-muted/60 placeholder:text-muted-foreground focus-visible:bg-background focus-visible:ring-ring text-ui h-8 w-full rounded-md pr-2 pl-8 outline-none focus-visible:ring-1"
       />
     </div>
   );
@@ -111,7 +111,7 @@ export function SelectionBar({
   if (!onDelete) {
     return (
       <div className="flex h-11 shrink-0 items-center gap-2 border-b px-3">
-        <span className="text-[13px] font-medium">{filtered ? 'Shown' : title}</span>
+        <span className="text-ui font-medium">{filtered ? 'Shown' : title}</span>
         <span className="text-muted-foreground text-xs tabular-nums">
           {filtered ? `${visibleIds.length} of ${total}` : total}
         </span>
@@ -130,7 +130,7 @@ export function SelectionBar({
       />
       {count > 0 ? (
         <>
-          <span className="mr-auto text-[13px]">{count} selected</span>
+          <span className="text-ui mr-auto">{count} selected</span>
           <Button
             variant="ghost"
             size="sm"
@@ -152,7 +152,7 @@ export function SelectionBar({
         </>
       ) : (
         <>
-          <span className="text-[13px] font-medium">{filtered ? 'Shown' : title}</span>
+          <span className="text-ui font-medium">{filtered ? 'Shown' : title}</span>
           <span className="text-muted-foreground text-xs tabular-nums">
             {filtered ? `${visibleIds.length} of ${total}` : total}
           </span>

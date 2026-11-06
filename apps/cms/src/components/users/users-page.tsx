@@ -173,12 +173,12 @@ function UsersTable({ data }: { data: TeamData }) {
                     }
                   }}
                 >
-                  <SelectTrigger size="sm" className="w-28 text-[13px]">
+                  <SelectTrigger size="sm" className="text-ui w-28">
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
                     {roleItems.map((item) => (
-                      <SelectItem key={item.value} value={item.value} className="text-[13px]">
+                      <SelectItem key={item.value} value={item.value} className="text-ui">
                         {item.label}
                       </SelectItem>
                     ))}

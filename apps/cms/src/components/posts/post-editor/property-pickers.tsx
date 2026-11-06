@@ -27,7 +27,7 @@ export function tagOptions(existing: string[], assigned: string[]): Option[] {
 }
 
 const valueButtonClass =
-  'h-7 w-full justify-start gap-1.5 px-2 text-[13px] font-normal hover:bg-accent data-[popup-open]:bg-accent';
+  'h-7 w-full justify-start gap-1.5 px-2 text-ui font-normal hover:bg-accent data-[popup-open]:bg-accent';
 
 /** Pick any number of options, or type a new one to create it. */
 export function MultiPicker({
@@ -273,7 +273,7 @@ function PickerEmpty() {
   return (
     <Empty className="gap-1 p-4">
       <EmptyHeader className="gap-1">
-        <EmptyTitle className="text-[13px]">No matches</EmptyTitle>
+        <EmptyTitle className="text-ui">No matches</EmptyTitle>
         <EmptyDescription className="text-xs">Try a different name.</EmptyDescription>
       </EmptyHeader>
     </Empty>

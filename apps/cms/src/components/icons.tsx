@@ -62,7 +62,6 @@ import { ArrowLeftRightIcon as AnimatedArrowLeftRightIcon } from '@animateicons/
 import { ArrowUpRight01Icon as AnimatedArrowUpRight01Icon } from '@animateicons/react/huge/arrow-up-right-0-1-icon';
 import { Calendar01Icon as AnimatedCalendar01Icon } from '@animateicons/react/huge/calendar-0-1-icon';
 import { ChartLineIcon as AnimatedChartLineIcon } from '@animateicons/react/huge/chart-line-icon';
-import { CheckIcon as AnimatedCheckIcon } from '@animateicons/react/huge/check-icon';
 import { CheckListIcon as AnimatedCheckListIcon } from '@animateicons/react/huge/check-list-icon';
 import { CheckmarkCircle01Icon as AnimatedCheckmarkCircle01Icon } from '@animateicons/react/huge/checkmark-circle-0-1-icon';
 import { CodeXmlIcon as AnimatedCodeXmlIcon } from '@animateicons/react/huge/code-xml-icon';
@@ -89,6 +88,7 @@ import { TextStrikethroughIcon as AnimatedTextStrikethroughIcon } from '@animate
 import { TextUnderlineIcon as AnimatedTextUnderlineIcon } from '@animateicons/react/huge/text-underline-icon';
 import { UndoIcon as AnimatedUndoIcon } from '@animateicons/react/huge/undo-icon';
 import { cn } from '@/lib/utils';
+import { CheckIcon as DrawnCheckIcon, GalleryHorizontalIcon } from './drawn-icons';
 
 // @hugeicons/core-free-icons doesn't export its icon-data type, so derive it
 // structurally from one of its own exports.
@@ -245,7 +245,7 @@ export const Table = animated(AnimatedTableIcon);
 export const CalendarClockIcon = animated(AnimatedCalendar01Icon);
 export const FileTextIcon = animated(AnimatedFile01Icon);
 export const GlobeIcon = animated(AnimatedGlobe02Icon);
-export const CheckIcon = animated(AnimatedCheckIcon);
+export const CheckIcon = DrawnCheckIcon;
 /** The tick inside a checkbox: static, since it sits in every list row. */
 export const CheckboxTickIcon = make(H.Tick02Icon);
 export const ChevronUpIcon = animated(AnimatedChevronUpIcon);
@@ -290,6 +290,7 @@ export const CircleHelp = animated(AnimatedHelpCircleIcon);
 export const ExternalLink = animated(AnimatedArrowUpRight01Icon);
 export const FileText = animated(AnimatedFile01Icon);
 export const ImageIcon = animated(AnimatedImage01Icon);
+export const MediaIcon = GalleryHorizontalIcon;
 export const LayoutDashboard = animated(AnimatedLayoutDashboardIcon);
 export const Settings = animated(AnimatedSettings01Icon);
 export const UserCog = animated(AnimatedUserSettings01Icon);

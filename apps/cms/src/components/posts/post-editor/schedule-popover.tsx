@@ -125,7 +125,7 @@ export function SchedulePopover({
         <ChevronDownIcon aria-hidden />
       </PopoverTrigger>
       <PopoverContent align="end" className="w-[22rem] p-0">
-        <div className="flex items-center gap-2 border-b px-3 py-2.5 text-[13px] font-medium">
+        <div className="text-ui flex items-center gap-2 border-b px-3 py-2.5 font-medium">
           <CalendarClockIcon aria-hidden className="text-muted-foreground size-4" />
           {scheduledAt ? 'Reschedule' : 'Schedule for later'}
         </div>

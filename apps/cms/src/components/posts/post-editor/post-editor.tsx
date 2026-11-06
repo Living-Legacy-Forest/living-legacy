@@ -100,7 +100,7 @@ export function PostEditor({
 
       <aside
         className={cn(
-          'min-w-0 space-y-6 text-[13px] lg:sticky lg:top-6 lg:self-start lg:overflow-hidden lg:transition-[padding] lg:duration-150 motion-reduce:lg:transition-none',
+          'text-ui min-w-0 space-y-6 lg:sticky lg:top-6 lg:self-start lg:overflow-hidden lg:transition-[padding] lg:duration-150 motion-reduce:lg:transition-none',
           // Hidden only on lg and up: below that the panel sits under the editor
           // and has no toggle.
           showProperties ? 'lg:border-l lg:pl-6' : 'lg:hidden'

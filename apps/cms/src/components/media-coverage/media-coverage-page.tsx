@@ -332,7 +332,7 @@ function CoverageSummary({ item }: { item: MediaCoverageItem }) {
   return (
     <>
       <span className="flex items-center gap-2">
-        <span className="min-w-0 flex-1 truncate text-[13px] font-medium">{item.title}</span>
+        <span className="text-ui min-w-0 flex-1 truncate font-medium">{item.title}</span>
         {item.featured && (
           <StarIcon aria-label="Featured" className="size-3 shrink-0 fill-current" />
         )}
@@ -697,7 +697,7 @@ function CoverageForm({
           }}
           onBlur={() => setSlug(slugify(slug || title))}
           placeholder="made-from-the-title"
-          className="font-mono text-[13px]"
+          className="text-ui font-mono"
         />
       </div>
       <div className="grid grid-cols-2 gap-3">

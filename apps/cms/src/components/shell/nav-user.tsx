@@ -148,7 +148,7 @@ export function NavUser({ user }: { user: SessionUser }) {
             <DropdownMenuLabel className="pointer-events-none flex items-center gap-2.5 py-2">
               <Avatar className="isolate size-8">{avatar}</Avatar>
               <span className="min-w-0">
-                <span className="text-foreground block truncate text-[13px] font-medium">
+                <span className="text-foreground text-ui block truncate font-medium">
                   {user.name}
                 </span>
                 <span className="text-muted-foreground block truncate text-xs font-normal">
@@ -194,7 +194,7 @@ export function NavUser({ user }: { user: SessionUser }) {
             <DialogTitle>Keyboard shortcuts</DialogTitle>
             <DialogDescription>Use Ctrl in place of ⌘ on Windows.</DialogDescription>
           </DialogHeader>
-          <ul className="space-y-2.5 text-[13px]">
+          <ul className="text-ui space-y-2.5">
             {shortcuts.map((shortcut) => (
               <li key={shortcut.label} className="flex items-center justify-between gap-4">
                 <span>{shortcut.label}</span>

@@ -354,7 +354,7 @@ function AnnouncementSummary({
           className="ring-border size-2.5 shrink-0 rounded-full ring-1"
           style={{ background: colour.bg }}
         />
-        <span className="min-w-0 flex-1 truncate text-[13px] font-medium">{a.title}</span>
+        <span className="text-ui min-w-0 flex-1 truncate font-medium">{a.title}</span>
         {clashesWith.length > 0 && (
           <TriangleAlertIcon
             aria-label={`Overlaps with ${clashesWith.map((c) => c.title).join(', ')}`}
@@ -623,7 +623,7 @@ function AnnouncementForm({
           value={values.hidePaths}
           onChange={(e) => patch({ hidePaths: e.target.value })}
           placeholder="/page-path"
-          className="font-mono text-[13px]"
+          className="text-ui font-mono"
         />
         <p className="text-muted-foreground text-xs">
           One path per line. End with * to hide a whole section, like /section/*. Leave empty to

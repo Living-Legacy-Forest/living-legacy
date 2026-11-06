@@ -327,7 +327,11 @@ export function MediaPicker({
   }, [open, selectedId]);
 
   const visible = (items ?? []).filter(
-    (m) => !hiddenIds?.includes(m.id) && matchesSearch(query, [m.filename, m.alt, m.caption])
+    (m) =>
+      // The library also holds documents, which cannot be used as an image.
+      m.mime.startsWith('image/') &&
+      !hiddenIds?.includes(m.id) &&
+      matchesSearch(query, [m.filename, m.alt, m.caption])
   );
   const picked = chosen.flatMap((id) => items?.find((m) => m.id === id) ?? []);
   const summary = many

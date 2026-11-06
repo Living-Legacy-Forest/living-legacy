@@ -64,7 +64,7 @@ function DialogContent({
   if (inSheet) {
     return (
       <DrawerContent {...(props as DrawerContentProps)}>
-        <DrawerBody data-slot="dialog-content" className={cn('grid gap-4', className)}>
+        <DrawerBody data-slot="dialog-content" className={cn('grid grid-cols-1 gap-4', className)}>
           {children}
         </DrawerBody>
         {showCloseButton && (
@@ -73,7 +73,7 @@ function DialogContent({
             render={
               <Button
                 variant="secondary"
-                className="text-muted-foreground absolute top-3 right-3 z-20 rounded-full"
+                className="text-muted-foreground absolute top-3 right-3 z-20 rounded-full after:absolute after:-inset-2"
                 size="icon-sm"
               />
             }

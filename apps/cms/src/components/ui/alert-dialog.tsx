@@ -62,7 +62,7 @@ function AlertDialogContent({
         <DrawerBody
           data-slot="alert-dialog-content"
           data-size={size}
-          className={cn('group/alert-dialog-content grid gap-4', className)}
+          className={cn('group/alert-dialog-content grid grid-cols-1 gap-4', className)}
         >
           {children}
         </DrawerBody>

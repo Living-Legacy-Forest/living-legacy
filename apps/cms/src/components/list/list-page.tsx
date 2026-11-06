@@ -201,15 +201,32 @@ export function PaneActions({
 /** The same buttons in the dialog, where Cancel closes it. */
 export function DialogActions({
   start,
+  compact = false,
   children,
 }: {
   start?: React.ReactNode;
+  /**
+   * On phones, one row with room left for the form, for a long form with several
+   * actions. Cancel goes: swiping the sheet away or its close button does the same.
+   */
+  compact?: boolean;
   children: React.ReactNode;
 }) {
   return (
-    <DialogFooter>
+    <DialogFooter
+      className={cn(
+        compact &&
+          'touch:[&_button]:min-h-11 flex-row flex-wrap items-center max-sm:*:data-[slot=button]:flex-1 sm:flex-nowrap'
+      )}
+    >
       {start && <div className="mr-auto">{start}</div>}
-      <DialogClose render={<Button type="button" variant="outline" />}>Cancel</DialogClose>
+      <DialogClose
+        render={
+          <Button type="button" variant="outline" className={cn(compact && 'max-sm:hidden')} />
+        }
+      >
+        Cancel
+      </DialogClose>
       {children}
     </DialogFooter>
   );
@@ -242,7 +259,7 @@ export function ListDialog({
         )}
       >
         <DialogHeader>
-          <DialogTitle>{title}</DialogTitle>
+          <DialogTitle className="leading-snug">{title}</DialogTitle>
           {description && <DialogDescription>{description}</DialogDescription>}
         </DialogHeader>
         {children}

@@ -38,7 +38,12 @@ export function SearchInput({
         placeholder={placeholder}
         value={value}
         onChange={(e) => onChange(e.target.value)}
-        className="bg-muted/60 placeholder:text-muted-foreground focus-visible:bg-background focus-visible:ring-ring text-ui h-8 w-full rounded-md pr-2 pl-8 outline-none focus-visible:ring-1"
+        enterKeyHint="search"
+        autoCapitalize="none"
+        autoCorrect="off"
+        spellCheck={false}
+        // Phones zoom into a field under 16px, so the smaller size starts at md.
+        className="bg-muted/60 placeholder:text-muted-foreground focus-visible:bg-background focus-visible:ring-ring md:text-ui touch:h-11 h-8 w-full rounded-md pr-2 pl-8 text-base outline-none focus-visible:ring-1"
       />
     </div>
   );

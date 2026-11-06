@@ -1,5 +1,10 @@
 import { describe, expect, it } from 'vitest';
 import {
+  EVENT_PHOTO_LIMIT,
+  changedFields,
+  eventInputSchema,
+  guestInputSchema,
+  groupEventDates,
   type BookableEvent,
   bookingProblem,
   bookingReference,
@@ -132,5 +137,148 @@ describe('stateTimeZone', () => {
     expect(stateTimeZone('ACT')).toBe('Australia/Sydney');
     expect(stateTimeZone('NSW')).toBe('Australia/Sydney');
     expect(stateTimeZone('VIC')).toBe('Australia/Melbourne');
+  });
+});
+
+describe('event photos', () => {
+  const input = {
+    title: 'An event',
+    locationId: null,
+    timeZone: 'Australia/Perth',
+    startsAt: 1000,
+    endsAt: 2000,
+    heroMediaId: 'cover',
+    capacity: null,
+    maxPartySize: 6,
+    bookingsCloseAt: null,
+    status: 'draft',
+  };
+  const others = (n: number) => Array.from({ length: n }, (_, i) => `photo-${i}`);
+
+  it('has no other photos unless given', () => {
+    expect(eventInputSchema.parse(input).galleryMediaIds).toEqual([]);
+  });
+
+  it('keeps the photos in the order given', () => {
+    const galleryMediaIds = ['b', 'a', 'c'];
+    expect(eventInputSchema.parse({ ...input, galleryMediaIds }).galleryMediaIds).toEqual(
+      galleryMediaIds
+    );
+  });
+
+  it('allows the limit with the cover, and no more', () => {
+    const fits = others(EVENT_PHOTO_LIMIT - 1);
+    expect(eventInputSchema.safeParse({ ...input, galleryMediaIds: fits }).success).toBe(true);
+    const over = others(EVENT_PHOTO_LIMIT);
+    expect(eventInputSchema.safeParse({ ...input, galleryMediaIds: over }).success).toBe(false);
+  });
+});
+
+describe('changedFields', () => {
+  it('leaves out a list or rich text that holds the same values', () => {
+    const was = { galleryMediaIds: ['a', 'b'], description: { type: 'doc' }, title: 'One' };
+    const next = { galleryMediaIds: ['a', 'b'], description: { type: 'doc' }, title: 'One' };
+    expect(changedFields(was, next)).toEqual({});
+  });
+
+  it('sees a new order as a change', () => {
+    expect(changedFields({ galleryMediaIds: ['a', 'b'] }, { galleryMediaIds: ['b', 'a'] })).toEqual(
+      {
+        galleryMediaIds: ['b', 'a'],
+      }
+    );
+  });
+
+  it('ignores fields the comparison does not cover', () => {
+    expect(changedFields({ title: 'One' }, { title: 'Two', updatedBy: 'someone' })).toEqual({
+      title: 'Two',
+    });
+  });
+});
+
+describe('groupEventDates', () => {
+  const day = 24 * HOUR;
+  const at = (id: string, days: number, seriesId: string | null = 'series') => ({
+    id,
+    seriesId,
+    startsAt: now + days * day,
+    endsAt: now + days * day + HOUR,
+  });
+
+  it('makes one group of the dates of a series, soonest first', () => {
+    const groups = groupEventDates([at('c', 9), at('a', 1), at('b', 5)], now);
+    expect(groups).toHaveLength(1);
+    expect(groups[0]!.key).toBe('series');
+    expect(groups[0]!.dates.map((d) => d.id)).toEqual(['a', 'b', 'c']);
+  });
+
+  it('keeps an event that does not repeat on its own', () => {
+    const groups = groupEventDates([at('solo', 1, null), at('other', 2, null)], now);
+    expect(groups.map((g) => g.key)).toEqual(['solo', 'other']);
+  });
+
+  it('leads with the next date still to come', () => {
+    const [group] = groupEventDates([at('past', -3), at('next', 2), at('later', 7)], now);
+    expect(group!.lead.id).toBe('next');
+    expect(group!.upcoming).toBe(true);
+  });
+
+  it('counts a date under way as still to come', () => {
+    const started = { id: 'now', seriesId: 'series', startsAt: now - HOUR, endsAt: now + HOUR };
+    const [group] = groupEventDates([at('past', -3), started, at('later', 7)], now);
+    expect(group!.lead.id).toBe('now');
+  });
+
+  it('leads with the latest date once they have all passed', () => {
+    const [group] = groupEventDates([at('old', -9), at('latest', -2)], now);
+    expect(group!.lead.id).toBe('latest');
+    expect(group!.upcoming).toBe(false);
+  });
+});
+
+describe('guestInputSchema', () => {
+  const guest = { eventId: 'e', firstName: 'Sam', partySize: 1 };
+  const problem = (over: object) => {
+    const result = guestInputSchema.safeParse({ ...guest, ...over });
+    return result.success ? null : result.error.issues[0]!.message;
+  };
+
+  it('needs only a first name and how many people', () => {
+    expect(problem({})).toBeNull();
+    expect(problem({ firstName: '   ' })).toMatch(/first name/i);
+  });
+
+  it.each(["O'Brien", 'Mary-Jane', 'José', 'Nguyễn Thị', 'St. John', 'D’Arcy'])(
+    'takes %s as a name',
+    (name) => {
+      expect(problem({ firstName: name, lastName: name })).toBeNull();
+    }
+  );
+
+  it.each(['Sam1', '12345', 'Sam@home', '<b>Sam</b>', '-', "'"])('refuses %s as a name', (name) => {
+    expect(problem({ firstName: name })).toMatch(/letters/i);
+    expect(problem({ lastName: name })).toMatch(/letters/i);
+  });
+
+  it('leaves a last name, email and phone optional', () => {
+    expect(problem({ lastName: '', email: '', phone: '', note: '' })).toBeNull();
+  });
+
+  it('refuses an email that is not one', () => {
+    expect(problem({ email: 'sam@' })).toMatch(/email/i);
+    expect(problem({ email: 'sam@example.com' })).toBeNull();
+  });
+
+  it('stores an Australian phone in one format', () => {
+    const parsed = guestInputSchema.parse({ ...guest, phone: '+61 412 345 678' });
+    expect(parsed.phone).toBe('0412 345 678');
+  });
+
+  it('refuses a phone from elsewhere', () => {
+    expect(problem({ phone: '+1 415 555 2671' })).toMatch(/australian/i);
+  });
+
+  it.each([0, -1, 1.5, 51])('refuses %s people', (partySize) => {
+    expect(problem({ partySize })).toMatch(/1 to 50/);
   });
 });

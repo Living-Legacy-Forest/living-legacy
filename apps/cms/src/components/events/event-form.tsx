@@ -1,4 +1,5 @@
 import {
+  EVENT_PHOTO_LIMIT,
   type EventInput,
   type SeriesScope,
   fromZoned,
@@ -8,7 +9,7 @@ import {
   timeZones,
   toZoned,
 } from '@ll/content';
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { DateTimePicker } from '@/components/date-time-picker';
 import { RichTextField } from '@/components/rich-text-field';
 import {
@@ -19,7 +20,7 @@ import {
 } from './event-dates-field';
 import { RepeatField, type RepeatValue, noRepeat, seriesDates } from './repeat-field';
 import { Trash2Icon } from '@/components/icons';
-import { ImageField } from '@/components/media/image-field';
+import { ImageGalleryField } from '@/components/media/image-gallery-field';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -75,26 +76,47 @@ const zoneItems = timeZones.map((value) => ({
 }));
 
 const STEPS = ['Details', 'Date & time', 'Places'] as const;
+const LAST_STEP = STEPS.length - 1;
+/** Fields a finger can hit on devices that cannot hover. */
+export const TOUCH_FIELDS =
+  'touch:**:data-[slot=input]:h-11 touch:**:data-[slot=select-trigger]:h-11!';
 
-/** Where a new event's steps are up to. */
-function Steps({ current }: { current: number }) {
+/** Where the steps are up to. A saved event has them all, so any can be gone to. */
+function Steps({ current, onPick }: { current: number; onPick?: (step: number) => void }) {
   return (
     <ol className="grid grid-cols-3 gap-2" aria-label="Steps">
-      {STEPS.map((label, i) => (
-        <li key={label} aria-current={i === current ? 'step' : undefined} className="space-y-1.5">
-          <span
-            className={cn('block h-1 rounded-full', i <= current ? 'bg-primary' : 'bg-muted')}
-          />
-          <span
-            className={cn(
-              'block text-xs',
-              i === current ? 'text-foreground font-medium' : 'text-muted-foreground'
+      {STEPS.map((label, i) => {
+        const content = (
+          <>
+            <span
+              className={cn('block h-1 rounded-full', i <= current ? 'bg-primary' : 'bg-muted')}
+            />
+            <span
+              className={cn(
+                'block text-xs',
+                i === current ? 'text-foreground font-medium' : 'text-muted-foreground'
+              )}
+            >
+              {i + 1}. {label}
+            </span>
+          </>
+        );
+        return (
+          <li key={label} aria-current={i === current ? 'step' : undefined} className="space-y-1.5">
+            {onPick ? (
+              <button
+                type="button"
+                onClick={() => onPick(i)}
+                className="focus-visible:ring-ring touch:min-h-11 block w-full space-y-1.5 rounded-sm text-left outline-none focus-visible:ring-2"
+              >
+                {content}
+              </button>
+            ) : (
+              content
             )}
-          >
-            {i + 1}. {label}
-          </span>
-        </li>
-      ))}
+          </li>
+        );
+      })}
     </ol>
   );
 }
@@ -150,6 +172,7 @@ function initialValues(event: EventRow | null, siteZone: string): Values {
       summary: '',
       description: null,
       heroMediaId: null,
+      galleryMediaIds: [],
       capacity: null,
       maxPartySize: 6,
       bookingsCloseAt: null,
@@ -167,6 +190,7 @@ function initialValues(event: EventRow | null, siteZone: string): Values {
     summary: event.summary,
     description: event.description,
     heroMediaId: event.heroMediaId,
+    galleryMediaIds: event.galleryMediaIds,
     capacity: event.capacity,
     maxPartySize: event.maxPartySize,
     bookingsCloseAt: event.bookingsCloseAt,
@@ -193,9 +217,17 @@ export function EventForm({
   const [zoneChosen, setZoneChosen] = useState(Boolean(event));
   const [repeat, setRepeat] = useState<RepeatValue>(noRepeat);
   const [askScope, setAskScope] = useState(false);
+  const form = useRef<HTMLFormElement>(null);
   const [step, setStep] = useState(0);
   // Which way the steps move, so the new one slides in from that side.
   const [forward, setForward] = useState(true);
+  // A new step starts from its top, not as far down as the last one was scrolled.
+  const shownStep = useRef(step);
+  useEffect(() => {
+    if (shownStep.current === step) return;
+    shownStep.current = step;
+    form.current?.scrollIntoView({ block: 'start' });
+  }, [step]);
   const zone = values.timeZone;
   const patch = (next: Partial<Values>) => setValues((v) => ({ ...v, ...next }));
   /** A new zone keeps the clock times (10:00 stays 10:00), not the instants. */
@@ -294,22 +326,34 @@ export function EventForm({
     return true;
   }
 
-  /** A new event's steps: check this one's fields, then move on or create. */
-  function next(e: React.FormEvent) {
-    e.preventDefault();
-    if (!reportInvalid(e.currentTarget)) return;
-    if (step === 1 && !timesReady()) return;
-    if (step < STEPS.length - 1) {
-      setForward(true);
-      setStep(step + 1);
-    } else void save('one');
+  /** Moves between the steps. Going forward checks the step being left. */
+  function goTo(to: number) {
+    if (to === step) return;
+    if (to > step) {
+      if (form.current && !reportInvalid(form.current)) return;
+      if (step === 1 && !timesReady()) return;
+    }
+    setForward(to > step);
+    setStep(to);
   }
 
+  /** A new event moves on until its last step, then is created; a saved one saves. */
   function submit(e: React.FormEvent) {
     e.preventDefault();
-    if (!reportInvalid(e.currentTarget) || !timesReady()) return;
+    if (!reportInvalid(e.currentTarget)) return;
+    if (!event) {
+      if (step < LAST_STEP) goTo(step + 1);
+      else void save('one');
+      return;
+    }
+    // Saving from another step: the times are on their own one.
+    if (!timesReady()) {
+      setForward(step < 1);
+      setStep(1);
+      return;
+    }
     // A date in a series asks whether the change is for it alone.
-    if (event?.seriesId) setAskScope(true);
+    if (event.seriesId) setAskScope(true);
     else void save('one');
   }
 
@@ -323,7 +367,8 @@ export function EventForm({
           maxLength={120}
           value={values.title}
           onChange={(e) => patch({ title: e.target.value })}
-          placeholder="e.g. Open day at Mornington"
+          placeholder="Event name"
+          enterKeyHint={event ? 'done' : 'next'}
         />
       </div>
 
@@ -334,8 +379,12 @@ export function EventForm({
           maxLength={120}
           value={values.slug}
           onChange={(e) => patch({ slug: e.target.value })}
-          placeholder={slugify(values.title) || 'open-day'}
+          placeholder={slugify(values.title) || 'event-name'}
           className="font-mono"
+          inputMode="url"
+          autoCapitalize="none"
+          autoCorrect="off"
+          spellCheck={false}
         />
         <p className="text-muted-foreground text-xs">
           Used for its page once the website shows events.
@@ -390,7 +439,7 @@ export function EventForm({
           maxLength={200}
           value={values.summary}
           onChange={(e) => patch({ summary: e.target.value })}
-          placeholder="A sentence about the day"
+          placeholder="A sentence about the event"
         />
         <p className="text-muted-foreground text-xs">Shown in event lists.</p>
       </div>
@@ -408,11 +457,13 @@ export function EventForm({
         />
       </div>
 
-      <ImageField
-        id="ev-photo"
-        label="Photo"
-        mediaId={values.heroMediaId}
-        onChange={(heroMediaId) => patch({ heroMediaId })}
+      <ImageGalleryField
+        id="ev-photos"
+        label="Photos"
+        description={`Up to ${EVENT_PHOTO_LIMIT}. The first one is the cover.`}
+        max={EVENT_PHOTO_LIMIT}
+        mediaIds={[...(values.heroMediaId ? [values.heroMediaId] : []), ...values.galleryMediaIds]}
+        onChange={([cover = null, ...rest]) => patch({ heroMediaId: cover, galleryMediaIds: rest })}
       />
     </>
   );
@@ -481,7 +532,7 @@ export function EventForm({
   );
   const places = (
     <>
-      <div className="grid gap-5 sm:grid-cols-2">
+      <div className="grid grid-cols-2 gap-3 sm:gap-5">
         <div className="space-y-1.5">
           <Label htmlFor="ev-capacity">Capacity</Label>
           <Input
@@ -517,13 +568,17 @@ export function EventForm({
         </div>
       </div>
 
-      <div className="flex items-center justify-between gap-4 rounded-lg border px-3 py-2.5">
-        <div className="space-y-0.5">
-          <Label htmlFor="ev-published">Published</Label>
-          <p className="text-muted-foreground text-xs">
+      {/* The label fills the row, so all of it is the target and not just the small switch. */}
+      <div className="flex items-center justify-between gap-4 rounded-lg border pr-3">
+        <Label
+          htmlFor="ev-published"
+          className="flex-1 flex-col items-start gap-0.5 self-stretch py-2.5 pl-3 font-medium"
+        >
+          Published
+          <span className="text-muted-foreground text-xs font-normal">
             Ready for the website once it shows events.
-          </p>
-        </div>
+          </span>
+        </Label>
         <Switch
           id="ev-published"
           checked={values.status === 'published'}
@@ -546,83 +601,85 @@ export function EventForm({
     </Button>
   );
 
-  // A new event is added in steps; a saved one is edited on one page.
-  if (!event) {
-    const dateCount = times ? allTimes(times).length : 1;
-    return (
-      <form noValidate onSubmit={next} className="space-y-5">
-        <Steps current={step} />
-        <div
-          key={step}
-          className={cn(
-            'animate-in fade-in space-y-5 duration-200 ease-out motion-reduce:animate-none',
-            forward ? 'slide-in-from-right-3' : 'slide-in-from-left-3'
-          )}
-        >
-          {step === 0 && details}
-          {step === 1 && when}
-          {step === 2 && (
-            <>
-              {places}
+  const back = step > 0 && (
+    <Button type="button" variant="ghost" size="sm" onClick={() => goTo(step - 1)}>
+      Back
+    </Button>
+  );
+
+  // Both go through the same steps. A saved event can also jump between them and
+  // save from any of them, so a small change does not mean walking through it all.
+  return (
+    <form
+      ref={form}
+      noValidate
+      onSubmit={submit}
+      className={cn('scroll-mt-12 space-y-5', TOUCH_FIELDS)}
+    >
+      <Steps current={step} onPick={event ? goTo : undefined} />
+      <div
+        key={step}
+        className={cn(
+          'animate-in fade-in space-y-5 duration-200 ease-out motion-reduce:animate-none',
+          forward ? 'slide-in-from-right-3' : 'slide-in-from-left-3'
+        )}
+      >
+        {step === 0 && details}
+        {step === 1 && when}
+        {step === 2 && (
+          <>
+            {places}
+            {!event && (
               <NewEventSummary
                 title={values.title}
                 where={values.venue || location?.name || ''}
                 times={times}
-                dates={dateCount}
+                dates={times ? allTimes(times).length : 1}
                 zone={zone}
                 sessions={sessions.length > 0}
               />
-            </>
-          )}
-        </div>
-        {actions(
-          step < STEPS.length - 1 ? (
-            <Button type="submit">Next</Button>
-          ) : (
-            saveButton('Create event')
-          ),
-          step > 0 && (
-            <Button
-              type="button"
-              variant="ghost"
-              size="sm"
-              onClick={() => {
-                setForward(false);
-                setStep(step - 1);
-              }}
-            >
-              Back
-            </Button>
-          )
+            )}
+          </>
         )}
-      </form>
-    );
-  }
+      </div>
 
-  return (
-    <form noValidate onSubmit={submit} className="space-y-5">
-      {details}
-      {when}
-      {places}
-
-      <ScopeDialog
-        open={askScope}
-        onOpenChange={setAskScope}
-        title="Save changes to"
-        description="Change this date only, or this date and the upcoming dates in the series. Dates you changed on their own keep their own values unless you changed the same thing here."
-        onChoose={(scope) => {
-          setAskScope(false);
-          void save(scope);
-        }}
-      />
-
-      {actions(
-        saveButton('Save'),
-        <div className="flex gap-1">
-          <CancelEvent event={event} />
-          <DeleteEvent event={event} onRemoved={() => onSaved(null)} />
-        </div>
+      {event && (
+        <ScopeDialog
+          open={askScope}
+          onOpenChange={setAskScope}
+          title="Which dates should change?"
+          description="Save to this date only, or to this date and the upcoming ones. A date you edited on its own keeps its values, unless you changed the same thing here."
+          onChoose={(scope) => {
+            setAskScope(false);
+            void save(scope);
+          }}
+        />
       )}
+
+      {event
+        ? actions(
+            <>
+              {step < LAST_STEP && (
+                <Button type="button" variant="outline" onClick={() => goTo(step + 1)}>
+                  Next
+                </Button>
+              )}
+              {saveButton('Save')}
+            </>,
+            <div className="flex gap-1">
+              {back}
+              {step === LAST_STEP && (
+                <>
+                  <CancelEvent event={event} />
+                  <DeleteEvent event={event} onRemoved={() => onSaved(null)} />
+                </>
+              )}
+            </div>
+          )
+        : actions(
+            step < LAST_STEP ? <Button type="submit">Next</Button> : saveButton('Create event'),
+            back
+          )}
     </form>
   );
 }
@@ -655,6 +712,9 @@ function CancelledEvent({
     </div>
   );
 }
+
+/** Room for Cancel and both scope buttons on one line. */
+const SCOPE_DIALOG = 'data-[size=default]:sm:max-w-lg';
 
 /** The two buttons a repeating event's dialogs end with, or the one for a single event. */
 function ScopeActions({
@@ -696,7 +756,7 @@ function ScopeDialog({
 }) {
   return (
     <AlertDialog open={open} onOpenChange={onOpenChange}>
-      <AlertDialogContent>
+      <AlertDialogContent className={SCOPE_DIALOG}>
         <AlertDialogHeader>
           <AlertDialogTitle>{title}</AlertDialogTitle>
           <AlertDialogDescription>{description}</AlertDialogDescription>
@@ -731,7 +791,7 @@ function CancelEvent({ event }: { event: EventRow }) {
       >
         Cancel event
       </AlertDialogTrigger>
-      <AlertDialogContent>
+      <AlertDialogContent className={cn(series && SCOPE_DIALOG)}>
         <AlertDialogHeader>
           <AlertDialogTitle>Cancel {event.title}?</AlertDialogTitle>
           <AlertDialogDescription>
@@ -782,7 +842,7 @@ function DeleteEvent({ event, onRemoved }: { event: EventRow; onRemoved: () => v
         <Trash2Icon aria-hidden data-icon="inline-start" />
         Delete
       </AlertDialogTrigger>
-      <AlertDialogContent>
+      <AlertDialogContent className={cn(series && SCOPE_DIALOG)}>
         <AlertDialogHeader>
           <AlertDialogTitle>Delete {event.title}?</AlertDialogTitle>
           <AlertDialogDescription>

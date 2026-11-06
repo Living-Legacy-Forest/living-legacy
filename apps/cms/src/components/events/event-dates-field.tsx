@@ -133,8 +133,8 @@ export function EventDatesField({
 
   return (
     <div className="space-y-3">
-      <div className="grid gap-3 sm:grid-cols-[1fr_7.5rem_7.5rem]">
-        <div className="space-y-1.5">
+      <div className="grid grid-cols-2 gap-3 sm:grid-cols-[1fr_7.5rem_7.5rem]">
+        <div className="col-span-2 space-y-1.5 sm:col-span-1">
           <Label htmlFor={id}>Date</Label>
           <Popover open={open} onOpenChange={setOpen}>
             <PopoverTrigger
@@ -143,7 +143,7 @@ export function EventDatesField({
                   id={id}
                   type="button"
                   variant="outline"
-                  className="w-full justify-start px-2.5 font-normal"
+                  className="touch:min-h-11 w-full justify-start px-2.5 font-normal"
                 />
               }
             >
@@ -152,7 +152,7 @@ export function EventDatesField({
                 {range ? dayLabel(range.from, range.to) : 'Pick a date'}
               </span>
             </PopoverTrigger>
-            <PopoverContent align="start" className="w-[20rem] p-0">
+            <PopoverContent align="start" className="w-[min(20rem,calc(100vw-2rem))] p-0">
               {/* The calendar fills the popover, so the hint below wraps under it. */}
               <Calendar
                 className="w-full px-3"
@@ -197,15 +197,16 @@ export function EventDatesField({
       {(sessions ?? []).map((session, i) => (
         <div
           key={i}
-          className="animate-in fade-in slide-in-from-top-1 grid items-center gap-3 duration-200 motion-reduce:animate-none sm:grid-cols-[1fr_7.5rem_7.5rem]"
+          className="animate-in fade-in slide-in-from-top-1 grid grid-cols-2 items-center gap-3 duration-200 motion-reduce:animate-none sm:grid-cols-[1fr_7.5rem_7.5rem]"
         >
-          <div className="flex items-center justify-between gap-2 sm:justify-end">
+          <div className="col-span-2 flex items-center justify-between gap-2 sm:col-span-1 sm:justify-end">
             <span className="text-muted-foreground text-sm">Also at</span>
             <Button
               type="button"
               variant="ghost"
               size="icon-sm"
               aria-label={`Remove time ${i + 2}`}
+              className="touch:size-11"
               onClick={() => onSessionsChange?.((sessions ?? []).filter((_, k) => k !== i))}
             >
               <XIcon aria-hidden />

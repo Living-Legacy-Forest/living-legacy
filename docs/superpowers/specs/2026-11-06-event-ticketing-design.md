@@ -64,7 +64,8 @@ Two tables in `packages/db/src/schema/events.ts`, added by a new migration.
 | `starts_at`, `ends_at` | Timestamps. |
 | `summary` | A sentence for the list and the email. |
 | `description` | Rich text (Tiptap JSON), like a post's body. |
-| `hero_media_id` | Optional FK to `media`. |
+| `hero_media_id` | Optional FK to `media`: the cover, the first of its photos. |
+| `gallery_media_ids` | JSON list of the rest of its photos, in order (20 photos at most, with the cover). Media refuses to delete an image an event uses. |
 | `capacity` | Total people; null means no limit. |
 | `max_party_size` | Default 6, at least 1. |
 | `bookings_close_at` | Optional; bookings otherwise close when the event starts. |
@@ -77,7 +78,7 @@ Two tables in `packages/db/src/schema/events.ts`, added by a new migration.
 | `id` | |
 | `event_id` | FK to `events`, cascade on delete. |
 | `reference` | Short, unique, readable: `LL-` plus 6 characters without look-alikes (no 0/O, 1/I/L). |
-| `first_name`, `last_name`, `email`, `phone` | Email normalised. Email and phone are optional for guests staff add (walk-ins); the website will require email. |
+| `first_name`, `last_name`, `email`, `phone` | Email normalised. Email and phone are optional for guests staff add (walk-ins); the website will require email. Names take letters, spaces, hyphens, apostrophes and full stops. Phones must be an Australian mobile or landline and are stored as `0412 345 678` or `03 7019 6142` (`auPhone`). |
 | `party_size` | 1 to the event's `max_party_size`. |
 | `note` | Optional: accessibility or dietary. |
 | `status` | `confirmed` or `cancelled`. |
@@ -197,8 +198,13 @@ synced to it (section 7). (Decided 2026-11-06, replacing CMS-sent emails.)
   upcoming dates. Upcoming dates take only the fields that changed; new clock
   times go on each date's own day.
 - The form: a date range (one day, or several for a multi-day event) with start
-  and end times. A new event is added in three steps (Details, Date & time,
-  Places); a saved one is edited on one page.
+  and end times. An event is added and edited in three steps (Details, Date &
+  time, Places). A saved one can also jump between steps and save from any of them.
+- **One row in the list**: the Events list shows a repeating event once, with
+  how many dates it has and the next one. Opening it shows that date, and a
+  calendar at the top of the pane moves between the dates (with a choice of time
+  on a day with several sessions); each keeps its own form and guest list. Deleting the row deletes the dates shown under the current
+  filter.
 - **Time zone per event**: each state keeps its own time, so an event takes its
   location's state zone (QLD Brisbane, WA Perth, NT Darwin, SA Adelaide, TAS
   Hobart, NSW and ACT Sydney, VIC Melbourne), and staff can change it. Changing

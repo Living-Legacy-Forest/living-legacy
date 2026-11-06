@@ -24,6 +24,7 @@ import { Spinner } from '@/components/ui/spinner';
 import { formatDateTime } from '@/lib/format';
 import { notify } from '@/lib/notify';
 import { useAction } from '@/lib/use-action';
+import { cn } from '@/lib/utils';
 import type { EventRow } from '@/server/events';
 import { type Guest, cancelGuest, getGuests, setCheckedIn } from '@/server/event-guests';
 import { Reveal } from '@/components/reveal';
@@ -141,7 +142,7 @@ export function EventGuests({ event }: { event: EventRow }) {
           value={query}
           onChange={setQuery}
         />
-        <div className="ml-auto flex gap-2">
+        <div className="touch:w-full touch:*:min-h-11 touch:*:flex-1 ml-auto flex gap-2">
           <Button
             type="button"
             variant="outline"
@@ -170,7 +171,10 @@ export function EventGuests({ event }: { event: EventRow }) {
           {confirmed.filter(matches).map((g) => (
             <li
               key={g.id}
-              className="animate-in fade-in slide-in-from-top-1 flex items-center gap-3 px-3 py-2.5 duration-200 motion-reduce:animate-none"
+              className={cn(
+                'animate-in fade-in slide-in-from-top-1 duration-200 motion-reduce:animate-none',
+                GUEST_ROW
+              )}
             >
               <GuestDetails guest={g} />
               {editable && (
@@ -179,7 +183,7 @@ export function EventGuests({ event }: { event: EventRow }) {
                     type="button"
                     variant={g.checkedInAt === null ? 'outline' : 'secondary'}
                     aria-pressed={g.checkedInAt !== null}
-                    className="min-h-11 min-w-28 shrink-0 sm:min-h-9"
+                    className="min-h-11 min-w-24 shrink-0 sm:min-h-9 sm:min-w-28"
                     onClick={() => toggleCheckIn(g)}
                   >
                     {g.checkedInAt === null ? (
@@ -198,7 +202,7 @@ export function EventGuests({ event }: { event: EventRow }) {
                           variant="ghost"
                           size="icon-sm"
                           aria-label={`More for ${fullName(g)}`}
-                          className="shrink-0"
+                          className="touch:size-11 shrink-0"
                         />
                       }
                     >
@@ -222,7 +226,7 @@ export function EventGuests({ event }: { event: EventRow }) {
           <h3 className="text-muted-foreground text-xs font-medium">Cancelled</h3>
           <ul className="divide-y rounded-lg border opacity-70">
             {cancelled.filter(matches).map((g) => (
-              <li key={g.id} className="flex items-center gap-3 px-3 py-2.5">
+              <li key={g.id} className={GUEST_ROW}>
                 <GuestDetails guest={g} />
               </li>
             ))}
@@ -283,23 +287,35 @@ function Stat({ label, value }: { label: string; value: string }) {
   );
 }
 
+/**
+ * A guest beside their buttons. On phones the name stays beside them and the rest
+ * runs the full width beneath, which leaves the longest lines the most room.
+ */
+const GUEST_ROW =
+  'grid grid-cols-[minmax(0,1fr)_auto_auto] items-center gap-x-3 gap-y-1 px-3 py-2.5 sm:flex sm:gap-y-0';
+
 function GuestDetails({ guest: g }: { guest: Guest }) {
   return (
-    <div className="min-w-0 flex-1">
-      <div className="flex items-center gap-2">
-        <span className="truncate font-medium">{fullName(g)}</span>
+    <div className="contents sm:block sm:min-w-0 sm:flex-1">
+      <div className="flex min-w-0 flex-wrap items-center gap-x-2 gap-y-0.5 sm:flex-nowrap">
+        {/* Finding the right person matters most at the door, so a phone shows all of a name. */}
+        <span className="max-w-full truncate font-medium max-sm:wrap-break-word max-sm:whitespace-normal">
+          {fullName(g)}
+        </span>
         {g.partySize > 1 && (
           <Badge variant="outline" className="shrink-0 tabular-nums">
             {g.partySize} people
           </Badge>
         )}
       </div>
-      <div className="text-muted-foreground truncate text-xs">
-        <span className="font-mono">{g.reference}</span>
-        {g.email && ` · ${g.email}`}
-        {!g.email && g.phone && ` · ${g.phone}`}
+      <div className="order-last col-span-full min-w-0 sm:order-none">
+        <div className="text-muted-foreground truncate text-xs">
+          <span className="font-mono">{g.reference}</span>
+          {g.email && ` · ${g.email}`}
+          {!g.email && g.phone && ` · ${g.phone}`}
+        </div>
+        {g.note && <div className="text-muted-foreground mt-0.5 text-xs">{g.note}</div>}
       </div>
-      {g.note && <div className="text-muted-foreground mt-0.5 text-xs">{g.note}</div>}
     </div>
   );
 }

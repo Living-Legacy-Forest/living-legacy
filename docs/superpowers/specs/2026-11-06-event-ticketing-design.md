@@ -41,7 +41,7 @@ binding. HubSpot sends every guest email once it is connected.
 
 **Not in v1**
 
-- Paid tickets, waitlists, QR codes, recurring events, tour time slots.
+- Paid tickets, waitlists, QR codes, tour time slots.
 - Syncing to HubSpot (designed for, see section 7; HubSpot is not connected yet).
 - Places held back from online booking (staff raise the capacity instead).
 - Emailing all guests of an event from the CMS.
@@ -55,13 +55,14 @@ Two tables in `packages/db/src/schema/events.ts`, added by a new migration.
 | Column | Notes |
 | --- | --- |
 | `id`, lifecycle columns | As other content tables (`created_at`, `updated_at`, `deleted_at`, `created_by`, `updated_by`). |
+| `series_id` | Links the dates of a repeating event; each date is its own event. |
 | `title` | Required. |
 | `slug` | Unique among live rows; the page is `/events/{slug}/`. |
 | `location_id` | Optional FK to `locations` (set null on delete). |
 | `venue` | Free text; defaults in the form to the location's address. |
 | `starts_at`, `ends_at` | Timestamps. Shown in the site time zone (Settings). |
 | `summary` | A sentence for the list and the email. |
-| `description` | Markdown, as a location's `about` is. |
+| `description` | Rich text (Tiptap JSON), like a post's body. |
 | `hero_media_id` | Optional FK to `media`. |
 | `capacity` | Total people; null means no limit. |
 | `max_party_size` | Default 6, at least 1. |
@@ -178,3 +179,21 @@ synced to it (section 7). (Decided 2026-11-06, replacing CMS-sent emails.)
   the last places, only one succeeds.
 - Browser checks: book, cancel from the link, check in on a 390px touch screen,
   CSV export, cancel an event.
+
+## 10. Repeating events (added 2026-11-06)
+
+- A new event can repeat: every week, every 2 weeks, monthly on the same
+  weekday ("2nd Saturday", or "last Saturday" for a 5th), or monthly on the
+  same date (months without it are skipped). It ends after a number of dates or
+  on a date, never more than 52, and any date can be left out before saving.
+- Each date becomes its own event (own capacity, guest list, check-in, CSV and
+  HubSpot sync) linked by `series_id`, with its own web address
+  (`{slug}-{yyyy-mm-dd}`). Times are set in the site time zone, so 10:00 stays
+  10:00 across daylight saving (`occurrenceDates`, `occurrenceTimes`,
+  `sameClockOn` in `@ll/content`, unit tested).
+- Editing, cancelling or deleting a date asks: this date only, or this and the
+  upcoming dates. Upcoming dates take only the fields that changed; new clock
+  times go on each date's own day.
+- The form: a date range (one day, or several for a multi-day event) with start
+  and end times. A new event is added in three steps (Details, Date & time,
+  Places); a saved one is edited on one page.

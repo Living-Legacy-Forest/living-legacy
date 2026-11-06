@@ -1,7 +1,7 @@
 import { index, integer, sqliteTable, text, uniqueIndex } from 'drizzle-orm/sqlite-core';
 import { sql } from 'drizzle-orm';
 import { user } from './auth';
-import { id, timestamps } from './columns';
+import { id, richText, timestamps } from './columns';
 import { locations, media } from './content';
 
 // Free events (open days) and the places people book on them. The booking
@@ -13,6 +13,8 @@ export const events = sqliteTable(
   'events',
   {
     id: id(),
+    /** Links the dates of a repeating event; each date is its own event. */
+    seriesId: text('series_id'),
     title: text('title').notNull(),
     /** Its page will be /events/{slug}/ once the website has event pages. */
     slug: text('slug').notNull(),
@@ -22,8 +24,8 @@ export const events = sqliteTable(
     startsAt: integer('starts_at', { mode: 'timestamp_ms' }).notNull(),
     endsAt: integer('ends_at', { mode: 'timestamp_ms' }).notNull(),
     summary: text('summary'),
-    /** Markdown. */
-    description: text('description'),
+    /** Rich text (Tiptap JSON), like a post's body. */
+    description: richText('description'),
     heroMediaId: text('hero_media_id').references(() => media.id, { onDelete: 'set null' }),
     /** Total people; null is no limit. */
     capacity: integer('capacity'),
@@ -38,7 +40,11 @@ export const events = sqliteTable(
     updatedBy: text('updated_by').references(() => user.id, { onDelete: 'set null' }),
     ...timestamps(),
   },
-  (t) => [uniqueIndex('events_slug').on(t.slug), index('events_starts_at').on(t.startsAt)]
+  (t) => [
+    uniqueIndex('events_slug').on(t.slug),
+    index('events_starts_at').on(t.startsAt),
+    index('events_series').on(t.seriesId),
+  ]
 );
 
 export const eventBookings = sqliteTable(

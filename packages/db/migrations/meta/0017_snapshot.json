@@ -1,7 +1,7 @@
 {
   "version": "6",
   "dialect": "sqlite",
-  "id": "62b44a2d-748f-48ce-b5e9-32d6bff4082d",
+  "id": "ec5dd8a1-3de2-42bf-8339-dc390c6266ff",
   "prevId": "1c9f36a9-82ed-4148-817b-4d19d741c002",
   "tables": {
     "account": {
@@ -2554,6 +2554,13 @@
           "notNull": true,
           "autoincrement": false
         },
+        "series_id": {
+          "name": "series_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
         "title": {
           "name": "title",
           "type": "text",
@@ -2692,6 +2699,11 @@
         "events_starts_at": {
           "name": "events_starts_at",
           "columns": ["starts_at"],
+          "isUnique": false
+        },
+        "events_series": {
+          "name": "events_series",
+          "columns": ["series_id"],
           "isUnique": false
         }
       },

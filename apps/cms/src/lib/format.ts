@@ -1,3 +1,5 @@
+import { parseClock } from '@ll/content';
+
 const LOCALE = 'en-AU';
 
 /** Noon anchor avoids off-by-one labels around timezone boundaries for ISO date strings. */
@@ -119,26 +121,12 @@ const pad2 = (n: number) => String(n).padStart(2, '0');
  * Reads times typed the way people write them: "9", "9am", "9:30 pm",
  * "21:10", "0930". Returns 24-hour "HH:MM", or null if it is not a time.
  */
+/** Typed time ("10:30", "2pm") as "HH:MM", or null. */
 export function parseTime(text: string): string | null {
-  const match = text
-    .trim()
-    .toLowerCase()
-    .match(/^(\d{1,2})(?:[:.]?(\d{2}))?\s*(a|am|p|pm)?$/);
-  if (!match) return null;
-  let hour = Number(match[1]);
-  const minute = Number(match[2] ?? 0);
-  const meridiem = match[3]?.[0];
-  if (minute > 59) return null;
-  if (meridiem) {
-    if (hour < 1 || hour > 12) return null;
-    hour = (hour % 12) + (meridiem === 'p' ? 12 : 0);
-  } else if (hour > 23) {
-    return null;
-  }
-  return `${pad2(hour)}:${pad2(minute)}`;
+  const t = parseClock(text);
+  return t ? `${pad2(t.hour)}:${pad2(t.minute)}` : null;
 }
 
-/** "21:10" becomes "9:10 pm", the way Australians write times. */
 export function displayTime(time: string) {
   const [hour = 0, minute = 0] = time.split(':').map(Number);
   return `${hour % 12 || 12}:${pad2(minute)} ${hour < 12 ? 'am' : 'pm'}`;

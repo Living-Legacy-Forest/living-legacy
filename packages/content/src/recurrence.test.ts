@@ -4,7 +4,8 @@ import {
   MAX_OCCURRENCES,
   occurrenceDates,
   occurrenceTimes,
-  parseTime,
+  sameClockOn,
+  parseClock,
   repeatLabel,
 } from './recurrence';
 
@@ -95,14 +96,16 @@ describe('occurrenceTimes', () => {
   });
 });
 
-describe('parseTime', () => {
+describe('parseClock', () => {
   it('reads 24-hour and am/pm times', () => {
-    expect(parseTime('10:00')).toEqual({ hour: 10, minute: 0 });
-    expect(parseTime('9:30 am')).toEqual({ hour: 9, minute: 30 });
-    expect(parseTime('2pm')).toEqual({ hour: 14, minute: 0 });
-    expect(parseTime('12:15 am')).toEqual({ hour: 0, minute: 15 });
-    expect(parseTime('25:00')).toBeNull();
-    expect(parseTime('soon')).toBeNull();
+    expect(parseClock('10:00')).toEqual({ hour: 10, minute: 0 });
+    expect(parseClock('9:30 am')).toEqual({ hour: 9, minute: 30 });
+    expect(parseClock('2pm')).toEqual({ hour: 14, minute: 0 });
+    expect(parseClock('12:15 am')).toEqual({ hour: 0, minute: 15 });
+    expect(parseClock('25:00')).toBeNull();
+    expect(parseClock('soon')).toBeNull();
+    expect(parseClock('1030')).toEqual({ hour: 10, minute: 30 });
+    expect(parseClock('2p')).toEqual({ hour: 14, minute: 0 });
   });
 });
 
@@ -113,5 +116,21 @@ describe('repeatLabel', () => {
     expect(repeatLabel('monthly_date', d(2026, 10, 14))).toBe('Monthly on the 14th');
     expect(repeatLabel('weekly', d(2026, 10, 14))).toBe('Every Saturday');
     expect(repeatLabel('fortnightly', d(2026, 10, 14))).toBe('Every 2 weeks on Saturday');
+  });
+});
+
+describe('sameClockOn', () => {
+  it('moves a later date to the new clock times, on its own day, across daylight saving', () => {
+    // Edited: 14 Nov 2026 now 11:00 to 13:30 Melbourne (AEDT).
+    const edited = {
+      startsAt: Date.UTC(2026, 10, 14, 0, 0),
+      endsAt: Date.UTC(2026, 10, 14, 2, 30),
+    };
+    // A later date in the series, 8 May 2027 10:00 (AEST), becomes 11:00 to 13:30 AEST.
+    const later = Date.UTC(2027, 4, 8, 0, 0);
+    expect(sameClockOn(later, edited, MELBOURNE)).toEqual({
+      startsAt: Date.UTC(2027, 4, 8, 1, 0),
+      endsAt: Date.UTC(2027, 4, 8, 3, 30),
+    });
   });
 });

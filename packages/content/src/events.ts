@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { richTextSchema } from './posts';
 
 // Free events (open days) and the bookings for them: the rules both the CMS
 // and, later, the website apply. Times are epoch milliseconds.
@@ -105,16 +106,28 @@ export const eventInputSchema = z
     startsAt: z.number().int(),
     endsAt: z.number().int(),
     summary: optionalText(200),
-    description: optionalText(10_000),
+    /** Rich text, stored like a post's body. */
+    description: richTextSchema.nullable().default(null),
     heroMediaId: z.string().nullable(),
     capacity: z.number().int().min(1).max(100_000).nullable(),
     maxPartySize: z.number().int().min(1).max(STAFF_MAX_PARTY_SIZE),
     bookingsCloseAt: z.number().int().nullable(),
     status: z.enum(['draft', 'published']),
+    /** A new repeating event: its other dates (the first is startsAt/endsAt). */
+    moreDates: z
+      .array(z.object({ startsAt: z.number().int(), endsAt: z.number().int() }))
+      .max(51)
+      .default([]),
+    /** Editing a repeating event: this date only, or this and its upcoming dates. */
+    scope: z.enum(['one', 'following']).default('one'),
   })
   .refine((e) => e.endsAt > e.startsAt, {
     path: ['endsAt'],
     message: 'The event must end after it starts.',
+  })
+  .refine((e) => e.moreDates.every((d) => d.endsAt > d.startsAt), {
+    path: ['moreDates'],
+    message: 'Every date must end after it starts.',
   })
   .refine((e) => e.bookingsCloseAt === null || e.bookingsCloseAt <= e.startsAt, {
     path: ['bookingsCloseAt'],
@@ -135,3 +148,7 @@ export const guestInputSchema = z.object({
   note: optionalText(500),
 });
 export type GuestInput = z.infer<typeof guestInputSchema>;
+
+/** Cancelling or deleting a repeating event: this date only, or this and its upcoming dates. */
+export const seriesScopeSchema = z.enum(['one', 'following']).default('one');
+export type SeriesScope = z.infer<typeof seriesScopeSchema>;

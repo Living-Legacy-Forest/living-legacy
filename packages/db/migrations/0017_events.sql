@@ -28,6 +28,7 @@ CREATE INDEX `event_bookings_event_status` ON `event_bookings` (`event_id`,`stat
 CREATE INDEX `event_bookings_email` ON `event_bookings` (`email`);--> statement-breakpoint
 CREATE TABLE `events` (
 	`id` text PRIMARY KEY NOT NULL,
+	`series_id` text,
 	`title` text NOT NULL,
 	`slug` text NOT NULL,
 	`location_id` text,
@@ -53,4 +54,5 @@ CREATE TABLE `events` (
 );
 --> statement-breakpoint
 CREATE UNIQUE INDEX `events_slug` ON `events` (`slug`);--> statement-breakpoint
-CREATE INDEX `events_starts_at` ON `events` (`starts_at`);
+CREATE INDEX `events_starts_at` ON `events` (`starts_at`);--> statement-breakpoint
+CREATE INDEX `events_series` ON `events` (`series_id`);

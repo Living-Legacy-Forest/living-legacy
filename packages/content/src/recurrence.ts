@@ -1,4 +1,4 @@
-import { fromZoned } from './zoned';
+import { fromZoned, toZoned } from './zoned';
 
 // Repeating events: the dates of a series, and their times in the site's time
 // zone. Each date becomes its own event (own capacity and guest list), linked
@@ -83,17 +83,20 @@ export function occurrenceDates(
   return dates;
 }
 
-/** "10:00", "9:30 am" or "2pm" as a 24-hour time, or null. */
-export function parseTime(text: string): { hour: number; minute: number } | null {
-  const m = /^\s*(\d{1,2})(?:[:.](\d{2}))?\s*(am|pm)?\s*$/i.exec(text);
+/** "10:00", "1030", "9:30 am" or "2p" as a 24-hour clock time, or null. */
+export function parseClock(text: string): { hour: number; minute: number } | null {
+  const m = text
+    .trim()
+    .toLowerCase()
+    .match(/^(\d{1,2})(?:[:.]?(\d{2}))?\s*(a|am|p|pm)?$/);
   if (!m) return null;
   let hour = Number(m[1]);
   const minute = Number(m[2] ?? 0);
-  const half = m[3]?.toLowerCase();
+  const half = m[3]?.[0];
   if (minute > 59) return null;
   if (half) {
     if (hour < 1 || hour > 12) return null;
-    hour = (hour % 12) + (half === 'pm' ? 12 : 0);
+    hour = (hour % 12) + (half === 'p' ? 12 : 0);
   } else if (hour > 23) {
     return null;
   }
@@ -105,8 +108,8 @@ export function occurrenceTimes(
   dates: CalendarDate[],
   opts: { startTime: string; endTime: string; spanDays: number; zone: string }
 ): { startsAt: number; endsAt: number }[] {
-  const start = parseTime(opts.startTime);
-  const end = parseTime(opts.endTime);
+  const start = parseClock(opts.startTime);
+  const end = parseClock(opts.endTime);
   if (!start || !end) throw new Error('Times must look like 10:00 or 2:30 pm.');
   return dates.map((date) => {
     const last = fromUtcDay(utcDay(date) + opts.spanDays * DAY_MS);
@@ -115,6 +118,26 @@ export function occurrenceTimes(
       endsAt: fromZoned({ ...last, ...end }, opts.zone),
     };
   });
+}
+
+/**
+ * Another date of a series, given the edited date's new times: the same clock
+ * times and length in days, on that date's own day ("this and upcoming dates").
+ */
+export function sameClockOn(
+  startsAt: number,
+  edited: { startsAt: number; endsAt: number },
+  zone: string
+): { startsAt: number; endsAt: number } {
+  const start = toZoned(edited.startsAt, zone);
+  const end = toZoned(edited.endsAt, zone);
+  const spanDays = Math.round((utcDay(end) - utcDay(start)) / DAY_MS);
+  const day = toZoned(startsAt, zone);
+  const last = fromUtcDay(utcDay(day) + spanDays * DAY_MS);
+  return {
+    startsAt: fromZoned({ ...day, hour: start.hour, minute: start.minute }, zone),
+    endsAt: fromZoned({ ...last, hour: end.hour, minute: end.minute }, zone),
+  };
 }
 
 const ordinal = (n: number) => {

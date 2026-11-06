@@ -54,9 +54,21 @@ export function useListPane<T>() {
 }
 
 /** The bordered two-column frame: list, then pane from `lg` up. */
-export function ListPageLayout({ children }: { children: React.ReactNode }) {
+export function ListPageLayout({
+  children,
+  className,
+}: {
+  children: React.ReactNode;
+  /** To size the columns differently, e.g. a narrower list beside a long form. */
+  className?: string;
+}) {
   return (
-    <div className="grid min-h-0 flex-1 grid-cols-1 overflow-hidden rounded-lg border lg:grid-cols-[minmax(20rem,1fr)_minmax(0,1fr)]">
+    <div
+      className={cn(
+        'grid min-h-0 flex-1 grid-cols-1 overflow-hidden rounded-lg border lg:grid-cols-[minmax(20rem,1fr)_minmax(0,1fr)]',
+        className
+      )}
+    >
       {children}
     </div>
   );

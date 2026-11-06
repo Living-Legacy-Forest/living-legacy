@@ -1,11 +1,22 @@
-import { capacityProblem, deleteEventProblem, eventInputSchema, slugify } from '@ll/content';
+import {
+  type RichTextDoc,
+  type SeriesScope,
+  capacityProblem,
+  deleteEventProblem,
+  eventInputSchema,
+  sameClockOn,
+  seriesScopeSchema,
+  slugify,
+  toZoned,
+} from '@ll/content';
 import type { Db } from '@ll/db';
 import { eventBookings, events, locations } from '@ll/db/schema';
 import { createServerFn } from '@tanstack/react-start';
-import { and, asc, desc, eq, isNull, ne, sql } from 'drizzle-orm';
+import { and, asc, desc, eq, gte, inArray, isNull, ne, sql } from 'drizzle-orm';
 import { z } from 'zod';
 import { getDb } from '@/lib/db';
 import { requirePermission } from '@/lib/session';
+import { readSiteSettings } from '@/lib/site-settings';
 import { logActivity } from './activity-log';
 
 const confirmed = sql`${eventBookings.status} = 'confirmed'`;
@@ -53,11 +64,12 @@ export const listEvents = createServerFn({ method: 'GET' })
         startsAt: e.startsAt.getTime(),
         endsAt: e.endsAt.getTime(),
         summary: e.summary ?? '',
-        description: e.description ?? '',
+        description: (e.description as RichTextDoc | null) ?? null,
         heroMediaId: e.heroMediaId,
         capacity: e.capacity,
         maxPartySize: e.maxPartySize,
         bookingsCloseAt: e.bookingsCloseAt?.getTime() ?? null,
+        seriesId: e.seriesId,
         status: e.status,
         booked: Number(booked),
         bookings: Number(bookings),
@@ -76,6 +88,35 @@ export type EventsData = Awaited<ReturnType<typeof listEvents>>;
 export type EventRow = EventsData['events'][number];
 export type LocationOption = EventsData['locations'][number];
 
+type EventRecord = typeof events.$inferSelect;
+/** One statement in a D1 batch. */
+type BatchItem = Parameters<Db['batch']>[0][number];
+
+const pad = (n: number) => String(n).padStart(2, '0');
+/** "2026-11-14" in the site time zone, for a series date's web address. */
+const dayKey = (ms: number, zone: string) => {
+  const w = toZoned(ms, zone);
+  return `${w.year}-${pad(w.month + 1)}-${pad(w.day)}`;
+};
+
+/** The event and, for "this and upcoming dates", the later dates of its series. */
+async function inScope(db: Db, event: EventRecord, scope: SeriesScope) {
+  if (scope === 'one' || !event.seriesId) return [event];
+  return db
+    .select()
+    .from(events)
+    .where(and(eq(events.seriesId, event.seriesId), gte(events.startsAt, event.startsAt)))
+    .orderBy(asc(events.startsAt));
+}
+
+async function peopleBooked(db: Db, eventId: string) {
+  const [row] = await db
+    .select({ taken: sql<number>`coalesce(sum(${eventBookings.partySize}), 0)` })
+    .from(eventBookings)
+    .where(and(eq(eventBookings.eventId, eventId), confirmed));
+  return Number(row?.taken ?? 0);
+}
+
 export const saveEvent = createServerFn({ method: 'POST' })
   .middleware([requirePermission('events:manage')])
   .validator(eventInputSchema)
@@ -83,127 +124,225 @@ export const saveEvent = createServerFn({ method: 'POST' })
     const db = getDb();
     const slug = slugify(data.slug || data.title);
     if (!slug) throw new Error('Give the event a title or a web address.');
-
-    const clash = await db.query.events.findFirst({
-      where: data.id ? and(eq(events.slug, slug), ne(events.id, data.id)) : eq(events.slug, slug),
-    });
-    if (clash) throw new Error('Another event already uses that web address. Change the slug.');
-
-    const values = {
+    const { timeZone } = await readSiteSettings();
+    const now = new Date();
+    const shared = {
       title: data.title,
-      slug,
       locationId: data.locationId,
       venue: data.venue || null,
-      startsAt: new Date(data.startsAt),
-      endsAt: new Date(data.endsAt),
       summary: data.summary || null,
-      description: data.description || null,
+      description: data.description,
       heroMediaId: data.heroMediaId,
       capacity: data.capacity,
       maxPartySize: data.maxPartySize,
-      bookingsCloseAt: data.bookingsCloseAt === null ? null : new Date(data.bookingsCloseAt),
       status: data.status,
       updatedBy: context.user.id,
-      updatedAt: new Date(),
+      updatedAt: now,
     };
+    // Bookings close the same time ahead of each date.
+    const closeBefore = data.bookingsCloseAt === null ? null : data.startsAt - data.bookingsCloseAt;
+    const closeAt = (startsAt: number) =>
+      closeBefore === null ? null : new Date(startsAt - closeBefore);
 
-    let id = data.id;
-    if (id) {
-      const current = await db.query.events.findFirst({ where: eq(events.id, id) });
-      if (!current) throw new Error('That event no longer exists.');
-      if (current.status === 'cancelled') {
-        throw new Error('This event is cancelled and can no longer be changed.');
+    if (!data.id) {
+      const dates = [{ startsAt: data.startsAt, endsAt: data.endsAt }, ...data.moreDates];
+      const seriesId = dates.length > 1 ? crypto.randomUUID() : null;
+      const rows = dates.map((d) => ({
+        ...shared,
+        seriesId,
+        // Each date of a series has its own page, so its own address.
+        slug: seriesId ? `${slug}-${dayKey(d.startsAt, timeZone)}` : slug,
+        startsAt: new Date(d.startsAt),
+        endsAt: new Date(d.endsAt),
+        bookingsCloseAt: closeAt(d.startsAt),
+        createdBy: context.user.id,
+      }));
+      const clash = await db
+        .select({ slug: events.slug })
+        .from(events)
+        .where(
+          inArray(
+            events.slug,
+            rows.map((r) => r.slug)
+          )
+        )
+        .limit(1);
+      if (clash.length) {
+        throw new Error('Another event already uses that web address. Change the slug.');
       }
-      const [row] = await db
-        .select({ taken: sql<number>`coalesce(sum(${eventBookings.partySize}), 0)` })
-        .from(eventBookings)
-        .where(and(eq(eventBookings.eventId, id), confirmed));
-      const problem = capacityProblem(data.capacity, Number(row?.taken ?? 0));
-      if (problem) throw new Error(problem);
-      // HubSpot sends guests the details, so a change of time or place sends
-      // the bookings to it again.
-      const changed =
-        current.startsAt.getTime() !== data.startsAt ||
-        current.endsAt.getTime() !== data.endsAt ||
-        (current.venue ?? '') !== data.venue ||
-        current.locationId !== data.locationId ||
-        current.title !== data.title;
-      await db.batch([
-        db.update(events).set(values).where(eq(events.id, id)),
-        ...(changed ? [resync(db, id)] : []),
+      // One statement per date: D1 limits how many values one statement binds.
+      const created = await db.batch([
+        db.insert(events).values(rows[0]!).returning({ id: events.id }),
+        ...rows.slice(1).map((r) => db.insert(events).values(r).returning({ id: events.id })),
         logActivity(db, {
           actorId: context.user.id,
           actorName: context.user.name,
           action: 'event.saved',
-          summary: `Updated the event ${data.title}`,
+          summary:
+            rows.length > 1
+              ? `Created the event ${data.title} on ${rows.length} dates`
+              : `Created the event ${data.title}`,
         }),
       ]);
-    } else {
-      const [created] = await db
-        .insert(events)
-        .values({ ...values, createdBy: context.user.id })
-        .returning({ id: events.id });
-      id = created!.id;
-      await logActivity(db, {
+      return { id: created[0][0]!.id, dates: rows.length };
+    }
+
+    const current = await db.query.events.findFirst({ where: eq(events.id, data.id) });
+    if (!current) throw new Error('That event no longer exists.');
+    if (current.status === 'cancelled') {
+      throw new Error('This event is cancelled and can no longer be changed.');
+    }
+    const clash = await db.query.events.findFirst({
+      where: and(eq(events.slug, slug), ne(events.id, current.id)),
+    });
+    if (clash) throw new Error('Another event already uses that web address. Change the slug.');
+
+    // The other dates take only what was changed here, so a date given its own
+    // capacity or times earlier keeps them unless that is what changed.
+    const was = {
+      title: current.title,
+      locationId: current.locationId,
+      venue: current.venue,
+      summary: current.summary,
+      description: current.description,
+      heroMediaId: current.heroMediaId,
+      capacity: current.capacity,
+      maxPartySize: current.maxPartySize,
+      status: current.status,
+    };
+    const patch = Object.fromEntries(
+      Object.entries(shared).filter(
+        ([key, value]) => key in was && was[key as keyof typeof was] !== value
+      )
+    ) as Partial<typeof shared>;
+    const timesChanged =
+      current.startsAt.getTime() !== data.startsAt || current.endsAt.getTime() !== data.endsAt;
+
+    const targets = (await inScope(db, current, data.scope)).filter(
+      (t) => t.status !== 'cancelled'
+    );
+    const statements: BatchItem[] = [];
+    for (const t of targets) {
+      const isThis = t.id === current.id;
+      const capacity = isThis ? data.capacity : (patch.capacity ?? t.capacity);
+      const problem = capacityProblem(capacity, await peopleBooked(db, t.id));
+      if (problem)
+        throw new Error(isThis ? problem : `${dayKey(t.startsAt.getTime(), timeZone)}: ${problem}`);
+      const times = isThis
+        ? { startsAt: data.startsAt, endsAt: data.endsAt }
+        : timesChanged
+          ? sameClockOn(t.startsAt.getTime(), data, timeZone)
+          : null;
+      statements.push(
+        db
+          .update(events)
+          .set({
+            ...(isThis ? { ...shared, slug, bookingsCloseAt: closeAt(data.startsAt) } : patch),
+            ...(times
+              ? { startsAt: new Date(times.startsAt), endsAt: new Date(times.endsAt) }
+              : {}),
+            updatedBy: context.user.id,
+            updatedAt: now,
+          })
+          .where(eq(events.id, t.id))
+      );
+      // HubSpot sends guests the details, so a change of time or place sends
+      // the bookings to it again.
+      if (timesChanged || 'title' in patch || 'venue' in patch || 'locationId' in patch) {
+        statements.push(resync(db, t.id));
+      }
+    }
+    statements.push(
+      logActivity(db, {
         actorId: context.user.id,
         actorName: context.user.name,
         action: 'event.saved',
-        summary: `Created the event ${data.title}`,
-      });
-    }
-    return { id };
+        summary:
+          targets.length > 1
+            ? `Updated the event ${data.title} on ${targets.length} dates`
+            : `Updated the event ${data.title}`,
+      })
+    );
+    await db.batch(statements as [BatchItem, ...BatchItem[]]);
+    return { id: current.id, dates: targets.length };
   });
+
+const scoped = z.object({ id: z.string(), scope: seriesScopeSchema });
 
 export const cancelEvent = createServerFn({ method: 'POST' })
   .middleware([requirePermission('events:manage')])
-  .validator(z.object({ id: z.string() }))
+  .validator(scoped)
   .handler(async ({ data, context }) => {
     const db = getDb();
     const event = await db.query.events.findFirst({ where: eq(events.id, data.id) });
     if (!event) throw new Error('That event no longer exists.');
-    if (event.status === 'cancelled') return;
+    const targets = (await inScope(db, event, data.scope)).filter((t) => t.status !== 'cancelled');
+    if (targets.length === 0) return { dates: 0 };
     const now = new Date();
     await db.batch([
-      db
-        .update(events)
-        .set({ status: 'cancelled', cancelledAt: now, updatedAt: now, updatedBy: context.user.id })
-        .where(eq(events.id, event.id)),
-      // HubSpot tells the guests, once it has the cancellation.
-      resync(db, event.id),
       logActivity(db, {
         actorId: context.user.id,
         actorName: context.user.name,
         action: 'event.cancelled',
-        summary: `Cancelled the event ${event.title}`,
+        summary:
+          targets.length > 1
+            ? `Cancelled the event ${event.title} on ${targets.length} dates`
+            : `Cancelled the event ${event.title}`,
       }),
+      ...targets.flatMap((t) => [
+        db
+          .update(events)
+          .set({
+            status: 'cancelled',
+            cancelledAt: now,
+            updatedAt: now,
+            updatedBy: context.user.id,
+          })
+          .where(eq(events.id, t.id)),
+        // HubSpot tells the guests, once it has the cancellation.
+        resync(db, t.id),
+      ]),
     ]);
+    return { dates: targets.length };
   });
 
 export const deleteEvent = createServerFn({ method: 'POST' })
   .middleware([requirePermission('events:manage')])
-  .validator(z.object({ id: z.string() }))
+  .validator(scoped)
   .handler(async ({ data, context }) => {
     const db = getDb();
     const event = await db.query.events.findFirst({ where: eq(events.id, data.id) });
-    if (!event) return;
-    const [row] = await db
-      .select({ n: sql<number>`count(*)` })
-      .from(eventBookings)
-      .where(and(eq(eventBookings.eventId, event.id), confirmed));
-    const problem = deleteEventProblem(
-      { status: event.status, endsAt: event.endsAt.getTime() },
-      Number(row?.n ?? 0),
-      Date.now()
-    );
-    if (problem) throw new Error(problem);
-    // Bookings cascade with it: guest details go with the event.
+    if (!event) return { dates: 0 };
+    const targets = await inScope(db, event, data.scope);
+    for (const t of targets) {
+      const [row] = await db
+        .select({ n: sql<number>`count(*)` })
+        .from(eventBookings)
+        .where(and(eq(eventBookings.eventId, t.id), confirmed));
+      const problem = deleteEventProblem(
+        { status: t.status, endsAt: t.endsAt.getTime() },
+        Number(row?.n ?? 0),
+        Date.now()
+      );
+      if (problem) throw new Error(problem);
+    }
+    // Bookings cascade with each date: guest details go with the event.
     await db.batch([
-      db.delete(events).where(eq(events.id, event.id)),
+      db.delete(events).where(
+        inArray(
+          events.id,
+          targets.map((t) => t.id)
+        )
+      ),
       logActivity(db, {
         actorId: context.user.id,
         actorName: context.user.name,
         action: 'event.deleted',
-        summary: `Deleted the event ${event.title}`,
+        summary:
+          targets.length > 1
+            ? `Deleted the event ${event.title} on ${targets.length} dates`
+            : `Deleted the event ${event.title}`,
       }),
     ]);
+    return { dates: targets.length };
   });

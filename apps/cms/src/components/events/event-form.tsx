@@ -1,6 +1,9 @@
-import { type EventInput, slugify } from '@ll/content';
+import { type EventInput, type SeriesScope, slugify } from '@ll/content';
 import { useState } from 'react';
 import { DateTimePicker } from '@/components/date-time-picker';
+import { RichTextField } from '@/components/rich-text-field';
+import { EventDatesField } from './event-dates-field';
+import { RepeatField, type RepeatValue, noRepeat, seriesDates } from './repeat-field';
 import { Trash2Icon } from '@/components/icons';
 import { ImageField } from '@/components/media/image-field';
 import {
@@ -32,6 +35,7 @@ import { reportInvalid } from '@/lib/form-validation';
 import { notify, removedNotice } from '@/lib/notify';
 import { useAction } from '@/lib/use-action';
 import { useTimeZone } from '@/lib/use-time-zone';
+import { cn } from '@/lib/utils';
 import {
   type EventRow,
   type LocationOption,
@@ -43,13 +47,68 @@ import {
 /** The form's buttons, laid out for the pane or the dialog; `start` holds cancel and delete. */
 export type FormActions = (submit: React.ReactNode, start: React.ReactNode) => React.ReactNode;
 
-type Values = Omit<EventInput, 'id' | 'startsAt' | 'endsAt'> & {
+type Values = Omit<EventInput, 'id' | 'startsAt' | 'endsAt' | 'moreDates' | 'scope'> & {
   startsAt: number | null;
   endsAt: number | null;
 };
 
-const TWO_HOURS = 2 * 60 * 60 * 1000;
 const NO_LOCATION = 'none';
+
+const STEPS = ['Details', 'Date & time', 'Places'] as const;
+
+/** Where a new event's steps are up to. */
+function Steps({ current }: { current: number }) {
+  return (
+    <ol className="grid grid-cols-3 gap-2" aria-label="Steps">
+      {STEPS.map((label, i) => (
+        <li key={label} aria-current={i === current ? 'step' : undefined} className="space-y-1.5">
+          <span
+            className={cn('block h-1 rounded-full', i <= current ? 'bg-primary' : 'bg-muted')}
+          />
+          <span
+            className={cn(
+              'block text-xs',
+              i === current ? 'text-foreground font-medium' : 'text-muted-foreground'
+            )}
+          >
+            {i + 1}. {label}
+          </span>
+        </li>
+      ))}
+    </ol>
+  );
+}
+
+/** The last step's check of what is about to be created. */
+function NewEventSummary({
+  title,
+  where,
+  times,
+  dates,
+}: {
+  title: string;
+  where: string;
+  times: { startsAt: number; endsAt: number } | null;
+  dates: number;
+}) {
+  const zone = useTimeZone();
+  return (
+    <dl className="bg-muted/50 grid grid-cols-[auto_1fr] gap-x-4 gap-y-1.5 rounded-lg px-3 py-2.5 text-sm">
+      <dt className="text-muted-foreground">Event</dt>
+      <dd className="min-w-0 truncate">{title}</dd>
+      <dt className="text-muted-foreground">Where</dt>
+      <dd className="min-w-0 truncate">{where || 'Not set'}</dd>
+      <dt className="text-muted-foreground">{dates > 1 ? 'First date' : 'When'}</dt>
+      <dd>{times ? formatDateTime(times.startsAt, zone) : 'Not set'}</dd>
+      {dates > 1 && (
+        <>
+          <dt className="text-muted-foreground">Dates</dt>
+          <dd>{dates}, each with its own guest list</dd>
+        </>
+      )}
+    </dl>
+  );
+}
 
 function initialValues(event: EventRow | null): Values {
   if (!event) {
@@ -61,7 +120,7 @@ function initialValues(event: EventRow | null): Values {
       startsAt: null,
       endsAt: null,
       summary: '',
-      description: '',
+      description: null,
       heroMediaId: null,
       capacity: null,
       maxPartySize: 6,
@@ -99,6 +158,10 @@ export function EventForm({
   actions: FormActions;
 }) {
   const [values, setValues] = useState<Values>(() => initialValues(event));
+  const [repeat, setRepeat] = useState<RepeatValue>(noRepeat);
+  const [askScope, setAskScope] = useState(false);
+  const [step, setStep] = useState(0);
+  const zone = useTimeZone();
   const patch = (next: Partial<Values>) => setValues((v) => ({ ...v, ...next }));
   const { run, pending } = useAction();
   const location = locations.find((l) => l.id === values.locationId);
@@ -111,32 +174,75 @@ export function EventForm({
     return <CancelledEvent event={event} actions={actions} onRemoved={() => onSaved(null)} />;
   }
 
-  async function submit(e: React.FormEvent) {
-    e.preventDefault();
-    if (!reportInvalid(e.currentTarget)) return;
-    const { startsAt, endsAt } = values;
-    if (startsAt === null || endsAt === null) {
-      notify.error('Check the event', 'Set when it starts and ends.');
-      return;
-    }
+  const times =
+    values.startsAt !== null && values.endsAt !== null
+      ? { startsAt: values.startsAt, endsAt: values.endsAt }
+      : null;
+
+  async function save(scope: SeriesScope) {
+    if (!times) return;
+    const moreDates =
+      !event && repeat.repeat !== 'none'
+        ? seriesDates(times, repeat, zone)
+            .filter((d) => !d.first && !d.skipped)
+            .map(({ startsAt, endsAt }) => ({ startsAt, endsAt }))
+        : [];
     const result = await run(
-      () => saveEvent({ data: { ...values, id: event?.id, startsAt, endsAt } }),
+      () => saveEvent({ data: { ...values, ...times, id: event?.id, moreDates, scope } }),
       {
-        success: {
-          title: event ? 'Event saved' : 'Event created',
+        success: (r) => ({
+          title: event ? 'Event saved' : r.dates > 1 ? `${r.dates} dates created` : 'Event created',
           description:
-            values.status === 'published'
-              ? 'Staff can add guests, and it is ready for the website.'
-              : 'It is a draft. Staff can still add guests.',
-        },
+            event && r.dates > 1
+              ? `The change was made on ${r.dates} dates.`
+              : r.dates > 1
+                ? 'Each date has its own guest list. Staff can add guests to any of them.'
+                : values.status === 'published'
+                  ? 'Staff can add guests, and it is ready for the website.'
+                  : 'It is a draft. Staff can still add guests.',
+        }),
         error: 'Could not save the event',
       }
     );
     if (result) onSaved(result.id);
   }
 
-  return (
-    <form noValidate onSubmit={submit} className="space-y-5">
+  /** Checks the times (and how a new series ends); says what is wrong, or returns true. */
+  function timesReady() {
+    if (!times) {
+      notify.error('Check the event', 'Pick its date and times.');
+      return false;
+    }
+    if (times.endsAt <= times.startsAt) {
+      notify.error('Check the event', 'It must end after it starts.');
+      return false;
+    }
+    if (!event && repeat.repeat !== 'none' && repeat.ends === 'until' && !repeat.until) {
+      notify.error('Check the event', 'Pick when it stops repeating.');
+      return false;
+    }
+    return true;
+  }
+
+  /** A new event's steps: check this one's fields, then move on or create. */
+  function next(e: React.FormEvent) {
+    e.preventDefault();
+    if (!reportInvalid(e.currentTarget)) return;
+    if (step === 1 && !timesReady()) return;
+    if (step < STEPS.length - 1) setStep(step + 1);
+    else void save('one');
+  }
+
+  function submit(e: React.FormEvent) {
+    e.preventDefault();
+    if (!reportInvalid(e.currentTarget) || !timesReady()) return;
+    // A date in a series asks whether the change is for it alone.
+    if (event?.seriesId) setAskScope(true);
+    else void save('one');
+  }
+
+  const details = (
+    <>
       <div className="space-y-1.5">
         <Label htmlFor="ev-title">Title</Label>
         <Input
@@ -203,38 +309,72 @@ export function EventForm({
         </div>
       </div>
 
-      <div className="grid gap-5 sm:grid-cols-2">
-        <div className="space-y-1.5">
-          <Label htmlFor="ev-starts">Starts</Label>
-          <DateTimePicker
-            id="ev-starts"
-            value={values.startsAt}
-            defaultTime="10:00"
-            placeholder="Pick a date"
-            onChange={(startsAt) =>
-              patch({
-                startsAt,
-                // A first start time suggests a two-hour event.
-                ...(startsAt !== null && values.endsAt === null
-                  ? { endsAt: startsAt + TWO_HOURS }
-                  : {}),
-              })
-            }
-          />
-        </div>
-        <div className="space-y-1.5">
-          <Label htmlFor="ev-ends">Ends</Label>
-          <DateTimePicker
-            id="ev-ends"
-            value={values.endsAt}
-            defaultTime="12:00"
-            placeholder="Pick a date"
-            minDate={values.startsAt}
-            onChange={(endsAt) => patch({ endsAt })}
-          />
-        </div>
+      <div className="space-y-1.5">
+        <Label htmlFor="ev-summary">Summary</Label>
+        <Textarea
+          id="ev-summary"
+          rows={2}
+          maxLength={200}
+          value={values.summary}
+          onChange={(e) => patch({ summary: e.target.value })}
+          placeholder="A sentence about the day"
+        />
+        <p className="text-muted-foreground text-xs">Shown in event lists.</p>
       </div>
 
+      <div className="space-y-1.5">
+        <Label id="ev-description-label" htmlFor="ev-description">
+          Description
+        </Label>
+        <RichTextField
+          id="ev-description"
+          labelId="ev-description-label"
+          value={values.description}
+          onChange={(description) => patch({ description })}
+          placeholder="What happens, what to bring, parking"
+        />
+      </div>
+
+      <ImageField
+        id="ev-photo"
+        label="Photo"
+        mediaId={values.heroMediaId}
+        onChange={(heroMediaId) => patch({ heroMediaId })}
+      />
+    </>
+  );
+  const when = (
+    <>
+      <EventDatesField
+        id="ev-date"
+        value={{ startsAt: values.startsAt, endsAt: values.endsAt }}
+        onChange={(next) => patch(next)}
+      />
+
+      {event?.seriesId ? (
+        <p className="text-muted-foreground -mt-2 text-xs">
+          One date of a repeating event. Saving asks whether to change the upcoming dates too.
+        </p>
+      ) : (
+        !event && <RepeatField first={times} value={repeat} onChange={setRepeat} />
+      )}
+
+      <div className="space-y-1.5">
+        <Label htmlFor="ev-closes">Bookings close (optional)</Label>
+        <DateTimePicker
+          id="ev-closes"
+          value={values.bookingsCloseAt}
+          placeholder="When it starts"
+          onChange={(bookingsCloseAt) => patch({ bookingsCloseAt })}
+        />
+        <p className="text-muted-foreground text-xs">
+          Online bookings close when it starts, unless set.
+        </p>
+      </div>
+    </>
+  );
+  const places = (
+    <>
       <div className="grid gap-5 sm:grid-cols-2">
         <div className="space-y-1.5">
           <Label htmlFor="ev-capacity">Capacity</Label>
@@ -271,51 +411,6 @@ export function EventForm({
         </div>
       </div>
 
-      <div className="space-y-1.5">
-        <Label htmlFor="ev-closes">Bookings close (optional)</Label>
-        <DateTimePicker
-          id="ev-closes"
-          value={values.bookingsCloseAt}
-          placeholder="When it starts"
-          onChange={(bookingsCloseAt) => patch({ bookingsCloseAt })}
-        />
-        <p className="text-muted-foreground text-xs">
-          Online bookings close when it starts, unless set.
-        </p>
-      </div>
-
-      <div className="space-y-1.5">
-        <Label htmlFor="ev-summary">Summary</Label>
-        <Textarea
-          id="ev-summary"
-          rows={2}
-          maxLength={200}
-          value={values.summary}
-          onChange={(e) => patch({ summary: e.target.value })}
-          placeholder="A sentence about the day"
-        />
-        <p className="text-muted-foreground text-xs">Shown in lists and in guest emails.</p>
-      </div>
-
-      <div className="space-y-1.5">
-        <Label htmlFor="ev-description">Description</Label>
-        <Textarea
-          id="ev-description"
-          rows={6}
-          value={values.description}
-          onChange={(e) => patch({ description: e.target.value })}
-          placeholder="What happens, what to bring, parking"
-        />
-        <p className="text-muted-foreground text-xs">Markdown.</p>
-      </div>
-
-      <ImageField
-        id="ev-photo"
-        label="Photo"
-        mediaId={values.heroMediaId}
-        onChange={(heroMediaId) => patch({ heroMediaId })}
-      />
-
       <div className="flex items-center justify-between gap-4 rounded-lg border px-3 py-2.5">
         <div className="space-y-0.5">
           <Label htmlFor="ev-published">Published</Label>
@@ -329,26 +424,83 @@ export function EventForm({
           onCheckedChange={(checked) => patch({ status: checked ? 'published' : 'draft' })}
         />
       </div>
+    </>
+  );
+
+  const saveButton = (label: string) => (
+    <Button type="submit" disabled={pending}>
+      {pending ? (
+        <>
+          <Spinner />
+          Saving…
+        </>
+      ) : (
+        label
+      )}
+    </Button>
+  );
+
+  // A new event is added in steps; a saved one is edited on one page.
+  if (!event) {
+    const dateCount =
+      times && repeat.repeat !== 'none'
+        ? seriesDates(times, repeat, zone).filter((d) => !d.skipped).length
+        : 1;
+    return (
+      <form noValidate onSubmit={next} className="space-y-5">
+        <Steps current={step} />
+        {step === 0 && details}
+        {step === 1 && when}
+        {step === 2 && (
+          <>
+            {places}
+            <NewEventSummary
+              title={values.title}
+              where={values.venue || location?.name || ''}
+              times={times}
+              dates={dateCount}
+            />
+          </>
+        )}
+        {actions(
+          step < STEPS.length - 1 ? (
+            <Button type="submit">Next</Button>
+          ) : (
+            saveButton('Create event')
+          ),
+          step > 0 && (
+            <Button type="button" variant="ghost" size="sm" onClick={() => setStep(step - 1)}>
+              Back
+            </Button>
+          )
+        )}
+      </form>
+    );
+  }
+
+  return (
+    <form noValidate onSubmit={submit} className="space-y-5">
+      {details}
+      {when}
+      {places}
+
+      <ScopeDialog
+        open={askScope}
+        onOpenChange={setAskScope}
+        title="Save changes to"
+        description="Change this date only, or this date and the upcoming dates in the series. Dates you changed on their own keep their own values unless you changed the same thing here."
+        onChoose={(scope) => {
+          setAskScope(false);
+          void save(scope);
+        }}
+      />
 
       {actions(
-        <Button type="submit" disabled={pending}>
-          {pending ? (
-            <>
-              <Spinner />
-              Saving…
-            </>
-          ) : event ? (
-            'Save'
-          ) : (
-            'Create event'
-          )}
-        </Button>,
-        event && (
-          <div className="flex gap-1">
-            <CancelEvent event={event} />
-            <DeleteEvent event={event} onRemoved={() => onSaved(null)} />
-          </div>
-        )
+        saveButton('Save'),
+        <div className="flex gap-1">
+          <CancelEvent event={event} />
+          <DeleteEvent event={event} onRemoved={() => onSaved(null)} />
+        </div>
       )}
     </form>
   );
@@ -383,9 +535,66 @@ function CancelledEvent({
   );
 }
 
+/** The two buttons a repeating event's dialogs end with, or the one for a single event. */
+function ScopeActions({
+  series,
+  label,
+  onChoose,
+}: {
+  series: boolean;
+  label: string;
+  onChoose: (scope: SeriesScope) => void;
+}) {
+  if (!series)
+    return <AlertDialogAction onClick={() => onChoose('one')}>{label}</AlertDialogAction>;
+  return (
+    <>
+      <AlertDialogAction variant="outline" onClick={() => onChoose('one')}>
+        This date only
+      </AlertDialogAction>
+      <AlertDialogAction onClick={() => onChoose('following')}>
+        This and upcoming dates
+      </AlertDialogAction>
+    </>
+  );
+}
+
+/** Asks whether a change to a repeating event is for this date or the upcoming ones too. */
+function ScopeDialog({
+  open,
+  onOpenChange,
+  title,
+  description,
+  onChoose,
+}: {
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+  title: string;
+  description: string;
+  onChoose: (scope: SeriesScope) => void;
+}) {
+  return (
+    <AlertDialog open={open} onOpenChange={onOpenChange}>
+      <AlertDialogContent>
+        <AlertDialogHeader>
+          <AlertDialogTitle>{title}</AlertDialogTitle>
+          <AlertDialogDescription>{description}</AlertDialogDescription>
+        </AlertDialogHeader>
+        <AlertDialogFooter>
+          <AlertDialogCancel>Cancel</AlertDialogCancel>
+          <ScopeActions series label="Save" onChoose={onChoose} />
+        </AlertDialogFooter>
+      </AlertDialogContent>
+    </AlertDialog>
+  );
+}
+
+const datesNote = (n: number) => (n > 1 ? ` on ${n} dates` : '');
+
 function CancelEvent({ event }: { event: EventRow }) {
   const { run, pending } = useAction();
   const n = event.bookings;
+  const series = Boolean(event.seriesId);
   return (
     <AlertDialog>
       <AlertDialogTrigger
@@ -406,26 +615,27 @@ function CancelEvent({ event }: { event: EventRow }) {
           <AlertDialogTitle>Cancel {event.title}?</AlertDialogTitle>
           <AlertDialogDescription>
             {n === 0
-              ? 'Nobody has booked yet.'
+              ? 'Nobody has booked this date yet.'
               : `${n} ${n === 1 ? 'booking stays' : 'bookings stay'} on its guest list, and HubSpot tells the guests once it is connected.`}{' '}
-            The event stays in the list, marked cancelled. This cannot be undone.
+            {series && 'Cancel this date only, or the upcoming dates too. '}
+            Cancelled dates stay in the list. This cannot be undone.
           </AlertDialogDescription>
         </AlertDialogHeader>
         <AlertDialogFooter>
           <AlertDialogCancel>Keep it</AlertDialogCancel>
-          <AlertDialogAction
-            onClick={() =>
-              run(() => cancelEvent({ data: { id: event.id } }), {
-                success: {
-                  title: 'Event cancelled',
-                  description: 'It stays in the list, marked cancelled.',
-                },
+          <ScopeActions
+            series={series}
+            label="Cancel event"
+            onChoose={(scope) =>
+              run(() => cancelEvent({ data: { id: event.id, scope } }), {
+                success: (r) => ({
+                  title: `Event cancelled${datesNote(r.dates)}`,
+                  description: 'Cancelled dates stay in the list.',
+                }),
                 error: 'Could not cancel the event',
               })
             }
-          >
-            Cancel event
-          </AlertDialogAction>
+          />
         </AlertDialogFooter>
       </AlertDialogContent>
     </AlertDialog>
@@ -434,6 +644,7 @@ function CancelEvent({ event }: { event: EventRow }) {
 
 function DeleteEvent({ event, onRemoved }: { event: EventRow; onRemoved: () => void }) {
   const { run, pending } = useAction();
+  const series = Boolean(event.seriesId);
   return (
     <AlertDialog>
       <AlertDialogTrigger
@@ -454,27 +665,22 @@ function DeleteEvent({ event, onRemoved }: { event: EventRow; onRemoved: () => v
         <AlertDialogHeader>
           <AlertDialogTitle>Delete {event.title}?</AlertDialogTitle>
           <AlertDialogDescription>
-            Its guest list is deleted too. This cannot be undone.
+            {series && 'Delete this date only, or the upcoming dates too. '}
+            Guest lists are deleted with their dates. This cannot be undone.
           </AlertDialogDescription>
         </AlertDialogHeader>
         <AlertDialogFooter>
           <AlertDialogCancel>Cancel</AlertDialogCancel>
-          <AlertDialogAction
-            onClick={() =>
-              run(
-                async () => {
-                  await deleteEvent({ data: { id: event.id } });
-                  return true;
-                },
-                {
-                  success: removedNotice(1, ['event', 'events']),
-                  error: 'Could not delete the event',
-                }
-              ).then((removed) => removed && onRemoved())
+          <ScopeActions
+            series={series}
+            label="Delete"
+            onChoose={(scope) =>
+              run(() => deleteEvent({ data: { id: event.id, scope } }), {
+                success: (r) => removedNotice(Math.max(1, r.dates), ['event date', 'event dates']),
+                error: 'Could not delete the event',
+              }).then((removed) => removed && onRemoved())
             }
-          >
-            Delete
-          </AlertDialogAction>
+          />
         </AlertDialogFooter>
       </AlertDialogContent>
     </AlertDialog>

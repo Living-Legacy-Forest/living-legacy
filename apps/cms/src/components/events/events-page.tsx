@@ -85,7 +85,7 @@ export function EventsPage({ data }: { data: EventsData }) {
   async function remove(ids: string[]) {
     const result = await run(
       async () => {
-        for (const id of ids) await deleteEvent({ data: { id } });
+        for (const id of ids) await deleteEvent({ data: { id, scope: 'one' } });
         return ids.length;
       },
       { success: (n) => removedNotice(n, NOUN), error: 'Could not remove' }
@@ -143,7 +143,8 @@ export function EventsPage({ data }: { data: EventsData }) {
           <EmptyContent>{newButton}</EmptyContent>
         </Empty>
       ) : (
-        <ListPageLayout>
+        // The form is long, so the list stays narrow and the pane takes the rest.
+        <ListPageLayout className="lg:grid-cols-[minmax(18rem,22rem)_minmax(0,1fr)]">
           <ListColumn
             label="Events"
             header={
@@ -275,6 +276,7 @@ function EventSummary({ event: e, zone }: { event: EventRow; zone: string }) {
         )}
       </span>
       <span className="text-muted-foreground mt-0.5 block truncate text-xs">
+        {e.seriesId && 'Repeats · '}
         {formatDate(e.startsAt, zone)}
         {e.locationName ? ` · ${e.locationName}` : ''}
       </span>

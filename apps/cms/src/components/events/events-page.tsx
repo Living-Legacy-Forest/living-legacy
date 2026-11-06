@@ -36,8 +36,9 @@ import { formatDate } from '@/lib/format';
 import { removedNotice } from '@/lib/notify';
 import { useAction } from '@/lib/use-action';
 import { useTimeZone } from '@/lib/use-time-zone';
-import { type EventRow, type EventsData, deleteEvent } from '@/server/events';
+import { type EventRow, type EventsData, type LocationOption, deleteEvent } from '@/server/events';
 import { EventForm, type FormActions } from './event-form';
+import { EventGuests } from './event-guests';
 
 const NOUN: [string, string] = ['event', 'events'];
 
@@ -95,7 +96,7 @@ export function EventsPage({ data }: { data: EventsData }) {
   }
 
   const form = (target: Target, onDone: (id: string | null) => void, actions: FormActions) => (
-    <EventForm
+    <EventPanel
       key={target.kind === 'edit' ? target.id : 'new'}
       event={editing(target)}
       locations={data.locations}
@@ -278,5 +279,43 @@ function EventSummary({ event: e, zone }: { event: EventRow; zone: string }) {
         {e.locationName ? ` · ${e.locationName}` : ''}
       </span>
     </>
+  );
+}
+
+/** A saved event's details, or who is coming; a new event has details only. */
+function EventPanel({
+  event,
+  locations,
+  onSaved,
+  actions,
+}: {
+  event: EventRow | null;
+  locations: LocationOption[];
+  onSaved: (id: string | null) => void;
+  actions: FormActions;
+}) {
+  const [view, setView] = useState<'details' | 'guests'>('details');
+  const details = (
+    <EventForm event={event} locations={locations} onSaved={onSaved} actions={actions} />
+  );
+  if (!event) return details;
+  return (
+    <div className="space-y-5">
+      <ToggleGroup
+        variant="outline"
+        size="sm"
+        value={[view]}
+        onValueChange={(value) => value[0] && setView(value[0] as typeof view)}
+        aria-label="Show"
+      >
+        <ToggleGroupItem value="details" className="text-xs">
+          Details
+        </ToggleGroupItem>
+        <ToggleGroupItem value="guests" className="text-xs">
+          Guests
+        </ToggleGroupItem>
+      </ToggleGroup>
+      {view === 'details' ? details : <EventGuests event={event} />}
+    </div>
   );
 }

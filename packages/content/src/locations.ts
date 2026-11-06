@@ -1,6 +1,8 @@
 // Living Legacy locations, for the national location directory and each
 // location's page. Shared by the CMS (to validate and edit) and the site (to
 // render). The state is a filter in the directory, never a page of its own.
+import { markdownToRichText } from './markdown';
+import { type RichTextDoc, isAllowedRichText } from './posts';
 
 export const australianStates = ['QLD', 'NSW', 'VIC', 'WA', 'SA', 'TAS', 'ACT', 'NT'] as const;
 export type AustralianState = (typeof australianStates)[number];
@@ -29,3 +31,27 @@ export const locationStageLabels: Record<LocationStage, string> = {
   external: 'On its own website',
   coming_soon: 'Coming soon',
 };
+
+/** What a location's about is saved as: its column is plain text, holding the document's JSON. */
+export function richTextToStored(doc: RichTextDoc | null): string | null {
+  return doc ? JSON.stringify(doc) : null;
+}
+
+/**
+ * A location's about, as the editor and the website use it. It was once written
+ * as Markdown, so anything that is not a stored document is read as that, and
+ * becomes a document the next time the location is saved.
+ */
+export function storedToRichText(stored: string | null): RichTextDoc | null {
+  const text = stored?.trim();
+  if (!text) return null;
+  if (text.startsWith('{')) {
+    try {
+      const parsed: unknown = JSON.parse(text);
+      if (isAllowedRichText(parsed)) return parsed;
+    } catch {
+      // Text that happens to start with a brace.
+    }
+  }
+  return markdownToRichText(text);
+}

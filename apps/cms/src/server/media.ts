@@ -104,7 +104,7 @@ const usageSources = [
     kind: 'location',
     table: locations,
     label: locations.name,
-    text: [locations.heroMediaId, locations.draft],
+    text: [locations.heroMediaId, locations.about, locations.draft],
   },
   {
     kind: 'event',

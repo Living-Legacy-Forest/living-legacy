@@ -1,5 +1,6 @@
 import { STAFF_MAX_PARTY_SIZE, auPhone, guestInputSchema } from '@ll/content';
 import { useState } from 'react';
+import { TOUCH_FIELDS } from '@/components/form-steps';
 import { Button } from '@/components/ui/button';
 import {
   Dialog,
@@ -19,7 +20,6 @@ import { useAction } from '@/lib/use-action';
 import { cn } from '@/lib/utils';
 import type { EventRow } from '@/server/events';
 import { addGuest } from '@/server/event-guests';
-import { TOUCH_FIELDS } from './event-form';
 
 const empty = {
   firstName: '',

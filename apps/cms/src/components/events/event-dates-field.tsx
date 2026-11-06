@@ -116,6 +116,7 @@ export function EventDatesField({
               className="w-full px-3"
               classNames={{ root: 'w-full' }}
               mode="range"
+              weekStartsOn={1}
               selected={range ? { from: asDate(range.from), to: asDate(range.to) } : undefined}
               defaultMonth={range ? asDate(range.from) : undefined}
               onSelect={pickRange}

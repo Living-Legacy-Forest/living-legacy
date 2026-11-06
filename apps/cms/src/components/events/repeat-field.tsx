@@ -180,6 +180,7 @@ export function RepeatField({
                   </PopoverTrigger>
                   <PopoverContent align="start" className="w-[20rem] p-0">
                     <Calendar
+                      weekStartsOn={1}
                       className="w-full px-3"
                       classNames={{ root: 'w-full' }}
                       mode="single"
@@ -243,38 +244,58 @@ export function RepeatField({
 
       {custom && (
         <div className="space-y-1.5">
-          <p className="text-sm font-medium">Dates</p>
-          <p className="text-muted-foreground text-xs">
-            Tap every other date it runs on. Each gets the same times.
-          </p>
-          <div className="w-fit rounded-lg border">
+          <div className="flex items-baseline justify-between gap-3">
+            <p className="text-sm font-medium">Dates</p>
+            {value.picked.length > 0 && (
+              <button
+                type="button"
+                onClick={() => patch({ picked: [] })}
+                className="text-muted-foreground hover:text-foreground text-xs"
+              >
+                Clear
+              </button>
+            )}
+          </div>
+          {/* The first date shows as chosen and stays so; tapping others adds or removes them. */}
+          <div className="rounded-lg border">
             <Calendar
               mode="multiple"
-              selected={value.picked.map((d) => new Date(d.year, d.month, d.day))}
+              weekStartsOn={1}
+              className="w-full px-3"
+              // A gap between days, so chosen dates sit apart rather than as one block.
+              classNames={{
+                root: 'w-full',
+                weekdays: 'flex gap-1.5',
+                week: 'mt-1.5 flex w-full gap-1.5',
+              }}
+              selected={[firstDay, ...value.picked].map((d) => new Date(d.year, d.month, d.day))}
               defaultMonth={new Date(firstDay.year, firstDay.month, firstDay.day)}
-              disabled={{ before: new Date(firstDay.year, firstDay.month, firstDay.day + 1) }}
+              disabled={{ before: new Date(firstDay.year, firstDay.month, firstDay.day) }}
               onSelect={(days) =>
                 patch({
-                  picked: (days ?? []).map((d) => ({
-                    year: d.getFullYear(),
-                    month: d.getMonth(),
-                    day: d.getDate(),
-                  })),
+                  picked: (days ?? [])
+                    .map((d) => ({ year: d.getFullYear(), month: d.getMonth(), day: d.getDate() }))
+                    .filter((d) => key(d) !== key(firstDay)),
                 })
               }
             />
           </div>
+          <p className="text-muted-foreground text-xs">
+            {kept === 1
+              ? 'Tap the other dates it runs on. Each gets the same times and its own guest list.'
+              : `${kept} dates, each with the same times and its own guest list.`}
+          </p>
         </div>
       )}
 
-      {value.repeat !== 'none' && (
+      {value.repeat !== 'none' && !custom && (
         <div className="space-y-2">
           <p className="text-muted-foreground text-xs">
-            {!custom && value.ends === 'until' && !value.until
+            {value.ends === 'until' && !value.until
               ? 'Pick when it ends to see the dates.'
               : `${kept} ${kept === 1 ? 'date' : 'dates'}, each with its own guest list. Tap a date to leave it out.`}
           </p>
-          {(custom || value.ends === 'count' || value.until) && (
+          {(value.ends === 'count' || value.until) && (
             <ul className="flex flex-wrap gap-1.5">
               {dates.map((d) => (
                 <li key={d.key}>

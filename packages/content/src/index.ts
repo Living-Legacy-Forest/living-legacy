@@ -14,3 +14,5 @@ export * from './image-size';
 export * from './media-sweep';
 export * from './events';
 export * from './event-crm';
+export * from './zoned';
+export * from './recurrence';

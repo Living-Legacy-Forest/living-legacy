@@ -34,6 +34,38 @@ describe('occurrenceDates', () => {
     ).toEqual(['2026-11-14', '2026-11-28', '2026-12-12']);
   });
 
+  it('repeats weekly on several days, such as Wednesday and Saturday', () => {
+    // 18 Nov 2026 is a Wednesday. Days are 0 Sunday to 6 Saturday.
+    expect(
+      show(occurrenceDates(d(2026, 10, 18), 'weekly', { count: 5 }, { weekdays: [3, 6] }))
+    ).toEqual(['2026-11-18', '2026-11-21', '2026-11-25', '2026-11-28', '2026-12-2']);
+  });
+
+  it('repeats every two weeks on several days, skipping the weeks between', () => {
+    expect(
+      show(occurrenceDates(d(2026, 10, 18), 'fortnightly', { count: 4 }, { weekdays: [3, 6] }))
+    ).toEqual(['2026-11-18', '2026-11-21', '2026-12-2', '2026-12-5']);
+  });
+
+  it('always keeps the first date, even if its day is not ticked', () => {
+    expect(
+      show(occurrenceDates(d(2026, 10, 18), 'weekly', { count: 2 }, { weekdays: [6] }))
+    ).toEqual(['2026-11-18', '2026-11-21']);
+  });
+
+  it('uses picked dates in order, once each, from the first date', () => {
+    expect(
+      show(
+        occurrenceDates(
+          d(2026, 10, 18),
+          'custom',
+          {},
+          { dates: [d(2026, 11, 24), d(2026, 10, 20), d(2026, 11, 24), d(2026, 9, 1)] }
+        )
+      )
+    ).toEqual(['2026-11-18', '2026-11-20', '2026-12-24']);
+  });
+
   it('repeats monthly on the same weekday, such as the 2nd Saturday, into a new year', () => {
     expect(show(occurrenceDates(d(2026, 10, 14), 'monthly_weekday', { count: 3 }))).toEqual([
       '2026-11-14',
@@ -116,6 +148,11 @@ describe('repeatLabel', () => {
     expect(repeatLabel('monthly_date', d(2026, 10, 14))).toBe('Monthly on the 14th');
     expect(repeatLabel('weekly', d(2026, 10, 14))).toBe('Every Saturday');
     expect(repeatLabel('fortnightly', d(2026, 10, 14))).toBe('Every 2 weeks on Saturday');
+    expect(repeatLabel('weekly', d(2026, 10, 18), [3, 6])).toBe('Every Wednesday and Saturday');
+    expect(repeatLabel('fortnightly', d(2026, 10, 18), [6, 3, 1])).toBe(
+      'Every 2 weeks on Monday, Wednesday and Saturday'
+    );
+    expect(repeatLabel('custom', d(2026, 10, 18))).toBe('On dates you pick');
   });
 });
 

@@ -33,6 +33,10 @@ export type RepeatValue = {
   until: CalendarDate | null;
   /** Dates left out of the series, as "2026-11-14". */
   skipped: string[];
+  /** Weekly patterns: the days besides the first date's (0 Sunday to 6 Saturday). */
+  weekdays: number[];
+  /** "On dates you pick": the other dates. */
+  picked: CalendarDate[];
 };
 
 export const noRepeat: RepeatValue = {
@@ -41,9 +45,17 @@ export const noRepeat: RepeatValue = {
   count: 6,
   until: null,
   skipped: [],
+  weekdays: [],
+  picked: [],
 };
 
 const key = (d: CalendarDate) => `${d.year}-${d.month + 1}-${d.day}`;
+
+/** Monday first, as Australian calendars are. */
+const WEEK = [1, 2, 3, 4, 5, 6, 0].map((day) => {
+  const name = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'][day]!;
+  return { day, name, short: name.slice(0, 2) };
+});
 
 /** Every date the series makes, with its times and whether it was left out. */
 export function seriesDates(first: EventTimes, value: RepeatValue, zone: string) {
@@ -51,7 +63,8 @@ export function seriesDates(first: EventTimes, value: RepeatValue, zone: string)
   const dates = occurrenceDates(
     firstDay,
     value.repeat,
-    value.ends === 'count' ? { count: value.count } : { until: value.until }
+    value.ends === 'count' ? { count: value.count } : { until: value.until },
+    { weekdays: value.weekdays, dates: value.picked }
   );
   return dates.map((d, i) => ({
     key: key(d),
@@ -81,13 +94,20 @@ export function RepeatField({
     return <p className="text-muted-foreground text-xs">Pick a date first to make it repeat.</p>;
   }
   const firstDay = toZoned(first.startsAt, zone);
-  const items = repeatKinds.map((kind) => ({ value: kind, label: repeatLabel(kind, firstDay) }));
+  const items = repeatKinds.map((kind) => ({
+    value: kind,
+    label: repeatLabel(kind, firstDay, value.weekdays),
+  }));
+  const firstWeekday = new Date(Date.UTC(firstDay.year, firstDay.month, firstDay.day)).getUTCDay();
+  const weekly = value.repeat === 'weekly' || value.repeat === 'fortnightly';
+  const custom = value.repeat === 'custom';
   const dates = value.repeat === 'none' ? [] : seriesDates(first, value, zone);
   const kept = dates.filter((d) => !d.skipped).length;
 
   return (
     <div className="space-y-3">
-      <div className="grid gap-3 sm:grid-cols-2">
+      {/* Stacked: a pattern like "Every 2 weeks on Monday, Wednesday and Saturday" needs the width. */}
+      <div className="space-y-3">
         <div className="space-y-1.5">
           <Label htmlFor="ev-repeat">Repeats</Label>
           <Select
@@ -107,10 +127,10 @@ export function RepeatField({
             </SelectContent>
           </Select>
         </div>
-        {value.repeat !== 'none' && (
+        {value.repeat !== 'none' && !custom && (
           <div className="space-y-1.5">
             <Label htmlFor="ev-repeat-ends">Ends</Label>
-            <div className="flex gap-2">
+            <div className="flex max-w-sm gap-2">
               <Select
                 items={[
                   { value: 'count', label: 'After' },
@@ -183,14 +203,76 @@ export function RepeatField({
         )}
       </div>
 
+      {weekly && (
+        <fieldset className="space-y-1.5">
+          <legend className="text-sm font-medium">On</legend>
+          <div className="flex gap-1">
+            {WEEK.map(({ day, short, name }) => {
+              const isFirst = day === firstWeekday;
+              const on = isFirst || value.weekdays.includes(day);
+              return (
+                <button
+                  key={day}
+                  type="button"
+                  aria-label={name}
+                  aria-pressed={on}
+                  disabled={isFirst}
+                  title={isFirst ? 'The first date falls on this day' : undefined}
+                  onClick={() =>
+                    patch({
+                      skipped: [],
+                      weekdays: on
+                        ? value.weekdays.filter((d) => d !== day)
+                        : [...value.weekdays, day],
+                    })
+                  }
+                  className={cn(
+                    'touch:size-11 size-9 rounded-full border text-xs font-medium transition-colors',
+                    on ? 'bg-primary text-primary-foreground border-transparent' : 'hover:bg-muted'
+                  )}
+                >
+                  {short}
+                </button>
+              );
+            })}
+          </div>
+        </fieldset>
+      )}
+
+      {custom && (
+        <div className="space-y-1.5">
+          <p className="text-sm font-medium">Dates</p>
+          <p className="text-muted-foreground text-xs">
+            Tap every other date it runs on. Each gets the same times.
+          </p>
+          <div className="w-fit rounded-lg border">
+            <Calendar
+              mode="multiple"
+              selected={value.picked.map((d) => new Date(d.year, d.month, d.day))}
+              defaultMonth={new Date(firstDay.year, firstDay.month, firstDay.day)}
+              disabled={{ before: new Date(firstDay.year, firstDay.month, firstDay.day + 1) }}
+              onSelect={(days) =>
+                patch({
+                  picked: (days ?? []).map((d) => ({
+                    year: d.getFullYear(),
+                    month: d.getMonth(),
+                    day: d.getDate(),
+                  })),
+                })
+              }
+            />
+          </div>
+        </div>
+      )}
+
       {value.repeat !== 'none' && (
         <div className="space-y-2">
           <p className="text-muted-foreground text-xs">
-            {value.ends === 'until' && !value.until
+            {!custom && value.ends === 'until' && !value.until
               ? 'Pick when it ends to see the dates.'
               : `${kept} ${kept === 1 ? 'date' : 'dates'}, each with its own guest list. Tap a date to leave it out.`}
           </p>
-          {(value.ends === 'count' || value.until) && (
+          {(custom || value.ends === 'count' || value.until) && (
             <ul className="flex flex-wrap gap-1.5">
               {dates.map((d) => (
                 <li key={d.key}>

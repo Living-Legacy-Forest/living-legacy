@@ -12,6 +12,7 @@ export const repeatKinds = [
   'fortnightly',
   'monthly_weekday',
   'monthly_date',
+  'custom',
 ] as const;
 export type RepeatKind = (typeof repeatKinds)[number];
 
@@ -46,36 +47,59 @@ function nthWeekday(year: number, month: number, weekday: number, nth: number): 
   return { year, month, day: 1 + ((weekday - firstWeekday + 7) % 7) + (nth - 1) * 7 };
 }
 
+/** Weekdays (0 Sunday to 6 Saturday) for weekly patterns; picked dates for "custom". */
+export type RepeatPattern = { weekdays?: number[]; dates?: CalendarDate[] };
+
 /**
  * The dates of a series from its first date, up to `count` dates or until
- * `until` (inclusive), and never more than MAX_OCCURRENCES.
+ * `until` (inclusive), and never more than MAX_OCCURRENCES. Weekly patterns can
+ * fall on several weekdays; the first date is always kept.
  */
 export function occurrenceDates(
   first: CalendarDate,
   repeat: RepeatKind,
-  end: { count?: number | null; until?: CalendarDate | null }
+  end: { count?: number | null; until?: CalendarDate | null },
+  pattern: RepeatPattern = {}
 ): CalendarDate[] {
   if (repeat === 'none') return [first];
+  const start = utcDay(first);
+
+  if (repeat === 'custom') {
+    const picked = new Set((pattern.dates ?? []).map(utcDay).filter((ms) => ms > start));
+    return [start, ...[...picked].sort((a, b) => a - b)].slice(0, MAX_OCCURRENCES).map(fromUtcDay);
+  }
+
   const limit = Math.min(end.count ?? MAX_OCCURRENCES, MAX_OCCURRENCES);
   const until = end.until ? utcDay(end.until) : Infinity;
   const dates: CalendarDate[] = [];
 
+  if (repeat === 'weekly' || repeat === 'fortnightly') {
+    const days = new Set([weekdayOf(first), ...(pattern.weekdays ?? [])]);
+    // Weeks run Monday to Sunday; every 2 weeks counts from the first date's week.
+    const weekStart = start - ((weekdayOf(first) + 6) % 7) * DAY_MS;
+    const span = (repeat === 'weekly' ? 7 : 14) * MAX_OCCURRENCES;
+    for (let i = 0; dates.length < limit && i < span; i++) {
+      const ms = start + i * DAY_MS;
+      if (ms > until) break;
+      const week = Math.floor((ms - weekStart) / (7 * DAY_MS));
+      if (repeat === 'fortnightly' && week % 2 === 1) continue;
+      if (!days.has(new Date(ms).getUTCDay())) continue;
+      dates.push(fromUtcDay(ms));
+    }
+    return dates;
+  }
+
   // Bounded so a pattern that rarely lands (the 31st) cannot run forever.
   for (let i = 0; dates.length < limit && i < MAX_OCCURRENCES * 2; i++) {
-    let date: CalendarDate | null;
-    if (repeat === 'weekly' || repeat === 'fortnightly') {
-      date = fromUtcDay(utcDay(first) + i * (repeat === 'weekly' ? 7 : 14) * DAY_MS);
-    } else {
-      const month = first.month + i;
-      const year = first.year + Math.floor(month / 12);
-      const m = month % 12;
-      date =
-        repeat === 'monthly_weekday'
-          ? nthWeekday(year, m, weekdayOf(first), weekdayPosition(first))
-          : first.day <= daysInMonth(year, m)
-            ? { year, month: m, day: first.day }
-            : null;
-    }
+    const month = first.month + i;
+    const year = first.year + Math.floor(month / 12);
+    const m = month % 12;
+    const date =
+      repeat === 'monthly_weekday'
+        ? nthWeekday(year, m, weekdayOf(first), weekdayPosition(first))
+        : first.day <= daysInMonth(year, m)
+          ? { year, month: m, day: first.day }
+          : null;
     if (!date) continue;
     if (utcDay(date) > until) break;
     dates.push(date);
@@ -146,21 +170,36 @@ const ordinal = (n: number) => {
   return `${n}${['th', 'st', 'nd', 'rd'][n % 10] ?? 'th'}`;
 };
 
-/** How a series repeats, worded from its first date. */
-export function repeatLabel(repeat: RepeatKind, first: CalendarDate): string {
+/** "Wednesday and Saturday", "Monday, Wednesday and Saturday": weeks start on Monday. */
+function dayList(days: number[]) {
+  const names = [...new Set(days)]
+    .sort((a, b) => ((a + 6) % 7) - ((b + 6) % 7))
+    .map((d) => WEEKDAYS[d]);
+  return names.length > 1 ? `${names.slice(0, -1).join(', ')} and ${names.at(-1)}` : names[0];
+}
+
+/** How a series repeats, worded from its first date (and, weekly, its days). */
+export function repeatLabel(
+  repeat: RepeatKind,
+  first: CalendarDate,
+  weekdays: number[] = []
+): string {
   const weekday = WEEKDAYS[weekdayOf(first)];
+  const days = dayList([weekdayOf(first), ...weekdays]);
   switch (repeat) {
     case 'none':
       return 'Does not repeat';
     case 'weekly':
-      return `Every ${weekday}`;
+      return `Every ${days}`;
     case 'fortnightly':
-      return `Every 2 weeks on ${weekday}`;
+      return `Every 2 weeks on ${days}`;
     case 'monthly_weekday': {
       const nth = weekdayPosition(first);
       return `Monthly on the ${nth === -1 ? 'last' : ordinal(nth)} ${weekday}`;
     }
     case 'monthly_date':
       return `Monthly on the ${ordinal(first.day)}`;
+    case 'custom':
+      return 'On dates you pick';
   }
 }

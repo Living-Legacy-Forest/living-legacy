@@ -217,7 +217,8 @@ export function EventForm({
       notify.error('Check the event', 'It must end after it starts.');
       return false;
     }
-    if (!event && repeat.repeat !== 'none' && repeat.ends === 'until' && !repeat.until) {
+    const needsEnd = repeat.repeat !== 'none' && repeat.repeat !== 'custom';
+    if (!event && needsEnd && repeat.ends === 'until' && !repeat.until) {
       notify.error('Check the event', 'Pick when it stops repeating.');
       return false;
     }

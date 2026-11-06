@@ -182,7 +182,8 @@ synced to it (section 7). (Decided 2026-11-06, replacing CMS-sent emails.)
 
 ## 10. Repeating events (added 2026-11-06)
 
-- A new event can repeat: every week, every 2 weeks, monthly on the same
+- A new event can repeat: every week or every 2 weeks on one or more weekdays
+  (Wednesday and Saturday, say), on dates picked from a calendar, or monthly on the same
   weekday ("2nd Saturday", or "last Saturday" for a 5th), or monthly on the
   same date (months without it are skipped). It ends after a number of dates or
   on a date, never more than 52, and any date can be left out before saving.

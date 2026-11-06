@@ -178,8 +178,10 @@ export function RepeatField({
                   >
                     {value.until ? dayLabel(value.until) : 'Pick a date'}
                   </PopoverTrigger>
-                  <PopoverContent align="start" className="w-auto p-0">
+                  <PopoverContent align="start" className="w-[20rem] p-0">
                     <Calendar
+                      className="w-full px-3"
+                      classNames={{ root: 'w-full' }}
                       mode="single"
                       selected={
                         value.until

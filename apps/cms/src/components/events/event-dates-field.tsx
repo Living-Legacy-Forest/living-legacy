@@ -110,8 +110,11 @@ export function EventDatesField({
               {range ? dayLabel(range.from, range.to) : 'Pick a date'}
             </span>
           </PopoverTrigger>
-          <PopoverContent align="start" className="w-auto p-0">
+          <PopoverContent align="start" className="w-[20rem] p-0">
+            {/* The calendar fills the popover, so the hint below wraps under it. */}
             <Calendar
+              className="w-full px-3"
+              classNames={{ root: 'w-full' }}
               mode="range"
               selected={range ? { from: asDate(range.from), to: asDate(range.to) } : undefined}
               defaultMonth={range ? asDate(range.from) : undefined}

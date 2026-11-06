@@ -1,7 +1,6 @@
 import { SEO_DESCRIPTION_LIMIT, isValidAbn } from '@ll/content';
 import { getRouteApi, useBlocker, useRouter } from '@tanstack/react-router';
 import { type ReactNode, useEffect, useRef, useState } from 'react';
-import { toast } from 'sonner';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -26,6 +25,7 @@ import { Spinner } from '@/components/ui/spinner';
 import { Textarea } from '@/components/ui/textarea';
 import { reportInvalid } from '@/lib/form-validation';
 import { zoneOffset } from '@/lib/format';
+import { notify } from '@/lib/notify';
 import { useAction } from '@/lib/use-action';
 import { setTheme, useThemeSync } from '@/lib/use-theme-sync';
 import { cn } from '@/lib/utils';
@@ -160,11 +160,14 @@ export function SettingsPage({
     if (!reportInvalid(e.currentTarget)) return;
     const issue = problem(values);
     if (issue) {
-      toast.error(issue.message);
+      notify.error('Check the settings', issue.message);
       document.getElementById(issue.field)?.focus();
       return;
     }
-    const result = await run(() => saveSiteSettings({ data: values }), 'Settings saved.');
+    const result = await run(() => saveSiteSettings({ data: values }), {
+      success: { title: 'Settings saved', description: 'The website uses them from now on.' },
+      error: 'Could not save the settings',
+    });
     if (result) {
       setSaved(result);
       setValues(result);

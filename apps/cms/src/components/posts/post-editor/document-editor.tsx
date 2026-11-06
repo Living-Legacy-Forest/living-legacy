@@ -2,14 +2,13 @@ import type { RichTextDoc } from '@ll/content';
 import { Placeholder } from '@tiptap/extension-placeholder';
 import { type Editor, useEditor, useEditorState } from '@tiptap/react';
 import { useRef } from 'react';
-import { toast } from 'sonner';
 import { RichTextEditor } from '@/components/editor';
 import { TableHoverOverlay } from '@/components/extensions/table/table-hover-overlay';
 import { CANVAS, SCROLLBAR } from '@/components/templates/simple-document-editor/constants';
 import { ShortcutsPopover } from '@/components/templates/simple-document-editor/shortcuts';
 import { Toolbar } from '@/components/templates/simple-document-editor/toolbar';
 import { readState } from '@/components/templates/simple-document-editor/utils';
-import { readableError } from '@/lib/errors';
+import { notify } from '@/lib/notify';
 import { uploadMedia } from '@/lib/upload-media';
 import { cn } from '@/lib/utils';
 import { postContentExtensions } from '../post-extensions';
@@ -19,7 +18,11 @@ const imageFiles = (files: FileList | null | undefined) =>
 
 /** Uploads pasted or dropped images to Media, then puts them in the body. */
 async function insertUploads(editor: Editor, files: File[], at?: number) {
-  const id = toast.loading(files.length === 1 ? 'Uploading image…' : 'Uploading images…');
+  const one = files.length === 1;
+  const id = notify.loading({
+    title: one ? 'Uploading image' : `Uploading ${files.length} images`,
+    description: `${one ? 'It is' : 'They are'} resized and added to the media library first.`,
+  });
   try {
     for (const file of files) {
       const item = await uploadMedia(file);
@@ -30,9 +33,13 @@ async function insertUploads(editor: Editor, files: File[], at?: number) {
         .insertContentAt(pos, { type: 'image', attrs: { src: item.url, alt: item.alt } })
         .run();
     }
-    toast.success(files.length === 1 ? 'Image added.' : 'Images added.', { id });
+    notify.success({
+      id,
+      title: one ? 'Image added' : 'Images added',
+      description: `${one ? 'It is' : 'They are'} in the post and the media library.`,
+    });
   } catch (error) {
-    toast.error(readableError(error), { id });
+    notify.error('Could not upload', error, { id });
   }
 }
 

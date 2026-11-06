@@ -74,6 +74,7 @@ import { Switch } from '@/components/ui/switch';
 import { Textarea } from '@/components/ui/textarea';
 import { readStatus } from '@/lib/bulk-import';
 import { reportInvalid } from '@/lib/form-validation';
+import { removedNotice } from '@/lib/notify';
 import { useAction } from '@/lib/use-action';
 import {
   type Faq,
@@ -177,10 +178,10 @@ export function FaqsPage({ data, canWrite }: { data: FaqData; canWrite: boolean 
   const groupName = new Map(data.groups.map((g) => [g.id, g.name]));
 
   async function remove(ids: string[]) {
-    const result = await run(
-      () => deleteFaqs({ data: { ids } }),
-      `${ids.length} ${ids.length === 1 ? NOUN[0] : NOUN[1]} removed.`
-    );
+    const result = await run(() => deleteFaqs({ data: { ids } }), {
+      success: removedNotice(ids.length, NOUN),
+      error: 'Could not remove',
+    });
     if (!result) return;
     if (view.pane?.kind === 'faq' && ids.includes(view.pane.id)) view.closePane();
     selection.clear();
@@ -508,10 +509,13 @@ function FaqSection({
                   <DropdownMenuItem
                     variant="destructive"
                     onClick={() =>
-                      run(
-                        () => deleteFaqGroup({ data: { id: group.id } }),
-                        'Group removed. Its FAQs are now ungrouped.'
-                      )
+                      run(() => deleteFaqGroup({ data: { id: group.id } }), {
+                        success: {
+                          title: 'Group removed',
+                          description: 'Its FAQs are kept, now without a group.',
+                        },
+                        error: 'Could not remove the group',
+                      })
                     }
                   >
                     <Trash2Icon aria-hidden />
@@ -598,7 +602,7 @@ function MoveButtons({
 }) {
   const { run, pending } = useAction();
   const move = (direction: 'up' | 'down') =>
-    run(() => moveFaq({ data: { id: faq.id, direction } }));
+    run(() => moveFaq({ data: { id: faq.id, direction } }), { error: 'Could not move the FAQ' });
 
   return (
     <>
@@ -681,10 +685,16 @@ function DeleteFaq({
           <AlertDialogCancel>Cancel</AlertDialogCancel>
           <AlertDialogAction
             onClick={() =>
-              run(async () => {
-                await deleteFaq({ data: { id: faq.id } });
-                return true;
-              }, 'FAQ removed.').then((removed) => removed && onRemoved())
+              run(
+                async () => {
+                  await deleteFaq({ data: { id: faq.id } });
+                  return true;
+                },
+                {
+                  success: removedNotice(1, NOUN),
+                  error: 'Could not remove the FAQ',
+                }
+              ).then((removed) => removed && onRemoved())
             }
           >
             Remove
@@ -774,7 +784,15 @@ function FaqForm({
             status: published ? 'published' : 'draft',
           },
         }),
-      faq ? 'FAQ updated.' : 'FAQ added.'
+      {
+        success: {
+          title: faq ? 'FAQ saved' : 'FAQ added',
+          description: published
+            ? 'It shows on the FAQ page.'
+            : 'It is a draft, so the website does not show it.',
+        },
+        error: 'Could not save the FAQ',
+      }
     );
     if (result) onSaved(result.id);
   }
@@ -865,7 +883,13 @@ function GroupForm({
     if (!reportInvalid(e.currentTarget)) return;
     const result = await run(
       () => saveFaqGroup({ data: { id: group?.id, name, navLabel, slug } }),
-      group ? 'Group updated.' : 'Group added.'
+      {
+        success: {
+          title: group ? 'Group saved' : 'Group added',
+          description: 'The FAQ page shows its published FAQs under it.',
+        },
+        error: 'Could not save the group',
+      }
     );
     if (result) onSaved();
   }

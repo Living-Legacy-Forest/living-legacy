@@ -1,6 +1,5 @@
 import { useRouter } from '@tanstack/react-router';
 import { useRef, useState } from 'react';
-import { toast } from 'sonner';
 import {
   ConfirmBulkDelete,
   RowCheckbox,
@@ -33,7 +32,7 @@ import {
 } from '@/components/ui/sheet';
 import { Spinner } from '@/components/ui/spinner';
 import { Textarea } from '@/components/ui/textarea';
-import { readableError } from '@/lib/errors';
+import { notify, removedNotice } from '@/lib/notify';
 import { formatBytes } from '@/lib/format';
 import { canCrop } from '@/lib/prepare-image';
 import { IMAGE_ACCEPT, uploadMedia } from '@/lib/upload-media';
@@ -63,16 +62,22 @@ export function MediaPage({ data }: { data: MediaListData }) {
         for (const file of list) await uploadMedia(file);
         return list.length;
       },
-      (n) => `${n} ${n === 1 ? 'file' : 'files'} uploaded.`
+      {
+        success: (n) => ({
+          title: n === 1 ? 'Image uploaded' : `${n} images uploaded`,
+          description: 'Resized for the web and ready to use in posts and pages.',
+        }),
+        error: 'Could not upload',
+      }
     );
   }
 
   async function removeChecked() {
     const ids = selection.checkedIds;
-    const result = await run(
-      () => deleteMedia({ data: { ids } }),
-      (r) => `${r.removed} ${r.removed === 1 ? NOUN[0] : NOUN[1]} removed.`
-    );
+    const result = await run(() => deleteMedia({ data: { ids } }), {
+      success: (r) => removedNotice(r.removed, NOUN),
+      error: 'Could not remove',
+    });
     if (!result) return;
     if (editingId && ids.includes(editingId)) setEditingId(null);
     selection.clear();
@@ -268,10 +273,13 @@ function MediaEditForm({
 
   async function save(e: React.FormEvent) {
     e.preventDefault();
-    const result = await run(
-      () => updateMedia({ data: { id: item.id, alt, caption } }),
-      'Media saved.'
-    );
+    const result = await run(() => updateMedia({ data: { id: item.id, alt, caption } }), {
+      success: {
+        title: 'Details saved',
+        description: 'The alt text and caption are updated in the media library.',
+      },
+      error: 'Could not save the details',
+    });
     if (result !== undefined) onClose();
   }
 
@@ -283,7 +291,7 @@ function MediaEditForm({
       const blob = await res.blob();
       setCropping(new File([blob], item.filename, { type: blob.type || item.mime }));
     } catch (error) {
-      toast.error(readableError(error));
+      notify.error('Could not open the cropper', error);
     } finally {
       setLoadingCrop(false);
     }
@@ -298,12 +306,18 @@ function MediaEditForm({
     }
     setCropping(null);
     await router.invalidate();
-    toast.success('Cropped copy saved. The original is unchanged.');
+    notify.success({
+      title: 'Cropped copy saved',
+      description: 'The original is unchanged, so anything using it stays as it is.',
+    });
     onOpen(copy.id);
   }
 
   async function remove() {
-    const result = await run(() => deleteMedia({ data: { ids: [item.id] } }), 'File removed.');
+    const result = await run(() => deleteMedia({ data: { ids: [item.id] } }), {
+      success: removedNotice(1, NOUN),
+      error: 'Could not remove the file',
+    });
     if (result) onClose();
   }
 

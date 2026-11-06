@@ -58,6 +58,7 @@ import { Switch } from '@/components/ui/switch';
 import { Textarea } from '@/components/ui/textarea';
 import { readStatus } from '@/lib/bulk-import';
 import { reportInvalid } from '@/lib/form-validation';
+import { removedNotice } from '@/lib/notify';
 import { useAction } from '@/lib/use-action';
 import {
   type TeamListData,
@@ -99,10 +100,10 @@ export function TeamPage({ data, canWrite }: { data: TeamListData; canWrite: boo
   const visible = data.filter((m) => matchesSearch(query, [m.name, m.role, m.bio]));
 
   async function remove(ids: string[]) {
-    const result = await run(
-      () => deleteTeamMembers({ data: { ids } }),
-      `${ids.length} ${ids.length === 1 ? NOUN[0] : NOUN[1]} removed.`
-    );
+    const result = await run(() => deleteTeamMembers({ data: { ids } }), {
+      success: removedNotice(ids.length, NOUN),
+      error: 'Could not remove',
+    });
     if (!result) return;
     if (view.pane?.kind === 'edit' && ids.includes(view.pane.id)) view.closePane();
     selection.clear();
@@ -113,7 +114,10 @@ export function TeamPage({ data, canWrite }: { data: TeamListData; canWrite: boo
       member={member}
       disabled={pending}
       onConfirm={() =>
-        run(() => deleteTeamMember({ data: { id: member.id } }), 'Member removed.').then(onRemoved)
+        run(() => deleteTeamMember({ data: { id: member.id } }), {
+          success: removedNotice(1, NOUN),
+          error: 'Could not remove the team member',
+        }).then(onRemoved)
       }
     />
   );
@@ -376,7 +380,9 @@ function MoveButtons({
 }) {
   const { run, pending } = useAction();
   const move = (direction: 'up' | 'down') =>
-    run(() => moveTeamMember({ data: { id: member.id, direction } }));
+    run(() => moveTeamMember({ data: { id: member.id, direction } }), {
+      error: 'Could not move the team member',
+    });
 
   return (
     <>
@@ -491,7 +497,15 @@ function MemberForm({
             photoMediaId,
           },
         }),
-      member ? 'Member updated.' : 'Member added.'
+      {
+        success: {
+          title: member ? 'Team member saved' : 'Team member added',
+          description: published
+            ? 'They show on the website.'
+            : 'They are a draft, so the website does not show them.',
+        },
+        error: 'Could not save the team member',
+      }
     );
     if (result) onSaved(result.id);
   }

@@ -166,10 +166,13 @@ function UsersTable({ data }: { data: TeamData }) {
                   disabled={locked || pending}
                   onValueChange={(value) => {
                     if (value && value !== u.role) {
-                      run(
-                        () => changeUserRole({ data: { userId: u.id, role: value as Role } }),
-                        'Role updated.'
-                      );
+                      run(() => changeUserRole({ data: { userId: u.id, role: value as Role } }), {
+                        success: {
+                          title: 'Role changed',
+                          description: `${u.name || u.email} is now ${roleItems.find((r) => r.value === value)?.label ?? value}.`,
+                        },
+                        error: 'Could not change the role',
+                      });
                     }
                   }}
                 >
@@ -193,7 +196,13 @@ function UsersTable({ data }: { data: TeamData }) {
                   user={u}
                   disabled={locked}
                   onConfirm={() =>
-                    run(() => removeUser({ data: { userId: u.id } }), 'User removed.')
+                    run(() => removeUser({ data: { userId: u.id } }), {
+                      success: {
+                        title: 'User removed',
+                        description: `${u.name || u.email} is signed out and can no longer sign in.`,
+                      },
+                      error: 'Could not remove the user',
+                    })
                   }
                 />
               </TableCell>
@@ -287,13 +296,16 @@ function InviteDialog() {
   async function submit(e: React.FormEvent) {
     e.preventDefault();
     if (!reportInvalid(e.currentTarget)) return;
-    const result = await run(
-      () => inviteUser({ data: { email, role } }),
-      (r) =>
+    const result = await run(() => inviteUser({ data: { email, role } }), {
+      success: (r) =>
         r.emailed
-          ? `Invite sent to ${r.email}.`
-          : `Invited ${r.email}, but the email could not be sent.`
-    );
+          ? { title: 'Invite sent', description: `${r.email} can sign in from the email.` }
+          : {
+              title: 'Invited, but the email failed',
+              description: `${r.email} can still sign in from the login page.`,
+            },
+      error: 'Could not send the invite',
+    });
     if (result) {
       setOpen(false);
       setEmail('');
@@ -408,10 +420,13 @@ function InvitationsTable({ invitations }: { invitations: TeamData['invitations'
                 className="text-muted-foreground"
                 disabled={pending}
                 onClick={() =>
-                  run(
-                    () => revokeInvitation({ data: { email: invite.email } }),
-                    'Invitation revoked.'
-                  )
+                  run(() => revokeInvitation({ data: { email: invite.email } }), {
+                    success: {
+                      title: 'Invitation revoked',
+                      description: `${invite.email} can no longer sign up.`,
+                    },
+                    error: 'Could not revoke the invitation',
+                  })
                 }
               >
                 Revoke

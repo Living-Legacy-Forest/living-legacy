@@ -11,7 +11,15 @@ type Stat = {
   hint: string;
 };
 
-function buildStats({ posts, media, publishedFaqs }: DashboardData): Stat[] {
+/** "2 live, 1 coming soon": the stages that matter for visitors, as a short line. */
+function locationHint(locations: DashboardData['locations']) {
+  if (locations.length === 0) return 'None added yet';
+  const live = locations.filter((l) => l.stage !== 'coming_soon').length;
+  const soon = locations.length - live;
+  return [live > 0 && `${live} open`, soon > 0 && `${soon} coming soon`].filter(Boolean).join(', ');
+}
+
+function buildStats({ posts, media, locations }: DashboardData): Stat[] {
   const { publishedLast30: last, publishedPrior30: prior } = posts;
   return [
     {
@@ -30,7 +38,7 @@ function buildStats({ posts, media, publishedFaqs }: DashboardData): Stat[] {
           ? `${formatInteger(media.missingAlt)} ${media.missingAlt === 1 ? 'needs' : 'need'} alt text`
           : `${formatBytes(media.bytes)} stored`,
     },
-    { label: 'Published FAQs', value: publishedFaqs, hint: 'Shown on the FAQ page' },
+    { label: 'Locations', value: locations.length, hint: locationHint(locations) },
   ];
 }
 

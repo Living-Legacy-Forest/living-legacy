@@ -1,7 +1,13 @@
 import { useRouter } from '@tanstack/react-router';
 import { useState } from 'react';
-import { toast } from 'sonner';
-import { readableError } from './errors';
+import { type Notice, notify } from './notify';
+
+export type RunOptions<T> = {
+  /** The toast when it works; none if left out (a reorder, say). */
+  success?: Notice | ((result: T) => Notice);
+  /** Heading for the toast when it fails; the reason goes under it. */
+  error: string;
+};
 
 /**
  * Runs a mutation with a pending flag, a toast for the outcome and a router
@@ -11,15 +17,15 @@ export function useAction() {
   const router = useRouter();
   const [pending, setPending] = useState(false);
 
-  async function run<T>(action: () => Promise<T>, success?: string | ((result: T) => string)) {
+  async function run<T>(action: () => Promise<T>, { success, error }: RunOptions<T>) {
     setPending(true);
     try {
       const result = await action();
-      if (success) toast.success(typeof success === 'function' ? success(result) : success);
+      if (success) notify.success(typeof success === 'function' ? success(result) : success);
       await router.invalidate();
       return result;
-    } catch (error) {
-      toast.error(readableError(error));
+    } catch (caught) {
+      notify.error(error, caught);
       return undefined;
     } finally {
       setPending(false);

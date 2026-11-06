@@ -1,5 +1,5 @@
 import { parseSiteSettings } from '@ll/content';
-import { faqs, locations, media, posts, siteSettings } from '@ll/db/schema';
+import { locations, media, posts, siteSettings } from '@ll/db/schema';
 import { createServerFn } from '@tanstack/react-start';
 import { and, asc, count, desc, eq, gte, isNull, sql, sum } from 'drizzle-orm';
 import { getDb } from '@/lib/db';
@@ -26,76 +26,67 @@ export const getDashboardData = createServerFn({ method: 'GET' })
     const since = (days: number) => new Date(now - days * DAY_MS);
 
     // One round trip to the database for the settings and every panel.
-    const [
-      settingsRows,
-      postCounts,
-      mediaTotals,
-      faqCount,
-      activityRows,
-      locationRows,
-      drafts,
-      published,
-    ] = await db.batch([
-      db.select({ data: siteSettings.data }).from(siteSettings).where(eq(siteSettings.id, 'site')),
-      db
-        .select({
-          published: sql<number>`coalesce(sum(${posts.status} = 'published'), 0)`,
-          drafts: sql<number>`coalesce(sum(${posts.status} = 'draft'), 0)`,
-          last30: sql<number>`coalesce(sum(${posts.status} = 'published' and ${posts.publishedAt} >= ${since(30).getTime()}), 0)`,
-          prior30: sql<number>`coalesce(sum(${posts.status} = 'published' and ${posts.publishedAt} >= ${since(60).getTime()} and ${posts.publishedAt} < ${since(30).getTime()}), 0)`,
-        })
-        .from(posts)
-        .where(notTrashed),
-      db
-        .select({
-          files: count(),
-          bytes: sum(media.size),
-          missingAlt: sql<number>`coalesce(sum(${media.alt} is null or trim(${media.alt}) = ''), 0)`,
-        })
-        .from(media),
-      db
-        .select({ total: count() })
-        .from(faqs)
-        .where(and(eq(faqs.status, 'published'), isNull(faqs.deletedAt))),
-      db
-        .select({ publishedAt: posts.publishedAt })
-        .from(posts)
-        .where(and(isPublished, gte(posts.publishedAt, since(ACTIVITY_DAYS)))),
-      db
-        .select({
-          id: locations.id,
-          name: locations.name,
-          stage: locations.stage,
-          latitude: locations.latitude,
-          longitude: locations.longitude,
-          heroMediaId: locations.heroMediaId,
-        })
-        .from(locations)
-        .where(isNull(locations.deletedAt))
-        .orderBy(asc(locations.sortOrder), asc(locations.name)),
-      db
-        .select({
-          id: posts.id,
-          title: posts.title,
-          at: posts.updatedAt,
-          imageId: posts.featuredMediaId,
-        })
-        .from(posts)
-        .where(and(eq(posts.status, 'draft'), notTrashed))
-        .orderBy(desc(posts.updatedAt))
-        .limit(5),
-      db
-        .select({
-          id: posts.id,
-          title: posts.title,
-          at: posts.publishedAt,
-          imageId: posts.featuredMediaId,
-        })
-        .from(posts)
-        .where(isPublished)
-        .orderBy(desc(posts.publishedAt))
-        .limit(5),
-    ]);
+    const [settingsRows, postCounts, mediaTotals, activityRows, locationRows, drafts, published] =
+      await db.batch([
+        db
+          .select({ data: siteSettings.data })
+          .from(siteSettings)
+          .where(eq(siteSettings.id, 'site')),
+        db
+          .select({
+            published: sql<number>`coalesce(sum(${posts.status} = 'published'), 0)`,
+            drafts: sql<number>`coalesce(sum(${posts.status} = 'draft'), 0)`,
+            last30: sql<number>`coalesce(sum(${posts.status} = 'published' and ${posts.publishedAt} >= ${since(30).getTime()}), 0)`,
+            prior30: sql<number>`coalesce(sum(${posts.status} = 'published' and ${posts.publishedAt} >= ${since(60).getTime()} and ${posts.publishedAt} < ${since(30).getTime()}), 0)`,
+          })
+          .from(posts)
+          .where(notTrashed),
+        db
+          .select({
+            files: count(),
+            bytes: sum(media.size),
+            missingAlt: sql<number>`coalesce(sum(${media.alt} is null or trim(${media.alt}) = ''), 0)`,
+          })
+          .from(media),
+        db
+          .select({ publishedAt: posts.publishedAt })
+          .from(posts)
+          .where(and(isPublished, gte(posts.publishedAt, since(ACTIVITY_DAYS)))),
+        db
+          .select({
+            id: locations.id,
+            name: locations.name,
+            stage: locations.stage,
+            latitude: locations.latitude,
+            longitude: locations.longitude,
+            heroMediaId: locations.heroMediaId,
+          })
+          .from(locations)
+          .where(isNull(locations.deletedAt))
+          .orderBy(asc(locations.sortOrder), asc(locations.name)),
+        db
+          .select({
+            id: posts.id,
+            title: posts.title,
+            at: posts.updatedAt,
+            imageId: posts.featuredMediaId,
+          })
+          .from(posts)
+          .where(and(eq(posts.status, 'draft'), notTrashed))
+          .orderBy(desc(posts.updatedAt))
+          .limit(5),
+        db
+          .select({
+            id: posts.id,
+            title: posts.title,
+            at: posts.publishedAt,
+            imageId: posts.featuredMediaId,
+          })
+          .from(posts)
+          .where(isPublished)
+          .orderBy(desc(posts.publishedAt))
+          .limit(5),
+      ]);
 
     // Days are bucketed in the organisation's configured timezone, not UTC.
     const { timeZone } = parseSiteSettings(settingsRows[0]?.data);
@@ -135,7 +126,6 @@ export const getDashboardData = createServerFn({ method: 'GET' })
         bytes: Number(mediaTotals[0]?.bytes ?? 0),
         missingAlt: Number(mediaTotals[0]?.missingAlt ?? 0),
       },
-      publishedFaqs: faqCount[0]?.total ?? 0,
       activity: [...perDay].map(([date, published]) => ({ date, published })),
       locations: locationRows,
       recentDrafts: drafts.map(toSummary),

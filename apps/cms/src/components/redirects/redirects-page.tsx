@@ -23,7 +23,6 @@ import {
 } from '@/components/list/list-tools';
 import { ArrowRightIcon, PlusIcon, Trash2Icon, UploadIcon } from '@/components/icons';
 import { useState } from 'react';
-import { toast } from 'sonner';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -58,6 +57,7 @@ import { Spinner } from '@/components/ui/spinner';
 import { Switch } from '@/components/ui/switch';
 import { readYesNo } from '@/lib/bulk-import';
 import { reportInvalid } from '@/lib/form-validation';
+import { notify, removedNotice } from '@/lib/notify';
 import { useAction } from '@/lib/use-action';
 import { cn } from '@/lib/utils';
 import {
@@ -145,10 +145,10 @@ export function RedirectsPage({ data }: { data: RedirectsData }) {
   );
 
   async function remove(ids: string[]) {
-    const result = await run(
-      () => deleteRedirects({ data: { ids } }),
-      `${ids.length} ${ids.length === 1 ? 'redirect' : 'redirects'} removed.`
-    );
+    const result = await run(() => deleteRedirects({ data: { ids } }), {
+      success: removedNotice(ids.length, NOUN),
+      error: 'Could not remove',
+    });
     if (!result) return;
     if (view.pane?.kind === 'edit' && ids.includes(view.pane.id)) view.closePane();
     selection.clear();
@@ -489,10 +489,16 @@ function DeleteRedirect({
           <AlertDialogCancel>Cancel</AlertDialogCancel>
           <AlertDialogAction
             onClick={() =>
-              run(async () => {
-                await deleteRedirect({ data: { id: redirect.id } });
-                return true;
-              }, 'Redirect removed.').then((removed) => removed && onRemoved())
+              run(
+                async () => {
+                  await deleteRedirect({ data: { id: redirect.id } });
+                  return true;
+                },
+                {
+                  success: removedNotice(1, NOUN),
+                  error: 'Could not remove the redirect',
+                }
+              ).then((removed) => removed && onRemoved())
             }
           >
             Remove
@@ -540,10 +546,20 @@ function RedirectForm({
             note: note || undefined,
           },
         }),
-      redirect ? 'Redirect updated.' : 'Redirect added.'
+      {
+        success: {
+          title: redirect ? 'Redirect saved' : 'Redirect added',
+          description: enabled
+            ? 'It is on, so the website uses it.'
+            : 'It is off, so the website ignores it.',
+        },
+        error: 'Could not save the redirect',
+      }
     );
     if (!result) return;
-    for (const warning of result.warnings) toast.warning(warning);
+    for (const warning of result.warnings) {
+      notify.warning({ title: 'Check this redirect', description: warning });
+    }
     onSaved(result.id);
   }
 

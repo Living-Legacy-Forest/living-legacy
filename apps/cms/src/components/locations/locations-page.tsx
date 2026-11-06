@@ -74,6 +74,7 @@ import { Spinner } from '@/components/ui/spinner';
 import { Switch } from '@/components/ui/switch';
 import { Textarea } from '@/components/ui/textarea';
 import { reportInvalid } from '@/lib/form-validation';
+import { removedNotice } from '@/lib/notify';
 import { useAction } from '@/lib/use-action';
 import {
   type LocationItem,
@@ -139,13 +140,16 @@ export function LocationsPage({
   };
   const pane = canWrite ? view.pane : null;
   const remove = (id: string) =>
-    run(() => deleteLocations({ data: { ids: [id] } }), 'Location removed.');
+    run(() => deleteLocations({ data: { ids: [id] } }), {
+      success: removedNotice(1, NOUN),
+      error: 'Could not remove the location',
+    });
 
   async function removeMany(ids: string[]) {
-    const result = await run(
-      () => deleteLocations({ data: { ids } }),
-      `${ids.length} ${ids.length === 1 ? NOUN[0] : NOUN[1]} removed.`
-    );
+    const result = await run(() => deleteLocations({ data: { ids } }), {
+      success: removedNotice(ids.length, NOUN),
+      error: 'Could not remove',
+    });
     if (!result) return;
     if (view.pane?.kind === 'edit' && ids.includes(view.pane.id)) view.closePane();
     selection.clear();
@@ -625,7 +629,15 @@ function LocationForm({
             status: published ? 'published' : 'draft',
           },
         }),
-      item ? 'Location updated.' : 'Location added.'
+      {
+        success: {
+          title: item ? 'Location saved' : 'Location added',
+          description: published
+            ? 'Its page and map pin show on the website.'
+            : 'It is a draft, so the website does not show it.',
+        },
+        error: 'Could not save the location',
+      }
     );
     if (result) onSaved(result.id);
   }

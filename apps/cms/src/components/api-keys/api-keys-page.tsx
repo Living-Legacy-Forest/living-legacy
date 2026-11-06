@@ -1,5 +1,4 @@
 import { useEffect, useState } from 'react';
-import { toast } from 'sonner';
 import { CheckIcon, CopyIcon, KeyIcon, PlusIcon, Trash2Icon } from '@/components/icons';
 import {
   AlertDialog,
@@ -42,6 +41,7 @@ import {
 } from '@/components/ui/table';
 import { formatDate, formatRelative } from '@/lib/format';
 import { reportInvalid } from '@/lib/form-validation';
+import { notify } from '@/lib/notify';
 import { useAction } from '@/lib/use-action';
 import { useTimeZone } from '@/lib/use-time-zone';
 import { cn } from '@/lib/utils';
@@ -155,7 +155,15 @@ function KeysTable({ keys }: { keys: ApiKeyRow[] }) {
               {!k.revokedAt && (
                 <RevokeKey
                   name={k.name}
-                  onConfirm={() => run(() => revokeApiKey({ data: { id: k.id } }), 'Key revoked.')}
+                  onConfirm={() =>
+                    run(() => revokeApiKey({ data: { id: k.id } }), {
+                      success: {
+                        title: 'Key revoked',
+                        description: `${k.name} stops working now. Anything using it needs a new key.`,
+                      },
+                      error: 'Could not revoke the key',
+                    })
+                  }
                 />
               )}
             </TableCell>
@@ -214,7 +222,9 @@ function CreateKeyDialog() {
   async function submit(e: React.FormEvent) {
     e.preventDefault();
     if (!reportInvalid(e.currentTarget)) return;
-    const result = await run(() => createApiKey({ data: { name, scope } }));
+    const result = await run(() => createApiKey({ data: { name, scope } }), {
+      error: 'Could not create the key',
+    });
     if (result) setCreated(result.key);
   }
 
@@ -314,7 +324,7 @@ function CopyableKey({ value }: { value: string }) {
       setCopied(true);
       window.setTimeout(() => setCopied(false), 2000);
     } catch {
-      toast.error('Could not copy. Select the key and copy it yourself.');
+      notify.error('Could not copy', 'Select the key and copy it yourself.');
     }
   }
 

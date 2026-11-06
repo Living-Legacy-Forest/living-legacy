@@ -60,6 +60,7 @@ import { Switch } from '@/components/ui/switch';
 import { Textarea } from '@/components/ui/textarea';
 import { readStatus, readYesNo } from '@/lib/bulk-import';
 import { reportInvalid } from '@/lib/form-validation';
+import { removedNotice } from '@/lib/notify';
 import { useAction } from '@/lib/use-action';
 import {
   type Testimonial,
@@ -133,13 +134,16 @@ export function TestimonialsPage({
   };
   const pane = canWrite ? view.pane : null;
   const remove = (id: string) =>
-    run(() => deleteTestimonial({ data: { id } }), 'Testimonial removed.');
+    run(() => deleteTestimonial({ data: { id } }), {
+      success: removedNotice(1, NOUN),
+      error: 'Could not remove the testimonial',
+    });
 
   async function removeMany(ids: string[]) {
-    const result = await run(
-      () => deleteTestimonials({ data: { ids } }),
-      `${ids.length} ${ids.length === 1 ? NOUN[0] : NOUN[1]} removed.`
-    );
+    const result = await run(() => deleteTestimonials({ data: { ids } }), {
+      success: removedNotice(ids.length, NOUN),
+      error: 'Could not remove',
+    });
     if (!result) return;
     if (view.pane?.kind === 'edit' && ids.includes(view.pane.id)) view.closePane();
     selection.clear();
@@ -554,7 +558,15 @@ function TestimonialForm({
             photoMediaId,
           },
         }),
-      testimonial ? 'Testimonial updated.' : 'Testimonial added.'
+      {
+        success: {
+          title: testimonial ? 'Testimonial saved' : 'Testimonial added',
+          description: published
+            ? 'It shows on the website.'
+            : 'It is a draft, so the website does not show it.',
+        },
+        error: 'Could not save the testimonial',
+      }
     );
     if (result) onSaved(result.id);
   }

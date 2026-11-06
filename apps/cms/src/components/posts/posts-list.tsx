@@ -141,23 +141,52 @@ export function PostsList({
     return () => clearTimeout(timer);
   }, [query, search.q, navigate]);
 
-  const mutate = async (action: () => Promise<{ count: number }>, verb: string) => {
+  const count = (n: number) => `${n} ${plural(n)}`;
+  const trash = async (ids: string[]) => {
     clearPostPreviews();
-    await run(action, (r) => `${r.count} ${plural(r.count)} ${verb}.`);
+    await run(() => trashPosts({ data: { ids } }), {
+      success: (r) => ({
+        title: `${count(r.count)} moved to the trash`,
+        description:
+          r.count === 1
+            ? 'It waits in the trash as a draft and is not on the website.'
+            : 'They wait in the trash as drafts and are not on the website.',
+        action: { label: 'Undo', onClick: () => void restore(ids) },
+      }),
+      error: 'Could not move to the trash',
+    });
   };
-  const trash = (ids: string[]) =>
-    mutate(() => trashPosts({ data: { ids } }), 'moved to the trash');
-  const restore = (ids: string[]) =>
-    mutate(() => restorePosts({ data: { ids } }), 'restored as drafts');
+  const restore = async (ids: string[]) => {
+    clearPostPreviews();
+    await run(() => restorePosts({ data: { ids } }), {
+      success: (r) => ({
+        title: `${count(r.count)} restored`,
+        description: 'They are drafts. Publish them when they are ready to go live.',
+      }),
+      error: 'Could not restore',
+    });
+  };
   const purge = async (ids: string[]) => {
-    await mutate(() => deletePosts({ data: { ids } }), 'permanently deleted');
+    clearPostPreviews();
+    await run(() => deletePosts({ data: { ids } }), {
+      success: (r) => ({
+        title: `${count(r.count)} deleted`,
+        description: 'Deleted permanently, with their revisions.',
+      }),
+      error: 'Could not delete',
+    });
     setConfirmDelete(null);
   };
   const submitReview = async (id: string, reviewerId: string | null) => {
-    const result = await run(
-      () => requestReview({ data: { id, reviewerId } }),
-      'Submitted for review.'
-    );
+    const result = await run(() => requestReview({ data: { id, reviewerId } }), {
+      success: {
+        title: 'Sent for review',
+        description: reviewerId
+          ? 'The reviewer was notified.'
+          : 'Anyone who can publish was notified.',
+      },
+      error: 'Could not send for review',
+    });
     return Boolean(result);
   };
 

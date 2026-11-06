@@ -148,6 +148,83 @@
   transition-timing-function: cubic-bezier(0.25, 1, 0.5, 1);
 }
 
+/* Toasts (components/ui/sonner.tsx). Sonner's own styles are unlayered, so
+   these match one level deeper to win. Title over description, the icon lined
+   up with the title, and the action as a small primary button. */
+[data-sonner-toaster] [data-sonner-toast][data-styled='true'] {
+  align-items: flex-start;
+  gap: 10px;
+  padding: 14px 16px 16px;
+  font-size: var(--text-ui);
+  box-shadow:
+    0 1px 2px rgb(0 0 0 / 0.04),
+    0 6px 20px rgb(0 0 0 / 0.08);
+  /* The countdown line: a bar along the bottom edge that empties over the
+     toast's duration. A background, because Sonner uses both pseudo-elements. */
+  background-image: linear-gradient(var(--toast-line), var(--toast-line));
+  background-repeat: no-repeat;
+  background-position: left bottom;
+  background-size: 0 2px;
+  --toast-line: color-mix(in oklch, var(--muted-foreground) 45%, transparent);
+}
+[data-sonner-toaster] [data-sonner-toast][data-styled='true'][data-type='success'] {
+  --toast-line: var(--brand);
+}
+[data-sonner-toaster] [data-sonner-toast][data-styled='true'][data-type='error'] {
+  --toast-line: var(--destructive);
+}
+/* Not while loading (no timer yet) or swiping out (Sonner animates that). */
+[data-sonner-toaster]
+  [data-sonner-toast][data-styled='true']:not([data-type='loading'], [data-swipe-out='true']) {
+  animation: toast-countdown var(--toast-duration, 5s) linear forwards;
+}
+/* Sonner holds the timer while the stack is hovered or touched; so does the line. */
+[data-sonner-toaster] [data-sonner-toast][data-styled='true'][data-expanded='true'] {
+  animation-play-state: paused;
+}
+[data-sonner-toaster] [data-sonner-toast][data-styled='true'] [data-icon] {
+  /* Centre the 16px icon on the title's first line. */
+  margin-top: calc((1.5em - 16px) / 2);
+}
+[data-sonner-toaster] [data-sonner-toast][data-styled='true'] [data-content] {
+  gap: 1px;
+}
+[data-sonner-toaster] [data-sonner-toast][data-styled='true'] [data-title] {
+  font-weight: 500;
+  line-height: 1.5;
+}
+[data-sonner-toaster] [data-sonner-toast][data-styled='true'] [data-description] {
+  color: var(--muted-foreground);
+  font-size: var(--text-xs);
+  line-height: 1.45;
+}
+[data-sonner-toaster] [data-sonner-toast][data-styled='true'] [data-button] {
+  align-self: center;
+  height: 28px;
+  padding: 0 10px;
+  border-radius: calc(var(--radius) - 2px);
+  font-size: var(--text-ui-sm);
+  background: var(--primary);
+  color: var(--primary-foreground);
+  transition: opacity 150ms;
+}
+[data-sonner-toaster] [data-sonner-toast][data-styled='true'] [data-button]:hover {
+  opacity: 0.88;
+}
+[data-sonner-toaster] [data-sonner-toast][data-styled='true'] [data-button][data-cancel] {
+  background: transparent;
+  color: var(--muted-foreground);
+}
+
+@keyframes toast-countdown {
+  from {
+    background-size: 100% 2px;
+  }
+  to {
+    background-size: 0 2px;
+  }
+}
+
 /* Drawn icons (components/drawn-icons.tsx) play when the control around them
    is hovered: the same controls as HOVER_TARGET in components/icons.tsx. Only
    on devices that hover, and not for people who ask for reduced motion. */

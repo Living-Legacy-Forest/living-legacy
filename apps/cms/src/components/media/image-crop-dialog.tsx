@@ -4,7 +4,6 @@
 // original. Cropping happens in the browser (see prepare-image.ts).
 import { useEffect, useState } from 'react';
 import Cropper, { type Area } from 'react-easy-crop';
-import { toast } from 'sonner';
 import { MinusIcon, PlusIcon } from '@/components/icons';
 import { Button } from '@/components/ui/button';
 import {
@@ -18,7 +17,7 @@ import {
 import { Slider } from '@/components/ui/slider';
 import { Spinner } from '@/components/ui/spinner';
 import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
-import { readableError } from '@/lib/errors';
+import { notify } from '@/lib/notify';
 import { canCrop, prepareImage } from '@/lib/prepare-image';
 import { uploadMedia } from '@/lib/upload-media';
 import type { MediaItem } from '@/server/media';
@@ -112,7 +111,7 @@ function CropBody({
     try {
       await onDone(await prepareImage(file, kind === 'crop' && area ? area : undefined));
     } catch (error) {
-      toast.error(readableError(error));
+      notify.error('Could not prepare the image', error);
     } finally {
       setBusy(null);
     }
@@ -252,7 +251,7 @@ export function useImageUpload<T = MediaItem>({
 
   const start = (picked: File) => {
     if (canCrop(picked)) setFile(picked);
-    else send(picked).catch((error) => toast.error(readableError(error)));
+    else send(picked).catch((error) => notify.error('Could not upload', error));
   };
 
   const dialog = (

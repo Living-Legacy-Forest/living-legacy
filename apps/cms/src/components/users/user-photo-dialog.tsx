@@ -1,6 +1,5 @@
 import { useRouter } from '@tanstack/react-router';
 import { useRef, useState } from 'react';
-import { toast } from 'sonner';
 import { CameraIcon } from '@/components/icons';
 import { useImageUpload } from '@/components/media/image-crop-dialog';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
@@ -18,7 +17,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Spinner } from '@/components/ui/spinner';
 import { authClient } from '@/lib/auth-client';
-import { readableError } from '@/lib/errors';
+import { type Notice, notify } from '@/lib/notify';
 import { forgetCachedUser } from '@/lib/session';
 import { IMAGE_ACCEPT } from '@/lib/upload-media';
 import { updateUserPhoto } from '@/server/users';
@@ -64,17 +63,18 @@ export function UserPhotoDialog({
   async function act(
     kind: 'upload' | 'remove' | 'save',
     action: () => Promise<void>,
-    done: string
+    done: Notice,
+    failure: string
   ) {
     setBusy(kind);
     try {
       await action();
       if (isSelf) forgetCachedUser();
       await router.invalidate();
-      toast.success(done);
+      notify.success(done);
       return true;
     } catch (error) {
-      toast.error(readableError(error));
+      notify.error(failure, error);
       return false;
     } finally {
       setBusy(null);
@@ -89,7 +89,8 @@ export function UserPhotoDialog({
         // Your own photo goes through Better Auth so your session sees it.
         if (isSelf) await authClient.updateUser({ image: url });
       },
-      'Photo updated.'
+      { title: 'Photo updated', description: 'It shows wherever their name does.' },
+      'Could not update the photo'
     );
 
   // Photos are cropped square first; they show in a circle.
@@ -108,7 +109,8 @@ export function UserPhotoDialog({
         await updateUserPhoto({ data: { userId: user.id, remove: true } });
         setAlt('');
       },
-      'Photo removed.'
+      { title: 'Photo removed', description: 'Their initials show in its place.' },
+      'Could not remove the photo'
     );
 
   async function save(e: React.FormEvent) {
@@ -116,7 +118,8 @@ export function UserPhotoDialog({
     const ok = await act(
       'save',
       () => updateUserPhoto({ data: { userId: user.id, imageAlt: alt } }),
-      'Alt text saved.'
+      { title: 'Alt text saved', description: 'Screen readers use it to describe the photo.' },
+      'Could not save the alt text'
     );
     if (ok) onOpenChange(false);
   }

@@ -1,7 +1,6 @@
 import { createFileRoute, redirect } from '@tanstack/react-router';
 import { MailCheck } from '@/components/icons';
 import { useEffect, useState } from 'react';
-import { toast } from 'sonner';
 import { z } from 'zod';
 import logoMark from '@/assets/brand/logo-mark.webp';
 import { Button } from '@/components/ui/button';
@@ -10,6 +9,7 @@ import { Label } from '@/components/ui/label';
 import { Spinner } from '@/components/ui/spinner';
 import { authClient } from '@/lib/auth-client';
 import { getCurrentUser, getLoginOptions } from '@/lib/session';
+import { notify } from '@/lib/notify';
 
 const errorMessages: Record<string, string> = {
   not_invited: 'This account has not been invited. Ask an admin to invite you.',
@@ -32,7 +32,7 @@ function LoginPage() {
 
   useEffect(() => {
     if (error) {
-      toast.error(errorMessages[error] ?? 'Sign-in failed. Please try again.', {
+      notify.error('Could not sign you in', errorMessages[error] ?? 'Please try again.', {
         id: 'login-error',
       });
     }
@@ -123,12 +123,15 @@ function MagicLinkForm({ onSent }: { onSent: (email: string) => void }) {
     const { error } = await authClient.signIn.magicLink({ email, callbackURL: '/' });
     setPending(false);
     if (error) {
-      toast.error('Something went wrong. Please try again.');
+      notify.error('Could not send the link', 'Something went wrong. Please try again.');
       return;
     }
     // Same outcome for everyone, whether or not a link was actually sent, so the
     // page never reveals who has access.
-    toast.success('Check your email for a sign-in link.');
+    notify.success({
+      title: 'Check your email',
+      description: 'If this address has access, a sign-in link is on its way.',
+    });
     onSent(email);
   }
 

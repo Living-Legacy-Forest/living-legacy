@@ -1,8 +1,7 @@
 import { type PostInput, emptyPostInput, publishErrors, slugify } from '@ll/content';
 import { useBlocker, useNavigate, useRouter } from '@tanstack/react-router';
 import { useEffect, useRef, useState } from 'react';
-import { toast } from 'sonner';
-import { readableError } from '@/lib/errors';
+import { type Notice, notify } from '@/lib/notify';
 import { formatDateTime, formatRelative } from '@/lib/format';
 import { useTimeZone } from '@/lib/use-time-zone';
 import {
@@ -126,7 +125,7 @@ export function usePostEditor({
   /** Publishing needs a title, body and so on; says what is missing. */
   function readyToPublish() {
     const errors = publishErrors(values);
-    if (errors.length) toast.error(errors.join(' '));
+    if (errors.length) notify.error('Not ready to publish', errors.join(' '));
     return errors.length === 0;
   }
 
@@ -156,22 +155,28 @@ export function usePostEditor({
       if (kind === 'publish') setSlugTouched(true);
 
       if (!quiet) {
-        toast.success(
+        notify.success(
           kind === 'publish'
             ? meta.status === 'published'
-              ? 'Post updated.'
+              ? { title: 'Post updated', description: 'The changes are live on the website.' }
               : meta.scheduledAt
-                ? 'Post published now. The schedule was cleared.'
-                : 'Post published.'
+                ? {
+                    title: 'Post published',
+                    description: 'It is live now, and the schedule was cleared.',
+                  }
+                : { title: 'Post published', description: 'It is live on the website.' }
             : meta.status === 'published'
-              ? 'Changes saved. They go live when you update the post.'
-              : 'Draft saved.'
+              ? {
+                  title: 'Changes saved',
+                  description: 'They go live when you update the post.',
+                }
+              : { title: 'Draft saved', description: 'Only people in the CMS can see it.' }
         );
       }
       await refresh(result.id);
       return result.id;
     } catch (error) {
-      toast.error(readableError(error));
+      notify.error(kind === 'publish' ? 'Could not publish' : 'Could not save', error);
       return null;
     } finally {
       setBusy(null);
@@ -198,11 +203,14 @@ export function usePostEditor({
         updatedAt: result.updatedAt,
         scheduledAt: result.scheduledAt,
       }));
-      toast.success(`Scheduled for ${formatDateTime(result.scheduledAt, timeZone)}.`);
+      notify.success({
+        title: 'Post scheduled',
+        description: `It goes live ${formatDateTime(result.scheduledAt, timeZone)}.`,
+      });
       await refresh(result.id);
       return true;
     } catch (error) {
-      toast.error(readableError(error));
+      notify.error('Could not schedule', error);
       return false;
     } finally {
       setBusy(null);
@@ -215,10 +223,10 @@ export function usePostEditor({
       const result = await unschedulePost({ data: { id: meta.id } });
       clearPostPreviews();
       setMeta((m) => ({ ...m, scheduledAt: null, updatedAt: result.updatedAt }));
-      toast.success('Unscheduled. The post is a draft again.');
+      notify.success({ title: 'Schedule cancelled', description: 'The post is a draft again.' });
       await router.invalidate();
     } catch (error) {
-      toast.error(readableError(error));
+      notify.error('Could not cancel the schedule', error);
     }
   }
 
@@ -234,13 +242,14 @@ export function usePostEditor({
       return;
     }
     if (tab) tab.location.href = `/preview/posts/${id}`;
-    else toast.error('Allow pop-ups for this site to open the preview.');
+    else notify.error('Preview blocked', 'Allow pop-ups for this site to open the preview.');
   }
 
   /** Runs a server action on the saved post, then reloads it (or does `after`). */
   async function act(
     action: (id: string) => Promise<unknown>,
-    success: string,
+    success: Notice,
+    failure: string,
     after?: () => Promise<void>
   ) {
     if (!meta.id) return;
@@ -248,29 +257,68 @@ export function usePostEditor({
     try {
       await action(meta.id);
       clearPostPreviews();
-      toast.success(success);
+      notify.success(success);
       await (after ? after() : onReload());
     } catch (error) {
-      toast.error(readableError(error));
+      notify.error(failure, error);
     } finally {
       setBusy(null);
     }
   }
 
-  const discard = () => act((id) => discardChanges({ data: { id } }), 'Changes discarded.');
-  const unpublish = () =>
-    act((id) => unpublishPost({ data: { id } }), 'Post unpublished. It is a draft again.');
-  const restore = () =>
-    act((id) => restorePosts({ data: { ids: [id] } }), 'Post restored as a draft.');
-  const trash = () =>
+  const discard = () =>
     act(
-      (id) => trashPosts({ data: { ids: [id] } }),
-      'Post moved to the trash.',
+      (id) => discardChanges({ data: { id } }),
+      { title: 'Changes discarded', description: 'The post is back to its live version.' },
+      'Could not discard the changes'
+    );
+  const unpublish = () =>
+    act(
+      (id) => unpublishPost({ data: { id } }),
+      { title: 'Post unpublished', description: 'It is off the website and a draft again.' },
+      'Could not unpublish'
+    );
+  const restore = () =>
+    act(
+      (id) => restorePosts({ data: { ids: [id] } }),
+      {
+        title: 'Post restored',
+        description: 'It is a draft. Publish it when it is ready to go live.',
+      },
+      'Could not restore'
+    );
+  const trash = () => {
+    const id = meta.id;
+    if (!id) return;
+    return act(
+      () => trashPosts({ data: { ids: [id] } }),
+      {
+        title: 'Post moved to the trash',
+        description: 'It waits in the trash as a draft and is not on the website.',
+        action: { label: 'Undo', onClick: () => void undoTrash(id) },
+      },
+      'Could not move to the trash',
       async () => {
         allowLeaving();
         await navigate({ to: '/posts' });
       }
     );
+  };
+
+  /** Undo on the trash toast: restore the post and open it again. */
+  async function undoTrash(id: string) {
+    try {
+      await restorePosts({ data: { ids: [id] } });
+      clearPostPreviews();
+      notify.success({
+        title: 'Post restored',
+        description: 'It is a draft. Publish it when it is ready to go live.',
+      });
+      await navigate({ to: '/posts/$postId', params: { postId: id } });
+    } catch (error) {
+      notify.error('Could not restore', error);
+    }
+  }
 
   /** Copies the post into a new draft and opens it. */
   async function duplicate() {
@@ -278,11 +326,11 @@ export function usePostEditor({
     setBusy('other');
     try {
       const result = await duplicatePost({ data: { id: meta.id } });
-      toast.success('Post duplicated.');
+      notify.success({ title: 'Post duplicated', description: 'You are now editing the copy.' });
       allowLeaving();
       await navigate({ to: '/posts/$postId', params: { postId: result.id } });
     } catch (error) {
-      toast.error(readableError(error));
+      notify.error('Could not duplicate', error);
     } finally {
       setBusy(null);
     }
@@ -296,13 +344,16 @@ export function usePostEditor({
     try {
       const result = await requestReview({ data: { id, reviewerId } });
       setMeta((m) => ({ ...m, ...result }));
-      toast.success(
-        reviewerId ? 'Sent for review.' : 'Sent for review. Anyone who can publish was notified.'
-      );
+      notify.success({
+        title: 'Sent for review',
+        description: reviewerId
+          ? 'The reviewer was notified.'
+          : 'Anyone who can publish was notified.',
+      });
       await router.invalidate();
       return true;
     } catch (error) {
-      toast.error(readableError(error));
+      notify.error('Could not send for review', error);
       return false;
     } finally {
       setBusy(null);
@@ -328,14 +379,16 @@ export function usePostEditor({
       setSaved((s) => ({ ...s, seoTitle, seoDescription, noindex, ogMediaId }));
       setMeta((m) => ({ ...m, updatedAt: result.updatedAt }));
       setLastSavedAt(result.updatedAt);
-      toast.success(
-        meta.status === 'published'
-          ? 'Search listing updated on the live post.'
-          : 'Search listing saved.'
-      );
+      notify.success({
+        title: 'Search listing saved',
+        description:
+          meta.status === 'published'
+            ? 'It is live on the post now.'
+            : 'It goes live when the post is published.',
+      });
       await router.invalidate();
     } catch (error) {
-      toast.error(readableError(error));
+      notify.error('Could not save the search listing', error);
     } finally {
       setBusy(null);
     }
@@ -347,13 +400,15 @@ export function usePostEditor({
       setValues(revision);
       setSlugTouched(true);
       setBodyKey((k) => k + 1);
-      toast.success(
-        meta.status === 'published'
-          ? 'Revision loaded. Update the post to make it live.'
-          : 'Revision loaded. Save to keep it.'
-      );
+      notify.success({
+        title: 'Revision loaded',
+        description:
+          meta.status === 'published'
+            ? 'Update the post to make it live.'
+            : 'Save the post to keep it.',
+      });
     } catch (error) {
-      toast.error(readableError(error));
+      notify.error('Could not load the revision', error);
     }
   }
 
@@ -367,13 +422,15 @@ export function usePostEditor({
       const { body, failedImages } = await docxToBody(file);
       update({ body });
       setBodyKey((k) => k + 1);
-      toast.success(
-        failedImages > 0
-          ? `Imported ${file.name}. ${failedImages} image${failedImages === 1 ? '' : 's'} could not be imported; add ${failedImages === 1 ? 'it' : 'them'} manually.`
-          : `Imported ${file.name}.`
-      );
+      notify.success({
+        title: 'Document imported',
+        description:
+          failedImages > 0
+            ? `${file.name} is in. ${failedImages} image${failedImages === 1 ? '' : 's'} could not be imported; add ${failedImages === 1 ? 'it' : 'them'} by hand.`
+            : `${file.name} replaced the content. Save to keep it.`,
+      });
     } catch {
-      toast.error('Could not read that file. Make sure it is a .docx document.');
+      notify.error('Could not import', 'Make sure the file is a .docx document.');
     } finally {
       setImportingDocx(false);
     }
@@ -389,7 +446,7 @@ export function usePostEditor({
       );
       setValues((v) => ({ ...v, categoryIds: [...new Set([...v.categoryIds, category.id])] }));
     } catch (error) {
-      toast.error(readableError(error));
+      notify.error('Could not add the category', error);
     }
   }
 

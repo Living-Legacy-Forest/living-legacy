@@ -46,6 +46,7 @@ import { Switch } from '@/components/ui/switch';
 import { Textarea } from '@/components/ui/textarea';
 import { formatDateTime, zoneName } from '@/lib/format';
 import { reportInvalid } from '@/lib/form-validation';
+import { removedNotice } from '@/lib/notify';
 import { useAction } from '@/lib/use-action';
 import { useTimeZone } from '@/lib/use-time-zone';
 import { cn } from '@/lib/utils';
@@ -114,10 +115,10 @@ export function AnnouncementsPage({
   const pane = view.pane?.kind === 'edit' && !editing(view.pane) ? null : view.pane;
 
   async function remove(ids: string[]) {
-    const result = await run(
-      () => deleteAnnouncements({ data: { ids } }),
-      `${ids.length} ${ids.length === 1 ? NOUN[0] : NOUN[1]} removed.`
-    );
+    const result = await run(() => deleteAnnouncements({ data: { ids } }), {
+      success: removedNotice(ids.length, NOUN),
+      error: 'Could not remove',
+    });
     if (!result) return;
     if (view.pane?.kind === 'edit' && ids.includes(view.pane.id)) view.closePane();
     selection.clear();
@@ -126,10 +127,13 @@ export function AnnouncementsPage({
   async function quickPublish(a: Announcement, currentStatus: AnnouncementStatus) {
     // Ended means its expiry already passed; clear it so publishing actually goes live.
     const endsAt = currentStatus === 'ended' ? null : a.endsAt;
-    await run(
-      () => saveAnnouncement({ data: { ...a, enabled: true, endsAt } }),
-      'Announcement published.'
-    );
+    await run(() => saveAnnouncement({ data: { ...a, enabled: true, endsAt } }), {
+      success: {
+        title: 'Announcement published',
+        description: 'It shows on the website within its dates.',
+      },
+      error: 'Could not publish the announcement',
+    });
   }
 
   const form = (
@@ -431,7 +435,13 @@ function AnnouncementForm({
         saveAnnouncement({
           data: { ...values, id: announcement?.id, hidePaths },
         }),
-      announcement ? 'Announcement saved.' : 'Announcement created.'
+      {
+        success: {
+          title: announcement ? 'Announcement saved' : 'Announcement created',
+          description: 'It shows on the website while it is on and within its dates.',
+        },
+        error: 'Could not save the announcement',
+      }
     );
     if (result) onSaved(result.id);
   }

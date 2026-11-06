@@ -1,7 +1,6 @@
 // Maps for locations: every location on one map, and the picker that sets a
 // location's pin. A pin wears the location's hero photo when it has one.
 import { useEffect, useState, useSyncExternalStore } from 'react';
-import { toast } from 'sonner';
 import { MapPinIcon } from '@/components/icons';
 import { Button } from '@/components/ui/button';
 import {
@@ -14,6 +13,7 @@ import {
 } from '@/components/ui/map';
 import { Spinner } from '@/components/ui/spinner';
 import { cn } from '@/lib/utils';
+import { notify } from '@/lib/notify';
 
 export type Pin = { latitude: number; longitude: number };
 
@@ -260,12 +260,12 @@ export function PinPicker({
       if (!res.ok) throw new Error();
       const [hit] = (await res.json()) as { lat: string; lon: string }[];
       if (!hit) {
-        toast.error('That address was not found. Click the map to place the pin instead.');
+        notify.error('Address not found', 'Click the map to place the pin instead.');
         return;
       }
       onChange({ latitude: Number(hit.lat), longitude: Number(hit.lon) });
     } catch {
-      toast.error('Could not look up the address. Click the map to place the pin instead.');
+      notify.error('Could not look up the address', 'Click the map to place the pin instead.');
     } finally {
       setFinding(false);
     }

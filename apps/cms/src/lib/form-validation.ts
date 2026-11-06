@@ -1,4 +1,4 @@
-import { toast } from 'sonner';
+import { notify } from './notify';
 
 /**
  * Checks a form's fields (required, type, pattern…) and reports the first problem
@@ -18,7 +18,12 @@ export function reportInvalid(form: EventTarget): boolean {
     if (field.validity.valid) continue;
 
     const label = field.labels?.[0]?.textContent?.trim() || 'This field';
-    toast.error(field.validity.valueMissing ? `${label} is required.` : `${label} is not valid.`);
+    notify.error(
+      field.validity.valueMissing ? `${label} is required` : `${label} is not valid`,
+      field.validity.valueMissing
+        ? 'Fill it in, then try again.'
+        : field.validationMessage || 'Check it, then try again.'
+    );
     field.focus();
     return false;
   }

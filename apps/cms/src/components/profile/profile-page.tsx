@@ -1,6 +1,5 @@
 import { useRouter } from '@tanstack/react-router';
 import { useEffect, useRef, useState } from 'react';
-import { toast } from 'sonner';
 import { CameraIcon, MailIcon } from '@/components/icons';
 import { useImageUpload } from '@/components/media/image-crop-dialog';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
@@ -11,9 +10,9 @@ import { Label } from '@/components/ui/label';
 import { Spinner } from '@/components/ui/spinner';
 import { Textarea } from '@/components/ui/textarea';
 import { authClient } from '@/lib/auth-client';
-import { readableError } from '@/lib/errors';
 import { reportInvalid } from '@/lib/form-validation';
 import { type SessionUser, forgetCachedUser } from '@/lib/session';
+import { notify } from '@/lib/notify';
 import { useAction } from '@/lib/use-action';
 
 async function uploadAvatar(file: File) {
@@ -41,7 +40,13 @@ export function ProfilePage({
   const { run, pending } = useAction();
 
   useEffect(() => {
-    if (justConfirmedEmail) toast.success('Email confirmed.', { id: 'email-confirmed' });
+    if (justConfirmedEmail) {
+      notify.success({
+        id: 'email-confirmed',
+        title: 'Email confirmed',
+        description: 'Sign in with the new address from now on.',
+      });
+    }
   }, [justConfirmedEmail]);
 
   const initials = user.name
@@ -62,9 +67,9 @@ export function ProfilePage({
       const url = await uploadAvatar(file);
       await authClient.updateUser({ image: url });
       await refresh();
-      toast.success('Photo updated.');
+      notify.success({ title: 'Photo updated', description: 'It shows wherever your name does.' });
     } catch (error) {
-      toast.error(readableError(error));
+      notify.error('Could not update the photo', error);
     } finally {
       setAvatarUploading(false);
     }
@@ -79,15 +84,24 @@ export function ProfilePage({
   async function saveProfile(e: React.FormEvent) {
     e.preventDefault();
     if (!reportInvalid(e.currentTarget)) return;
-    await run(async () => {
-      const { error } = await authClient.updateUser({
-        name,
-        bio: bio || null,
-        imageAlt: imageAlt.trim() || null,
-      });
-      if (error) throw new Error(error.message ?? 'Could not save your profile.');
-      await refresh();
-    }, 'Profile saved.');
+    await run(
+      async () => {
+        const { error } = await authClient.updateUser({
+          name,
+          bio: bio || null,
+          imageAlt: imageAlt.trim() || null,
+        });
+        if (error) throw new Error(error.message ?? 'Could not save your profile.');
+        await refresh();
+      },
+      {
+        success: {
+          title: 'Profile saved',
+          description: 'Your details are updated across the CMS.',
+        },
+        error: 'Could not save your profile',
+      }
+    );
   }
 
   return (
@@ -196,7 +210,7 @@ function ChangeEmail({ currentEmail }: { currentEmail: string }) {
     e.preventDefault();
     if (!reportInvalid(e.currentTarget)) return;
     if (newEmail.trim().toLowerCase() === currentEmail.toLowerCase()) {
-      toast.error("That's already your email.");
+      notify.error('Nothing to change', "That's already your email.");
       return;
     }
     setPending(true);
@@ -206,7 +220,7 @@ function ChangeEmail({ currentEmail }: { currentEmail: string }) {
     });
     setPending(false);
     if (error) {
-      toast.error(readableError(new Error(error.message ?? 'Could not send that link.')));
+      notify.error('Could not send the link', error.message ?? 'Please try again.');
       return;
     }
     setSentTo(newEmail.trim());

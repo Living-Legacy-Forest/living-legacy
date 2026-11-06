@@ -6,7 +6,6 @@
 // A new image can be dropped on the field or chosen from the computer, and is
 // cropped to the shape the website shows it in before it is uploaded.
 import { useEffect, useState } from 'react';
-import { toast } from 'sonner';
 import { SearchInput, matchesSearch } from '@/components/list/list-tools';
 import { UploadIcon } from '@/components/icons';
 import { useImageUpload } from '@/components/media/image-crop-dialog';
@@ -24,7 +23,7 @@ import {
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Spinner } from '@/components/ui/spinner';
-import { readableError } from '@/lib/errors';
+import { notify } from '@/lib/notify';
 import { cn } from '@/lib/utils';
 import { type MediaItem, getMediaItems, listMedia, updateMedia } from '@/server/media';
 
@@ -194,9 +193,12 @@ function AltText({
     try {
       await updateMedia({ data: { id: item.id, alt: next } });
       onSaved({ ...item, alt: next });
-      toast.success('Alt text saved.');
+      notify.success({
+        title: 'Alt text saved',
+        description: 'Screen readers use it to describe the image.',
+      });
     } catch (error) {
-      toast.error(readableError(error));
+      notify.error('Could not save the alt text', error);
       setAlt(item.alt);
     } finally {
       setSaving(false);
@@ -274,7 +276,7 @@ export function MediaPicker({
         list.forEach(remember);
         setItems(list);
       })
-      .catch((error) => toast.error(readableError(error)));
+      .catch((error) => notify.error('Could not load the media library', error));
     return () => {
       current = false;
     };

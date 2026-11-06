@@ -47,6 +47,7 @@ import { Label } from '@/components/ui/label';
 import { Spinner } from '@/components/ui/spinner';
 import { Textarea } from '@/components/ui/textarea';
 import { reportInvalid } from '@/lib/form-validation';
+import { removedNotice } from '@/lib/notify';
 import { useAction } from '@/lib/use-action';
 import { type Term, type TermsData, deleteTerms, saveTerm } from '@/server/terms';
 
@@ -98,10 +99,13 @@ export function TermsPage({
   const pane = view.pane?.kind === 'edit' && !editing(view.pane) ? null : view.pane;
 
   async function remove(ids: string[]) {
-    const result = await run(
-      () => deleteTerms({ data: { type, ids } }),
-      `${ids.length} ${ids.length === 1 ? noun[0] : noun[1]} removed.`
-    );
+    const result = await run(() => deleteTerms({ data: { type, ids } }), {
+      success: {
+        ...removedNotice(ids.length, noun),
+        description: `${ids.length === 1 ? 'It is' : 'They are'} also taken off any posts.`,
+      },
+      error: 'Could not remove',
+    });
     if (!result) return;
     if (view.pane?.kind === 'edit' && ids.includes(view.pane.id)) view.closePane();
     selection.clear();
@@ -335,7 +339,13 @@ function DeleteTerm({
                   await deleteTerms({ data: { type, ids: [term.id] } });
                   return true;
                 },
-                `${type === 'category' ? 'Category' : 'Tag'} deleted.`
+                {
+                  success: {
+                    title: `${type === 'category' ? 'Category' : 'Tag'} deleted`,
+                    description: 'It is also taken off any posts.',
+                  },
+                  error: `Could not delete the ${type}`,
+                }
               ).then((removed) => removed && onRemoved())
             }
           >
@@ -366,12 +376,13 @@ function TermForm({
   async function submit(e: React.FormEvent) {
     e.preventDefault();
     if (!reportInvalid(e.currentTarget)) return;
-    const result = await run(
-      () => saveTerm({ data: { id: term?.id, type, name, description } }),
-      term
-        ? `${type === 'category' ? 'Category' : 'Tag'} saved.`
-        : `${type === 'category' ? 'Category' : 'Tag'} created.`
-    );
+    const result = await run(() => saveTerm({ data: { id: term?.id, type, name, description } }), {
+      success: {
+        title: `${type === 'category' ? 'Category' : 'Tag'} ${term ? 'saved' : 'created'}`,
+        description: term ? 'Posts that use it show the change.' : 'It can be added to posts now.',
+      },
+      error: `Could not save the ${type}`,
+    });
     if (result) onSaved(result.id);
   }
 

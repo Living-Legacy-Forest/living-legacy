@@ -94,14 +94,21 @@ export function BulkCsvForm<T>({
   async function submit(e: React.FormEvent) {
     e.preventDefault();
     if (!plan || plan.rows.length === 0) return;
-    const result = await run(
-      () => apply(plan.rows),
-      ({ added, updated }) =>
-        [added > 0 && `${plural(added, noun)} added`, updated > 0 && `${updated} updated`]
-          .filter(Boolean)
-          .join(', ')
-          .replace(/^./, (c) => c.toUpperCase()) + '.'
-    );
+    const result = await run(() => apply(plan.rows), {
+      success: ({ added, updated, skipped }) => ({
+        title: 'Import finished',
+        description:
+          [
+            added > 0 && `${plural(added, noun)} added`,
+            updated > 0 && `${updated} updated`,
+            skipped.length > 0 && `${skipped.length} skipped`,
+          ]
+            .filter(Boolean)
+            .join(', ')
+            .replace(/^./, (c) => c.toUpperCase()) + '.',
+      }),
+      error: 'Could not import',
+    });
     if (!result) return;
     setFile(null);
     if (result.skipped.length === 0) return onDone();

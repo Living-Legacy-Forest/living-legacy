@@ -47,4 +47,24 @@ export default [
       ...sharedRules,
     },
   },
+  // Toasts go through lib/notify, which requires a heading and a description.
+  {
+    files: ['src/**/*.{ts,tsx}'],
+    ignores: ['src/lib/notify.ts', 'src/components/ui/sonner.tsx'],
+    rules: {
+      'no-restricted-imports': [
+        'error',
+        {
+          paths: [
+            {
+              name: 'sonner',
+              importNames: ['toast'],
+              message:
+                'Use notify from @/lib/notify, so every toast has a heading and a description.',
+            },
+          ],
+        },
+      ],
+    },
+  },
 ];

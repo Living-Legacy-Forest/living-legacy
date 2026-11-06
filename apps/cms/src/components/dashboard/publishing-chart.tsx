@@ -1,7 +1,14 @@
 import { ChartAreaIcon } from '@/components/icons';
 import { useId, useMemo, useState } from 'react';
 import { Area, AreaChart, CartesianGrid, XAxis, YAxis } from 'recharts';
-import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardFooter,
+  CardHeader,
+  CardTitle,
+} from '@/components/ui/card';
 import {
   Empty,
   EmptyDescription,
@@ -22,14 +29,11 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { useIsMobile } from '@/hooks/use-mobile';
-import { formatChartAxisTick, formatChartTooltipDate, formatInteger } from '@/lib/format';
+import { formatChartAxisTick, formatChartRange, formatInteger } from '@/lib/format';
 import type { DashboardData } from '@/server/dashboard';
 
 type PeriodDays = 30 | 60 | 90;
-
-// Recharts XAxis `interval`: tick skip index (0 = all, 1 = every other, ...).
-const xAxisIntervalByPeriod: Record<PeriodDays, number> = { 30: 3, 60: 6, 90: 13 };
+type Week = { date: string; end: string; published: number };
 
 // Base UI's Select shows the raw value unless it is given the item labels.
 const periodItems = [
@@ -42,18 +46,40 @@ const chartConfig = {
   published: { label: 'Posts published', color: 'var(--chart-1)' },
 } satisfies ChartConfig;
 
+/**
+ * Days grouped into weeks ending today. Posts go out a few times a month, so
+ * per day the chart is mostly zero with a spike for each post; per week it
+ * reads as a rhythm.
+ */
+function byWeek(days: DashboardData['activity']): Week[] {
+  const weeks: Week[] = [];
+  for (let end = days.length; end > 0; end -= 7) {
+    const chunk = days.slice(Math.max(0, end - 7), end);
+    weeks.unshift({
+      date: chunk[0]?.date ?? '',
+      end: chunk[chunk.length - 1]?.date ?? '',
+      published: chunk.reduce((sum, day) => sum + day.published, 0),
+    });
+  }
+  return weeks;
+}
+
+// Follows shadcn's interactive area chart: a range picker in the header,
+// horizontal grid lines, a smooth curve over a gradient and a dot tooltip.
 export function PublishingChart({ activity }: { activity: DashboardData['activity'] }) {
   const gradientId = `publishing-grad-${useId().replace(/:/g, '')}`;
   const [periodDays, setPeriodDays] = useState<PeriodDays>(30);
-  const isMobile = useIsMobile();
 
-  const rows = useMemo(() => activity.slice(-periodDays), [activity, periodDays]);
-  const total = rows.reduce((sum, row) => sum + row.published, 0);
+  const weeks = useMemo(() => byWeek(activity.slice(-periodDays)), [activity, periodDays]);
+  const total = weeks.reduce((sum, week) => sum + week.published, 0);
 
   return (
     <Card className="col-span-2 lg:col-span-4">
       <CardHeader className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-        <CardTitle className="text-balance">Publishing activity</CardTitle>
+        <div className="grid gap-1">
+          <CardTitle className="text-balance">Publishing activity</CardTitle>
+          <CardDescription>Posts published each week</CardDescription>
+        </div>
         <Select
           items={periodItems}
           onValueChange={(v) => setPeriodDays(Number(v) as PeriodDays)}
@@ -89,50 +115,44 @@ export function PublishingChart({ activity }: { activity: DashboardData['activit
             </EmptyHeader>
           </Empty>
         ) : (
-          <ChartContainer className="aspect-auto h-60 w-full p-0" config={chartConfig}>
-            <AreaChart
-              accessibilityLayer
-              data={[...rows]}
-              margin={{ left: 8, right: 8, top: 8, bottom: 0 }}
-            >
+          <ChartContainer className="aspect-auto h-60 w-full" config={chartConfig}>
+            <AreaChart accessibilityLayer data={weeks} margin={{ left: 12, right: 12, top: 8 }}>
               <defs>
                 <linearGradient id={gradientId} x1="0" x2="0" y1="0" y2="1">
-                  <stop offset="0%" stopColor="var(--color-published)" stopOpacity={0.25} />
-                  <stop offset="100%" stopColor="var(--color-published)" stopOpacity={0} />
+                  <stop offset="5%" stopColor="var(--color-published)" stopOpacity={0.8} />
+                  <stop offset="95%" stopColor="var(--color-published)" stopOpacity={0.1} />
                 </linearGradient>
               </defs>
-              <CartesianGrid horizontal={false} strokeDasharray="2 2" />
+              <CartesianGrid vertical={false} />
               <XAxis
-                axisLine={false}
                 dataKey="date"
-                // A phone has too little width for a fixed spacing; let the
-                // chart drop labels that would collide, keeping first and last.
-                interval={isMobile ? 'preserveStartEnd' : xAxisIntervalByPeriod[periodDays]}
-                minTickGap={isMobile ? 28 : 16}
-                tickFormatter={(value) => formatChartAxisTick(String(value), periodDays)}
                 tickLine={false}
+                axisLine={false}
                 tickMargin={8}
+                minTickGap={32}
+                tickFormatter={(value) => formatChartAxisTick(String(value))}
               />
               <YAxis hide allowDecimals={false} domain={[0, (max: number) => Math.max(max, 2)]} />
               <ChartTooltip
+                cursor={false}
                 content={
                   <ChartTooltipContent
-                    className="min-w-40"
-                    indicator="line"
+                    className="min-w-44"
+                    indicator="dot"
                     labelFormatter={(_, payload) => {
-                      const date = (payload?.[0]?.payload as { date?: string } | undefined)?.date;
-                      return date ? formatChartTooltipDate(date) : '';
+                      const week = payload?.[0]?.payload as Week | undefined;
+                      return week ? formatChartRange(week.date, week.end) : '';
                     }}
                   />
                 }
               />
               <Area
                 dataKey="published"
-                dot={false}
+                // Monotone rather than shadcn's natural: natural swings below
+                // zero beside empty weeks, which would read as negative posts.
+                type="monotone"
                 fill={`url(#${gradientId})`}
                 stroke="var(--color-published)"
-                strokeWidth={2}
-                type="monotone"
               />
             </AreaChart>
           </ChartContainer>

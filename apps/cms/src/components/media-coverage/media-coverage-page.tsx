@@ -79,6 +79,7 @@ import { Switch } from '@/components/ui/switch';
 import { Textarea } from '@/components/ui/textarea';
 import { formatDate } from '@/lib/format';
 import { reportInvalid } from '@/lib/form-validation';
+import { removedNotice } from '@/lib/notify';
 import { useAction } from '@/lib/use-action';
 import { useTimeZone } from '@/lib/use-time-zone';
 import { cn } from '@/lib/utils';
@@ -136,13 +137,16 @@ export function MediaCoveragePage({
   };
   const pane = canWrite ? view.pane : null;
   const remove = (id: string) =>
-    run(() => deleteMediaCoverage({ data: { ids: [id] } }), 'Item removed.');
+    run(() => deleteMediaCoverage({ data: { ids: [id] } }), {
+      success: removedNotice(1, NOUN),
+      error: 'Could not remove the item',
+    });
 
   async function removeMany(ids: string[]) {
-    const result = await run(
-      () => deleteMediaCoverage({ data: { ids } }),
-      `${ids.length} ${ids.length === 1 ? NOUN[0] : NOUN[1]} removed.`
-    );
+    const result = await run(() => deleteMediaCoverage({ data: { ids } }), {
+      success: removedNotice(ids.length, NOUN),
+      error: 'Could not remove',
+    });
     if (!result) return;
     if (view.pane?.kind === 'edit' && ids.includes(view.pane.id)) view.closePane();
     selection.clear();
@@ -664,7 +668,15 @@ function CoverageForm({
             status: published ? 'published' : 'draft',
           },
         }),
-      item ? 'Coverage updated.' : 'Coverage added.'
+      {
+        success: {
+          title: item ? 'Coverage saved' : 'Coverage added',
+          description: published
+            ? 'It shows on the website.'
+            : 'It is a draft, so the website does not show it.',
+        },
+        error: 'Could not save the coverage',
+      }
     );
     if (result) onSaved(result.id);
   }

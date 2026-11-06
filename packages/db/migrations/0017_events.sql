@@ -33,6 +33,7 @@ CREATE TABLE `events` (
 	`slug` text NOT NULL,
 	`location_id` text,
 	`venue` text,
+	`time_zone` text DEFAULT 'Australia/Melbourne' NOT NULL,
 	`starts_at` integer NOT NULL,
 	`ends_at` integer NOT NULL,
 	`summary` text,

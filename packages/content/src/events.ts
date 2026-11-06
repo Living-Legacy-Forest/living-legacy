@@ -1,5 +1,7 @@
 import { z } from 'zod';
+import type { AustralianState } from './locations';
 import { richTextSchema } from './posts';
+import { type TimeZone, timeZones } from './settings';
 
 // Free events (open days) and the bookings for them: the rules both the CMS
 // and, later, the website apply. Times are epoch milliseconds.
@@ -94,6 +96,21 @@ export function bookingReference(bytes: Uint8Array): string {
   return `LL-${code}`;
 }
 
+/** The time zone an event at a location in `state` runs on: its capital's. */
+export function stateTimeZone(state: AustralianState): TimeZone {
+  const zones: Record<AustralianState, TimeZone> = {
+    QLD: 'Australia/Brisbane',
+    NSW: 'Australia/Sydney',
+    ACT: 'Australia/Sydney',
+    VIC: 'Australia/Melbourne',
+    TAS: 'Australia/Hobart',
+    SA: 'Australia/Adelaide',
+    WA: 'Australia/Perth',
+    NT: 'Australia/Darwin',
+  };
+  return zones[state];
+}
+
 const optionalText = (max: number) => z.string().trim().max(max).default('');
 
 export const eventInputSchema = z
@@ -102,6 +119,8 @@ export const eventInputSchema = z
     title: z.string().trim().min(1, 'Give the event a title.').max(120),
     slug: optionalText(120),
     locationId: z.string().nullable(),
+    /** Its dates and times are in this zone (its location's, unless changed). */
+    timeZone: z.enum(timeZones),
     venue: optionalText(300),
     startsAt: z.number().int(),
     endsAt: z.number().int(),

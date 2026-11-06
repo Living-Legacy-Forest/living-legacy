@@ -6,6 +6,7 @@ import {
   capacityProblem,
   deleteEventProblem,
   seatsTaken,
+  stateTimeZone,
 } from './events';
 
 const HOUR = 60 * 60 * 1000;
@@ -118,5 +119,18 @@ describe('deleteEventProblem', () => {
     expect(deleteEventProblem(event(), 0, now)).toBeNull();
     expect(deleteEventProblem(event({ status: 'cancelled' }), 5, now)).toBeNull();
     expect(deleteEventProblem(event(), 5, now + 51 * HOUR)).toBeNull();
+  });
+});
+
+describe('stateTimeZone', () => {
+  it("gives each state its capital's time zone", () => {
+    expect(stateTimeZone('WA')).toBe('Australia/Perth');
+    expect(stateTimeZone('QLD')).toBe('Australia/Brisbane');
+    expect(stateTimeZone('NT')).toBe('Australia/Darwin');
+    expect(stateTimeZone('SA')).toBe('Australia/Adelaide');
+    expect(stateTimeZone('TAS')).toBe('Australia/Hobart');
+    expect(stateTimeZone('ACT')).toBe('Australia/Sydney');
+    expect(stateTimeZone('NSW')).toBe('Australia/Sydney');
+    expect(stateTimeZone('VIC')).toBe('Australia/Melbourne');
   });
 });

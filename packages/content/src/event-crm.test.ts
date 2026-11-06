@@ -23,6 +23,7 @@ const booking = (over: Partial<CrmBooking> = {}): CrmBooking => ({
     venue: '125 Tyabb-Tooradin Rd, Somerville VIC 3912',
     locationName: 'Living Legacy Mornington',
     status: 'published',
+    timeZone: 'Australia/Melbourne',
   },
   ...over,
 });
@@ -35,6 +36,7 @@ describe('hubspotBookingProperties', () => {
       phone: '0400 000 000',
       ll_event_name: 'Open day, Mornington',
       ll_event_start: String(Date.UTC(2026, 10, 13, 23, 0)),
+      ll_event_time_zone: 'Australia/Melbourne',
       ll_event_venue: '125 Tyabb-Tooradin Rd, Somerville VIC 3912',
       ll_event_location: 'Living Legacy Mornington',
       ll_event_party_size: '2',

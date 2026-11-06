@@ -32,10 +32,9 @@ import {
   EmptyTitle,
 } from '@/components/ui/empty';
 import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
-import { formatDate } from '@/lib/format';
+import { formatDateTime, zoneName } from '@/lib/format';
 import { removedNotice } from '@/lib/notify';
 import { useAction } from '@/lib/use-action';
-import { useTimeZone } from '@/lib/use-time-zone';
 import { type EventRow, type EventsData, type LocationOption, deleteEvent } from '@/server/events';
 import { EventForm, type FormActions } from './event-form';
 import { EventGuests } from './event-guests';
@@ -68,7 +67,6 @@ export function EventsPage({ data }: { data: EventsData }) {
   const [toDelete, setToDelete] = useState<string[] | null>(null);
   const selection = useSelection(data.events.map((e) => e.id));
   const { run, pending } = useAction();
-  const zone = useTimeZone();
 
   const now = Date.now();
   // Coming up reads soonest first; looking back reads latest first.
@@ -202,7 +200,7 @@ export function EventsPage({ data }: { data: EventsData }) {
                     swipe={{ label: 'Delete', onAction: () => setToDelete([e.id]) }}
                     onOpen={() => view.open({ kind: 'edit', id: e.id })}
                   >
-                    <EventSummary event={e} zone={zone} />
+                    <EventSummary event={e} />
                   </ListRow>
                 ))}
               </ListRows>
@@ -260,7 +258,7 @@ export function EventsPage({ data }: { data: EventsData }) {
   );
 }
 
-function EventSummary({ event: e, zone }: { event: EventRow; zone: string }) {
+function EventSummary({ event: e }: { event: EventRow }) {
   return (
     <>
       <span className="flex items-center gap-2">
@@ -277,7 +275,8 @@ function EventSummary({ event: e, zone }: { event: EventRow; zone: string }) {
       </span>
       <span className="text-muted-foreground mt-0.5 block truncate text-xs">
         {e.seriesId && 'Repeats · '}
-        {formatDate(e.startsAt, zone)}
+        {/* Its own zone: events in another state show their local time. */}
+        {formatDateTime(e.startsAt, e.timeZone)} {zoneName(e.timeZone, e.startsAt)}
         {e.locationName ? ` · ${e.locationName}` : ''}
       </span>
     </>

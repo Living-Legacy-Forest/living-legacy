@@ -21,6 +21,8 @@ export const events = sqliteTable(
     locationId: text('location_id').references(() => locations.id, { onDelete: 'set null' }),
     /** Where to go; the form suggests the location's address. */
     venue: text('venue'),
+    /** Its times are in this zone: its location's state, unless changed. */
+    timeZone: text('time_zone').notNull().default('Australia/Melbourne'),
     startsAt: integer('starts_at', { mode: 'timestamp_ms' }).notNull(),
     endsAt: integer('ends_at', { mode: 'timestamp_ms' }).notNull(),
     summary: text('summary'),

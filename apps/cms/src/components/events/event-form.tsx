@@ -1,8 +1,22 @@
-import { type EventInput, type SeriesScope, slugify } from '@ll/content';
+import {
+  type EventInput,
+  type SeriesScope,
+  fromZoned,
+  sameClockOn,
+  slugify,
+  stateTimeZone,
+  timeZones,
+  toZoned,
+} from '@ll/content';
 import { useState } from 'react';
 import { DateTimePicker } from '@/components/date-time-picker';
 import { RichTextField } from '@/components/rich-text-field';
-import { EventDatesField } from './event-dates-field';
+import {
+  EventDatesField,
+  type EventTimes,
+  type SessionTime,
+  sessionTimes,
+} from './event-dates-field';
 import { RepeatField, type RepeatValue, noRepeat, seriesDates } from './repeat-field';
 import { Trash2Icon } from '@/components/icons';
 import { ImageField } from '@/components/media/image-field';
@@ -30,7 +44,7 @@ import {
 import { Spinner } from '@/components/ui/spinner';
 import { Switch } from '@/components/ui/switch';
 import { Textarea } from '@/components/ui/textarea';
-import { formatDateTime } from '@/lib/format';
+import { formatDateTime, zoneName } from '@/lib/format';
 import { reportInvalid } from '@/lib/form-validation';
 import { notify, removedNotice } from '@/lib/notify';
 import { useAction } from '@/lib/use-action';
@@ -53,6 +67,12 @@ type Values = Omit<EventInput, 'id' | 'startsAt' | 'endsAt' | 'moreDates' | 'sco
 };
 
 const NO_LOCATION = 'none';
+
+/** "Perth (AWST)": the zone's city and its abbreviation now. */
+const zoneItems = timeZones.map((value) => ({
+  value,
+  label: `${value.split('/')[1]?.replace('_', ' ')} (${zoneName(value)})`,
+}));
 
 const STEPS = ['Details', 'Date & time', 'Places'] as const;
 
@@ -85,13 +105,16 @@ function NewEventSummary({
   where,
   times,
   dates,
+  zone,
+  sessions,
 }: {
   title: string;
   where: string;
   times: { startsAt: number; endsAt: number } | null;
   dates: number;
+  zone: string;
+  sessions: boolean;
 }) {
-  const zone = useTimeZone();
   return (
     <dl className="bg-muted/50 grid grid-cols-[auto_1fr] gap-x-4 gap-y-1.5 rounded-lg px-3 py-2.5 text-sm">
       <dt className="text-muted-foreground">Event</dt>
@@ -99,10 +122,14 @@ function NewEventSummary({
       <dt className="text-muted-foreground">Where</dt>
       <dd className="min-w-0 truncate">{where || 'Not set'}</dd>
       <dt className="text-muted-foreground">{dates > 1 ? 'First date' : 'When'}</dt>
-      <dd>{times ? formatDateTime(times.startsAt, zone) : 'Not set'}</dd>
+      <dd>
+        {times
+          ? `${formatDateTime(times.startsAt, zone)} ${zoneName(zone, times.startsAt)}`
+          : 'Not set'}
+      </dd>
       {dates > 1 && (
         <>
-          <dt className="text-muted-foreground">Dates</dt>
+          <dt className="text-muted-foreground">{sessions ? 'Sessions' : 'Dates'}</dt>
           <dd>{dates}, each with its own guest list</dd>
         </>
       )}
@@ -110,9 +137,10 @@ function NewEventSummary({
   );
 }
 
-function initialValues(event: EventRow | null): Values {
+function initialValues(event: EventRow | null, siteZone: string): Values {
   if (!event) {
     return {
+      timeZone: siteZone as Values['timeZone'],
       title: '',
       slug: '',
       locationId: null,
@@ -129,6 +157,7 @@ function initialValues(event: EventRow | null): Values {
     };
   }
   return {
+    timeZone: event.timeZone as Values['timeZone'],
     title: event.title,
     slug: event.slug,
     locationId: event.locationId,
@@ -157,14 +186,31 @@ export function EventForm({
   onSaved: (id: string | null) => void;
   actions: FormActions;
 }) {
-  const [values, setValues] = useState<Values>(() => initialValues(event));
+  const siteZone = useTimeZone();
+  const [values, setValues] = useState<Values>(() => initialValues(event, siteZone));
+  const [sessions, setSessions] = useState<SessionTime[]>([]);
+  // Picking a location sets the zone, until someone chooses one themselves.
+  const [zoneChosen, setZoneChosen] = useState(Boolean(event));
   const [repeat, setRepeat] = useState<RepeatValue>(noRepeat);
   const [askScope, setAskScope] = useState(false);
   const [step, setStep] = useState(0);
   // Which way the steps move, so the new one slides in from that side.
   const [forward, setForward] = useState(true);
-  const zone = useTimeZone();
+  const zone = values.timeZone;
   const patch = (next: Partial<Values>) => setValues((v) => ({ ...v, ...next }));
+  /** A new zone keeps the clock times (10:00 stays 10:00), not the instants. */
+  const rezone = (next: string) =>
+    setValues((v) => {
+      const move = (ms: number | null) =>
+        ms === null ? null : fromZoned(toZoned(ms, v.timeZone), next);
+      return {
+        ...v,
+        timeZone: next as Values['timeZone'],
+        startsAt: move(v.startsAt),
+        endsAt: move(v.endsAt),
+        bookingsCloseAt: move(v.bookingsCloseAt),
+      };
+    });
   const { run, pending } = useAction();
   const location = locations.find((l) => l.id === values.locationId);
   const locationItems = [
@@ -181,24 +227,38 @@ export function EventForm({
       ? { startsAt: values.startsAt, endsAt: values.endsAt }
       : null;
 
+  /** Every event a new one makes: each date of its series, at each of its times. */
+  function allTimes(first: EventTimes): EventTimes[] {
+    const dates =
+      repeat.repeat !== 'none'
+        ? seriesDates(first, repeat, zone).filter((d) => !d.skipped)
+        : [{ ...first }];
+    const extra = sessions
+      .map((x) => sessionTimes(first.startsAt, x, zone))
+      .filter((x): x is EventTimes => x !== null);
+    return dates.flatMap((d) => [
+      { startsAt: d.startsAt, endsAt: d.endsAt },
+      ...extra.map((x) => sameClockOn(d.startsAt, x, zone)),
+    ]);
+  }
+
   async function save(scope: SeriesScope) {
     if (!times) return;
-    const moreDates =
-      !event && repeat.repeat !== 'none'
-        ? seriesDates(times, repeat, zone)
-            .filter((d) => !d.first && !d.skipped)
-            .map(({ startsAt, endsAt }) => ({ startsAt, endsAt }))
-        : [];
+    const moreDates = event ? [] : allTimes(times).slice(1);
     const result = await run(
       () => saveEvent({ data: { ...values, ...times, id: event?.id, moreDates, scope } }),
       {
         success: (r) => ({
-          title: event ? 'Event saved' : r.dates > 1 ? `${r.dates} dates created` : 'Event created',
+          title: event
+            ? 'Event saved'
+            : r.dates > 1
+              ? `${r.dates} ${sessions.length ? 'sessions' : 'dates'} created`
+              : 'Event created',
           description:
             event && r.dates > 1
               ? `The change was made on ${r.dates} dates.`
               : r.dates > 1
-                ? 'Each date has its own guest list. Staff can add guests to any of them.'
+                ? `Each ${sessions.length ? 'session' : 'date'} has its own guest list. Staff can add guests to any of them.`
                 : values.status === 'published'
                   ? 'Staff can add guests, and it is ready for the website.'
                   : 'It is a draft. Staff can still add guests.',
@@ -217,6 +277,13 @@ export function EventForm({
     }
     if (times.endsAt <= times.startsAt) {
       notify.error('Check the event', 'It must end after it starts.');
+      return false;
+    }
+    if (times && sessions.some((x) => !sessionTimes(times.startsAt, x, zone))) {
+      notify.error(
+        'Check the event',
+        'Each extra time needs a start and a later end, like 2:00 pm to 4:00 pm.'
+      );
       return false;
     }
     const needsEnd = repeat.repeat !== 'none' && repeat.repeat !== 'custom';
@@ -288,6 +355,7 @@ export function EventForm({
                 // Fill the venue from the location, unless one was typed.
                 ...(picked && !values.venue ? { venue: picked.address } : {}),
               });
+              if (picked && !zoneChosen) rezone(stateTimeZone(picked.state));
             }}
           >
             <SelectTrigger id="ev-location" className="w-full">
@@ -350,10 +418,42 @@ export function EventForm({
   );
   const when = (
     <>
+      <div className="space-y-1.5">
+        <Label htmlFor="ev-zone">Time zone</Label>
+        <Select
+          items={zoneItems}
+          value={values.timeZone}
+          onValueChange={(next) => {
+            if (!next) return;
+            setZoneChosen(true);
+            rezone(next);
+          }}
+        >
+          <SelectTrigger id="ev-zone" className="w-full sm:w-64">
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            {zoneItems.map((item) => (
+              <SelectItem key={item.value} value={item.value}>
+                {item.label}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+        <p className="text-muted-foreground text-xs">
+          Set from the location's state. Dates and times below are in this zone.
+        </p>
+      </div>
+
       <EventDatesField
+        // A new zone re-reads the times shown.
+        key={values.timeZone}
         id="ev-date"
+        zone={zone}
         value={{ startsAt: values.startsAt, endsAt: values.endsAt }}
         onChange={(next) => patch(next)}
+        sessions={event ? undefined : sessions}
+        onSessionsChange={event ? undefined : setSessions}
       />
 
       {event?.seriesId ? (
@@ -361,13 +461,14 @@ export function EventForm({
           One date of a repeating event. Saving asks whether to change the upcoming dates too.
         </p>
       ) : (
-        !event && <RepeatField first={times} value={repeat} onChange={setRepeat} />
+        !event && <RepeatField zone={zone} first={times} value={repeat} onChange={setRepeat} />
       )}
 
       <div className="space-y-1.5">
         <Label htmlFor="ev-closes">Bookings close (optional)</Label>
         <DateTimePicker
           id="ev-closes"
+          zone={zone}
           value={values.bookingsCloseAt}
           placeholder="When it starts"
           onChange={(bookingsCloseAt) => patch({ bookingsCloseAt })}
@@ -447,10 +548,7 @@ export function EventForm({
 
   // A new event is added in steps; a saved one is edited on one page.
   if (!event) {
-    const dateCount =
-      times && repeat.repeat !== 'none'
-        ? seriesDates(times, repeat, zone).filter((d) => !d.skipped).length
-        : 1;
+    const dateCount = times ? allTimes(times).length : 1;
     return (
       <form noValidate onSubmit={next} className="space-y-5">
         <Steps current={step} />
@@ -471,6 +569,8 @@ export function EventForm({
                 where={values.venue || location?.name || ''}
                 times={times}
                 dates={dateCount}
+                zone={zone}
+                sessions={sessions.length > 0}
               />
             </>
           )}
@@ -537,7 +637,7 @@ function CancelledEvent({
   actions: FormActions;
   onRemoved: () => void;
 }) {
-  const zone = useTimeZone();
+  const zone = event.timeZone;
   return (
     <div className="space-y-4">
       <p className="bg-muted text-muted-foreground rounded-lg px-3 py-2.5 text-sm">

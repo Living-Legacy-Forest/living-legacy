@@ -24,7 +24,6 @@ import { Spinner } from '@/components/ui/spinner';
 import { formatDateTime } from '@/lib/format';
 import { notify } from '@/lib/notify';
 import { useAction } from '@/lib/use-action';
-import { useTimeZone } from '@/lib/use-time-zone';
 import type { EventRow } from '@/server/events';
 import { type Guest, cancelGuest, getGuests, setCheckedIn } from '@/server/event-guests';
 import { Reveal } from '@/components/reveal';
@@ -40,7 +39,7 @@ export function EventGuests({ event }: { event: EventRow }) {
   const [adding, setAdding] = useState(false);
   const [toCancel, setToCancel] = useState<Guest | null>(null);
   const { run } = useAction();
-  const zone = useTimeZone();
+  const zone = event.timeZone;
 
   const reload = useCallback(
     () =>

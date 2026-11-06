@@ -16,7 +16,6 @@ import { and, asc, desc, eq, gte, inArray, isNull, ne, sql } from 'drizzle-orm';
 import { z } from 'zod';
 import { getDb } from '@/lib/db';
 import { requirePermission } from '@/lib/session';
-import { readSiteSettings } from '@/lib/site-settings';
 import { logActivity } from './activity-log';
 
 const confirmed = sql`${eventBookings.status} = 'confirmed'`;
@@ -47,6 +46,7 @@ export const listEvents = createServerFn({ method: 'GET' })
           name: locations.name,
           address: locations.address,
           email: locations.email,
+          state: locations.state,
         })
         .from(locations)
         .where(isNull(locations.deletedAt))
@@ -70,6 +70,7 @@ export const listEvents = createServerFn({ method: 'GET' })
         maxPartySize: e.maxPartySize,
         bookingsCloseAt: e.bookingsCloseAt?.getTime() ?? null,
         seriesId: e.seriesId,
+        timeZone: e.timeZone,
         status: e.status,
         booked: Number(booked),
         bookings: Number(bookings),
@@ -80,6 +81,7 @@ export const listEvents = createServerFn({ method: 'GET' })
         name: l.name,
         address: l.address ?? '',
         email: l.email ?? '',
+        state: l.state,
       })),
     };
   });
@@ -93,7 +95,13 @@ type EventRecord = typeof events.$inferSelect;
 type BatchItem = Parameters<Db['batch']>[0][number];
 
 const pad = (n: number) => String(n).padStart(2, '0');
-/** "2026-11-14" in the site time zone, for a series date's web address. */
+/** "1000" for 10:00 in `zone`, for a session's web address and matching sessions. */
+const clockKey = (ms: number, zone: string) => {
+  const w = toZoned(ms, zone);
+  return `${pad(w.hour)}${pad(w.minute)}`;
+};
+
+/** "2026-11-14" in the event's time zone, for a series date's web address. */
 const dayKey = (ms: number, zone: string) => {
   const w = toZoned(ms, zone);
   return `${w.year}-${pad(w.month + 1)}-${pad(w.day)}`;
@@ -124,10 +132,12 @@ export const saveEvent = createServerFn({ method: 'POST' })
     const db = getDb();
     const slug = slugify(data.slug || data.title);
     if (!slug) throw new Error('Give the event a title or a web address.');
-    const { timeZone } = await readSiteSettings();
+    // Each event keeps its own zone (its location's), not the site's.
+    const timeZone = data.timeZone;
     const now = new Date();
     const shared = {
       title: data.title,
+      timeZone: data.timeZone,
       locationId: data.locationId,
       venue: data.venue || null,
       summary: data.summary || null,
@@ -147,11 +157,16 @@ export const saveEvent = createServerFn({ method: 'POST' })
     if (!data.id) {
       const dates = [{ startsAt: data.startsAt, endsAt: data.endsAt }, ...data.moreDates];
       const seriesId = dates.length > 1 ? crypto.randomUUID() : null;
-      const rows = dates.map((d) => ({
+      // Each date of a series has its own page, so its own address; with
+      // several times on one day, the time tells them apart.
+      const days = dates.map((d) => dayKey(d.startsAt, timeZone));
+      const sameDay = new Set(days).size < days.length;
+      const rows = dates.map((d, i) => ({
         ...shared,
         seriesId,
-        // Each date of a series has its own page, so its own address.
-        slug: seriesId ? `${slug}-${dayKey(d.startsAt, timeZone)}` : slug,
+        slug: seriesId
+          ? `${slug}-${days[i]}${sameDay ? `-${clockKey(d.startsAt, timeZone)}` : ''}`
+          : slug,
         startsAt: new Date(d.startsAt),
         endsAt: new Date(d.endsAt),
         bookingsCloseAt: closeAt(d.startsAt),
@@ -201,6 +216,7 @@ export const saveEvent = createServerFn({ method: 'POST' })
     // capacity or times earlier keeps them unless that is what changed.
     const was = {
       title: current.title,
+      timeZone: current.timeZone,
       locationId: current.locationId,
       venue: current.venue,
       summary: current.summary,
@@ -222,17 +238,25 @@ export const saveEvent = createServerFn({ method: 'POST' })
       (t) => t.status !== 'cancelled'
     );
     const statements: BatchItem[] = [];
+    let changed = 0;
     for (const t of targets) {
       const isThis = t.id === current.id;
       const capacity = isThis ? data.capacity : (patch.capacity ?? t.capacity);
       const problem = capacityProblem(capacity, await peopleBooked(db, t.id));
       if (problem)
         throw new Error(isThis ? problem : `${dayKey(t.startsAt.getTime(), timeZone)}: ${problem}`);
+      // A new time moves only the dates at this date's old time: with several
+      // times a day, the other sessions keep theirs.
       const times = isThis
         ? { startsAt: data.startsAt, endsAt: data.endsAt }
-        : timesChanged
+        : timesChanged &&
+            clockKey(t.startsAt.getTime(), current.timeZone) ===
+              clockKey(current.startsAt.getTime(), current.timeZone)
           ? sameClockOn(t.startsAt.getTime(), data, timeZone)
           : null;
+      // Nothing for this date to take (another session, nothing shared changed).
+      if (!isThis && !times && Object.keys(patch).length === 0) continue;
+      changed++;
       statements.push(
         db
           .update(events)
@@ -248,7 +272,14 @@ export const saveEvent = createServerFn({ method: 'POST' })
       );
       // HubSpot sends guests the details, so a change of time or place sends
       // the bookings to it again.
-      if (timesChanged || 'title' in patch || 'venue' in patch || 'locationId' in patch) {
+      const moved = isThis ? timesChanged : times !== null;
+      if (
+        moved ||
+        'title' in patch ||
+        'venue' in patch ||
+        'locationId' in patch ||
+        'timeZone' in patch
+      ) {
         statements.push(resync(db, t.id));
       }
     }
@@ -258,13 +289,13 @@ export const saveEvent = createServerFn({ method: 'POST' })
         actorName: context.user.name,
         action: 'event.saved',
         summary:
-          targets.length > 1
-            ? `Updated the event ${data.title} on ${targets.length} dates`
+          changed > 1
+            ? `Updated the event ${data.title} on ${changed} dates`
             : `Updated the event ${data.title}`,
       })
     );
     await db.batch(statements as [BatchItem, ...BatchItem[]]);
-    return { id: current.id, dates: targets.length };
+    return { id: current.id, dates: changed };
   });
 
 const scoped = z.object({ id: z.string(), scope: seriesScopeSchema });

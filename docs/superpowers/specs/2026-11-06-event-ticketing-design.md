@@ -60,7 +60,8 @@ Two tables in `packages/db/src/schema/events.ts`, added by a new migration.
 | `slug` | Unique among live rows; the page is `/events/{slug}/`. |
 | `location_id` | Optional FK to `locations` (set null on delete). |
 | `venue` | Free text; defaults in the form to the location's address. |
-| `starts_at`, `ends_at` | Timestamps. Shown in the site time zone (Settings). |
+| `time_zone` | The event's zone: set from its location's state (WA is Perth), changeable. Its times are entered and shown in it. |
+| `starts_at`, `ends_at` | Timestamps. |
 | `summary` | A sentence for the list and the email. |
 | `description` | Rich text (Tiptap JSON), like a post's body. |
 | `hero_media_id` | Optional FK to `media`. |
@@ -198,3 +199,12 @@ synced to it (section 7). (Decided 2026-11-06, replacing CMS-sent emails.)
 - The form: a date range (one day, or several for a multi-day event) with start
   and end times. A new event is added in three steps (Details, Date & time,
   Places); a saved one is edited on one page.
+- **Time zone per event**: each state keeps its own time, so an event takes its
+  location's state zone (QLD Brisbane, WA Perth, NT Darwin, SA Adelaide, TAS
+  Hobart, NSW and ACT Sydney, VIC Melbourne), and staff can change it. Changing
+  the zone keeps the clock times. HubSpot gets `ll_event_time_zone` with the
+  start so emails can show local time.
+- **Several times a day**: a new event can have more times ("Also at 2:00 pm").
+  Every date at every time becomes its own event; same-day sessions get the time
+  in their address (`{slug}-{date}-{hhmm}`). "This and upcoming" moves only the
+  sessions at the edited session's old time.

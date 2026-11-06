@@ -24,7 +24,6 @@ import {
 } from '@/components/ui/select';
 import { Reveal } from '@/components/reveal';
 import { cn } from '@/lib/utils';
-import { useTimeZone } from '@/lib/use-time-zone';
 import { type EventTimes, dayLabel } from './event-dates-field';
 
 export type RepeatValue = {
@@ -79,15 +78,17 @@ export function seriesDates(first: EventTimes, value: RepeatValue, zone: string)
 
 /** Repeats for a new event: the pattern, when it ends, and which dates to leave out. */
 export function RepeatField({
+  zone,
   first,
   value,
   onChange,
 }: {
+  /** The event's time zone. */
+  zone: string;
   first: EventTimes | null;
   value: RepeatValue;
   onChange: (value: RepeatValue) => void;
 }) {
-  const zone = useTimeZone();
   const [untilOpen, setUntilOpen] = useState(false);
   const patch = (next: Partial<RepeatValue>) => onChange({ ...value, ...next });
 

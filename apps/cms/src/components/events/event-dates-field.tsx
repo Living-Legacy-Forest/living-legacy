@@ -1,16 +1,42 @@
 import { type CalendarDate, toZoned } from '@ll/content';
 import { useState } from 'react';
 import { type DateRange } from 'react-day-picker';
-import { CalendarClockIcon } from '@/components/icons';
+import { CalendarClockIcon, PlusIcon, XIcon } from '@/components/icons';
 import { Button } from '@/components/ui/button';
 import { Calendar } from '@/components/ui/calendar';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { displayTime, fromZoned, parseTime } from '@/lib/format';
-import { useTimeZone } from '@/lib/use-time-zone';
 
 export type EventTimes = { startsAt: number; endsAt: number };
+
+/** Another time on the same day, as typed: "2:00 pm" to "4:00 pm". */
+export type SessionTime = { start: string; end: string };
+
+const clock = (text: string) => {
+  const t = parseTime(text);
+  if (!t) return null;
+  const [hour = 0, minute = 0] = t.split(':').map(Number);
+  return { hour, minute };
+};
+
+/** An extra session's times on the first date, or null if its times don't read or run backwards. */
+export function sessionTimes(
+  firstStartsAt: number,
+  session: SessionTime,
+  zone: string
+): EventTimes | null {
+  const start = clock(session.start);
+  const end = clock(session.end);
+  if (!start || !end) return null;
+  const day = toZoned(firstStartsAt, zone);
+  const times = {
+    startsAt: fromZoned({ ...day, ...start }, zone),
+    endsAt: fromZoned({ ...day, ...end }, zone),
+  };
+  return times.endsAt > times.startsAt ? times : null;
+}
 
 const asDate = (d: CalendarDate) => new Date(d.year, d.month, d.day);
 const asCalendar = (d: Date): CalendarDate => ({
@@ -41,14 +67,21 @@ export function dayLabel(from: CalendarDate, to?: CalendarDate | null) {
  */
 export function EventDatesField({
   id,
+  zone,
   value,
   onChange,
+  sessions,
+  onSessionsChange,
 }: {
   id: string;
+  /** The event's time zone. */
+  zone: string;
   value: { startsAt: number | null; endsAt: number | null };
   onChange: (times: EventTimes) => void;
+  /** Extra times on each date, for a new event; each becomes its own event. */
+  sessions?: SessionTime[];
+  onSessionsChange?: (sessions: SessionTime[]) => void;
 }) {
-  const zone = useTimeZone();
   const start = value.startsAt === null ? null : toZoned(value.startsAt, zone);
   const end = value.endsAt === null ? null : toZoned(value.endsAt, zone);
   const [range, setRange] = useState<{ from: CalendarDate; to: CalendarDate } | null>(
@@ -90,66 +123,123 @@ export function EventDatesField({
     report(range, which === 'start' ? shown : startText, which === 'end' ? shown : endText);
   }
 
+  const setSession = (i: number, next: Partial<SessionTime>) =>
+    onSessionsChange?.((sessions ?? []).map((x, k) => (k === i ? { ...x, ...next } : x)));
+  /** Tidies a typed session time, or leaves it for the save check to flag. */
+  const tidy = (text: string) => {
+    const parsed = parseTime(text);
+    return parsed ? displayTime(parsed) : text;
+  };
+
   return (
-    <div className="grid gap-3 sm:grid-cols-[1fr_7.5rem_7.5rem]">
-      <div className="space-y-1.5">
-        <Label htmlFor={id}>Date</Label>
-        <Popover open={open} onOpenChange={setOpen}>
-          <PopoverTrigger
-            render={
-              <Button
-                id={id}
-                type="button"
-                variant="outline"
-                className="w-full justify-start px-2.5 font-normal"
+    <div className="space-y-3">
+      <div className="grid gap-3 sm:grid-cols-[1fr_7.5rem_7.5rem]">
+        <div className="space-y-1.5">
+          <Label htmlFor={id}>Date</Label>
+          <Popover open={open} onOpenChange={setOpen}>
+            <PopoverTrigger
+              render={
+                <Button
+                  id={id}
+                  type="button"
+                  variant="outline"
+                  className="w-full justify-start px-2.5 font-normal"
+                />
+              }
+            >
+              <CalendarClockIcon aria-hidden data-icon="inline-start" />
+              <span className="truncate">
+                {range ? dayLabel(range.from, range.to) : 'Pick a date'}
+              </span>
+            </PopoverTrigger>
+            <PopoverContent align="start" className="w-[20rem] p-0">
+              {/* The calendar fills the popover, so the hint below wraps under it. */}
+              <Calendar
+                className="w-full px-3"
+                classNames={{ root: 'w-full' }}
+                mode="range"
+                weekStartsOn={1}
+                selected={range ? { from: asDate(range.from), to: asDate(range.to) } : undefined}
+                defaultMonth={range ? asDate(range.from) : undefined}
+                onSelect={pickRange}
+                min={0}
               />
-            }
-          >
-            <CalendarClockIcon aria-hidden data-icon="inline-start" />
-            <span className="truncate">
-              {range ? dayLabel(range.from, range.to) : 'Pick a date'}
-            </span>
-          </PopoverTrigger>
-          <PopoverContent align="start" className="w-[20rem] p-0">
-            {/* The calendar fills the popover, so the hint below wraps under it. */}
-            <Calendar
-              className="w-full px-3"
-              classNames={{ root: 'w-full' }}
-              mode="range"
-              weekStartsOn={1}
-              selected={range ? { from: asDate(range.from), to: asDate(range.to) } : undefined}
-              defaultMonth={range ? asDate(range.from) : undefined}
-              onSelect={pickRange}
-              min={0}
-            />
-            <p className="text-muted-foreground border-t px-3 py-2 text-xs">
-              Pick one day, or a second day for an event over two or more days.
-            </p>
-          </PopoverContent>
-        </Popover>
+              <p className="text-muted-foreground border-t px-3 py-2 text-xs">
+                Pick one day, or a second day for an event over two or more days.
+              </p>
+            </PopoverContent>
+          </Popover>
+        </div>
+        <div className="space-y-1.5">
+          <Label htmlFor={`${id}-start`}>Starts</Label>
+          <Input
+            id={`${id}-start`}
+            value={startText}
+            onChange={(e) => setStartText(e.target.value)}
+            onBlur={(e) => settle(e.target.value, setStartText, 'start')}
+            placeholder="10:00 am"
+            inputMode="text"
+          />
+        </div>
+        <div className="space-y-1.5">
+          <Label htmlFor={`${id}-end`}>Ends</Label>
+          <Input
+            id={`${id}-end`}
+            value={endText}
+            onChange={(e) => setEndText(e.target.value)}
+            onBlur={(e) => settle(e.target.value, setEndText, 'end')}
+            placeholder="12:00 pm"
+            inputMode="text"
+          />
+        </div>
       </div>
-      <div className="space-y-1.5">
-        <Label htmlFor={`${id}-start`}>Starts</Label>
-        <Input
-          id={`${id}-start`}
-          value={startText}
-          onChange={(e) => setStartText(e.target.value)}
-          onBlur={(e) => settle(e.target.value, setStartText, 'start')}
-          placeholder="10:00 am"
-          inputMode="text"
-        />
-      </div>
-      <div className="space-y-1.5">
-        <Label htmlFor={`${id}-end`}>Ends</Label>
-        <Input
-          id={`${id}-end`}
-          value={endText}
-          onChange={(e) => setEndText(e.target.value)}
-          onBlur={(e) => settle(e.target.value, setEndText, 'end')}
-          placeholder="12:00 pm"
-          inputMode="text"
-        />
-      </div>
+
+      {(sessions ?? []).map((session, i) => (
+        <div
+          key={i}
+          className="animate-in fade-in slide-in-from-top-1 grid items-center gap-3 duration-200 motion-reduce:animate-none sm:grid-cols-[1fr_7.5rem_7.5rem]"
+        >
+          <div className="flex items-center justify-between gap-2 sm:justify-end">
+            <span className="text-muted-foreground text-sm">Also at</span>
+            <Button
+              type="button"
+              variant="ghost"
+              size="icon-sm"
+              aria-label={`Remove time ${i + 2}`}
+              onClick={() => onSessionsChange?.((sessions ?? []).filter((_, k) => k !== i))}
+            >
+              <XIcon aria-hidden />
+            </Button>
+          </div>
+          <Input
+            aria-label={`Time ${i + 2} starts`}
+            value={session.start}
+            onChange={(e) => setSession(i, { start: e.target.value })}
+            onBlur={(e) => setSession(i, { start: tidy(e.target.value) })}
+            placeholder="2:00 pm"
+          />
+          <Input
+            aria-label={`Time ${i + 2} ends`}
+            value={session.end}
+            onChange={(e) => setSession(i, { end: e.target.value })}
+            onBlur={(e) => setSession(i, { end: tidy(e.target.value) })}
+            placeholder="4:00 pm"
+          />
+        </div>
+      ))}
+
+      {onSessionsChange && (
+        <Button
+          type="button"
+          variant="ghost"
+          size="sm"
+          className="text-muted-foreground -ml-2"
+          onClick={() => onSessionsChange([...(sessions ?? []), { start: '', end: '' }])}
+        >
+          <PlusIcon aria-hidden data-icon="inline-start" />
+          Add another time
+        </Button>
+      )}
     </div>
   );
 }

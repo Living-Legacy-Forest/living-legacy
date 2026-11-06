@@ -1,7 +1,7 @@
 {
   "version": "6",
   "dialect": "sqlite",
-  "id": "ec5dd8a1-3de2-42bf-8339-dc390c6266ff",
+  "id": "12f1618d-79ab-456d-9d54-15d3dc6fb69e",
   "prevId": "1c9f36a9-82ed-4148-817b-4d19d741c002",
   "tables": {
     "account": {
@@ -2588,6 +2588,14 @@
           "primaryKey": false,
           "notNull": false,
           "autoincrement": false
+        },
+        "time_zone": {
+          "name": "time_zone",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false,
+          "default": "'Australia/Melbourne'"
         },
         "starts_at": {
           "name": "starts_at",

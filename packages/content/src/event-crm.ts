@@ -20,6 +20,8 @@ export type CrmBooking = {
     venue: string;
     locationName: string;
     status: 'draft' | 'published' | 'cancelled';
+    /** So workflows can show the start in local time, e.g. "Australia/Perth". */
+    timeZone: string;
   };
 };
 
@@ -34,6 +36,7 @@ export const eventBookingStatuses = [
 export const HUBSPOT_EVENT_PROPERTIES = [
   { name: 'll_event_name', label: 'Event: name', type: 'string', fieldType: 'text' },
   { name: 'll_event_start', label: 'Event: starts', type: 'datetime', fieldType: 'date' },
+  { name: 'll_event_time_zone', label: 'Event: time zone', type: 'string', fieldType: 'text' },
   { name: 'll_event_venue', label: 'Event: venue', type: 'string', fieldType: 'text' },
   { name: 'll_event_location', label: 'Event: location', type: 'string', fieldType: 'text' },
   { name: 'll_event_party_size', label: 'Event: people', type: 'number', fieldType: 'number' },
@@ -67,6 +70,7 @@ export function hubspotBookingProperties(b: CrmBooking): Record<string, string> 
     ll_event_name: b.event.title,
     // HubSpot takes datetimes as epoch milliseconds.
     ll_event_start: String(b.event.startsAt),
+    ll_event_time_zone: b.event.timeZone,
     ll_event_venue: b.event.venue,
     ll_event_location: b.event.locationName,
     ll_event_party_size: String(b.partySize),

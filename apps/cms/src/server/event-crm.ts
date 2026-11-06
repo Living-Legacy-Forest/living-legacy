@@ -71,6 +71,7 @@ async function pendingBookings(db: Db) {
       venue: e.venue || address || '',
       locationName: locationName ?? '',
       status: e.status,
+      timeZone: e.timeZone,
     },
   }));
 }

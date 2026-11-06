@@ -62,6 +62,37 @@ export function useMediaItem(id: string | null) {
   return { item, missing, update };
 }
 
+/** Several images at once: one request, rather than one for each. */
+export function useMediaItems(ids: string[]) {
+  const [, refresh] = useState(0);
+  const key = ids.join();
+  const [loadedKey, setLoadedKey] = useState<string | null>(null);
+
+  useEffect(() => {
+    const unknown = ids.filter((id) => !known.has(id));
+    if (unknown.length === 0) return setLoadedKey(key);
+    let current = true;
+    getMediaItems({ data: { ids: unknown } })
+      .then((found) => found.forEach(remember))
+      .catch(() => {})
+      .finally(() => current && setLoadedKey(key));
+    return () => {
+      current = false;
+    };
+    // `key` is `ids`, by value.
+  }, [key]);
+
+  return {
+    item: (id: string) => known.get(id) ?? null,
+    /** Asked for and not there, rather than still on its way. */
+    missing: (id: string) => loadedKey === key && !known.has(id),
+    update: (next: MediaItem) => {
+      remember(next);
+      refresh((n) => n + 1);
+    },
+  };
+}
+
 export function ImageField({
   id,
   label,
@@ -172,7 +203,7 @@ export function ImageField({
   );
 }
 
-function AltText({
+export function AltText({
   id,
   item,
   onSaved,
@@ -241,33 +272,46 @@ export function MediaPicker({
   onOpenChange,
   selectedId,
   aspect,
+  hiddenIds,
   onSelect,
+  onSelectMany,
 }: {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   selectedId: string | null;
   /** Uploads made here are cropped to it; blank lets the editor choose. */
   aspect?: number;
-  onSelect: (item: MediaItem) => void;
+  /** Images not to offer, such as those a gallery already has. */
+  hiddenIds?: string[];
+  onSelect?: (item: MediaItem) => void;
+  /** Lets several be chosen, in the order they were clicked. */
+  onSelectMany?: (items: MediaItem[]) => void;
 }) {
+  const many = onSelectMany !== undefined;
   const [items, setItems] = useState<MediaItem[] | null>(null);
   const [query, setQuery] = useState('');
-  const [chosen, setChosen] = useState<string | null>(selectedId);
+  const [chosen, setChosen] = useState<string[]>(selectedId ? [selectedId] : []);
+  const choose = (id: string) =>
+    setChosen((list) => {
+      if (!many) return [id];
+      return list.includes(id) ? list.filter((other) => other !== id) : [...list, id];
+    });
   const upload = useImageUpload({
     aspect,
     onUploaded: (item) => {
       remember(item);
       setItems((list) => [item, ...(list ?? [])]);
-      setChosen(item.id);
+      setChosen((list) => (many ? [...list, item.id] : [item.id]));
       setQuery('');
     },
   });
-  const chooser = useFileChooser((files) => upload.start(files[0]!));
-  const { over, dropProps } = useImageDrop((files) => upload.start(files[0]!), upload.uploading);
+  const take = (files: File[]) => (many ? upload.startAll(files) : upload.start(files[0]!));
+  const chooser = useFileChooser(take, many);
+  const { over, dropProps } = useImageDrop(take, upload.uploading);
 
   useEffect(() => {
     if (!open) return;
-    setChosen(selectedId);
+    setChosen(selectedId ? [selectedId] : []);
     setQuery('');
     let current = true;
     listMedia()
@@ -282,17 +326,30 @@ export function MediaPicker({
     };
   }, [open, selectedId]);
 
-  const visible = (items ?? []).filter((m) => matchesSearch(query, [m.filename, m.alt, m.caption]));
-  const picked = items?.find((m) => m.id === chosen) ?? null;
+  const visible = (items ?? []).filter(
+    (m) =>
+      // The library also holds documents, which cannot be used as an image.
+      m.mime.startsWith('image/') &&
+      !hiddenIds?.includes(m.id) &&
+      matchesSearch(query, [m.filename, m.alt, m.caption])
+  );
+  const picked = chosen.flatMap((id) => items?.find((m) => m.id === id) ?? []);
+  const summary = many
+    ? picked.length === 0
+      ? 'No images selected'
+      : `${picked.length} selected`
+    : (picked[0]?.filename ?? 'No image selected');
 
   return (
     <>
       <Dialog open={open} onOpenChange={onOpenChange}>
         <DialogContent className="flex flex-col sm:max-w-3xl md:max-h-[85vh]">
           <DialogHeader>
-            <DialogTitle>Choose an image</DialogTitle>
+            <DialogTitle>{many ? 'Choose images' : 'Choose an image'}</DialogTitle>
             <DialogDescription>
-              Pick one from Media, or upload a new one. You can drop images here too.
+              {many
+                ? 'Pick as many as you need from Media, or upload new ones. You can drop images here too.'
+                : 'Pick one from Media, or upload a new one. You can drop images here too.'}
             </DialogDescription>
           </DialogHeader>
 
@@ -338,6 +395,7 @@ export function MediaPicker({
               <div
                 role="listbox"
                 aria-label="Images"
+                aria-multiselectable={many || undefined}
                 className="grid grid-cols-3 gap-2 sm:grid-cols-4 md:grid-cols-5"
               >
                 {visible.map((m) => (
@@ -345,12 +403,12 @@ export function MediaPicker({
                     key={m.id}
                     type="button"
                     role="option"
-                    aria-selected={m.id === chosen}
-                    onClick={() => setChosen(m.id)}
-                    onDoubleClick={() => onSelect(m)}
+                    aria-selected={chosen.includes(m.id)}
+                    onClick={() => choose(m.id)}
+                    onDoubleClick={() => onSelect?.(m)}
                     className={cn(
                       'focus-visible:ring-ring relative aspect-square overflow-hidden rounded-md border outline-none focus-visible:ring-2',
-                      m.id === chosen && 'ring-foreground ring-2 ring-offset-1'
+                      chosen.includes(m.id) && 'ring-foreground ring-2 ring-offset-1'
                     )}
                   >
                     <img
@@ -366,13 +424,15 @@ export function MediaPicker({
           </div>
 
           <DialogFooter className="items-center gap-2 sm:justify-between">
-            <p className="text-muted-foreground min-w-0 truncate text-xs">
-              {picked ? picked.filename : 'No image selected'}
-            </p>
+            <p className="text-muted-foreground min-w-0 truncate text-xs">{summary}</p>
             <div className="flex gap-2">
               <DialogClose render={<Button type="button" variant="outline" />}>Cancel</DialogClose>
-              <Button type="button" disabled={!picked} onClick={() => picked && onSelect(picked)}>
-                Use image
+              <Button
+                type="button"
+                disabled={picked.length === 0}
+                onClick={() => (many ? onSelectMany(picked) : picked[0] && onSelect?.(picked[0]))}
+              >
+                {many ? 'Add images' : 'Use image'}
               </Button>
             </div>
           </DialogFooter>

@@ -126,6 +126,7 @@ export function ImageDropZone({
           type="button"
           size="sm"
           variant="outline"
+          className="touch:min-h-11"
           disabled={busy}
           onClick={chooser.open}
         >

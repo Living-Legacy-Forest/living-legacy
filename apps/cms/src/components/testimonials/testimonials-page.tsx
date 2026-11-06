@@ -611,7 +611,7 @@ function TestimonialForm({
           id="t-location"
           value={location}
           onChange={(e) => setLocation(e.target.value)}
-          placeholder="Melbourne"
+          placeholder="City or town"
         />
       </div>
       <ImageField

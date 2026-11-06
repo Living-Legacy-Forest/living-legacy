@@ -28,7 +28,13 @@ export const events = sqliteTable(
     summary: text('summary'),
     /** Rich text (Tiptap JSON), like a post's body. */
     description: richText('description'),
+    /** The cover, the first of its photos. */
     heroMediaId: text('hero_media_id').references(() => media.id, { onDelete: 'set null' }),
+    /** The rest of its photos, in order. Media's "still used" check guards them. */
+    galleryMediaIds: text('gallery_media_ids', { mode: 'json' })
+      .$type<string[]>()
+      .notNull()
+      .default([]),
     /** Total people; null is no limit. */
     capacity: integer('capacity'),
     maxPartySize: integer('max_party_size').notNull().default(6),

@@ -254,6 +254,22 @@ export function useImageUpload<T = MediaItem>({
     else send(picked).catch((error) => notify.error('Could not upload', error));
   };
 
+  /** One goes through the crop as usual; a crop for each of many would be a chore. */
+  const startAll = async (picked: File[]) => {
+    if (picked.length === 1) return start(picked[0]!);
+    setUploading(true);
+    try {
+      for (const one of picked) {
+        // One that fails should not stop the rest.
+        await upload(one)
+          .then(onUploaded)
+          .catch((error) => notify.error(`Could not upload ${one.name}`, error));
+      }
+    } finally {
+      setUploading(false);
+    }
+  };
+
   const dialog = (
     <ImageCropDialog
       file={file}
@@ -266,5 +282,5 @@ export function useImageUpload<T = MediaItem>({
     />
   );
 
-  return { start, uploading, dialog };
+  return { start, startAll, uploading, dialog };
 }

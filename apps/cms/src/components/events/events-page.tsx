@@ -1,3 +1,4 @@
+import { groupEventDates } from '@ll/content';
 import { useState } from 'react';
 import { CalendarClockIcon, PlusIcon } from '@/components/icons';
 import {
@@ -32,12 +33,12 @@ import {
   EmptyTitle,
 } from '@/components/ui/empty';
 import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
-import { formatDateTime, zoneName } from '@/lib/format';
 import { removedNotice } from '@/lib/notify';
 import { useAction } from '@/lib/use-action';
-import { type EventRow, type EventsData, type LocationOption, deleteEvent } from '@/server/events';
+import { type EventRow, type EventsData, type LocationOption, deleteEvents } from '@/server/events';
 import { EventForm, type FormActions } from './event-form';
 import { EventGuests } from './event-guests';
+import { SeriesDatePicker, dateStatus, startsIn } from './series-date-picker';
 
 const NOUN: [string, string] = ['event', 'events'];
 
@@ -65,15 +66,22 @@ export function EventsPage({ data }: { data: EventsData }) {
   const [query, setQuery] = useState('');
   const [filter, setFilter] = useState<Filter>('upcoming');
   const [toDelete, setToDelete] = useState<string[] | null>(null);
-  const selection = useSelection(data.events.map((e) => e.id));
   const { run, pending } = useAction();
 
   const now = Date.now();
-  // Coming up reads soonest first; looking back reads latest first.
-  const visible = data.events
-    .filter((e) => inFilter(e, filter, now))
-    .filter((e) => matchesSearch(query, [e.title, e.locationName, e.venue]))
-    .sort((a, b) => (filter === 'upcoming' ? a.startsAt - b.startsAt : b.startsAt - a.startsAt));
+  // One row for each event, however many dates it repeats on. Coming up reads
+  // soonest first; looking back reads latest first.
+  const visible = groupEventDates(
+    data.events
+      .filter((e) => inFilter(e, filter, now))
+      .filter((e) => matchesSearch(query, [e.title, e.locationName, e.venue])),
+    now
+  ).sort((a, b) =>
+    filter === 'upcoming' ? a.lead.startsAt - b.lead.startsAt : b.lead.startsAt - a.lead.startsAt
+  );
+  // Only what is shown: a row ticks the dates it stands for under this filter.
+  const selection = useSelection(visible.map((row) => row.key));
+  const idsOf = (rows: typeof visible) => rows.flatMap((row) => row.dates.map((d) => d.id));
 
   const editing = (target: Target | null) =>
     target?.kind === 'edit' ? (data.events.find((e) => e.id === target.id) ?? null) : null;
@@ -81,30 +89,40 @@ export function EventsPage({ data }: { data: EventsData }) {
   const pane = view.pane?.kind === 'edit' && !editing(view.pane) ? null : view.pane;
 
   async function remove(ids: string[]) {
-    const result = await run(
-      async () => {
-        for (const id of ids) await deleteEvent({ data: { id, scope: 'one' } });
-        return ids.length;
-      },
-      { success: (n) => removedNotice(n, NOUN), error: 'Could not remove' }
-    );
+    const result = await run(async () => (await deleteEvents({ data: { ids } })).dates, {
+      success: (n) => removedNotice(n, NOUN),
+      error: 'Could not remove',
+    });
     if (result === undefined) return;
     if (view.pane?.kind === 'edit' && ids.includes(view.pane.id)) view.closePane();
     selection.clear();
   }
 
-  const form = (target: Target, onDone: (id: string | null) => void, actions: FormActions) => (
-    <EventPanel
-      key={target.kind === 'edit' ? target.id : 'new'}
-      event={editing(target)}
-      locations={data.locations}
-      onSaved={onDone}
-      actions={actions}
-    />
-  );
+  const form = (target: Target, onDone: (id: string | null) => void, actions: FormActions) => {
+    const event = editing(target);
+    return (
+      <EventPanel
+        // The dates of an event share a panel, so its open tab stays when moving between them.
+        key={event ? (event.seriesId ?? event.id) : 'new'}
+        event={event}
+        dates={
+          event?.seriesId
+            ? data.events
+                .filter((e) => e.seriesId === event.seriesId)
+                .sort((a, b) => a.startsAt - b.startsAt)
+            : []
+        }
+        onPickDate={(id) => view.open({ kind: 'edit', id })}
+        locations={data.locations}
+        onSaved={onDone}
+        actions={actions}
+      />
+    );
+  };
+  const paneEvent = pane ? editing(pane) : null;
 
   const newButton = (
-    <Button size="sm" onClick={() => view.open({ kind: 'new' })}>
+    <Button size="sm" className="touch:min-h-11" onClick={() => view.open({ kind: 'new' })}>
       <PlusIcon aria-hidden data-icon="inline-start" />
       New event
     </Button>
@@ -117,12 +135,15 @@ export function EventsPage({ data }: { data: EventsData }) {
           Events
         </h1>
         {data.events.length > 0 && (
-          <SearchInput
-            label="Search events"
-            placeholder="Search events"
-            value={query}
-            onChange={setQuery}
-          />
+          // Under the title and New event on phones, beside them from sm.
+          <div className="order-last w-full sm:order-none sm:w-auto">
+            <SearchInput
+              label="Search events"
+              placeholder="Search events"
+              value={query}
+              onChange={setQuery}
+            />
+          </div>
         )}
         {newButton}
       </div>
@@ -142,7 +163,7 @@ export function EventsPage({ data }: { data: EventsData }) {
         </Empty>
       ) : (
         // The form is long, so the list stays narrow and the pane takes the rest.
-        <ListPageLayout className="lg:grid-cols-[minmax(18rem,22rem)_minmax(0,1fr)]">
+        <ListPageLayout className="lg:grid-cols-[minmax(22rem,30rem)_minmax(0,1fr)]">
           <ListColumn
             label="Events"
             header={
@@ -151,23 +172,33 @@ export function EventsPage({ data }: { data: EventsData }) {
                   variant="outline"
                   size="sm"
                   value={[filter]}
-                  onValueChange={(value) => value[0] && setFilter(value[0] as Filter)}
+                  onValueChange={(value) => {
+                    if (!value[0]) return;
+                    setFilter(value[0] as Filter);
+                    selection.clear();
+                  }}
                   aria-label="Show events"
-                  className="px-3 pt-2.5"
+                  className="touch:w-full px-3 pt-2.5"
                 >
                   {filters.map((f) => (
-                    <ToggleGroupItem key={f.value} value={f.value} className="text-xs">
+                    <ToggleGroupItem
+                      key={f.value}
+                      value={f.value}
+                      className="touch:min-h-11 touch:flex-1 text-xs"
+                    >
                       {f.label}
                     </ToggleGroupItem>
                   ))}
                 </ToggleGroup>
                 <SelectionBar
                   selection={selection}
-                  visibleIds={visible.map((e) => e.id)}
+                  visibleIds={visible.map((row) => row.key)}
                   title={filters.find((f) => f.value === filter)!.label}
                   total={visible.length}
                   pending={pending}
-                  onDelete={() => setToDelete(selection.checkedIds)}
+                  onDelete={() =>
+                    setToDelete(idsOf(visible.filter((row) => selection.isChecked(row.key))))
+                  }
                 />
               </div>
             }
@@ -186,21 +217,21 @@ export function EventsPage({ data }: { data: EventsData }) {
               )
             ) : (
               <ListRows>
-                {visible.map((e) => (
+                {visible.map((row) => (
                   <ListRow
-                    key={e.id}
-                    current={pane?.kind === 'edit' && pane.id === e.id}
+                    key={row.key}
+                    current={paneEvent !== null && (paneEvent.seriesId ?? paneEvent.id) === row.key}
                     align="start"
                     select={{
-                      label: `Select ${e.title}`,
-                      checked: selection.isChecked(e.id),
+                      label: `Select ${row.lead.title}`,
+                      checked: selection.isChecked(row.key),
                       selecting: selection.selecting,
-                      onToggle: () => selection.toggle(e.id),
+                      onToggle: () => selection.toggle(row.key),
                     }}
-                    swipe={{ label: 'Delete', onAction: () => setToDelete([e.id]) }}
-                    onOpen={() => view.open({ kind: 'edit', id: e.id })}
+                    swipe={{ label: 'Delete', onAction: () => setToDelete(idsOf([row])) }}
+                    onOpen={() => view.open({ kind: 'edit', id: row.lead.id })}
                   >
-                    <EventSummary event={e} />
+                    <EventSummary row={row} />
                   </ListRow>
                 ))}
               </ListRows>
@@ -247,37 +278,53 @@ export function EventsPage({ data }: { data: EventsData }) {
         title={
           view.dialog?.kind === 'edit' ? (editing(view.dialog)?.title ?? 'Event') : 'New event'
         }
-        description="An open day or information session, and who is coming."
+        // A saved event's sheet needs the room more than the explanation.
+        description={
+          view.dialog?.kind === 'new' ? 'An open day or information session.' : undefined
+        }
       >
         {view.dialog &&
           form(view.dialog, view.closeDialog, (submit, start) => (
-            <DialogActions start={start}>{submit}</DialogActions>
+            <DialogActions compact start={start}>
+              {submit}
+            </DialogActions>
           ))}
       </ListDialog>
     </div>
   );
 }
 
-function EventSummary({ event: e }: { event: EventRow }) {
+/** The same for several dates. Capacities are per date, so only people add up. */
+function rowStatus(dates: EventRow[]) {
+  if (dates.length === 1) return dateStatus(dates[0]!);
+  const published = dates.filter((d) => d.status === 'published');
+  if (published.length > 0) return `${published.reduce((n, d) => n + d.booked, 0)} booked`;
+  return dates.some((d) => d.status === 'draft') ? 'Draft' : 'Cancelled';
+}
+
+function EventSummary({ row }: { row: ReturnType<typeof groupEventDates<EventRow>>[number] }) {
+  const { lead, dates, upcoming } = row;
+  const when =
+    dates.length > 1
+      ? `${dates.length} dates · ${upcoming ? 'Next' : 'Last'} ${startsIn(lead)}`
+      : `${lead.seriesId ? 'Repeats · ' : ''}${startsIn(lead)}`;
   return (
     <>
       <span className="flex items-center gap-2">
-        <span className="text-ui min-w-0 flex-1 truncate font-medium">{e.title}</span>
-        {e.status === 'published' ? (
-          <Badge variant="outline" className="shrink-0 tabular-nums">
-            {e.booked} / {e.capacity ?? '∞'} booked
-          </Badge>
-        ) : (
-          <Badge variant="outline" className="shrink-0">
-            {e.status === 'draft' ? 'Draft' : 'Cancelled'}
-          </Badge>
-        )}
+        <span className="text-ui min-w-0 flex-1 truncate font-medium">{lead.title}</span>
+        <Badge variant="outline" className="shrink-0 tabular-nums">
+          {rowStatus(dates)}
+        </Badge>
       </span>
       <span className="text-muted-foreground mt-0.5 block truncate text-xs">
-        {e.seriesId && 'Repeats · '}
-        {/* Its own zone: events in another state show their local time. */}
-        {formatDateTime(e.startsAt, e.timeZone)} {zoneName(e.timeZone, e.startsAt)}
-        {e.locationName ? ` · ${e.locationName}` : ''}
+        {when}
+        {/* On its own line on phones, where it would otherwise be cut off. */}
+        {lead.locationName && (
+          <span className="block truncate lg:inline">
+            <span className="hidden lg:inline"> · </span>
+            {lead.locationName}
+          </span>
+        )}
       </span>
     </>
   );
@@ -286,38 +333,51 @@ function EventSummary({ event: e }: { event: EventRow }) {
 /** A saved event's details, or who is coming; a new event has details only. */
 function EventPanel({
   event,
+  dates,
+  onPickDate,
   locations,
   onSaved,
   actions,
 }: {
   event: EventRow | null;
+  /** All the dates of its series, soonest first; empty if it does not repeat. */
+  dates: EventRow[];
+  onPickDate: (id: string) => void;
   locations: LocationOption[];
   onSaved: (id: string | null) => void;
   actions: FormActions;
 }) {
   const [view, setView] = useState<'details' | 'guests'>('details');
   const details = (
-    <EventForm event={event} locations={locations} onSaved={onSaved} actions={actions} />
+    <EventForm
+      key={event?.id ?? 'new'}
+      event={event}
+      locations={locations}
+      onSaved={onSaved}
+      actions={actions}
+    />
   );
   if (!event) return details;
   return (
     <div className="space-y-5">
+      {dates.length > 1 && <SeriesDatePicker event={event} dates={dates} onPick={onPickDate} />}
       <ToggleGroup
         variant="outline"
         size="sm"
         value={[view]}
         onValueChange={(value) => value[0] && setView(value[0] as typeof view)}
         aria-label="Show"
+        className="touch:w-full"
       >
-        <ToggleGroupItem value="details" className="text-xs">
+        <ToggleGroupItem value="details" className="touch:min-h-11 touch:flex-1 text-xs">
           Details
         </ToggleGroupItem>
-        <ToggleGroupItem value="guests" className="text-xs">
+        <ToggleGroupItem value="guests" className="touch:min-h-11 touch:flex-1 text-xs">
           Guests
         </ToggleGroupItem>
       </ToggleGroup>
       <div key={view} className="animate-in fade-in duration-200 motion-reduce:animate-none">
-        {view === 'details' ? details : <EventGuests event={event} />}
+        {view === 'details' ? details : <EventGuests key={event.id} event={event} />}
       </div>
     </div>
   );

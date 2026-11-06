@@ -1,4 +1,5 @@
 import {
+  events,
   faqs,
   locations,
   media,
@@ -105,6 +106,12 @@ const usageSources = [
     label: locations.name,
     text: [locations.heroMediaId, locations.draft],
   },
+  {
+    kind: 'event',
+    table: events,
+    label: events.title,
+    text: [events.heroMediaId, events.galleryMediaIds, events.description],
+  },
 ] satisfies { kind: string; table: SQLiteTable; label: SQLiteColumn; text: SQLiteColumn[] }[];
 
 /** Where each of `ids` is still used, as "post “Title”" labels. */
@@ -137,7 +144,8 @@ export const deleteMedia = createServerFn({ method: 'POST' })
     const usage = await findUsage(db, data.ids);
     if (usage.length) {
       const inUse = data.ids.filter((id) => usage.some((u) => u.haystack.includes(id)));
-      const places = usage.map((u) => u.name);
+      // Each date of a repeating event is its own row, under the one name.
+      const places = [...new Set(usage.map((u) => u.name))];
       const where =
         places.length > 3
           ? `${places.slice(0, 3).join(', ')} and ${places.length - 3} more`

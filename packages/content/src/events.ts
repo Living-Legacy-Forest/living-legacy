@@ -1,5 +1,6 @@
 import { z } from 'zod';
 import type { AustralianState } from './locations';
+import { auPhone } from './phone';
 import { richTextSchema } from './posts';
 import { type TimeZone, timeZones } from './settings';
 
@@ -18,6 +19,43 @@ export const DEFAULT_MAX_PARTY_SIZE = 6;
 export const STAFF_MAX_PARTY_SIZE = 50;
 /** Bookings are personal details; they go this long after the event ends. */
 export const BOOKING_RETENTION_DAYS = 365;
+/** Photos on one event, its cover included. */
+export const EVENT_PHOTO_LIMIT = 20;
+
+/**
+ * Events as staff think of them: the dates of a repeating event together, an
+ * event that does not repeat on its own. `lead` is the date that stands for the
+ * group: the next one still to come, or the latest once all have passed.
+ */
+export function groupEventDates<
+  T extends { id: string; seriesId: string | null; startsAt: number; endsAt: number },
+>(events: T[], now: number) {
+  const groups = new Map<string, T[]>();
+  for (const event of events) {
+    const key = event.seriesId ?? event.id;
+    groups.set(key, [...(groups.get(key) ?? []), event]);
+  }
+  return [...groups].map(([key, list]) => {
+    const dates = [...list].sort((a, b) => a.startsAt - b.startsAt);
+    const next = dates.find((d) => d.endsAt >= now);
+    return { key, dates, lead: next ?? dates[dates.length - 1]!, upcoming: next !== undefined };
+  });
+}
+
+/**
+ * The fields `was` has that hold something else in `next`. Lists and rich text
+ * are compared by value: a new object with the same contents is not a change.
+ */
+export function changedFields<T extends Record<string, unknown>>(
+  was: Record<string, unknown>,
+  next: T
+): Partial<T> {
+  return Object.fromEntries(
+    Object.entries(next).filter(
+      ([key, value]) => key in was && JSON.stringify(was[key]) !== JSON.stringify(value)
+    )
+  ) as Partial<T>;
+}
 
 export type BookableEvent = {
   status: EventStatus;
@@ -127,7 +165,13 @@ export const eventInputSchema = z
     summary: optionalText(200),
     /** Rich text, stored like a post's body. */
     description: richTextSchema.nullable().default(null),
+    /** The cover: the first of the event's photos. */
     heroMediaId: z.string().nullable(),
+    /** The rest of its photos, in order. */
+    galleryMediaIds: z
+      .array(z.string())
+      .max(EVENT_PHOTO_LIMIT - 1, `An event can have ${EVENT_PHOTO_LIMIT} photos.`)
+      .default([]),
     capacity: z.number().int().min(1).max(100_000).nullable(),
     maxPartySize: z.number().int().min(1).max(STAFF_MAX_PARTY_SIZE),
     bookingsCloseAt: z.number().int().nullable(),
@@ -154,16 +198,27 @@ export const eventInputSchema = z
   });
 export type EventInput = z.infer<typeof eventInputSchema>;
 
+/** Letters from any language, with the marks names use: O'Brien, Mary-Jane, St. John. */
+const NAME = /^(?=.*\p{L})[\p{L}\p{M}' ’.-]+$/u;
+const NAME_MESSAGE = 'Use letters only, with spaces, hyphens or apostrophes if the name has them.';
+const PEOPLE_MESSAGE = `People must be a whole number from 1 to ${STAFF_MAX_PARTY_SIZE}.`;
+
 export const guestInputSchema = z.object({
   eventId: z.string(),
-  firstName: z.string().trim().min(1, 'Enter a first name.').max(60),
-  lastName: optionalText(60),
+  firstName: z.string().trim().min(1, 'Enter a first name.').max(60).regex(NAME, NAME_MESSAGE),
+  lastName: optionalText(60).refine((v) => !v || NAME.test(v), NAME_MESSAGE),
   email: optionalText(200).refine(
     (v) => !v || z.string().email().safeParse(v).success,
-    'That email address is not valid.'
+    'Enter an email like name@example.com.'
   ),
-  phone: optionalText(40),
-  partySize: z.number().int().min(1).max(STAFF_MAX_PARTY_SIZE),
+  phone: optionalText(40)
+    .refine((v) => !v || auPhone(v) !== null, 'Enter an Australian mobile or landline number.')
+    .transform((v) => (v ? auPhone(v)! : '')),
+  partySize: z
+    .number(PEOPLE_MESSAGE)
+    .int(PEOPLE_MESSAGE)
+    .min(1, PEOPLE_MESSAGE)
+    .max(STAFF_MAX_PARTY_SIZE, PEOPLE_MESSAGE),
   note: optionalText(500),
 });
 export type GuestInput = z.infer<typeof guestInputSchema>;

@@ -2,6 +2,7 @@ import {
   type RichTextDoc,
   type SeriesScope,
   capacityProblem,
+  changedFields,
   deleteEventProblem,
   eventInputSchema,
   sameClockOn,
@@ -66,6 +67,7 @@ export const listEvents = createServerFn({ method: 'GET' })
         summary: e.summary ?? '',
         description: (e.description as RichTextDoc | null) ?? null,
         heroMediaId: e.heroMediaId,
+        galleryMediaIds: e.galleryMediaIds,
         capacity: e.capacity,
         maxPartySize: e.maxPartySize,
         bookingsCloseAt: e.bookingsCloseAt?.getTime() ?? null,
@@ -143,6 +145,7 @@ export const saveEvent = createServerFn({ method: 'POST' })
       summary: data.summary || null,
       description: data.description,
       heroMediaId: data.heroMediaId,
+      galleryMediaIds: data.galleryMediaIds,
       capacity: data.capacity,
       maxPartySize: data.maxPartySize,
       status: data.status,
@@ -222,15 +225,12 @@ export const saveEvent = createServerFn({ method: 'POST' })
       summary: current.summary,
       description: current.description,
       heroMediaId: current.heroMediaId,
+      galleryMediaIds: current.galleryMediaIds,
       capacity: current.capacity,
       maxPartySize: current.maxPartySize,
       status: current.status,
     };
-    const patch = Object.fromEntries(
-      Object.entries(shared).filter(
-        ([key, value]) => key in was && was[key as keyof typeof was] !== value
-      )
-    ) as Partial<typeof shared>;
+    const patch = changedFields(was, shared);
     const timesChanged =
       current.startsAt.getTime() !== data.startsAt || current.endsAt.getTime() !== data.endsAt;
 
@@ -376,4 +376,60 @@ export const deleteEvent = createServerFn({ method: 'POST' })
       }),
     ]);
     return { dates: targets.length };
+  });
+
+/** D1 limits how many values one statement binds. */
+const IDS_PER_STATEMENT = 50;
+
+/** Several events at once, from the list: all of them go, or none if one is refused. */
+export const deleteEvents = createServerFn({ method: 'POST' })
+  .middleware([requirePermission('events:manage')])
+  .validator(z.object({ ids: z.array(z.string()).min(1).max(1000) }))
+  .handler(async ({ data, context }) => {
+    const db = getDb();
+    const chunks: string[][] = [];
+    for (let i = 0; i < data.ids.length; i += IDS_PER_STATEMENT) {
+      chunks.push(data.ids.slice(i, i + IDS_PER_STATEMENT));
+    }
+    const [found, booked] = await Promise.all([
+      Promise.all(chunks.map((ids) => db.select().from(events).where(inArray(events.id, ids)))),
+      Promise.all(
+        chunks.map((ids) =>
+          db
+            .select({ eventId: eventBookings.eventId, count: sql<number>`count(*)` })
+            .from(eventBookings)
+            .where(and(inArray(eventBookings.eventId, ids), confirmed))
+            .groupBy(eventBookings.eventId)
+        )
+      ),
+    ]);
+    const rows = found.flat();
+    if (rows.length === 0) return { dates: 0 };
+    const bookings = new Map(booked.flat().map((b) => [b.eventId, Number(b.count)]));
+    for (const event of rows) {
+      const problem = deleteEventProblem(
+        { status: event.status, endsAt: event.endsAt.getTime() },
+        bookings.get(event.id) ?? 0,
+        Date.now()
+      );
+      if (problem) {
+        const day = dayKey(event.startsAt.getTime(), event.timeZone);
+        throw new Error(`${event.title} on ${day}: ${problem} Nothing was deleted.`);
+      }
+    }
+    // Bookings cascade with each date: guest details go with the event.
+    const statements: BatchItem[] = [
+      ...chunks.map((ids) => db.delete(events).where(inArray(events.id, ids))),
+      logActivity(db, {
+        actorId: context.user.id,
+        actorName: context.user.name,
+        action: 'event.deleted',
+        summary:
+          rows.length > 1
+            ? `Deleted ${rows.length} event dates`
+            : `Deleted the event ${rows[0]!.title}`,
+      }),
+    ];
+    await db.batch(statements as [BatchItem, ...BatchItem[]]);
+    return { dates: rows.length };
   });

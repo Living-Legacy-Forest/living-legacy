@@ -77,6 +77,7 @@ export function DateTimePicker({
               variant="outline"
               className={cn(
                 'min-w-0 flex-1 justify-start font-normal',
+                'touch:min-h-11',
                 value === null && 'text-muted-foreground'
               )}
             />
@@ -87,7 +88,7 @@ export function DateTimePicker({
             {value === null ? placeholder : formatDateTime(value, zone)}
           </span>
         </PopoverTrigger>
-        <PopoverContent align="start" className="w-[20rem] p-0">
+        <PopoverContent align="start" className="w-[min(20rem,calc(100vw-2rem))] p-0">
           <Calendar
             mode="single"
             selected={day}

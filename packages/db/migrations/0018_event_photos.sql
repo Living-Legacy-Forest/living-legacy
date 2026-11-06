@@ -1,0 +1,1 @@
+ALTER TABLE `events` ADD `gallery_media_ids` text DEFAULT '[]' NOT NULL;

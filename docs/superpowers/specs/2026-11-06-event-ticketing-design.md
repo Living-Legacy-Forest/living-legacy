@@ -1,7 +1,7 @@
 # Event bookings (free open days): design spec
 
 Date: 2026-11-06
-Status: approved in chat; spec awaiting review
+Status: approved; phase 1 (CMS only) being built
 
 ## 1. Goal
 
@@ -21,6 +21,12 @@ manage the guest list in the CMS and check people in on a phone.
   (section 7).
 
 ## 2. Scope
+
+**Phases.** Phase 1 is the CMS only: events, the guest list and check-in,
+guests added by staff, emails, clean-up and the HubSpot hook. Phase 2 adds the
+website (sections 4 and 8): the public pages, online booking through the
+service binding and the self-cancel link. Until then, confirmation emails say
+to reply to cancel, and bookings come from staff (phone bookings, walk-ins).
 
 **In v1**
 
@@ -57,7 +63,7 @@ Two tables in `packages/db/src/schema/events.ts`, added by a new migration.
 | `venue` | Free text; defaults in the form to the location's address. |
 | `starts_at`, `ends_at` | Timestamps. Shown in the site time zone (Settings). |
 | `summary` | A sentence for the list and the email. |
-| `description` | Rich text, as posts use. |
+| `description` | Markdown, as a location's `about` is. |
 | `hero_media_id` | Optional FK to `media`. |
 | `capacity` | Total people; null means no limit. |
 | `max_party_size` | Default 6, at least 1. |
@@ -72,7 +78,7 @@ Two tables in `packages/db/src/schema/events.ts`, added by a new migration.
 | `id` | |
 | `event_id` | FK to `events`, cascade on delete. |
 | `reference` | Short, unique, readable: `LL-` plus 6 characters without look-alikes (no 0/O, 1/I/L). |
-| `first_name`, `last_name`, `email`, `phone` | Email normalised; phone optional. |
+| `first_name`, `last_name`, `email`, `phone` | Email normalised. Email and phone are optional for guests staff add (walk-ins); the website will require email. |
 | `party_size` | 1 to the event's `max_party_size`. |
 | `note` | Optional: accessibility or dietary. |
 | `status` | `confirmed` or `cancelled`. |

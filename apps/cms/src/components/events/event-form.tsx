@@ -9,8 +9,9 @@ import {
   timeZones,
   toZoned,
 } from '@ll/content';
-import { useEffect, useRef, useState } from 'react';
+import { useState } from 'react';
 import { DateTimePicker } from '@/components/date-time-picker';
+import { FormStep, FormSteps, TOUCH_FIELDS, useFormSteps } from '@/components/form-steps';
 import { RichTextField } from '@/components/rich-text-field';
 import {
   EventDatesField,
@@ -76,51 +77,6 @@ const zoneItems = timeZones.map((value) => ({
 }));
 
 const STEPS = ['Details', 'Date & time', 'Places'] as const;
-const LAST_STEP = STEPS.length - 1;
-/** Fields a finger can hit on devices that cannot hover. */
-export const TOUCH_FIELDS =
-  'touch:**:data-[slot=input]:h-11 touch:**:data-[slot=select-trigger]:h-11!';
-
-/** Where the steps are up to. A saved event has them all, so any can be gone to. */
-function Steps({ current, onPick }: { current: number; onPick?: (step: number) => void }) {
-  return (
-    <ol className="grid grid-cols-3 gap-2" aria-label="Steps">
-      {STEPS.map((label, i) => {
-        const content = (
-          <>
-            <span
-              className={cn('block h-1 rounded-full', i <= current ? 'bg-primary' : 'bg-muted')}
-            />
-            <span
-              className={cn(
-                'block text-xs',
-                i === current ? 'text-foreground font-medium' : 'text-muted-foreground'
-              )}
-            >
-              {i + 1}. {label}
-            </span>
-          </>
-        );
-        return (
-          <li key={label} aria-current={i === current ? 'step' : undefined} className="space-y-1.5">
-            {onPick ? (
-              <button
-                type="button"
-                onClick={() => onPick(i)}
-                className="focus-visible:ring-ring touch:min-h-11 block w-full space-y-1.5 rounded-sm text-left outline-none focus-visible:ring-2"
-              >
-                {content}
-              </button>
-            ) : (
-              content
-            )}
-          </li>
-        );
-      })}
-    </ol>
-  );
-}
-
 /** The last step's check of what is about to be created. */
 function NewEventSummary({
   title,
@@ -217,17 +173,12 @@ export function EventForm({
   const [zoneChosen, setZoneChosen] = useState(Boolean(event));
   const [repeat, setRepeat] = useState<RepeatValue>(noRepeat);
   const [askScope, setAskScope] = useState(false);
-  const form = useRef<HTMLFormElement>(null);
-  const [step, setStep] = useState(0);
-  // Which way the steps move, so the new one slides in from that side.
-  const [forward, setForward] = useState(true);
-  // A new step starts from its top, not as far down as the last one was scrolled.
-  const shownStep = useRef(step);
-  useEffect(() => {
-    if (shownStep.current === step) return;
-    shownStep.current = step;
-    form.current?.scrollIntoView({ block: 'start' });
-  }, [step]);
+  // Moving on from Date & time checks the times, which are not plain fields.
+  const steps = useFormSteps({
+    count: STEPS.length,
+    canGoForward: (from) => from !== 1 || timesReady(),
+  });
+  const { step } = steps;
   const zone = values.timeZone;
   const patch = (next: Partial<Values>) => setValues((v) => ({ ...v, ...next }));
   /** A new zone keeps the clock times (10:00 stays 10:00), not the instants. */
@@ -326,30 +277,18 @@ export function EventForm({
     return true;
   }
 
-  /** Moves between the steps. Going forward checks the step being left. */
-  function goTo(to: number) {
-    if (to === step) return;
-    if (to > step) {
-      if (form.current && !reportInvalid(form.current)) return;
-      if (step === 1 && !timesReady()) return;
-    }
-    setForward(to > step);
-    setStep(to);
-  }
-
   /** A new event moves on until its last step, then is created; a saved one saves. */
   function submit(e: React.FormEvent) {
     e.preventDefault();
     if (!reportInvalid(e.currentTarget)) return;
     if (!event) {
-      if (step < LAST_STEP) goTo(step + 1);
-      else void save('one');
+      if (steps.isLast) void save('one');
+      else steps.goTo(step + 1);
       return;
     }
     // Saving from another step: the times are on their own one.
     if (!timesReady()) {
-      setForward(step < 1);
-      setStep(1);
+      steps.show(1);
       return;
     }
     // A date in a series asks whether the change is for it alone.
@@ -602,7 +541,7 @@ export function EventForm({
   );
 
   const back = step > 0 && (
-    <Button type="button" variant="ghost" size="sm" onClick={() => goTo(step - 1)}>
+    <Button type="button" variant="ghost" size="sm" onClick={() => steps.goTo(step - 1)}>
       Back
     </Button>
   );
@@ -611,19 +550,13 @@ export function EventForm({
   // save from any of them, so a small change does not mean walking through it all.
   return (
     <form
-      ref={form}
+      ref={steps.form}
       noValidate
       onSubmit={submit}
       className={cn('scroll-mt-12 space-y-5', TOUCH_FIELDS)}
     >
-      <Steps current={step} onPick={event ? goTo : undefined} />
-      <div
-        key={step}
-        className={cn(
-          'animate-in fade-in space-y-5 duration-200 ease-out motion-reduce:animate-none',
-          forward ? 'slide-in-from-right-3' : 'slide-in-from-left-3'
-        )}
-      >
+      <FormSteps labels={STEPS} current={step} onPick={event ? steps.goTo : undefined} />
+      <FormStep step={step} forward={steps.forward} className="space-y-5">
         {step === 0 && details}
         {step === 1 && when}
         {step === 2 && (
@@ -641,7 +574,7 @@ export function EventForm({
             )}
           </>
         )}
-      </div>
+      </FormStep>
 
       {event && (
         <ScopeDialog
@@ -659,8 +592,8 @@ export function EventForm({
       {event
         ? actions(
             <>
-              {step < LAST_STEP && (
-                <Button type="button" variant="outline" onClick={() => goTo(step + 1)}>
+              {!steps.isLast && (
+                <Button type="button" variant="outline" onClick={() => steps.goTo(step + 1)}>
                   Next
                 </Button>
               )}
@@ -668,7 +601,7 @@ export function EventForm({
             </>,
             <div className="flex gap-1">
               {back}
-              {step === LAST_STEP && (
+              {steps.isLast && (
                 <>
                   <CancelEvent event={event} />
                   <DeleteEvent event={event} onRemoved={() => onSaved(null)} />
@@ -677,7 +610,7 @@ export function EventForm({
             </div>
           )
         : actions(
-            step < LAST_STEP ? <Button type="submit">Next</Button> : saveButton('Create event'),
+            steps.isLast ? saveButton('Create event') : <Button type="submit">Next</Button>,
             back
           )}
     </form>

@@ -71,13 +71,23 @@ export const navGroups: NavGroup[] = [
         ],
       },
       { title: 'Media', icon: MediaIcon, to: '/media', permission: 'media:write' },
-      { title: 'FAQs', icon: CircleHelp, to: '/faqs' },
-      { title: 'Testimonials', icon: Quote, to: '/testimonials' },
-      { title: 'Team', icon: Users, to: '/team' },
+      { title: 'Announcements', icon: MegaphoneIcon, to: '/announcements' },
+      { title: 'Media coverage', icon: NewspaperIcon, to: '/media-coverage' },
+    ],
+  },
+  {
+    label: 'Places',
+    items: [
       { title: 'Locations', icon: MapPinIcon, to: '/locations' },
       { title: 'Events', icon: CalendarClockIcon, to: '/events', permission: 'events:manage' },
-      { title: 'Media coverage', icon: NewspaperIcon, to: '/media-coverage' },
-      { title: 'Announcements', icon: MegaphoneIcon, to: '/announcements' },
+    ],
+  },
+  {
+    label: 'About',
+    items: [
+      { title: 'Team', icon: Users, to: '/team' },
+      { title: 'Testimonials', icon: Quote, to: '/testimonials' },
+      { title: 'FAQs', icon: CircleHelp, to: '/faqs' },
     ],
   },
   {

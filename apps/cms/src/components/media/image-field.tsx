@@ -158,14 +158,20 @@ export function ImageField({
           <div className="min-w-0 flex-1 space-y-2">
             {item && <AltText id={`${id}-alt`} item={item} onSaved={update} />}
             <div className="flex gap-2">
-              <Button type="button" variant="outline" size="sm" onClick={() => setPicking(true)}>
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                className="touch:min-h-11"
+                onClick={() => setPicking(true)}
+              >
                 Change
               </Button>
               <Button
                 type="button"
                 variant="ghost"
                 size="sm"
-                className="text-muted-foreground"
+                className="text-muted-foreground touch:min-h-11"
                 onClick={() => onChange(null)}
               >
                 Remove
@@ -182,7 +188,13 @@ export function ImageField({
             aspect ? 'It is cropped to the shape the website shows.' : 'JPG, PNG, WebP or GIF.'
           }
         >
-          <Button type="button" size="sm" variant="ghost" onClick={() => setPicking(true)}>
+          <Button
+            type="button"
+            size="sm"
+            variant="ghost"
+            className="touch:min-h-11"
+            onClick={() => setPicking(true)}
+          >
             From Media
           </Button>
         </ImageDropZone>

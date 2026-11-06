@@ -53,7 +53,7 @@ export function RichTextField({
         className="rounded-none! border-0! shadow-none!"
       >
         <Toolbar editor={editor} state={state} />
-        <RichTextEditor.Content className="[&_.ProseMirror]:min-h-40! [&_.ProseMirror]:px-3! [&_.ProseMirror]:py-2.5! [&_.ProseMirror]:text-sm" />
+        <RichTextEditor.Content className="[&_.ProseMirror]:min-h-40! [&_.ProseMirror]:px-3! [&_.ProseMirror]:py-2.5! [&_.ProseMirror]:text-base md:[&_.ProseMirror]:text-sm" />
       </RichTextEditor>
     </div>
   );

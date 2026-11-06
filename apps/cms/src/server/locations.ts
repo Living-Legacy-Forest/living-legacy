@@ -1,4 +1,12 @@
-import { australianStates, locationStages, slugify } from '@ll/content';
+import {
+  australianStates,
+  locationStages,
+  richTextPlainText,
+  richTextSchema,
+  richTextToStored,
+  slugify,
+  storedToRichText,
+} from '@ll/content';
 import { eventBookings, events, locations } from '@ll/db/schema';
 import { createServerFn } from '@tanstack/react-start';
 import { and, asc, eq, gt, inArray, isNull, ne } from 'drizzle-orm';
@@ -8,8 +16,8 @@ import { authMiddleware, requirePermission } from '@/lib/session';
 
 export const listLocations = createServerFn({ method: 'GET' })
   .middleware([authMiddleware])
-  .handler(async () =>
-    getDb()
+  .handler(async () => {
+    const rows = await getDb()
       .select({
         id: locations.id,
         name: locations.name,
@@ -35,8 +43,9 @@ export const listLocations = createServerFn({ method: 'GET' })
       .from(locations)
       .where(isNull(locations.deletedAt))
       // The order the directory shows them in.
-      .orderBy(asc(locations.sortOrder), asc(locations.name))
-  );
+      .orderBy(asc(locations.sortOrder), asc(locations.name));
+    return rows.map((row) => ({ ...row, about: storedToRichText(row.about) }));
+  });
 
 export type LocationsData = Awaited<ReturnType<typeof listLocations>>;
 export type LocationItem = LocationsData[number];
@@ -62,7 +71,9 @@ const locationSchema = z.object({
   externalUrl: webLink,
   heroMediaId: z.string().nullable(),
   intro: z.string().trim().max(400),
-  about: z.string().trim().max(10000),
+  about: richTextSchema
+    .nullable()
+    .refine((doc) => !doc || richTextPlainText(doc).length <= 10000, 'About is too long.'),
   address: z.string().trim().max(200),
   pin: pinSchema,
   mapUrl: webLink,
@@ -115,7 +126,7 @@ export const saveLocation = createServerFn({ method: 'POST' })
       externalUrl: data.externalUrl || null,
       heroMediaId: data.heroMediaId,
       intro: data.intro || null,
-      about: data.about || null,
+      about: richTextToStored(data.about),
       address: data.address || null,
       latitude: data.pin?.latitude ?? null,
       longitude: data.pin?.longitude ?? null,

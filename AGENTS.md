@@ -34,6 +34,29 @@ Database changes: edit `packages/db/src/schema/`, then
 - **Comments** say why, not what. Match the density of the file you're in.
 - **User-facing copy** is plain, sentence case, in Australian English ("organise", "colour").
 
+## Website (`apps/web`) and its content
+
+Two documents set the rules for anything a visitor reads or anything that shapes the site:
+
+- [`docs/brand-language.md`](docs/brand-language.md): tone and the approved names. Read it
+  before writing or changing any customer-facing text, including CMS content, alt text, meta
+  tags, form labels and error messages.
+- [`docs/national-site.md`](docs/national-site.md): URLs, location pages, calls to action,
+  forms, analytics and migration, for the national site launching mid-January 2027.
+
+The rules that most often go wrong:
+
+- Use the six names exactly: **EarthSApHE™ Treatment**, **EarthSApHE™ Ashes**, **Legacy
+  Infusion Ceremony**, **Legacy Ground**, **Living Legacy Title** (Entitlement on legal
+  documents), **Living Legacy Forest**. Spell `EarthSApHE` exactly and never uppercase it with CSS.
+- Never write plot, grave, remains, cremains, the deceased, resting place, SoilSAFE, formula,
+  paramagnetic, or urgency such as "act now" or "limited availability".
+- Forests are always "Living Legacy" + place name. **Mornington Green is retired**; it is
+  Living Legacy Mornington.
+- Forest pages live at `/locations/<slug>/` with one shared template. No state pages, no empty
+  "coming soon" pages.
+- Never send names, email addresses or phone numbers to analytics.
+
 ## CMS (`apps/cms/src`)
 
 | Folder             | What goes there                                                                 |

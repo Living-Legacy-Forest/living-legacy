@@ -136,6 +136,8 @@
   --sidebar-ring: oklch(0.556 0 0);
 
   --brand: #8fb08c;
+  /* The light theme's chart green is too dark to read on a dark background. */
+  --chart-1: #8fb08c;
 }
 
 /* Sidebar collapse (and the hover-to-peek flyout, which shares the same

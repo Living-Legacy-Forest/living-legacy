@@ -2,6 +2,7 @@ import { defineMiddleware } from 'astro:middleware';
 import { captureServerException } from '@/lib/analytics/posthog-server';
 import { isIndexableHost } from '@/lib/seo';
 import { findRedirect, recordHit } from '@/lib/redirects';
+import { getSiteSettings } from '@/lib/settings';
 
 /**
  * Three jobs on every on-demand response:
@@ -9,7 +10,8 @@ import { findRedirect, recordHit } from '@/lib/redirects';
  * 1. Apply the redirects managed in the CMS (see `src/lib/redirects.ts`),
  *    ahead of routing. `public/_redirects` cannot do this on Workers, since
  *    every request (not just static-asset misses) hits the Worker.
- * 2. Block indexing on any host that is not the production domain. The header
+ * 2. Block indexing on any host that is not the production domain, and
+ *    everywhere while Settings hides the site from search engines. The header
  *    covers responses a meta tag cannot reach, such as the sitemap, and applies
  *    even if a page forgets to use BaseLayout.
  * 3. Report rendering failures to PostHog error tracking, the server-side
@@ -25,7 +27,7 @@ export const onRequest = defineMiddleware(async (context, next) => {
         ? await gone(context.rewrite('/404'))
         : context.redirect(redirect.location, redirect.rule.statusCode === 302 ? 302 : 301);
 
-    if (!isIndexableHost(context.url.host)) {
+    if (!isIndexableHost(context.url.host) || (await getSiteSettings()).hideFromSearch) {
       // Response headers are occasionally immutable (redirects, cached asset
       // responses). Blocking indexing must never turn into a 500.
       try {

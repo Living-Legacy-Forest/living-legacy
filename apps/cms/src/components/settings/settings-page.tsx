@@ -1,4 +1,10 @@
-import { SEO_DESCRIPTION_LIMIT, isValidAbn } from '@ll/content';
+import {
+  SEO_DESCRIPTION_LIMIT,
+  isEmailDomain,
+  isValidAbn,
+  parseEmailDomains,
+  sessionDayOptions,
+} from '@ll/content';
 import { getRouteApi, useBlocker, useRouter } from '@tanstack/react-router';
 import { type ReactNode, useEffect, useRef, useState } from 'react';
 import {
@@ -22,6 +28,7 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { Spinner } from '@/components/ui/spinner';
+import { Switch } from '@/components/ui/switch';
 import { Textarea } from '@/components/ui/textarea';
 import { reportInvalid } from '@/lib/form-validation';
 import { zoneOffset } from '@/lib/format';
@@ -48,6 +55,7 @@ const sections = [
   { id: 'business', title: 'Contact & business' },
   { id: 'social', title: 'Social links' },
   { id: 'search', title: 'Search & sharing' },
+  { id: 'sign-in', title: 'Sign-in & security' },
   { id: 'appearance', title: 'Language & appearance' },
 ] as const;
 
@@ -56,6 +64,11 @@ const localeItems: { value: Locale; label: string }[] = [
   { value: 'en-GB', label: 'English (UK)' },
   { value: 'en-US', label: 'English (US)' },
 ];
+
+const sessionItems = sessionDayOptions.map((days) => ({
+  value: String(days),
+  label: days === 1 ? 'After 1 day' : `After ${days} days`,
+}));
 
 const themeLabels: Record<Theme, string> = {
   system: 'System preference',
@@ -112,6 +125,12 @@ function ThemeSwatch({ theme }: { theme: Theme }) {
 function problem(v: SiteSettings): { field: string; message: string } | null {
   if (v.abn && !isValidAbn(v.abn)) {
     return { field: 'settings-abn', message: 'That ABN is not valid. Check the 11 digits.' };
+  }
+  if (!parseEmailDomains(v.allowedEmailDomains).every(isEmailDomain)) {
+    return {
+      field: 'settings-domains',
+      message: 'Enter domains such as example.com.au, separated by commas.',
+    };
   }
   if (v.titlePattern && !v.titlePattern.includes(TITLE_TOKENS.page)) {
     return {
@@ -350,6 +369,21 @@ export function SettingsPage({
             description="How pages appear in search results and when shared, unless a page sets its own."
           >
             <SettingsRow
+              id="settings-hide-search"
+              title="Hide from search engines"
+              description={
+                values.hideFromSearch
+                  ? 'On: search engines are asked to drop every page. Visitors can still open the site.'
+                  : 'Asks search engines to leave every page out of their results, such as before a launch.'
+              }
+            >
+              <Switch
+                id="settings-hide-search"
+                checked={values.hideFromSearch}
+                onCheckedChange={(checked) => patch({ hideFromSearch: checked })}
+              />
+            </SettingsRow>
+            <SettingsRow
               id="settings-title-pattern"
               title="Page title pattern"
               description={`${TITLE_TOKENS.page} is the page's title, ${TITLE_TOKENS.site} the site title.`}
@@ -426,6 +460,62 @@ export function SettingsPage({
               />
             </SettingsRow>
           </SettingsSection>
+
+          {!seoOnly && (
+            <SettingsSection
+              id="sign-in"
+              title="Sign-in & security"
+              description="Who can be invited to the CMS and how people sign in."
+            >
+              <SettingsRow
+                id="settings-domains"
+                title="Allowed email domains"
+                description="Invites only go to these, separated by commas. Leave empty to allow any. People already here keep access."
+                stacked
+              >
+                <Input
+                  id="settings-domains"
+                  value={values.allowedEmailDomains}
+                  placeholder="livinglegacy.com.au, sistercreatives.co"
+                  onChange={(e) => patch({ allowedEmailDomains: e.target.value })}
+                  className="font-mono"
+                />
+              </SettingsRow>
+              <SettingsRow
+                id="settings-google-sign-in"
+                title="Sign in with Google"
+                description="When off, everyone signs in with an email link."
+              >
+                <Switch
+                  id="settings-google-sign-in"
+                  checked={values.googleSignIn}
+                  onCheckedChange={(checked) => patch({ googleSignIn: checked })}
+                />
+              </SettingsRow>
+              <SettingsRow
+                id="settings-session"
+                title="Sign out when idle"
+                description="How long someone can be away from the CMS before signing in again."
+              >
+                <Select
+                  items={sessionItems}
+                  value={String(values.sessionDays)}
+                  onValueChange={(value) => value && patch({ sessionDays: Number(value) })}
+                >
+                  <SelectTrigger id="settings-session" className="w-40">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {sessionItems.map((item) => (
+                      <SelectItem key={item.value} value={item.value}>
+                        {item.label}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </SettingsRow>
+            </SettingsSection>
+          )}
 
           {!seoOnly && (
             <SettingsSection
@@ -549,32 +639,59 @@ const fieldWidth = 'w-full sm:w-72';
 /**
  * Glides to a section. Done per click rather than with a global smooth scroll,
  * so page changes and scroll restoration stay instant. Respects reduced motion.
+ *
+ * The hash is written once the glide ends: TanStack Router wraps
+ * history.replaceState and jumps straight to a #hash target, which would cut
+ * the glide short. `scrollend` is missing in older Safari, hence the timer.
  */
-function scrollToSection(id: string) {
+function scrollToSection(id: string, onDone: () => void) {
   const reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  let done = false;
+  const finish = () => {
+    if (done) return;
+    done = true;
+    window.removeEventListener('scrollend', finish);
+    history.replaceState(history.state, '', `#${id}`);
+    onDone();
+  };
+  window.addEventListener('scrollend', finish, { once: true });
+  window.setTimeout(finish, reduce ? 0 : 1000);
   document.getElementById(id)?.scrollIntoView({ behavior: reduce ? 'auto' : 'smooth' });
-  history.replaceState(null, '', `#${id}`);
 }
 
 /** Jump links to each section; the one in view is highlighted. Desktop only. */
 function SectionNav({ ids }: { ids: string[] }) {
   const shown = sections.filter((section) => ids.includes(section.id));
   const [active, setActive] = useState<string>(shown[0]?.id ?? '');
+  // While a clicked link's glide runs, the sections it passes must not take
+  // the highlight from the one that was clicked.
+  const gliding = useRef(false);
 
   useEffect(() => {
-    const observer = new IntersectionObserver(
-      (entries) => {
-        const visible = entries.find((entry) => entry.isIntersecting);
-        if (visible) setActive(visible.target.id);
-      },
-      // A section counts as current once its top passes just under the header.
-      { rootMargin: '-80px 0px -70% 0px' }
-    );
-    for (const { id } of shown) {
-      const el = document.getElementById(id);
-      if (el) observer.observe(el);
-    }
-    return () => observer.disconnect();
+    // Current is the last section whose top has passed just under the header,
+    // or the last one at the bottom of the page, since the final sections are
+    // short and never reach the top.
+    let frame = 0;
+    const update = () => {
+      frame = 0;
+      if (gliding.current) return;
+      const atBottom =
+        window.innerHeight + window.scrollY >= document.documentElement.scrollHeight - 4;
+      const passed = shown.filter(
+        ({ id }) => (document.getElementById(id)?.getBoundingClientRect().top ?? Infinity) <= 120
+      );
+      const current = atBottom ? shown[shown.length - 1] : (passed.at(-1) ?? shown[0]);
+      if (current) setActive(current.id);
+    };
+    const onScroll = () => {
+      frame ||= requestAnimationFrame(update);
+    };
+    update();
+    window.addEventListener('scroll', onScroll, { passive: true });
+    return () => {
+      cancelAnimationFrame(frame);
+      window.removeEventListener('scroll', onScroll);
+    };
   }, []);
 
   return (
@@ -587,8 +704,11 @@ function SectionNav({ ids }: { ids: string[] }) {
               aria-current={active === section.id ? 'true' : undefined}
               onClick={(e) => {
                 e.preventDefault();
-                scrollToSection(section.id);
+                gliding.current = true;
                 setActive(section.id);
+                scrollToSection(section.id, () => {
+                  gliding.current = false;
+                });
               }}
               className={cn(
                 'text-muted-foreground hover:text-foreground text-ui block rounded-md px-2.5 py-1.5 transition-colors',

@@ -13,6 +13,7 @@ import { notify } from '@/lib/notify';
 
 const errorMessages: Record<string, string> = {
   not_invited: 'This account has not been invited. Ask an admin to invite you.',
+  google_disabled: 'Google sign-in is turned off. Use an email link instead.',
 };
 
 export const Route = createFileRoute('/login')({
@@ -176,7 +177,13 @@ function GoogleSignIn() {
       callbackURL: '/',
       errorCallbackURL: '/login',
     });
-    if (error) setPending(false);
+    if (error) {
+      setPending(false);
+      notify.error(
+        'Could not sign you in',
+        errorMessages[error.message ?? ''] ?? 'Please try again.'
+      );
+    }
   }
 
   return (

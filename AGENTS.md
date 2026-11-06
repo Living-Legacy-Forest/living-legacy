@@ -95,8 +95,8 @@ export const saveTerm = createServerFn({ method: 'POST' })
 
 ### List pages
 
-Team, FAQs, redirects, testimonials, media coverage, announcements, terms and posts share
-`components/list/`. A new list page should too:
+Team, FAQs, redirects, testimonials, media coverage, announcements, terms, posts and events
+share `components/list/`. A new list page should too:
 
 - `useListPane<Target>()` holds what is open. On `lg` and up it shows in the right-hand pane;
   smaller screens open the same target in `ListDialog`.

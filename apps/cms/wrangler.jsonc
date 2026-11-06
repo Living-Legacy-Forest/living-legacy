@@ -32,6 +32,8 @@
     // Sender for every CMS email (sign-in links, invites, review requests).
     // notify.livinglegacy.com.au is verified in Resend and kept apart from
     // the marketing mail sent from the root domain.
-    "EMAIL_FROM": "Living Legacy CMS <cms@notify.livinglegacy.com.au>"
+    "EMAIL_FROM": "Living Legacy CMS <cms@notify.livinglegacy.com.au>",
+    // Sender for guest emails about events (bookings, reminders, cancellations).
+    "EVENTS_EMAIL_FROM": "Living Legacy <events@notify.livinglegacy.com.au>"
   }
 }

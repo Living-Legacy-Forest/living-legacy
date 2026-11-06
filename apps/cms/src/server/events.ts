@@ -6,6 +6,7 @@ import { z } from 'zod';
 import { getDb } from '@/lib/db';
 import { requirePermission } from '@/lib/session';
 import { logActivity } from './activity-log';
+import { emailCancellation } from './event-mail';
 
 const confirmed = sql`${eventBookings.status} = 'confirmed'`;
 
@@ -166,8 +167,7 @@ export const cancelEvent = createServerFn({ method: 'POST' })
         summary: `Cancelled the event ${event.title}`,
       }),
     ]);
-    // Task 5 emails the guests here and returns how many were told.
-    return { notified: 0 };
+    return { notified: await emailCancellation(db, event.id) };
   });
 
 export const deleteEvent = createServerFn({ method: 'POST' })

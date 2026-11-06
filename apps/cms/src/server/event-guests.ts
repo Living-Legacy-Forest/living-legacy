@@ -7,6 +7,7 @@ import { getDb } from '@/lib/db';
 import { requirePermission } from '@/lib/session';
 import { logActivity } from './activity-log';
 import { insertBooking } from './booking-store';
+import { emailConfirmation } from './event-mail';
 
 export const getGuests = createServerFn({ method: 'GET' })
   .middleware([requirePermission('events:manage')])
@@ -85,8 +86,14 @@ export const addGuest = createServerFn({ method: 'POST' })
       action: 'event.guest_added',
       summary: `Added ${data.firstName} (${data.partySize}) to ${event.title}`,
     });
-    // Task 5 sends the confirmation when asked and reports it here.
-    return { reference: booking.reference, emailed: false };
+    let emailed = false;
+    if (data.sendConfirmation && data.email) {
+      const row = await db.query.eventBookings.findFirst({
+        where: eq(eventBookings.id, booking.id),
+      });
+      if (row) emailed = await emailConfirmation(db, row);
+    }
+    return { reference: booking.reference, emailed };
   });
 
 export const cancelGuest = createServerFn({ method: 'POST' })

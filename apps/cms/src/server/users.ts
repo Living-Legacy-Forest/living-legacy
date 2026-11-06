@@ -1,8 +1,8 @@
 import { guardRemoval, guardRoleChange, normaliseEmail, roleSchema } from '@ll/content';
-import { invitation, user } from '@ll/db/schema';
+import { invitation, session, user } from '@ll/db/schema';
 import { createServerFn } from '@tanstack/react-start';
 import { env } from 'cloudflare:workers';
-import { count, desc, eq } from 'drizzle-orm';
+import { count, desc, eq, max } from 'drizzle-orm';
 import { z } from 'zod';
 import { deleteOwnAvatar } from '@/lib/avatars';
 import { getDb } from '@/lib/db';
@@ -19,7 +19,7 @@ export const listUsers = createServerFn({ method: 'GET' })
   .middleware([requirePermission('users:manage')])
   .handler(async ({ context }) => {
     const db = getDb();
-    const [users, invitations, admins] = await Promise.all([
+    const [users, invitations, activity] = await db.batch([
       db
         .select({
           id: user.id,
@@ -36,13 +36,26 @@ export const listUsers = createServerFn({ method: 'GET' })
         .select({ email: invitation.email, role: invitation.role, createdAt: invitation.createdAt })
         .from(invitation)
         .orderBy(desc(invitation.createdAt)),
-      adminCount(db),
+      // A session's updated_at moves when Better Auth refreshes it (about once
+      // a day of use), so this is when someone was last around, to the day.
+      // Expired sessions can be cleared, so no row means no recent sign-in.
+      db
+        .select({ userId: session.userId, at: max(session.updatedAt) })
+        .from(session)
+        .groupBy(session.userId),
     ]);
+    const lastActive = new Map(
+      activity.map((a) => [a.userId, a.at ? new Date(a.at).getTime() : null])
+    );
 
     return {
       currentUserId: context.user.id,
-      adminCount: admins,
-      users: users.map((u) => ({ ...u, createdAt: u.createdAt.getTime() })),
+      adminCount: users.filter((u) => u.role === 'admin').length,
+      users: users.map((u) => ({
+        ...u,
+        createdAt: u.createdAt.getTime(),
+        lastActiveAt: lastActive.get(u.id) ?? null,
+      })),
       invitations: invitations.map((i) => ({ ...i, createdAt: i.createdAt.getTime() })),
     };
   });

@@ -44,10 +44,9 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
-import { formatDate } from '@/lib/format';
+import { formatRelative } from '@/lib/format';
 import { reportInvalid } from '@/lib/form-validation';
 import { useAction } from '@/lib/use-action';
-import { useTimeZone } from '@/lib/use-time-zone';
 import { cn } from '@/lib/utils';
 import {
   type TeamData,
@@ -128,15 +127,25 @@ export function UsersPage({ data }: { data: TeamData }) {
 
 function UsersTable({ data }: { data: TeamData }) {
   const { run, pending } = useAction();
-  const timeZone = useTimeZone();
+
+  function changeRole(u: TeamUser, value: string) {
+    if (value === u.role) return;
+    run(() => changeUserRole({ data: { userId: u.id, role: value as Role } }), {
+      success: {
+        title: 'Role changed',
+        description: `${u.name || u.email} is now ${roleLabel(value)}.`,
+      },
+      error: 'Could not change the role',
+    });
+  }
 
   return (
     <Table className={tableCellPadding}>
-      <TableHeader>
+      <TableHeader className="max-sm:hidden">
         <TableRow className="hover:bg-transparent">
           <TableHead>Name</TableHead>
-          <TableHead className="w-32">Role</TableHead>
-          <TableHead className="w-28 max-sm:hidden">Joined</TableHead>
+          <TableHead className="w-36 max-sm:hidden">Role</TableHead>
+          <TableHead className="w-32 max-md:hidden">Last active</TableHead>
           <TableHead className="w-0" />
         </TableRow>
       </TableHeader>
@@ -144,73 +153,124 @@ function UsersTable({ data }: { data: TeamData }) {
         {data.users.map((u) => {
           const isSelf = u.id === data.currentUserId;
           const isLastAdmin = u.role === 'admin' && data.adminCount === 1;
+          // You can't demote or remove yourself, or the only admin; show the
+          // role as text rather than a control that does nothing.
           const locked = isSelf || isLastAdmin;
+          const role = (
+            <RoleControl
+              user={u}
+              locked={locked}
+              note={isLastAdmin && !isSelf ? 'Only admin' : undefined}
+              disabled={pending}
+              onChange={(value) => changeRole(u, value)}
+            />
+          );
           return (
             <TableRow key={u.id}>
-              <TableCell className="w-full max-w-0 py-2.5">
-                <div className="flex items-center gap-3">
+              <TableCell className="w-full max-w-0 py-3">
+                <div className="flex items-center gap-3 max-sm:items-start">
                   <UserAvatar user={u} isSelf={isSelf} />
-                  <div className="min-w-0">
-                    <div className="flex items-center gap-2 text-sm font-medium">
+                  <div className="min-w-0 flex-1">
+                    <div className="flex items-center gap-2 font-medium">
                       <span className="truncate">{u.name || u.email}</span>
                       {isSelf && <Badge variant="secondary">You</Badge>}
                     </div>
                     <div className="text-muted-foreground truncate text-xs">{u.email}</div>
+                    {/* Phones have no room for the role and activity columns. */}
+                    <div className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1 sm:hidden">
+                      {role}
+                      <LastActive at={u.lastActiveAt} className="text-xs" />
+                    </div>
                   </div>
                 </div>
               </TableCell>
+              <TableCell className="max-sm:hidden">{role}</TableCell>
+              <TableCell className="max-md:hidden">
+                <LastActive at={u.lastActiveAt} className="text-sm" />
+              </TableCell>
               <TableCell>
-                <Select
-                  items={roleItems}
-                  value={u.role}
-                  disabled={locked || pending}
-                  onValueChange={(value) => {
-                    if (value && value !== u.role) {
-                      run(() => changeUserRole({ data: { userId: u.id, role: value as Role } }), {
+                {!locked && (
+                  <RemoveUser
+                    user={u}
+                    onConfirm={() =>
+                      run(() => removeUser({ data: { userId: u.id } }), {
                         success: {
-                          title: 'Role changed',
-                          description: `${u.name || u.email} is now ${roleItems.find((r) => r.value === value)?.label ?? value}.`,
+                          title: 'User removed',
+                          description: `${u.name || u.email} is signed out and can no longer sign in.`,
                         },
-                        error: 'Could not change the role',
-                      });
+                        error: 'Could not remove the user',
+                      })
                     }
-                  }}
-                >
-                  <SelectTrigger size="sm" className="text-ui w-28">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {roleItems.map((item) => (
-                      <SelectItem key={item.value} value={item.value} className="text-ui">
-                        {item.label}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </TableCell>
-              <TableCell className="text-muted-foreground text-sm max-sm:hidden">
-                {formatDate(u.createdAt, timeZone)}
-              </TableCell>
-              <TableCell>
-                <RemoveUser
-                  user={u}
-                  disabled={locked}
-                  onConfirm={() =>
-                    run(() => removeUser({ data: { userId: u.id } }), {
-                      success: {
-                        title: 'User removed',
-                        description: `${u.name || u.email} is signed out and can no longer sign in.`,
-                      },
-                      error: 'Could not remove the user',
-                    })
-                  }
-                />
+                  />
+                )}
               </TableCell>
             </TableRow>
           );
         })}
       </TableBody>
     </Table>
+  );
+}
+
+function roleLabel(value: string) {
+  return roleItems.find((r) => r.value === value)?.label ?? value;
+}
+
+/** The role picker, with what each role can do; plain text where it can't change. */
+function RoleControl({
+  user,
+  locked,
+  note,
+  disabled,
+  onChange,
+}: {
+  user: TeamUser;
+  locked: boolean;
+  note?: string;
+  disabled: boolean;
+  onChange: (role: string) => void;
+}) {
+  if (locked) {
+    return (
+      <span className="inline-flex items-baseline gap-1.5 text-sm">
+        {roleLabel(user.role)}
+        {note && <span className="text-muted-foreground text-xs">{note}</span>}
+      </span>
+    );
+  }
+  return (
+    <Select
+      items={roleItems}
+      value={user.role}
+      disabled={disabled}
+      onValueChange={(value) => value && onChange(value)}
+    >
+      <SelectTrigger
+        size="sm"
+        aria-label={`Role for ${user.name || user.email}`}
+        className="text-ui w-28"
+      >
+        <SelectValue />
+      </SelectTrigger>
+      <SelectContent align="start" alignItemWithTrigger={false} className="w-auto max-w-80">
+        {roleItems.map((item) => (
+          <SelectItem key={item.value} value={item.value} className="items-start py-2">
+            <div className="grid gap-0.5 pr-4">
+              <span className="text-ui font-medium">{item.label}</span>
+              <span className="text-muted-foreground text-xs">{item.description}</span>
+            </div>
+          </SelectItem>
+        ))}
+      </SelectContent>
+    </Select>
+  );
+}
+
+function LastActive({ at, className }: { at: number | null; className?: string }) {
+  return (
+    <span className={cn('text-muted-foreground', className)}>
+      {at === null ? 'No recent sign-in' : `Active ${formatRelative(at)}`}
+    </span>
   );
 }
 
@@ -225,14 +285,18 @@ function UserAvatar({ user, isSelf }: { user: TeamUser; isSelf: boolean }) {
         onClick={() => setOpen(true)}
         className="group focus-visible:ring-ring relative shrink-0 rounded-full outline-none focus-visible:ring-2"
       >
-        <Avatar className="size-8">
+        <Avatar className="size-9">
           {user.image && <AvatarImage src={user.image} alt={user.imageAlt ?? ''} />}
           <AvatarFallback className="bg-muted text-xs font-medium">
             {initials(label)}
           </AvatarFallback>
         </Avatar>
-        <span className="bg-background/85 absolute inset-0 flex items-center justify-center rounded-full opacity-0 transition-opacity group-hover:opacity-100">
+        <span className="bg-background/85 touch:hidden absolute inset-0 flex items-center justify-center rounded-full opacity-0 transition-opacity group-hover:opacity-100">
           <CameraIcon aria-hidden className="size-3.5" />
+        </span>
+        {/* Touch screens can't hover, so the camera shows as a badge instead. */}
+        <span className="bg-background touch:flex absolute -right-1 -bottom-1 hidden size-5 items-center justify-center rounded-full border">
+          <CameraIcon aria-hidden className="size-3" />
         </span>
       </button>
       <UserPhotoDialog
@@ -246,15 +310,7 @@ function UserAvatar({ user, isSelf }: { user: TeamUser; isSelf: boolean }) {
   );
 }
 
-function RemoveUser({
-  user,
-  disabled,
-  onConfirm,
-}: {
-  user: TeamUser;
-  disabled: boolean;
-  onConfirm: () => void;
-}) {
+function RemoveUser({ user, onConfirm }: { user: TeamUser; onConfirm: () => void }) {
   const label = user.name || user.email;
   return (
     <AlertDialog>
@@ -263,7 +319,6 @@ function RemoveUser({
           <Button
             variant="ghost"
             size="icon-sm"
-            disabled={disabled}
             aria-label={`Remove ${label}`}
             className="text-muted-foreground hover:text-destructive"
           />
@@ -389,48 +444,66 @@ function InviteDialog() {
 
 function InvitationsTable({ invitations }: { invitations: TeamData['invitations'] }) {
   const { run, pending } = useAction();
-  const timeZone = useTimeZone();
+
+  const resend = (invite: TeamData['invitations'][number]) =>
+    run(() => inviteUser({ data: { email: invite.email, role: invite.role } }), {
+      success: (r) =>
+        r.emailed
+          ? { title: 'Invite sent again', description: `A new email is on its way to ${r.email}.` }
+          : {
+              title: 'The email failed again',
+              description: `${r.email} can still sign in from the login page.`,
+            },
+      error: 'Could not resend the invite',
+    });
+
+  const revoke = (email: string) =>
+    run(() => revokeInvitation({ data: { email } }), {
+      success: {
+        title: 'Invitation revoked',
+        description: `${email} can no longer sign up.`,
+      },
+      error: 'Could not revoke the invitation',
+    });
 
   return (
     <Table className={tableCellPadding}>
-      <TableHeader>
+      <TableHeader className="max-sm:hidden">
         <TableRow className="hover:bg-transparent">
           <TableHead>Email</TableHead>
-          <TableHead className="w-32">Role</TableHead>
-          <TableHead className="w-28 max-sm:hidden">Invited</TableHead>
+          <TableHead className="w-36 max-sm:hidden">Role</TableHead>
+          <TableHead className="w-32 max-md:hidden">Invited</TableHead>
           <TableHead className="w-0" />
         </TableRow>
       </TableHeader>
       <TableBody>
         {invitations.map((invite) => (
           <TableRow key={invite.email}>
-            <TableCell className="w-full max-w-0 truncate py-2.5 text-sm">{invite.email}</TableCell>
-            <TableCell>
-              <Badge variant="outline" className="capitalize">
-                {invite.role}
-              </Badge>
+            <TableCell className="w-full max-w-0 py-3">
+              <div className="truncate">{invite.email}</div>
+              <div className="text-muted-foreground text-xs sm:hidden">
+                {roleLabel(invite.role)} · invited {formatRelative(invite.createdAt)}
+              </div>
             </TableCell>
-            <TableCell className="text-muted-foreground text-sm max-sm:hidden">
-              {formatDate(invite.createdAt, timeZone)}
+            <TableCell className="text-sm max-sm:hidden">{roleLabel(invite.role)}</TableCell>
+            <TableCell className="text-muted-foreground text-sm max-md:hidden">
+              {formatRelative(invite.createdAt)}
             </TableCell>
             <TableCell>
-              <Button
-                variant="ghost"
-                size="sm"
-                className="text-muted-foreground"
-                disabled={pending}
-                onClick={() =>
-                  run(() => revokeInvitation({ data: { email: invite.email } }), {
-                    success: {
-                      title: 'Invitation revoked',
-                      description: `${invite.email} can no longer sign up.`,
-                    },
-                    error: 'Could not revoke the invitation',
-                  })
-                }
-              >
-                Revoke
-              </Button>
+              <div className="flex justify-end gap-1">
+                <Button variant="ghost" size="sm" disabled={pending} onClick={() => resend(invite)}>
+                  Resend
+                </Button>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="text-muted-foreground hover:text-destructive"
+                  disabled={pending}
+                  onClick={() => revoke(invite.email)}
+                >
+                  Revoke
+                </Button>
+              </div>
             </TableCell>
           </TableRow>
         ))}

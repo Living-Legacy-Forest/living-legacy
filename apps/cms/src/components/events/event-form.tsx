@@ -20,7 +20,8 @@ import {
   sessionTimes,
 } from './event-dates-field';
 import { RepeatField, type RepeatValue, noRepeat, seriesDates } from './repeat-field';
-import { Trash2Icon } from '@/components/icons';
+import { EyeIcon, Trash2Icon } from '@/components/icons';
+import { type EventPreviewDraft, openEventPreview } from './event-preview-store';
 import { ImageGalleryField } from '@/components/media/image-gallery-field';
 import {
   AlertDialog,
@@ -540,6 +541,22 @@ export function EventForm({
     </Button>
   );
 
+  // Shows the form as it is, unsaved changes included; nothing is saved, as a
+  // published event changes on the website the moment it is.
+  const previewButton = (
+    <PreviewButton
+      draft={() => ({
+        ...values,
+        id: event?.id ?? null,
+        seriesId: event?.seriesId ?? null,
+        summary: values.summary ?? '',
+        venue: values.venue ?? '',
+        booked: event?.booked ?? 0,
+        moreDates: !event && times ? allTimes(times).slice(1) : [],
+      })}
+    />
+  );
+
   const back = step > 0 && (
     <Button type="button" variant="ghost" size="sm" onClick={() => steps.goTo(step - 1)}>
       Back
@@ -592,6 +609,7 @@ export function EventForm({
       {event
         ? actions(
             <>
+              {previewButton}
               {!steps.isLast && (
                 <Button type="button" variant="outline" onClick={() => steps.goTo(step + 1)}>
                   Next
@@ -610,7 +628,10 @@ export function EventForm({
             </div>
           )
         : actions(
-            steps.isLast ? saveButton('Create event') : <Button type="submit">Next</Button>,
+            <>
+              {previewButton}
+              {steps.isLast ? saveButton('Create event') : <Button type="submit">Next</Button>}
+            </>,
             back
           )}
     </form>
@@ -641,8 +662,42 @@ function CancelledEvent({
         <dt className="text-muted-foreground">Bookings</dt>
         <dd className="tabular-nums">{event.bookings}</dd>
       </dl>
-      {actions(null, <DeleteEvent event={event} onRemoved={onRemoved} />)}
+      {actions(
+        <PreviewButton
+          draft={() => ({
+            id: event.id,
+            seriesId: event.seriesId,
+            status: event.status,
+            title: event.title,
+            summary: event.summary,
+            description: event.description,
+            locationId: event.locationId,
+            venue: event.venue,
+            timeZone: event.timeZone,
+            startsAt: event.startsAt,
+            endsAt: event.endsAt,
+            heroMediaId: event.heroMediaId,
+            galleryMediaIds: event.galleryMediaIds,
+            capacity: event.capacity,
+            maxPartySize: event.maxPartySize,
+            bookingsCloseAt: event.bookingsCloseAt,
+            booked: event.booked,
+            moreDates: [],
+          })}
+        />,
+        <DeleteEvent event={event} onRemoved={onRemoved} />
+      )}
     </div>
+  );
+}
+
+/** Opens the event as a visitor would see it, in a new tab. */
+function PreviewButton({ draft }: { draft: () => EventPreviewDraft }) {
+  return (
+    <Button type="button" variant="outline" onClick={() => openEventPreview(draft())}>
+      <EyeIcon aria-hidden data-icon="inline-start" />
+      <span className="max-sm:sr-only">Preview</span>
+    </Button>
   );
 }
 

@@ -2,7 +2,7 @@ import { mediaVariantWidths } from '@ll/db/enums';
 import type { MediaItem } from '@/server/media';
 import { makeSizes, prepareImage } from './prepare-image';
 
-export const IMAGE_ACCEPT = 'image/jpeg,image/png,image/webp,image/gif';
+export const IMAGE_ACCEPT = 'image/jpeg,image/png,image/webp,image/avif,image/gif';
 
 /** Width and height, so the website can reserve the image's space. */
 async function measure(file: File): Promise<{ width: number; height: number } | null> {

@@ -39,3 +39,5 @@ pnpm-debug.log*
 .agents/
 .claude/skills/
 skills-lock.json
+.superpowers/
+.playwright-mcp/

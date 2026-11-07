@@ -86,7 +86,7 @@ export function ImageDropZone({
   busy = false,
   multiple = false,
   title = 'Drop an image here',
-  description = 'JPG, PNG, WebP or GIF.',
+  description = 'JPG, PNG, WebP, AVIF or GIF.',
   className,
   children,
 }: {

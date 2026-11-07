@@ -11,7 +11,7 @@ import {
   toZoned,
 } from '@ll/content';
 import type { Db } from '@ll/db';
-import { eventBookings, events, locations } from '@ll/db/schema';
+import { eventBookings, events, locations, media } from '@ll/db/schema';
 import { createServerFn } from '@tanstack/react-start';
 import { and, asc, desc, eq, gte, inArray, isNull, ne, sql } from 'drizzle-orm';
 import { z } from 'zod';
@@ -433,3 +433,79 @@ export const deleteEvents = createServerFn({ method: 'POST' })
     await db.batch(statements as [BatchItem, ...BatchItem[]]);
     return { dates: rows.length };
   });
+
+/**
+ * What an event preview needs beyond the form's own values: its location's
+ * address and pin, its photos, and the other upcoming dates of its series.
+ * The preview shows unsaved changes, so it asks by id rather than by event.
+ */
+export const getEventPreviewExtras = createServerFn({ method: 'GET' })
+  .middleware([requirePermission('events:manage')])
+  .validator(
+    z.object({
+      locationId: z.string().nullable(),
+      mediaIds: z.array(z.string()).max(50),
+      seriesId: z.string().nullable(),
+      eventId: z.string().nullable(),
+    })
+  )
+  .handler(async ({ data }) => {
+    const db = getDb();
+    const [place, photos, dates] = await Promise.all([
+      data.locationId
+        ? db
+            .select({
+              name: locations.name,
+              address: locations.address,
+              latitude: locations.latitude,
+              longitude: locations.longitude,
+              mapUrl: locations.mapUrl,
+            })
+            .from(locations)
+            .where(eq(locations.id, data.locationId))
+            .then((rows) => rows[0] ?? null)
+        : null,
+      data.mediaIds.length
+        ? db
+            .select({ id: media.id, alt: media.alt, width: media.width, height: media.height })
+            .from(media)
+            .where(inArray(media.id, data.mediaIds))
+        : [],
+      data.seriesId
+        ? db
+            .select({ id: events.id, startsAt: events.startsAt, endsAt: events.endsAt })
+            .from(events)
+            .where(
+              and(
+                eq(events.seriesId, data.seriesId),
+                ne(events.status, 'cancelled'),
+                gte(events.endsAt, new Date())
+              )
+            )
+            .orderBy(asc(events.startsAt))
+            .limit(13)
+        : [],
+    ]);
+    // Photos come back in the order the form has them, minus any since deleted.
+    const byId = new Map(photos.map((p) => [p.id, p]));
+    return {
+      location: place && {
+        ...place,
+        address: place.address ?? '',
+        pin:
+          place.latitude !== null && place.longitude !== null
+            ? { latitude: place.latitude, longitude: place.longitude }
+            : null,
+      },
+      photos: data.mediaIds.flatMap((id) => {
+        const p = byId.get(id);
+        return p ? [{ ...p, alt: p.alt ?? '', url: `/api/media/${id}` }] : [];
+      }),
+      otherDates: dates
+        .filter((d) => d.id !== data.eventId)
+        .slice(0, 12)
+        .map((d) => ({ startsAt: d.startsAt.getTime(), endsAt: d.endsAt.getTime() })),
+    };
+  });
+
+export type EventPreviewExtras = Awaited<ReturnType<typeof getEventPreviewExtras>>;

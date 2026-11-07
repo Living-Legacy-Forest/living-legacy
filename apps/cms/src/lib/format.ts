@@ -91,6 +91,33 @@ export function formatDateTime(timestamp: number, zone: string) {
   });
 }
 
+/** "Saturday 14 March 2027" in `zone`. */
+export function formatLongDate(timestamp: number, zone: string) {
+  return new Date(timestamp).toLocaleDateString(LOCALE, {
+    timeZone: zone,
+    weekday: 'long',
+    day: 'numeric',
+    month: 'long',
+    year: 'numeric',
+  });
+}
+
+/** "10:00 am – 12:00 pm", naming the end's day when it is not the start's. */
+export function formatTimeRange(start: number, end: number, zone: string) {
+  const time = (ms: number) =>
+    new Date(ms).toLocaleTimeString(LOCALE, { timeZone: zone, hour: 'numeric', minute: '2-digit' });
+  const day = (ms: number) =>
+    new Date(ms).toLocaleDateString(LOCALE, {
+      timeZone: zone,
+      weekday: 'short',
+      day: 'numeric',
+      month: 'short',
+    });
+  return day(start) === day(end)
+    ? `${time(start)} – ${time(end)}`
+    : `${day(start)}, ${time(start)} – ${day(end)}, ${time(end)}`;
+}
+
 // Shared with the event rules, which need the same conversions.
 export { type WallTime, fromZoned, toZoned } from '@ll/content';
 

@@ -1,5 +1,6 @@
-// Maps for locations: every location on one map, and the picker that sets a
-// location's pin. A pin wears the location's hero photo when it has one.
+// Maps for locations: every location on one map, the picker that sets a
+// location's pin, and one pin to look at. A pin wears the location's hero photo
+// when it has one.
 import { useEffect, useState, useSyncExternalStore } from 'react';
 import { MapPinIcon } from '@/components/icons';
 import { Button } from '@/components/ui/button';
@@ -317,5 +318,17 @@ export function PinPicker({
         </span>
       </div>
     </div>
+  );
+}
+
+/** One pin to look at, not change: an event's location in its preview. */
+export function LocationPinMap({ pin, name }: { pin: Pin; name?: string }) {
+  const theme = useCmsTheme();
+  return (
+    <MapView theme={theme} center={[pin.longitude, pin.latitude]} zoom={PIN_ZOOM}>
+      <FoldedAttribution />
+      <PinMarker pin={pin} name={name} />
+      <MapControls />
+    </MapView>
   );
 }

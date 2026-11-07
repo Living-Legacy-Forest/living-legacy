@@ -34,6 +34,7 @@ import { Route as ApiAvatarIndexRouteImport } from './routes/api/avatar/index'
 import { Route as ApiAvatarKeyRouteImport } from './routes/api/avatar/$key'
 import { Route as ApiMediaIndexRouteImport } from './routes/api/media/index'
 import { Route as ApiV1TermsRouteImport } from './routes/api/v1/terms'
+import { Route as PreviewEventsDraftIdRouteImport } from './routes/preview/events/$draftId'
 import { Route as PreviewPostsPostIdRouteImport } from './routes/preview/posts/$postId'
 import { Route as AppPostsCategoriesIndexRouteImport } from './routes/_app/posts/categories/index'
 import { Route as AppPostsTagsIndexRouteImport } from './routes/_app/posts/tags/index'
@@ -164,6 +165,11 @@ const ApiV1TermsRoute = ApiV1TermsRouteImport.update({
   path: '/api/v1/terms',
   getParentRoute: () => rootRouteImport,
 } as any)
+const PreviewEventsDraftIdRoute = PreviewEventsDraftIdRouteImport.update({
+  id: '/preview/events/$draftId',
+  path: '/preview/events/$draftId',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const PreviewPostsPostIdRoute = PreviewPostsPostIdRouteImport.update({
   id: '/preview/posts/$postId',
   path: '/preview/posts/$postId',
@@ -198,6 +204,7 @@ export interface FileRoutesByFullPath {
   '/api/auth/$': typeof ApiAuthSplatRoute
   '/api/avatar/$key': typeof ApiAvatarKeyRoute
   '/api/v1/terms': typeof ApiV1TermsRoute
+  '/preview/events/$draftId': typeof PreviewEventsDraftIdRoute
   '/preview/posts/$postId': typeof PreviewPostsPostIdRoute
   '/activity/': typeof AppActivityIndexRoute
   '/announcements/': typeof AppAnnouncementsIndexRoute
@@ -229,6 +236,7 @@ export interface FileRoutesByTo {
   '/api/auth/$': typeof ApiAuthSplatRoute
   '/api/avatar/$key': typeof ApiAvatarKeyRoute
   '/api/v1/terms': typeof ApiV1TermsRoute
+  '/preview/events/$draftId': typeof PreviewEventsDraftIdRoute
   '/preview/posts/$postId': typeof PreviewPostsPostIdRoute
   '/activity': typeof AppActivityIndexRoute
   '/announcements': typeof AppAnnouncementsIndexRoute
@@ -262,6 +270,7 @@ export interface FileRoutesById {
   '/api/auth/$': typeof ApiAuthSplatRoute
   '/api/avatar/$key': typeof ApiAvatarKeyRoute
   '/api/v1/terms': typeof ApiV1TermsRoute
+  '/preview/events/$draftId': typeof PreviewEventsDraftIdRoute
   '/preview/posts/$postId': typeof PreviewPostsPostIdRoute
   '/_app/activity/': typeof AppActivityIndexRoute
   '/_app/announcements/': typeof AppAnnouncementsIndexRoute
@@ -295,6 +304,7 @@ export interface FileRouteTypes {
     | '/api/auth/$'
     | '/api/avatar/$key'
     | '/api/v1/terms'
+    | '/preview/events/$draftId'
     | '/preview/posts/$postId'
     | '/activity/'
     | '/announcements/'
@@ -326,6 +336,7 @@ export interface FileRouteTypes {
     | '/api/auth/$'
     | '/api/avatar/$key'
     | '/api/v1/terms'
+    | '/preview/events/$draftId'
     | '/preview/posts/$postId'
     | '/activity'
     | '/announcements'
@@ -358,6 +369,7 @@ export interface FileRouteTypes {
     | '/api/auth/$'
     | '/api/avatar/$key'
     | '/api/v1/terms'
+    | '/preview/events/$draftId'
     | '/preview/posts/$postId'
     | '/_app/activity/'
     | '/_app/announcements/'
@@ -388,6 +400,7 @@ export interface RootRouteChildren {
   ApiAuthSplatRoute: typeof ApiAuthSplatRoute
   ApiAvatarKeyRoute: typeof ApiAvatarKeyRoute
   ApiV1TermsRoute: typeof ApiV1TermsRoute
+  PreviewEventsDraftIdRoute: typeof PreviewEventsDraftIdRoute
   PreviewPostsPostIdRoute: typeof PreviewPostsPostIdRoute
   ApiAvatarIndexRoute: typeof ApiAvatarIndexRoute
   ApiMediaIndexRoute: typeof ApiMediaIndexRoute
@@ -572,6 +585,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiV1TermsRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/preview/events/$draftId': {
+      id: '/preview/events/$draftId'
+      path: '/preview/events/$draftId'
+      fullPath: '/preview/events/$draftId'
+      preLoaderRoute: typeof PreviewEventsDraftIdRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/preview/posts/$postId': {
       id: '/preview/posts/$postId'
       path: '/preview/posts/$postId'
@@ -664,6 +684,7 @@ const rootRouteChildren: RootRouteChildren = {
   ApiAuthSplatRoute: ApiAuthSplatRoute,
   ApiAvatarKeyRoute: ApiAvatarKeyRoute,
   ApiV1TermsRoute: ApiV1TermsRoute,
+  PreviewEventsDraftIdRoute: PreviewEventsDraftIdRoute,
   PreviewPostsPostIdRoute: PreviewPostsPostIdRoute,
   ApiAvatarIndexRoute: ApiAvatarIndexRoute,
   ApiMediaIndexRoute: ApiMediaIndexRoute,

@@ -2,7 +2,7 @@
  * Upload. A raw handler rather than a server function, since a server
  * function's validator expects JSON and this receives multipart form data.
  */
-import { type Role, can, imageSize } from '@ll/content';
+import { type Role, can, imageExtension, imageSize } from '@ll/content';
 import { schema } from '@ll/db';
 import { type MediaVariant, maxImageSide, mediaVariantWidths } from '@ll/db/enums';
 import { createFileRoute } from '@tanstack/react-router';
@@ -67,10 +67,10 @@ export const Route = createFileRoute('/api/media/')({
             ? (reported as { width: number; height: number })
             : measured;
 
-        const ext = file.name.includes('.') ? file.name.split('.').pop() : undefined;
         const base = crypto.randomUUID();
-        // Under media/ so these can be told apart from avatars in the bucket.
-        const r2Key = `media/${base}${ext ? `.${ext}` : ''}`;
+        // Under media/ so these can be told apart from avatars in the bucket. The
+        // extension comes from the checked type, never the file's own name.
+        const r2Key = `media/${base}.${imageExtension(file.type)}`;
 
         // Smaller copies made in the browser. One that is not actually smaller
         // than the original, or not the width it claims, is dropped.
@@ -81,7 +81,7 @@ export const Route = createFileRoute('/api/media/')({
           if (copy.type === 'image/gif' || copy.size >= file.size || w >= width) continue;
           const copyBytes = new Uint8Array(await copy.arrayBuffer());
           if (imageSize(copyBytes)?.width !== w) continue;
-          const key = `media/${base}-w${w}.${copy.type.split('/')[1]!.replace('jpeg', 'jpg')}`;
+          const key = `media/${base}-w${w}.${imageExtension(copy.type)}`;
           sizes.push({ variant: { width: w, key, mime: copy.type }, bytes: copyBytes });
         }
 

@@ -43,6 +43,8 @@ export const events = sqliteTable(
     status: text('status', { enum: ['draft', 'published', 'cancelled'] })
       .notNull()
       .default('draft'),
+    /** A draft set to go live then; the five-minute job publishes it. */
+    publishAt: integer('publish_at', { mode: 'timestamp_ms' }),
     cancelledAt: integer('cancelled_at', { mode: 'timestamp_ms' }),
     createdBy: text('created_by').references(() => user.id, { onDelete: 'set null' }),
     updatedBy: text('updated_by').references(() => user.id, { onDelete: 'set null' }),

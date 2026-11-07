@@ -78,60 +78,89 @@ const usageSources = [
   {
     kind: 'post',
     table: posts,
+    id: posts.id,
     label: posts.title,
     text: [posts.featuredMediaId, posts.ogMediaId, posts.body, posts.draft],
   },
   {
     kind: 'team member',
     table: teamMembers,
+    id: teamMembers.id,
     label: teamMembers.name,
     text: [teamMembers.photoMediaId, teamMembers.bio, teamMembers.draft],
   },
-  { kind: 'FAQ', table: faqs, label: faqs.question, text: [faqs.answer, faqs.draft] },
+  { kind: 'FAQ', table: faqs, id: faqs.id, label: faqs.question, text: [faqs.answer, faqs.draft] },
   {
     kind: 'testimonial',
     table: testimonials,
+    id: testimonials.id,
     label: testimonials.name,
     text: [testimonials.photoMediaId, testimonials.draft],
   },
   {
     kind: 'media coverage item',
     table: mediaCoverage,
+    id: mediaCoverage.id,
     label: mediaCoverage.title,
     text: [mediaCoverage.imageMediaId, mediaCoverage.draft],
   },
   {
     kind: 'location',
     table: locations,
+    id: locations.id,
     label: locations.name,
     text: [locations.heroMediaId, locations.about, locations.draft],
   },
   {
     kind: 'event',
     table: events,
+    id: events.id,
     label: events.title,
     text: [events.heroMediaId, events.galleryMediaIds, events.description],
   },
-] satisfies { kind: string; table: SQLiteTable; label: SQLiteColumn; text: SQLiteColumn[] }[];
+] satisfies {
+  kind: string;
+  table: SQLiteTable;
+  id: SQLiteColumn;
+  label: SQLiteColumn;
+  text: SQLiteColumn[];
+}[];
 
 /** Where each of `ids` is still used, as "post “Title”" labels. */
 async function findUsage(db: ReturnType<typeof getDb>, ids: string[]) {
   const found = await Promise.all(
-    usageSources.map(async ({ kind, table, label, text }) => {
+    usageSources.map(async ({ kind, table, id: idColumn, label, text }) => {
       const haystack = sql<string>`(${sql.join(
         text.map((c) => sql`coalesce(${c}, '')`),
         sql` || ' ' || `
       )})`;
       // Media ids are ULIDs, so they hold no LIKE wildcards.
       const rows = await db
-        .select({ label: sql<string>`${label}`, haystack })
+        .select({ id: sql<string>`${idColumn}`, label: sql<string>`${label}`, haystack })
         .from(table)
         .where(or(...ids.map((id) => sql`${haystack} like ${`%${id}%`}`)));
-      return rows.map((r) => ({ name: `${kind} “${r.label}”`, haystack: r.haystack }));
+      return rows.map((r) => ({
+        kind,
+        id: r.id,
+        label: r.label,
+        name: `${kind} “${r.label}”`,
+        haystack: r.haystack,
+      }));
     })
   );
   return found.flat();
 }
+
+/** Where one image is used, for the media panel. Drafts count, as deleting would break them. */
+export const getMediaUsage = createServerFn({ method: 'GET' })
+  .middleware([requirePermission('media:write')])
+  .validator(z.object({ id: z.string().max(64) }))
+  .handler(async ({ data }) => {
+    const found = await findUsage(getDb(), [data.id]);
+    return found.map(({ kind, id, label }) => ({ kind, id, label }));
+  });
+
+export type MediaUsage = Awaited<ReturnType<typeof getMediaUsage>>;
 
 // Removing a file is permanent, so it needs content:purge like emptying the
 // trash; media:write only uploads and edits.

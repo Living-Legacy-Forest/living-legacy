@@ -75,11 +75,22 @@ export async function serveMedia(
       'Content-Type': variant?.mime ?? row.mime,
       'Content-Length': String(object.size),
       'Cache-Control': EDGE_CACHE,
+      ...UPLOAD_HEADERS,
     },
   });
   ctx.waitUntil(cache.put(key, response.clone()));
   return withBrowserCache(response, request);
 }
+
+/**
+ * Uploaded bytes are served from the CMS's own origin, so they must never be
+ * read as anything but the image type they were stored as: no sniffing, and a
+ * policy that runs nothing should a file ever be opened as a page.
+ */
+export const UPLOAD_HEADERS = {
+  'X-Content-Type-Options': 'nosniff',
+  'Content-Security-Policy': "default-src 'none'; sandbox",
+} as const;
 
 /** Drops this data centre's cached copies of each id; others expire on their own. */
 export async function forgetCachedMedia(origin: string, ids: string[]) {

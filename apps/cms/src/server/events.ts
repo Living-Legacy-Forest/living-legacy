@@ -74,6 +74,7 @@ export const listEvents = createServerFn({ method: 'GET' })
         seriesId: e.seriesId,
         timeZone: e.timeZone,
         status: e.status,
+        publishAt: e.publishAt?.getTime() ?? null,
         booked: Number(booked),
         bookings: Number(bookings),
         checkedIn: Number(checkedIn),
@@ -127,6 +128,11 @@ async function peopleBooked(db: Db, eventId: string) {
   return Number(row?.taken ?? 0);
 }
 
+/** A scheduled time must leave the five-minute job a chance to see it. */
+const MIN_PUBLISH_LEAD_MS = 60_000;
+const PUBLISH_LEAD_MESSAGE =
+  'Pick a publish time at least a minute from now, or switch on Published instead.';
+
 export const saveEvent = createServerFn({ method: 'POST' })
   .middleware([requirePermission('events:manage')])
   .validator(eventInputSchema)
@@ -134,6 +140,11 @@ export const saveEvent = createServerFn({ method: 'POST' })
     const db = getDb();
     const slug = slugify(data.slug || data.title);
     if (!slug) throw new Error('Give the event a title or a web address.');
+    const publishAtProblem = (current: Date | null) =>
+      data.status === 'draft' &&
+      data.publishAt !== null &&
+      data.publishAt !== current?.getTime() &&
+      data.publishAt < Date.now() + MIN_PUBLISH_LEAD_MS;
     // Each event keeps its own zone (its location's), not the site's.
     const timeZone = data.timeZone;
     const now = new Date();
@@ -149,6 +160,9 @@ export const saveEvent = createServerFn({ method: 'POST' })
       capacity: data.capacity,
       maxPartySize: data.maxPartySize,
       status: data.status,
+      // Only a draft waits for a time; publishing by hand drops it.
+      publishAt:
+        data.status === 'draft' && data.publishAt !== null ? new Date(data.publishAt) : null,
       updatedBy: context.user.id,
       updatedAt: now,
     };
@@ -158,6 +172,7 @@ export const saveEvent = createServerFn({ method: 'POST' })
       closeBefore === null ? null : new Date(startsAt - closeBefore);
 
     if (!data.id) {
+      if (publishAtProblem(null)) throw new Error(PUBLISH_LEAD_MESSAGE);
       const dates = [{ startsAt: data.startsAt, endsAt: data.endsAt }, ...data.moreDates];
       const seriesId = dates.length > 1 ? crypto.randomUUID() : null;
       // Each date of a series has its own page, so its own address; with
@@ -210,6 +225,7 @@ export const saveEvent = createServerFn({ method: 'POST' })
     if (current.status === 'cancelled') {
       throw new Error('This event is cancelled and can no longer be changed.');
     }
+    if (publishAtProblem(current.publishAt)) throw new Error(PUBLISH_LEAD_MESSAGE);
     const clash = await db.query.events.findFirst({
       where: and(eq(events.slug, slug), ne(events.id, current.id)),
     });
@@ -229,6 +245,7 @@ export const saveEvent = createServerFn({ method: 'POST' })
       capacity: current.capacity,
       maxPartySize: current.maxPartySize,
       status: current.status,
+      publishAt: current.publishAt,
     };
     const patch = changedFields(was, shared);
     const timesChanged =

@@ -176,6 +176,8 @@ export const eventInputSchema = z
     maxPartySize: z.number().int().min(1).max(STAFF_MAX_PARTY_SIZE),
     bookingsCloseAt: z.number().int().nullable(),
     status: z.enum(['draft', 'published']),
+    /** A draft's time to go live, or null to stay a draft until published by hand. */
+    publishAt: z.number().int().nullable().default(null),
     /** A new repeating event: its other dates (the first is startsAt/endsAt). */
     moreDates: z
       .array(z.object({ startsAt: z.number().int(), endsAt: z.number().int() }))

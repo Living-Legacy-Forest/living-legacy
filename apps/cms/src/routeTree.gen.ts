@@ -15,11 +15,13 @@ import { Route as AppIndexRouteImport } from './routes/_app/index'
 import { Route as AppActivityIndexRouteImport } from './routes/_app/activity/index'
 import { Route as AppAnnouncementsIndexRouteImport } from './routes/_app/announcements/index'
 import { Route as AppApiKeysIndexRouteImport } from './routes/_app/api-keys/index'
+import { Route as AppChecksIndexRouteImport } from './routes/_app/checks/index'
 import { Route as AppEventsIndexRouteImport } from './routes/_app/events/index'
 import { Route as AppFaqsIndexRouteImport } from './routes/_app/faqs/index'
 import { Route as AppLocationsIndexRouteImport } from './routes/_app/locations/index'
 import { Route as AppMediaCoverageIndexRouteImport } from './routes/_app/media-coverage/index'
 import { Route as AppMediaIndexRouteImport } from './routes/_app/media/index'
+import { Route as AppMissingPagesIndexRouteImport } from './routes/_app/missing-pages/index'
 import { Route as AppPostsIndexRouteImport } from './routes/_app/posts/index'
 import { Route as AppPostsPostIdRouteImport } from './routes/_app/posts/$postId'
 import { Route as AppPostsNewRouteImport } from './routes/_app/posts/new'
@@ -70,6 +72,11 @@ const AppApiKeysIndexRoute = AppApiKeysIndexRouteImport.update({
   path: '/api-keys/',
   getParentRoute: () => AppRoute,
 } as any)
+const AppChecksIndexRoute = AppChecksIndexRouteImport.update({
+  id: '/checks/',
+  path: '/checks/',
+  getParentRoute: () => AppRoute,
+} as any)
 const AppEventsIndexRoute = AppEventsIndexRouteImport.update({
   id: '/events/',
   path: '/events/',
@@ -93,6 +100,11 @@ const AppMediaCoverageIndexRoute = AppMediaCoverageIndexRouteImport.update({
 const AppMediaIndexRoute = AppMediaIndexRouteImport.update({
   id: '/media/',
   path: '/media/',
+  getParentRoute: () => AppRoute,
+} as any)
+const AppMissingPagesIndexRoute = AppMissingPagesIndexRouteImport.update({
+  id: '/missing-pages/',
+  path: '/missing-pages/',
   getParentRoute: () => AppRoute,
 } as any)
 const AppPostsIndexRoute = AppPostsIndexRouteImport.update({
@@ -209,11 +221,13 @@ export interface FileRoutesByFullPath {
   '/activity/': typeof AppActivityIndexRoute
   '/announcements/': typeof AppAnnouncementsIndexRoute
   '/api-keys/': typeof AppApiKeysIndexRoute
+  '/checks/': typeof AppChecksIndexRoute
   '/events/': typeof AppEventsIndexRoute
   '/faqs/': typeof AppFaqsIndexRoute
   '/locations/': typeof AppLocationsIndexRoute
   '/media-coverage/': typeof AppMediaCoverageIndexRoute
   '/media/': typeof AppMediaIndexRoute
+  '/missing-pages/': typeof AppMissingPagesIndexRoute
   '/posts/': typeof AppPostsIndexRoute
   '/profile/': typeof AppProfileIndexRoute
   '/redirects/': typeof AppRedirectsIndexRoute
@@ -241,11 +255,13 @@ export interface FileRoutesByTo {
   '/activity': typeof AppActivityIndexRoute
   '/announcements': typeof AppAnnouncementsIndexRoute
   '/api-keys': typeof AppApiKeysIndexRoute
+  '/checks': typeof AppChecksIndexRoute
   '/events': typeof AppEventsIndexRoute
   '/faqs': typeof AppFaqsIndexRoute
   '/locations': typeof AppLocationsIndexRoute
   '/media-coverage': typeof AppMediaCoverageIndexRoute
   '/media': typeof AppMediaIndexRoute
+  '/missing-pages': typeof AppMissingPagesIndexRoute
   '/posts': typeof AppPostsIndexRoute
   '/profile': typeof AppProfileIndexRoute
   '/redirects': typeof AppRedirectsIndexRoute
@@ -275,11 +291,13 @@ export interface FileRoutesById {
   '/_app/activity/': typeof AppActivityIndexRoute
   '/_app/announcements/': typeof AppAnnouncementsIndexRoute
   '/_app/api-keys/': typeof AppApiKeysIndexRoute
+  '/_app/checks/': typeof AppChecksIndexRoute
   '/_app/events/': typeof AppEventsIndexRoute
   '/_app/faqs/': typeof AppFaqsIndexRoute
   '/_app/locations/': typeof AppLocationsIndexRoute
   '/_app/media-coverage/': typeof AppMediaCoverageIndexRoute
   '/_app/media/': typeof AppMediaIndexRoute
+  '/_app/missing-pages/': typeof AppMissingPagesIndexRoute
   '/_app/posts/': typeof AppPostsIndexRoute
   '/_app/profile/': typeof AppProfileIndexRoute
   '/_app/redirects/': typeof AppRedirectsIndexRoute
@@ -309,11 +327,13 @@ export interface FileRouteTypes {
     | '/activity/'
     | '/announcements/'
     | '/api-keys/'
+    | '/checks/'
     | '/events/'
     | '/faqs/'
     | '/locations/'
     | '/media-coverage/'
     | '/media/'
+    | '/missing-pages/'
     | '/posts/'
     | '/profile/'
     | '/redirects/'
@@ -341,11 +361,13 @@ export interface FileRouteTypes {
     | '/activity'
     | '/announcements'
     | '/api-keys'
+    | '/checks'
     | '/events'
     | '/faqs'
     | '/locations'
     | '/media-coverage'
     | '/media'
+    | '/missing-pages'
     | '/posts'
     | '/profile'
     | '/redirects'
@@ -374,11 +396,13 @@ export interface FileRouteTypes {
     | '/_app/activity/'
     | '/_app/announcements/'
     | '/_app/api-keys/'
+    | '/_app/checks/'
     | '/_app/events/'
     | '/_app/faqs/'
     | '/_app/locations/'
     | '/_app/media-coverage/'
     | '/_app/media/'
+    | '/_app/missing-pages/'
     | '/_app/posts/'
     | '/_app/profile/'
     | '/_app/redirects/'
@@ -452,6 +476,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppApiKeysIndexRouteImport
       parentRoute: typeof AppRoute
     }
+    '/_app/checks/': {
+      id: '/_app/checks/'
+      path: '/checks'
+      fullPath: '/checks/'
+      preLoaderRoute: typeof AppChecksIndexRouteImport
+      parentRoute: typeof AppRoute
+    }
     '/_app/events/': {
       id: '/_app/events/'
       path: '/events'
@@ -485,6 +516,13 @@ declare module '@tanstack/react-router' {
       path: '/media'
       fullPath: '/media/'
       preLoaderRoute: typeof AppMediaIndexRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/_app/missing-pages/': {
+      id: '/_app/missing-pages/'
+      path: '/missing-pages'
+      fullPath: '/missing-pages/'
+      preLoaderRoute: typeof AppMissingPagesIndexRouteImport
       parentRoute: typeof AppRoute
     }
     '/_app/posts/': {
@@ -637,11 +675,13 @@ interface AppRouteChildren {
   AppActivityIndexRoute: typeof AppActivityIndexRoute
   AppAnnouncementsIndexRoute: typeof AppAnnouncementsIndexRoute
   AppApiKeysIndexRoute: typeof AppApiKeysIndexRoute
+  AppChecksIndexRoute: typeof AppChecksIndexRoute
   AppEventsIndexRoute: typeof AppEventsIndexRoute
   AppFaqsIndexRoute: typeof AppFaqsIndexRoute
   AppLocationsIndexRoute: typeof AppLocationsIndexRoute
   AppMediaCoverageIndexRoute: typeof AppMediaCoverageIndexRoute
   AppMediaIndexRoute: typeof AppMediaIndexRoute
+  AppMissingPagesIndexRoute: typeof AppMissingPagesIndexRoute
   AppPostsIndexRoute: typeof AppPostsIndexRoute
   AppProfileIndexRoute: typeof AppProfileIndexRoute
   AppRedirectsIndexRoute: typeof AppRedirectsIndexRoute
@@ -660,11 +700,13 @@ const AppRouteChildren: AppRouteChildren = {
   AppActivityIndexRoute: AppActivityIndexRoute,
   AppAnnouncementsIndexRoute: AppAnnouncementsIndexRoute,
   AppApiKeysIndexRoute: AppApiKeysIndexRoute,
+  AppChecksIndexRoute: AppChecksIndexRoute,
   AppEventsIndexRoute: AppEventsIndexRoute,
   AppFaqsIndexRoute: AppFaqsIndexRoute,
   AppLocationsIndexRoute: AppLocationsIndexRoute,
   AppMediaCoverageIndexRoute: AppMediaCoverageIndexRoute,
   AppMediaIndexRoute: AppMediaIndexRoute,
+  AppMissingPagesIndexRoute: AppMissingPagesIndexRoute,
   AppPostsIndexRoute: AppPostsIndexRoute,
   AppProfileIndexRoute: AppProfileIndexRoute,
   AppRedirectsIndexRoute: AppRedirectsIndexRoute,

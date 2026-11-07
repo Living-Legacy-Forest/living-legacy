@@ -9,6 +9,8 @@ import {
   FileText,
   MediaIcon,
   LayoutDashboard,
+  Link2Off,
+  ListTodo,
   MegaphoneIcon,
   MapPinIcon,
   NewspaperIcon,
@@ -33,12 +35,14 @@ export type NavItem = {
     | '/profile'
     | '/activity'
     | '/api-keys'
+    | '/checks'
     | '/announcements'
     | '/events'
     | '/faqs'
     | '/media'
     | '/locations'
     | '/media-coverage'
+    | '/missing-pages'
     | '/redirects'
     | '/settings'
     | '/team'
@@ -73,6 +77,12 @@ export const navGroups: NavGroup[] = [
       { title: 'Media', icon: MediaIcon, to: '/media', permission: 'media:write' },
       { title: 'Announcements', icon: MegaphoneIcon, to: '/announcements' },
       { title: 'Media coverage', icon: NewspaperIcon, to: '/media-coverage' },
+      {
+        title: 'Content checks',
+        icon: ListTodo,
+        to: '/checks',
+        permission: ['posts:publish', 'seo:write'],
+      },
     ],
   },
   {
@@ -95,6 +105,12 @@ export const navGroups: NavGroup[] = [
     items: [
       { title: 'Activity', icon: ActivityIcon, to: '/activity', permission: 'posts:publish' },
       { title: 'Redirects', icon: ArrowRightLeft, to: '/redirects', permission: 'redirects:write' },
+      {
+        title: 'Missing pages',
+        icon: Link2Off,
+        to: '/missing-pages',
+        permission: 'redirects:write',
+      },
       { title: 'Users', icon: UserCog, to: '/users', permission: 'users:manage' },
       { title: 'API keys', icon: KeyIcon, to: '/api-keys', permission: 'settings:write' },
       {

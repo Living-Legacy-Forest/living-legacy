@@ -36,7 +36,7 @@ function EditPostPage() {
     <PostEditor
       key={`${data.post?.id}-${version}`}
       data={data}
-      access={postAccessFor(user, data.post?.createdBy ?? null)}
+      access={postAccessFor(user, data.post?.createdBy ?? null, !!data.post?.scheduledAt)}
       onReload={async () => {
         reloading.current = true;
         await router.invalidate();

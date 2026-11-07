@@ -15,6 +15,7 @@ import { Route as AppIndexRouteImport } from './routes/_app/index'
 import { Route as AppActivityIndexRouteImport } from './routes/_app/activity/index'
 import { Route as AppAnnouncementsIndexRouteImport } from './routes/_app/announcements/index'
 import { Route as AppApiKeysIndexRouteImport } from './routes/_app/api-keys/index'
+import { Route as AppChecksIndexRouteImport } from './routes/_app/checks/index'
 import { Route as AppEventsIndexRouteImport } from './routes/_app/events/index'
 import { Route as AppFaqsIndexRouteImport } from './routes/_app/faqs/index'
 import { Route as AppLocationsIndexRouteImport } from './routes/_app/locations/index'
@@ -68,6 +69,11 @@ const AppAnnouncementsIndexRoute = AppAnnouncementsIndexRouteImport.update({
 const AppApiKeysIndexRoute = AppApiKeysIndexRouteImport.update({
   id: '/api-keys/',
   path: '/api-keys/',
+  getParentRoute: () => AppRoute,
+} as any)
+const AppChecksIndexRoute = AppChecksIndexRouteImport.update({
+  id: '/checks/',
+  path: '/checks/',
   getParentRoute: () => AppRoute,
 } as any)
 const AppEventsIndexRoute = AppEventsIndexRouteImport.update({
@@ -209,6 +215,7 @@ export interface FileRoutesByFullPath {
   '/activity/': typeof AppActivityIndexRoute
   '/announcements/': typeof AppAnnouncementsIndexRoute
   '/api-keys/': typeof AppApiKeysIndexRoute
+  '/checks/': typeof AppChecksIndexRoute
   '/events/': typeof AppEventsIndexRoute
   '/faqs/': typeof AppFaqsIndexRoute
   '/locations/': typeof AppLocationsIndexRoute
@@ -241,6 +248,7 @@ export interface FileRoutesByTo {
   '/activity': typeof AppActivityIndexRoute
   '/announcements': typeof AppAnnouncementsIndexRoute
   '/api-keys': typeof AppApiKeysIndexRoute
+  '/checks': typeof AppChecksIndexRoute
   '/events': typeof AppEventsIndexRoute
   '/faqs': typeof AppFaqsIndexRoute
   '/locations': typeof AppLocationsIndexRoute
@@ -275,6 +283,7 @@ export interface FileRoutesById {
   '/_app/activity/': typeof AppActivityIndexRoute
   '/_app/announcements/': typeof AppAnnouncementsIndexRoute
   '/_app/api-keys/': typeof AppApiKeysIndexRoute
+  '/_app/checks/': typeof AppChecksIndexRoute
   '/_app/events/': typeof AppEventsIndexRoute
   '/_app/faqs/': typeof AppFaqsIndexRoute
   '/_app/locations/': typeof AppLocationsIndexRoute
@@ -309,6 +318,7 @@ export interface FileRouteTypes {
     | '/activity/'
     | '/announcements/'
     | '/api-keys/'
+    | '/checks/'
     | '/events/'
     | '/faqs/'
     | '/locations/'
@@ -341,6 +351,7 @@ export interface FileRouteTypes {
     | '/activity'
     | '/announcements'
     | '/api-keys'
+    | '/checks'
     | '/events'
     | '/faqs'
     | '/locations'
@@ -374,6 +385,7 @@ export interface FileRouteTypes {
     | '/_app/activity/'
     | '/_app/announcements/'
     | '/_app/api-keys/'
+    | '/_app/checks/'
     | '/_app/events/'
     | '/_app/faqs/'
     | '/_app/locations/'
@@ -450,6 +462,13 @@ declare module '@tanstack/react-router' {
       path: '/api-keys'
       fullPath: '/api-keys/'
       preLoaderRoute: typeof AppApiKeysIndexRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/_app/checks/': {
+      id: '/_app/checks/'
+      path: '/checks'
+      fullPath: '/checks/'
+      preLoaderRoute: typeof AppChecksIndexRouteImport
       parentRoute: typeof AppRoute
     }
     '/_app/events/': {
@@ -637,6 +656,7 @@ interface AppRouteChildren {
   AppActivityIndexRoute: typeof AppActivityIndexRoute
   AppAnnouncementsIndexRoute: typeof AppAnnouncementsIndexRoute
   AppApiKeysIndexRoute: typeof AppApiKeysIndexRoute
+  AppChecksIndexRoute: typeof AppChecksIndexRoute
   AppEventsIndexRoute: typeof AppEventsIndexRoute
   AppFaqsIndexRoute: typeof AppFaqsIndexRoute
   AppLocationsIndexRoute: typeof AppLocationsIndexRoute
@@ -660,6 +680,7 @@ const AppRouteChildren: AppRouteChildren = {
   AppActivityIndexRoute: AppActivityIndexRoute,
   AppAnnouncementsIndexRoute: AppAnnouncementsIndexRoute,
   AppApiKeysIndexRoute: AppApiKeysIndexRoute,
+  AppChecksIndexRoute: AppChecksIndexRoute,
   AppEventsIndexRoute: AppEventsIndexRoute,
   AppFaqsIndexRoute: AppFaqsIndexRoute,
   AppLocationsIndexRoute: AppLocationsIndexRoute,

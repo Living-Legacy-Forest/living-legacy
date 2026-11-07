@@ -43,9 +43,18 @@ import { type MediaItem, type MediaListData, deleteMedia, updateMedia } from '@/
 
 const NOUN: [string, string] = ['file', 'files'];
 
-export function MediaPage({ data, canDelete }: { data: MediaListData; canDelete: boolean }) {
+export function MediaPage({
+  data,
+  canDelete,
+  initialSelected,
+}: {
+  data: MediaListData;
+  canDelete: boolean;
+  /** Opened in the panel on arrival. */
+  initialSelected?: string;
+}) {
   const [query, setQuery] = useState('');
-  const [editingId, setEditingId] = useState<string | null>(null);
+  const [editingId, setEditingId] = useState<string | null>(initialSelected ?? null);
   const [confirmDelete, setConfirmDelete] = useState(false);
   const [dragOver, setDragOver] = useState(false);
   const fileInput = useRef<HTMLInputElement>(null);

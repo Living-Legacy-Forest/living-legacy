@@ -9,6 +9,7 @@ import {
   FileText,
   MediaIcon,
   LayoutDashboard,
+  ListTodo,
   MegaphoneIcon,
   MapPinIcon,
   NewspaperIcon,
@@ -33,6 +34,7 @@ export type NavItem = {
     | '/profile'
     | '/activity'
     | '/api-keys'
+    | '/checks'
     | '/announcements'
     | '/events'
     | '/faqs'
@@ -73,6 +75,12 @@ export const navGroups: NavGroup[] = [
       { title: 'Media', icon: MediaIcon, to: '/media', permission: 'media:write' },
       { title: 'Announcements', icon: MegaphoneIcon, to: '/announcements' },
       { title: 'Media coverage', icon: NewspaperIcon, to: '/media-coverage' },
+      {
+        title: 'Content checks',
+        icon: ListTodo,
+        to: '/checks',
+        permission: ['posts:publish', 'seo:write'],
+      },
     ],
   },
   {

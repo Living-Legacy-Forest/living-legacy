@@ -21,6 +21,7 @@ import { Route as AppFaqsIndexRouteImport } from './routes/_app/faqs/index'
 import { Route as AppLocationsIndexRouteImport } from './routes/_app/locations/index'
 import { Route as AppMediaCoverageIndexRouteImport } from './routes/_app/media-coverage/index'
 import { Route as AppMediaIndexRouteImport } from './routes/_app/media/index'
+import { Route as AppMissingPagesIndexRouteImport } from './routes/_app/missing-pages/index'
 import { Route as AppPostsIndexRouteImport } from './routes/_app/posts/index'
 import { Route as AppPostsPostIdRouteImport } from './routes/_app/posts/$postId'
 import { Route as AppPostsNewRouteImport } from './routes/_app/posts/new'
@@ -99,6 +100,11 @@ const AppMediaCoverageIndexRoute = AppMediaCoverageIndexRouteImport.update({
 const AppMediaIndexRoute = AppMediaIndexRouteImport.update({
   id: '/media/',
   path: '/media/',
+  getParentRoute: () => AppRoute,
+} as any)
+const AppMissingPagesIndexRoute = AppMissingPagesIndexRouteImport.update({
+  id: '/missing-pages/',
+  path: '/missing-pages/',
   getParentRoute: () => AppRoute,
 } as any)
 const AppPostsIndexRoute = AppPostsIndexRouteImport.update({
@@ -221,6 +227,7 @@ export interface FileRoutesByFullPath {
   '/locations/': typeof AppLocationsIndexRoute
   '/media-coverage/': typeof AppMediaCoverageIndexRoute
   '/media/': typeof AppMediaIndexRoute
+  '/missing-pages/': typeof AppMissingPagesIndexRoute
   '/posts/': typeof AppPostsIndexRoute
   '/profile/': typeof AppProfileIndexRoute
   '/redirects/': typeof AppRedirectsIndexRoute
@@ -254,6 +261,7 @@ export interface FileRoutesByTo {
   '/locations': typeof AppLocationsIndexRoute
   '/media-coverage': typeof AppMediaCoverageIndexRoute
   '/media': typeof AppMediaIndexRoute
+  '/missing-pages': typeof AppMissingPagesIndexRoute
   '/posts': typeof AppPostsIndexRoute
   '/profile': typeof AppProfileIndexRoute
   '/redirects': typeof AppRedirectsIndexRoute
@@ -289,6 +297,7 @@ export interface FileRoutesById {
   '/_app/locations/': typeof AppLocationsIndexRoute
   '/_app/media-coverage/': typeof AppMediaCoverageIndexRoute
   '/_app/media/': typeof AppMediaIndexRoute
+  '/_app/missing-pages/': typeof AppMissingPagesIndexRoute
   '/_app/posts/': typeof AppPostsIndexRoute
   '/_app/profile/': typeof AppProfileIndexRoute
   '/_app/redirects/': typeof AppRedirectsIndexRoute
@@ -324,6 +333,7 @@ export interface FileRouteTypes {
     | '/locations/'
     | '/media-coverage/'
     | '/media/'
+    | '/missing-pages/'
     | '/posts/'
     | '/profile/'
     | '/redirects/'
@@ -357,6 +367,7 @@ export interface FileRouteTypes {
     | '/locations'
     | '/media-coverage'
     | '/media'
+    | '/missing-pages'
     | '/posts'
     | '/profile'
     | '/redirects'
@@ -391,6 +402,7 @@ export interface FileRouteTypes {
     | '/_app/locations/'
     | '/_app/media-coverage/'
     | '/_app/media/'
+    | '/_app/missing-pages/'
     | '/_app/posts/'
     | '/_app/profile/'
     | '/_app/redirects/'
@@ -504,6 +516,13 @@ declare module '@tanstack/react-router' {
       path: '/media'
       fullPath: '/media/'
       preLoaderRoute: typeof AppMediaIndexRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/_app/missing-pages/': {
+      id: '/_app/missing-pages/'
+      path: '/missing-pages'
+      fullPath: '/missing-pages/'
+      preLoaderRoute: typeof AppMissingPagesIndexRouteImport
       parentRoute: typeof AppRoute
     }
     '/_app/posts/': {
@@ -662,6 +681,7 @@ interface AppRouteChildren {
   AppLocationsIndexRoute: typeof AppLocationsIndexRoute
   AppMediaCoverageIndexRoute: typeof AppMediaCoverageIndexRoute
   AppMediaIndexRoute: typeof AppMediaIndexRoute
+  AppMissingPagesIndexRoute: typeof AppMissingPagesIndexRoute
   AppPostsIndexRoute: typeof AppPostsIndexRoute
   AppProfileIndexRoute: typeof AppProfileIndexRoute
   AppRedirectsIndexRoute: typeof AppRedirectsIndexRoute
@@ -686,6 +706,7 @@ const AppRouteChildren: AppRouteChildren = {
   AppLocationsIndexRoute: AppLocationsIndexRoute,
   AppMediaCoverageIndexRoute: AppMediaCoverageIndexRoute,
   AppMediaIndexRoute: AppMediaIndexRoute,
+  AppMissingPagesIndexRoute: AppMissingPagesIndexRoute,
   AppPostsIndexRoute: AppPostsIndexRoute,
   AppProfileIndexRoute: AppProfileIndexRoute,
   AppRedirectsIndexRoute: AppRedirectsIndexRoute,

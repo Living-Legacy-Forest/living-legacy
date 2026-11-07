@@ -32,7 +32,8 @@ function noFraming(response: Response) {
 // Custom Worker entry: TanStack Start serves requests. The cron triggers in
 // wrangler.jsonc: every five minutes, publish scheduled posts and sync event
 // bookings to HubSpot (once connected; HubSpot sends the guest emails); daily,
-// clear out unused stored files and delete bookings a year after their event.
+// clear out unused stored files, delete bookings a year after their event, and
+// forget missing pages nobody has asked for in 90 days.
 export default {
   // The app reads bindings via `cloudflare:workers`, so it only gets the request.
   async fetch(request, _env, ctx) {
@@ -52,12 +53,18 @@ export default {
   async scheduled(controller, env, ctx) {
     const now = new Date(controller.scheduledTime);
     if (controller.cron === MEDIA_SWEEP_CRON) {
-      const [{ sweepOrphanedMedia }, { purgeOldBookings }] = await Promise.all([
-        import('./server/media-sweep'),
-        import('./server/event-jobs'),
-      ]);
+      const [{ sweepOrphanedMedia }, { purgeOldBookings }, { pruneMissingPages }] =
+        await Promise.all([
+          import('./server/media-sweep'),
+          import('./server/event-jobs'),
+          import('./server/not-found'),
+        ]);
       ctx.waitUntil(
-        Promise.all([sweepOrphanedMedia(env.DB, env.MEDIA, now), purgeOldBookings(env.DB, now)])
+        Promise.all([
+          sweepOrphanedMedia(env.DB, env.MEDIA, now),
+          purgeOldBookings(env.DB, now),
+          pruneMissingPages(env.DB, now),
+        ])
       );
       return;
     }

@@ -35,6 +35,23 @@ export const redirects = sqliteTable('redirects', {
   ...timestamps(),
 });
 
+// Paths the website answered "not found", counted so someone can redirect
+// the ones people still follow. Written by the website, read in the CMS
+// (Missing pages); paths unseen for 90 days are cleared by the daily job.
+export const notFoundPaths = sqliteTable(
+  'not_found_paths',
+  {
+    /** Normalised as redirects match paths: lowercase, no trailing slash. */
+    path: text('path').primaryKey(),
+    hits: integer('hits').notNull().default(1),
+    firstSeenAt: integer('first_seen_at', { mode: 'timestamp_ms' }).notNull(),
+    lastSeenAt: integer('last_seen_at', { mode: 'timestamp_ms' }).notNull(),
+    /** Set when someone decides it needs no redirect; it stays hidden. */
+    dismissedAt: integer('dismissed_at', { mode: 'timestamp_ms' }),
+  },
+  (t) => [index('not_found_paths_last_seen').on(t.lastSeenAt)]
+);
+
 export const revisions = sqliteTable(
   'revisions',
   {

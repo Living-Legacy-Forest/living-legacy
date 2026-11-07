@@ -1,7 +1,7 @@
 import { defineMiddleware } from 'astro:middleware';
 import { captureServerException } from '@/lib/analytics/posthog-server';
 import { isIndexableHost } from '@/lib/seo';
-import { findRedirect, recordHit } from '@/lib/redirects';
+import { findRedirect, recordHit, recordNotFound } from '@/lib/redirects';
 import { getSiteSettings } from '@/lib/settings';
 
 /**
@@ -16,6 +16,8 @@ import { getSiteSettings } from '@/lib/settings';
  *    even if a page forgets to use BaseLayout.
  * 3. Report rendering failures to PostHog error tracking, the server-side
  *    equivalent of the browser's `capture_exceptions`.
+ * 4. Count paths that were not found and no redirect caught, for the CMS's
+ *    Missing pages (after the response, so visitors do not wait for it).
  */
 export const onRequest = defineMiddleware(async (context, next) => {
   try {
@@ -26,6 +28,10 @@ export const onRequest = defineMiddleware(async (context, next) => {
       : redirect.location === null
         ? await gone(context.rewrite('/404'))
         : context.redirect(redirect.location, redirect.rule.statusCode === 302 ? 302 : 301);
+
+    if (!redirect && response.status === 404) {
+      context.locals.cfContext?.waitUntil(recordNotFound(context.url.pathname));
+    }
 
     if (!isIndexableHost(context.url.host) || (await getSiteSettings()).hideFromSearch) {
       // Response headers are occasionally immutable (redirects, cached asset

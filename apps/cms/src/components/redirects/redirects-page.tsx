@@ -22,7 +22,7 @@ import {
   useSelection,
 } from '@/components/list/list-tools';
 import { ArrowRightIcon, PlusIcon, Trash2Icon, UploadIcon } from '@/components/icons';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -126,10 +126,30 @@ function redirectFromCsv(values: Record<string, string>) {
 }
 
 /** What the pane (or, on smaller screens, the dialog) shows. */
-type Target = { kind: 'edit'; id: string } | { kind: 'new' } | { kind: 'bulk' };
+type Target =
+  | { kind: 'edit'; id: string }
+  /** `fromPath` fills in the old path, from a link on Missing pages. */
+  | { kind: 'new'; fromPath?: string }
+  | { kind: 'bulk' };
 
-export function RedirectsPage({ data }: { data: RedirectsData }) {
+export function RedirectsPage({
+  data,
+  initialFrom,
+  onOpenedInitial,
+}: {
+  data: RedirectsData;
+  /** An old path to start a new redirect for, from ?from= in the address. */
+  initialFrom?: string;
+  /** Clears ?from= once used, so going back does not open the form again. */
+  onOpenedInitial?: () => void;
+}) {
   const view = useListPane<Target>();
+  useEffect(() => {
+    if (!initialFrom) return;
+    view.open({ kind: 'new', fromPath: initialFrom });
+    onOpenedInitial?.();
+    // Only on arrival with ?from=, not on every render that has it.
+  }, [initialFrom]);
   const [query, setQuery] = useState('');
   const [filter, setFilter] = useState<Filter>('all');
   const [toDelete, setToDelete] = useState<string[] | null>(null);
@@ -191,6 +211,7 @@ export function RedirectsPage({ data }: { data: RedirectsData }) {
     <RedirectForm
       key={target.kind === 'edit' ? target.id : target.kind}
       redirect={redirectFor(target)}
+      initialFrom={target.kind === 'new' ? target.fromPath : undefined}
       onSaved={onSaved}
       footer={(formPending, isNew) =>
         actions(<SubmitButton pending={formPending} isNew={isNew} />, formPending)
@@ -512,14 +533,17 @@ function DeleteRedirect({
 /** Shared fields + submit logic, used inline (desktop pane) and in the mobile dialog. */
 function RedirectForm({
   redirect,
+  initialFrom,
   onSaved,
   footer,
 }: {
   redirect: Redirect | null;
+  /** The old path for a new redirect, when one was passed in. */
+  initialFrom?: string;
   onSaved: (id: string) => void;
   footer: (pending: boolean, isNew: boolean) => React.ReactNode;
 }) {
-  const [fromPath, setFromPath] = useState(redirect?.fromPath ?? '');
+  const [fromPath, setFromPath] = useState(redirect?.fromPath ?? initialFrom ?? '');
   const [toPath, setToPath] = useState(redirect?.toPath ?? '');
   const [statusCode, setStatusCode] = useState<Code>(
     redirect ? (String(redirect.statusCode) as Code) : '301'

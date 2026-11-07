@@ -12,6 +12,7 @@ import {
   type RedirectMatch,
   type RedirectRule,
   type RedirectStatusCode,
+  notFoundPathKey,
   resolveRedirect,
 } from '@ll/content';
 import { env } from 'cloudflare:workers';
@@ -79,5 +80,27 @@ export async function recordHit(id: string): Promise<void> {
       .run();
   } catch (error) {
     console.error('[redirects] could not record a hit', error);
+  }
+}
+
+/**
+ * Counts a "not found" for the CMS's Missing pages, where someone can redirect
+ * the paths people still follow. Bot probes and icon requests are skipped (see
+ * notFoundPathKey). Meant for `waitUntil`; a failure only logs.
+ */
+export async function recordNotFound(pathname: string): Promise<void> {
+  const path = notFoundPathKey(pathname);
+  if (!path) return;
+  const now = Date.now();
+  try {
+    await db
+      ?.prepare(
+        `INSERT INTO not_found_paths (path, hits, first_seen_at, last_seen_at) VALUES (?, 1, ?, ?)
+         ON CONFLICT(path) DO UPDATE SET hits = hits + 1, last_seen_at = excluded.last_seen_at`
+      )
+      .bind(path, now, now)
+      .run();
+  } catch (error) {
+    console.error('[not found] could not record a path', error);
   }
 }

@@ -185,7 +185,9 @@ export function ImageField({
           busy={upload.uploading}
           onFiles={(files) => upload.start(files[0]!)}
           description={
-            aspect ? 'It is cropped to the shape the website shows.' : 'JPG, PNG, WebP or GIF.'
+            aspect
+              ? 'It is cropped to the shape the website shows.'
+              : 'JPG, PNG, WebP, AVIF or GIF.'
           }
         >
           <Button

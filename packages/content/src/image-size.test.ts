@@ -64,6 +64,67 @@ describe('imageSize', () => {
     });
   });
 
+  describe('AVIF', () => {
+    // An ISO-BMFF box: 32-bit size (header included), four-letter type, body.
+    const box = (type: string, ...body: number[][]) => {
+      const content = body.flat();
+      return [...u32be(8 + content.length), ...[...type].map((c) => c.charCodeAt(0)), ...content];
+    };
+    const fourcc = (s: string) => [...s].map((c) => c.charCodeAt(0));
+    const ftyp = (major: string, ...compatible: string[]) =>
+      box('ftyp', fourcc(major), u32be(0), ...compatible.map(fourcc));
+    // `ispe` is a full box: version and flags, then width and height.
+    const ispe = (w: number, h: number) => box('ispe', [0, 0, 0, 0], u32be(w), u32be(h));
+    const meta = (...props: number[][]) =>
+      box('meta', [0, 0, 0, 0], box('iprp', box('ipco', ...props)));
+
+    it('reads the image size from the item properties', () => {
+      const avif = new Uint8Array([...ftyp('avif', 'mif1', 'avif'), ...meta(ispe(3000, 2000))]);
+      expect(imageSize(avif)).toEqual({ width: 3000, height: 2000 });
+    });
+
+    it('takes the largest size when there are tiles or a thumbnail', () => {
+      const avif = new Uint8Array([
+        ...ftyp('avif'),
+        ...meta(ispe(512, 512), ispe(4096, 2304), ispe(320, 180)),
+      ]);
+      expect(imageSize(avif)).toEqual({ width: 4096, height: 2304 });
+    });
+
+    it('crops to the clean aperture, as an odd-sized image is stored padded to even sides', () => {
+      // clap: width, height and two offsets, each a numerator and a denominator.
+      const clap = (w: number, h: number) =>
+        box('clap', u32be(w), u32be(1), u32be(h), u32be(1), u32be(0), u32be(1), u32be(0), u32be(1));
+      const avif = new Uint8Array([...ftyp('avif'), ...meta(ispe(98, 82), clap(97, 81))]);
+      expect(imageSize(avif)).toEqual({ width: 97, height: 81 });
+    });
+
+    it('accepts AVIF named only as a compatible brand, and image sequences', () => {
+      expect(imageSize(new Uint8Array([...ftyp('mif1', 'avif'), ...meta(ispe(800, 600))]))).toEqual(
+        { width: 800, height: 600 }
+      );
+      expect(imageSize(new Uint8Array([...ftyp('avis'), ...meta(ispe(640, 360))]))).toEqual({
+        width: 640,
+        height: 360,
+      });
+    });
+
+    it('refuses HEIC, which shares the container', () => {
+      expect(
+        imageSize(new Uint8Array([...ftyp('heic', 'mif1'), ...meta(ispe(800, 600))]))
+      ).toBeNull();
+    });
+
+    it('returns null for a truncated or malformed file', () => {
+      const whole = [...ftyp('avif'), ...meta(ispe(800, 600))];
+      expect(imageSize(new Uint8Array(whole.slice(0, whole.length - 4)))).toBeNull();
+      // A box claiming to be smaller than its own header must not loop forever.
+      expect(
+        imageSize(new Uint8Array([...ftyp('avif'), ...u32be(4), ...fourcc('meta')]))
+      ).toBeNull();
+    });
+  });
+
   it('returns null for anything it cannot read', () => {
     expect(imageSize(bytes('not an image at all'))).toBeNull();
     expect(imageSize(bytes([0x89, 0x50]))).toBeNull();

@@ -13,7 +13,7 @@ import { getDb } from '@/lib/db';
 const { media } = schema;
 
 const MAX_BYTES = 10 * 1024 * 1024;
-const ALLOWED_MIME = new Set(['image/jpeg', 'image/png', 'image/webp', 'image/gif']);
+const ALLOWED_MIME = new Set(['image/jpeg', 'image/png', 'image/webp', 'image/avif', 'image/gif']);
 
 export const Route = createFileRoute('/api/media/')({
   server: {
@@ -32,7 +32,7 @@ export const Route = createFileRoute('/api/media/')({
         }
         if (!ALLOWED_MIME.has(file.type)) {
           return Response.json(
-            { error: 'Only JPEG, PNG, WebP and GIF images are supported.' },
+            { error: 'Only JPEG, PNG, WebP, AVIF and GIF images are supported.' },
             { status: 400 }
           );
         }

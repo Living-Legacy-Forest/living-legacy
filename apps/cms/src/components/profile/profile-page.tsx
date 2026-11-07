@@ -134,7 +134,7 @@ export function ProfilePage({
             <input
               ref={fileInput}
               type="file"
-              accept="image/jpeg,image/png,image/webp,image/gif"
+              accept="image/jpeg,image/png,image/webp,image/avif,image/gif"
               className="hidden"
               onChange={(e) => {
                 const file = e.target.files?.[0];

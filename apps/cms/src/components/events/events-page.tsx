@@ -299,6 +299,7 @@ function rowStatus(dates: EventRow[]) {
   if (dates.length === 1) return dateStatus(dates[0]!);
   const published = dates.filter((d) => d.status === 'published');
   if (published.length > 0) return `${published.reduce((n, d) => n + d.booked, 0)} booked`;
+  if (dates.some((d) => d.status === 'draft' && d.publishAt)) return 'Scheduled';
   return dates.some((d) => d.status === 'draft') ? 'Draft' : 'Cancelled';
 }
 

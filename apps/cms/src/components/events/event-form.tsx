@@ -134,6 +134,7 @@ function initialValues(event: EventRow | null, siteZone: string): Values {
       maxPartySize: 6,
       bookingsCloseAt: null,
       status: 'draft',
+      publishAt: null,
     };
   }
   return {
@@ -153,6 +154,7 @@ function initialValues(event: EventRow | null, siteZone: string): Values {
     bookingsCloseAt: event.bookingsCloseAt,
     // A cancelled event is shown read-only, so this is never saved.
     status: event.status === 'published' ? 'published' : 'draft',
+    publishAt: event.publishAt,
   };
 }
 
@@ -522,9 +524,31 @@ export function EventForm({
         <Switch
           id="ev-published"
           checked={values.status === 'published'}
-          onCheckedChange={(checked) => patch({ status: checked ? 'published' : 'draft' })}
+          // Publishing now replaces any time it was set to go live.
+          onCheckedChange={(checked) =>
+            patch({ status: checked ? 'published' : 'draft', publishAt: null })
+          }
         />
       </div>
+
+      {values.status === 'draft' && (
+        <div className="space-y-1.5">
+          <Label htmlFor="ev-publish-at">Publish later</Label>
+          <DateTimePicker
+            id="ev-publish-at"
+            zone={zone}
+            value={values.publishAt}
+            minDate={Date.now()}
+            placeholder="Stay a draft"
+            onChange={(publishAt) => patch({ publishAt })}
+          />
+          <p className="text-muted-foreground text-xs">
+            {values.publishAt
+              ? `It goes live within five minutes of this time (${zoneName(zone, values.publishAt)}).`
+              : 'Leave empty to publish it yourself.'}
+          </p>
+        </div>
+      )}
     </>
   );
 

@@ -17,7 +17,7 @@ export const startsIn = (e: EventRow) =>
 
 /** How one date stands: its places once published, otherwise its state. */
 export function dateStatus(e: EventRow) {
-  if (e.status === 'draft') return 'Draft';
+  if (e.status === 'draft') return e.publishAt ? 'Scheduled' : 'Draft';
   if (e.status === 'cancelled') return 'Cancelled';
   return `${e.booked} / ${e.capacity ?? '∞'} booked`;
 }

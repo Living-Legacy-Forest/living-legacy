@@ -30,10 +30,10 @@ function noFraming(response: Response) {
 }
 
 // Custom Worker entry: TanStack Start serves requests. The cron triggers in
-// wrangler.jsonc: every five minutes, publish scheduled posts and sync event
-// bookings to HubSpot (once connected; HubSpot sends the guest emails); daily,
-// clear out unused stored files, delete bookings a year after their event, and
-// forget missing pages nobody has asked for in 90 days.
+// wrangler.jsonc: every five minutes, publish scheduled posts and events and
+// sync event bookings to HubSpot (once connected; HubSpot sends the guest
+// emails); daily, clear out unused stored files, delete bookings a year after
+// their event, and forget missing pages nobody has asked for in 90 days.
 export default {
   // The app reads bindings via `cloudflare:workers`, so it only gets the request.
   async fetch(request, _env, ctx) {
@@ -68,10 +68,17 @@ export default {
       );
       return;
     }
-    const [{ publishDuePosts }, { syncPending }] = await Promise.all([
+    const [{ publishDuePosts }, { syncPending }, { publishDueEvents }] = await Promise.all([
       import('./server/scheduler'),
       import('./server/event-crm'),
+      import('./server/event-jobs'),
     ]);
-    ctx.waitUntil(Promise.all([publishDuePosts(env.DB, now), syncPending(env.DB)]));
+    ctx.waitUntil(
+      Promise.all([
+        publishDuePosts(env.DB, now),
+        syncPending(env.DB),
+        publishDueEvents(env.DB, now),
+      ])
+    );
   },
 } satisfies ExportedHandler<Cloudflare.Env>;

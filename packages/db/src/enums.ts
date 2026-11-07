@@ -29,6 +29,7 @@ export const activityActions = [
   'post.created_via_api',
   'post.updated_via_api',
   'event.saved',
+  'event.published',
   'event.cancelled',
   'event.deleted',
   'event.guest_added',

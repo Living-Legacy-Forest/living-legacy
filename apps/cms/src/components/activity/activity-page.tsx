@@ -1,6 +1,9 @@
+import { Link } from '@tanstack/react-router';
 import {
   ActivityIcon,
   ArrowRightLeft,
+  ChevronLeftIcon,
+  ChevronRightIcon,
   FileText,
   KeyIcon,
   Settings,
@@ -14,9 +17,15 @@ import {
   EmptyTitle,
   EmptyDescription,
 } from '@/components/ui/empty';
+import { buttonVariants } from '@/components/ui/button';
 import { formatDateTime, formatRelative } from '@/lib/format';
 import { useTimeZone } from '@/lib/use-time-zone';
-import type { ActivityLogData, ActivityLogEntry } from '@/server/activity-log';
+import { cn } from '@/lib/utils';
+import {
+  ACTIVITY_PAGE_SIZE,
+  type ActivityLogData,
+  type ActivityLogEntry,
+} from '@/server/activity-log';
 
 const icons: Record<string, LucideIcon> = {
   post: FileText,
@@ -43,7 +52,7 @@ export function ActivityPage({ data }: { data: ActivityLogData }) {
         </p>
       </div>
 
-      {data.length === 0 ? (
+      {data.total === 0 ? (
         <Empty className="rounded-lg border">
           <EmptyHeader>
             <EmptyMedia variant="icon">
@@ -57,7 +66,7 @@ export function ActivityPage({ data }: { data: ActivityLogData }) {
         </Empty>
       ) : (
         <ul className="divide-y rounded-lg border">
-          {data.map((entry) => {
+          {data.rows.map((entry) => {
             const Icon = iconFor(entry.action);
             return (
               <li key={entry.id} className="flex items-start gap-3 px-4 py-3">
@@ -83,6 +92,57 @@ export function ActivityPage({ data }: { data: ActivityLogData }) {
           })}
         </ul>
       )}
+
+      {data.total > 0 && <Pager data={data} />}
     </div>
+  );
+}
+
+/** "51–100 of 312" and the way to the pages either side; links, so they open in a new tab too. */
+function Pager({ data }: { data: ActivityLogData }) {
+  const { page, pageCount, total } = data;
+  const from = (page - 1) * ACTIVITY_PAGE_SIZE + 1;
+  const to = Math.min(page * ACTIVITY_PAGE_SIZE, total);
+  const step = cn(
+    buttonVariants({ variant: 'ghost', size: 'icon-sm' }),
+    'touch:size-11',
+    'aria-disabled:pointer-events-none aria-disabled:opacity-50'
+  );
+  return (
+    <nav
+      aria-label="Activity pages"
+      className="text-muted-foreground mt-3 flex items-center justify-between text-xs"
+    >
+      <span className="tabular-nums">
+        {from}–{to} of {total}
+      </span>
+      {pageCount > 1 && (
+        <div className="flex items-center gap-1">
+          <Link
+            to="/activity"
+            search={{ page: page - 1 > 1 ? page - 1 : undefined }}
+            aria-label="Previous page"
+            aria-disabled={page <= 1}
+            tabIndex={page <= 1 ? -1 : undefined}
+            className={step}
+          >
+            <ChevronLeftIcon aria-hidden />
+          </Link>
+          <span className="tabular-nums">
+            Page {page} of {pageCount}
+          </span>
+          <Link
+            to="/activity"
+            search={{ page: page + 1 }}
+            aria-label="Next page"
+            aria-disabled={page >= pageCount}
+            tabIndex={page >= pageCount ? -1 : undefined}
+            className={step}
+          >
+            <ChevronRightIcon aria-hidden />
+          </Link>
+        </div>
+      )}
+    </nav>
   );
 }

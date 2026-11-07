@@ -10,6 +10,7 @@ import {
 } from '@/components/list/list-tools';
 import { CropIcon, MediaIcon, Trash2Icon, UploadIcon } from '@/components/icons';
 import { ImageCropDialog } from '@/components/media/image-crop-dialog';
+import { MediaUsageList } from '@/components/media/media-usage';
 import { Button } from '@/components/ui/button';
 import {
   Empty,
@@ -376,6 +377,7 @@ function MediaEditForm({
               onChange={(e) => setCaption(e.target.value)}
             />
           </div>
+          <MediaUsageList id={item.id} />
         </div>
         <SheetFooter>
           {confirmingDelete ? (

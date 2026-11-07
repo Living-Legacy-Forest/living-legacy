@@ -11,12 +11,16 @@ import { APIError, createAuthMiddleware } from 'better-auth/api';
 import { magicLink } from 'better-auth/plugins';
 import { tanstackStartCookies } from 'better-auth/tanstack-start';
 import { env } from 'cloudflare:workers';
-import { eq } from 'drizzle-orm';
+import { and, count, eq, gt, sql } from 'drizzle-orm';
 import { getDb } from './db';
 import { sendChangeEmailVerificationEmail, sendMagicLinkEmail } from './email';
 import { readSiteSettings } from './site-settings';
 
 const DAY_MS = 24 * 60 * 60 * 1000;
+/** How long a sign-in link works. */
+const MAGIC_LINK_SECONDS = 300;
+/** One sign-in email per address in this long; the earlier link still works. */
+const MAGIC_LINK_COOLDOWN_SECONDS = 60;
 
 /** When a session started or refreshed now should end, from Settings → Sign-in. */
 async function sessionEnd(): Promise<Date> {
@@ -127,7 +131,7 @@ function createAuth() {
     },
     plugins: [
       magicLink({
-        expiresIn: 300, // 5 minutes
+        expiresIn: MAGIC_LINK_SECONDS,
         storeToken: 'hashed', // a DB leak must not expose usable links
         rateLimit: { window: 60, max: 5 },
         sendMagicLink: async ({ email, url }) => {
@@ -143,6 +147,25 @@ function createAuth() {
           // Invite-only: say nothing to strangers. The user-create hook is the
           // backstop if a link is ever used for a non-eligible email.
           if (!canReceiveMagicLink({ hasAccount: Boolean(existing), signupRole })) return;
+          // The rate limit above is per address the request came from, and only
+          // within one Worker instance. This one is per inbox: a link already sent
+          // in the last minute is still valid, so another email would only
+          // flood the inbox and spend sending quota. This request's own link is
+          // already stored, hence "more than one".
+          const [recent] = await db
+            .select({ n: count() })
+            .from(schema.verification)
+            .where(
+              and(
+                sql`json_extract(${schema.verification.value}, '$.type') = 'magic-link'`,
+                sql`lower(json_extract(${schema.verification.value}, '$.email')) = ${normalised}`,
+                gt(
+                  schema.verification.expiresAt,
+                  new Date(Date.now() + (MAGIC_LINK_SECONDS - MAGIC_LINK_COOLDOWN_SECONDS) * 1000)
+                )
+              )
+            );
+          if ((recent?.n ?? 0) > 1) return;
           await sendMagicLinkEmail(normalised, url);
         },
       }),

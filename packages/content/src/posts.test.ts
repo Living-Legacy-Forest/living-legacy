@@ -28,6 +28,23 @@ describe('slugify', () => {
 });
 
 describe('isAllowedRichText', () => {
+  it('accepts ordinary nesting but refuses documents too deep or too large to handle', () => {
+    const para = { type: 'paragraph', content: [{ type: 'text', text: 'x' }] };
+    const list = (depth: number): object =>
+      depth === 0
+        ? para
+        : { type: 'bulletList', content: [{ type: 'listItem', content: [list(depth - 1)] }] };
+    // A list nested ten deep is unusual but legitimate.
+    expect(isAllowedRichText({ type: 'doc', content: [list(10)] })).toBe(true);
+    // A crafted document can nest far deeper than any editor would.
+    let deep: object = para;
+    for (let i = 0; i < 100; i++) deep = { type: 'blockquote', content: [deep] };
+    expect(isAllowedRichText({ type: 'doc', content: [deep] })).toBe(false);
+    expect(
+      isAllowedRichText({ type: 'doc', content: Array.from({ length: 25_000 }, () => para) })
+    ).toBe(false);
+  });
+
   const doc = (content: unknown[]) => ({ type: 'doc', content });
 
   it('accepts the blocks and marks the editor produces', () => {

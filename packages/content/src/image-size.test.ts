@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { imageSize } from './image-size';
+import { imageExtension, imageSize } from './image-size';
 
 const bytes = (...parts: (number[] | string)[]) =>
   new Uint8Array(
@@ -129,5 +129,13 @@ describe('imageSize', () => {
     expect(imageSize(bytes('not an image at all'))).toBeNull();
     expect(imageSize(bytes([0x89, 0x50]))).toBeNull();
     expect(imageSize(bytes([0xff, 0xd8, 0xff, 0xe0]))).toBeNull();
+  });
+});
+
+describe('imageExtension', () => {
+  it('names the stored file by its checked type', () => {
+    expect(imageExtension('image/jpeg')).toBe('jpg');
+    expect(imageExtension('image/png')).toBe('png');
+    expect(imageExtension('image/avif')).toBe('avif');
   });
 });

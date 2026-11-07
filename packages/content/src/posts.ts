@@ -75,13 +75,21 @@ const isSafeHref = (href: unknown) =>
 const isHostedImage = (src: unknown) =>
   typeof src === 'string' && (/^https:\/\//i.test(src) || /^\/(?!\/)/.test(src));
 
-function isAllowedNode(node: unknown): boolean {
+// Far beyond anything the editor makes (a list ten deep is rare), but low
+// enough that a crafted document cannot exhaust the stack or the CPU of the
+// server checking it here and rendering it on the website.
+const MAX_DEPTH = 40;
+const MAX_NODES = 20_000;
+
+function isAllowedNode(node: unknown, depth: number, budget: { nodes: number }): boolean {
   if (!node || typeof node !== 'object') return false;
+  if (depth > MAX_DEPTH || --budget.nodes < 0) return false;
   const { type, content, marks, attrs } = node as RichTextNode;
   if (typeof type !== 'string' || !allowedNodes.has(type)) return false;
   if (type === 'image' && !isHostedImage(attrs?.src)) return false;
-  if (content !== undefined && (!Array.isArray(content) || !content.every(isAllowedNode))) {
-    return false;
+  if (content !== undefined) {
+    if (!Array.isArray(content)) return false;
+    for (const child of content) if (!isAllowedNode(child, depth + 1, budget)) return false;
   }
   if (marks !== undefined) {
     if (!Array.isArray(marks)) return false;
@@ -94,7 +102,9 @@ function isAllowedNode(node: unknown): boolean {
 }
 
 export function isAllowedRichText(value: unknown): value is RichTextDoc {
-  return (value as RichTextNode | null)?.type === 'doc' && isAllowedNode(value);
+  return (
+    (value as RichTextNode | null)?.type === 'doc' && isAllowedNode(value, 0, { nodes: MAX_NODES })
+  );
 }
 
 export const richTextSchema = z.custom<RichTextDoc>(isAllowedRichText, {

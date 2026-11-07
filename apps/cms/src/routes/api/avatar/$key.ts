@@ -5,6 +5,7 @@
  */
 import { createFileRoute } from '@tanstack/react-router';
 import { env } from 'cloudflare:workers';
+import { UPLOAD_HEADERS } from '@/server/media-delivery';
 
 export const Route = createFileRoute('/api/avatar/$key')({
   server: {
@@ -19,6 +20,7 @@ export const Route = createFileRoute('/api/avatar/$key')({
           headers: {
             'Content-Type': object.httpMetadata?.contentType ?? 'application/octet-stream',
             'Cache-Control': 'public, max-age=31536000, immutable',
+            ...UPLOAD_HEADERS,
           },
         });
       },

@@ -4,7 +4,7 @@
  * the shared Media library. An admin may send a `userId` to set someone
  * else's. A raw handler, since multipart can't go through createServerFn.
  */
-import { type Role, can } from '@ll/content';
+import { type Role, can, imageExtension, imageSize } from '@ll/content';
 import { schema } from '@ll/db';
 import { createFileRoute } from '@tanstack/react-router';
 import { env } from 'cloudflare:workers';
@@ -52,9 +52,16 @@ export const Route = createFileRoute('/api/avatar/')({
           return Response.json({ error: 'That file is larger than 5 MB.' }, { status: 400 });
         }
 
-        const ext = file.name.includes('.') ? file.name.split('.').pop() : undefined;
-        const key = `avatar-${crypto.randomUUID()}${ext ? `.${ext}` : ''}`;
-        await env.MEDIA.put(key, await file.arrayBuffer(), {
+        // Checked like /api/media: the file must really be an image, whatever
+        // type the browser declared.
+        const bytes = new Uint8Array(await file.arrayBuffer());
+        if (!imageSize(bytes)) {
+          return Response.json({ error: 'That image could not be read.' }, { status: 400 });
+        }
+
+        // The extension comes from the checked type, never the file's own name.
+        const key = `avatar-${crypto.randomUUID()}.${imageExtension(file.type)}`;
+        await env.MEDIA.put(key, bytes, {
           httpMetadata: { contentType: file.type },
           customMetadata: { userId: target.id },
         });

@@ -11,6 +11,24 @@ const MEDIA_SWEEP_CRON = '0 17 * * *';
 
 const OLD_HOST = 'living-legacy-cms.living-legacy.workers.dev';
 
+/**
+ * No other site may show the CMS in a frame, where a signed-in editor could be
+ * tricked into clicking something (clickjacking). The session cookie being
+ * SameSite=Lax covers other sites, but not a sibling subdomain.
+ */
+function noFraming(response: Response) {
+  const headers = new Headers(response.headers);
+  headers.set('X-Frame-Options', 'DENY');
+  if (!headers.has('Content-Security-Policy')) {
+    headers.set('Content-Security-Policy', "frame-ancestors 'none'");
+  }
+  return new Response(response.body, {
+    status: response.status,
+    statusText: response.statusText,
+    headers,
+  });
+}
+
 // Custom Worker entry: TanStack Start serves requests. The cron triggers in
 // wrangler.jsonc: every five minutes, publish scheduled posts and sync event
 // bookings to HubSpot (once connected; HubSpot sends the guest emails); daily,
@@ -29,7 +47,7 @@ export default {
     // The busiest route, and it needs nothing from the app: serve it directly.
     const mediaId = mediaIdFromPath(url.pathname);
     if (mediaId) return serveMedia(request, mediaId, ctx);
-    return (await loadApp()).fetch(request);
+    return noFraming(await (await loadApp()).fetch(request));
   },
   async scheduled(controller, env, ctx) {
     const now = new Date(controller.scheduledTime);

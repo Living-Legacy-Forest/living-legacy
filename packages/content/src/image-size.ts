@@ -22,6 +22,11 @@ export function imageSize(data: Uint8Array): { width: number; height: number } |
   return null;
 }
 
+/** The file extension for an accepted image type: "jpg" for image/jpeg, else its subtype. */
+export function imageExtension(mime: string) {
+  return (mime.split('/')[1] ?? 'bin').replace('jpeg', 'jpg');
+}
+
 function size(width: number, height: number) {
   return width > 0 && height > 0 ? { width, height } : null;
 }

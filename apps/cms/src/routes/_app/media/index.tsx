@@ -14,5 +14,6 @@ export const Route = createFileRoute('/_app/media/')({
 
 function MediaRoute() {
   const data = Route.useLoaderData();
-  return <MediaPage data={data} />;
+  const { user } = Route.useRouteContext();
+  return <MediaPage data={data} canDelete={can(user.role, 'content:purge')} />;
 }

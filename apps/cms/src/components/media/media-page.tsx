@@ -42,7 +42,7 @@ import { type MediaItem, type MediaListData, deleteMedia, updateMedia } from '@/
 
 const NOUN: [string, string] = ['file', 'files'];
 
-export function MediaPage({ data }: { data: MediaListData }) {
+export function MediaPage({ data, canDelete }: { data: MediaListData; canDelete: boolean }) {
   const [query, setQuery] = useState('');
   const [editingId, setEditingId] = useState<string | null>(null);
   const [confirmDelete, setConfirmDelete] = useState(false);
@@ -157,7 +157,7 @@ export function MediaPage({ data }: { data: MediaListData }) {
             title="All"
             total={data.length}
             pending={pending}
-            onDelete={() => setConfirmDelete(true)}
+            onDelete={canDelete ? () => setConfirmDelete(true) : undefined}
           />
           {visible.length === 0 ? (
             <div className="text-muted-foreground flex flex-1 flex-col items-center justify-center gap-2 p-6 text-center text-sm">
@@ -198,6 +198,7 @@ export function MediaPage({ data }: { data: MediaListData }) {
             <MediaEditForm
               key={editing.id}
               item={editing}
+              canDelete={canDelete}
               onClose={() => setEditingId(null)}
               onOpen={setEditingId}
             />
@@ -253,10 +254,13 @@ function MediaTile({
 
 function MediaEditForm({
   item,
+  canDelete,
   onClose,
   onOpen,
 }: {
   item: MediaItem;
+  /** Deleting a file is permanent, so only roles with content:purge see it. */
+  canDelete: boolean;
   onClose: () => void;
   /** Shows another file in the panel, e.g. a cropped copy. */
   onOpen: (id: string) => void;
@@ -400,16 +404,18 @@ function MediaEditForm({
                 Save changes
               </Button>
               <SheetClose render={<Button type="button" variant="outline" />}>Close</SheetClose>
-              <Button
-                type="button"
-                variant="ghost"
-                className="text-destructive hover:text-destructive"
-                disabled={pending}
-                onClick={() => setConfirmingDelete(true)}
-              >
-                <Trash2Icon aria-hidden data-icon="inline-start" />
-                Delete
-              </Button>
+              {canDelete && (
+                <Button
+                  type="button"
+                  variant="ghost"
+                  className="text-destructive hover:text-destructive"
+                  disabled={pending}
+                  onClick={() => setConfirmingDelete(true)}
+                >
+                  <Trash2Icon aria-hidden data-icon="inline-start" />
+                  Delete
+                </Button>
+              )}
             </>
           )}
         </SheetFooter>

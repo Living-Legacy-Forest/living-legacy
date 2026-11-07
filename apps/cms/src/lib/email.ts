@@ -71,8 +71,9 @@ export const cmsOrigin = () => new URL(env.BETTER_AUTH_URL).origin;
 
 /**
  * One branded layout for every CMS email. Tables and inline styles, because
- * Outlook and Gmail ignore most modern CSS. All text passed in must already
- * be escaped; `button.url` is escaped here.
+ * Outlook and Gmail ignore most modern CSS. `preheader`, `heading` and
+ * `button.url` are plain text and escaped here; `intro` is HTML, so callers
+ * escape what they put in it.
  */
 function layout(opts: {
   /** Inbox preview text, shown after the subject and hidden in the email. */
@@ -99,10 +100,10 @@ function layout(opts: {
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="color-scheme" content="light">
 <meta name="supported-color-schemes" content="light">
-<title>${opts.heading}</title>
+<title>${escapeHtml(opts.heading)}</title>
 </head>
 <body style="margin:0;padding:0;background:${colours.paper};">
-<div style="display:none;max-height:0;overflow:hidden;opacity:0;">${opts.preheader}</div>
+<div style="display:none;max-height:0;overflow:hidden;opacity:0;">${escapeHtml(opts.preheader)}</div>
 <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="background:${colours.paper};">
   <tr>
     <td align="center" style="padding:40px 16px;">
@@ -128,7 +129,7 @@ function layout(opts: {
         </tr>
         <tr>
           <td style="background:${colours.white};border:1px solid ${colours.line};border-radius:12px;padding:40px 36px;">
-            <h1 style="margin:0 0 16px;font-family:${serif};font-size:26px;line-height:32px;font-weight:normal;color:${colours.ink};">${opts.heading}</h1>
+            <h1 style="margin:0 0 16px;font-family:${serif};font-size:26px;line-height:32px;font-weight:normal;color:${colours.ink};">${escapeHtml(opts.heading)}</h1>
             ${paragraphs}
             <table role="presentation" cellpadding="0" cellspacing="0" border="0" style="margin:8px 0 24px;">
               <tr>

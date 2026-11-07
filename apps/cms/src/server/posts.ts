@@ -289,6 +289,14 @@ export const savePost = createServerFn({ method: 'POST' })
 
     const row = await loadPost(db, data.id);
     assertCanEdit(row, context.user);
+    // A scheduled post's content is what the publisher approved, and the cron
+    // job publishes it as is. Letting an author change it would put unreviewed
+    // content live.
+    if (row.scheduledAt && !can(context.user.role, 'posts:publish')) {
+      throw new Error(
+        'This post is scheduled. Ask an editor to unschedule it before you change it.'
+      );
+    }
     assertVersion(row, data.expectedUpdatedAt);
     return saveEdits(db, row, data.values, userId);
   });

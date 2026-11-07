@@ -133,8 +133,10 @@ async function findUsage(db: ReturnType<typeof getDb>, ids: string[]) {
   return found.flat();
 }
 
+// Removing a file is permanent, so it needs content:purge like emptying the
+// trash; media:write only uploads and edits.
 export const deleteMedia = createServerFn({ method: 'POST' })
-  .middleware([requirePermission('media:write')])
+  .middleware([requirePermission('content:purge')])
   .validator(z.object({ ids: z.array(z.string()).min(1).max(100) }))
   .handler(async ({ data }) => {
     const db = getDb();

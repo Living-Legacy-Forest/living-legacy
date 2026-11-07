@@ -49,6 +49,10 @@ export const Route = createFileRoute('/api/v1/posts/$id')({
         if (!row) return apiError(404, 'No post has that id.');
         if (row.deletedAt)
           return apiError(409, 'That post is in the trash. Restore it in the CMS first.');
+        // The cron job publishes a scheduled post's content as is, so an edit
+        // here would go live without anyone reviewing it.
+        if (row.scheduledAt && row.status !== 'published')
+          return apiError(409, 'That post is scheduled. Unschedule it in the CMS first.');
 
         // Edits build on whatever is waiting to be published, if anything.
         const live = await liveInput(db, row);

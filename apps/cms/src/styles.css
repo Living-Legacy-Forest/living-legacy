@@ -168,6 +168,26 @@
   body {
     background-color: var(--ios-grouped);
   }
+
+  /* Grouped lists (ListRows): hairline dividers that start where the text does,
+     or past the thumbnail, and iOS's body and secondary text sizes. */
+  [data-slot='list-rows'] > li + li::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    right: 0;
+    left: var(--row-inset, 1rem);
+    z-index: 1;
+    height: 0.5px;
+    background: var(--ios-separator);
+    pointer-events: none;
+  }
+  [data-slot='list-rows'] .text-ui {
+    font-size: 1.0625rem;
+  }
+  [data-slot='list-rows'] .text-xs {
+    font-size: 0.9375rem;
+  }
 }
 
 /* Sidebar collapse (and the hover-to-peek flyout, which shares the same

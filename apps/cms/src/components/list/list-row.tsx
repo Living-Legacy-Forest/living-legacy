@@ -54,7 +54,9 @@ export function ListRow({
       ref={drag.rowRef}
       className={cn(
         'group relative overflow-hidden rounded-md',
-        current ? 'bg-accent' : 'hover:bg-muted/60'
+        current ? 'bg-accent' : 'hover:bg-muted/60',
+        // Phones: a cell in the grouped list. It highlights while pressed, not on hover.
+        'max-md:rounded-none max-md:bg-transparent max-md:hover:bg-transparent max-md:has-[>div>button:active]:bg-(--ios-fill)'
       )}
     >
       {swipe && drag.revealed && (
@@ -78,8 +80,9 @@ export function ListRow({
         {...drag.handlers}
         className={cn(
           'touch:min-h-11 relative flex gap-1 rounded-md px-1.5 py-1',
+          'max-md:min-h-11 max-md:rounded-none max-md:py-0 max-md:pr-3 max-md:pl-2.5',
           // Opaque only while it slides, so it covers the action behind it.
-          drag.revealed && (current ? 'bg-accent' : 'bg-background'),
+          drag.revealed && (current ? 'bg-accent' : 'bg-background max-md:bg-(--ios-cell)'),
           align === 'start' ? 'items-start' : 'items-center',
           swipe && 'touch-pan-y'
         )}
@@ -99,7 +102,7 @@ export function ListRow({
           aria-current={current || undefined}
           onClick={onOpen}
           onDoubleClick={onDoubleClick}
-          className="focus-visible:ring-ring touch:active:opacity-60 min-w-0 flex-1 rounded-md px-1.5 py-1.5 text-left outline-none focus-visible:ring-1"
+          className="focus-visible:ring-ring touch:active:opacity-60 min-w-0 flex-1 rounded-md px-1.5 py-1.5 text-left outline-none focus-visible:ring-1 max-md:py-2.5 max-md:active:opacity-100"
         >
           {children}
         </button>
@@ -114,7 +117,7 @@ export function ListRow({
           <span
             aria-hidden
             className={cn(
-              'text-muted-foreground/50 touch:flex hidden shrink-0',
+              'text-muted-foreground/50 touch:flex hidden shrink-0 max-md:text-(--ios-secondary) max-md:opacity-60',
               align === 'start' ? 'mt-2.5' : 'self-center'
             )}
           >

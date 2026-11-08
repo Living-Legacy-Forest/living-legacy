@@ -66,6 +66,8 @@ export function ListPageLayout({
     <div
       className={cn(
         'grid min-h-0 flex-1 grid-cols-1 overflow-hidden rounded-lg border lg:grid-cols-[minmax(20rem,1fr)_minmax(0,1fr)]',
+        // Phones: no frame. The list is an iOS grouped list that ends with its rows.
+        'max-md:flex-none max-md:overflow-visible max-md:rounded-none max-md:border-0',
         className
       )}
     >
@@ -92,16 +94,33 @@ export function ListColumn({
   );
 }
 
-/** The scrolling list of rows (ListRow), or wrap your own grouped sections. */
+/**
+ * The scrolling list of rows (ListRow), or wrap your own grouped sections.
+ * On phones it is an iOS grouped list: one rounded group whose dividers start
+ * at the text, or past the thumbnail when rows have one (`inset="media"`).
+ */
 export function ListRows({
   children,
   className,
+  inset = 'text',
 }: {
   children: React.ReactNode;
   className?: string;
+  inset?: 'text' | 'media';
 }) {
   return (
-    <ul className={cn('min-h-0 flex-1 space-y-px overflow-y-auto p-1.5', className)}>{children}</ul>
+    <ul
+      data-slot="list-rows"
+      // 16px of padding, then a 60px thumbnail and a 12px gap before the text.
+      style={{ '--row-inset': inset === 'media' ? '5.5rem' : '1rem' } as React.CSSProperties}
+      className={cn(
+        'min-h-0 flex-1 space-y-px overflow-y-auto p-1.5',
+        'max-md:flex-none max-md:space-y-0 max-md:overflow-hidden max-md:rounded-[10px] max-md:bg-(--ios-cell) max-md:p-0',
+        className
+      )}
+    >
+      {children}
+    </ul>
   );
 }
 

@@ -22,6 +22,7 @@ import {
   matchesSearch,
   useSelection,
 } from '@/components/list/list-tools';
+import { PageActions } from '@/components/shell/page-actions';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import {
@@ -145,7 +146,14 @@ export function EventsPage({ data }: { data: EventsData }) {
             />
           </div>
         )}
-        {newButton}
+        <div className="max-md:hidden">{newButton}</div>
+        <PageActions
+          edit={{
+            editing: selection.selecting,
+            onToggle: selection.selecting ? selection.clear : selection.startEditing,
+          }}
+          add={{ label: 'New event', onClick: () => view.open({ kind: 'new' }) }}
+        />
       </div>
 
       {data.events.length === 0 && pane === null ? (

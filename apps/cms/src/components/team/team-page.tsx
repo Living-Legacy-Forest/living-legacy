@@ -29,6 +29,7 @@ import {
   matchesSearch,
   useSelection,
 } from '@/components/list/list-tools';
+import { PageActions } from '@/components/shell/page-actions';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -191,6 +192,14 @@ export function TeamPage({ data, canWrite }: { data: TeamListData; canWrite: boo
           />
         )}
         {canWrite && addButtons}
+        {canWrite && (
+          <PageActions
+            edit={{
+              editing: selection.selecting,
+              onToggle: selection.selecting ? selection.clear : selection.startEditing,
+            }}
+          />
+        )}
       </div>
 
       {data.length === 0 && pane === null ? (

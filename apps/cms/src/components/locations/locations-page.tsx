@@ -209,7 +209,13 @@ export function LocationsPage({
         )}
         {canWrite && <div className="max-md:hidden">{addButton}</div>}
         {canWrite && (
-          <PageActions add={{ label: 'Add location', onClick: () => view.open({ kind: 'new' }) }} />
+          <PageActions
+            edit={{
+              editing: selection.selecting,
+              onToggle: selection.selecting ? selection.clear : selection.startEditing,
+            }}
+            add={{ label: 'Add location', onClick: () => view.open({ kind: 'new' }) }}
+          />
         )}
       </div>
 
@@ -244,7 +250,7 @@ export function LocationsPage({
             {visible.length === 0 ? (
               <NoMatches onClear={() => setQuery('')}>Nothing matches that search.</NoMatches>
             ) : (
-              <ListRows>
+              <ListRows inset="media">
                 {visible.map((l) => (
                   <ListRow
                     key={l.id}

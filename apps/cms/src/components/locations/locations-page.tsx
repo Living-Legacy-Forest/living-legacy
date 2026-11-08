@@ -32,6 +32,7 @@ import {
 import { FormStep, FormSteps, TOUCH_FIELDS, useFormSteps } from '@/components/form-steps';
 import { ExternalLink, MapPinIcon, PencilIcon, PlusIcon, Trash2Icon } from '@/components/icons';
 import { LocationsOverviewMap, PinPicker, type Pin } from '@/components/locations/location-map';
+import { PageActions } from '@/components/shell/page-actions';
 import { ImageField, useMediaItem } from '@/components/media/image-field';
 import { RichTextField } from '@/components/rich-text-field';
 import {
@@ -206,7 +207,10 @@ export function LocationsPage({
             />
           </div>
         )}
-        {canWrite && addButton}
+        {canWrite && <div className="max-md:hidden">{addButton}</div>}
+        {canWrite && (
+          <PageActions add={{ label: 'Add location', onClick: () => view.open({ kind: 'new' }) }} />
+        )}
       </div>
 
       {data.length === 0 && pane === null ? (

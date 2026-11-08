@@ -52,11 +52,18 @@ export function AppHeader({ user }: { user: SessionUser }) {
           <span className="truncate">{back.label}</span>
         </Link>
       )}
+      {/* Phones: the page's Edit goes here when there is no back link (PageActions). */}
+      {!back && (
+        <div
+          data-slot="page-actions-start"
+          className="relative z-10 -ml-1 flex items-center md:hidden"
+        />
+      )}
 
       {/* The large title's compact twin, shown once the large one scrolls away. */}
       <div
         aria-hidden
-        className="pointer-events-none absolute inset-x-0 bottom-0 flex h-14 items-center justify-center px-28 transition-opacity duration-200 md:hidden"
+        className="pointer-events-none absolute inset-x-0 bottom-0 flex h-14 items-center justify-center px-36 transition-opacity duration-200 md:hidden"
         style={{ opacity: collapsed ? 1 : 0 }}
       >
         <span className="truncate text-[1.0625rem] font-semibold">{title}</span>
@@ -64,11 +71,15 @@ export function AppHeader({ user }: { user: SessionUser }) {
 
       <div className="relative z-10 ml-auto flex items-center gap-1.5 max-md:gap-0">
         <Notifications user={user} />
+        {/* Phones: the page's … and + (PageActions). The account lives in More. */}
+        <div data-slot="page-actions-end" className="flex items-center md:hidden" />
         <Separator
           className="mx-1.5 h-4 data-[orientation=vertical]:self-center max-md:hidden"
           orientation="vertical"
         />
-        <NavUser user={user} />
+        <div className="max-md:hidden">
+          <NavUser user={user} />
+        </div>
       </div>
     </header>
   );

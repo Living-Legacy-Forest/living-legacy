@@ -1,0 +1,127 @@
+// Form fields as iOS draws them on phones: grouped sections of rows, each with
+// its label on the left and its value on the right. Wider screens keep the
+// stacked label, control and hint the CMS has always used; the phone look lives
+// in styles.css, keyed on these data-slots.
+import type { ReactNode } from 'react';
+import { Label } from '@/components/ui/label';
+import { Switch } from '@/components/ui/switch';
+
+export function FormSection({
+  title,
+  footer,
+  children,
+}: {
+  /** Shown on phones only, as the small heading above the group. */
+  title?: string;
+  /** A note below the group; a hint on wider screens. */
+  footer?: string;
+  children: ReactNode;
+}) {
+  return (
+    <section data-slot="form-section" className="space-y-4">
+      {title && (
+        <h3 data-slot="form-section-title" className="hidden max-md:block">
+          {title}
+        </h3>
+      )}
+      <div data-slot="form-group" className="space-y-4">
+        {children}
+      </div>
+      {footer && (
+        <p data-slot="form-section-footer" className="text-muted-foreground text-xs">
+          {footer}
+        </p>
+      )}
+    </section>
+  );
+}
+
+/** Label left and control right on phones; label above the control on wider screens, as today. */
+export function FormCell({
+  label,
+  htmlFor,
+  hint,
+  children,
+}: {
+  label: string;
+  htmlFor?: string;
+  hint?: ReactNode;
+  children: ReactNode;
+}) {
+  return (
+    <div data-slot="form-cell" className="space-y-1.5">
+      <Label htmlFor={htmlFor}>{label}</Label>
+      {children}
+      {hint && (
+        <p data-slot="form-hint" className="text-muted-foreground text-xs">
+          {hint}
+        </p>
+      )}
+    </div>
+  );
+}
+
+/** Label (and optional description) left, Switch right, on every size. */
+export function FormSwitchCell({
+  id,
+  label,
+  description,
+  checked,
+  onCheckedChange,
+}: {
+  id: string;
+  label: string;
+  description?: string;
+  checked: boolean;
+  onCheckedChange: (checked: boolean) => void;
+}) {
+  return (
+    <div
+      data-slot="form-switch-cell"
+      className="flex items-center justify-between gap-4 rounded-lg border pr-3"
+    >
+      {/* The label fills the row, so all of it is the target and not just the small switch. */}
+      <Label
+        htmlFor={id}
+        className="flex-1 flex-col items-start gap-0.5 self-stretch py-2.5 pl-3 font-medium"
+      >
+        {label}
+        {description && (
+          <span data-slot="form-hint" className="text-muted-foreground text-xs font-normal">
+            {description}
+          </span>
+        )}
+      </Label>
+      <Switch id={id} checked={checked} onCheckedChange={onCheckedChange} />
+    </div>
+  );
+}
+
+/** Full-width content (rich text, image galleries, maps) in its own group on phones. */
+export function FormBlock({
+  label,
+  labelId,
+  htmlFor,
+  hint,
+  children,
+}: {
+  label: string;
+  labelId?: string;
+  htmlFor?: string;
+  hint?: ReactNode;
+  children: ReactNode;
+}) {
+  return (
+    <div data-slot="form-block" className="space-y-1.5">
+      <Label id={labelId} htmlFor={htmlFor}>
+        {label}
+      </Label>
+      <div data-slot="form-block-body">{children}</div>
+      {hint && (
+        <p data-slot="form-hint" className="text-muted-foreground text-xs">
+          {hint}
+        </p>
+      )}
+    </div>
+  );
+}

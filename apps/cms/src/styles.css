@@ -278,6 +278,162 @@
   [data-sonner-toaster][data-y-position='top'] [data-sonner-toast][data-styled='true'] {
     border-radius: 16px;
   }
+
+  /* Grouped form fields (components/form-cells.tsx): rounded groups of rows, a
+     small heading above and a note below, and each row's label on the left. */
+  :is([data-slot='form-section'], [data-slot='form-block'], [data-slot='form-group']) > * {
+    margin-block: 0;
+  }
+  [data-slot='form-section-title'],
+  [data-slot='form-block'] > [data-slot='label'] {
+    padding: 0 1rem 0.375rem;
+    color: var(--ios-secondary);
+    font-size: 0.8125rem;
+    font-weight: 400;
+    text-transform: uppercase;
+  }
+  [data-slot='form-section-footer'],
+  [data-slot='form-block'] > [data-slot='form-hint'] {
+    padding: 0.375rem 1rem 0;
+    color: var(--ios-secondary);
+    font-size: 0.8125rem;
+  }
+  [data-slot='form-group'],
+  [data-slot='form-block-body'] {
+    overflow: hidden;
+    border-radius: 10px;
+    background: var(--ios-cell);
+  }
+  [data-slot='drawer-content'] :is([data-slot='form-group'], [data-slot='form-block-body']) {
+    background: var(--ios-cell-raised);
+  }
+  /* A block whose content draws its own box (the rich-text editor) fills the
+     group edge to edge; anything else (the map pin picker) gets a row's padding. */
+  [data-slot='form-block-body'] > .border {
+    border: 0;
+    border-radius: 0;
+  }
+  [data-slot='form-block-body'] > :not(.border) {
+    padding: 0.75rem 1rem;
+  }
+  /* Content that is not a row (a photo picker) gets the row's padding. Paired
+     fields sit in a wrapper that phones dissolve (max-md:contents). */
+  [data-slot='form-group'] > :not([data-slot], .max-md\:contents) {
+    padding: 0.75rem 1rem;
+  }
+  /* Hairlines between rows, from where the text starts. Each sits just above its
+     row, so the group's clipping hides the first one. */
+  [data-slot='form-group'] :is([data-slot='form-cell'], [data-slot='form-switch-cell']),
+  [data-slot='form-group'] > :not([data-slot], .max-md\:contents) {
+    position: relative;
+  }
+  [data-slot='form-group'] :is([data-slot='form-cell'], [data-slot='form-switch-cell'])::before,
+  [data-slot='form-group'] > :not([data-slot], .max-md\:contents)::before {
+    content: '';
+    position: absolute;
+    top: -0.5px;
+    right: 0;
+    left: 1rem;
+    height: 0.5px;
+    background: var(--ios-separator);
+    pointer-events: none;
+  }
+
+  [data-slot='form-cell'] {
+    display: grid;
+    grid-template-columns: auto minmax(0, 1fr);
+    align-items: center;
+    column-gap: 1rem;
+    min-height: 2.75rem;
+    padding-inline: 1rem;
+  }
+  [data-slot='form-cell'] > * {
+    margin-block: 0;
+  }
+  [data-slot='form-cell'] > [data-slot='label'],
+  [data-slot='form-switch-cell'] > [data-slot='label'] {
+    font-size: 1.0625rem;
+    font-weight: 400;
+    white-space: nowrap;
+  }
+  [data-slot='form-cell'] > [data-slot='form-hint'] {
+    grid-column: 1 / -1;
+    margin-top: -0.25rem;
+    padding-bottom: 0.625rem;
+  }
+  :is([data-slot='form-cell'], [data-slot='form-switch-cell']) [data-slot='form-hint'] {
+    color: var(--ios-secondary);
+    font-size: 0.8125rem;
+    white-space: normal;
+  }
+  /* The value sits on the right with no box around it. */
+  [data-slot='form-cell'] > :is([data-slot='input'], [data-slot='select-trigger']) {
+    justify-self: end;
+    height: 2.75rem !important;
+    border: 0;
+    border-radius: 0;
+    background: transparent;
+    box-shadow: none;
+    padding-inline: 0;
+    font-size: 1.0625rem;
+    text-align: right;
+  }
+  /* A choice reads as its value and a chevron, in the secondary colour. */
+  [data-slot='form-cell'] > [data-slot='select-trigger'] {
+    width: auto;
+    max-width: 100%;
+    color: var(--ios-secondary);
+  }
+  /* Several lines of text take the row's full width, under the label. */
+  [data-slot='form-cell']:has(> [data-slot='textarea']) {
+    padding-top: 0.625rem;
+  }
+  [data-slot='form-cell'] > [data-slot='textarea'] {
+    grid-column: 1 / -1;
+    min-height: 0;
+    border: 0;
+    border-radius: 0;
+    background: transparent;
+    box-shadow: none;
+    padding: 0.25rem 0 0.625rem;
+    font-size: 1.0625rem;
+    resize: none;
+  }
+
+  [data-slot='form-switch-cell'] {
+    min-height: 2.75rem;
+    border: 0;
+    border-radius: 0;
+    padding-right: 1rem;
+  }
+  [data-slot='form-switch-cell'] > [data-slot='label'] {
+    padding-left: 1rem;
+  }
+  /* Switches: iOS's size inside a row, and the brand tint when on. */
+  [data-slot='switch'][data-checked] {
+    background: var(--brand);
+  }
+  [data-slot='switch'][data-unchecked] {
+    background: var(--ios-fill);
+  }
+  [data-slot='switch'] > [data-slot='switch-thumb'] {
+    background: #ffffff;
+    box-shadow:
+      0 3px 8px rgb(0 0 0 / 0.15),
+      0 3px 1px rgb(0 0 0 / 0.06);
+  }
+  [data-slot='form-switch-cell'] [data-slot='switch'] {
+    width: 51px;
+    height: 31px;
+  }
+  [data-slot='form-switch-cell'] [data-slot='switch-thumb'] {
+    width: 27px;
+    height: 27px;
+    translate: 1px 0;
+  }
+  [data-slot='form-switch-cell'] [data-slot='switch-thumb'][data-checked] {
+    translate: 21px 0;
+  }
 }
 
 /* Sidebar collapse (and the hover-to-peek flyout, which shares the same

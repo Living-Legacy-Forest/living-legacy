@@ -50,14 +50,26 @@ function Drawer({ children, onOpenChange, actionsRef, ...props }: DrawerProps) {
       {/* Outside this sheet's context, and any outer one's: its body is no form to guard. */}
       <InSheetContext value={null}>
         <DrawerPrimitive.Root open={confirming} onOpenChange={setConfirming}>
+          {/* The same parts as AlertDialog, so it is the same iOS action sheet (styles.css). */}
           <DrawerContent role="alertdialog">
-            <DrawerBody className="grid gap-4 text-center">
-              <div className="grid gap-1.5">
+            <DrawerBody data-slot="alert-dialog-content" className="grid gap-4 text-center">
+              <div data-slot="alert-dialog-header" className="grid gap-1.5">
                 <DrawerTitle>Discard changes?</DrawerTitle>
                 <DrawerDescription>Your edits haven’t been saved.</DrawerDescription>
               </div>
-              <div className={cn('-mx-4 flex flex-col gap-2 border-t px-4', sheetFooterClass)}>
+              <div
+                data-slot="alert-dialog-footer"
+                className={cn('-mx-4 flex flex-col-reverse gap-2 border-t px-4', sheetFooterClass)}
+              >
+                <DrawerPrimitive.Close
+                  data-slot="alert-dialog-cancel"
+                  render={<Button variant="outline" />}
+                >
+                  Keep editing
+                </DrawerPrimitive.Close>
                 <Button
+                  data-slot="alert-dialog-action"
+                  data-variant="destructive"
                   variant="destructive"
                   onClick={() => {
                     dirty.current = false;
@@ -67,9 +79,6 @@ function Drawer({ children, onOpenChange, actionsRef, ...props }: DrawerProps) {
                 >
                   Discard changes
                 </Button>
-                <DrawerPrimitive.Close render={<Button variant="outline" />}>
-                  Keep editing
-                </DrawerPrimitive.Close>
               </div>
             </DrawerBody>
           </DrawerContent>

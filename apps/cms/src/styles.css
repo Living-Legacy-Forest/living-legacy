@@ -194,6 +194,86 @@
     background-color: var(--ios-grouped);
   }
 
+  /* Confirmations (AlertDialog, and the drawer's "Discard changes?") as an iOS
+     action sheet: a floating group of the question and its actions, then a
+     separate Cancel. The footer's DOM order is Cancel first (flex-col-reverse). */
+  [data-slot='drawer-content'][role='alertdialog'] {
+    background: transparent;
+    box-shadow: none;
+    padding-inline: 0.5rem;
+  }
+  [data-slot='drawer-content'][role='alertdialog'] [data-slot='drawer-grabber'] {
+    display: none;
+  }
+  [data-slot='drawer-content'][role='alertdialog'] [data-slot='alert-dialog-content'] {
+    gap: 0;
+    padding-inline: 0;
+    padding-bottom: max(0.5rem, env(safe-area-inset-bottom));
+  }
+  [data-slot='drawer-content'][role='alertdialog'] [data-slot='alert-dialog-header'] {
+    gap: 0.25rem;
+    border-radius: 14px 14px 0 0;
+    background: var(--ios-cell-raised);
+    padding: 0.875rem 1rem;
+    text-align: center;
+    place-items: center;
+  }
+  [data-slot='drawer-content'][role='alertdialog'] [data-slot='alert-dialog-header'] > * {
+    color: var(--ios-secondary);
+    font-size: 0.8125rem;
+  }
+  [data-slot='drawer-content'][role='alertdialog']
+    [data-slot='alert-dialog-header']
+    > :first-child {
+    font-weight: 600;
+  }
+  [data-slot='drawer-content'][role='alertdialog'] [data-slot='alert-dialog-footer'] {
+    position: static;
+    margin: 0;
+    gap: 0;
+    border: 0;
+    background: transparent;
+    padding: 0;
+    backdrop-filter: none;
+    display: flex;
+    flex-direction: column-reverse;
+  }
+  [data-slot='drawer-content'][role='alertdialog'] [data-slot='alert-dialog-footer'] > * {
+    width: 100%;
+    height: auto;
+    min-height: 3.5625rem;
+    border: 0;
+    border-top: 0.5px solid var(--ios-separator);
+    border-radius: 0;
+    background: var(--ios-cell-raised);
+    box-shadow: none;
+    color: var(--brand);
+    font-size: 1.25rem;
+    font-weight: 400;
+  }
+  /* Every confirmation in the CMS confirms a loss (remove, delete, revoke,
+     leave unsaved changes), so the action is red as iOS draws destructive ones. */
+  [data-slot='drawer-content'][role='alertdialog']
+    [data-slot='alert-dialog-footer']
+    > :not(:first-child) {
+    color: var(--destructive);
+  }
+  /* The action just above Cancel closes the group's rounded corners. */
+  [data-slot='drawer-content'][role='alertdialog']
+    [data-slot='alert-dialog-footer']
+    > :nth-child(2) {
+    border-radius: 0 0 14px 14px;
+  }
+  /* Cancel: its own rounded group, in bold. */
+  [data-slot='drawer-content'][role='alertdialog']
+    [data-slot='alert-dialog-footer']
+    > :first-child {
+    margin-top: 0.5rem;
+    border-top: 0;
+    border-radius: 14px;
+    font-weight: 600;
+  }
+
   /* Messages drop in from the top as rounded banners (components/ui/sonner.tsx). */
   [data-sonner-toaster][data-y-position='top'] [data-sonner-toast][data-styled='true'] {
     border-radius: 16px;

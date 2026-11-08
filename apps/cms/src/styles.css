@@ -145,8 +145,8 @@
 
 /* Phones look like a UIKit app (docs/superpowers/specs/2026-11-08-ios-mobile-ui-design.md):
    iOS's grouped-list colours, on phones only so desktop and tablet keep theirs.
-   The tint (text-tint) is the text colour, switches are --brand, and destructive
-   stays --destructive. */
+   The tint (text-tint) is the text colour, switches are iOS green (ui/switch.tsx),
+   and destructive stays --destructive. */
 @media (width < 48rem) {
   :root {
     --ios-grouped: #f2f2f7;
@@ -456,31 +456,6 @@
   }
   [data-slot='form-switch-cell'] > [data-slot='label'] {
     padding-left: 1rem;
-  }
-  /* Switches: iOS's size inside a row, and the brand tint when on. */
-  [data-slot='switch'][data-checked] {
-    background: var(--brand);
-  }
-  [data-slot='switch'][data-unchecked] {
-    background: var(--ios-fill);
-  }
-  [data-slot='switch'] > [data-slot='switch-thumb'] {
-    background: #ffffff;
-    box-shadow:
-      0 3px 8px rgb(0 0 0 / 0.15),
-      0 3px 1px rgb(0 0 0 / 0.06);
-  }
-  [data-slot='form-switch-cell'] [data-slot='switch'] {
-    width: 51px;
-    height: 31px;
-  }
-  [data-slot='form-switch-cell'] [data-slot='switch-thumb'] {
-    width: 27px;
-    height: 27px;
-    translate: 1px 0;
-  }
-  [data-slot='form-switch-cell'] [data-slot='switch-thumb'][data-checked] {
-    translate: 21px 0;
   }
 }
 

@@ -189,6 +189,11 @@
     font-size: 0.9375rem;
   }
 
+  /* A form sheet (ListDialog) sits on the grouped background, under its top bar. */
+  [data-slot='drawer-content']:has([data-slot='sheet-header']) {
+    background-color: var(--ios-grouped);
+  }
+
   /* Messages drop in from the top as rounded banners (components/ui/sonner.tsx). */
   [data-sonner-toaster][data-y-position='top'] [data-sonner-toast][data-styled='true'] {
     border-radius: 16px;

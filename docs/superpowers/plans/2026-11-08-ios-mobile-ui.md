@@ -8,6 +8,7 @@
 not change.
 
 **Architecture:**
+
 - **Phone looks come from shared components, using `max-md:` CSS.** List parts, shell, form cells,
   dialogs and confirmations carry the styling, so pages get it by using them. This avoids
   rendering different trees per device and the hydration mismatches that come with it.
@@ -18,6 +19,7 @@ not change.
 - **Pages then adopt the shared parts one at a time.**
 
 **Tech stack:**
+
 - TanStack Start, React 19, shadcn on Base UI, Tailwind 4 (`max-md:`, and the custom `touch:`
   variant);
 - Sonner 2, for toasts;
@@ -33,17 +35,18 @@ not change.
 - **iOS tokens are phone-only**, declared under `@media (max-width: 767px)` in `styles.css` for both
   `:root` and `.dark`:
 
-  | Token | Light | Dark |
-  |---|---|---|
-  | `--ios-grouped` | `#f2f2f7` | `#000000` |
-  | `--ios-cell` | `#ffffff` | `#1c1c1e` |
-  | `--ios-cell-raised` (cells inside a sheet) | `#ffffff` | `#2c2c2e` |
-  | `--ios-separator` | `rgb(60 60 67 / 0.29)` | `rgb(84 84 88 / 0.65)` |
-  | `--ios-secondary` | `rgb(60 60 67 / 0.6)` | `rgb(235 235 245 / 0.6)` |
-  | `--ios-fill` | `rgb(118 118 128 / 0.12)` | `rgb(118 118 128 / 0.24)` |
-  | `--ios-segment-on` | `#ffffff` | `#636366` |
+  | Token                                      | Light                     | Dark                      |
+  | ------------------------------------------ | ------------------------- | ------------------------- |
+  | `--ios-grouped`                            | `#f2f2f7`                 | `#000000`                 |
+  | `--ios-cell`                               | `#ffffff`                 | `#1c1c1e`                 |
+  | `--ios-cell-raised` (cells inside a sheet) | `#ffffff`                 | `#2c2c2e`                 |
+  | `--ios-separator`                          | `rgb(60 60 67 / 0.29)`    | `rgb(84 84 88 / 0.65)`    |
+  | `--ios-secondary`                          | `rgb(60 60 67 / 0.6)`     | `rgb(235 235 245 / 0.6)`  |
+  | `--ios-fill`                               | `rgb(118 118 128 / 0.12)` | `rgb(118 118 128 / 0.24)` |
+  | `--ios-segment-on`                         | `#ffffff`                 | `#636366`                 |
 
   The tint is the existing `--brand`. Destructive stays `--destructive`.
+
 - **iOS type scale** on phones (spec): large title 34px bold; body 17px; secondary 15px; group
   headings 13px uppercase in `--ios-secondary`.
   - The large title is already 34px on phones (`styles.css`, `[data-slot='page-title']`), and it
@@ -71,34 +74,36 @@ Things the spec implies but no feature test naturally covers. Each has a check i
 owns it.
 
 1. **Keyboard open in a sheet.** Typing in a field near the bottom keeps Save (in the sheet's top
-   bar) visible and tappable, and the field scrolls into view. *(Task 6)*
+   bar) visible and tappable, and the field scrolls into view. _(Task 6)_
 2. **Swiping down on a sheet.** With typed changes it asks "Discard changes?". Unchanged, it closes
-   at once. Cancel behaves the same. *(Task 6)*
+   at once. Cancel behaves the same. _(Task 6)_
 3. **Long names.** A 60-character location name or post title truncates with an ellipsis in the top
-   bar, the sheet title and rows, with no horizontal scroll. *(Tasks 2, 3, 6)*
+   bar, the sheet title and rows, with no horizontal scroll. _(Tasks 2, 3, 6)_
 4. **Desktop and tablet are unchanged** at 800px and 1280px: dialog footers, panes, the sidebar and
-   toasts at the bottom right. *(every task; full sweep in Task 12)*
+   toasts at the bottom right. _(every task; full sweep in Task 12)_
 5. **Light mode.** Grouped colours, separators and the green tint stay readable in light mode, not
-   just in the dark mock-ups. *(Tasks 1, 12)*
+   just in the dark mock-ups. _(Tasks 1, 12)_
 
 ---
 
 ### Task 1: Phone tokens and grouped page background
 
 **Files:**
+
 - Modify: `apps/cms/src/styles.css`. Add the token block from Global constraints.
 - Modify: `apps/cms/src/components/shell/app-shell.tsx`. On phones the main content area uses
   `--ios-grouped` as its background.
 
 **Interfaces:**
+
 - **Produces:** the CSS variables `--ios-grouped`, `--ios-cell`, `--ios-cell-raised`,
   `--ios-separator`, `--ios-secondary`, `--ios-fill` and `--ios-segment-on`, defined on phones only.
   Every later task uses them as `max-md:bg-(--ios-cell)` and so on.
 
 - [ ] **Step 1:** Add the token block, under one `@media (max-width: 767px)`, for `:root` and
-  `.dark`, with the exact values above.
+      `.dark`, with the exact values above.
 - [ ] **Step 2:** Give the phone main area a `--ios-grouped` background. The tab bar and header keep
-  their translucent backgrounds.
+      their translucent backgrounds.
 - [ ] **Step 3: Check.**
   - At 390×844, the Dashboard background is `#f2f2f7` in light and `#000` in dark (use
     `evaluate_script` and `getComputedStyle`).
@@ -108,11 +113,13 @@ owns it.
 ### Task 2: Top bar: page actions, bell, no initials
 
 **Files:**
+
 - Create: `apps/cms/src/components/shell/page-actions.tsx`.
 - Modify: `apps/cms/src/components/shell/app-header.tsx`.
 - Modify: `apps/cms/src/components/shell/nav-user.tsx`, to hide it on phones only.
 
 **Interfaces:**
+
 - **Produces:**
   ```tsx
   export function PageActions(props: {
@@ -141,7 +148,7 @@ owns it.
   - Right slot: page actions, then the bell.
 - [ ] **Step 2:** Hide `NavUser` below `md`. The account lives in More (Task 3).
 - [ ] **Step 3:** Put `<PageActions add={…} />` on Locations, as the first consumer, to prove the
-  slots work. Hide its "Add location" button on phones.
+      slots work. Hide its "Add location" button on phones.
 - [ ] **Step 4: Check.**
   - At 390, Locations shows the bell and + top right, and no initials. Tapping + opens New location.
   - At 1280, the header is unchanged: breadcrumbs, bell and initials.
@@ -152,12 +159,14 @@ owns it.
 ### Task 3: Grouped lists
 
 **Files:**
+
 - Modify: `apps/cms/src/components/list/list-page.tsx`: `ListPageLayout`, `ListColumn`,
   `ListRows`, `NoMatches`.
 - Modify: `apps/cms/src/components/list/list-row.tsx`.
 - Modify: `apps/cms/src/components/list/list-tools.tsx`: `SelectionBar` and `SearchInput`.
 
 **Interfaces:**
+
 - **Produces:** `ListRows` gains `inset?: 'text' | 'media'`.
   - It sets where separators start: 16px, or 16 + 60 + 12 = 88px past a 60px thumbnail.
   - The default is `'text'`.
@@ -200,14 +209,18 @@ owns it.
 ### Task 4: Segmented control
 
 **Files:**
+
 - Create: `apps/cms/src/components/segmented-control.tsx`.
 - Modify: `apps/cms/src/components/events/events-page.tsx`, the Upcoming/Drafts/Past/All filter.
 
 **Interfaces:**
+
 - **Produces:**
   ```tsx
   export function SegmentedControl<T extends string>(props: {
-    label: string; value: T; onValueChange: (value: T) => void;
+    label: string;
+    value: T;
+    onValueChange: (value: T) => void;
     options: { value: T; label: string }[]; // 2 to 4 options
     className?: string;
   }): JSX.Element;
@@ -221,7 +234,7 @@ owns it.
 
 - [ ] **Step 1:** Build it, and use it for the Events filter.
 - [ ] **Step 2:** Find every other `ToggleGroup` used as a filter with 2 to 4 options, using
-  `rg "ToggleGroup" apps/cms/src/components`, and switch each to `SegmentedControl`.
+      `rg "ToggleGroup" apps/cms/src/components`, and switch each to `SegmentedControl`.
   - This includes the event panel's Details/Guests switch.
   - Leave filters with 5 or more options alone.
 - [ ] **Step 3: Check.**
@@ -232,10 +245,12 @@ owns it.
 ### Task 5: Messages from the top on phones
 
 **Files:**
+
 - Modify: `apps/cms/src/routes/__root.tsx`.
 - Modify: `apps/cms/src/components/ui/sonner.tsx` (small edit: accept the phone props).
 
 **Interfaces:**
+
 - **Phones** (`useIsMobile()`):
   - `position="top-center"`;
   - `mobileOffset={{ top: 'calc(env(safe-area-inset-top) + 8px)' }}`;
@@ -255,10 +270,12 @@ owns it.
 ### Task 6: Sheet with Cancel/Save in its top bar, and the discard prompt
 
 **Files:**
+
 - Create: `apps/cms/src/components/list/sheet-form.tsx`.
 - Modify: `apps/cms/src/components/list/list-page.tsx`: `ListDialog` and `DialogActions`.
 
 **Interfaces:**
+
 - **Produces**, from `sheet-form.tsx`:
   ```tsx
   /** The id the open sheet's <form> must carry, so Save in the sheet's top bar can submit it. */
@@ -294,7 +311,7 @@ owns it.
     with `rg "<form" apps/cms/src/components`. There are 19; add the id to each one shown in a
     `ListDialog`.
 - [ ] **Step 2:** Build dirty tracking and the discard action sheet. It uses the `AlertDialog`
-  phone variant from Task 7, or a plain one until Task 7 lands.
+      phone variant from Task 7, or a plain one until Task 7 lands.
 - [ ] **Step 3: Check, on Locations and Events.**
   - At 390, tapping a row opens a sheet with Cancel / title / Save. Save saves, and the sheet
     closes with a top toast.
@@ -309,14 +326,16 @@ owns it.
   - Review focus 3: a 60-character name truncates in the sheet title.
   - At 800 and 1280, dialogs and panes show their footer buttons as before.
 - [ ] **Step 4: Commit** with the message
-  `feat(cms): phone sheets with Cancel and Save on top, and a discard prompt`.
+      `feat(cms): phone sheets with Cancel and Save on top, and a discard prompt`.
 
 ### Task 7: Confirmations as action sheets
 
 **Files:**
+
 - Modify: `apps/cms/src/components/ui/alert-dialog.tsx` (phone branch only).
 
 **Interfaces:**
+
 - **Phone layout:**
   - one rounded `--ios-cell-raised` group holding the title and description, centred, 13px, in
     `--ios-secondary`;
@@ -336,19 +355,40 @@ owns it.
 ### Task 8: Grouped form cells
 
 **Files:**
+
 - Create: `apps/cms/src/components/form-cells.tsx`.
 
 **Interfaces:**
+
 - **Produces:**
   ```tsx
-  export function FormSection(props: { title?: string; footer?: string; children: ReactNode }): JSX.Element;
+  export function FormSection(props: {
+    title?: string;
+    footer?: string;
+    children: ReactNode;
+  }): JSX.Element;
   /** Label left and control right on phones; label above the control on wider screens, as today. */
-  export function FormCell(props: { label: string; htmlFor?: string; hint?: string; children: ReactNode }): JSX.Element;
+  export function FormCell(props: {
+    label: string;
+    htmlFor?: string;
+    hint?: string;
+    children: ReactNode;
+  }): JSX.Element;
   /** Label (and optional description) left, Switch right, on every size. Calls useMarkSheetDirty. */
-  export function FormSwitchCell(props: { id: string; label: string; description?: string;
-    checked: boolean; onCheckedChange: (checked: boolean) => void }): JSX.Element;
+  export function FormSwitchCell(props: {
+    id: string;
+    label: string;
+    description?: string;
+    checked: boolean;
+    onCheckedChange: (checked: boolean) => void;
+  }): JSX.Element;
   /** Full-width content (rich text, image galleries, maps) in its own group on phones. */
-  export function FormBlock(props: { label: string; labelId?: string; hint?: string; children: ReactNode }): JSX.Element;
+  export function FormBlock(props: {
+    label: string;
+    labelId?: string;
+    hint?: string;
+    children: ReactNode;
+  }): JSX.Element;
   ```
 - **Phones:**
   - `FormSection` is a rounded group on `--ios-cell-raised` (inside a sheet) or `--ios-cell`
@@ -380,6 +420,7 @@ FAQs, announcements, media coverage, redirects, terms (categories and tags), pos
 API keys.
 
 **Interfaces:**
+
 - **Consumes:** `PageActions` (Task 2), `ListRows inset` (Task 3), `SegmentedControl` (Task 4),
   `useSheetFormId` (Task 6) and the form cells (Task 8).
 - **Per page:**
@@ -405,10 +446,12 @@ API keys.
 ### Task 10: Media library and the post editor's top bar
 
 **Files:**
+
 - Modify: `apps/cms/src/components/media/media-page.tsx`.
 - Modify: `apps/cms/src/components/posts/post-editor/editor-toolbar.tsx`.
 
 **Interfaces:**
+
 - **Media** (spec call 4):
   - it stays a thumbnail grid: 3 columns on phones, 2px gaps, square tiles, no rounding;
   - upload goes in `PageActions add`, and Edit (select) in `PageActions edit`;
@@ -424,7 +467,7 @@ API keys.
 
 - [ ] **Step 1:** Media.
 - [ ] **Step 2:** Post editor top bar, checked for the full, author, SEO and read-only access
-  levels (`post-access.ts`).
+      levels (`post-access.ts`).
 - [ ] **Step 3: Check.**
   - At 390, the media grid and media sheet look right.
   - The post editor shows ‹ Posts / title / Publish, and the … menu holds every other action.
@@ -435,6 +478,7 @@ API keys.
 ### Task 11: More, Dashboard, Settings, Profile and the other pages
 
 **Files:**
+
 - Modify: `apps/cms/src/components/shell/tab-bar.tsx` (`MoreSheet`).
 - Modify: `apps/cms/src/components/dashboard/*`.
 - Modify: `apps/cms/src/components/settings/settings-page.tsx`.
@@ -444,6 +488,7 @@ API keys.
 - Modify: `apps/cms/src/components/missing-pages/missing-pages-page.tsx`.
 
 **Interfaces:**
+
 - **More** (spec call 5):
   - it opens with a profile cell: 60px avatar, name in 20px, email in 15px `--ios-secondary`,
     and a chevron, linking to `/profile`;
@@ -473,14 +518,14 @@ API keys.
 **Files:** none new. This task fixes whatever the sweep finds.
 
 - [ ] **Step 1:** Screenshot every page in the spec's "Pages in scope" at 390×844 mobile and
-  touch, in light and dark, scrolled to the top and with the large title collapsed. Include one
-  open sheet and one action sheet per list page.
+      touch, in light and dark, scrolled to the top and with the large title collapsed. Include one
+      open sheet and one action sheet per list page.
 - [ ] **Step 2:** Review focus 4. Screenshot every page at 800×1000 and at 1280×800, and compare
-  them with screenshots taken from `master` before the branch. Any difference is a bug.
+      them with screenshots taken from `master` before the branch. Any difference is a bug.
 - [ ] **Step 3:** Review focus 5. In light mode, check that separators are visible and that tint
-  text on `--ios-cell` reads clearly. Use the contrast check in Chrome DevTools, aiming for
-  at least 4.5:1 for text.
+      text on `--ios-cell` reads clearly. Use the contrast check in Chrome DevTools, aiming for
+      at least 4.5:1 for text.
 - [ ] **Step 4:** Run `bun run type-check && bun run lint && bunx prettier --check apps packages && bun run test && bun run build`.
 - [ ] **Step 5:** Hand the 390px screenshots to the owner for sign-off, and ask them to try sheets
-  and the keyboard on a real iPhone (spec call 10).
+      and the keyboard on a real iPhone (spec call 10).
 - [ ] **Step 6: Commit** any fixes with the message `fix(cms): phone UI sweep`.

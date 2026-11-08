@@ -10,7 +10,9 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from '@/components/ui/alert-dialog';
+import { FormCell, FormSection } from '@/components/form-cells';
 import { FolderIcon, PlusIcon, TagIcon, Trash2Icon } from '@/components/icons';
+import { PageActions } from '@/components/shell/page-actions';
 import {
   DialogActions,
   ListColumn,
@@ -43,7 +45,6 @@ import {
   EmptyTitle,
 } from '@/components/ui/empty';
 import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
 import { Spinner } from '@/components/ui/spinner';
 import { Textarea } from '@/components/ui/textarea';
 import { reportInvalid } from '@/lib/form-validation';
@@ -144,10 +145,19 @@ export function TermsPage({
           />
         )}
         {canWrite && (
-          <Button size="sm" onClick={() => view.open({ kind: 'new' })}>
+          <Button size="sm" className="max-md:hidden" onClick={() => view.open({ kind: 'new' })}>
             <PlusIcon aria-hidden data-icon="inline-start" />
             New {noun[0]}
           </Button>
+        )}
+        {canWrite && (
+          <PageActions
+            edit={{
+              editing: selection.selecting,
+              onToggle: selection.selecting ? selection.clear : selection.startEditing,
+            }}
+            add={{ label: `New ${noun[0]}`, onClick: () => view.open({ kind: 'new' }) }}
+          />
         )}
       </div>
 
@@ -387,36 +397,39 @@ function TermForm({
   }
 
   return (
-    <form noValidate onSubmit={submit} className="space-y-5">
-      <div className="space-y-1.5">
-        <Label htmlFor="t-name">Name</Label>
-        <Input
-          id="t-name"
-          required
-          maxLength={60}
-          value={name}
-          onChange={(e) => setName(e.target.value)}
-          placeholder={type === 'category' ? 'e.g. News' : 'e.g. sustainability'}
-        />
-      </div>
-      <div className="space-y-1.5">
-        <Label htmlFor="t-description">Description (optional)</Label>
-        <Textarea
-          id="t-description"
-          rows={3}
-          maxLength={300}
-          value={description}
-          onChange={(e) => setDescription(e.target.value)}
-          placeholder={
-            type === 'category' ? 'A sentence about this category' : 'A note for other editors'
+    <form noValidate onSubmit={submit} className="space-y-5 [--form-gap:1.25rem] max-md:space-y-7">
+      <FormSection>
+        <FormCell label="Name" htmlFor="t-name">
+          <Input
+            id="t-name"
+            required
+            maxLength={60}
+            value={name}
+            onChange={(e) => setName(e.target.value)}
+            placeholder={type === 'category' ? 'e.g. News' : 'e.g. sustainability'}
+          />
+        </FormCell>
+        <FormCell
+          label="Description (optional)"
+          htmlFor="t-description"
+          hint={
+            type === 'category'
+              ? "Shown at the top of this category's page on the website, and as its SEO description."
+              : undefined
           }
-        />
-        {type === 'category' && (
-          <p className="text-muted-foreground text-xs">
-            Shown at the top of this category's page on the website, and as its SEO description.
-          </p>
-        )}
-      </div>
+        >
+          <Textarea
+            id="t-description"
+            rows={3}
+            maxLength={300}
+            value={description}
+            onChange={(e) => setDescription(e.target.value)}
+            placeholder={
+              type === 'category' ? 'A sentence about this category' : 'A note for other editors'
+            }
+          />
+        </FormCell>
+      </FormSection>
       {footer(
         <Button type="submit" disabled={pending}>
           {pending ? (

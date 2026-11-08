@@ -14,7 +14,6 @@ import {
   PencilLineIcon,
   PlusIcon,
   RotateCcwIcon,
-  SearchIcon,
   SearchXIcon,
   SendIcon,
   Trash2Icon,
@@ -32,9 +31,10 @@ import {
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
 import { Button } from '@/components/ui/button';
-import { isDesktop } from '@/components/list/list-page';
+import { ListRows, isDesktop } from '@/components/list/list-page';
 import { ListRow } from '@/components/list/list-row';
-import { useSelection } from '@/components/list/list-tools';
+import { SearchInput, useSelection } from '@/components/list/list-tools';
+import { PageActions } from '@/components/shell/page-actions';
 import {
   Empty,
   EmptyContent,
@@ -206,19 +206,12 @@ export function PostsList({
         <h1 data-slot="page-title" className="mr-auto text-xl">
           Posts
         </h1>
-        <div className="relative w-full sm:w-56">
-          <SearchIcon
-            aria-hidden
-            className="text-muted-foreground pointer-events-none absolute top-1/2 left-2.5 size-3.5 -translate-y-1/2"
-          />
-          <input
-            aria-label="Search posts by title"
-            placeholder="Filter by title"
-            value={query}
-            onChange={(e) => setQuery(e.target.value)}
-            className="bg-muted/60 placeholder:text-muted-foreground focus-visible:bg-background focus-visible:ring-ring text-ui h-8 w-full rounded-md pr-2 pl-8 outline-none focus-visible:ring-1"
-          />
-        </div>
+        <SearchInput
+          label="Search posts by title"
+          placeholder="Filter by title"
+          value={query}
+          onChange={setQuery}
+        />
         <Select
           items={categoryItems}
           value={search.category ?? 'all'}
@@ -249,16 +242,36 @@ export function PostsList({
           </SelectContent>
         </Select>
         {canWrite && (
-          <Button size="sm" render={<Link to="/posts/new" />} nativeButton={false}>
+          <Button
+            size="sm"
+            className="max-md:hidden"
+            render={<Link to="/posts/new" />}
+            nativeButton={false}
+          >
             <PlusIcon aria-hidden data-icon="inline-start" />
             New post
           </Button>
         )}
+        <PageActions
+          edit={
+            canPublish
+              ? {
+                  editing: selection.selecting,
+                  onToggle: selection.selecting ? selection.clear : selection.startEditing,
+                }
+              : undefined
+          }
+          add={
+            canWrite
+              ? { label: 'New post', onClick: () => navigate({ to: '/posts/new' }) }
+              : undefined
+          }
+        />
       </div>
 
-      <div className="grid min-h-0 flex-1 grid-cols-1 overflow-hidden rounded-lg border lg:grid-cols-[minmax(20rem,2fr)_minmax(0,3fr)]">
+      <div className="grid min-h-0 flex-1 grid-cols-1 overflow-hidden rounded-lg border max-md:flex-none max-md:overflow-visible max-md:rounded-none max-md:border-0 lg:grid-cols-[minmax(20rem,2fr)_minmax(0,3fr)]">
         <section aria-label="Post list" className="flex min-h-0 flex-col lg:border-r">
-          <div className="flex h-11 shrink-0 items-center gap-1 border-b px-2">
+          <div className="flex h-11 shrink-0 items-center gap-1 border-b px-2 max-md:mb-2 max-md:border-0 max-md:px-0">
             {checkedIds.length > 0 ? (
               <>
                 <Button
@@ -338,7 +351,8 @@ export function PostsList({
               <Button
                 variant="ghost"
                 size="sm"
-                className="text-tint touch:inline-flex ml-auto hidden min-h-11 shrink-0 text-[0.9375rem] font-medium"
+                // Phones have Edit in the top bar; touch tablets keep it here.
+                className="text-tint touch:inline-flex ml-auto hidden min-h-11 shrink-0 text-[0.9375rem] font-medium max-md:hidden!"
                 onClick={selection.selecting ? selection.clear : selection.startEditing}
               >
                 {selection.selecting ? 'Done' : 'Edit'}
@@ -349,7 +363,7 @@ export function PostsList({
           {data.rows.length === 0 ? (
             <EmptyState search={search} />
           ) : (
-            <ul className="min-h-0 flex-1 space-y-px overflow-y-auto p-1.5">
+            <ListRows>
               {data.rows.map((row) => (
                 <PostListItem
                   key={row.id}
@@ -378,11 +392,11 @@ export function PostsList({
                   onSelect={() => select(row.id)}
                 />
               ))}
-            </ul>
+            </ListRows>
           )}
 
           {data.total > 0 && (
-            <div className="text-muted-foreground flex h-10 shrink-0 items-center justify-between border-t px-3 text-xs">
+            <div className="text-muted-foreground flex h-10 shrink-0 items-center justify-between border-t px-3 text-xs max-md:border-0">
               <span className="tabular-nums">
                 {from}-{to} of {data.total}
               </span>

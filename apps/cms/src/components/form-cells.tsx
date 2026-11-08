@@ -137,3 +137,11 @@ export function FormBlock({
     </div>
   );
 }
+
+/** A heading over a group that is not a FormSection (a table, a choice of cards): on phones, iOS's small grey heading. */
+export const groupHeadingClass =
+  'max-md:px-4 max-md:text-[0.8125rem] max-md:font-normal max-md:text-(--ios-secondary) max-md:uppercase';
+
+/** The box a table or list sits in: bordered on wider screens, an inset group on phones. */
+export const groupBoxClass =
+  'overflow-hidden rounded-lg border max-md:rounded-[10px] max-md:border-0 max-md:bg-(--ios-cell) max-md:[&_tr]:border-(--ios-separator)';

@@ -11,6 +11,7 @@ import {
 import { CropIcon, MediaIcon, Trash2Icon, UploadIcon } from '@/components/icons';
 import { FormCell, FormSection } from '@/components/form-cells';
 import { DialogActions, ListDialog } from '@/components/list/list-page';
+import { PageActions } from '@/components/shell/page-actions';
 import { ImageCropDialog } from '@/components/media/image-crop-dialog';
 import { MediaUsageList } from '@/components/media/media-usage';
 import { Button } from '@/components/ui/button';
@@ -134,10 +135,26 @@ export function MediaPage({
             e.target.value = '';
           }}
         />
-        <Button size="sm" disabled={pending} onClick={() => fileInput.current?.click()}>
+        <Button
+          size="sm"
+          className="max-md:hidden"
+          disabled={pending}
+          onClick={() => fileInput.current?.click()}
+        >
           {pending ? <Spinner /> : <UploadIcon aria-hidden data-icon="inline-start" />}
           Upload
         </Button>
+        <PageActions
+          edit={
+            canDelete
+              ? {
+                  editing: selection.selecting,
+                  onToggle: selection.selecting ? selection.clear : selection.startEditing,
+                }
+              : undefined
+          }
+          add={{ label: 'Upload images', onClick: () => fileInput.current?.click() }}
+        />
       </div>
 
       {data.length === 0 ? (

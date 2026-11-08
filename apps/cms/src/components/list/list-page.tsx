@@ -314,6 +314,7 @@ export function ListDialog({
   title,
   description,
   size = 'md',
+  icon,
   children,
 }: {
   open: boolean;
@@ -321,6 +322,8 @@ export function ListDialog({
   title: React.ReactNode;
   description?: React.ReactNode;
   size?: 'sm' | 'md' | 'lg';
+  /** A badge above the title on wider screens; a phone sheet's bar has no room. */
+  icon?: React.ReactNode;
   children: React.ReactNode;
 }) {
   const isPhone = useIsMobile();
@@ -367,6 +370,7 @@ export function ListDialog({
           </>
         ) : (
           <DialogHeader>
+            {icon}
             <DialogTitle className="leading-snug">{title}</DialogTitle>
             {description && <DialogDescription>{description}</DialogDescription>}
           </DialogHeader>

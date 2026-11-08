@@ -15,18 +15,11 @@ import {
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import {
-  Dialog,
-  DialogClose,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-} from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { UserPhotoDialog } from '@/components/users/user-photo-dialog';
+import { FormCell, FormSection, groupBoxClass, groupHeadingClass } from '@/components/form-cells';
+import { DialogActions, ListDialog } from '@/components/list/list-page';
+import { PageActions } from '@/components/shell/page-actions';
 import { Label } from '@/components/ui/label';
 import {
   Select,
@@ -89,17 +82,20 @@ function Section({
   children: React.ReactNode;
 }) {
   return (
-    <section className="space-y-2.5">
-      <div className="flex items-baseline gap-2">
-        <h2 className="text-sm font-medium">{title}</h2>
-        <span className="text-muted-foreground text-xs tabular-nums">{count}</span>
+    <section className="space-y-2.5 max-md:space-y-1.5">
+      <div className={cn('flex items-baseline gap-2', groupHeadingClass)}>
+        <h2 className="text-sm font-medium max-md:text-[0.8125rem] max-md:font-normal">{title}</h2>
+        <span className="text-muted-foreground text-xs tabular-nums max-md:text-[0.8125rem]">
+          {count}
+        </span>
       </div>
-      <div className="overflow-hidden rounded-lg border">{children}</div>
+      <div className={groupBoxClass}>{children}</div>
     </section>
   );
 }
 
 export function UsersPage({ data }: { data: TeamData }) {
+  const [inviting, setInviting] = useState(false);
   return (
     <div className="mx-auto w-full max-w-3xl space-y-8">
       <div className="flex items-start justify-between gap-4">
@@ -109,7 +105,12 @@ export function UsersPage({ data }: { data: TeamData }) {
           </h1>
           <p className="text-muted-foreground text-sm">People who can sign in to the CMS.</p>
         </div>
-        <InviteDialog />
+        <Button size="sm" className="max-md:hidden" onClick={() => setInviting(true)}>
+          <UserPlusIcon aria-hidden data-icon="inline-start" />
+          Invite
+        </Button>
+        <PageActions add={{ label: 'Invite someone', onClick: () => setInviting(true) }} />
+        <InviteDialog open={inviting} onOpenChange={setInviting} />
       </div>
 
       <Section title="Members" count={data.users.length}>
@@ -342,8 +343,13 @@ function RemoveUser({ user, onConfirm }: { user: TeamUser; onConfirm: () => void
   );
 }
 
-function InviteDialog() {
-  const [open, setOpen] = useState(false);
+function InviteDialog({
+  open,
+  onOpenChange: setOpen,
+}: {
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+}) {
   const [email, setEmail] = useState('');
   const [role, setRole] = useState<Role>('editor');
   const { run, pending } = useAction();
@@ -369,28 +375,20 @@ function InviteDialog() {
   }
 
   return (
-    <Dialog open={open} onOpenChange={setOpen}>
-      <DialogTrigger
-        render={
-          <Button size="sm">
-            <UserPlusIcon aria-hidden data-icon="inline-start" />
-            Invite
-          </Button>
-        }
-      />
-      <DialogContent className="sm:max-w-md">
-        <DialogHeader>
-          <span className="bg-muted text-foreground mb-1 flex size-10 items-center justify-center rounded-lg">
-            <UserPlusIcon aria-hidden className="size-5" />
-          </span>
-          <DialogTitle>Invite someone</DialogTitle>
-          <DialogDescription>
-            They get an email with a link to sign in. You can change their role later.
-          </DialogDescription>
-        </DialogHeader>
-        <form noValidate onSubmit={submit} className="space-y-5">
-          <div className="space-y-1.5">
-            <Label htmlFor="invite-email">Email</Label>
+    <ListDialog
+      open={open}
+      onClose={() => setOpen(false)}
+      title="Invite someone"
+      description="They get an email with a link to sign in. You can change their role later."
+      icon={
+        <span className="bg-muted text-foreground mb-1 flex size-10 items-center justify-center rounded-lg">
+          <UserPlusIcon aria-hidden className="size-5" />
+        </span>
+      }
+    >
+      <form noValidate onSubmit={submit} className="space-y-5 max-md:space-y-7">
+        <FormSection>
+          <FormCell label="Email" htmlFor="invite-email">
             <Input
               id="invite-email"
               type="email"
@@ -399,9 +397,11 @@ function InviteDialog() {
               onChange={(e) => setEmail(e.target.value)}
               placeholder="name@example.com"
             />
-          </div>
-          <div className="space-y-2">
-            <Label>Role</Label>
+          </FormCell>
+        </FormSection>
+        <div className="space-y-2 max-md:space-y-1.5">
+          <Label className={groupHeadingClass}>Role</Label>
+          <FormSection>
             <div className="grid grid-cols-2 gap-2">
               {roleItems.map((item) => {
                 const selected = role === item.value;
@@ -422,23 +422,22 @@ function InviteDialog() {
                 );
               })}
             </div>
-          </div>
-          <DialogFooter>
-            <DialogClose render={<Button type="button" variant="outline" />}>Cancel</DialogClose>
-            <Button type="submit" disabled={pending}>
-              {pending ? (
-                <>
-                  <Spinner />
-                  Sending…
-                </>
-              ) : (
-                'Send invite'
-              )}
-            </Button>
-          </DialogFooter>
-        </form>
-      </DialogContent>
-    </Dialog>
+          </FormSection>
+        </div>
+        <DialogActions>
+          <Button type="submit" disabled={pending}>
+            {pending ? (
+              <>
+                <Spinner />
+                Sending…
+              </>
+            ) : (
+              'Send invite'
+            )}
+          </Button>
+        </DialogActions>
+      </form>
+    </ListDialog>
   );
 }
 

@@ -11,6 +11,7 @@ import {
 } from '@ll/content';
 import { useState } from 'react';
 import { DateTimePicker } from '@/components/date-time-picker';
+import { FormBlock, FormCell, FormSection, FormSwitchCell } from '@/components/form-cells';
 import { FormStep, FormSteps, TOUCH_FIELDS, useFormSteps } from '@/components/form-steps';
 import { RichTextField } from '@/components/rich-text-field';
 import {
@@ -36,7 +37,6 @@ import {
 } from '@/components/ui/alert-dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
 import {
   Select,
   SelectContent,
@@ -45,7 +45,6 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { Spinner } from '@/components/ui/spinner';
-import { Switch } from '@/components/ui/switch';
 import { Textarea } from '@/components/ui/textarea';
 import { formatDateTime, zoneName } from '@/lib/format';
 import { reportInvalid } from '@/lib/form-validation';
@@ -301,95 +300,92 @@ export function EventForm({
 
   const details = (
     <>
-      <div className="space-y-1.5">
-        <Label htmlFor="ev-title">Title</Label>
-        <Input
-          id="ev-title"
-          required
-          maxLength={120}
-          value={values.title}
-          onChange={(e) => patch({ title: e.target.value })}
-          placeholder="Event name"
-          enterKeyHint={event ? 'done' : 'next'}
-        />
-      </div>
-
-      <div className="space-y-1.5">
-        <Label htmlFor="ev-slug">Web address</Label>
-        <Input
-          id="ev-slug"
-          maxLength={120}
-          value={values.slug}
-          onChange={(e) => patch({ slug: e.target.value })}
-          placeholder={slugify(values.title) || 'event-name'}
-          className="font-mono"
-          inputMode="url"
-          autoCapitalize="none"
-          autoCorrect="off"
-          spellCheck={false}
-        />
-        <p className="text-muted-foreground text-xs">
-          Used for its page once the website shows events.
-        </p>
-      </div>
-
-      <div className="grid gap-5 sm:grid-cols-2">
-        <div className="space-y-1.5">
-          <Label htmlFor="ev-location">Location</Label>
-          <Select
-            items={locationItems}
-            value={values.locationId ?? NO_LOCATION}
-            onValueChange={(value) => {
-              const picked = locations.find((l) => l.id === value);
-              patch({
-                locationId: picked ? picked.id : null,
-                // Fill the venue from the location, unless one was typed.
-                ...(picked && !values.venue ? { venue: picked.address } : {}),
-              });
-              if (picked && !zoneChosen) rezone(stateTimeZone(picked.state));
-            }}
-          >
-            <SelectTrigger id="ev-location" className="w-full">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              {locationItems.map((item) => (
-                <SelectItem key={item.value} value={item.value}>
-                  {item.label}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        </div>
-        <div className="space-y-1.5">
-          <Label htmlFor="ev-venue">Venue</Label>
+      <FormSection>
+        <FormCell label="Title" htmlFor="ev-title">
           <Input
-            id="ev-venue"
-            maxLength={300}
-            value={values.venue}
-            onChange={(e) => patch({ venue: e.target.value })}
-            placeholder={location?.address || 'Where to go'}
+            id="ev-title"
+            required
+            maxLength={120}
+            value={values.title}
+            onChange={(e) => patch({ title: e.target.value })}
+            placeholder="Event name"
+            enterKeyHint={event ? 'done' : 'next'}
           />
+        </FormCell>
+        <FormCell
+          label="Web address"
+          htmlFor="ev-slug"
+          hint="Used for its page once the website shows events."
+        >
+          <Input
+            id="ev-slug"
+            maxLength={120}
+            value={values.slug}
+            onChange={(e) => patch({ slug: e.target.value })}
+            placeholder={slugify(values.title) || 'event-name'}
+            className="font-mono"
+            inputMode="url"
+            autoCapitalize="none"
+            autoCorrect="off"
+            spellCheck={false}
+          />
+        </FormCell>
+      </FormSection>
+
+      <FormSection title="Where">
+        <div className="grid gap-5 max-md:contents sm:grid-cols-2">
+          <FormCell label="Location" htmlFor="ev-location">
+            <Select
+              items={locationItems}
+              value={values.locationId ?? NO_LOCATION}
+              onValueChange={(value) => {
+                const picked = locations.find((l) => l.id === value);
+                patch({
+                  locationId: picked ? picked.id : null,
+                  // Fill the venue from the location, unless one was typed.
+                  ...(picked && !values.venue ? { venue: picked.address } : {}),
+                });
+                if (picked && !zoneChosen) rezone(stateTimeZone(picked.state));
+              }}
+            >
+              <SelectTrigger id="ev-location" className="w-full">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {locationItems.map((item) => (
+                  <SelectItem key={item.value} value={item.value}>
+                    {item.label}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </FormCell>
+          <FormCell label="Venue" htmlFor="ev-venue">
+            <Input
+              id="ev-venue"
+              maxLength={300}
+              value={values.venue}
+              onChange={(e) => patch({ venue: e.target.value })}
+              placeholder={location?.address || 'Where to go'}
+            />
+          </FormCell>
         </div>
-      </div>
+      </FormSection>
 
-      <div className="space-y-1.5">
-        <Label htmlFor="ev-summary">Summary</Label>
-        <Textarea
-          id="ev-summary"
-          rows={2}
-          maxLength={200}
-          value={values.summary}
-          onChange={(e) => patch({ summary: e.target.value })}
-          placeholder="A sentence about the event"
-        />
-        <p className="text-muted-foreground text-xs">Shown in event lists.</p>
-      </div>
+      <FormSection>
+        <FormCell label="Summary" htmlFor="ev-summary" hint="Shown in event lists.">
+          <Textarea
+            id="ev-summary"
+            rows={2}
+            maxLength={200}
+            value={values.summary}
+            onChange={(e) => patch({ summary: e.target.value })}
+            placeholder="A sentence about the event"
+          />
+        </FormCell>
+      </FormSection>
 
-      <div className="space-y-1.5">
-        <Label id="ev-description-label" htmlFor="ev-description">
-          Description
-        </Label>
+      <FormBlock label="Description" labelId="ev-description-label" htmlFor="ev-description">
         <RichTextField
           id="ev-description"
           labelId="ev-description-label"
@@ -397,158 +393,174 @@ export function EventForm({
           onChange={(description) => patch({ description })}
           placeholder="What happens, what to bring, parking"
         />
-      </div>
+      </FormBlock>
 
-      <ImageGalleryField
-        id="ev-photos"
-        label="Photos"
-        description={`Up to ${EVENT_PHOTO_LIMIT}. The first one is the cover.`}
-        max={EVENT_PHOTO_LIMIT}
-        mediaIds={[...(values.heroMediaId ? [values.heroMediaId] : []), ...values.galleryMediaIds]}
-        onChange={([cover = null, ...rest]) => patch({ heroMediaId: cover, galleryMediaIds: rest })}
-      />
+      <FormSection>
+        <ImageGalleryField
+          id="ev-photos"
+          label="Photos"
+          description={`Up to ${EVENT_PHOTO_LIMIT}. The first one is the cover.`}
+          max={EVENT_PHOTO_LIMIT}
+          mediaIds={[
+            ...(values.heroMediaId ? [values.heroMediaId] : []),
+            ...values.galleryMediaIds,
+          ]}
+          onChange={([cover = null, ...rest]) =>
+            patch({ heroMediaId: cover, galleryMediaIds: rest })
+          }
+        />
+      </FormSection>
     </>
   );
   const when = (
     <>
-      <div className="space-y-1.5">
-        <Label htmlFor="ev-zone">Time zone</Label>
-        <Select
-          items={zoneItems}
-          value={values.timeZone}
-          onValueChange={(next) => {
-            if (!next) return;
-            setZoneChosen(true);
-            rezone(next);
-          }}
+      <FormSection>
+        <FormCell
+          label="Time zone"
+          htmlFor="ev-zone"
+          hint="Set from the location's state. Dates and times below are in this zone."
         >
-          <SelectTrigger id="ev-zone" className="w-full sm:w-64">
-            <SelectValue />
-          </SelectTrigger>
-          <SelectContent>
-            {zoneItems.map((item) => (
-              <SelectItem key={item.value} value={item.value}>
-                {item.label}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-        <p className="text-muted-foreground text-xs">
-          Set from the location's state. Dates and times below are in this zone.
-        </p>
-      </div>
+          <Select
+            items={zoneItems}
+            value={values.timeZone}
+            onValueChange={(next) => {
+              if (!next) return;
+              setZoneChosen(true);
+              rezone(next);
+            }}
+          >
+            <SelectTrigger id="ev-zone" className="w-full sm:w-64">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              {zoneItems.map((item) => (
+                <SelectItem key={item.value} value={item.value}>
+                  {item.label}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </FormCell>
+      </FormSection>
 
-      <EventDatesField
-        // A new zone re-reads the times shown.
-        key={values.timeZone}
-        id="ev-date"
-        zone={zone}
-        value={{ startsAt: values.startsAt, endsAt: values.endsAt }}
-        onChange={(next) => patch(next)}
-        sessions={event ? undefined : sessions}
-        onSessionsChange={event ? undefined : setSessions}
-      />
+      <FormSection>
+        <EventDatesField
+          // A new zone re-reads the times shown.
+          key={values.timeZone}
+          id="ev-date"
+          zone={zone}
+          value={{ startsAt: values.startsAt, endsAt: values.endsAt }}
+          onChange={(next) => patch(next)}
+          sessions={event ? undefined : sessions}
+          onSessionsChange={event ? undefined : setSessions}
+        />
+      </FormSection>
 
       {event?.seriesId ? (
-        <p className="text-muted-foreground -mt-2 text-xs">
+        <p className="text-muted-foreground -mt-2 text-xs max-md:-mt-5 max-md:px-4 max-md:text-[0.8125rem]">
           One date of a repeating event. Saving asks whether to change the upcoming dates too.
         </p>
       ) : (
-        !event && <RepeatField zone={zone} first={times} value={repeat} onChange={setRepeat} />
+        !event && (
+          <FormSection>
+            <RepeatField zone={zone} first={times} value={repeat} onChange={setRepeat} />
+          </FormSection>
+        )
       )}
 
-      <div className="space-y-1.5">
-        <Label htmlFor="ev-closes">Bookings close (optional)</Label>
-        <DateTimePicker
-          id="ev-closes"
-          zone={zone}
-          value={values.bookingsCloseAt}
-          placeholder="When it starts"
-          onChange={(bookingsCloseAt) => patch({ bookingsCloseAt })}
-        />
-        <p className="text-muted-foreground text-xs">
-          Online bookings close when it starts, unless set.
-        </p>
-      </div>
+      <FormSection>
+        <FormCell
+          label="Bookings close (optional)"
+          htmlFor="ev-closes"
+          hint="Online bookings close when it starts, unless set."
+        >
+          <DateTimePicker
+            id="ev-closes"
+            zone={zone}
+            value={values.bookingsCloseAt}
+            placeholder="When it starts"
+            onChange={(bookingsCloseAt) => patch({ bookingsCloseAt })}
+          />
+        </FormCell>
+      </FormSection>
     </>
   );
   const places = (
     <>
-      <div className="grid grid-cols-2 gap-3 sm:gap-5">
-        <div className="space-y-1.5">
-          <Label htmlFor="ev-capacity">Capacity</Label>
-          <Input
-            id="ev-capacity"
-            type="number"
-            inputMode="numeric"
-            min={1}
-            value={values.capacity ?? ''}
-            onChange={(e) =>
-              patch({
-                capacity: e.target.value === '' ? null : Math.max(1, Number(e.target.value)),
-              })
-            }
-            placeholder="No limit"
-          />
-          <p className="text-muted-foreground text-xs">Total people. Leave empty for no limit.</p>
+      <FormSection>
+        <div className="grid grid-cols-2 gap-3 max-md:contents sm:gap-5">
+          <FormCell
+            label="Capacity"
+            htmlFor="ev-capacity"
+            hint="Total people. Leave empty for no limit."
+          >
+            <Input
+              id="ev-capacity"
+              type="number"
+              inputMode="numeric"
+              min={1}
+              value={values.capacity ?? ''}
+              onChange={(e) =>
+                patch({
+                  capacity: e.target.value === '' ? null : Math.max(1, Number(e.target.value)),
+                })
+              }
+              placeholder="No limit"
+            />
+          </FormCell>
+          <FormCell
+            label="Max per booking"
+            htmlFor="ev-party"
+            hint="For online bookings. Staff can add more."
+          >
+            <Input
+              id="ev-party"
+              type="number"
+              inputMode="numeric"
+              min={1}
+              max={50}
+              required
+              value={values.maxPartySize}
+              onChange={(e) =>
+                patch({ maxPartySize: Math.min(50, Math.max(1, Number(e.target.value) || 1)) })
+              }
+            />
+          </FormCell>
         </div>
-        <div className="space-y-1.5">
-          <Label htmlFor="ev-party">Max per booking</Label>
-          <Input
-            id="ev-party"
-            type="number"
-            inputMode="numeric"
-            min={1}
-            max={50}
-            required
-            value={values.maxPartySize}
-            onChange={(e) =>
-              patch({ maxPartySize: Math.min(50, Math.max(1, Number(e.target.value) || 1)) })
-            }
-          />
-          <p className="text-muted-foreground text-xs">For online bookings. Staff can add more.</p>
-        </div>
-      </div>
+      </FormSection>
 
-      {/* The label fills the row, so all of it is the target and not just the small switch. */}
-      <div className="flex items-center justify-between gap-4 rounded-lg border pr-3">
-        <Label
-          htmlFor="ev-published"
-          className="flex-1 flex-col items-start gap-0.5 self-stretch py-2.5 pl-3 font-medium"
-        >
-          Published
-          <span className="text-muted-foreground text-xs font-normal">
-            Ready for the website once it shows events.
-          </span>
-        </Label>
-        <Switch
+      <FormSection>
+        <FormSwitchCell
           id="ev-published"
+          label="Published"
+          description="Ready for the website once it shows events."
           checked={values.status === 'published'}
           // Publishing now replaces any time it was set to go live.
           onCheckedChange={(checked) =>
             patch({ status: checked ? 'published' : 'draft', publishAt: null })
           }
         />
-      </div>
-
-      {values.status === 'draft' && (
-        <div className="space-y-1.5">
-          <Label htmlFor="ev-publish-at">Publish later</Label>
-          <DateTimePicker
-            id="ev-publish-at"
-            zone={zone}
-            value={values.publishAt}
-            minDate={Date.now()}
-            placeholder="Stay a draft"
-            onChange={(publishAt) => patch({ publishAt })}
-          />
-          <p className="text-muted-foreground text-xs">
-            {values.publishAt
-              ? `It goes live within five minutes of this time (${zoneName(zone, values.publishAt)}).`
-              : 'Leave empty to publish it yourself.'}
-          </p>
-        </div>
-      )}
+        {values.status === 'draft' && (
+          <FormCell
+            label="Publish later"
+            htmlFor="ev-publish-at"
+            hint={
+              values.publishAt
+                ? `It goes live within five minutes of this time (${zoneName(zone, values.publishAt)}).`
+                : 'Leave empty to publish it yourself.'
+            }
+          >
+            <DateTimePicker
+              id="ev-publish-at"
+              zone={zone}
+              value={values.publishAt}
+              minDate={Date.now()}
+              placeholder="Stay a draft"
+              onChange={(publishAt) => patch({ publishAt })}
+            />
+          </FormCell>
+        )}
+      </FormSection>
     </>
   );
 
@@ -597,7 +609,11 @@ export function EventForm({
       className={cn('scroll-mt-12 space-y-5', TOUCH_FIELDS)}
     >
       <FormSteps labels={STEPS} current={step} onPick={event ? steps.goTo : undefined} />
-      <FormStep step={step} forward={steps.forward} className="space-y-5">
+      <FormStep
+        step={step}
+        forward={steps.forward}
+        className="space-y-5 [--form-gap:1.25rem] max-md:space-y-7"
+      >
         {step === 0 && details}
         {step === 1 && when}
         {step === 2 && (

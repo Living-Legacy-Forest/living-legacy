@@ -18,13 +18,14 @@ export function FormSection({
   children: ReactNode;
 }) {
   return (
-    <section data-slot="form-section" className="space-y-4">
+    // A form whose fields sit further apart sets --form-gap, so wider screens keep its spacing.
+    <section data-slot="form-section" className="space-y-[var(--form-gap,1rem)]">
       {title && (
         <h3 data-slot="form-section-title" className="hidden max-md:block">
           {title}
         </h3>
       )}
-      <div data-slot="form-group" className="space-y-4">
+      <div data-slot="form-group" className="space-y-[var(--form-gap,1rem)]">
         {children}
       </div>
       {footer && (

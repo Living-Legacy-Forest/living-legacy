@@ -29,6 +29,7 @@ import {
   matchesSearch,
   useSelection,
 } from '@/components/list/list-tools';
+import { FormCell, FormSection, FormSwitchCell } from '@/components/form-cells';
 import { PageActions } from '@/components/shell/page-actions';
 import {
   AlertDialog,
@@ -53,9 +54,7 @@ import {
   EmptyTitle,
 } from '@/components/ui/empty';
 import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
 import { Spinner } from '@/components/ui/spinner';
-import { Switch } from '@/components/ui/switch';
 import { Textarea } from '@/components/ui/textarea';
 import { readStatus } from '@/lib/bulk-import';
 import { reportInvalid } from '@/lib/form-validation';
@@ -191,13 +190,15 @@ export function TeamPage({ data, canWrite }: { data: TeamListData; canWrite: boo
             onChange={setQuery}
           />
         )}
-        {canWrite && addButtons}
+        {canWrite && <div className="flex gap-3 max-md:hidden">{addButtons}</div>}
         {canWrite && (
           <PageActions
             edit={{
               editing: selection.selecting,
               onToggle: selection.selecting ? selection.clear : selection.startEditing,
             }}
+            add={{ label: 'Add member', onClick: () => view.open({ kind: 'new' }) }}
+            more={[{ label: 'Bulk update', onClick: () => view.open({ kind: 'bulk' }) }]}
           />
         )}
       </div>
@@ -520,51 +521,54 @@ function MemberForm({
   }
 
   return (
-    <form noValidate onSubmit={submit} className="space-y-4">
-      <div className="space-y-1.5">
-        <Label htmlFor="member-name">Name</Label>
-        <Input
-          id="member-name"
-          required
-          value={name}
-          onChange={(e) => setName(e.target.value)}
-          placeholder="Jane Smith"
+    <form noValidate onSubmit={submit} className="space-y-4 max-md:space-y-7">
+      <FormSection>
+        <FormCell label="Name" htmlFor="member-name">
+          <Input
+            id="member-name"
+            required
+            value={name}
+            onChange={(e) => setName(e.target.value)}
+            placeholder="Jane Smith"
+          />
+        </FormCell>
+        <FormCell label="Role" htmlFor="member-role">
+          <Input
+            id="member-role"
+            value={role}
+            onChange={(e) => setRole(e.target.value)}
+            placeholder="Founder"
+          />
+        </FormCell>
+      </FormSection>
+      <FormSection>
+        <ImageField
+          id="member-photo"
+          label="Photo"
+          description="A square portrait works best."
+          shape="square"
+          mediaId={photoMediaId}
+          onChange={setPhotoMediaId}
         />
-      </div>
-      <div className="space-y-1.5">
-        <Label htmlFor="member-role">Role</Label>
-        <Input
-          id="member-role"
-          value={role}
-          onChange={(e) => setRole(e.target.value)}
-          placeholder="Founder"
+      </FormSection>
+      <FormSection>
+        <FormCell label="Bio" htmlFor="member-bio">
+          <Textarea
+            id="member-bio"
+            rows={4}
+            value={bio}
+            onChange={(e) => setBio(e.target.value)}
+            placeholder="A short introduction, shown on the website."
+          />
+        </FormCell>
+        <FormSwitchCell
+          id="member-published"
+          label="Published"
+          description="Show this person on the website."
+          checked={published}
+          onCheckedChange={setPublished}
         />
-      </div>
-      <ImageField
-        id="member-photo"
-        label="Photo"
-        description="A square portrait works best."
-        shape="square"
-        mediaId={photoMediaId}
-        onChange={setPhotoMediaId}
-      />
-      <div className="space-y-1.5">
-        <Label htmlFor="member-bio">Bio</Label>
-        <Textarea
-          id="member-bio"
-          rows={4}
-          value={bio}
-          onChange={(e) => setBio(e.target.value)}
-          placeholder="A short introduction, shown on the website."
-        />
-      </div>
-      <div className="flex items-center justify-between rounded-lg border p-3">
-        <div className="space-y-0.5">
-          <div className="text-sm font-medium">Published</div>
-          <div className="text-muted-foreground text-xs">Show this person on the website.</div>
-        </div>
-        <Switch checked={published} onCheckedChange={setPublished} />
-      </div>
+      </FormSection>
       {footer(pending, member === null)}
     </form>
   );

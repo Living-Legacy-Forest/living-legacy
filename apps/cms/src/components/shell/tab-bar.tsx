@@ -1,4 +1,4 @@
-import { Link, useLocation } from '@tanstack/react-router';
+import { Link, useLocation, useRouter } from '@tanstack/react-router';
 import { useState } from 'react';
 import {
   ChevronRightIcon,
@@ -7,6 +7,7 @@ import {
   MoreHorizontalIcon,
   TagIcon,
 } from '@/components/icons';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Drawer, DrawerBody, DrawerContent } from '@/components/ui/drawer';
 import {
   type NavItem,
@@ -17,7 +18,8 @@ import {
   navGroups,
   phoneTabs,
 } from '@/lib/nav';
-import type { SessionUser } from '@/lib/session';
+import { authClient } from '@/lib/auth-client';
+import { type SessionUser, forgetCachedUser } from '@/lib/session';
 import { cn } from '@/lib/utils';
 import { SheetHeader, sheetGroupClass, sheetRowClass } from './sheet-parts';
 
@@ -60,7 +62,7 @@ export function TabBar({ user }: { user: SessionUser }) {
                   window.scrollTo({ top: 0, behavior: 'smooth' });
                 }
               }}
-              className={cn(tabClass, active ? 'text-brand' : 'text-muted-foreground')}
+              className={cn(tabClass, active ? 'text-tint' : 'text-muted-foreground')}
             >
               <tab.icon aria-hidden />
               <span className="truncate">{tab.title}</span>
@@ -71,7 +73,7 @@ export function TabBar({ user }: { user: SessionUser }) {
           type="button"
           onClick={() => setMoreOpen(true)}
           aria-haspopup="dialog"
-          className={cn(tabClass, moreActive ? 'text-brand' : 'text-muted-foreground')}
+          className={cn(tabClass, moreActive ? 'text-tint' : 'text-muted-foreground')}
         >
           <MoreHorizontalIcon aria-hidden />
           <span>More</span>
@@ -96,6 +98,17 @@ const childIcons: Partial<Record<NonNullable<NavItem['to']>, NavItem['icon']>> =
   '/posts/tags': TagIcon,
 };
 
+/** Two initials for the avatar's fallback. */
+function initialsOf(user: SessionUser) {
+  return (user.name || user.email)
+    .split(/[\s@.]+/)
+    .filter(Boolean)
+    .map((part) => part[0])
+    .join('')
+    .slice(0, 2)
+    .toUpperCase();
+}
+
 function MoreSheet({
   user,
   open,
@@ -108,6 +121,14 @@ function MoreSheet({
   tabs: string[];
 }) {
   const { pathname } = useLocation();
+  const router = useRouter();
+
+  async function signOut() {
+    onOpenChange(false);
+    await authClient.signOut();
+    forgetCachedUser();
+    await router.navigate({ to: '/login' });
+  }
 
   // Everything the sidebar offers that is not already a tab, in the sidebar's
   // order. A section with its own pages (Posts) gets a group of its own.
@@ -131,13 +152,36 @@ function MoreSheet({
 
   return (
     <Drawer open={open} onOpenChange={onOpenChange}>
-      <DrawerContent className="bg-muted">
+      <DrawerContent className="bg-(--ios-grouped)">
         <SheetHeader title="More" onDone={() => onOpenChange(false)} />
         <DrawerBody className="flex flex-col gap-6 pb-[calc(env(safe-area-inset-bottom)+1.5rem)]">
+          {/* The account first, as iOS Settings opens with the Apple Account. */}
+          <Link
+            to="/profile"
+            onClick={() => onOpenChange(false)}
+            className={cn(
+              sheetGroupClass,
+              'flex min-h-19 items-center gap-3 divide-y-0 px-4 py-2.5 active:bg-(--ios-fill)'
+            )}
+          >
+            <Avatar className="size-15">
+              {user.image && <AvatarImage src={user.image} alt="" />}
+              <AvatarFallback className="text-lg">{initialsOf(user)}</AvatarFallback>
+            </Avatar>
+            <span className="min-w-0 flex-1">
+              <span className="block truncate text-[1.25rem] leading-tight">
+                {user.name || user.email}
+              </span>
+              <span className="block truncate text-[0.9375rem] text-(--ios-secondary)">
+                {user.email}
+              </span>
+            </span>
+            <ChevronRightIcon aria-hidden className="size-4 text-(--ios-secondary) opacity-60" />
+          </Link>
           {sections.map((section) => (
             <section key={section.label || 'links'}>
               {section.label && (
-                <h2 className="text-muted-foreground mb-1.5 px-4 text-[0.8125rem]">
+                <h2 className="mb-1.5 px-4 text-[0.8125rem] text-(--ios-secondary) uppercase">
                   {section.label}
                 </h2>
               )}
@@ -154,6 +198,17 @@ function MoreSheet({
               </ul>
             </section>
           ))}
+          <ul className={sheetGroupClass}>
+            <li>
+              <button
+                type="button"
+                onClick={signOut}
+                className={cn(sheetRowClass, 'text-destructive justify-center')}
+              >
+                Sign out
+              </button>
+            </li>
+          </ul>
         </DrawerBody>
       </DrawerContent>
     </Drawer>
@@ -177,7 +232,7 @@ function MoreRow({
       ) : (
         <span aria-hidden className="w-5.5" />
       )}
-      <span className={cn('flex-1 truncate', active && 'text-brand font-medium')}>{row.title}</span>
+      <span className={cn('flex-1 truncate', active && 'text-tint font-medium')}>{row.title}</span>
       {row.to && <ChevronRightIcon aria-hidden className="text-muted-foreground/60 size-4!" />}
     </>
   );

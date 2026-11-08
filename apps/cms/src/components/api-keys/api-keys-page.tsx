@@ -19,15 +19,9 @@ import {
   CodeBlockContent,
   CodeBlockCopyButton,
 } from '@/components/ui/code-block';
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-} from '@/components/ui/dialog';
+import { FormCell, FormSection, groupBoxClass, groupHeadingClass } from '@/components/form-cells';
+import { DialogActions, ListDialog } from '@/components/list/list-page';
+import { PageActions } from '@/components/shell/page-actions';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Spinner } from '@/components/ui/spinner';
@@ -61,6 +55,7 @@ const scopeItems: { value: Scope; label: string; description: string }[] = [
 const tableCellPadding = '[&_td]:px-4 [&_th]:px-4';
 
 export function ApiKeysPage({ keys }: { keys: ApiKeyRow[] }) {
+  const [creating, setCreating] = useState(false);
   const active = keys.filter((k) => !k.revokedAt);
   const revoked = keys.filter((k) => k.revokedAt);
 
@@ -76,15 +71,22 @@ export function ApiKeysPage({ keys }: { keys: ApiKeyRow[] }) {
             who created it.
           </p>
         </div>
-        <CreateKeyDialog />
+        <Button size="sm" className="max-md:hidden" onClick={() => setCreating(true)}>
+          <PlusIcon aria-hidden data-icon="inline-start" />
+          New API key
+        </Button>
+        <PageActions add={{ label: 'New API key', onClick: () => setCreating(true) }} />
+        <CreateKeyDialog open={creating} onOpenChange={setCreating} />
       </div>
 
-      <section className="space-y-2.5">
-        <div className="flex items-baseline gap-2">
-          <h2 className="text-sm font-medium">Active keys</h2>
+      <section className="space-y-2.5 max-md:space-y-1.5">
+        <div className={cn('flex items-baseline gap-2', groupHeadingClass)}>
+          <h2 className="text-sm font-medium max-md:text-[0.8125rem] max-md:font-normal">
+            Active keys
+          </h2>
           <span className="text-muted-foreground text-xs tabular-nums">{active.length}</span>
         </div>
-        <div className="overflow-hidden rounded-lg border">
+        <div className={groupBoxClass}>
           {active.length ? (
             <KeysTable keys={active} />
           ) : (
@@ -96,12 +98,14 @@ export function ApiKeysPage({ keys }: { keys: ApiKeyRow[] }) {
       </section>
 
       {revoked.length > 0 && (
-        <section className="space-y-2.5">
-          <div className="flex items-baseline gap-2">
-            <h2 className="text-sm font-medium">Revoked</h2>
+        <section className="space-y-2.5 max-md:space-y-1.5">
+          <div className={cn('flex items-baseline gap-2', groupHeadingClass)}>
+            <h2 className="text-sm font-medium max-md:text-[0.8125rem] max-md:font-normal">
+              Revoked
+            </h2>
             <span className="text-muted-foreground text-xs tabular-nums">{revoked.length}</span>
           </div>
-          <div className="overflow-hidden rounded-lg border">
+          <div className={groupBoxClass}>
             <KeysTable keys={revoked} />
           </div>
         </section>
@@ -206,8 +210,13 @@ function RevokeKey({ name, onConfirm }: { name: string; onConfirm: () => void })
   );
 }
 
-function CreateKeyDialog() {
-  const [open, setOpen] = useState(false);
+function CreateKeyDialog({
+  open,
+  onOpenChange: setOpen,
+}: {
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+}) {
   const [name, setName] = useState('');
   const [scope, setScope] = useState<Scope>('read');
   const [created, setCreated] = useState<string | null>(null);
@@ -228,46 +237,45 @@ function CreateKeyDialog() {
     if (result) setCreated(result.key);
   }
 
-  return (
-    <Dialog
-      open={open}
-      onOpenChange={(next) => {
-        setOpen(next);
-        if (!next) reset();
-      }}
-    >
-      <DialogTrigger
-        render={
-          <Button size="sm">
-            <PlusIcon aria-hidden data-icon="inline-start" />
-            New API key
-          </Button>
-        }
-      />
-      <DialogContent className="sm:max-w-md">
-        <DialogHeader>
-          <span className="bg-muted text-foreground mb-1 flex size-10 items-center justify-center rounded-lg">
-            <KeyIcon aria-hidden className="size-5" />
-          </span>
-          <DialogTitle>{created ? 'Copy your key' : 'New API key'}</DialogTitle>
-          <DialogDescription>
-            {created
-              ? 'This is the only time the key is shown. Store it somewhere safe, like a password manager.'
-              : 'Name it after the tool that will use it, so you know which to revoke later.'}
-          </DialogDescription>
-        </DialogHeader>
+  function close() {
+    setOpen(false);
+    reset();
+  }
 
-        {created ? (
-          <>
-            <CopyableKey value={created} />
-            <DialogFooter>
-              <Button onClick={() => setOpen(false)}>Done</Button>
-            </DialogFooter>
-          </>
-        ) : (
-          <form noValidate onSubmit={submit} className="space-y-5">
-            <div className="space-y-1.5">
-              <Label htmlFor="api-key-name">Name</Label>
+  return (
+    <ListDialog
+      open={open}
+      onClose={close}
+      title={created ? 'Copy your key' : 'New API key'}
+      description={
+        created
+          ? 'This is the only time the key is shown. Store it somewhere safe, like a password manager.'
+          : 'Name it after the tool that will use it, so you know which to revoke later.'
+      }
+      icon={
+        <span className="bg-muted text-foreground mb-1 flex size-10 items-center justify-center rounded-lg">
+          <KeyIcon aria-hidden className="size-5" />
+        </span>
+      }
+    >
+      {created ? (
+        // A form so Done takes the sheet bar's place for Save on phones.
+        <form
+          onSubmit={(e) => {
+            e.preventDefault();
+            close();
+          }}
+          className="space-y-5"
+        >
+          <CopyableKey value={created} />
+          <DialogActions>
+            <Button type="submit">Done</Button>
+          </DialogActions>
+        </form>
+      ) : (
+        <form noValidate onSubmit={submit} className="space-y-5 max-md:space-y-7">
+          <FormSection>
+            <FormCell label="Name" htmlFor="api-key-name">
               <Input
                 id="api-key-name"
                 required
@@ -276,9 +284,11 @@ function CreateKeyDialog() {
                 onChange={(e) => setName(e.target.value)}
                 placeholder="e.g. Blog writing assistant"
               />
-            </div>
-            <div className="space-y-2">
-              <Label>Access</Label>
+            </FormCell>
+          </FormSection>
+          <div className="space-y-2 max-md:space-y-1.5">
+            <Label className={groupHeadingClass}>Access</Label>
+            <FormSection>
               <div className="grid grid-cols-2 gap-2">
                 {scopeItems.map((item) => {
                   const selected = scope === item.value;
@@ -301,17 +311,17 @@ function CreateKeyDialog() {
                   );
                 })}
               </div>
-            </div>
-            <DialogFooter>
-              <Button type="submit" disabled={pending}>
-                {pending && <Spinner data-icon="inline-start" />}
-                Create key
-              </Button>
-            </DialogFooter>
-          </form>
-        )}
-      </DialogContent>
-    </Dialog>
+            </FormSection>
+          </div>
+          <DialogActions>
+            <Button type="submit" disabled={pending}>
+              {pending && <Spinner data-icon="inline-start" />}
+              Create key
+            </Button>
+          </DialogActions>
+        </form>
+      )}
+    </ListDialog>
   );
 }
 
@@ -357,7 +367,7 @@ function UsageGuide() {
   -d '{"title": "My draft", "markdown": "## Hello\\n\\nWritten elsewhere."}'`;
 
   return (
-    <section className="space-y-2.5">
+    <section className="space-y-2.5 max-md:space-y-1.5">
       <h2 className="text-sm font-medium">Using the API</h2>
       <div className="space-y-4 rounded-lg border p-4 text-sm">
         <p className="text-muted-foreground">

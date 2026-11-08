@@ -10,7 +10,8 @@
  *   </ListPageLayout>
  *   <ListDialog open={pane.dialog !== null} onClose={pane.closeDialog} …/>
  */
-import { useState } from 'react';
+import { createContext, useContext, useLayoutEffect, useRef, useState } from 'react';
+import { createPortal } from 'react-dom';
 import { PanelRightIcon } from '@/components/icons';
 import { Button } from '@/components/ui/button';
 import {
@@ -22,6 +23,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog';
+import { DrawerClose, DrawerTitle } from '@/components/ui/drawer';
 import {
   Empty,
   EmptyDescription,
@@ -29,7 +31,22 @@ import {
   EmptyMedia,
   EmptyTitle,
 } from '@/components/ui/empty';
+import { useIsMobile } from '@/hooks/use-mobile';
 import { cn } from '@/lib/utils';
+
+/**
+ * Phones: the sheet's top bar, where DialogActions moves the form's submit
+ * button (Save, Create, Next), opposite Cancel, as an iOS sheet has them.
+ */
+const SheetSubmitSlot = createContext<HTMLElement | null>(null);
+
+/** Submits the sheet's form from a button that has moved out of it into the top bar. */
+function submitSheetForm(event: React.MouseEvent) {
+  const button = (event.target as Element).closest('button[type="submit"]');
+  if (!button) return;
+  event.preventDefault();
+  button.closest('[data-slot="drawer-content"]')?.querySelector('form')?.requestSubmit();
+}
 
 /** Large screens show the pane; below this the target opens in a dialog. */
 export const isDesktop = () =>
@@ -66,6 +83,8 @@ export function ListPageLayout({
     <div
       className={cn(
         'grid min-h-0 flex-1 grid-cols-1 overflow-hidden rounded-lg border lg:grid-cols-[minmax(20rem,1fr)_minmax(0,1fr)]',
+        // Phones: no frame. The list is an iOS grouped list that ends with its rows.
+        'max-md:flex-none max-md:overflow-visible max-md:rounded-none max-md:border-0',
         className
       )}
     >
@@ -92,16 +111,33 @@ export function ListColumn({
   );
 }
 
-/** The scrolling list of rows (ListRow), or wrap your own grouped sections. */
+/**
+ * The scrolling list of rows (ListRow), or wrap your own grouped sections.
+ * On phones it is an iOS grouped list: one rounded group whose dividers start
+ * at the text, or past the thumbnail when rows have one (`inset="media"`).
+ */
 export function ListRows({
   children,
   className,
+  inset = 'text',
 }: {
   children: React.ReactNode;
   className?: string;
+  inset?: 'text' | 'media';
 }) {
   return (
-    <ul className={cn('min-h-0 flex-1 space-y-px overflow-y-auto p-1.5', className)}>{children}</ul>
+    <ul
+      data-slot="list-rows"
+      // 16px of padding, then a 60px thumbnail and a 12px gap before the text.
+      style={{ '--row-inset': inset === 'media' ? '5.5rem' : '1rem' } as React.CSSProperties}
+      className={cn(
+        'min-h-0 flex-1 space-y-px overflow-y-auto p-1.5',
+        'max-md:flex-none max-md:space-y-0 max-md:overflow-hidden max-md:rounded-[10px] max-md:bg-(--ios-cell) max-md:p-0',
+        className
+      )}
+    >
+      {children}
+    </ul>
   );
 }
 
@@ -212,6 +248,45 @@ export function DialogActions({
   compact?: boolean;
   children: React.ReactNode;
 }) {
+  const slot = useContext(SheetSubmitSlot);
+  const isPhone = useIsMobile();
+  const barRef = useRef<HTMLDivElement>(null);
+
+  // A sheet's bar holds one short word, as iOS's does: "Add location" or
+  // "Create event" reads as Add or Create there, and in full at the form's end.
+  useLayoutEffect(() => {
+    const button = barRef.current?.querySelector('button[type=submit]');
+    if (!button) return;
+    const words = (button.textContent ?? '').trim().split(/\s+/);
+    if (words.length > 1 && words[0]) button.setAttribute('data-bar-label', words[0]);
+    else button.removeAttribute('data-bar-label');
+  });
+
+  // Phones: the submit button joins Cancel in the sheet's top bar, as plain
+  // tint-coloured text. Everything else (Back, Next, Preview, Delete) stays at
+  // the end of the form. The children render in both places, each showing its part.
+  if (isPhone && slot) {
+    return (
+      <>
+        {createPortal(
+          <div
+            ref={barRef}
+            data-slot="sheet-submit"
+            onClickCapture={submitSheetForm}
+            className="[&>button]:text-tint! flex items-center [&>*:not(button[type=submit])]:hidden [&>button]:h-11 [&>button]:border-0 [&>button]:bg-transparent! [&>button]:px-0 [&>button]:text-[1.0625rem] [&>button]:font-semibold [&>button]:shadow-none [&>button]:active:opacity-50 [&>button]:disabled:opacity-40"
+          >
+            {children}
+          </div>,
+          slot
+        )}
+        <div className="mt-8 flex flex-wrap items-center gap-2 [&_button]:min-h-11 [&_button[type=submit]]:hidden">
+          {start && <div className="mr-auto">{start}</div>}
+          {children}
+        </div>
+      </>
+    );
+  }
+
   return (
     <DialogFooter
       className={cn(
@@ -239,6 +314,7 @@ export function ListDialog({
   title,
   description,
   size = 'md',
+  icon,
   children,
 }: {
   open: boolean;
@@ -246,11 +322,17 @@ export function ListDialog({
   title: React.ReactNode;
   description?: React.ReactNode;
   size?: 'sm' | 'md' | 'lg';
+  /** A badge above the title on wider screens; a phone sheet's bar has no room. */
+  icon?: React.ReactNode;
   children: React.ReactNode;
 }) {
+  const isPhone = useIsMobile();
+  const [slot, setSlot] = useState<HTMLElement | null>(null);
   return (
     <Dialog open={open} onOpenChange={(isOpen) => !isOpen && onClose()}>
       <DialogContent
+        // Phones have Cancel in the sheet's top bar instead of a close button.
+        showCloseButton={!isPhone}
         // Long forms scroll inside the dialog rather than running off the screen. Phones
         // get a sheet, which already does.
         className={cn(
@@ -258,11 +340,42 @@ export function ListDialog({
           size === 'sm' ? 'sm:max-w-sm' : size === 'lg' ? 'sm:max-w-lg' : 'sm:max-w-md'
         )}
       >
-        <DialogHeader>
-          <DialogTitle className="leading-snug">{title}</DialogTitle>
-          {description && <DialogDescription>{description}</DialogDescription>}
-        </DialogHeader>
-        {children}
+        {isPhone ? (
+          <>
+            {/* An iOS sheet's bar: Cancel, the title, and the form's submit button. */}
+            <div
+              data-slot="sheet-header"
+              className="sticky -top-2 z-20 -mx-4 -mt-2 grid grid-cols-[minmax(4.5rem,1fr)_auto_minmax(4.5rem,1fr)] items-center gap-2 bg-(--ios-grouped)/85 px-4 pt-2 pb-1 backdrop-blur-xl"
+            >
+              <DrawerClose
+                render={
+                  <button
+                    type="button"
+                    className="text-tint min-h-11 justify-self-start text-[1.0625rem] active:opacity-50"
+                  />
+                }
+              >
+                Cancel
+              </DrawerClose>
+              <DrawerTitle className="max-w-[52vw] truncate text-center text-[1.0625rem] font-semibold text-nowrap!">
+                {title}
+              </DrawerTitle>
+              <div ref={setSlot} className="flex justify-self-end" />
+            </div>
+            {description && (
+              <DialogDescription className="text-center text-[0.9375rem] text-(--ios-secondary)">
+                {description}
+              </DialogDescription>
+            )}
+          </>
+        ) : (
+          <DialogHeader>
+            {icon}
+            <DialogTitle className="leading-snug">{title}</DialogTitle>
+            {description && <DialogDescription>{description}</DialogDescription>}
+          </DialogHeader>
+        )}
+        <SheetSubmitSlot value={slot}>{children}</SheetSubmitSlot>
       </DialogContent>
     </Dialog>
   );

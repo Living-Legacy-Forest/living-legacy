@@ -50,14 +50,26 @@ function Drawer({ children, onOpenChange, actionsRef, ...props }: DrawerProps) {
       {/* Outside this sheet's context, and any outer one's: its body is no form to guard. */}
       <InSheetContext value={null}>
         <DrawerPrimitive.Root open={confirming} onOpenChange={setConfirming}>
+          {/* The same parts as AlertDialog, so it is the same iOS action sheet (styles.css). */}
           <DrawerContent role="alertdialog">
-            <DrawerBody className="grid gap-4 text-center">
-              <div className="grid gap-1.5">
+            <DrawerBody data-slot="alert-dialog-content" className="grid gap-4 text-center">
+              <div data-slot="alert-dialog-header" className="grid gap-1.5">
                 <DrawerTitle>Discard changes?</DrawerTitle>
                 <DrawerDescription>Your edits haven’t been saved.</DrawerDescription>
               </div>
-              <div className={cn('-mx-4 flex flex-col gap-2 border-t px-4', sheetFooterClass)}>
+              <div
+                data-slot="alert-dialog-footer"
+                className={cn('-mx-4 flex flex-col-reverse gap-2 border-t px-4', sheetFooterClass)}
+              >
+                <DrawerPrimitive.Close
+                  data-slot="alert-dialog-cancel"
+                  render={<Button variant="outline" />}
+                >
+                  Keep editing
+                </DrawerPrimitive.Close>
                 <Button
+                  data-slot="alert-dialog-action"
+                  data-variant="destructive"
                   variant="destructive"
                   onClick={() => {
                     dirty.current = false;
@@ -67,9 +79,6 @@ function Drawer({ children, onOpenChange, actionsRef, ...props }: DrawerProps) {
                 >
                   Discard changes
                 </Button>
-                <DrawerPrimitive.Close render={<Button variant="outline" />}>
-                  Keep editing
-                </DrawerPrimitive.Close>
               </div>
             </DrawerBody>
           </DrawerContent>
@@ -103,10 +112,12 @@ function DrawerContent({ className, children, ...props }: DrawerContentProps) {
         data-slot="drawer-viewport"
         className="fixed inset-0 z-50 flex items-end justify-center"
       >
+        {/* Clipped, not overflow-hidden: iOS scrolls a hidden-overflow box to show a
+            focused field, which slid the form up over the sheet's top bar. */}
         <DrawerPrimitive.Popup
           data-slot="drawer-content"
           className={cn(
-            'bg-popover text-popover-foreground relative -mb-(--bleed) flex max-h-[calc(100dvh-env(safe-area-inset-top)-0.75rem+var(--bleed))] w-full [transform:translateY(var(--drawer-swipe-movement-y))] flex-col overflow-hidden rounded-t-[1.25rem] pt-4 pb-(--bleed) text-sm shadow-[0_-1px_0] shadow-black/5 transition-transform duration-[450ms] ease-[cubic-bezier(0.32,0.72,0,1)] will-change-transform outline-none [--bleed:3rem] data-ending-style:[transform:translateY(calc(100%-var(--bleed)+2px))] data-ending-style:duration-[calc(var(--drawer-swipe-strength)*400ms)] data-starting-style:[transform:translateY(calc(100%-var(--bleed)+2px))] data-swiping:select-none motion-reduce:transition-none dark:shadow-white/10',
+            'bg-popover text-popover-foreground relative -mb-(--bleed) flex max-h-[calc(100dvh-env(safe-area-inset-top)-0.75rem+var(--bleed))] w-full [transform:translateY(var(--drawer-swipe-movement-y))] flex-col overflow-clip rounded-t-[1.25rem] pt-4 pb-(--bleed) text-sm shadow-[0_-1px_0] shadow-black/5 transition-transform duration-[450ms] ease-[cubic-bezier(0.32,0.72,0,1)] will-change-transform outline-none [--bleed:3rem] data-ending-style:[transform:translateY(calc(100%-var(--bleed)+2px))] data-ending-style:duration-[calc(var(--drawer-swipe-strength)*400ms)] data-starting-style:[transform:translateY(calc(100%-var(--bleed)+2px))] data-swiping:select-none motion-reduce:transition-none dark:shadow-white/10',
             // A sheet opened on top of this one pushes it back and dims it, as iOS stacks them.
             'origin-top transition-[transform,scale] after:pointer-events-none after:absolute after:inset-0 after:z-30 after:bg-black/0 after:transition-colors after:duration-[450ms] data-nested-drawer-open:scale-[0.94] data-nested-drawer-open:after:bg-black/25',
             className

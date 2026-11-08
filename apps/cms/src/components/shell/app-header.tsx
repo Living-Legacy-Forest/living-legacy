@@ -3,6 +3,7 @@ import { useEffect, useState } from 'react';
 import { ChevronLeftIcon } from '@/components/icons';
 import { Separator } from '@/components/ui/separator';
 import { useIsMobile } from '@/hooks/use-mobile';
+import { cn } from '@/lib/utils';
 import { findNavItem, isEditorPath } from '@/lib/nav';
 import type { SessionUser } from '@/lib/session';
 import { AppBreadcrumbs } from './app-breadcrumbs';
@@ -38,7 +39,7 @@ export function AppHeader({ user }: { user: SessionUser }) {
       {back && (
         <Link
           to={back.to}
-          className="text-brand relative z-10 -ml-1 flex min-h-11 max-w-[30%] min-w-0 items-center pr-2 text-sm active:opacity-50 md:hidden"
+          className="text-tint relative z-10 -ml-1 flex min-h-11 max-w-[30%] min-w-0 items-center pr-2 text-sm active:opacity-50 md:hidden"
         >
           {/* Sized in em so it stays in proportion with the label: a little taller
               than the capitals, with a stroke close to the letters' weight. The
@@ -52,23 +53,44 @@ export function AppHeader({ user }: { user: SessionUser }) {
           <span className="truncate">{back.label}</span>
         </Link>
       )}
+      {/* Phones: the page's Edit goes here when there is no back link (PageActions). */}
+      {!back && (
+        <div
+          data-slot="page-actions-start"
+          className="relative z-10 -ml-1 flex items-center md:hidden"
+        />
+      )}
 
       {/* The large title's compact twin, shown once the large one scrolls away. */}
       <div
         aria-hidden
-        className="pointer-events-none absolute inset-x-0 bottom-0 flex h-14 items-center justify-center px-28 transition-opacity duration-200 md:hidden"
+        className="pointer-events-none absolute inset-x-0 bottom-0 flex h-14 items-center justify-center px-36 transition-opacity duration-200 md:hidden"
         style={{ opacity: collapsed ? 1 : 0 }}
       >
         <span className="truncate text-[1.0625rem] font-semibold">{title}</span>
       </div>
 
+      {/* Phones: a title the page sets itself (PageActions), for a screen with no large one.
+          In the row, not centred on the screen, so it uses all the room between the sides. */}
+      <div
+        data-slot="page-actions-title"
+        className="flex min-w-0 flex-1 justify-center px-1 empty:hidden md:hidden"
+      />
+
       <div className="relative z-10 ml-auto flex items-center gap-1.5 max-md:gap-0">
-        <Notifications user={user} />
+        {/* The editor's bar needs the room for its title and Publish. */}
+        <div className={cn('contents', isEditorPath(pathname) && 'max-md:hidden')}>
+          <Notifications user={user} />
+        </div>
+        {/* Phones: the page's … and + (PageActions). The account lives in More. */}
+        <div data-slot="page-actions-end" className="flex items-center md:hidden" />
         <Separator
           className="mx-1.5 h-4 data-[orientation=vertical]:self-center max-md:hidden"
           orientation="vertical"
         />
-        <NavUser user={user} />
+        <div className="max-md:hidden">
+          <NavUser user={user} />
+        </div>
       </div>
     </header>
   );

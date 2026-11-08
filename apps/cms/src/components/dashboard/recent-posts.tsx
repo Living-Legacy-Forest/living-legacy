@@ -70,7 +70,9 @@ function PostList({
 }) {
   return (
     <section className="space-y-2">
-      <h2 className="text-muted-foreground text-xs font-medium">{title}</h2>
+      <h2 className="text-muted-foreground text-xs font-medium max-md:text-[0.8125rem] max-md:font-normal max-md:text-(--ios-secondary) max-md:uppercase">
+        {title}
+      </h2>
       {posts.length === 0 ? (
         <Empty className="border py-8">
           <EmptyHeader>
@@ -82,7 +84,7 @@ function PostList({
           </EmptyHeader>
         </Empty>
       ) : (
-        <ItemGroup className="gap-0">
+        <ItemGroup className="gap-0 max-md:divide-y max-md:divide-(--ios-separator)">
           {posts.map((post) => (
             <Item
               key={post.id}

@@ -1,18 +1,10 @@
 import { STAFF_MAX_PARTY_SIZE, auPhone, guestInputSchema } from '@ll/content';
 import { useState } from 'react';
 import { TOUCH_FIELDS } from '@/components/form-steps';
+import { FormCell, FormSection } from '@/components/form-cells';
+import { DialogActions, ListDialog } from '@/components/list/list-page';
 import { Button } from '@/components/ui/button';
-import {
-  Dialog,
-  DialogClose,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
 import { Spinner } from '@/components/ui/spinner';
 import { Textarea } from '@/components/ui/textarea';
 import { notify } from '@/lib/notify';
@@ -110,16 +102,16 @@ export function AddGuestDialog({
   }
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-md">
-        <DialogHeader>
-          <DialogTitle>Add a guest</DialogTitle>
-          <DialogDescription>A phone booking or a walk-in for {event.title}.</DialogDescription>
-        </DialogHeader>
-        <form noValidate onSubmit={submit} className={cn('space-y-4', TOUCH_FIELDS)}>
-          <div className="grid grid-cols-2 gap-4">
-            <div className="space-y-1.5">
-              <Label htmlFor={FIELDS.firstName.id}>First name</Label>
+    <ListDialog
+      open={open}
+      onClose={() => onOpenChange(false)}
+      title="Add a guest"
+      description={`A phone booking or a walk-in for ${event.title}.`}
+    >
+      <form noValidate onSubmit={submit} className={cn('space-y-4 max-md:space-y-7', TOUCH_FIELDS)}>
+        <FormSection>
+          <div className="grid grid-cols-2 gap-4 max-md:contents">
+            <FormCell label="First name" htmlFor={FIELDS.firstName.id}>
               <Input
                 id={FIELDS.firstName.id}
                 value={values.firstName}
@@ -133,9 +125,8 @@ export function AddGuestDialog({
                 placeholder="First name"
                 onChange={(e) => patch({ firstName: onlyName(e.target.value) })}
               />
-            </div>
-            <div className="space-y-1.5">
-              <Label htmlFor={FIELDS.lastName.id}>Last name (optional)</Label>
+            </FormCell>
+            <FormCell label="Last name (optional)" htmlFor={FIELDS.lastName.id}>
               <Input
                 id={FIELDS.lastName.id}
                 value={values.lastName}
@@ -148,11 +139,10 @@ export function AddGuestDialog({
                 placeholder="Last name"
                 onChange={(e) => patch({ lastName: onlyName(e.target.value) })}
               />
-            </div>
+            </FormCell>
           </div>
-          <div className="grid grid-cols-[minmax(0,1fr)_5rem] gap-4 sm:grid-cols-[1fr_7rem]">
-            <div className="space-y-1.5">
-              <Label htmlFor={FIELDS.email.id}>Email (optional)</Label>
+          <div className="grid grid-cols-[minmax(0,1fr)_5rem] gap-4 max-md:contents sm:grid-cols-[1fr_7rem]">
+            <FormCell label="Email (optional)" htmlFor={FIELDS.email.id}>
               <Input
                 id={FIELDS.email.id}
                 value={values.email}
@@ -166,9 +156,8 @@ export function AddGuestDialog({
                 placeholder="name@example.com"
                 onChange={(e) => patch({ email: e.target.value.replace(/\s/g, '') })}
               />
-            </div>
-            <div className="space-y-1.5">
-              <Label htmlFor={FIELDS.partySize.id}>People</Label>
+            </FormCell>
+            <FormCell label="People" htmlFor={FIELDS.partySize.id}>
               <Input
                 id={FIELDS.partySize.id}
                 value={values.partySize}
@@ -178,10 +167,13 @@ export function AddGuestDialog({
                 placeholder="1"
                 onChange={(e) => patch({ partySize: onlyDigits(e.target.value) })}
               />
-            </div>
+            </FormCell>
           </div>
-          <div className="space-y-1.5">
-            <Label htmlFor={FIELDS.phone.id}>Phone (optional)</Label>
+          <FormCell
+            label="Phone (optional)"
+            htmlFor={FIELDS.phone.id}
+            hint="Australian mobile or landline."
+          >
             <Input
               id={FIELDS.phone.id}
               value={values.phone}
@@ -196,10 +188,10 @@ export function AddGuestDialog({
                 if (tidy) patch({ phone: tidy });
               }}
             />
-            <p className="text-muted-foreground text-xs">Australian mobile or landline.</p>
-          </div>
-          <div className="space-y-1.5">
-            <Label htmlFor={FIELDS.note.id}>Note (optional)</Label>
+          </FormCell>
+        </FormSection>
+        <FormSection>
+          <FormCell label="Note (optional)" htmlFor={FIELDS.note.id}>
             <Textarea
               id={FIELDS.note.id}
               rows={2}
@@ -208,22 +200,21 @@ export function AddGuestDialog({
               onChange={(e) => patch({ note: e.target.value })}
               placeholder="Accessibility or dietary needs"
             />
-          </div>
-          <DialogFooter className="touch:*:min-h-11 flex-row max-sm:*:flex-1">
-            <DialogClose render={<Button type="button" variant="outline" />}>Cancel</DialogClose>
-            <Button type="submit" disabled={pending}>
-              {pending ? (
-                <>
-                  <Spinner />
-                  Adding…
-                </>
-              ) : (
-                'Add guest'
-              )}
-            </Button>
-          </DialogFooter>
-        </form>
-      </DialogContent>
-    </Dialog>
+          </FormCell>
+        </FormSection>
+        <DialogActions>
+          <Button type="submit" disabled={pending}>
+            {pending ? (
+              <>
+                <Spinner />
+                Adding…
+              </>
+            ) : (
+              'Add guest'
+            )}
+          </Button>
+        </DialogActions>
+      </form>
+    </ListDialog>
   );
 }

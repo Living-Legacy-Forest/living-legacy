@@ -81,7 +81,7 @@ function RootDocument({ children }: { children: ReactNode }) {
       <body>
         <TooltipProvider>{children}</TooltipProvider>
         {/* On phones toasts sit at the bottom, above the tab bar. */}
-        <Toaster mobileOffset={{ bottom: 'calc(var(--tab-bar-height) + 16px)' }} />
+        <Toaster />
         <Scripts />
       </body>
     </html>

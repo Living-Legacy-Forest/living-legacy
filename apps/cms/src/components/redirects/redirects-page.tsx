@@ -1,5 +1,7 @@
 import { checkRedirect } from '@ll/content';
 import { BulkCsvForm } from '@/components/bulk/bulk-csv-form';
+import { FormCell, FormSection, FormSwitchCell } from '@/components/form-cells';
+import { PageActions } from '@/components/shell/page-actions';
 import {
   DialogActions,
   ListColumn,
@@ -45,7 +47,6 @@ import {
   EmptyTitle,
 } from '@/components/ui/empty';
 import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
 import {
   Select,
   SelectContent,
@@ -54,7 +55,6 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { Spinner } from '@/components/ui/spinner';
-import { Switch } from '@/components/ui/switch';
 import { readYesNo } from '@/lib/bulk-import';
 import { reportInvalid } from '@/lib/form-validation';
 import { notify, removedNotice } from '@/lib/notify';
@@ -271,7 +271,15 @@ export function RedirectsPage({
             </Select>
           </>
         )}
-        {addButtons}
+        <div className="flex gap-3 max-md:hidden">{addButtons}</div>
+        <PageActions
+          edit={{
+            editing: selection.selecting,
+            onToggle: selection.selecting ? selection.clear : selection.startEditing,
+          }}
+          add={{ label: 'Add redirect', onClick: () => view.open({ kind: 'new' }) }}
+          more={[{ label: 'Bulk update', onClick: () => view.open({ kind: 'bulk' }) }]}
+        />
       </div>
 
       {data.length === 0 && pane === null ? (
@@ -588,90 +596,91 @@ function RedirectForm({
   }
 
   return (
-    <form noValidate onSubmit={submit} className="space-y-4">
-      <div className="space-y-1.5">
-        <Label htmlFor="r-from">Old path</Label>
-        <Input
-          id="r-from"
-          required
-          value={fromPath}
-          onChange={(e) => setFromPath(e.target.value)}
-          placeholder="/old-page"
-          className="font-mono"
-        />
-        <p className="text-muted-foreground text-xs">
-          End with * to cover everything under a path, like /blog/*.
-        </p>
-      </div>
-      <div className="space-y-1.5">
-        <Label htmlFor="r-type">Type</Label>
-        <Select
-          items={codeItems}
-          value={statusCode}
-          onValueChange={(value) => value && setStatusCode(value as Code)}
+    <form noValidate onSubmit={submit} className="space-y-4 max-md:space-y-7">
+      <FormSection>
+        <FormCell
+          label="Old path"
+          htmlFor="r-from"
+          hint="End with * to cover everything under a path, like /blog/*."
         >
-          <SelectTrigger id="r-type" className="w-full">
-            <SelectValue />
-          </SelectTrigger>
-          <SelectContent>
-            {codeItems.map((item) => (
-              <SelectItem key={item.value} value={item.value}>
-                {item.label}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-        {removed && (
-          <p className="text-muted-foreground text-xs">
-            Visitors see the not-found page, and search engines drop the page sooner.
-          </p>
-        )}
-      </div>
-      {!removed && (
-        <div className="space-y-1.5">
-          <Label htmlFor="r-to">Destination</Label>
           <Input
-            id="r-to"
+            id="r-from"
             required
-            value={toPath}
-            onChange={(e) => setToPath(e.target.value)}
-            placeholder="/new-page"
+            value={fromPath}
+            onChange={(e) => setFromPath(e.target.value)}
+            placeholder="/old-page"
             className="font-mono"
           />
-          <p className="text-muted-foreground text-xs">
-            A path like /new-page or a full URL. A * here receives what the old path's * matched.
-          </p>
-        </div>
-      )}
-      <div className="space-y-1.5">
-        <Label htmlFor="r-note">Note</Label>
-        <Input
-          id="r-note"
-          value={note}
-          onChange={(e) => setNote(e.target.value)}
-          placeholder="Why this exists (optional)"
+        </FormCell>
+        <FormCell
+          label="Type"
+          htmlFor="r-type"
+          hint={
+            removed
+              ? 'Visitors see the not-found page, and search engines drop the page sooner.'
+              : undefined
+          }
+        >
+          <Select
+            items={codeItems}
+            value={statusCode}
+            onValueChange={(value) => value && setStatusCode(value as Code)}
+          >
+            <SelectTrigger id="r-type" className="w-full">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              {codeItems.map((item) => (
+                <SelectItem key={item.value} value={item.value}>
+                  {item.label}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </FormCell>
+        {!removed && (
+          <FormCell
+            label="Destination"
+            htmlFor="r-to"
+            hint="A path like /new-page or a full URL. A * here receives what the old path's * matched."
+          >
+            <Input
+              id="r-to"
+              required
+              value={toPath}
+              onChange={(e) => setToPath(e.target.value)}
+              placeholder="/new-page"
+              className="font-mono"
+            />
+          </FormCell>
+        )}
+        <FormCell label="Note" htmlFor="r-note">
+          <Input
+            id="r-note"
+            value={note}
+            onChange={(e) => setNote(e.target.value)}
+            placeholder="Why this exists (optional)"
+          />
+        </FormCell>
+      </FormSection>
+      <FormSection>
+        {!removed && (
+          <FormSwitchCell
+            id="r-keep-query"
+            label="Keep query string"
+            description="Carry tracking tags like ?utm_source= over to the destination."
+            checked={keepQuery}
+            onCheckedChange={setKeepQuery}
+          />
+        )}
+        <FormSwitchCell
+          id="r-enabled"
+          label="Active"
+          description="Turn off to pause this redirect without deleting it."
+          checked={enabled}
+          onCheckedChange={setEnabled}
         />
-      </div>
-      {!removed && (
-        <div className="flex items-center justify-between gap-4 rounded-lg border p-3">
-          <div className="space-y-0.5">
-            <div className="text-sm font-medium">Keep query string</div>
-            <div className="text-muted-foreground text-xs">
-              Carry tracking tags like ?utm_source= over to the destination.
-            </div>
-          </div>
-          <Switch checked={keepQuery} onCheckedChange={setKeepQuery} />
-        </div>
-      )}
-      <div className="flex items-center justify-between gap-4 rounded-lg border p-3">
-        <div className="space-y-0.5">
-          <div className="text-sm font-medium">Active</div>
-          <div className="text-muted-foreground text-xs">
-            Turn off to pause this redirect without deleting it.
-          </div>
-        </div>
-        <Switch checked={enabled} onCheckedChange={setEnabled} />
-      </div>
+      </FormSection>
       {redirect && <p className="text-muted-foreground text-xs">{usage(redirect)}.</p>}
       {footer(pending, redirect === null)}
     </form>

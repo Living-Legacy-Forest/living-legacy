@@ -4,11 +4,12 @@ import { DrawerTitle } from '@/components/ui/drawer';
 // they read as one set: a title with Done, then grouped iOS-style lists.
 
 /** Rounded white group on the sheet's grey background. */
-export const sheetGroupClass = 'bg-background divide-border/70 divide-y overflow-hidden rounded-xl';
+export const sheetGroupClass =
+  'bg-(--ios-cell-raised) divide-(--ios-separator) divide-y overflow-hidden rounded-[10px]';
 
 /** One tappable row in a group: at least 44pt, body-sized text, dims while pressed. */
 export const sheetRowClass =
-  'flex min-h-11 w-full items-center gap-3 px-4 text-left text-[1.0625rem] transition-colors active:bg-muted [&_svg]:size-5.5';
+  'flex min-h-11 w-full items-center gap-3 px-4 text-left text-[1.0625rem] transition-colors active:bg-(--ios-fill) [&_svg]:size-5.5';
 
 export function SheetHeader({ title, onDone }: { title: string; onDone: () => void }) {
   return (
@@ -17,7 +18,7 @@ export function SheetHeader({ title, onDone }: { title: string; onDone: () => vo
       <button
         type="button"
         onClick={onDone}
-        className="text-brand -mr-2 min-h-11 px-2 text-[1.0625rem] font-semibold active:opacity-50"
+        className="text-tint -mr-2 min-h-11 px-2 text-[1.0625rem] font-semibold active:opacity-50"
       >
         Done
       </button>

@@ -26,15 +26,20 @@ function Check({
   children: React.ReactNode;
 }) {
   return (
-    <section className="rounded-lg border">
-      <header className="flex items-baseline justify-between gap-4 border-b px-4 py-3">
+    // Phones: the header becomes iOS's small heading over a grouped list.
+    <section className="rounded-lg border max-md:rounded-none max-md:border-0">
+      <header className="flex items-baseline justify-between gap-4 border-b px-4 py-3 max-md:border-0 max-md:pt-0 max-md:pb-1.5">
         <div className="min-w-0">
-          <h2 className="text-ui font-medium">{title}</h2>
+          <h2 className="text-ui font-medium max-md:text-[0.8125rem] max-md:font-normal max-md:text-(--ios-secondary) max-md:uppercase">
+            {title}
+          </h2>
           <p className="text-muted-foreground mt-0.5 text-xs">{why}</p>
         </div>
         <span className="text-muted-foreground text-xs tabular-nums">{total}</span>
       </header>
-      <ul className="divide-y text-sm">{children}</ul>
+      <ul className="divide-y text-sm max-md:divide-(--ios-separator) max-md:overflow-hidden max-md:rounded-[10px] max-md:bg-(--ios-cell)">
+        {children}
+      </ul>
     </section>
   );
 }
@@ -74,7 +79,7 @@ export function ContentChecksPage({
       </div>
 
       {problems === 0 ? (
-        <Empty className="rounded-lg border">
+        <Empty className="rounded-lg border max-md:rounded-[10px] max-md:border-0 max-md:bg-(--ios-cell)">
           <EmptyHeader>
             <EmptyMedia variant="icon">
               <CheckboxTickIcon aria-hidden />

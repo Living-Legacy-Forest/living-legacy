@@ -29,9 +29,11 @@ import {
   matchesSearch,
   useSelection,
 } from '@/components/list/list-tools';
+import { FormBlock, FormCell, FormSection, FormSwitchCell } from '@/components/form-cells';
 import { FormStep, FormSteps, TOUCH_FIELDS, useFormSteps } from '@/components/form-steps';
 import { ExternalLink, MapPinIcon, PencilIcon, PlusIcon, Trash2Icon } from '@/components/icons';
 import { LocationsOverviewMap, PinPicker, type Pin } from '@/components/locations/location-map';
+import { PageActions } from '@/components/shell/page-actions';
 import { ImageField, useMediaItem } from '@/components/media/image-field';
 import { RichTextField } from '@/components/rich-text-field';
 import {
@@ -56,7 +58,6 @@ import {
   EmptyTitle,
 } from '@/components/ui/empty';
 import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
 import {
   Select,
   SelectContent,
@@ -73,7 +74,6 @@ import {
   SheetTitle,
 } from '@/components/ui/sheet';
 import { Spinner } from '@/components/ui/spinner';
-import { Switch } from '@/components/ui/switch';
 import { Textarea } from '@/components/ui/textarea';
 import { reportInvalid } from '@/lib/form-validation';
 import { removedNotice } from '@/lib/notify';
@@ -206,7 +206,16 @@ export function LocationsPage({
             />
           </div>
         )}
-        {canWrite && addButton}
+        {canWrite && <div className="max-md:hidden">{addButton}</div>}
+        {canWrite && (
+          <PageActions
+            edit={{
+              editing: selection.selecting,
+              onToggle: selection.selecting ? selection.clear : selection.startEditing,
+            }}
+            add={{ label: 'Add location', onClick: () => view.open({ kind: 'new' }) }}
+          />
+        )}
       </div>
 
       {data.length === 0 && pane === null ? (
@@ -240,7 +249,7 @@ export function LocationsPage({
             {visible.length === 0 ? (
               <NoMatches onClear={() => setQuery('')}>Nothing matches that search.</NoMatches>
             ) : (
-              <ListRows>
+              <ListRows inset="media">
                 {visible.map((l) => (
                   <ListRow
                     key={l.id}
@@ -554,10 +563,6 @@ function DeleteLocation({
   );
 }
 
-function Hint({ children }: { children: React.ReactNode }) {
-  return <p className="text-muted-foreground text-xs">{children}</p>;
-}
-
 /** Shared fields + submit logic, used inline (desktop pane) and in the mobile dialog. */
 function LocationForm({
   item,
@@ -665,138 +670,157 @@ function LocationForm({
       className={cn('scroll-mt-12 space-y-5', TOUCH_FIELDS)}
     >
       <FormSteps labels={STEPS} current={step} onPick={item ? steps.goTo : undefined} />
-      <FormStep step={step} forward={steps.forward} className="space-y-4">
+      <FormStep step={step} forward={steps.forward} className="space-y-4 max-md:space-y-7">
         {step === 0 && (
           <>
-            <div className="space-y-1.5">
-              <Label htmlFor="loc-name">Name</Label>
-              <Input
-                id="loc-name"
-                required
-                maxLength={120}
-                value={name}
-                onChange={(e) => {
-                  setName(e.target.value);
-                  if (!slugTouched) setSlug(slugify(e.target.value));
-                }}
-                placeholder="The location’s public name"
-              />
-              <Hint>The public name, as it appears on signage.</Hint>
-            </div>
-            <div className="space-y-1.5">
-              <Label htmlFor="loc-slug">Slug</Label>
-              <Input
-                id="loc-slug"
-                maxLength={80}
-                value={slug}
-                onChange={(e) => {
-                  setSlug(e.target.value);
-                  setSlugTouched(true);
-                }}
-                onBlur={() => setSlug(slugify(slug || name))}
-                placeholder="made-from-the-name"
-                inputMode="url"
-                autoCapitalize="none"
-                autoCorrect="off"
-                spellCheck={false}
-                className="md:text-ui font-mono"
-              />
-              <Hint>
-                Its page lives at /locations/{slug || 'slug'}/. Keep it short, e.g. the town name.
-              </Hint>
-            </div>
-            <div className="grid grid-cols-2 gap-3">
-              <div className="space-y-1.5">
-                <Label htmlFor="loc-state">State</Label>
+            <FormSection>
+              <FormCell
+                label="Name"
+                htmlFor="loc-name"
+                hint="The public name, as it appears on signage."
+              >
+                <Input
+                  id="loc-name"
+                  required
+                  maxLength={120}
+                  value={name}
+                  onChange={(e) => {
+                    setName(e.target.value);
+                    if (!slugTouched) setSlug(slugify(e.target.value));
+                  }}
+                  placeholder="The location’s public name"
+                />
+              </FormCell>
+              <FormCell
+                label="Slug"
+                htmlFor="loc-slug"
+                hint={
+                  <>
+                    Its page lives at /locations/{slug || 'slug'}/. Keep it short, e.g. the town
+                    name.
+                  </>
+                }
+              >
+                <Input
+                  id="loc-slug"
+                  maxLength={80}
+                  value={slug}
+                  onChange={(e) => {
+                    setSlug(e.target.value);
+                    setSlugTouched(true);
+                  }}
+                  onBlur={() => setSlug(slugify(slug || name))}
+                  placeholder="made-from-the-name"
+                  inputMode="url"
+                  autoCapitalize="none"
+                  autoCorrect="off"
+                  spellCheck={false}
+                  className="md:text-ui font-mono"
+                />
+              </FormCell>
+            </FormSection>
+            <FormSection
+              title="Place"
+              footer="The state filters the directory; it is never a page of its own."
+            >
+              <div className="grid grid-cols-2 gap-3 max-md:contents">
+                <FormCell label="State" htmlFor="loc-state">
+                  <Select
+                    items={stateItems}
+                    value={state}
+                    onValueChange={(v) => v && setState(v as AustralianState)}
+                  >
+                    <SelectTrigger id="loc-state" className="w-full">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {stateItems.map((s) => (
+                        <SelectItem key={s.value} value={s.value}>
+                          {s.label}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </FormCell>
+                <FormCell label="Region" htmlFor="loc-region">
+                  <Input
+                    id="loc-region"
+                    maxLength={80}
+                    value={region}
+                    onChange={(e) => setRegion(e.target.value)}
+                    placeholder="Optional, e.g. a nearby town"
+                  />
+                </FormCell>
+              </div>
+            </FormSection>
+            <FormSection title="Listing">
+              <FormCell label="Stage" htmlFor="loc-stage" hint={stageHints[stage]}>
                 <Select
-                  items={stateItems}
-                  value={state}
-                  onValueChange={(v) => v && setState(v as AustralianState)}
+                  items={stageItems}
+                  value={stage}
+                  onValueChange={(v) => v && setStage(v as LocationStage)}
                 >
-                  <SelectTrigger id="loc-state" className="w-full">
+                  <SelectTrigger id="loc-stage" className="w-full">
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
-                    {stateItems.map((s) => (
+                    {stageItems.map((s) => (
                       <SelectItem key={s.value} value={s.value}>
                         {s.label}
                       </SelectItem>
                     ))}
                   </SelectContent>
                 </Select>
-              </div>
-              <div className="space-y-1.5">
-                <Label htmlFor="loc-region">Region</Label>
-                <Input
-                  id="loc-region"
-                  maxLength={80}
-                  value={region}
-                  onChange={(e) => setRegion(e.target.value)}
-                  placeholder="Optional, e.g. a nearby town"
-                />
-              </div>
-            </div>
-            <Hint>The state filters the directory; it is never a page of its own.</Hint>
-            <div className="space-y-1.5">
-              <Label htmlFor="loc-stage">Stage</Label>
-              <Select
-                items={stageItems}
-                value={stage}
-                onValueChange={(v) => v && setStage(v as LocationStage)}
-              >
-                <SelectTrigger id="loc-stage" className="w-full">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  {stageItems.map((s) => (
-                    <SelectItem key={s.value} value={s.value}>
-                      {s.label}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-              <Hint>{stageHints[stage]}</Hint>
-            </div>
-            {stage === 'external' && (
-              <div className="space-y-1.5">
-                <Label htmlFor="loc-external">Current website</Label>
-                <Input
-                  id="loc-external"
-                  type="url"
-                  value={externalUrl}
-                  onChange={(e) => setExternalUrl(e.target.value)}
-                  placeholder="https://"
-                />
-                <Hint>Where the directory sends visitors until this location moves here.</Hint>
-              </div>
-            )}
+              </FormCell>
+              {stage === 'external' && (
+                <FormCell
+                  label="Current website"
+                  htmlFor="loc-external"
+                  hint="Where the directory sends visitors until this location moves here."
+                >
+                  <Input
+                    id="loc-external"
+                    type="url"
+                    value={externalUrl}
+                    onChange={(e) => setExternalUrl(e.target.value)}
+                    placeholder="https://"
+                  />
+                </FormCell>
+              )}
+            </FormSection>
           </>
         )}
         {step === 1 && (
           <>
-            <ImageField
-              id="loc-hero"
-              label="Hero photo"
-              description="A genuine photo of this location, never a generic one."
-              mediaId={heroMediaId}
-              onChange={setHeroMediaId}
-            />
-            <div className="space-y-1.5">
-              <Label htmlFor="loc-intro">Intro</Label>
-              <Textarea
-                id="loc-intro"
-                rows={3}
-                maxLength={400}
-                value={intro}
-                onChange={(e) => setIntro(e.target.value)}
-                placeholder="What makes this place special, in a sentence or two"
+            <FormSection>
+              <ImageField
+                id="loc-hero"
+                label="Hero photo"
+                description="A genuine photo of this location, never a generic one."
+                mediaId={heroMediaId}
+                onChange={setHeroMediaId}
               />
-              <Hint>A sentence or two for its card in the directory.</Hint>
-            </div>
-            <div className="space-y-1.5">
-              <Label id="loc-about-label" htmlFor="loc-about">
-                About
-              </Label>
+              <FormCell
+                label="Intro"
+                htmlFor="loc-intro"
+                hint="A sentence or two for its card in the directory."
+              >
+                <Textarea
+                  id="loc-intro"
+                  rows={3}
+                  maxLength={400}
+                  value={intro}
+                  onChange={(e) => setIntro(e.target.value)}
+                  placeholder="What makes this place special, in a sentence or two"
+                />
+              </FormCell>
+            </FormSection>
+            <FormBlock
+              label="About"
+              labelId="loc-about-label"
+              htmlFor="loc-about"
+              hint="The local introduction on its page: the landscape, trees and what a visit is like."
+            >
               <RichTextField
                 id="loc-about"
                 labelId="loc-about-label"
@@ -804,26 +828,27 @@ function LocationForm({
                 onChange={setAbout}
                 placeholder="Tell visitors about this place and what to expect when they visit"
               />
-              <Hint>
-                The local introduction on its page: the landscape, trees and what a visit is like.
-              </Hint>
-            </div>
+            </FormBlock>
           </>
         )}
         {step === 2 && (
           <>
-            <div className="space-y-1.5">
-              <Label htmlFor="loc-address">Address</Label>
-              <Input
-                id="loc-address"
-                maxLength={200}
-                value={address}
-                onChange={(e) => setAddress(e.target.value)}
-                placeholder="Street, suburb, state and postcode"
-              />
-            </div>
-            <div className="space-y-1.5">
-              <Label htmlFor="loc-pin">Map pin</Label>
+            <FormSection>
+              <FormCell label="Address" htmlFor="loc-address">
+                <Input
+                  id="loc-address"
+                  maxLength={200}
+                  value={address}
+                  onChange={(e) => setAddress(e.target.value)}
+                  placeholder="Street, suburb, state and postcode"
+                />
+              </FormCell>
+            </FormSection>
+            <FormBlock
+              label="Map pin"
+              htmlFor="loc-pin"
+              hint="Find it from the address, then drag the pin or click the map to fine-tune it."
+            >
               <PinPicker
                 id="loc-pin"
                 pin={pin}
@@ -831,108 +856,98 @@ function LocationForm({
                 photoUrl={heroUrl}
                 onChange={setPin}
               />
-              <Hint>
-                Find it from the address, then drag the pin or click the map to fine-tune it.
-              </Hint>
-            </div>
-            <div className="space-y-1.5">
-              <Label htmlFor="loc-map">Map link</Label>
-              <Input
-                id="loc-map"
-                type="url"
-                value={mapUrl}
-                onChange={(e) => setMapUrl(e.target.value)}
-                placeholder="https://"
-              />
-              <Hint>The Share link from Google Maps.</Hint>
-            </div>
-            <div className="space-y-1.5">
-              <Label htmlFor="loc-hours">Hours</Label>
-              <Textarea
-                id="loc-hours"
-                rows={3}
-                maxLength={400}
-                value={hours}
-                onChange={(e) => setHours(e.target.value)}
-                placeholder={'Monday to Friday, 9am to 5pm\nWeekends by appointment'}
-              />
-              <Hint>One line per day or range.</Hint>
-            </div>
-            <div className="grid grid-cols-2 gap-3">
-              <div className="space-y-1.5">
-                <Label htmlFor="loc-phone">Phone</Label>
+            </FormBlock>
+            <FormSection title="Visiting">
+              <FormCell label="Map link" htmlFor="loc-map" hint="The Share link from Google Maps.">
                 <Input
-                  id="loc-phone"
-                  type="tel"
-                  maxLength={40}
-                  value={phone}
-                  onChange={(e) => setPhone(e.target.value)}
-                  placeholder="Phone number"
+                  id="loc-map"
+                  type="url"
+                  value={mapUrl}
+                  onChange={(e) => setMapUrl(e.target.value)}
+                  placeholder="https://"
                 />
-              </div>
-              <div className="space-y-1.5">
-                <Label htmlFor="loc-email">Email</Label>
-                <Input
-                  id="loc-email"
-                  type="email"
-                  maxLength={120}
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  placeholder="name@example.com"
+              </FormCell>
+              <FormCell label="Hours" htmlFor="loc-hours" hint="One line per day or range.">
+                <Textarea
+                  id="loc-hours"
+                  rows={3}
+                  maxLength={400}
+                  value={hours}
+                  onChange={(e) => setHours(e.target.value)}
+                  placeholder={'Monday to Friday, 9am to 5pm\nWeekends by appointment'}
                 />
+              </FormCell>
+              <div className="grid grid-cols-2 gap-3 max-md:contents">
+                <FormCell label="Phone" htmlFor="loc-phone">
+                  <Input
+                    id="loc-phone"
+                    type="tel"
+                    maxLength={40}
+                    value={phone}
+                    onChange={(e) => setPhone(e.target.value)}
+                    placeholder="Phone number"
+                  />
+                </FormCell>
+                <FormCell label="Email" htmlFor="loc-email">
+                  <Input
+                    id="loc-email"
+                    type="email"
+                    maxLength={120}
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    placeholder="name@example.com"
+                  />
+                </FormCell>
               </div>
-            </div>
+            </FormSection>
           </>
         )}
         {step === 3 && (
           <>
-            <div className="space-y-1.5">
-              <Label htmlFor="loc-form">HubSpot form ID</Label>
-              <Input
-                id="loc-form"
-                maxLength={36}
-                value={hubspotFormId}
-                onChange={(e) => setHubspotFormId(e.target.value)}
-                placeholder="Optional"
-                autoCapitalize="none"
-                autoCorrect="off"
-                spellCheck={false}
-                className="md:text-ui font-mono"
-              />
-              <Hint>
-                Found in HubSpot under the form’s embed code. Tour bookings and enquiries from its
-                page go to this form, so they reach this location’s team. Blank uses the general
-                enquiry form.
-              </Hint>
-            </div>
-
-            <div className="space-y-1.5">
-              <Label htmlFor="loc-order">Order</Label>
-              <Input
-                id="loc-order"
-                type="number"
-                inputMode="numeric"
-                min={0}
-                max={9999}
-                value={sortOrder}
-                onChange={(e) => setSortOrder(e.target.value)}
-                className="w-28"
-              />
-              <Hint>Lower numbers come first in the directory.</Hint>
-            </div>
-            {/* The label fills the row, so all of it is the target and not just the small switch. */}
-            <div className="flex items-center justify-between gap-4 rounded-lg border pr-3">
-              <Label
-                htmlFor="loc-published"
-                className="flex-1 flex-col items-start gap-0.5 self-stretch py-2.5 pl-3 font-medium"
+            <FormSection>
+              <FormCell
+                label="HubSpot form ID"
+                htmlFor="loc-form"
+                hint="Found in HubSpot under the form’s embed code. Tour bookings and enquiries from its page go to this form, so they reach this location’s team. Blank uses the general enquiry form."
               >
-                Published
-                <span className="text-muted-foreground text-xs font-normal">
-                  Show this on the website.
-                </span>
-              </Label>
-              <Switch id="loc-published" checked={published} onCheckedChange={setPublished} />
-            </div>
+                <Input
+                  id="loc-form"
+                  maxLength={36}
+                  value={hubspotFormId}
+                  onChange={(e) => setHubspotFormId(e.target.value)}
+                  placeholder="Optional"
+                  autoCapitalize="none"
+                  autoCorrect="off"
+                  spellCheck={false}
+                  className="md:text-ui font-mono"
+                />
+              </FormCell>
+            </FormSection>
+            <FormSection>
+              <FormCell
+                label="Order"
+                htmlFor="loc-order"
+                hint="Lower numbers come first in the directory."
+              >
+                <Input
+                  id="loc-order"
+                  type="number"
+                  inputMode="numeric"
+                  min={0}
+                  max={9999}
+                  value={sortOrder}
+                  onChange={(e) => setSortOrder(e.target.value)}
+                  className="w-28"
+                />
+              </FormCell>
+              <FormSwitchCell
+                id="loc-published"
+                label="Published"
+                description="Show this on the website."
+                checked={published}
+                onCheckedChange={setPublished}
+              />
+            </FormSection>
           </>
         )}
       </FormStep>

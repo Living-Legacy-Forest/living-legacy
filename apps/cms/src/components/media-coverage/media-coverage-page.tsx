@@ -34,7 +34,9 @@ import {
   Trash2Icon,
   XIcon,
 } from '@/components/icons';
+import { FormCell, FormSection, FormSwitchCell } from '@/components/form-cells';
 import { ImageField, useMediaItem } from '@/components/media/image-field';
+import { PageActions } from '@/components/shell/page-actions';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -65,7 +67,6 @@ import {
   EmptyTitle,
 } from '@/components/ui/empty';
 import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import {
   Select,
@@ -75,7 +76,6 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { Spinner } from '@/components/ui/spinner';
-import { Switch } from '@/components/ui/switch';
 import { Textarea } from '@/components/ui/textarea';
 import { formatDate } from '@/lib/format';
 import { reportInvalid } from '@/lib/form-validation';
@@ -194,16 +194,39 @@ export function MediaCoveragePage({
             onChange={setQuery}
           />
         )}
-        <Button
-          size="sm"
-          variant="outline"
-          render={<a href={PAGE_URL} target="_blank" rel="noreferrer" />}
-          nativeButton={false}
-        >
-          <ExternalLink aria-hidden data-icon="inline-start" />
-          View on website
-        </Button>
-        {canWrite && addButton}
+        <div className="flex gap-3 max-md:hidden">
+          <Button
+            size="sm"
+            variant="outline"
+            render={<a href={PAGE_URL} target="_blank" rel="noreferrer" />}
+            nativeButton={false}
+          >
+            <ExternalLink aria-hidden data-icon="inline-start" />
+            View on website
+          </Button>
+          {canWrite && addButton}
+        </div>
+        <PageActions
+          edit={
+            canWrite
+              ? {
+                  editing: selection.selecting,
+                  onToggle: selection.selecting ? selection.clear : selection.startEditing,
+                }
+              : undefined
+          }
+          add={
+            canWrite
+              ? { label: 'Add coverage', onClick: () => view.open({ kind: 'new' }) }
+              : undefined
+          }
+          more={[
+            {
+              label: 'View on website',
+              onClick: () => window.open(PAGE_URL, '_blank', 'noreferrer'),
+            },
+          ]}
+        />
       </div>
 
       {data.length === 0 && pane === null ? (
@@ -606,10 +629,6 @@ function CategoryPicker({
   );
 }
 
-function Hint({ children }: { children: React.ReactNode }) {
-  return <p className="text-muted-foreground text-xs">{children}</p>;
-}
-
 /** Shared fields + submit logic, used inline (desktop pane) and in the mobile dialog. */
 function CoverageForm({
   item,
@@ -682,165 +701,177 @@ function CoverageForm({
   }
 
   return (
-    <form noValidate onSubmit={submit} className="space-y-4">
-      <div className="space-y-1.5">
-        <Label htmlFor="mc-title">Title</Label>
-        <Input
-          id="mc-title"
-          required
-          maxLength={200}
-          value={title}
-          onChange={(e) => {
-            setTitle(e.target.value);
-            if (!slugTouched) setSlug(slugify(e.target.value));
-          }}
-          placeholder="As the outlet headlined it"
-        />
-      </div>
-      <div className="space-y-1.5">
-        <Label htmlFor="mc-slug">Slug</Label>
-        <Input
-          id="mc-slug"
-          maxLength={80}
-          value={slug}
-          onChange={(e) => {
-            setSlug(e.target.value);
-            setSlugTouched(true);
-          }}
-          onBlur={() => setSlug(slugify(slug || title))}
-          placeholder="made-from-the-title"
-          className="text-ui font-mono"
-        />
-      </div>
-      <div className="grid grid-cols-2 gap-3">
-        <div className="space-y-1.5">
-          <Label htmlFor="mc-kind">Kind</Label>
-          <Select
-            items={kindItems}
-            value={kind}
-            onValueChange={(v) => v && setKind(v as MediaCoverageKind)}
-          >
-            <SelectTrigger id="mc-kind" className="w-full">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              {kindItems.map((k) => (
-                <SelectItem key={k.value} value={k.value}>
-                  {k.label}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        </div>
-        <div className="space-y-1.5">
-          <Label htmlFor="mc-category">Category</Label>
-          <CategoryPicker
-            id="mc-category"
-            value={category}
-            options={categories}
-            onChange={setCategory}
+    <form noValidate onSubmit={submit} className="space-y-4 max-md:space-y-7">
+      <FormSection>
+        <FormCell label="Title" htmlFor="mc-title">
+          <Input
+            id="mc-title"
+            required
+            maxLength={200}
+            value={title}
+            onChange={(e) => {
+              setTitle(e.target.value);
+              if (!slugTouched) setSlug(slugify(e.target.value));
+            }}
+            placeholder="As the outlet headlined it"
           />
+        </FormCell>
+        <FormCell label="Slug" htmlFor="mc-slug">
+          <Input
+            id="mc-slug"
+            maxLength={80}
+            value={slug}
+            onChange={(e) => {
+              setSlug(e.target.value);
+              setSlugTouched(true);
+            }}
+            onBlur={() => setSlug(slugify(slug || title))}
+            placeholder="made-from-the-title"
+            className="text-ui font-mono"
+          />
+        </FormCell>
+      </FormSection>
+      <FormSection footer="The category drives the topic filter on the page, e.g. Science or Broadcast.">
+        <div className="grid grid-cols-2 gap-3 max-md:contents">
+          <FormCell label="Kind" htmlFor="mc-kind">
+            <Select
+              items={kindItems}
+              value={kind}
+              onValueChange={(v) => v && setKind(v as MediaCoverageKind)}
+            >
+              <SelectTrigger id="mc-kind" className="w-full">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {kindItems.map((k) => (
+                  <SelectItem key={k.value} value={k.value}>
+                    {k.label}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </FormCell>
+          <FormCell label="Category" htmlFor="mc-category">
+            <CategoryPicker
+              id="mc-category"
+              value={category}
+              options={categories}
+              onChange={setCategory}
+            />
+          </FormCell>
         </div>
-      </div>
-      <Hint>The category drives the topic filter on the page, e.g. Science or Broadcast.</Hint>
-      <div className="space-y-1.5">
-        <Label htmlFor="mc-source">Source</Label>
-        <Input
-          id="mc-source"
-          required
-          maxLength={80}
-          value={source}
-          onChange={(e) => setSource(e.target.value)}
-          placeholder="Herald Sun"
+      </FormSection>
+      <FormSection>
+        <FormCell
+          label="Source"
+          htmlFor="mc-source"
+          hint="The outlet name, e.g. The Senior, Herald Sun, Today Tonight."
+        >
+          <Input
+            id="mc-source"
+            required
+            maxLength={80}
+            value={source}
+            onChange={(e) => setSource(e.target.value)}
+            placeholder="Herald Sun"
+          />
+        </FormCell>
+        <FormCell label="Published at" htmlFor="mc-date">
+          <DateTimePicker
+            id="mc-date"
+            value={coverageDate}
+            onChange={setCoverageDate}
+            placeholder="When the outlet ran it"
+          />
+        </FormCell>
+        <FormCell
+          label="Excerpt"
+          htmlFor="mc-excerpt"
+          hint="A short summary shown beneath the title on the card."
+        >
+          <Textarea
+            id="mc-excerpt"
+            rows={3}
+            maxLength={400}
+            value={excerpt}
+            onChange={(e) => setExcerpt(e.target.value)}
+          />
+        </FormCell>
+        <FormCell
+          label="Reading time (min)"
+          htmlFor="mc-reading"
+          hint="Optional. Shown as the read time on the card."
+        >
+          <Input
+            id="mc-reading"
+            type="number"
+            inputMode="numeric"
+            min={1}
+            max={240}
+            value={readingMinutes}
+            onChange={(e) => setReadingMinutes(e.target.value)}
+            className="w-28"
+          />
+        </FormCell>
+      </FormSection>
+      <FormSection>
+        <ImageField
+          id="mc-image"
+          aspect={16 / 9}
+          label="Image"
+          description="Used for news articles and as the thumbnail for video cards."
+          mediaId={imageMediaId}
+          onChange={setImageMediaId}
         />
-        <Hint>The outlet name, e.g. The Senior, Herald Sun, Today Tonight.</Hint>
-      </div>
-      <div className="space-y-1.5">
-        <Label htmlFor="mc-date">Published at</Label>
-        <DateTimePicker
-          id="mc-date"
-          value={coverageDate}
-          onChange={setCoverageDate}
-          placeholder="When the outlet ran it"
+      </FormSection>
+      <FormSection>
+        <FormCell
+          label="External URL"
+          htmlFor="mc-url"
+          hint={
+            notYouTube
+              ? 'Not a YouTube link, so the card opens it in a new tab instead of playing it.'
+              : 'A link to the original article or video.'
+          }
+        >
+          <Input
+            id="mc-url"
+            type="url"
+            required
+            value={externalUrl}
+            onChange={(e) => setExternalUrl(e.target.value)}
+            placeholder="https://"
+          />
+        </FormCell>
+      </FormSection>
+      <FormSection>
+        <FormSwitchCell
+          id="mc-featured"
+          label="Featured"
+          description="Shown first, as a larger card."
+          checked={featured}
+          onCheckedChange={setFeatured}
         />
-      </div>
-      <div className="space-y-1.5">
-        <Label htmlFor="mc-excerpt">Excerpt</Label>
-        <Textarea
-          id="mc-excerpt"
-          rows={3}
-          maxLength={400}
-          value={excerpt}
-          onChange={(e) => setExcerpt(e.target.value)}
+        <FormCell label="Order" htmlFor="mc-order" hint="Lower numbers come first.">
+          <Input
+            id="mc-order"
+            type="number"
+            inputMode="numeric"
+            min={0}
+            max={9999}
+            value={sortOrder}
+            onChange={(e) => setSortOrder(e.target.value)}
+            className="w-28"
+          />
+        </FormCell>
+        <FormSwitchCell
+          id="mc-published"
+          label="Published"
+          description="Show this on the website."
+          checked={published}
+          onCheckedChange={setPublished}
         />
-        <Hint>A short summary shown beneath the title on the card.</Hint>
-      </div>
-      <div className="space-y-1.5">
-        <Label htmlFor="mc-reading">Reading time (min)</Label>
-        <Input
-          id="mc-reading"
-          type="number"
-          inputMode="numeric"
-          min={1}
-          max={240}
-          value={readingMinutes}
-          onChange={(e) => setReadingMinutes(e.target.value)}
-          className="w-28"
-        />
-        <Hint>Optional. Shown as the read time on the card.</Hint>
-      </div>
-      <ImageField
-        id="mc-image"
-        aspect={16 / 9}
-        label="Image"
-        description="Used for news articles and as the thumbnail for video cards."
-        mediaId={imageMediaId}
-        onChange={setImageMediaId}
-      />
-      <div className="space-y-1.5">
-        <Label htmlFor="mc-url">External URL</Label>
-        <Input
-          id="mc-url"
-          type="url"
-          required
-          value={externalUrl}
-          onChange={(e) => setExternalUrl(e.target.value)}
-          placeholder="https://"
-        />
-        <Hint>
-          {notYouTube
-            ? 'Not a YouTube link, so the card opens it in a new tab instead of playing it.'
-            : 'A link to the original article or video.'}
-        </Hint>
-      </div>
-      <div className="flex items-center justify-between rounded-lg border p-3">
-        <div className="space-y-0.5">
-          <div className="text-sm font-medium">Featured</div>
-          <div className="text-muted-foreground text-xs">Shown first, as a larger card.</div>
-        </div>
-        <Switch checked={featured} onCheckedChange={setFeatured} />
-      </div>
-      <div className="space-y-1.5">
-        <Label htmlFor="mc-order">Order</Label>
-        <Input
-          id="mc-order"
-          type="number"
-          inputMode="numeric"
-          min={0}
-          max={9999}
-          value={sortOrder}
-          onChange={(e) => setSortOrder(e.target.value)}
-          className="w-28"
-        />
-        <Hint>Lower numbers come first.</Hint>
-      </div>
-      <div className="flex items-center justify-between rounded-lg border p-3">
-        <div className="space-y-0.5">
-          <div className="text-sm font-medium">Published</div>
-          <div className="text-muted-foreground text-xs">Show this on the website.</div>
-        </div>
-        <Switch checked={published} onCheckedChange={setPublished} />
-      </div>
+      </FormSection>
       {footer(pending, item === null)}
     </form>
   );

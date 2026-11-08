@@ -22,6 +22,8 @@ import {
   matchesSearch,
   useSelection,
 } from '@/components/list/list-tools';
+import { PageActions } from '@/components/shell/page-actions';
+import { SegmentedControl } from '@/components/segmented-control';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import {
@@ -32,7 +34,6 @@ import {
   EmptyMedia,
   EmptyTitle,
 } from '@/components/ui/empty';
-import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
 import { removedNotice } from '@/lib/notify';
 import { useAction } from '@/lib/use-action';
 import { type EventRow, type EventsData, type LocationOption, deleteEvents } from '@/server/events';
@@ -145,7 +146,14 @@ export function EventsPage({ data }: { data: EventsData }) {
             />
           </div>
         )}
-        {newButton}
+        <div className="max-md:hidden">{newButton}</div>
+        <PageActions
+          edit={{
+            editing: selection.selecting,
+            onToggle: selection.selecting ? selection.clear : selection.startEditing,
+          }}
+          add={{ label: 'New event', onClick: () => view.open({ kind: 'new' }) }}
+        />
       </div>
 
       {data.events.length === 0 && pane === null ? (
@@ -168,28 +176,16 @@ export function EventsPage({ data }: { data: EventsData }) {
             label="Events"
             header={
               <div className="space-y-2">
-                <ToggleGroup
-                  variant="outline"
-                  size="sm"
-                  value={[filter]}
-                  onValueChange={(value) => {
-                    if (!value[0]) return;
-                    setFilter(value[0] as Filter);
+                <SegmentedControl
+                  label="Show events"
+                  value={filter}
+                  onValueChange={(next) => {
+                    setFilter(next);
                     selection.clear();
                   }}
-                  aria-label="Show events"
-                  className="touch:w-full px-3 pt-2.5"
-                >
-                  {filters.map((f) => (
-                    <ToggleGroupItem
-                      key={f.value}
-                      value={f.value}
-                      className="touch:min-h-11 touch:flex-1 text-xs"
-                    >
-                      {f.label}
-                    </ToggleGroupItem>
-                  ))}
-                </ToggleGroup>
+                  options={filters}
+                  className="px-3 pt-2.5 max-md:mx-0 max-md:mb-3"
+                />
                 <SelectionBar
                   selection={selection}
                   visibleIds={visible.map((row) => row.key)}
@@ -362,21 +358,15 @@ function EventPanel({
   return (
     <div className="space-y-5">
       {dates.length > 1 && <SeriesDatePicker event={event} dates={dates} onPick={onPickDate} />}
-      <ToggleGroup
-        variant="outline"
-        size="sm"
-        value={[view]}
-        onValueChange={(value) => value[0] && setView(value[0] as typeof view)}
-        aria-label="Show"
-        className="touch:w-full"
-      >
-        <ToggleGroupItem value="details" className="touch:min-h-11 touch:flex-1 text-xs">
-          Details
-        </ToggleGroupItem>
-        <ToggleGroupItem value="guests" className="touch:min-h-11 touch:flex-1 text-xs">
-          Guests
-        </ToggleGroupItem>
-      </ToggleGroup>
+      <SegmentedControl
+        label="Show"
+        value={view}
+        onValueChange={setView}
+        options={[
+          { value: 'details', label: 'Details' },
+          { value: 'guests', label: 'Guests' },
+        ]}
+      />
       <div key={view} className="animate-in fade-in duration-200 motion-reduce:animate-none">
         {view === 'details' ? details : <EventGuests key={event.id} event={event} />}
       </div>

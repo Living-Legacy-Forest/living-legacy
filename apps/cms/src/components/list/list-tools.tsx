@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { useIsMobile } from '@/hooks/use-mobile';
 import { SearchIcon, Trash2Icon, XIcon } from '@/components/icons';
 import {
   AlertDialog,
@@ -27,6 +28,8 @@ export function SearchInput({
   value: string;
   onChange: (value: string) => void;
 }) {
+  // Phones say just "Search", as iOS does; the page's title already says what.
+  const isMobile = useIsMobile();
   return (
     <div className="relative w-full sm:w-56">
       <SearchIcon
@@ -35,7 +38,7 @@ export function SearchInput({
       />
       <input
         aria-label={label}
-        placeholder={placeholder}
+        placeholder={isMobile ? 'Search' : placeholder}
         value={value}
         onChange={(e) => onChange(e.target.value)}
         enterKeyHint="search"
@@ -43,7 +46,7 @@ export function SearchInput({
         autoCorrect="off"
         spellCheck={false}
         // Phones zoom into a field under 16px, so the smaller size starts at md.
-        className="bg-muted/60 placeholder:text-muted-foreground focus-visible:bg-background focus-visible:ring-ring md:text-ui touch:h-11 h-8 w-full rounded-md pr-2 pl-8 text-base outline-none focus-visible:ring-1"
+        className="bg-muted/60 placeholder:text-muted-foreground focus-visible:bg-background focus-visible:ring-ring md:text-ui touch:h-11 h-8 w-full rounded-md pr-2 pl-8 text-base outline-none focus-visible:ring-1 max-md:h-9 max-md:rounded-[10px] max-md:bg-(--ios-fill) max-md:text-[1.0625rem] max-md:placeholder:text-(--ios-secondary) max-md:focus-visible:bg-(--ios-fill) max-md:focus-visible:ring-0"
       />
     </div>
   );
@@ -101,6 +104,7 @@ export function SelectionBar({
   total,
   pending,
   onDelete,
+  editInTopBar = true,
 }: {
   selection: Selection;
   visibleIds: string[];
@@ -108,14 +112,19 @@ export function SelectionBar({
   total: number;
   pending: boolean;
   onDelete?: () => void;
+  /** Phones: Edit is in the top bar (PageActions), so the bar does not show its own. */
+  editInTopBar?: boolean;
 }) {
   const count = selection.checkedIds.length;
+  // Phones: the bar is the small grey heading above the grouped list.
+  const phoneHeading =
+    'max-md:h-auto max-md:min-h-8 max-md:border-0 max-md:px-4 max-md:pb-1.5 max-md:[&>span]:text-[0.8125rem] max-md:[&>span]:font-normal max-md:[&>span]:text-(--ios-secondary) max-md:[&>span]:uppercase';
   const allChecked = visibleIds.length > 0 && visibleIds.every(selection.isChecked);
   const filtered = visibleIds.length !== total;
 
   if (!onDelete) {
     return (
-      <div className="flex h-11 shrink-0 items-center gap-2 border-b px-3">
+      <div className={cn('flex h-11 shrink-0 items-center gap-2 border-b px-3', phoneHeading)}>
         <span className="text-ui font-medium">{filtered ? 'Shown' : title}</span>
         <span className="text-muted-foreground text-xs tabular-nums">
           {filtered ? `${visibleIds.length} of ${total}` : total}
@@ -125,7 +134,7 @@ export function SelectionBar({
   }
 
   return (
-    <div className="flex h-11 shrink-0 items-center gap-2 border-b pr-2 pl-3">
+    <div className={cn('flex h-11 shrink-0 items-center gap-2 border-b pr-2 pl-3', phoneHeading)}>
       <Checkbox
         aria-label={allChecked ? 'Clear selection' : 'Select all shown'}
         checked={allChecked}
@@ -165,7 +174,10 @@ export function SelectionBar({
           <Button
             variant="ghost"
             size="sm"
-            className="text-brand touch:inline-flex ml-auto hidden min-h-11 text-[0.9375rem] font-medium"
+            className={cn(
+              'text-tint touch:inline-flex ml-auto hidden min-h-11 text-[0.9375rem] font-medium',
+              editInTopBar && 'max-md:hidden!'
+            )}
             onClick={selection.selecting ? selection.clear : selection.startEditing}
           >
             {selection.selecting ? 'Done' : 'Edit'}

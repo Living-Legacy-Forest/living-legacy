@@ -163,11 +163,11 @@ export function EventGuests({ event }: { event: EventRow }) {
       </div>
 
       {confirmed.length === 0 ? (
-        <p className="text-muted-foreground rounded-lg border border-dashed px-4 py-8 text-center text-sm">
+        <p className="text-muted-foreground rounded-lg border border-dashed px-4 py-8 text-center text-sm max-md:border-0 max-md:text-[0.9375rem]">
           No guests yet. Add phone bookings and walk-ins here.
         </p>
       ) : (
-        <ul className="divide-y rounded-lg border">
+        <ul className={GUEST_LIST}>
           {confirmed.filter(matches).map((g) => (
             <li
               key={g.id}
@@ -223,8 +223,10 @@ export function EventGuests({ event }: { event: EventRow }) {
 
       <Reveal show={cancelled.length > 0}>
         <section className="space-y-2">
-          <h3 className="text-muted-foreground text-xs font-medium">Cancelled</h3>
-          <ul className="divide-y rounded-lg border opacity-70">
+          <h3 className="text-muted-foreground text-xs font-medium max-md:px-4 max-md:text-[0.8125rem] max-md:font-normal max-md:text-(--ios-secondary) max-md:uppercase">
+            Cancelled
+          </h3>
+          <ul className={cn(GUEST_LIST, 'opacity-70')}>
             {cancelled.filter(matches).map((g) => (
               <li key={g.id} className={GUEST_ROW}>
                 <GuestDetails guest={g} />
@@ -291,8 +293,12 @@ function Stat({ label, value }: { label: string; value: string }) {
  * A guest beside their buttons. On phones the name stays beside them and the rest
  * runs the full width beneath, which leaves the longest lines the most room.
  */
+/** Bordered on wider screens; an iOS grouped list on phones. */
+const GUEST_LIST =
+  'divide-y rounded-lg border max-md:divide-(--ios-separator) max-md:overflow-hidden max-md:rounded-[10px] max-md:border-0 max-md:bg-(--ios-cell-raised)';
+
 const GUEST_ROW =
-  'grid grid-cols-[minmax(0,1fr)_auto_auto] items-center gap-x-3 gap-y-1 px-3 py-2.5 sm:flex sm:gap-y-0';
+  'grid grid-cols-[minmax(0,1fr)_auto_auto] items-center gap-x-3 gap-y-1 px-3 py-2.5 sm:flex sm:gap-y-0 max-md:px-4';
 
 function GuestDetails({ guest: g }: { guest: Guest }) {
   return (

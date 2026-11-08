@@ -255,11 +255,12 @@
     font-size: 1.25rem;
     font-weight: 400;
   }
-  /* Every confirmation in the CMS confirms a loss (remove, delete, revoke,
-     leave unsaved changes), so the action is red as iOS draws destructive ones. */
+  /* Confirmations almost all confirm a loss (remove, delete, revoke, leave unsaved
+     changes), so the action is red as iOS draws destructive ones. One that loses
+     nothing (a repeating event's "Which dates should change?") sets data-tone="default". */
   [data-slot='drawer-content'][role='alertdialog']
     [data-slot='alert-dialog-footer']
-    > :not(:first-child) {
+    > :not(:first-child):not([data-tone='default']) {
     color: var(--destructive);
   }
   /* The action just above Cancel closes the group's rounded corners. */
@@ -281,6 +282,11 @@
   /* Messages drop in from the top as rounded banners (components/ui/sonner.tsx). */
   [data-sonner-toaster][data-y-position='top'] [data-sonner-toast][data-styled='true'] {
     border-radius: 16px;
+  }
+  /* While a form sheet is open its top bar holds Cancel and Save; a toast drops in
+     below that bar, so a validation message never sits over Save. */
+  body:has([data-slot='sheet-header']) [data-sonner-toaster][data-y-position='top'] {
+    top: calc(env(safe-area-inset-top) + 5.5rem) !important;
   }
 
   /* Settings rows (settings-page.tsx) read like form cells. */

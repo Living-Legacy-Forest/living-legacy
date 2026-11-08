@@ -10,7 +10,7 @@ import { cn } from '@/lib/utils';
 
 const switchVariants = cva(
   [
-    'group/switch peer relative inline-flex h-(--switch-h) w-(--switch-w) shrink-0 cursor-pointer items-center rounded-full p-0.5 outline-none select-none',
+    'group/switch peer relative inline-flex h-(--switch-h) touch-pan-y w-(--switch-w) shrink-0 cursor-pointer items-center rounded-full p-0.5 outline-none select-none',
     'transition-[background-color,box-shadow] duration-200 ease-[cubic-bezier(0.22,1,0.36,1)]',
     // The thumb's travel: --switch-x, mirrored right to left, shortened by the press stretch.
     '[--switch-dir:1] [--switch-stretch:0px] [--switch-thumb-w:var(--switch-thumb)] [--switch-x:0px] rtl:[--switch-dir:-1]',

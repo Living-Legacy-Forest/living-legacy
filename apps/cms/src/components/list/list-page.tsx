@@ -238,9 +238,12 @@ export function PaneActions({
 export function DialogActions({
   start,
   compact = false,
+  cancel = true,
   children,
 }: {
   start?: React.ReactNode;
+  /** Off for a step with nothing left to cancel, such as showing what was just created. */
+  cancel?: boolean;
   /**
    * On phones, one row with room left for the form, for a long form with several
    * actions. Cancel goes: swiping the sheet away or its close button does the same.
@@ -258,8 +261,14 @@ export function DialogActions({
     const button = barRef.current?.querySelector('button[type=submit]');
     if (!button) return;
     const words = (button.textContent ?? '').trim().split(/\s+/);
-    if (words.length > 1 && words[0]) button.setAttribute('data-bar-label', words[0]);
-    else button.removeAttribute('data-bar-label');
+    if (words.length > 1 && words[0]) {
+      button.setAttribute('data-bar-label', words[0]);
+      // The short word is drawn by CSS; the full label stays the accessible name.
+      button.setAttribute('aria-label', words.join(' '));
+    } else {
+      button.removeAttribute('data-bar-label');
+      button.removeAttribute('aria-label');
+    }
   });
 
   // Phones: the submit button joins Cancel in the sheet's top bar, as plain
@@ -290,18 +299,21 @@ export function DialogActions({
   return (
     <DialogFooter
       className={cn(
+        'touch:[&_button]:min-h-11',
         compact &&
           'touch:[&_button]:min-h-11 flex-row flex-wrap items-center max-sm:*:data-[slot=button]:flex-1 sm:flex-nowrap'
       )}
     >
       {start && <div className="mr-auto">{start}</div>}
-      <DialogClose
-        render={
-          <Button type="button" variant="outline" className={cn(compact && 'max-sm:hidden')} />
-        }
-      >
-        Cancel
-      </DialogClose>
+      {cancel && (
+        <DialogClose
+          render={
+            <Button type="button" variant="outline" className={cn(compact && 'max-sm:hidden')} />
+          }
+        >
+          Cancel
+        </DialogClose>
+      )}
       {children}
     </DialogFooter>
   );

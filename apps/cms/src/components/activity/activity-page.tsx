@@ -136,7 +136,7 @@ export function ActivityPage({ data, search }: { data: ActivityLogData; search: 
       </div>
 
       {data.total === 0 ? (
-        <Empty className="rounded-lg border">
+        <Empty className="rounded-lg border max-md:rounded-[10px] max-md:border-0 max-md:bg-(--ios-cell)">
           <EmptyHeader>
             <EmptyMedia variant="icon">
               <ActivityIcon aria-hidden />
@@ -161,7 +161,7 @@ export function ActivityPage({ data, search }: { data: ActivityLogData; search: 
           )}
         </Empty>
       ) : (
-        <ul className="divide-y rounded-lg border">
+        <ul className="divide-y rounded-lg border max-md:divide-(--ios-separator) max-md:overflow-hidden max-md:rounded-[10px] max-md:border-0 max-md:bg-(--ios-cell)">
           {data.rows.map((entry) => {
             const Icon = iconFor(entry.action);
             return (

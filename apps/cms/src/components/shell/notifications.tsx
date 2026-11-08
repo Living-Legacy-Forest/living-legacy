@@ -105,7 +105,7 @@ export function Notifications({ user }: { user: SessionUser }) {
           {bell}
         </Button>
         <Drawer open={open} onOpenChange={onOpenChange}>
-          <DrawerContent className="bg-muted">
+          <DrawerContent className="bg-(--ios-grouped)">
             <SheetHeader title="Activity" onDone={close} />
             <DrawerBody className="pb-[calc(env(safe-area-inset-bottom)+1.5rem)]">
               {list}

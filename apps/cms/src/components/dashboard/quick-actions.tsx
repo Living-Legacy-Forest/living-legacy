@@ -68,7 +68,8 @@ export function QuickActions({ user }: { user: SessionUser }) {
         <CardTitle>Quick actions</CardTitle>
         <CardDescription>Shortcuts to common tasks.</CardDescription>
       </CardHeader>
-      <CardContent className="grid gap-2 sm:grid-cols-2 lg:grid-cols-4">
+      {/* Phones: one grouped list of rows rather than a grid of outlined tiles. */}
+      <CardContent className="grid gap-2 max-md:gap-0 max-md:divide-y max-md:divide-(--ios-separator) sm:grid-cols-2 lg:grid-cols-4 max-md:[&>[data-slot=item]]:rounded-none max-md:[&>[data-slot=item]]:border-0 max-md:[&>[data-slot=item]]:px-0">
         {visible.map((action) =>
           action.to ? (
             <Item key={action.title} variant="outline" size="sm" render={<Link to={action.to} />}>

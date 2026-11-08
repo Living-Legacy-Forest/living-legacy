@@ -1,7 +1,9 @@
 import { useRouter } from '@tanstack/react-router';
 import { useEffect, useRef, useState } from 'react';
 import { CameraIcon, MailIcon } from '@/components/icons';
+import { FormCell, FormSection, groupHeadingClass } from '@/components/form-cells';
 import { useImageUpload } from '@/components/media/image-crop-dialog';
+import { PageActions } from '@/components/shell/page-actions';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -37,6 +39,7 @@ export function ProfilePage({
   const [imageAlt, setImageAlt] = useState(user.imageAlt ?? '');
   const [avatarUploading, setAvatarUploading] = useState(false);
   const fileInput = useRef<HTMLInputElement>(null);
+  const formRef = useRef<HTMLFormElement>(null);
   const { run, pending } = useAction();
 
   useEffect(() => {
@@ -116,7 +119,20 @@ export function ProfilePage({
       </div>
 
       <div className="space-y-8">
-        <div className="flex items-center gap-4">
+        {/* Phones: Save in the top bar, as iOS edits a profile. */}
+        <PageActions
+          primary={
+            <button
+              type="button"
+              disabled={pending || !dirty}
+              onClick={() => formRef.current?.requestSubmit()}
+            >
+              Save
+            </button>
+          }
+        />
+        {/* Phones: the photo and name centred over the groups, as iOS's account page. */}
+        <div className="flex items-center gap-4 max-md:flex-col max-md:gap-2 max-md:text-center">
           <div className="group relative">
             <Avatar size="lg" className="size-16">
               {user.image && <AvatarImage src={user.image} alt={user.imageAlt ?? ''} />}
@@ -152,43 +168,55 @@ export function ProfilePage({
           </div>
         </div>
 
-        <form noValidate onSubmit={saveProfile} className="space-y-5">
-          <div className="space-y-1.5">
-            <Label htmlFor="profile-name">Name</Label>
-            <Input
-              id="profile-name"
-              required
-              maxLength={80}
-              value={name}
-              onChange={(e) => setName(e.target.value)}
-              className="max-w-xs"
-            />
-          </div>
-          <div className="space-y-1.5">
-            <Label htmlFor="profile-bio">Bio</Label>
-            <Textarea
-              id="profile-bio"
-              rows={3}
-              maxLength={300}
-              value={bio}
-              onChange={(e) => setBio(e.target.value)}
-              placeholder="A line or two about you"
-            />
-          </div>
-          {user.image && (
-            <div className="space-y-1.5">
-              <Label htmlFor="profile-photo-alt">Photo alt text</Label>
+        <form
+          ref={formRef}
+          noValidate
+          onSubmit={saveProfile}
+          className="space-y-5 [--form-gap:1.25rem] max-md:space-y-7"
+        >
+          <FormSection>
+            <FormCell label="Name" htmlFor="profile-name">
               <Input
-                id="profile-photo-alt"
-                maxLength={300}
-                value={imageAlt}
-                onChange={(e) => setImageAlt(e.target.value)}
-                placeholder="Describe your photo"
+                id="profile-name"
+                required
+                maxLength={80}
+                value={name}
+                onChange={(e) => setName(e.target.value)}
+                className="max-w-xs"
               />
-              <p className="text-muted-foreground text-xs">Read out by screen readers.</p>
-            </div>
-          )}
-          <Button type="submit" variant="outline" disabled={pending || !dirty}>
+            </FormCell>
+            <FormCell label="Bio" htmlFor="profile-bio">
+              <Textarea
+                id="profile-bio"
+                rows={3}
+                maxLength={300}
+                value={bio}
+                onChange={(e) => setBio(e.target.value)}
+                placeholder="A line or two about you"
+              />
+            </FormCell>
+            {user.image && (
+              <FormCell
+                label="Photo alt text"
+                htmlFor="profile-photo-alt"
+                hint="Read out by screen readers."
+              >
+                <Input
+                  id="profile-photo-alt"
+                  maxLength={300}
+                  value={imageAlt}
+                  onChange={(e) => setImageAlt(e.target.value)}
+                  placeholder="Describe your photo"
+                />
+              </FormCell>
+            )}
+          </FormSection>
+          <Button
+            type="submit"
+            variant="outline"
+            className="max-md:hidden"
+            disabled={pending || !dirty}
+          >
             {pending ? <Spinner /> : null}
             Save
           </Button>
@@ -229,14 +257,21 @@ function ChangeEmail({ currentEmail }: { currentEmail: string }) {
 
   return (
     <div className="space-y-1.5">
-      <Label htmlFor="profile-email">Email</Label>
-      <div className="flex items-center gap-2">
-        <div className="bg-muted/60 text-muted-foreground text-ui flex h-8 max-w-xs flex-1 items-center gap-2 rounded-md px-3">
+      <Label htmlFor="profile-email" className={groupHeadingClass}>
+        Email
+      </Label>
+      <div className="flex items-center gap-2 max-md:min-h-11 max-md:rounded-[10px] max-md:bg-(--ios-cell) max-md:pr-2">
+        <div className="bg-muted/60 text-muted-foreground text-ui flex h-8 max-w-xs flex-1 items-center gap-2 rounded-md px-3 max-md:bg-transparent max-md:px-4 max-md:text-[1.0625rem]">
           <MailIcon aria-hidden className="size-3.5 shrink-0" />
           <span className="truncate">{currentEmail}</span>
         </div>
         {!editing && (
-          <Button type="button" variant="outline" onClick={() => setEditing(true)}>
+          <Button
+            type="button"
+            variant="outline"
+            className="max-md:text-tint max-md:border-0 max-md:bg-transparent max-md:text-[1.0625rem] max-md:shadow-none"
+            onClick={() => setEditing(true)}
+          >
             Change
           </Button>
         )}
@@ -269,7 +304,7 @@ function ChangeEmail({ currentEmail }: { currentEmail: string }) {
           sign-in email changes once you click it.
         </p>
       )}
-      <p className="text-muted-foreground text-xs">
+      <p className="text-muted-foreground text-xs max-md:px-4 max-md:text-[0.8125rem]">
         There is no password; this is also what you sign in with.
       </p>
     </div>

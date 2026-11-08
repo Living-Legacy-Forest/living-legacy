@@ -21,7 +21,7 @@ const LocationsCard = lazy(() =>
 
 export function Dashboard({ data, user }: { data: DashboardData; user: SessionUser }) {
   return (
-    <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
+    <div data-slot="dashboard" className="grid grid-cols-2 gap-4 max-md:gap-3 lg:grid-cols-4">
       <DashboardStats data={data} />
       <Suspense
         fallback={

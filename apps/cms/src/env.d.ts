@@ -19,6 +19,7 @@ interface ImportMetaEnv {
   readonly VITE_APP_VERSION: string;
   readonly VITE_APP_COMMIT: string;
   readonly VITE_APP_BUILT_AT: string;
-  // "preview" for a pull request's version, "production" otherwise.
+  // "production" for CI's deploy, "preview" for a pull request's version,
+  // "development" for local builds. Sentry reports only from production.
   readonly VITE_SENTRY_ENVIRONMENT: string;
 }

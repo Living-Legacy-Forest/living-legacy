@@ -82,10 +82,11 @@ jobs:
         run: bunx wrangler d1 migrations apply DB --remote
 
       # With the token, the build uploads source maps to Sentry so stack traces
-      # show the original code. Without it the build still succeeds.
+      # show the original code. Only the production build gets it: previews
+      # don't report to Sentry, so their maps would never be used.
       - name: Build
         env:
-          SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_AUTH_TOKEN }}
+          SENTRY_AUTH_TOKEN: ${{ github.event_name != 'pull_request' && secrets.SENTRY_AUTH_TOKEN || '' }}
         run: bun run build
 
       - name: Upload preview version

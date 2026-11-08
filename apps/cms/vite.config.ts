@@ -27,9 +27,14 @@ function commitSha(): string {
 process.env.VITE_APP_VERSION = readFileSync(new URL('version.txt', import.meta.url), 'utf8').trim();
 process.env.VITE_APP_COMMIT = commitSha();
 process.env.VITE_APP_BUILT_AT = new Date().toISOString();
-// CI builds a pull request into a preview version (deploy-cms.yml).
+// Sentry reports only from the production deploy, which CI builds on a push to
+// master (deploy-cms.yml). Pull request previews and local builds stay silent.
 process.env.VITE_SENTRY_ENVIRONMENT =
-  process.env.GITHUB_EVENT_NAME === 'pull_request' ? 'preview' : 'production';
+  process.env.GITHUB_ACTIONS !== 'true'
+    ? 'development'
+    : process.env.GITHUB_EVENT_NAME === 'pull_request'
+      ? 'preview'
+      : 'production';
 
 export default defineConfig({
   resolve: { tsconfigPaths: true },

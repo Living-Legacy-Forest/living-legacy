@@ -9,8 +9,8 @@ const DSN =
 
 export const sentryOptions = {
   dsn: DSN,
-  // Local dev stays quiet; only builds report.
-  enabled: import.meta.env.PROD,
+  // Production only: set in vite.config.ts.
+  enabled: import.meta.env.PROD && import.meta.env.VITE_SENTRY_ENVIRONMENT === 'production',
   environment: import.meta.env.VITE_SENTRY_ENVIRONMENT,
   release: import.meta.env.VITE_APP_COMMIT,
   // The CMS is small enough to trace everything.

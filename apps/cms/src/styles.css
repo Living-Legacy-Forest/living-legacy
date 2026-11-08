@@ -188,6 +188,11 @@
   [data-slot='list-rows'] .text-xs {
     font-size: 0.9375rem;
   }
+
+  /* Messages drop in from the top as rounded banners (components/ui/sonner.tsx). */
+  [data-sonner-toaster][data-y-position='top'] [data-sonner-toast][data-styled='true'] {
+    border-radius: 16px;
+  }
 }
 
 /* Sidebar collapse (and the hover-to-peek flyout, which shares the same

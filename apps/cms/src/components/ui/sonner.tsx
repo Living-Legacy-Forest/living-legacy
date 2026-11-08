@@ -1,6 +1,7 @@
 import { Toaster as Sonner, type ToasterProps } from 'sonner';
 import { CircleCheckIcon, InfoIcon, TriangleAlertIcon, OctagonXIcon } from '@/components/icons';
 import { Spinner } from '@/components/ui/spinner';
+import { useIsMobile } from '@/hooks/use-mobile';
 
 /**
  * How long a toast stays up. The countdown line along its bottom edge
@@ -15,6 +16,18 @@ const DURATION = 5000;
 //     action: { label: 'View', onClick: () => … },
 //   });
 const Toaster = ({ ...props }: ToasterProps) => {
+  // Phones: a banner that drops in under the notch, like an iOS notification,
+  // and swipes back up to go. Wider screens keep the corner stack.
+  const isPhone = useIsMobile();
+  const phone: Partial<ToasterProps> = isPhone
+    ? {
+        position: 'top-center',
+        // Sonner's own phone layout starts below 600px; phones here go to 767px.
+        offset: { top: 'calc(env(safe-area-inset-top) + 8px)' },
+        mobileOffset: { top: 'calc(env(safe-area-inset-top) + 8px)' },
+        swipeDirections: ['top'],
+      }
+    : {};
   return (
     <Sonner
       theme="light"
@@ -42,6 +55,7 @@ const Toaster = ({ ...props }: ToasterProps) => {
         },
       }}
       {...props}
+      {...phone}
     />
   );
 };

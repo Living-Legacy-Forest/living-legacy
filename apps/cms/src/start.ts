@@ -1,3 +1,7 @@
+import {
+  sentryGlobalFunctionMiddleware,
+  sentryGlobalRequestMiddleware,
+} from '@sentry/tanstackstart-react';
 import { createCsrfMiddleware, createStart } from '@tanstack/react-start';
 
 const safeMethods = new Set(['GET', 'HEAD', 'OPTIONS']);
@@ -11,8 +15,11 @@ const safeMethods = new Set(['GET', 'HEAD', 'OPTIONS']);
 // has none, and its callers (scripts, automations) send no Origin header.
 const isApi = (request: Request) => new URL(request.url).pathname.startsWith('/api/v1/');
 
+// Sentry's middleware goes first so it sees errors from everything after it.
 export const startInstance = createStart(() => ({
+  functionMiddleware: [sentryGlobalFunctionMiddleware],
   requestMiddleware: [
+    sentryGlobalRequestMiddleware,
     createCsrfMiddleware({
       filter: ({ request }) => !safeMethods.has(request.method) && !isApi(request),
     }),

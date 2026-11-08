@@ -1,4 +1,5 @@
 import { cloudflare } from '@cloudflare/vite-plugin';
+import { sentryTanstackStart } from '@sentry/tanstackstart-react/vite';
 import tailwindcss from '@tailwindcss/vite';
 import { tanstackStart } from '@tanstack/react-start/plugin/vite';
 import react from '@vitejs/plugin-react';
@@ -26,6 +27,9 @@ function commitSha(): string {
 process.env.VITE_APP_VERSION = readFileSync(new URL('version.txt', import.meta.url), 'utf8').trim();
 process.env.VITE_APP_COMMIT = commitSha();
 process.env.VITE_APP_BUILT_AT = new Date().toISOString();
+// CI builds a pull request into a preview version (deploy-cms.yml).
+process.env.VITE_SENTRY_ENVIRONMENT =
+  process.env.GITHUB_EVENT_NAME === 'pull_request' ? 'preview' : 'production';
 
 export default defineConfig({
   resolve: { tsconfigPaths: true },
@@ -34,5 +38,16 @@ export default defineConfig({
     tailwindcss(),
     tanstackStart(),
     react(),
+    // Last. Uploads source maps when SENTRY_AUTH_TOKEN is set (CI), then
+    // deletes them from the build; without the token the build is unchanged.
+    sentryTanstackStart({
+      org: 'living-legacy',
+      project: 'living-legacy-cms',
+      release: { name: process.env.VITE_APP_COMMIT },
+      telemetry: false,
+      // It cannot follow `.middleware([requirePermission(…)])` and warns on
+      // every server file; request and server function spans cover it.
+      autoInstrumentMiddleware: false,
+    }),
   ],
 });

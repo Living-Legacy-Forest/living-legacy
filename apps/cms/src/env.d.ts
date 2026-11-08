@@ -19,4 +19,6 @@ interface ImportMetaEnv {
   readonly VITE_APP_VERSION: string;
   readonly VITE_APP_COMMIT: string;
   readonly VITE_APP_BUILT_AT: string;
+  // "preview" for a pull request's version, "production" otherwise.
+  readonly VITE_SENTRY_ENVIRONMENT: string;
 }

@@ -338,7 +338,7 @@ export function PostsList({
               <Button
                 variant="ghost"
                 size="sm"
-                className="text-brand touch:inline-flex ml-auto hidden min-h-11 shrink-0 text-[0.9375rem] font-medium"
+                className="text-tint touch:inline-flex ml-auto hidden min-h-11 shrink-0 text-[0.9375rem] font-medium"
                 onClick={selection.selecting ? selection.clear : selection.startEditing}
               >
                 {selection.selecting ? 'Done' : 'Edit'}

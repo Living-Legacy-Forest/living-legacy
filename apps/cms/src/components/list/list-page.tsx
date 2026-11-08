@@ -10,7 +10,7 @@
  *   </ListPageLayout>
  *   <ListDialog open={pane.dialog !== null} onClose={pane.closeDialog} …/>
  */
-import { createContext, useContext, useState } from 'react';
+import { createContext, useContext, useLayoutEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { PanelRightIcon } from '@/components/icons';
 import { Button } from '@/components/ui/button';
@@ -250,6 +250,17 @@ export function DialogActions({
 }) {
   const slot = useContext(SheetSubmitSlot);
   const isPhone = useIsMobile();
+  const barRef = useRef<HTMLDivElement>(null);
+
+  // A sheet's bar holds one short word, as iOS's does: "Add location" or
+  // "Create event" reads as Add or Create there, and in full at the form's end.
+  useLayoutEffect(() => {
+    const button = barRef.current?.querySelector('button[type=submit]');
+    if (!button) return;
+    const words = (button.textContent ?? '').trim().split(/\s+/);
+    if (words.length > 1 && words[0]) button.setAttribute('data-bar-label', words[0]);
+    else button.removeAttribute('data-bar-label');
+  });
 
   // Phones: the submit button joins Cancel in the sheet's top bar, as plain
   // tint-coloured text. Everything else (Back, Next, Preview, Delete) stays at
@@ -259,8 +270,10 @@ export function DialogActions({
       <>
         {createPortal(
           <div
+            ref={barRef}
+            data-slot="sheet-submit"
             onClickCapture={submitSheetForm}
-            className="[&>button]:text-brand! flex items-center [&>*:not(button[type=submit])]:hidden [&>button]:h-11 [&>button]:border-0 [&>button]:bg-transparent! [&>button]:px-0 [&>button]:text-[1.0625rem] [&>button]:font-semibold [&>button]:shadow-none [&>button]:active:opacity-50 [&>button]:disabled:opacity-40"
+            className="[&>button]:text-tint! flex items-center [&>*:not(button[type=submit])]:hidden [&>button]:h-11 [&>button]:border-0 [&>button]:bg-transparent! [&>button]:px-0 [&>button]:text-[1.0625rem] [&>button]:font-semibold [&>button]:shadow-none [&>button]:active:opacity-50 [&>button]:disabled:opacity-40"
           >
             {children}
           </div>,
@@ -329,13 +342,13 @@ export function ListDialog({
             {/* An iOS sheet's bar: Cancel, the title, and the form's submit button. */}
             <div
               data-slot="sheet-header"
-              className="sticky top-0 z-20 -mx-4 -mt-2 grid grid-cols-[minmax(4.5rem,1fr)_auto_minmax(4.5rem,1fr)] items-center gap-2 bg-(--ios-grouped)/85 px-4 pt-2 pb-1 backdrop-blur-xl"
+              className="sticky -top-2 z-20 -mx-4 -mt-2 grid grid-cols-[minmax(4.5rem,1fr)_auto_minmax(4.5rem,1fr)] items-center gap-2 bg-(--ios-grouped)/85 px-4 pt-2 pb-1 backdrop-blur-xl"
             >
               <DrawerClose
                 render={
                   <button
                     type="button"
-                    className="text-brand min-h-11 justify-self-start text-[1.0625rem] active:opacity-50"
+                    className="text-tint min-h-11 justify-self-start text-[1.0625rem] active:opacity-50"
                   />
                 }
               >

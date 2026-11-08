@@ -42,7 +42,9 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from '@/components/ui/alert-dialog';
+import { FormCell, FormSection, FormSwitchCell } from '@/components/form-cells';
 import { ImageField } from '@/components/media/image-field';
+import { PageActions } from '@/components/shell/page-actions';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import {
@@ -54,9 +56,7 @@ import {
   EmptyTitle,
 } from '@/components/ui/empty';
 import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
 import { Spinner } from '@/components/ui/spinner';
-import { Switch } from '@/components/ui/switch';
 import { Textarea } from '@/components/ui/textarea';
 import { readStatus, readYesNo } from '@/lib/bulk-import';
 import { reportInvalid } from '@/lib/form-validation';
@@ -221,7 +221,17 @@ export function TestimonialsPage({
             onChange={setQuery}
           />
         )}
-        {canWrite && addButtons}
+        {canWrite && <div className="flex gap-3 max-md:hidden">{addButtons}</div>}
+        {canWrite && (
+          <PageActions
+            edit={{
+              editing: selection.selecting,
+              onToggle: selection.selecting ? selection.clear : selection.startEditing,
+            }}
+            add={{ label: 'Add testimonial', onClick: () => view.open({ kind: 'new' }) }}
+            more={[{ label: 'Bulk update', onClick: () => view.open({ kind: 'bulk' }) }]}
+          />
+        )}
       </div>
 
       {data.length === 0 && pane === null ? (
@@ -572,70 +582,74 @@ function TestimonialForm({
   }
 
   return (
-    <form noValidate onSubmit={submit} className="space-y-4">
-      <div className="space-y-1.5">
-        <Label htmlFor="t-quote">Quote</Label>
-        <Textarea
-          id="t-quote"
-          required
-          rows={4}
-          value={quote}
-          onChange={(e) => setQuote(e.target.value)}
-          placeholder="What they said, in their own words…"
-        />
-      </div>
-      <div className="grid grid-cols-2 gap-3">
-        <div className="space-y-1.5">
-          <Label htmlFor="t-name">Name</Label>
-          <Input
-            id="t-name"
+    <form noValidate onSubmit={submit} className="space-y-4 max-md:space-y-7">
+      <FormSection>
+        <FormCell label="Quote" htmlFor="t-quote">
+          <Textarea
+            id="t-quote"
             required
-            value={name}
-            onChange={(e) => setName(e.target.value)}
-            placeholder="Jane Smith"
+            rows={4}
+            value={quote}
+            onChange={(e) => setQuote(e.target.value)}
+            placeholder="What they said, in their own words…"
           />
+        </FormCell>
+      </FormSection>
+      <FormSection>
+        <div className="grid grid-cols-2 gap-3 max-md:contents">
+          <FormCell label="Name" htmlFor="t-name">
+            <Input
+              id="t-name"
+              required
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+              placeholder="Jane Smith"
+            />
+          </FormCell>
+          <FormCell label="Relationship" htmlFor="t-relationship">
+            <Input
+              id="t-relationship"
+              value={relationship}
+              onChange={(e) => setRelationship(e.target.value)}
+              placeholder="Customer"
+            />
+          </FormCell>
         </div>
-        <div className="space-y-1.5">
-          <Label htmlFor="t-relationship">Relationship</Label>
+        <FormCell label="Location" htmlFor="t-location">
           <Input
-            id="t-relationship"
-            value={relationship}
-            onChange={(e) => setRelationship(e.target.value)}
-            placeholder="Customer"
+            id="t-location"
+            value={location}
+            onChange={(e) => setLocation(e.target.value)}
+            placeholder="City or town"
           />
-        </div>
-      </div>
-      <div className="space-y-1.5">
-        <Label htmlFor="t-location">Location</Label>
-        <Input
-          id="t-location"
-          value={location}
-          onChange={(e) => setLocation(e.target.value)}
-          placeholder="City or town"
+        </FormCell>
+      </FormSection>
+      <FormSection>
+        <ImageField
+          id="t-photo"
+          label="Photo"
+          description="Optional. A photo of the person, with their permission."
+          shape="square"
+          mediaId={photoMediaId}
+          onChange={setPhotoMediaId}
         />
-      </div>
-      <ImageField
-        id="t-photo"
-        label="Photo"
-        description="Optional. A photo of the person, with their permission."
-        shape="square"
-        mediaId={photoMediaId}
-        onChange={setPhotoMediaId}
-      />
-      <div className="flex items-center justify-between rounded-lg border p-3">
-        <div className="space-y-0.5">
-          <div className="text-sm font-medium">Featured</div>
-          <div className="text-muted-foreground text-xs">Highlight this quote on the site.</div>
-        </div>
-        <Switch checked={featured} onCheckedChange={setFeatured} />
-      </div>
-      <div className="flex items-center justify-between rounded-lg border p-3">
-        <div className="space-y-0.5">
-          <div className="text-sm font-medium">Published</div>
-          <div className="text-muted-foreground text-xs">Show this quote on the website.</div>
-        </div>
-        <Switch checked={published} onCheckedChange={setPublished} />
-      </div>
+      </FormSection>
+      <FormSection>
+        <FormSwitchCell
+          id="t-featured"
+          label="Featured"
+          description="Highlight this quote on the site."
+          checked={featured}
+          onCheckedChange={setFeatured}
+        />
+        <FormSwitchCell
+          id="t-published"
+          label="Published"
+          description="Show this quote on the website."
+          checked={published}
+          onCheckedChange={setPublished}
+        />
+      </FormSection>
       {footer(pending, testimonial === null)}
     </form>
   );

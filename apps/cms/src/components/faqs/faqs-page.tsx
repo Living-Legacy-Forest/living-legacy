@@ -6,6 +6,7 @@ import {
   ListColumn,
   ListDialog,
   ListPageLayout,
+  ListRows,
   NoMatches,
   PaneActions,
   PaneColumn,
@@ -61,7 +62,6 @@ import {
   EmptyTitle,
 } from '@/components/ui/empty';
 import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
 import {
   Select,
   SelectContent,
@@ -70,7 +70,6 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { Spinner } from '@/components/ui/spinner';
-import { Switch } from '@/components/ui/switch';
 import { Textarea } from '@/components/ui/textarea';
 import { readStatus } from '@/lib/bulk-import';
 import { reportInvalid } from '@/lib/form-validation';
@@ -89,6 +88,8 @@ import {
   saveFaqGroup,
 } from '@/server/faqs';
 import { TagInput } from './tag-input';
+import { FormBlock, FormCell, FormSection, FormSwitchCell } from '@/components/form-cells';
+import { PageActions } from '@/components/shell/page-actions';
 
 const UNGROUPED = 'ungrouped';
 
@@ -272,7 +273,7 @@ export function FaqsPage({ data, canWrite }: { data: FaqData; canWrite: boolean 
           </Select>
         )}
         {canWrite && (
-          <>
+          <div className="flex gap-3 max-md:hidden">
             <Button size="sm" variant="outline" onClick={() => view.open({ kind: 'bulk' })}>
               <UploadIcon aria-hidden data-icon="inline-start" />
               Bulk update
@@ -285,7 +286,23 @@ export function FaqsPage({ data, canWrite }: { data: FaqData; canWrite: boolean 
               <PlusIcon aria-hidden data-icon="inline-start" />
               Add FAQ
             </Button>
-          </>
+          </div>
+        )}
+        {canWrite && (
+          <PageActions
+            edit={{
+              editing: selection.selecting,
+              onToggle: selection.selecting ? selection.clear : selection.startEditing,
+            }}
+            add={{
+              label: 'Add',
+              items: [
+                { label: 'Add FAQ', onClick: () => view.open({ kind: 'new' }) },
+                { label: 'New group', onClick: () => view.open({ kind: 'group' }) },
+              ],
+            }}
+            more={[{ label: 'Bulk update', onClick: () => view.open({ kind: 'bulk' }) }]}
+          />
         )}
       </div>
 
@@ -339,7 +356,7 @@ export function FaqsPage({ data, canWrite }: { data: FaqData; canWrite: boolean 
                 No FAQs match.
               </NoMatches>
             ) : (
-              <div className="min-h-0 flex-1 space-y-3 overflow-y-auto p-1.5">
+              <div className="min-h-0 flex-1 space-y-3 overflow-y-auto p-1.5 max-md:flex-none max-md:space-y-6 max-md:overflow-visible max-md:p-0">
                 {visibleSections.map((section) => (
                   <FaqSection
                     key={section.group?.id ?? UNGROUPED}
@@ -471,8 +488,8 @@ function FaqSection({
 
   return (
     <section>
-      <div className="flex h-8 items-center gap-2 px-1.5">
-        <h2 className="text-muted-foreground text-xs font-medium">
+      <div className="flex h-8 items-center gap-2 px-1.5 max-md:px-4">
+        <h2 className="text-muted-foreground text-xs font-medium max-md:text-[0.8125rem] max-md:font-normal max-md:text-(--ios-secondary) max-md:uppercase">
           {group ? group.name : 'Ungrouped'}
         </h2>
         <span className="text-muted-foreground text-xs tabular-nums">{faqs.length}</span>
@@ -530,7 +547,7 @@ function FaqSection({
       {faqs.length === 0 ? (
         <p className="text-muted-foreground px-3 py-2 text-xs">No FAQs in this group yet.</p>
       ) : (
-        <ul className="space-y-px">
+        <ListRows className="flex-none overflow-visible p-0">
           {faqs.map((faq, index) => (
             <ListRow
               key={faq.id}
@@ -560,7 +577,7 @@ function FaqSection({
               <FaqSummary faq={faq} />
             </ListRow>
           ))}
-        </ul>
+        </ListRows>
       )}
     </section>
   );
@@ -798,48 +815,53 @@ function FaqForm({
   }
 
   return (
-    <form noValidate onSubmit={submit} className="space-y-4">
-      <div className="space-y-1.5">
-        <Label htmlFor="faq-question">Question</Label>
-        <Input
-          id="faq-question"
-          required
-          value={question}
-          onChange={(e) => setQuestion(e.target.value)}
-          placeholder="What would people like to know?"
-        />
-      </div>
-      <div className="space-y-1.5">
-        <Label htmlFor="faq-answer">Answer</Label>
-        <Textarea
-          id="faq-answer"
-          required
-          rows={5}
-          value={answer}
-          onChange={(e) => setAnswer(e.target.value)}
-          placeholder="A clear, helpful answer…"
-        />
-        <p className="text-muted-foreground text-xs">
-          Leave a blank line between paragraphs. For a link, write [the words](https://…).
-        </p>
-      </div>
-      <div className="space-y-1.5">
-        <Label htmlFor="faq-group">Group</Label>
-        <Select items={groupItems} value={groupId} onValueChange={(v) => v && setGroupId(v)}>
-          <SelectTrigger id="faq-group" className="w-full">
-            <SelectValue />
-          </SelectTrigger>
-          <SelectContent>
-            {groupItems.map((item) => (
-              <SelectItem key={item.value} value={item.value}>
-                {item.label}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-      </div>
-      <div className="space-y-1.5">
-        <Label htmlFor="faq-tags">Tags</Label>
+    <form noValidate onSubmit={submit} className="space-y-4 max-md:space-y-7">
+      <FormSection>
+        <FormCell label="Question" htmlFor="faq-question">
+          <Input
+            id="faq-question"
+            required
+            value={question}
+            onChange={(e) => setQuestion(e.target.value)}
+            placeholder="What would people like to know?"
+          />
+        </FormCell>
+        <FormCell
+          label="Answer"
+          htmlFor="faq-answer"
+          hint="Leave a blank line between paragraphs. For a link, write [the words](https://…)."
+        >
+          <Textarea
+            id="faq-answer"
+            required
+            rows={5}
+            value={answer}
+            onChange={(e) => setAnswer(e.target.value)}
+            placeholder="A clear, helpful answer…"
+          />
+        </FormCell>
+      </FormSection>
+      <FormSection>
+        <FormCell label="Group" htmlFor="faq-group">
+          <Select items={groupItems} value={groupId} onValueChange={(v) => v && setGroupId(v)}>
+            <SelectTrigger id="faq-group" className="w-full">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              {groupItems.map((item) => (
+                <SelectItem key={item.value} value={item.value}>
+                  {item.label}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </FormCell>
+      </FormSection>
+      <FormBlock
+        label="Tags"
+        htmlFor="faq-tags"
+        hint="Where this FAQ appears on the website, e.g. home, pricing or a location. Press Enter or a comma after each tag."
+      >
         <TagInput
           id="faq-tags"
           value={tags}
@@ -847,18 +869,16 @@ function FaqForm({
           suggestions={knownTags}
           placeholder="home, pricing"
         />
-        <p className="text-muted-foreground text-xs">
-          Where this FAQ appears on the website, e.g. home, pricing or a location. Press Enter or a
-          comma after each tag.
-        </p>
-      </div>
-      <div className="flex items-center justify-between rounded-lg border p-3">
-        <div className="space-y-0.5">
-          <div className="text-sm font-medium">Published</div>
-          <div className="text-muted-foreground text-xs">Show this FAQ on the website.</div>
-        </div>
-        <Switch checked={published} onCheckedChange={setPublished} />
-      </div>
+      </FormBlock>
+      <FormSection>
+        <FormSwitchCell
+          id="faq-published"
+          label="Published"
+          description="Show this FAQ on the website."
+          checked={published}
+          onCheckedChange={setPublished}
+        />
+      </FormSection>
       {footer(pending)}
     </form>
   );
@@ -895,48 +915,47 @@ function GroupForm({
   }
 
   return (
-    <form noValidate onSubmit={submit} className="space-y-4">
-      <div className="space-y-1.5">
-        <Label htmlFor="group-name">Name</Label>
-        <Input
-          id="group-name"
-          required
-          maxLength={80}
-          value={name}
-          onChange={(e) => setName(e.target.value)}
-          placeholder="Pricing"
-        />
-        <p className="text-muted-foreground text-xs">The heading on the FAQs page.</p>
-      </div>
-      <div className="space-y-1.5">
-        <Label htmlFor="group-nav-label">Menu label</Label>
-        <Input
-          id="group-nav-label"
-          maxLength={40}
-          value={navLabel}
-          onChange={(e) => setNavLabel(e.target.value)}
-          placeholder={name || 'Same as the name'}
-        />
-        <p className="text-muted-foreground text-xs">
-          Optional. A shorter name for the page's side menu.
-        </p>
-      </div>
-      <div className="space-y-1.5">
-        <Label htmlFor="group-slug">Anchor</Label>
-        <Input
-          id="group-slug"
-          maxLength={60}
-          value={slug}
-          onChange={(e) => setSlug(e.target.value)}
-          onBlur={() => setSlug(slugify(slug))}
-          placeholder={slugify(name) || 'made-from-the-name'}
-          className="text-ui font-mono"
-        />
-        <p className="text-muted-foreground text-xs">
-          Links straight to the group, as /faqs/#{slug || slugify(name) || 'anchor'}. Changing it
-          breaks links that use the old one.
-        </p>
-      </div>
+    <form noValidate onSubmit={submit} className="space-y-4 max-md:space-y-7">
+      <FormSection>
+        <FormCell label="Name" htmlFor="group-name" hint="The heading on the FAQs page.">
+          <Input
+            id="group-name"
+            required
+            maxLength={80}
+            value={name}
+            onChange={(e) => setName(e.target.value)}
+            placeholder="Pricing"
+          />
+        </FormCell>
+        <FormCell
+          label="Menu label"
+          htmlFor="group-nav-label"
+          hint="Optional. A shorter name for the page's side menu."
+        >
+          <Input
+            id="group-nav-label"
+            maxLength={40}
+            value={navLabel}
+            onChange={(e) => setNavLabel(e.target.value)}
+            placeholder={name || 'Same as the name'}
+          />
+        </FormCell>
+        <FormCell
+          label="Anchor"
+          htmlFor="group-slug"
+          hint={`Links straight to the group, as /faqs/#${slug || slugify(name) || 'anchor'}. Changing it breaks links that use the old one.`}
+        >
+          <Input
+            id="group-slug"
+            maxLength={60}
+            value={slug}
+            onChange={(e) => setSlug(e.target.value)}
+            onBlur={() => setSlug(slugify(slug))}
+            placeholder={slugify(name) || 'made-from-the-name'}
+            className="text-ui font-mono"
+          />
+        </FormCell>
+      </FormSection>
       {footer(pending)}
     </form>
   );

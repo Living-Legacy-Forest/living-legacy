@@ -20,7 +20,7 @@ type AddAction = { label: string; onClick: () => void } | { label: string; items
 
 /** Text and icon buttons in the bar: the tint colour, 44pt to tap, dimmed while pressed. */
 const barButton =
-  'text-brand flex min-h-11 min-w-11 items-center justify-center px-2 text-[1.0625rem] active:opacity-50 disabled:opacity-40';
+  'text-tint flex min-h-11 min-w-11 items-center justify-center px-2 text-[1.0625rem] active:opacity-50 disabled:opacity-40';
 
 function MenuButton({
   label,

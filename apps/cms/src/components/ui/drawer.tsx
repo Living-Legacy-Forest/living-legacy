@@ -112,10 +112,12 @@ function DrawerContent({ className, children, ...props }: DrawerContentProps) {
         data-slot="drawer-viewport"
         className="fixed inset-0 z-50 flex items-end justify-center"
       >
+        {/* Clipped, not overflow-hidden: iOS scrolls a hidden-overflow box to show a
+            focused field, which slid the form up over the sheet's top bar. */}
         <DrawerPrimitive.Popup
           data-slot="drawer-content"
           className={cn(
-            'bg-popover text-popover-foreground relative -mb-(--bleed) flex max-h-[calc(100dvh-env(safe-area-inset-top)-0.75rem+var(--bleed))] w-full [transform:translateY(var(--drawer-swipe-movement-y))] flex-col overflow-hidden rounded-t-[1.25rem] pt-4 pb-(--bleed) text-sm shadow-[0_-1px_0] shadow-black/5 transition-transform duration-[450ms] ease-[cubic-bezier(0.32,0.72,0,1)] will-change-transform outline-none [--bleed:3rem] data-ending-style:[transform:translateY(calc(100%-var(--bleed)+2px))] data-ending-style:duration-[calc(var(--drawer-swipe-strength)*400ms)] data-starting-style:[transform:translateY(calc(100%-var(--bleed)+2px))] data-swiping:select-none motion-reduce:transition-none dark:shadow-white/10',
+            'bg-popover text-popover-foreground relative -mb-(--bleed) flex max-h-[calc(100dvh-env(safe-area-inset-top)-0.75rem+var(--bleed))] w-full [transform:translateY(var(--drawer-swipe-movement-y))] flex-col overflow-clip rounded-t-[1.25rem] pt-4 pb-(--bleed) text-sm shadow-[0_-1px_0] shadow-black/5 transition-transform duration-[450ms] ease-[cubic-bezier(0.32,0.72,0,1)] will-change-transform outline-none [--bleed:3rem] data-ending-style:[transform:translateY(calc(100%-var(--bleed)+2px))] data-ending-style:duration-[calc(var(--drawer-swipe-strength)*400ms)] data-starting-style:[transform:translateY(calc(100%-var(--bleed)+2px))] data-swiping:select-none motion-reduce:transition-none dark:shadow-white/10',
             // A sheet opened on top of this one pushes it back and dims it, as iOS stacks them.
             'origin-top transition-[transform,scale] after:pointer-events-none after:absolute after:inset-0 after:z-30 after:bg-black/0 after:transition-colors after:duration-[450ms] data-nested-drawer-open:scale-[0.94] data-nested-drawer-open:after:bg-black/25',
             className

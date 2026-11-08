@@ -17,7 +17,7 @@ export function SheetHeader({ title, onDone }: { title: string; onDone: () => vo
       <button
         type="button"
         onClick={onDone}
-        className="text-brand -mr-2 min-h-11 px-2 text-[1.0625rem] font-semibold active:opacity-50"
+        className="text-tint -mr-2 min-h-11 px-2 text-[1.0625rem] font-semibold active:opacity-50"
       >
         Done
       </button>

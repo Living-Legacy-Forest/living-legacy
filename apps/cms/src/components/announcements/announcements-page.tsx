@@ -7,6 +7,8 @@ import {
 } from '@ll/content';
 import { useState } from 'react';
 import { DateTimePicker } from '@/components/date-time-picker';
+import { FormCell, FormSection, FormSwitchCell } from '@/components/form-cells';
+import { PageActions } from '@/components/shell/page-actions';
 import {
   DialogActions,
   ListColumn,
@@ -40,9 +42,7 @@ import {
   EmptyTitle,
 } from '@/components/ui/empty';
 import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
 import { Spinner } from '@/components/ui/spinner';
-import { Switch } from '@/components/ui/switch';
 import { Textarea } from '@/components/ui/textarea';
 import { formatDateTime, zoneName } from '@/lib/format';
 import { reportInvalid } from '@/lib/form-validation';
@@ -84,6 +84,11 @@ function windowLabel(a: Pick<Announcement, 'startsAt' | 'endsAt'>, zone: string)
 }
 
 type Target = { kind: 'edit'; id: string } | { kind: 'new'; from?: Announcement };
+
+/** A group of fields; its legend is the heading, and on phones the group's small heading. */
+const FIELDSET = 'space-y-3 [--form-gap:0.75rem] max-md:space-y-0';
+const LEGEND =
+  'mb-2 text-sm font-medium max-md:mb-0 max-md:px-4 max-md:pb-1.5 max-md:text-[0.8125rem] max-md:font-normal max-md:text-(--ios-secondary) max-md:uppercase';
 
 export function AnnouncementsPage({
   data,
@@ -172,7 +177,16 @@ export function AnnouncementsPage({
             onChange={setQuery}
           />
         )}
-        {canWrite && newButton}
+        {canWrite && <div className="max-md:hidden">{newButton}</div>}
+        {canWrite && (
+          <PageActions
+            edit={{
+              editing: selection.selecting,
+              onToggle: selection.selecting ? selection.clear : selection.startEditing,
+            }}
+            add={{ label: 'New announcement', onClick: () => view.open({ kind: 'new' }) }}
+          />
+        )}
       </div>
 
       {data.length === 0 && pane === null ? (
@@ -447,175 +461,171 @@ function AnnouncementForm({
   }
 
   return (
-    <form noValidate onSubmit={submit} className="space-y-5">
-      <div className="space-y-1.5">
-        <Label htmlFor="a-title">Name</Label>
-        <Input
-          id="a-title"
-          required
-          maxLength={80}
-          value={values.title}
-          onChange={(e) => patch({ title: e.target.value })}
-          placeholder="e.g. Monthly promotion"
-        />
-        <p className="text-muted-foreground text-xs">
-          For the CMS list only. Not shown on the site.
-        </p>
-      </div>
-
-      <div className="flex items-center justify-between gap-4 rounded-lg border p-3">
-        <div className="space-y-0.5">
-          <Label htmlFor="a-enabled">Enabled</Label>
-          <p className="text-muted-foreground text-xs">
-            Off hides it, whatever the dates. Shows within its dates when on.
-          </p>
-        </div>
-        <Switch
+    <form noValidate onSubmit={submit} className="space-y-5 [--form-gap:1.25rem] max-md:space-y-7">
+      <FormSection>
+        <FormCell
+          label="Name"
+          htmlFor="a-title"
+          hint="For the CMS list only. Not shown on the site."
+        >
+          <Input
+            id="a-title"
+            required
+            maxLength={80}
+            value={values.title}
+            onChange={(e) => patch({ title: e.target.value })}
+            placeholder="e.g. Monthly promotion"
+          />
+        </FormCell>
+        <FormSwitchCell
           id="a-enabled"
+          label="Enabled"
+          description="Off hides it, whatever the dates. Shows within its dates when on."
           checked={values.enabled}
           onCheckedChange={(enabled) => patch({ enabled })}
         />
-      </div>
+      </FormSection>
 
-      <fieldset className="space-y-3">
-        <legend className="mb-2 text-sm font-medium">Message</legend>
-        <div className="space-y-1.5">
-          <div className="flex items-center justify-between gap-2">
-            <Label htmlFor="a-message">Default (phones)</Label>
-            <span
-              className={cn(
-                'text-muted-foreground text-xs tabular-nums',
-                values.message.length > ANNOUNCEMENT_MOBILE_LENGTH && 'text-amber-600'
-              )}
-            >
-              {values.message.length}/{ANNOUNCEMENT_MOBILE_LENGTH}
-            </span>
-          </div>
-          <Input
-            id="a-message"
-            required
-            maxLength={160}
-            value={values.message}
-            onChange={(e) => patch({ message: e.target.value })}
-            placeholder="Your announcement message"
-          />
-          <p className="text-muted-foreground text-xs">
-            Keep under {ANNOUNCEMENT_MOBILE_LENGTH} characters to stay on one line on a phone. Used
-            on larger screens too, unless replaced below.
-          </p>
-        </div>
-        <div className="grid gap-3 sm:grid-cols-2">
-          <div className="space-y-1.5">
-            <Label htmlFor="a-tablet">Tablet (optional)</Label>
-            <Input
-              id="a-tablet"
-              maxLength={160}
-              value={values.messageTablet}
-              onChange={(e) => patch({ messageTablet: e.target.value })}
-              placeholder="Uses the default message"
-            />
-          </div>
-          <div className="space-y-1.5">
-            <Label htmlFor="a-desktop">Desktop (optional)</Label>
-            <Input
-              id="a-desktop"
-              maxLength={200}
-              value={values.messageDesktop}
-              onChange={(e) => patch({ messageDesktop: e.target.value })}
-              placeholder="Uses the tablet message"
-            />
-          </div>
-        </div>
-      </fieldset>
-
-      <fieldset className="space-y-3">
-        <legend className="mb-2 text-sm font-medium">Button (optional)</legend>
-        <div className="grid gap-3 sm:grid-cols-[1fr_1.5fr]">
-          <div className="space-y-1.5">
-            <Label htmlFor="a-cta-label">Label</Label>
-            <Input
-              id="a-cta-label"
-              maxLength={30}
-              value={values.ctaLabel}
-              onChange={(e) => patch({ ctaLabel: e.target.value })}
-              placeholder="Button text"
-            />
-          </div>
-          <div className="space-y-1.5">
-            <Label htmlFor="a-cta-url">Link</Label>
-            <Input
-              id="a-cta-url"
-              value={values.ctaUrl}
-              onChange={(e) => patch({ ctaUrl: e.target.value })}
-              placeholder="/page or https://…"
-              className="font-mono"
-            />
-          </div>
-        </div>
-      </fieldset>
-
-      <fieldset className="space-y-2">
-        <legend className="mb-2 text-sm font-medium">Background colour</legend>
-        <div className="grid grid-cols-2 gap-2">
-          {backgrounds.map((b) => (
-            <label
-              key={b.value}
-              className={cn(
-                'flex cursor-pointer items-center gap-2 rounded-lg border px-3 py-2 text-sm transition-colors',
-                values.background === b.value
-                  ? 'border-ring ring-ring/30 ring-2'
-                  : 'hover:bg-muted/60'
-              )}
-            >
-              <input
-                type="radio"
-                name="a-background"
-                value={b.value}
-                checked={values.background === b.value}
-                onChange={() => patch({ background: b.value })}
-                className="sr-only"
-              />
+      <fieldset className={FIELDSET}>
+        <legend className={LEGEND}>Message</legend>
+        <FormSection>
+          <FormCell
+            label="Default (phones)"
+            htmlFor="a-message"
+            aside={
               <span
-                aria-hidden
-                className="ring-border size-4 shrink-0 rounded-full ring-1"
-                style={{ background: b.bg }}
+                className={cn(
+                  'text-muted-foreground text-xs tabular-nums',
+                  values.message.length > ANNOUNCEMENT_MOBILE_LENGTH && 'text-amber-600'
+                )}
+              >
+                {values.message.length}/{ANNOUNCEMENT_MOBILE_LENGTH}
+              </span>
+            }
+            hint={`Keep under ${ANNOUNCEMENT_MOBILE_LENGTH} characters to stay on one line on a phone. Used on larger screens too, unless replaced below.`}
+          >
+            <Input
+              id="a-message"
+              required
+              maxLength={160}
+              value={values.message}
+              onChange={(e) => patch({ message: e.target.value })}
+              placeholder="Your announcement message"
+            />
+          </FormCell>
+          <div className="grid gap-3 max-md:contents sm:grid-cols-2">
+            <FormCell label="Tablet (optional)" htmlFor="a-tablet">
+              <Input
+                id="a-tablet"
+                maxLength={160}
+                value={values.messageTablet}
+                onChange={(e) => patch({ messageTablet: e.target.value })}
+                placeholder="Uses the default message"
               />
-              {b.label}
-            </label>
-          ))}
-        </div>
+            </FormCell>
+            <FormCell label="Desktop (optional)" htmlFor="a-desktop">
+              <Input
+                id="a-desktop"
+                maxLength={200}
+                value={values.messageDesktop}
+                onChange={(e) => patch({ messageDesktop: e.target.value })}
+                placeholder="Uses the tablet message"
+              />
+            </FormCell>
+          </div>
+        </FormSection>
       </fieldset>
 
-      <fieldset className="space-y-3">
-        <legend className="mb-2 text-sm font-medium">Schedule ({zone})</legend>
-        <div className="grid gap-3 sm:grid-cols-2">
-          <div className="space-y-1.5">
-            <Label htmlFor="a-start">Go live</Label>
-            <DateTimePicker
-              id="a-start"
-              value={values.startsAt}
-              onChange={(startsAt) => patch({ startsAt })}
-              placeholder="As soon as enabled"
-            />
-            <p className="text-muted-foreground text-xs">
-              Blank shows it as soon as it is enabled.
-            </p>
+      <fieldset className={FIELDSET}>
+        <legend className={LEGEND}>Button (optional)</legend>
+        <FormSection>
+          <div className="grid gap-3 max-md:contents sm:grid-cols-[1fr_1.5fr]">
+            <FormCell label="Label" htmlFor="a-cta-label">
+              <Input
+                id="a-cta-label"
+                maxLength={30}
+                value={values.ctaLabel}
+                onChange={(e) => patch({ ctaLabel: e.target.value })}
+                placeholder="Button text"
+              />
+            </FormCell>
+            <FormCell label="Link" htmlFor="a-cta-url">
+              <Input
+                id="a-cta-url"
+                value={values.ctaUrl}
+                onChange={(e) => patch({ ctaUrl: e.target.value })}
+                placeholder="/page or https://…"
+                className="font-mono"
+              />
+            </FormCell>
           </div>
-          <div className="space-y-1.5">
-            <Label htmlFor="a-end">Expire</Label>
-            <DateTimePicker
-              id="a-end"
-              value={values.endsAt}
-              onChange={(endsAt) => patch({ endsAt })}
-              placeholder="No expiry"
-              defaultTime="23:59"
-              minDate={values.startsAt}
-            />
-            <p className="text-muted-foreground text-xs">Blank never expires.</p>
+        </FormSection>
+      </fieldset>
+
+      <fieldset className={cn(FIELDSET, 'space-y-2')}>
+        <legend className={LEGEND}>Background colour</legend>
+        <FormSection>
+          <div className="grid grid-cols-2 gap-2">
+            {backgrounds.map((b) => (
+              <label
+                key={b.value}
+                className={cn(
+                  'flex cursor-pointer items-center gap-2 rounded-lg border px-3 py-2 text-sm transition-colors',
+                  values.background === b.value
+                    ? 'border-ring ring-ring/30 ring-2'
+                    : 'hover:bg-muted/60'
+                )}
+              >
+                <input
+                  type="radio"
+                  name="a-background"
+                  value={b.value}
+                  checked={values.background === b.value}
+                  onChange={() => patch({ background: b.value })}
+                  className="sr-only"
+                />
+                <span
+                  aria-hidden
+                  className="ring-border size-4 shrink-0 rounded-full ring-1"
+                  style={{ background: b.bg }}
+                />
+                {b.label}
+              </label>
+            ))}
           </div>
-        </div>
+        </FormSection>
+      </fieldset>
+
+      <fieldset className={FIELDSET}>
+        <legend className={LEGEND}>Schedule ({zone})</legend>
+        <FormSection>
+          <div className="grid gap-3 max-md:contents sm:grid-cols-2">
+            <FormCell
+              label="Go live"
+              htmlFor="a-start"
+              hint="Blank shows it as soon as it is enabled."
+            >
+              <DateTimePicker
+                id="a-start"
+                value={values.startsAt}
+                onChange={(startsAt) => patch({ startsAt })}
+                placeholder="As soon as enabled"
+              />
+            </FormCell>
+            <FormCell label="Expire" htmlFor="a-end" hint="Blank never expires.">
+              <DateTimePicker
+                id="a-end"
+                value={values.endsAt}
+                onChange={(endsAt) => patch({ endsAt })}
+                placeholder="No expiry"
+                defaultTime="23:59"
+                minDate={values.startsAt}
+              />
+            </FormCell>
+          </div>
+        </FormSection>
         {overlaps.length > 0 && (
-          <p className="flex gap-2 rounded-md border border-amber-500/40 bg-amber-500/10 px-3 py-2 text-xs">
+          <p className="flex gap-2 rounded-md border border-amber-500/40 bg-amber-500/10 px-3 py-2 text-xs max-md:mt-3">
             <TriangleAlertIcon aria-hidden className="mt-px size-3.5 shrink-0 text-amber-600" />
             <span>
               Overlaps with {overlaps.map((o) => o.title).join(', ')}. While both are live, the one
@@ -625,21 +635,22 @@ function AnnouncementForm({
         )}
       </fieldset>
 
-      <div className="space-y-1.5">
-        <Label htmlFor="a-hide">Hide on pages</Label>
-        <Textarea
-          id="a-hide"
-          rows={2}
-          value={values.hidePaths}
-          onChange={(e) => patch({ hidePaths: e.target.value })}
-          placeholder="/page-path"
-          className="text-ui font-mono"
-        />
-        <p className="text-muted-foreground text-xs">
-          One path per line. End with * to hide a whole section, like /section/*. Leave empty to
-          show everywhere.
-        </p>
-      </div>
+      <FormSection>
+        <FormCell
+          label="Hide on pages"
+          htmlFor="a-hide"
+          hint="One path per line. End with * to hide a whole section, like /section/*. Leave empty to show everywhere."
+        >
+          <Textarea
+            id="a-hide"
+            rows={2}
+            value={values.hidePaths}
+            onChange={(e) => patch({ hidePaths: e.target.value })}
+            placeholder="/page-path"
+            className="text-ui font-mono"
+          />
+        </FormCell>
+      </FormSection>
 
       {footer(
         <Button type="submit" disabled={pending}>

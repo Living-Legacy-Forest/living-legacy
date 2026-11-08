@@ -42,16 +42,27 @@ export function FormCell({
   label,
   htmlFor,
   hint,
+  aside,
   children,
 }: {
   label: string;
   htmlFor?: string;
   hint?: ReactNode;
+  /** A note level with the label (a character count); under the label on phones. */
+  aside?: ReactNode;
   children: ReactNode;
 }) {
+  const labelEl = <Label htmlFor={htmlFor}>{label}</Label>;
   return (
     <div data-slot="form-cell" className="space-y-1.5">
-      <Label htmlFor={htmlFor}>{label}</Label>
+      {aside ? (
+        <div data-slot="form-label-row" className="flex items-center justify-between gap-2">
+          {labelEl}
+          {aside}
+        </div>
+      ) : (
+        labelEl
+      )}
       {children}
       {hint && (
         <p data-slot="form-hint" className="text-muted-foreground text-xs">

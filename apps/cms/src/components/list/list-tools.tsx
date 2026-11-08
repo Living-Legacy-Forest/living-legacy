@@ -175,7 +175,7 @@ export function SelectionBar({
             variant="ghost"
             size="sm"
             className={cn(
-              'text-brand touch:inline-flex ml-auto hidden min-h-11 text-[0.9375rem] font-medium',
+              'text-tint touch:inline-flex ml-auto hidden min-h-11 text-[0.9375rem] font-medium',
               editInTopBar && 'max-md:hidden!'
             )}
             onClick={selection.selecting ? selection.clear : selection.startEditing}

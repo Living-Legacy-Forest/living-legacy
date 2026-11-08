@@ -60,7 +60,7 @@ export function TabBar({ user }: { user: SessionUser }) {
                   window.scrollTo({ top: 0, behavior: 'smooth' });
                 }
               }}
-              className={cn(tabClass, active ? 'text-brand' : 'text-muted-foreground')}
+              className={cn(tabClass, active ? 'text-tint' : 'text-muted-foreground')}
             >
               <tab.icon aria-hidden />
               <span className="truncate">{tab.title}</span>
@@ -71,7 +71,7 @@ export function TabBar({ user }: { user: SessionUser }) {
           type="button"
           onClick={() => setMoreOpen(true)}
           aria-haspopup="dialog"
-          className={cn(tabClass, moreActive ? 'text-brand' : 'text-muted-foreground')}
+          className={cn(tabClass, moreActive ? 'text-tint' : 'text-muted-foreground')}
         >
           <MoreHorizontalIcon aria-hidden />
           <span>More</span>
@@ -177,7 +177,7 @@ function MoreRow({
       ) : (
         <span aria-hidden className="w-5.5" />
       )}
-      <span className={cn('flex-1 truncate', active && 'text-brand font-medium')}>{row.title}</span>
+      <span className={cn('flex-1 truncate', active && 'text-tint font-medium')}>{row.title}</span>
       {row.to && <ChevronRightIcon aria-hidden className="text-muted-foreground/60 size-4!" />}
     </>
   );

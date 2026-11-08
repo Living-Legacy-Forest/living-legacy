@@ -9,6 +9,8 @@ import {
   useSelection,
 } from '@/components/list/list-tools';
 import { CropIcon, MediaIcon, Trash2Icon, UploadIcon } from '@/components/icons';
+import { FormCell, FormSection } from '@/components/form-cells';
+import { DialogActions, ListDialog } from '@/components/list/list-page';
 import { ImageCropDialog } from '@/components/media/image-crop-dialog';
 import { MediaUsageList } from '@/components/media/media-usage';
 import { Button } from '@/components/ui/button';
@@ -33,6 +35,7 @@ import {
 } from '@/components/ui/sheet';
 import { Spinner } from '@/components/ui/spinner';
 import { Textarea } from '@/components/ui/textarea';
+import { useIsMobile } from '@/hooks/use-mobile';
 import { notify, removedNotice } from '@/lib/notify';
 import { formatBytes } from '@/lib/format';
 import { canCrop } from '@/lib/prepare-image';
@@ -55,6 +58,7 @@ export function MediaPage({
 }) {
   const [query, setQuery] = useState('');
   const [editingId, setEditingId] = useState<string | null>(initialSelected ?? null);
+  const isPhone = useIsMobile();
   const [confirmDelete, setConfirmDelete] = useState(false);
   const [dragOver, setDragOver] = useState(false);
   const fileInput = useRef<HTMLInputElement>(null);
@@ -202,8 +206,14 @@ export function MediaPage({
         onConfirm={removeChecked}
       />
 
-      <Sheet open={editing !== null} onOpenChange={(open) => !open && setEditingId(null)}>
-        <SheetContent>
+      {/* Phones get the iOS form sheet the other pages use; wider screens a side panel. */}
+      {isPhone ? (
+        <ListDialog
+          open={editing !== null}
+          onClose={() => setEditingId(null)}
+          title={editing?.filename ?? ''}
+          description={editing ? fileFacts(editing) : undefined}
+        >
           {editing && (
             <MediaEditForm
               key={editing.id}
@@ -211,10 +221,25 @@ export function MediaPage({
               canDelete={canDelete}
               onClose={() => setEditingId(null)}
               onOpen={setEditingId}
+              inSheet
             />
           )}
-        </SheetContent>
-      </Sheet>
+        </ListDialog>
+      ) : (
+        <Sheet open={editing !== null} onOpenChange={(open) => !open && setEditingId(null)}>
+          <SheetContent>
+            {editing && (
+              <MediaEditForm
+                key={editing.id}
+                item={editing}
+                canDelete={canDelete}
+                onClose={() => setEditingId(null)}
+                onOpen={setEditingId}
+              />
+            )}
+          </SheetContent>
+        </Sheet>
+      )}
     </div>
   );
 }
@@ -262,11 +287,17 @@ function MediaTile({
   );
 }
 
+/** Size and dimensions, under the file name. */
+function fileFacts(item: MediaItem) {
+  return `${formatBytes(item.size)}${item.width && item.height ? ` · ${item.width}×${item.height}` : ''}`;
+}
+
 function MediaEditForm({
   item,
   canDelete,
   onClose,
   onOpen,
+  inSheet = false,
 }: {
   item: MediaItem;
   /** Deleting a file is permanent, so only roles with content:purge see it. */
@@ -274,6 +305,8 @@ function MediaEditForm({
   onClose: () => void;
   /** Shows another file in the panel, e.g. a cropped copy. */
   onOpen: (id: string) => void;
+  /** In the phone's form sheet (ListDialog), which has the title and Save in its bar. */
+  inSheet?: boolean;
 }) {
   const router = useRouter();
   const [alt, setAlt] = useState(item.alt);
@@ -335,56 +368,119 @@ function MediaEditForm({
     if (result) onClose();
   }
 
+  const preview = (
+    <img
+      src={`${item.url}?w=1280`}
+      alt={item.alt || item.filename}
+      className="bg-muted max-h-72 w-full rounded-md border object-contain"
+    />
+  );
+  const crop = canCrop({ type: item.mime }) && (
+    <div className="flex items-center gap-3">
+      <Button
+        type="button"
+        variant="outline"
+        size="sm"
+        disabled={loadingCrop || pending}
+        onClick={startCrop}
+      >
+        {loadingCrop ? <Spinner /> : <CropIcon aria-hidden data-icon="inline-start" />}
+        Crop a copy
+      </Button>
+      <p className="text-muted-foreground text-xs">The original stays as it is.</p>
+    </div>
+  );
+  const altInput = (
+    <Input
+      id="m-alt"
+      maxLength={300}
+      value={alt}
+      onChange={(e) => setAlt(e.target.value)}
+      placeholder="Describes the image for screen readers and SEO"
+    />
+  );
+  const captionInput = (
+    <Textarea
+      id="m-caption"
+      rows={2}
+      maxLength={500}
+      value={caption}
+      onChange={(e) => setCaption(e.target.value)}
+    />
+  );
+  const cropDialog = (
+    <ImageCropDialog file={cropping} onCancel={() => setCropping(null)} onDone={saveCopy} />
+  );
+
+  if (inSheet) {
+    return (
+      <>
+        <form onSubmit={save} className="space-y-7">
+          <FormSection>
+            {preview}
+            {crop}
+          </FormSection>
+          <FormSection>
+            <FormCell label="Alt text" htmlFor="m-alt">
+              {altInput}
+            </FormCell>
+            <FormCell label="Caption" htmlFor="m-caption">
+              {captionInput}
+            </FormCell>
+          </FormSection>
+          <MediaUsageList id={item.id} />
+          <DialogActions
+            start={
+              canDelete && (
+                <Button
+                  type="button"
+                  variant="ghost"
+                  className="text-destructive hover:text-destructive"
+                  disabled={pending}
+                  onClick={() => setConfirmingDelete(true)}
+                >
+                  <Trash2Icon aria-hidden data-icon="inline-start" />
+                  Delete
+                </Button>
+              )
+            }
+          >
+            <Button type="submit" disabled={pending}>
+              {pending ? <Spinner /> : null}
+              Save
+            </Button>
+          </DialogActions>
+        </form>
+        <ConfirmBulkDelete
+          open={confirmingDelete}
+          onOpenChange={setConfirmingDelete}
+          count={1}
+          noun={NOUN}
+          description="It is removed for good. Anything using it, like a post or a team member, loses that image."
+          onConfirm={remove}
+        />
+        {cropDialog}
+      </>
+    );
+  }
+
   return (
     <>
       <form onSubmit={save} className="flex min-h-0 flex-1 flex-col gap-4">
         <SheetHeader>
           <SheetTitle className="truncate pr-8">{item.filename}</SheetTitle>
-          <SheetDescription>
-            {formatBytes(item.size)}
-            {item.width && item.height ? ` · ${item.width}×${item.height}` : ''}
-          </SheetDescription>
+          <SheetDescription>{fileFacts(item)}</SheetDescription>
         </SheetHeader>
         <div className="grid flex-1 auto-rows-min gap-6 overflow-y-auto px-4">
-          <img
-            src={`${item.url}?w=1280`}
-            alt={item.alt || item.filename}
-            className="bg-muted max-h-72 w-full rounded-md border object-contain"
-          />
-          {canCrop({ type: item.mime }) && (
-            <div className="-mt-3 flex items-center gap-3">
-              <Button
-                type="button"
-                variant="outline"
-                size="sm"
-                disabled={loadingCrop || pending}
-                onClick={startCrop}
-              >
-                {loadingCrop ? <Spinner /> : <CropIcon aria-hidden data-icon="inline-start" />}
-                Crop a copy
-              </Button>
-              <p className="text-muted-foreground text-xs">The original stays as it is.</p>
-            </div>
-          )}
+          {preview}
+          {crop && <div className="-mt-3">{crop}</div>}
           <div className="grid gap-3">
             <Label htmlFor="m-alt">Alt text</Label>
-            <Input
-              id="m-alt"
-              maxLength={300}
-              value={alt}
-              onChange={(e) => setAlt(e.target.value)}
-              placeholder="Describes the image for screen readers and SEO"
-            />
+            {altInput}
           </div>
           <div className="grid gap-3">
             <Label htmlFor="m-caption">Caption</Label>
-            <Textarea
-              id="m-caption"
-              rows={2}
-              maxLength={500}
-              value={caption}
-              onChange={(e) => setCaption(e.target.value)}
-            />
+            {captionInput}
           </div>
           <MediaUsageList id={item.id} />
         </div>
@@ -431,7 +527,7 @@ function MediaEditForm({
           )}
         </SheetFooter>
       </form>
-      <ImageCropDialog file={cropping} onCancel={() => setCropping(null)} onDone={saveCopy} />
+      {cropDialog}
     </>
   );
 }

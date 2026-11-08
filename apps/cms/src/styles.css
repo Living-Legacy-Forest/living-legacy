@@ -140,6 +140,36 @@
   --chart-1: #8fb08c;
 }
 
+/* Phones look like a UIKit app (docs/superpowers/specs/2026-11-08-ios-mobile-ui-design.md):
+   iOS's grouped-list colours, on phones only so desktop and tablet keep theirs.
+   The tint is --brand and destructive stays --destructive. */
+@media (width < 48rem) {
+  :root {
+    --ios-grouped: #f2f2f7;
+    --ios-cell: #ffffff;
+    /* A cell inside a sheet, which sits on the grouped colour. */
+    --ios-cell-raised: #ffffff;
+    --ios-separator: rgb(60 60 67 / 0.29);
+    --ios-secondary: rgb(60 60 67 / 0.6);
+    /* Search fields and the segmented control's track. */
+    --ios-fill: rgb(118 118 128 / 0.12);
+    --ios-segment-on: #ffffff;
+  }
+  .dark {
+    --ios-grouped: #000000;
+    --ios-cell: #1c1c1e;
+    --ios-cell-raised: #2c2c2e;
+    --ios-separator: rgb(84 84 88 / 0.65);
+    --ios-secondary: rgb(235 235 245 / 0.6);
+    --ios-fill: rgb(118 118 128 / 0.24);
+    --ios-segment-on: #636366;
+  }
+  /* Behind the page when it bounces past its ends. */
+  body {
+    background-color: var(--ios-grouped);
+  }
+}
+
 /* Sidebar collapse (and the hover-to-peek flyout, which shares the same
    elements) eases out instead of moving linearly, and is instant when the
    user asks for reduced motion. Unlayered so it wins over the utilities. */

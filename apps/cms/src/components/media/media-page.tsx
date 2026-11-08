@@ -179,6 +179,8 @@ export function MediaPage({
         <div
           className={cn(
             'flex min-h-0 flex-1 flex-col overflow-hidden rounded-lg border',
+            // Phones: no frame; the grid runs edge to edge, as Photos does.
+            'max-md:flex-none max-md:overflow-visible max-md:rounded-none max-md:border-0',
             dragOver && 'ring-ring ring-2'
           )}
         >
@@ -198,15 +200,16 @@ export function MediaPage({
               </Button>
             </div>
           ) : (
-            <div className="grid flex-1 grid-cols-2 gap-3 overflow-y-auto p-3 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6">
+            <div className="grid flex-1 grid-cols-2 gap-3 overflow-y-auto p-3 max-md:-mx-4 max-md:grid-cols-3 max-md:gap-0.5 max-md:overflow-visible max-md:p-0 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6">
               {visible.map((m) => (
                 <MediaTile
                   key={m.id}
                   item={m}
                   checked={selection.isChecked(m.id)}
-                  selecting={selection.checkedIds.length > 0}
+                  selecting={selection.selecting || selection.checkedIds.length > 0}
                   onToggle={() => selection.toggle(m.id)}
-                  onOpen={() => setEditingId(m.id)}
+                  // In Edit mode a tap ticks the tile, as in Photos.
+                  onOpen={() => (selection.selecting ? selection.toggle(m.id) : setEditingId(m.id))}
                 />
               ))}
             </div>
@@ -277,8 +280,8 @@ function MediaTile({
   return (
     <div
       className={cn(
-        'group relative aspect-square overflow-hidden rounded-md border',
-        checked && 'ring-ring ring-2'
+        'group max-md:bg-muted relative aspect-square overflow-hidden rounded-md border max-md:rounded-none max-md:border-0',
+        checked && 'ring-ring ring-2 max-md:ring-inset'
       )}
     >
       <RowCheckbox

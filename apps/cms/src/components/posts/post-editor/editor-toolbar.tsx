@@ -18,7 +18,9 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
+import { type PageMenuItem, PageActions } from '@/components/shell/page-actions';
 import { Spinner } from '@/components/ui/spinner';
+import { useIsMobile } from '@/hooks/use-mobile';
 import { cn } from '@/lib/utils';
 import { PostStatusBadge } from '../post-status-badge';
 import { ReviewerPopover } from '../reviewer-popover';
@@ -43,6 +45,40 @@ export function EditorToolbar({
   const docxInputRef = useRef<HTMLInputElement>(null);
   const chooseDocx = () => docxInputRef.current?.click();
   const canDiscard = meta.hasDraft && !dirty && meta.id !== null;
+  const isPhone = useIsMobile();
+
+  // Phones: the app's top bar holds ‹ Posts, the title and the main action, with
+  // the rest in its … menu; this bar keeps the status and, for a publisher, Schedule.
+  if (isPhone) {
+    return (
+      <header className="flex min-h-11 shrink-0 items-center gap-3 border-b px-3 py-1.5">
+        <PostStatusBadge
+          status={meta.status}
+          hasDraft={meta.hasDraft}
+          inReview={meta.reviewRequestedAt !== null}
+          scheduledAt={meta.scheduledAt}
+          showDate
+          className="text-foreground text-ui"
+        />
+        <span className="text-muted-foreground text-xs" aria-live="polite">
+          {editor.saveState}
+        </span>
+        {access === 'full' && !editor.isLive && (
+          <div className="ml-auto">
+            <SchedulePopover
+              labelled
+              scheduledAt={meta.scheduledAt}
+              disabled={working}
+              onSchedule={editor.schedule}
+              onUnschedule={editor.unschedule}
+            />
+          </div>
+        )}
+        <PhoneBar editor={editor} canDiscard={canDiscard} onImport={chooseDocx} />
+        <DocxInput inputRef={docxInputRef} editor={editor} />
+      </header>
+    );
+  }
 
   return (
     <header className="flex h-12 shrink-0 items-center gap-3 border-b px-3 max-md:h-auto max-md:min-h-12 max-md:flex-wrap max-md:gap-y-1.5 max-md:py-2">
@@ -92,19 +128,104 @@ export function EditorToolbar({
           <PanelRightIcon aria-hidden />
         </Button>
       </div>
-      <input
-        ref={docxInputRef}
-        type="file"
-        accept=".docx,application/vnd.openxmlformats-officedocument.wordprocessingml.document"
-        className="hidden"
-        onChange={(e) => {
-          const file = e.target.files?.[0];
-          e.target.value = '';
-          if (file) void editor.importDocx(file);
-        }}
-      />
+      <DocxInput inputRef={docxInputRef} editor={editor} />
     </header>
   );
+}
+
+function DocxInput({
+  inputRef,
+  editor,
+}: {
+  inputRef: React.RefObject<HTMLInputElement | null>;
+  editor: PostEditorState;
+}) {
+  return (
+    <input
+      ref={inputRef}
+      type="file"
+      accept=".docx,application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+      className="hidden"
+      onChange={(e) => {
+        const file = e.target.files?.[0];
+        e.target.value = '';
+        if (file) void editor.importDocx(file);
+      }}
+    />
+  );
+}
+
+/** The phone top bar's part: the title, the main action and the … menu. */
+function PhoneBar({ editor, canDiscard, onImport }: ActionsProps) {
+  const { access, meta, dirty, working, isLive } = editor;
+  const items: PageMenuItem[] = [];
+  const add = (item: PageMenuItem | false) => item && items.push(item);
+
+  if (access === 'full' || access === 'author') {
+    add({
+      label: isLive ? 'Save changes' : 'Save draft',
+      onClick: editor.save,
+      disabled: working || (!dirty && meta.id !== null),
+    });
+  }
+  if (access === 'seo') {
+    add({
+      label: 'Save search listing',
+      onClick: editor.saveSeo,
+      disabled: working || !dirty || !meta.id,
+    });
+  }
+  add({ label: 'Preview', onClick: editor.preview, disabled: working || !meta.id });
+  add(canDiscard && { label: 'Discard changes', onClick: editor.discard, disabled: working });
+  if (access === 'full' || access === 'author') {
+    add({ label: 'Import Word doc', onClick: onImport, disabled: working || editor.importingDocx });
+    add(!!meta.id && { label: 'Duplicate', onClick: editor.duplicate, disabled: working });
+  }
+  add({
+    label: 'Properties',
+    onClick: () =>
+      document.getElementById('post-properties')?.scrollIntoView({ behavior: 'smooth' }),
+  });
+  if (access === 'full') {
+    add(isLive && { label: 'Unpublish', onClick: editor.unpublish, disabled: working });
+    add(
+      !!meta.id && {
+        label: 'Move to trash',
+        onClick: editor.trash,
+        destructive: true,
+        disabled: working,
+      }
+    );
+  }
+
+  let primary: React.ReactNode = null;
+  if (access === 'full') {
+    primary = (
+      <button
+        type="button"
+        disabled={working || (isLive && !dirty && !meta.hasDraft)}
+        onClick={editor.publish}
+      >
+        {editor.busy === 'publish' ? 'Publishing…' : isLive ? 'Update' : 'Publish'}
+      </button>
+    );
+  } else if (access === 'author') {
+    primary =
+      meta.reviewRequestedAt !== null && !dirty ? (
+        <button type="button" disabled>
+          Submitted
+        </button>
+      ) : (
+        <ReviewerPopover
+          reviewers={editor.reviewers}
+          disabled={working}
+          label="Submit"
+          onSubmit={editor.submitForReview}
+        />
+      );
+  }
+
+  return <PageActions title={editor.values.title || 'Untitled'} more={items} primary={primary} />;
 }
 
 type ActionsProps = { editor: PostEditorState; canDiscard: boolean; onImport: () => void };

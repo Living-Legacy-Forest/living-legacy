@@ -68,9 +68,12 @@ export function SchedulePopover({
   disabled,
   onSchedule,
   onUnschedule,
+  labelled = false,
 }: {
   scheduledAt: number | null;
   disabled?: boolean;
+  /** A ghost button with its words, standing alone (phones), not Publish's chevron. */
+  labelled?: boolean;
   onSchedule: (at: number) => Promise<boolean>;
   onUnschedule: () => Promise<void>;
 }) {
@@ -114,15 +117,26 @@ export function SchedulePopover({
     >
       <PopoverTrigger
         render={
-          <Button
-            size="sm"
-            disabled={disabled}
-            aria-label={scheduledAt ? 'Change schedule' : 'Schedule for later'}
-            className="border-primary-foreground/20 rounded-l-none border-l px-1.5"
-          />
+          labelled ? (
+            <Button variant="ghost" size="sm" disabled={disabled} />
+          ) : (
+            <Button
+              size="sm"
+              disabled={disabled}
+              aria-label={scheduledAt ? 'Change schedule' : 'Schedule for later'}
+              className="border-primary-foreground/20 rounded-l-none border-l px-1.5"
+            />
+          )
         }
       >
-        <ChevronDownIcon aria-hidden />
+        {labelled ? (
+          <>
+            <CalendarClockIcon aria-hidden data-icon="inline-start" />
+            {scheduledAt ? 'Reschedule' : 'Schedule'}
+          </>
+        ) : (
+          <ChevronDownIcon aria-hidden />
+        )}
       </PopoverTrigger>
       <PopoverContent align="end" className="w-[22rem] p-0">
         <div className="text-ui flex items-center gap-2 border-b px-3 py-2.5 font-medium">

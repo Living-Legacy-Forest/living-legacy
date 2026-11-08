@@ -14,7 +14,12 @@ import {
 import { useIsMobile } from '@/hooks/use-mobile';
 import { cn } from '@/lib/utils';
 
-export type PageMenuItem = { label: string; onClick: () => void; destructive?: boolean };
+export type PageMenuItem = {
+  label: string;
+  onClick: () => void;
+  destructive?: boolean;
+  disabled?: boolean;
+};
 
 type AddAction = { label: string; onClick: () => void } | { label: string; items: PageMenuItem[] };
 
@@ -41,6 +46,7 @@ function MenuButton({
           <DropdownMenuItem
             key={item.label}
             variant={item.destructive ? 'destructive' : 'default'}
+            disabled={item.disabled}
             className="min-h-11 text-[1.0625rem]"
             onClick={item.onClick}
           >
@@ -56,6 +62,8 @@ export function PageActions({
   edit,
   add,
   more,
+  title,
+  primary,
 }: {
   /** Left of the top bar: Edit, or Done while in Edit mode. */
   edit?: { editing: boolean; onToggle: () => void };
@@ -63,12 +71,17 @@ export function PageActions({
   add?: AddAction;
   /** The … menu, for anything else (Bulk update, Export). */
   more?: PageMenuItem[];
+  /** The bar's centre, for a page with no large title (the post editor). */
+  title?: string;
+  /** The screen's main action as bold text at the right (Publish); any button, restyled. */
+  primary?: React.ReactNode;
 }) {
   const isMobile = useIsMobile();
-  const [slots, setSlots] = useState<{ start: Element | null; end: Element | null }>({
-    start: null,
-    end: null,
-  });
+  const [slots, setSlots] = useState<{
+    start: Element | null;
+    end: Element | null;
+    title: Element | null;
+  }>({ start: null, end: null, title: null });
 
   // The header renders the slots; it is mounted before the page, so they exist.
   useEffect(() => {
@@ -76,6 +89,7 @@ export function PageActions({
     setSlots({
       start: document.querySelector('[data-slot="page-actions-start"]'),
       end: document.querySelector('[data-slot="page-actions-end"]'),
+      title: document.querySelector('[data-slot="page-actions-title"]'),
     });
   }, [isMobile]);
 
@@ -118,9 +132,20 @@ export function PageActions({
                 <PlusIcon aria-hidden className="size-6" />
               </button>
             ))}
+          {primary && (
+            <span className="[&>button]:text-tint! flex items-center [&_svg]:hidden [&>button]:h-11 [&>button]:min-w-11 [&>button]:border-0 [&>button]:bg-transparent! [&>button]:px-2 [&>button]:text-[1.0625rem] [&>button]:font-semibold [&>button]:shadow-none [&>button]:active:opacity-50 [&>button]:disabled:opacity-40">
+              {primary}
+            </span>
+          )}
         </>,
         slots.end
       )}
+      {title &&
+        slots.title &&
+        createPortal(
+          <span className="truncate text-[1.0625rem] font-semibold">{title}</span>,
+          slots.title
+        )}
     </>
   );
 }

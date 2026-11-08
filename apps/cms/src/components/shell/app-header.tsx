@@ -3,6 +3,7 @@ import { useEffect, useState } from 'react';
 import { ChevronLeftIcon } from '@/components/icons';
 import { Separator } from '@/components/ui/separator';
 import { useIsMobile } from '@/hooks/use-mobile';
+import { cn } from '@/lib/utils';
 import { findNavItem, isEditorPath } from '@/lib/nav';
 import type { SessionUser } from '@/lib/session';
 import { AppBreadcrumbs } from './app-breadcrumbs';
@@ -69,8 +70,18 @@ export function AppHeader({ user }: { user: SessionUser }) {
         <span className="truncate text-[1.0625rem] font-semibold">{title}</span>
       </div>
 
+      {/* Phones: a title the page sets itself (PageActions), for a screen with no large one.
+          In the row, not centred on the screen, so it uses all the room between the sides. */}
+      <div
+        data-slot="page-actions-title"
+        className="flex min-w-0 flex-1 justify-center px-1 empty:hidden md:hidden"
+      />
+
       <div className="relative z-10 ml-auto flex items-center gap-1.5 max-md:gap-0">
-        <Notifications user={user} />
+        {/* The editor's bar needs the room for its title and Publish. */}
+        <div className={cn('contents', isEditorPath(pathname) && 'max-md:hidden')}>
+          <Notifications user={user} />
+        </div>
         {/* Phones: the page's … and + (PageActions). The account lives in More. */}
         <div data-slot="page-actions-end" className="flex items-center md:hidden" />
         <Separator

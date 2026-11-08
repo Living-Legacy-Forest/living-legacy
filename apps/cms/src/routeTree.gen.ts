@@ -12,6 +12,7 @@ import { Route as rootRouteImport } from './routes/__root'
 import { Route as AppRouteImport } from './routes/_app'
 import { Route as LoginRouteImport } from './routes/login'
 import { Route as AppIndexRouteImport } from './routes/_app/index'
+import { Route as ApiSentryTestRouteImport } from './routes/api/sentry-test'
 import { Route as AppActivityIndexRouteImport } from './routes/_app/activity/index'
 import { Route as AppAnnouncementsIndexRouteImport } from './routes/_app/announcements/index'
 import { Route as AppApiKeysIndexRouteImport } from './routes/_app/api-keys/index'
@@ -56,6 +57,11 @@ const AppIndexRoute = AppIndexRouteImport.update({
   id: '/',
   path: '/',
   getParentRoute: () => AppRoute,
+} as any)
+const ApiSentryTestRoute = ApiSentryTestRouteImport.update({
+  id: '/api/sentry-test',
+  path: '/api/sentry-test',
+  getParentRoute: () => rootRouteImport,
 } as any)
 const AppActivityIndexRoute = AppActivityIndexRouteImport.update({
   id: '/activity/',
@@ -211,6 +217,7 @@ const ApiV1PostsIdRoute = ApiV1PostsIdRouteImport.update({
 export interface FileRoutesByFullPath {
   '/': typeof AppIndexRoute
   '/login': typeof LoginRoute
+  '/api/sentry-test': typeof ApiSentryTestRoute
   '/posts/$postId': typeof AppPostsPostIdRoute
   '/posts/new': typeof AppPostsNewRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
@@ -244,6 +251,7 @@ export interface FileRoutesByFullPath {
 }
 export interface FileRoutesByTo {
   '/login': typeof LoginRoute
+  '/api/sentry-test': typeof ApiSentryTestRoute
   '/': typeof AppIndexRoute
   '/posts/$postId': typeof AppPostsPostIdRoute
   '/posts/new': typeof AppPostsNewRoute
@@ -280,6 +288,7 @@ export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/_app': typeof AppRouteWithChildren
   '/login': typeof LoginRoute
+  '/api/sentry-test': typeof ApiSentryTestRoute
   '/_app/': typeof AppIndexRoute
   '/_app/posts/$postId': typeof AppPostsPostIdRoute
   '/_app/posts/new': typeof AppPostsNewRoute
@@ -317,6 +326,7 @@ export interface FileRouteTypes {
   fullPaths:
     | '/'
     | '/login'
+    | '/api/sentry-test'
     | '/posts/$postId'
     | '/posts/new'
     | '/api/auth/$'
@@ -350,6 +360,7 @@ export interface FileRouteTypes {
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/login'
+    | '/api/sentry-test'
     | '/'
     | '/posts/$postId'
     | '/posts/new'
@@ -385,6 +396,7 @@ export interface FileRouteTypes {
     | '__root__'
     | '/_app'
     | '/login'
+    | '/api/sentry-test'
     | '/_app/'
     | '/_app/posts/$postId'
     | '/_app/posts/new'
@@ -421,6 +433,7 @@ export interface FileRouteTypes {
 export interface RootRouteChildren {
   AppRoute: typeof AppRouteWithChildren
   LoginRoute: typeof LoginRoute
+  ApiSentryTestRoute: typeof ApiSentryTestRoute
   ApiAuthSplatRoute: typeof ApiAuthSplatRoute
   ApiAvatarKeyRoute: typeof ApiAvatarKeyRoute
   ApiV1TermsRoute: typeof ApiV1TermsRoute
@@ -454,6 +467,13 @@ declare module '@tanstack/react-router' {
       fullPath: '/'
       preLoaderRoute: typeof AppIndexRouteImport
       parentRoute: typeof AppRoute
+    }
+    '/api/sentry-test': {
+      id: '/api/sentry-test'
+      path: '/api/sentry-test'
+      fullPath: '/api/sentry-test'
+      preLoaderRoute: typeof ApiSentryTestRouteImport
+      parentRoute: typeof rootRouteImport
     }
     '/_app/activity/': {
       id: '/_app/activity/'
@@ -723,6 +743,7 @@ const AppRouteWithChildren = AppRoute._addFileChildren(AppRouteChildren)
 const rootRouteChildren: RootRouteChildren = {
   AppRoute: AppRouteWithChildren,
   LoginRoute: LoginRoute,
+  ApiSentryTestRoute: ApiSentryTestRoute,
   ApiAuthSplatRoute: ApiAuthSplatRoute,
   ApiAvatarKeyRoute: ApiAvatarKeyRoute,
   ApiV1TermsRoute: ApiV1TermsRoute,

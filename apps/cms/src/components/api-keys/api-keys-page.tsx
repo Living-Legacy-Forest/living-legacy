@@ -22,6 +22,7 @@ import {
 import { FormCell, FormSection, groupBoxClass, groupHeadingClass } from '@/components/form-cells';
 import { DialogActions, ListDialog } from '@/components/list/list-page';
 import { PageActions } from '@/components/shell/page-actions';
+import { useSheetSaved } from '@/components/ui/drawer';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Spinner } from '@/components/ui/spinner';
@@ -259,19 +260,7 @@ function CreateKeyDialog({
       }
     >
       {created ? (
-        // A form so Done takes the sheet bar's place for Save on phones.
-        <form
-          onSubmit={(e) => {
-            e.preventDefault();
-            close();
-          }}
-          className="space-y-5"
-        >
-          <CopyableKey value={created} />
-          <DialogActions>
-            <Button type="submit">Done</Button>
-          </DialogActions>
-        </form>
+        <CreatedKey value={created} onDone={close} />
       ) : (
         <form noValidate onSubmit={submit} className="space-y-5 max-md:space-y-7">
           <FormSection>
@@ -322,6 +311,30 @@ function CreateKeyDialog({
         </form>
       )}
     </ListDialog>
+  );
+}
+
+/**
+ * The new key, shown once. The key is saved, so closing loses nothing: no
+ * "Discard changes?" on phones and no Cancel beside Done.
+ */
+function CreatedKey({ value, onDone }: { value: string; onDone: () => void }) {
+  const markSaved = useSheetSaved();
+  useEffect(markSaved, [markSaved]);
+  return (
+    // A form so Done takes the sheet bar's place for Save on phones.
+    <form
+      onSubmit={(e) => {
+        e.preventDefault();
+        onDone();
+      }}
+      className="space-y-5"
+    >
+      <CopyableKey value={value} />
+      <DialogActions cancel={false}>
+        <Button type="submit">Done</Button>
+      </DialogActions>
+    </form>
   );
 }
 

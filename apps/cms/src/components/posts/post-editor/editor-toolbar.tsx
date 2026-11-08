@@ -206,7 +206,13 @@ function PhoneBar({ editor, canDiscard, onImport }: ActionsProps) {
         disabled={working || (isLive && !dirty && !meta.hasDraft)}
         onClick={editor.publish}
       >
-        {editor.busy === 'publish' ? 'Publishing…' : isLive ? 'Update' : 'Publish'}
+        {editor.busy === 'publish'
+          ? 'Publishing…'
+          : isLive
+            ? 'Update'
+            : meta.scheduledAt
+              ? 'Publish now'
+              : 'Publish'}
       </button>
     );
   } else if (access === 'author') {

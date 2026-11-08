@@ -80,7 +80,7 @@ function RootDocument({ children }: { children: ReactNode }) {
       </head>
       <body>
         <TooltipProvider>{children}</TooltipProvider>
-        {/* On phones toasts sit at the bottom, above the tab bar. */}
+        {/* Toasts drop from the top on phones (components/ui/sonner.tsx), bottom right elsewhere. */}
         <Toaster />
         <Scripts />
       </body>

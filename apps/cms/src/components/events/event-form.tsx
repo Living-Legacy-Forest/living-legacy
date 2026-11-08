@@ -748,20 +748,28 @@ const SCOPE_DIALOG = 'data-[size=default]:sm:max-w-lg';
 function ScopeActions({
   series,
   label,
+  safe = false,
   onChoose,
 }: {
   series: boolean;
   label: string;
+  /** Saving loses nothing, so phones' action sheet does not draw it red. */
+  safe?: boolean;
   onChoose: (scope: SeriesScope) => void;
 }) {
+  const tone = safe ? 'default' : undefined;
   if (!series)
-    return <AlertDialogAction onClick={() => onChoose('one')}>{label}</AlertDialogAction>;
+    return (
+      <AlertDialogAction data-tone={tone} onClick={() => onChoose('one')}>
+        {label}
+      </AlertDialogAction>
+    );
   return (
     <>
-      <AlertDialogAction variant="outline" onClick={() => onChoose('one')}>
+      <AlertDialogAction data-tone={tone} variant="outline" onClick={() => onChoose('one')}>
         This date only
       </AlertDialogAction>
-      <AlertDialogAction onClick={() => onChoose('following')}>
+      <AlertDialogAction data-tone={tone} onClick={() => onChoose('following')}>
         This and upcoming dates
       </AlertDialogAction>
     </>
@@ -791,7 +799,7 @@ function ScopeDialog({
         </AlertDialogHeader>
         <AlertDialogFooter>
           <AlertDialogCancel>Cancel</AlertDialogCancel>
-          <ScopeActions series label="Save" onChoose={onChoose} />
+          <ScopeActions series safe label="Save" onChoose={onChoose} />
         </AlertDialogFooter>
       </AlertDialogContent>
     </AlertDialog>

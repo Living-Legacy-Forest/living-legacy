@@ -153,7 +153,10 @@ export function MediaPage({
                 }
               : undefined
           }
-          add={{ label: 'Upload images', onClick: () => fileInput.current?.click() }}
+          add={{
+            label: 'Upload images',
+            onClick: () => !pending && fileInput.current?.click(),
+          }}
         />
       </div>
 

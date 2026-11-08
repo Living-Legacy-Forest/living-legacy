@@ -15,6 +15,14 @@ function useInSheet() {
   return React.useContext(InSheetContext) !== null;
 }
 
+/** Marks the sheet as having nothing unsaved, for a step that follows a save. */
+function useSheetSaved() {
+  const sheet = React.useContext(InSheetContext);
+  return React.useCallback(() => {
+    if (sheet) sheet.dirty.current = false;
+  }, [sheet]);
+}
+
 type DrawerProps = Omit<DrawerPrimitive.Root.Props, 'children'> & { children?: React.ReactNode };
 type DrawerContentProps = DrawerPrimitive.Popup.Props;
 
@@ -224,4 +232,5 @@ export {
   useInSheet,
   type DrawerContentProps,
   type DrawerProps,
+  useSheetSaved,
 };

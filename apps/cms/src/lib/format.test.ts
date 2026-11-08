@@ -62,8 +62,9 @@ describe('dates in the site time zone', () => {
   it('names the end day only when a range crosses midnight', () => {
     const start = Date.UTC(2027, 2, 13, 23); // 10:00 am, 14 March in Melbourne
     expect(formatTimeRange(start, start + 2 * 3_600_000, MELBOURNE)).toBe('10:00 am – 12:00 pm');
+    // Versions of Node's locale data differ on the comma after the weekday.
     expect(formatTimeRange(start, start + 15 * 3_600_000, MELBOURNE)).toMatch(
-      /^Sun 14 Mar, 10:00 am – Mon 15 Mar, 1:00 am$/
+      /^Sun,? 14 Mar, 10:00 am – Mon,? 15 Mar, 1:00 am$/
     );
   });
 

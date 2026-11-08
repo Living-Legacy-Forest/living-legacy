@@ -114,6 +114,15 @@ share `components/list/`. A new list page should too:
 - Tappable rows are at least 44pt (`touch:min-h-11`).
 - Check changes at 390px with touch emulation as well as on desktop.
 
+### Tests
+
+`bun run --filter @ll/cms test` (or `test:unit`, `test:integration`). Put tests beside the code:
+
+- `*.test.ts`: unit tests, plain Node, no database.
+- `*.integration.test.ts`: real SQL in a local D1 and R2 (Miniflare) with every migration
+  applied; `cloudflare:workers`'s `env` holds them. Each file gets a fresh database; clear the
+  tables a test relies on in `beforeEach`. Helpers are in `apps/cms/test/fixtures.ts`.
+
 ### Rich-text editor
 
 `components/editor`, `components/extensions`, `components/templates` and

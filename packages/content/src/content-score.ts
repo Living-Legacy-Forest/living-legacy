@@ -89,6 +89,8 @@ const STATUS_VALUE = { pass: 1, warning: 0.5, critical: 0 } as const;
 const VAGUE_LINK_TEXT = /^(click here|here|read more|more|this link|link)$/i;
 const BARE_URL = /^(https?:\/\/|www\.)/i;
 const STUFFING_SHARE = 0.03;
+/** Keywords a permalink can carry without losing meaning: letters, digits, spaces, hyphens, apostrophes. */
+const SLUG_SAFE = /^[\p{L}\p{N}\s'’-]+$/u;
 
 const n = (value: number) => value.toLocaleString('en-AU');
 const plural = (count: number, word: string, many = `${word}s`) =>
@@ -219,15 +221,27 @@ export function analysePost(input: ScoreInput, guidelines: ContentGuidelines): C
     () => hasKeyword(description),
     'Search engines bold matching words in the snippet.'
   );
-  keywordCheck(
-    'keyword-in-slug',
-    'the permalink',
-    () => {
-      const segment = slugify(keyword);
-      return segment !== '' && `-${input.slug}-`.includes(`-${segment}-`);
-    },
-    'A readable address tells people what the page is before they open it.'
-  );
+  // A permalink keeps only letters and digits, so "C++" and "C#" both become
+  // "c". Judging those would pass or fail by accident, so they are skipped.
+  if (keyword && !SLUG_SAFE.test(keyword)) {
+    add(
+      'basic',
+      'keyword-in-slug',
+      'skipped',
+      'The focus keyword has symbols a permalink cannot hold, so the permalink is not checked.',
+      'A readable address tells people what the page is before they open it.'
+    );
+  } else {
+    keywordCheck(
+      'keyword-in-slug',
+      'the permalink',
+      () => {
+        const segment = slugify(keyword);
+        return segment !== '' && `-${input.slug}-`.includes(`-${segment}-`);
+      },
+      'A readable address tells people what the page is before they open it.'
+    );
+  }
   keywordCheck(
     'keyword-in-first-paragraph',
     'the first paragraph',
@@ -440,11 +454,12 @@ export function analysePost(input: ScoreInput, guidelines: ContentGuidelines): C
   );
 
   // Brand language
+  // Each distinct piece once: a search title that repeats the title would
+  // otherwise double every count.
   const brandText = [
-    input.title,
-    input.seoTitle,
-    input.seoDescription,
-    input.excerpt,
+    ...new Set(
+      [input.title, input.seoTitle, input.seoDescription, input.excerpt].map((text) => text.trim())
+    ),
     outline.text,
     ...outline.imageAlts,
   ].join('\n');

@@ -115,9 +115,20 @@ describe('analysePost', () => {
     expect(statusOf(result, 'keyword-stuffing')).toBe('skipped');
   });
 
-  it('does not pass the slug check for a keyword with no letters', () => {
-    const result = analysePost({ ...good, focusKeyword: '!!!' }, loose);
-    expect(statusOf(result, 'keyword-in-slug')).toBe('warning');
+  it('does not judge the slug for keywords with symbols a permalink drops', () => {
+    for (const focusKeyword of ['!!!', 'C++', 'C#']) {
+      const result = analysePost({ ...good, focusKeyword, slug: 'c-sharp-tips' }, loose);
+      expect([focusKeyword, statusOf(result, 'keyword-in-slug')]).toEqual([
+        focusKeyword,
+        'skipped',
+      ]);
+    }
+  });
+
+  it('counts brand problems once when the search title repeats the title', () => {
+    const title = 'A grave matter for families';
+    const result = analysePost({ ...good, title, seoTitle: title }, loose);
+    expect(result.brand.find((f) => f.found === 'grave')?.count).toBe(1);
   });
 
   it('matches the keyword to whole slug segments', () => {

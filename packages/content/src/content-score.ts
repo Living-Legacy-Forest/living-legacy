@@ -43,6 +43,8 @@ export interface ScoreCheck {
   status: CheckStatus;
   message: string;
   why: string;
+  /** Overrides the status's usual credit (pass 1, warning 0.5, critical 0), e.g. 0.5 for half a target. */
+  credit?: number;
 }
 
 export type RangeState = 'below' | 'within' | 'above';
@@ -67,12 +69,15 @@ export interface TermUse {
 
 export interface ContentScore {
   score: number;
-  categories: Record<ScoreCategory, number>;
+  /** null for a category with nothing to check yet. */
+  categories: Record<ScoreCategory, number | null>;
   checks: ScoreCheck[];
   structure: StructureCount[];
   terms: TermUse[];
   brand: BrandFinding[];
   source: ContentGuidelines['source'];
+  /** Set when the score is held down because the post is short of its word target. */
+  held: { score: number; reason: string } | null;
 }
 
 /** Weights total 100. */
@@ -89,6 +94,8 @@ const STATUS_VALUE = { pass: 1, warning: 0.5, critical: 0 } as const;
 const VAGUE_LINK_TEXT = /^(click here|here|read more|more|this link|link)$/i;
 const BARE_URL = /^(https?:\/\/|www\.)/i;
 const STUFFING_SHARE = 0.03;
+/** The most a post with a few words can score; the rest comes with length (see analysePost). */
+const SHORT_POST_FLOOR = 40;
 /** Keywords a permalink can carry without losing meaning: letters, digits, spaces, hyphens, apostrophes. */
 const SLUG_SAFE = /^[\p{L}\p{N}\s'’-]+$/u;
 
@@ -163,19 +170,31 @@ export function guidelinesFromSettings(
 }
 
 /** Category scores and the weighted total. Skipped checks do not count. */
+/**
+ * Category scores and the weighted total. Skipped checks do not count, and a
+ * category with nothing to check is left out of the total rather than given
+ * full marks for it.
+ */
 export function scoreChecks(checks: ScoreCheck[]): Pick<ContentScore, 'score' | 'categories'> {
-  const categories = {} as Record<ScoreCategory, number>;
+  const categories = {} as Record<ScoreCategory, number | null>;
   let total = 0;
+  let weights = 0;
   for (const { id, weight } of SCORE_CATEGORIES) {
     const scored = checks.filter((c) => c.category === id && c.status !== 'skipped');
-    const value = scored.length
-      ? scored.reduce((sum, c) => sum + STATUS_VALUE[c.status as keyof typeof STATUS_VALUE], 0) /
-        scored.length
-      : 1;
+    if (!scored.length) {
+      categories[id] = null;
+      continue;
+    }
+    const value =
+      scored.reduce(
+        (sum, c) => sum + (c.credit ?? STATUS_VALUE[c.status as keyof typeof STATUS_VALUE]),
+        0
+      ) / scored.length;
     categories[id] = Math.round(value * 100);
     total += value * weight;
+    weights += weight;
   }
-  return { score: Math.round(total), categories };
+  return { score: weights ? Math.round((total / weights) * 100) : 0, categories };
 }
 
 export function analysePost(input: ScoreInput, guidelines: ContentGuidelines): ContentScore {
@@ -186,8 +205,19 @@ export function analysePost(input: ScoreInput, guidelines: ContentGuidelines): C
     id: string,
     status: CheckStatus,
     message: string,
-    why: string
-  ) => checks.push({ id, category, status, message, why });
+    why: string,
+    credit?: number
+  ) =>
+    checks.push({
+      id,
+      category,
+      status,
+      message,
+      why,
+      ...(credit === undefined ? {} : { credit }),
+    });
+  /** Credit for a count part way to its minimum: 300 of 600 earns half, none earns nothing. */
+  const progress = (value: number, min: number) => (min > 0 ? Math.min(1, value / min) : 1);
   const passIf = (ok: boolean, otherwise: 'warning' | 'critical' = 'warning'): CheckStatus =>
     ok ? 'pass' : otherwise;
 
@@ -212,8 +242,10 @@ export function analysePost(input: ScoreInput, guidelines: ContentGuidelines): C
   add(
     'basic',
     'title-length',
-    passIf(title.length >= 30 && title.length <= 60),
-    `The search title is ${plural(title.length, 'character')} (aim for 30 to 60).`,
+    title ? passIf(title.length >= 30 && title.length <= 60) : 'critical',
+    title
+      ? `The search title is ${plural(title.length, 'character')} (aim for 30 to 60).`
+      : 'No title yet.',
     'Search results cut off long titles, and short ones waste the space.'
   );
   add(
@@ -300,7 +332,8 @@ export function analysePost(input: ScoreInput, guidelines: ContentGuidelines): C
       `${key}-count`,
       passIf(s.state === 'within'),
       `${n(s.value)} ${s.label.toLowerCase()} (target ${formatRange(s.target)}).`,
-      why
+      why,
+      s.state === 'below' ? progress(s.value, s.target.min) : undefined
     );
   };
 
@@ -327,7 +360,8 @@ export function analysePost(input: ScoreInput, guidelines: ContentGuidelines): C
     focus
       ? `The focus keyword appears ${plural(focus.count, 'time')} in the body (aim for at least ${n(focus.min)}).`
       : 'Add a focus keyword to count its uses.',
-    'Using the phrase naturally tells readers and search engines what the post covers.'
+    'Using the phrase naturally tells readers and search engines what the post covers.',
+    focus && focus.state !== 'met' ? progress(focus.count, focus.min) : undefined
   );
   const share =
     focus && counts.words ? (focus.count * splitWords(keyword).length) / counts.words : 0;
@@ -351,7 +385,10 @@ export function analysePost(input: ScoreInput, guidelines: ContentGuidelines): C
       : short.length
         ? `Not used enough yet: ${short.map((term) => term.term).join(', ')}.`
         : 'Every related term is used.',
-    'Related terms help the post cover the whole topic.'
+    'Related terms help the post cover the whole topic.',
+    short.length
+      ? related.reduce((sum, term) => sum + progress(term.count, term.min), 0) / related.length
+      : undefined
   );
 
   const sentenceWords = outline.sentences.map((sentence) => splitWords(sentence).length);
@@ -402,7 +439,7 @@ export function analysePost(input: ScoreInput, guidelines: ContentGuidelines): C
   add(
     'technical',
     'no-h1',
-    passIf(h1s === 0),
+    levels.length ? passIf(h1s === 0) : 'skipped',
     h1s
       ? `${plural(h1s, 'H1')} in the body. The post title is already the H1.`
       : 'No H1 in the body.',
@@ -454,7 +491,8 @@ export function analysePost(input: ScoreInput, guidelines: ContentGuidelines): C
     internal
       ? `${plural(internal, 'link')} to other pages on the site.`
       : 'No links to other pages on the site.',
-    'Internal links help readers, and search engines, find related pages.'
+    'Internal links help readers, and search engines, find related pages.',
+    internal ? undefined : 0
   );
   const vague = outline.links.filter(
     (link) => VAGUE_LINK_TEXT.test(link.text) || BARE_URL.test(link.text)
@@ -480,6 +518,10 @@ export function analysePost(input: ScoreInput, guidelines: ContentGuidelines): C
     ...outline.imageAlts,
   ].join('\n');
   const brand = findBrandProblems(brandText);
+  // With no text yet there is nothing to judge, so these are skipped, not passed.
+  const hasText = brandText.trim() !== '';
+  const brandStatus = (ok: boolean, otherwise: 'warning' | 'critical' = 'warning') =>
+    hasText ? passIf(ok, otherwise) : 'skipped';
   const never = brand.filter((f) => f.kind === 'term' && f.severity === 'critical');
   const avoid = brand.filter((f) => f.kind === 'term' && f.severity === 'warning');
   const spelling = brand.filter((f) => f.kind === 'spelling');
@@ -487,21 +529,21 @@ export function analysePost(input: ScoreInput, guidelines: ContentGuidelines): C
   add(
     'brand',
     'brand-never',
-    passIf(!never.length, 'critical'),
+    brandStatus(!never.length, 'critical'),
     never.length ? `Words the brand never uses: ${found(never)}.` : 'None of the never-use words.',
     'The brand language guide rules these out for every customer-facing word.'
   );
   add(
     'brand',
     'brand-avoid',
-    passIf(!avoid.length),
+    brandStatus(!avoid.length),
     avoid.length ? `Words to check: ${found(avoid)}.` : 'None of the words to avoid.',
     'These are usually wrong for the brand, though some are fine in context.'
   );
   add(
     'brand',
     'brand-spelling',
-    passIf(!spelling.length, 'critical'),
+    brandStatus(!spelling.length, 'critical'),
     spelling.length
       ? `EarthSApHE written as ${found(spelling)}.`
       : 'EarthSApHE is written correctly wherever it appears.',
@@ -512,12 +554,35 @@ export function analysePost(input: ScoreInput, guidelines: ContentGuidelines): C
   add(
     'brand',
     'punctuation',
-    passIf(!dashes && !bangs),
+    brandStatus(!dashes && !bangs),
     dashes || bangs
       ? `${plural(dashes, 'dash', 'dashes')} and ${plural(bangs, 'exclamation mark')}.`
       : 'No em or en dashes and no exclamation marks.',
     'House style uses neither in information copy.'
   );
 
-  return { ...scoreChecks(checks), checks, structure, terms, brand, source: guidelines.source };
+  const scored = scoreChecks(checks);
+  // Setup (title, description, image) can't carry a post that is barely
+  // written: below the word target the score is held to 40, plus up to 60 more
+  // as the words arrive. Nothing written yet scores nothing.
+  const cap = Math.round(
+    SHORT_POST_FLOOR + (100 - SHORT_POST_FLOOR) * progress(counts.words, guidelines.words.min)
+  );
+  const held =
+    counts.words > 0 && scored.score > cap
+      ? {
+          score: cap,
+          reason: `Held at ${cap} until the post has ${n(guidelines.words.min)} words.`,
+        }
+      : null;
+  return {
+    ...scored,
+    score: counts.words === 0 ? 0 : Math.min(scored.score, cap),
+    held,
+    checks,
+    structure,
+    terms,
+    brand,
+    source: guidelines.source,
+  };
 }

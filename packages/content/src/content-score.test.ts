@@ -5,6 +5,7 @@ import {
   type ScoreCheck,
   type ScoreInput,
   analysePost,
+  SCORE_BANDS,
   formatRange,
   structureCaption,
   structureProgress,
@@ -301,5 +302,14 @@ describe('structureCaption and structureProgress', () => {
     expect(structureCaption(at(10, 1, 8))).toBe('2 too many');
     expect(structureProgress(at(10, 1, 8))).toBe(1);
     expect(structureProgress(at(0, 0, 8))).toBe(1);
+  });
+});
+
+describe('SCORE_BANDS', () => {
+  it('sets where Good and Strong start, for the editor and the dashboard alike', () => {
+    expect(SCORE_BANDS).toEqual({ good: 50, strong: 80 });
+    expect(scoreBand(SCORE_BANDS.good - 1).band).toBe('low');
+    expect(scoreBand(SCORE_BANDS.good).band).toBe('mid');
+    expect(scoreBand(SCORE_BANDS.strong).band).toBe('high');
   });
 });

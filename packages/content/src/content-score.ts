@@ -119,9 +119,12 @@ export function structureProgress({ value, target, state }: StructureCount): num
   return Math.min(1, value / target.min);
 }
 
+/** Where the Good and Strong bands start. The dashboard counts posts with the same lines. */
+export const SCORE_BANDS = { good: 50, strong: 80 } as const;
+
 export function scoreBand(score: number): { band: 'low' | 'mid' | 'high'; label: string } {
-  if (score >= 80) return { band: 'high', label: 'Strong' };
-  if (score >= 50) return { band: 'mid', label: 'Good' };
+  if (score >= SCORE_BANDS.strong) return { band: 'high', label: 'Strong' };
+  if (score >= SCORE_BANDS.good) return { band: 'mid', label: 'Good' };
   return { band: 'low', label: 'Needs work' };
 }
 

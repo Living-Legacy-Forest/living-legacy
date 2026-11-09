@@ -90,8 +90,6 @@ export function PostEditor({
                 key={editor.bodyKey}
                 title={values.title}
                 onTitleChange={editor.setTitle}
-                excerpt={values.excerpt}
-                onExcerptChange={(excerpt) => update({ excerpt })}
                 body={values.body}
                 onBodyChange={(body) => update({ body })}
                 readOnly={editor.contentLocked}

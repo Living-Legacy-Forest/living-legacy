@@ -1,5 +1,5 @@
 // Stands in for the document editor while it loads, laid out like it: the
-// toolbar, the page with its title, summary and text, and the word count.
+// toolbar, the page with its title and text, and the word count.
 // Kept apart from document-editor.tsx so it loads without ProseMirror.
 import { Skeleton } from '@/components/ui/skeleton';
 import { CANVAS } from '@/components/templates/simple-document-editor/constants';

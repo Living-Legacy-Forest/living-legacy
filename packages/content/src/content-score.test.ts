@@ -6,6 +6,7 @@ import {
   type ScoreInput,
   analysePost,
   SCORE_BANDS,
+  SCORE_CATEGORIES,
   formatRange,
   structureCaption,
   structureProgress,
@@ -32,6 +33,11 @@ const img = (alt?: string) => ({
   attrs: { src: '/media/a.jpg', ...(alt === undefined ? {} : { alt }) },
 });
 const doc = (...content: object[]) => ({ type: 'doc', content }) as RichTextDoc;
+
+const contentTargets = guidelinesFromSettings(contentTargetsFrom(SITE_SETTINGS_DEFAULTS), {
+  focusKeyword: 'Legacy Infusion Ceremony',
+  relatedTerms: [],
+});
 
 const loose: ContentGuidelines = {
   source: 'settings',
@@ -207,7 +213,7 @@ describe('analysePost', () => {
     expect(statusOf(result, 'related-terms')).toBe('warning');
   });
 
-  it('scores an empty new post without NaN and skips the body checks', () => {
+  it('scores an empty new post 0 and judges nothing it does not have', () => {
     const result = analysePost(
       {
         ...good,
@@ -220,7 +226,9 @@ describe('analysePost', () => {
       },
       { ...loose, terms: [] }
     );
-    expect(Number.isInteger(result.score)).toBe(true);
+    expect(result.score).toBe(0);
+    expect(statusOf(result, 'title-length')).toBe('critical');
+    expect(statusOf(result, 'no-h1')).toBe('skipped');
     expect(statusOf(result, 'sentence-length')).toBe('skipped');
     expect(statusOf(result, 'alt-text')).toBe('skipped');
   });
@@ -231,21 +239,34 @@ describe('analysePost', () => {
 });
 
 describe('scoreChecks', () => {
+  const allPass = SCORE_CATEGORIES.map((c) => check(c.id, 'pass'));
+  const without = (id: ScoreCheck['category']) => allPass.filter((c) => c.category !== id);
+
   it('scores 100 when everything passes', () => {
-    expect(scoreChecks([check('basic', 'pass'), check('brand', 'pass')]).score).toBe(100);
+    expect(scoreChecks(allPass).score).toBe(100);
   });
 
   it('weights categories, counts a warning as half and a critical issue as nothing', () => {
-    const basicHalf = scoreChecks([check('basic', 'pass'), check('basic', 'critical')]);
+    const basicHalf = scoreChecks([
+      ...without('basic'),
+      check('basic', 'pass'),
+      check('basic', 'critical'),
+    ]);
     expect(basicHalf.categories.basic).toBe(50);
     expect(basicHalf.score).toBe(88); // 100 - 25 x 0.5 = 87.5
-    expect(scoreChecks([check('technical', 'warning')]).score).toBe(95); // 100 - 10 x 0.5
+    expect(scoreChecks([...without('technical'), check('technical', 'warning')]).score).toBe(95);
   });
 
-  it('leaves skipped checks out, and a category with none left scores 100', () => {
+  it("uses a check's own credit when it has one", () => {
+    const partWay = { ...check('content', 'warning'), credit: 0.2 };
+    expect(scoreChecks([...without('content'), partWay]).score).toBe(80); // 100 - 25 x 0.8
+  });
+
+  it('leaves a category with nothing to check out of the total', () => {
     const result = scoreChecks([check('links', 'skipped'), check('images', 'critical')]);
-    expect(result.categories.links).toBe(100);
-    expect(result.score).toBe(85);
+    expect(result.categories.links).toBeNull();
+    expect(result.score).toBe(0);
+    expect(scoreChecks([check('basic', 'pass'), check('links', 'skipped')]).score).toBe(100);
   });
 });
 
@@ -311,5 +332,53 @@ describe('SCORE_BANDS', () => {
     expect(scoreBand(SCORE_BANDS.good - 1).band).toBe('low');
     expect(scoreBand(SCORE_BANDS.good).band).toBe('mid');
     expect(scoreBand(SCORE_BANDS.strong).band).toBe('high');
+  });
+});
+
+describe('analysePost credit', () => {
+  const words = (n: number) => doc(p(t(Array.from({ length: n }, () => 'tree').join(' '))));
+  const credit = (result: ContentScore, id: string) =>
+    result.checks.find((c) => c.id === id)?.credit;
+
+  it('gives a count below its target credit for how far along it is', () => {
+    const targets = { ...loose, words: { min: 600, max: 2000 } };
+    expect(credit(analysePost({ ...good, body: words(300) }, targets), 'words-count')).toBe(0.5);
+    expect(credit(analysePost({ ...good, body: words(0) }, targets), 'words-count')).toBe(0);
+    expect(
+      credit(analysePost({ ...good, body: words(700) }, targets), 'words-count')
+    ).toBeUndefined();
+  });
+
+  it('gives no credit for a missing internal link', () => {
+    const result = analysePost({ ...good, body: words(10) }, loose);
+    expect(statusOf(result, 'internal-link')).toBe('warning');
+    expect(credit(result, 'internal-link')).toBe(0);
+  });
+
+  it('skips brand language when there is no text to check', () => {
+    const result = analysePost(
+      { ...good, title: '', seoTitle: '', seoDescription: '', excerpt: '', body: null },
+      loose
+    );
+    expect(statusOf(result, 'brand-never')).toBe('skipped');
+    expect(statusOf(result, 'punctuation')).toBe('skipped');
+    expect(result.categories.brand).toBeNull();
+  });
+
+  it("holds a short post's score down until it reaches the word target, and says so", () => {
+    const targets = { ...loose, words: { min: 600, max: 2000 } };
+    const short = analysePost({ ...good, body: words(13) }, targets);
+    expect(short.score).toBe(41); // 40 + 60 x 13/600
+    expect(short.held).toEqual({ score: 41, reason: 'Held at 41 until the post has 600 words.' });
+    const half = analysePost({ ...good, body: words(300) }, targets);
+    expect(half.score).toBeLessThanOrEqual(70);
+    expect(analysePost(good, loose).held).toBeNull();
+  });
+
+  it('scores a few lines well below a full post', () => {
+    const short = analysePost({ ...good, body: words(13) }, contentTargets);
+    const full = analysePost(good, contentTargets);
+    expect(short.score).toBeLessThan(50);
+    expect(full.score).toBeGreaterThan(short.score);
   });
 });

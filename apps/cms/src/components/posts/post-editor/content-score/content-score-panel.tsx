@@ -21,6 +21,9 @@ export function ContentScorePanel({ result }: { result: ContentScore }) {
     <div className="space-y-5 pt-3">
       <div className="flex flex-col items-center">
         <ScoreGauge score={result.score} />
+        {result.held && (
+          <p className="text-muted-foreground mt-1 text-center text-xs">{result.held.reason}</p>
+        )}
         <Collapsible open={details} onOpenChange={setDetails} className="w-full">
           <CollapsibleTrigger className="group text-muted-foreground hover:text-foreground touch:min-h-11 mx-auto flex min-h-8 items-center gap-1 text-xs">
             Details

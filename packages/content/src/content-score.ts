@@ -106,6 +106,19 @@ export function formatRange(range: Range): string {
   return range.max === null ? `at least ${n(range.min)}` : `${n(range.min)} to ${n(range.max)}`;
 }
 
+/** What to do about a structure count, short enough for one line in the panel. */
+export function structureCaption({ value, target, state }: StructureCount): string {
+  if (state === 'below') return `Need ${n(target.min - value)} more`;
+  if (state === 'above' && target.max !== null) return `${n(value - target.max)} too many`;
+  return 'In range';
+}
+
+/** How far a count is towards its minimum, from 0 to 1. In range or over is full. */
+export function structureProgress({ value, target, state }: StructureCount): number {
+  if (state !== 'below' || target.min <= 0) return 1;
+  return Math.min(1, value / target.min);
+}
+
 export function scoreBand(score: number): { band: 'low' | 'mid' | 'high'; label: string } {
   if (score >= 80) return { band: 'high', label: 'Strong' };
   if (score >= 50) return { band: 'mid', label: 'Good' };

@@ -6,6 +6,8 @@ import {
   type ScoreInput,
   analysePost,
   formatRange,
+  structureCaption,
+  structureProgress,
   guidelinesFromSettings,
   scoreBand,
   scoreChecks,
@@ -276,5 +278,28 @@ describe('formatRange and scoreBand', () => {
     expect(scoreBand(49).label).toBe('Needs work');
     expect(scoreBand(50).label).toBe('Good');
     expect(scoreBand(80).label).toBe('Strong');
+  });
+});
+
+describe('structureCaption and structureProgress', () => {
+  const at = (value: number, min: number, max: number | null) => {
+    const target = { min, max };
+    const state = value < min ? 'below' : max !== null && value > max ? 'above' : 'within';
+    return { key: 'words' as const, label: 'Words', value, target, state } as const;
+  };
+
+  it('says how many more are needed, and how far along the count is', () => {
+    expect(structureCaption(at(3, 600, 2000))).toBe('Need 597 more');
+    expect(structureProgress(at(3, 600, 2000))).toBeCloseTo(0.005);
+    expect(structureCaption(at(0, 3, 12))).toBe('Need 3 more');
+    expect(structureProgress(at(0, 3, 12))).toBe(0);
+  });
+
+  it('says when a count is in range or over, with a full bar', () => {
+    expect(structureCaption(at(2, 1, 8))).toBe('In range');
+    expect(structureCaption(at(9, 5, null))).toBe('In range');
+    expect(structureCaption(at(10, 1, 8))).toBe('2 too many');
+    expect(structureProgress(at(10, 1, 8))).toBe(1);
+    expect(structureProgress(at(0, 0, 8))).toBe(1);
   });
 });

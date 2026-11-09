@@ -1,20 +1,13 @@
 import {
   type BrandFinding,
   type ContentScore,
-  type RangeState,
   type StructureCount,
   type TermUse,
-  formatRange,
+  structureCaption,
+  structureProgress,
 } from '@ll/content';
 import { useState } from 'react';
-import {
-  ArrowDownIcon,
-  ArrowUpIcon,
-  CheckIcon,
-  ChevronRightIcon,
-  CircleAlertIcon,
-  TriangleAlertIcon,
-} from '@/components/icons';
+import { ChevronRightIcon, CircleAlertIcon, TriangleAlertIcon } from '@/components/icons';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import { cn } from '@/lib/utils';
 import { ScoreChecks } from './score-checks';
@@ -61,43 +54,47 @@ function Heading({ id, children }: { id: string; children: string }) {
   );
 }
 
+const BAR = {
+  within: 'bg-emerald-600 dark:bg-emerald-400',
+  below: 'bg-amber-500',
+  above: 'bg-amber-500',
+} as const;
+
 function Structure({ structure }: { structure: StructureCount[] }) {
   return (
     <section aria-labelledby="score-structure" className="space-y-2">
       <Heading id="score-structure">Structure</Heading>
-      <dl className="grid grid-cols-2 gap-2">
+      <ul className="grid grid-cols-2 gap-2">
         {structure.map((s) => (
-          <div key={s.key} className="bg-muted/50 min-w-0 rounded-md px-2.5 py-2">
-            <dt className="text-muted-foreground truncate text-[0.65rem] tracking-wide uppercase">
-              {s.label}
-            </dt>
-            <dd className="flex items-center gap-0.5 font-semibold tabular-nums">
-              {s.value.toLocaleString('en-AU')}
-              <RangeMark state={s.state} />
-            </dd>
-            <dd className="text-muted-foreground text-[0.65rem] tabular-nums">
-              {formatRange(s.target)}
-            </dd>
-          </div>
+          <li key={s.key} className="bg-muted/50 min-w-0 space-y-1.5 rounded-md px-2.5 py-2">
+            <p className="flex items-baseline justify-between gap-2">
+              <span className="text-muted-foreground truncate text-xs">{s.label}</span>
+              <span className="text-sm font-semibold tabular-nums">
+                {s.value.toLocaleString('en-AU')}
+              </span>
+            </p>
+            {/* The caption says the same in words, so the bar is decoration. */}
+            <div aria-hidden className="bg-border h-1 overflow-hidden rounded-full">
+              <div
+                className={cn(
+                  'h-full rounded-full transition-[width] duration-300 motion-reduce:transition-none',
+                  BAR[s.state]
+                )}
+                style={{ width: `${Math.round(structureProgress(s) * 100)}%` }}
+              />
+            </div>
+            <p
+              className={cn(
+                'text-[0.7rem] leading-tight',
+                s.state === 'within' ? 'text-muted-foreground' : tone.mid
+              )}
+            >
+              {structureCaption(s)}
+            </p>
+          </li>
         ))}
-      </dl>
+      </ul>
     </section>
-  );
-}
-
-const RANGE_MARK = {
-  within: { Icon: CheckIcon, className: tone.good, label: 'within target' },
-  below: { Icon: ArrowUpIcon, className: tone.mid, label: 'below target' },
-  above: { Icon: ArrowDownIcon, className: tone.mid, label: 'above target' },
-} as const;
-
-function RangeMark({ state }: { state: RangeState }) {
-  const { Icon, className, label } = RANGE_MARK[state];
-  return (
-    <>
-      <Icon aria-hidden className={cn('size-3', className)} />
-      <span className="sr-only">{label}</span>
-    </>
   );
 }
 

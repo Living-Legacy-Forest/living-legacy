@@ -478,6 +478,7 @@ export function usePostEditor({
     access,
     reviewers: data.reviewers,
     authors: data.authors,
+    contentTargets: data.contentTargets,
     tags: data.tags,
     revisions: data.revisions,
     values,

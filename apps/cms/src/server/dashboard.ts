@@ -6,6 +6,7 @@ import { getDb } from '@/lib/db';
 import { authMiddleware } from '@/lib/session';
 import { loadContentChecks } from './content-checks';
 import { loadMissingPages } from './not-found';
+import { loadScoreSummary } from './post-score';
 
 const DAY_MS = 86_400_000;
 
@@ -23,6 +24,10 @@ export const getDashboardData = createServerFn({ method: 'GET' })
     const db = getDb();
     const now = Date.now();
     const attention = loadAttention(db, context.user, now);
+    // Scores are for the people who can act on them, like the content checks.
+    const { role } = context.user;
+    const scores =
+      can(role, 'posts:publish') || can(role, 'seo:write') ? loadScoreSummary(db) : null;
     const notTrashed = isNull(posts.deletedAt);
     const isPublished = and(eq(posts.status, 'published'), notTrashed);
     const since = (days: number) => new Date(now - days * DAY_MS);
@@ -108,6 +113,7 @@ export const getDashboardData = createServerFn({ method: 'GET' })
       recentDrafts: drafts.map(toSummary),
       recentlyPublished: published.map(toSummary),
       attention: await attention,
+      scores: await scores,
     };
   });
 

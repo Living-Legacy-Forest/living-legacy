@@ -4,6 +4,7 @@ import { postTerms, posts, publishEvents, redirects, revisions, terms, user } fr
 import { and, asc, eq, inArray, isNull, ne } from 'drizzle-orm';
 import type { BatchItem } from 'drizzle-orm/batch';
 import { logActivity } from './activity-log';
+import { loadContentTargets, scorePost } from './post-score';
 
 // Database operations for posts, shared by the server functions and the
 // scheduler (which runs outside any request, so nothing here reads one).
@@ -119,6 +120,11 @@ export async function columnWrites(db: Db, id: string, input: PostInput) {
     ...(await validCategoryIds(db, input.categoryIds)),
     ...(await resolveTagIds(db, input.tags)),
   ];
+  // Scored with the permalink the server will use: the one given, or the title's.
+  const contentScore = scorePost(
+    { ...input, slug: input.slug || slugify(input.title) },
+    await loadContentTargets(db)
+  );
   const columns = {
     title: input.title,
     excerpt: input.excerpt || null,
@@ -131,6 +137,7 @@ export async function columnWrites(db: Db, id: string, input: PostInput) {
     noindex: input.noindex,
     focusKeyword: input.focusKeyword || null,
     relatedTerms: input.relatedTerms,
+    contentScore,
   };
   const termStatements: Statement[] = [
     db.delete(postTerms).where(eq(postTerms.postId, id)),

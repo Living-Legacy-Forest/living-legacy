@@ -30,6 +30,7 @@ const row = (overrides: Partial<PostRow> = {}): PostRow => ({
   noindex: false,
   focusKeyword: null,
   relatedTerms: [],
+  contentScore: null,
   scheduledAt: null,
   reviewRequestedAt: null,
   reviewerId: null,

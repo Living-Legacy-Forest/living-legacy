@@ -25,6 +25,7 @@ import { cmsOrigin, sendReviewRequestedEmail } from '@/lib/email';
 import { type SessionUser, authMiddleware, requirePermission } from '@/lib/session';
 import { readSiteSettings } from '@/lib/site-settings';
 import { logActivity } from './activity-log';
+import { loadContentTargets, scoreInputFromColumns, scorePost } from './post-score';
 import {
   type PostRow,
   type Statement,
@@ -505,12 +506,18 @@ export const savePostSeo = createServerFn({ method: 'POST' })
       focusKeyword: data.focusKeyword || null,
       relatedTerms: data.relatedTerms,
     };
+    // The columns change, so their score does too.
+    const contentScore = scorePost(
+      scoreInputFromColumns({ ...row, ...seo }),
+      await loadContentTargets(db)
+    );
     const now = new Date();
     const statements: Statement[] = [
       db
         .update(posts)
         .set({
           ...seo,
+          contentScore,
           draft: row.draft
             ? {
                 ...row.draft,

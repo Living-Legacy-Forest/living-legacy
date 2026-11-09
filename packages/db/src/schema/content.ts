@@ -55,6 +55,8 @@ export const posts = sqliteTable(
     ogMediaId: text('og_media_id').references(() => media.id, { onDelete: 'set null' }),
     noindex: integer('noindex', { mode: 'boolean' }).notNull().default(false),
     focusKeyword: text('focus_keyword'),
+    /** The content score of the post's columns (its live version once published). Advice only. */
+    contentScore: integer('content_score'),
     relatedTerms: text('related_terms', { mode: 'json' }).$type<string[]>().notNull().default([]),
     /** When a draft goes live on its own; cleared on publish, unschedule or trash. */
     scheduledAt: integer('scheduled_at', { mode: 'timestamp_ms' }),

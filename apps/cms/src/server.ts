@@ -40,7 +40,7 @@ function noFraming(response: Response) {
 // wrangler.jsonc: every five minutes, publish scheduled posts and events and
 // sync event bookings to HubSpot (once connected; HubSpot sends the guest
 // emails); daily, clear out unused stored files, delete bookings a year after
-// their event, and forget missing pages nobody has asked for in 90 days.
+// their event, forget missing pages nobody has asked for in 90 days, and rescore every post.
 //
 // withSentry reports errors from both, and traces requests, cron runs and D1.
 export default Sentry.withSentry(
@@ -71,17 +71,23 @@ export default Sentry.withSentry(
     async scheduled(controller, env, ctx) {
       const now = new Date(controller.scheduledTime);
       if (controller.cron === MEDIA_SWEEP_CRON) {
-        const [{ sweepOrphanedMedia }, { purgeOldBookings }, { pruneMissingPages }] =
-          await Promise.all([
-            import('./server/media-sweep'),
-            import('./server/event-jobs'),
-            import('./server/not-found'),
-          ]);
+        const [
+          { sweepOrphanedMedia },
+          { purgeOldBookings },
+          { pruneMissingPages },
+          { rescorePosts },
+        ] = await Promise.all([
+          import('./server/media-sweep'),
+          import('./server/event-jobs'),
+          import('./server/not-found'),
+          import('./server/post-score'),
+        ]);
         ctx.waitUntil(
           Promise.all([
             sweepOrphanedMedia(env.DB, env.MEDIA, now),
             purgeOldBookings(env.DB, now),
             pruneMissingPages(env.DB, now),
+            rescorePosts(env.DB),
           ])
         );
         return;

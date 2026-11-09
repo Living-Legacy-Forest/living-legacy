@@ -8,6 +8,17 @@
 @import './components/extensions/table/style.css';
 @import './components/static-renderer/style.css';
 
+/* A quiet scrollbar for panels that scroll on their own: thin, no track, and
+   only shown while the pointer is over the panel or something in it has focus. */
+@utility scrollbar-subtle {
+  scrollbar-width: thin;
+  scrollbar-color: transparent transparent;
+  &:hover,
+  &:focus-within {
+    scrollbar-color: color-mix(in oklab, var(--muted-foreground) 30%, transparent) transparent;
+  }
+}
+
 /* `dark:` utilities match a .dark class on <html>, set server-side from the
    site's Theme setting (and client-side for "system"); see __root.tsx. */
 @custom-variant dark (&:where(.dark, .dark *));

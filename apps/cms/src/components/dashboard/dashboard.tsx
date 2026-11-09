@@ -12,6 +12,8 @@ import { DashboardStats } from './stats';
 const LocationsCard = lazy(() =>
   import('./locations-card').then((m) => ({ default: m.LocationsCard }))
 );
+// The chart library likewise loads with the card that needs it.
+const ScoreCard = lazy(() => import('./score-card').then((m) => ({ default: m.ScoreCard })));
 
 /** What needs doing comes first; counts and recent work sit around it for context. */
 export function Dashboard({ data }: { data: DashboardData }) {
@@ -26,6 +28,20 @@ export function Dashboard({ data }: { data: DashboardData }) {
       >
         <LocationsCard locations={data.locations} />
       </Suspense>
+      {data.scores && (
+        <Suspense
+          fallback={
+            <ChartPlaceholder
+              title="Content score"
+              className="col-span-2 lg:col-span-4"
+              chartClassName="h-40"
+              footer
+            />
+          }
+        >
+          <ScoreCard scores={data.scores} />
+        </Suspense>
+      )}
       <RecentPosts drafts={data.recentDrafts} published={data.recentlyPublished} />
       <AppVersion />
     </div>

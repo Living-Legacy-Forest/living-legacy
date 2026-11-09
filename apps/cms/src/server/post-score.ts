@@ -109,7 +109,7 @@ export async function loadScoreSummary(db: Db) {
     bands: { low: Number(t?.low ?? 0), mid: Number(t?.mid ?? 0), high: Number(t?.high ?? 0) },
     scored: Number(t?.scored ?? 0),
     unscored: Number(t?.unscored ?? 0),
-    average: t?.average == null ? null : Math.round(Number(t.average)),
+    average: t?.average === null || t?.average === undefined ? null : Math.round(Number(t.average)),
     lowest,
   };
 }

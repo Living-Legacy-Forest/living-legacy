@@ -1,6 +1,15 @@
 import { type PostInput, blogPath, publishErrors, slugify } from '@ll/content';
 import type { Db } from '@ll/db';
-import { postTerms, posts, publishEvents, redirects, revisions, terms, user } from '@ll/db/schema';
+import {
+  locations,
+  postTerms,
+  posts,
+  publishEvents,
+  redirects,
+  revisions,
+  terms,
+  user,
+} from '@ll/db/schema';
 import { and, asc, eq, inArray, isNull, ne } from 'drizzle-orm';
 import type { BatchItem } from 'drizzle-orm/batch';
 import { logActivity } from './activity-log';
@@ -53,6 +62,7 @@ export async function liveInput(db: Db, row: PostRow): Promise<PostInput> {
     excerpt: row.excerpt ?? '',
     body: (row.body as PostInput['body']) ?? null,
     authorId: row.authorId,
+    locationId: row.locationId,
     categoryIds: assigned.filter((t) => t.type === 'category').map((t) => t.id),
     tags: assigned.filter((t) => t.type === 'tag').map((t) => t.name),
     featuredMediaId: row.featuredMediaId,
@@ -114,6 +124,16 @@ async function validCategoryIds(db: Db, ids: string[]) {
   return rows.map((r) => r.id);
 }
 
+/** The location, if it exists and is not in the trash; otherwise no location. */
+async function validLocationId(db: Db, id: string | null) {
+  if (!id) return null;
+  const row = await db.query.locations.findFirst({
+    columns: { id: true },
+    where: and(eq(locations.id, id), isNull(locations.deletedAt)),
+  });
+  return row?.id ?? null;
+}
+
 /** Column values and term assignment statements for writing input to the live row. */
 export async function columnWrites(db: Db, id: string, input: PostInput) {
   const termIds = [
@@ -130,6 +150,7 @@ export async function columnWrites(db: Db, id: string, input: PostInput) {
     excerpt: input.excerpt || null,
     body: input.body,
     authorId: input.authorId,
+    locationId: await validLocationId(db, input.locationId),
     featuredMediaId: input.featuredMediaId,
     seoTitle: input.seoTitle || null,
     seoDescription: input.seoDescription || null,

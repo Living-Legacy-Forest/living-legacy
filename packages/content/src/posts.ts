@@ -138,6 +138,8 @@ export const postInputSchema = z.object({
   excerpt: z.string().trim().max(500),
   body: richTextSchema.nullable(),
   authorId: z.string().nullable(),
+  /** The forest the post is about, if any. Defaults keep older drafts and revisions readable. */
+  locationId: z.string().nullable().default(null),
   categoryIds: z.array(z.string()).max(20),
   /** Tag names; unknown tags are created on save. */
   tags: z.array(z.string().trim().min(1).max(50)).max(30),
@@ -164,6 +166,7 @@ export const emptyPostInput: PostInput = {
   excerpt: '',
   body: null,
   authorId: null,
+  locationId: null,
   categoryIds: [],
   tags: [],
   featuredMediaId: null,

@@ -13,6 +13,7 @@ import {
   postTerms,
   publishEvents,
   revisions,
+  locations,
   teamMembers,
   terms,
   user,
@@ -201,7 +202,7 @@ export const getPostEditorData = createServerFn({ method: 'GET' })
   .handler(async ({ data }) => {
     const db = getDb();
 
-    const [categories, tags, authors, reviewers] = await db.batch([
+    const [categories, tags, authors, reviewers, locationOptions] = await db.batch([
       db
         .select({ id: terms.id, name: terms.name })
         .from(terms)
@@ -222,12 +223,18 @@ export const getPostEditorData = createServerFn({ method: 'GET' })
         .from(user)
         .where(inArray(user.role, publishRoles()))
         .orderBy(asc(user.name)),
+      db
+        .select({ id: locations.id, name: locations.name })
+        .from(locations)
+        .where(isNull(locations.deletedAt))
+        .orderBy(asc(locations.name)),
     ]);
     const options = {
       categories,
       tags: tags.map((t) => t.name),
       authors,
       reviewers,
+      locations: locationOptions,
       contentTargets: contentTargetsFrom(await readSiteSettings()),
     };
 

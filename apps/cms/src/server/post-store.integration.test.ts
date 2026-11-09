@@ -1,5 +1,5 @@
 import { emptyPostInput } from '@ll/content';
-import { posts } from '@ll/db/schema';
+import { locations, posts } from '@ll/db/schema';
 import { eq } from 'drizzle-orm';
 import { beforeEach, describe, expect, it } from 'vitest';
 import { addUser, testDb } from '../../test/fixtures';
@@ -7,6 +7,7 @@ import { createDraft, liveInput, saveEdits } from './post-store';
 
 beforeEach(async () => {
   await testDb().delete(posts);
+  await testDb().delete(locations);
 });
 
 describe('focus keyword and related terms', () => {
@@ -52,5 +53,59 @@ describe('focus keyword and related terms', () => {
     const input = await liveInput(db, row!);
     expect(input.focusKeyword).toBe('');
     expect(input.relatedTerms).toEqual([]);
+  });
+});
+
+describe('location', () => {
+  const addLocation = async (values: Partial<typeof locations.$inferInsert> = {}) => {
+    const [row] = await testDb()
+      .insert(locations)
+      .values({ name: 'Living Legacy Mornington', slug: 'mornington', state: 'VIC', ...values })
+      .returning();
+    return row!;
+  };
+
+  it('is saved with a post and read back', async () => {
+    const userId = await addUser('editor');
+    const db = testDb();
+    const place = await addLocation();
+    const row = await createDraft(
+      db,
+      { ...emptyPostInput, title: 'Open day', locationId: place.id },
+      userId
+    );
+    expect((await liveInput(db, row)).locationId).toBe(place.id);
+  });
+
+  it('is dropped when the location is in the trash or does not exist', async () => {
+    const userId = await addUser('editor');
+    const db = testDb();
+    const trashed = await addLocation({ slug: 'old', deletedAt: new Date() });
+    const one = await createDraft(
+      db,
+      { ...emptyPostInput, title: 'A', locationId: trashed.id },
+      userId
+    );
+    const two = await createDraft(
+      db,
+      { ...emptyPostInput, title: 'B', locationId: 'nope' },
+      userId
+    );
+    expect((await liveInput(db, one)).locationId).toBeNull();
+    expect((await liveInput(db, two)).locationId).toBeNull();
+  });
+
+  it('clears from posts when the location is deleted for good', async () => {
+    const userId = await addUser('editor');
+    const db = testDb();
+    const place = await addLocation();
+    const row = await createDraft(
+      db,
+      { ...emptyPostInput, title: 'Open day', locationId: place.id },
+      userId
+    );
+    await db.delete(locations).where(eq(locations.id, place.id));
+    const after = await db.query.posts.findFirst({ where: eq(posts.id, row.id) });
+    expect(after!.locationId).toBeNull();
   });
 });

@@ -50,6 +50,10 @@ export const posts = sqliteTable(
     body: richText('body'),
     featuredMediaId: text('featured_media_id').references(() => media.id, { onDelete: 'set null' }),
     authorId: text('author_id').references(() => teamMembers.id, { onDelete: 'set null' }),
+    /** The forest the post is about, if any. */
+    locationId: text('location_id').references((): AnySQLiteColumn => locations.id, {
+      onDelete: 'set null',
+    }),
     seoTitle: text('seo_title'),
     seoDescription: text('seo_description'),
     ogMediaId: text('og_media_id').references(() => media.id, { onDelete: 'set null' }),

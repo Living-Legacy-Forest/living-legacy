@@ -15,6 +15,8 @@ import { Button } from '@/components/ui/button';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import { formatDateTime } from '@/lib/format';
 import { useTimeZone } from '@/lib/use-time-zone';
+import { Label } from '@/components/ui/label';
+import { Textarea } from '@/components/ui/textarea';
 import { cn } from '@/lib/utils';
 import { ContentScorePanel } from './content-score/content-score-panel';
 import { useContentScore } from './content-score/use-content-score';
@@ -108,6 +110,22 @@ export function PropertiesPanel({
               </span>
             </Property>
           )}
+          <div className="space-y-1.5 pt-3">
+            <Label htmlFor="post-summary" className="text-muted-foreground text-xs font-normal">
+              Summary
+            </Label>
+            <Textarea
+              id="post-summary"
+              value={values.excerpt}
+              rows={3}
+              placeholder="A sentence or two about the post."
+              onChange={(e) => update({ excerpt: e.target.value })}
+              className="text-ui md:text-ui"
+            />
+            <p className="text-muted-foreground text-xs">
+              Shown on blog cards, and in search results when Description is empty.
+            </p>
+          </div>
         </fieldset>
       </Section>
 

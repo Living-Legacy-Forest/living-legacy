@@ -46,8 +46,6 @@ async function insertUploads(editor: Editor, files: File[], at?: number) {
 type Props = {
   title: string;
   onTitleChange: (title: string) => void;
-  excerpt: string;
-  onExcerptChange: (excerpt: string) => void;
   /** Read once on mount; remount with a new `key` to replace it. */
   body: RichTextDoc | null;
   onBodyChange: (body: RichTextDoc | null) => void;
@@ -57,13 +55,12 @@ type Props = {
 
 /**
  * Document-style post editor (editorcn toolbar editor): a floating toolbar
- * over a page that holds the title, summary and body, with counts below.
+ * over a page that holds the title and body, with counts below. The summary
+ * is edited in the side panel (Properties).
  */
 export function DocumentEditor({
   title,
   onTitleChange,
-  excerpt,
-  onExcerptChange,
   body,
   onBodyChange,
   readOnly = false,
@@ -129,16 +126,7 @@ export function DocumentEditor({
             readOnly={readOnly}
             onChange={(e) => onTitleChange(e.target.value.replace(/\n/g, ' '))}
             placeholder="Post title"
-            className="placeholder:text-muted-foreground/60 field-sizing-content w-full resize-none bg-transparent text-2xl font-bold tracking-tight outline-none sm:text-3xl"
-          />
-          <textarea
-            aria-label="Summary"
-            rows={1}
-            value={excerpt}
-            readOnly={readOnly}
-            onChange={(e) => onExcerptChange(e.target.value)}
-            placeholder="Add a short summary…"
-            className="text-muted-foreground placeholder:text-muted-foreground/50 mt-1 mb-6 field-sizing-content w-full resize-none bg-transparent text-base leading-relaxed outline-none"
+            className="placeholder:text-muted-foreground/60 mb-6 field-sizing-content w-full resize-none bg-transparent text-2xl font-bold tracking-tight outline-none sm:text-3xl"
           />
           <RichTextEditor.Content className="flex flex-1 flex-col [&_.ProseMirror]:min-h-64! [&_.ProseMirror]:flex-1 [&_.ProseMirror]:p-0! [&_mark]:rounded-sm [&_mark]:px-0.5 [&_mark]:text-inherit [&_mark:not([style])]:bg-yellow-400/40" />
         </article>

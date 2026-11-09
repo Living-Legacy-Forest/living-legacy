@@ -87,7 +87,8 @@ export function NavGroup({
                     className="ml-auto size-3.5! transition-transform duration-150 in-data-[panel-open]:rotate-90 motion-reduce:transition-none"
                   />
                 </CollapsibleTrigger>
-                <CollapsibleContent>
+                {/* Opens to Base UI's measured height; instant with reduced motion. */}
+                <CollapsibleContent className="h-(--collapsible-panel-height) overflow-hidden transition-[height,opacity] duration-200 ease-[cubic-bezier(0.25,1,0.5,1)] data-ending-style:h-0 data-ending-style:opacity-0 data-starting-style:h-0 data-starting-style:opacity-0 motion-reduce:transition-none">
                   <SidebarMenuSub className="border-sidebar-border mr-0 gap-px py-0.5">
                     {item.items.map((sub) => (
                       <SidebarMenuSubItem key={sub.title}>

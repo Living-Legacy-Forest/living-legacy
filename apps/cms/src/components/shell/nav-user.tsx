@@ -38,6 +38,10 @@ const shortcuts: { keys: string[]; label: string }[] = [
   { keys: ['⌘', 'B'], label: 'Show or hide the sidebar' },
   { keys: ['⌘', 'S'], label: 'Save the post you are editing' },
   { keys: ['↑', '↓'], label: 'Move through the posts list' },
+  { keys: ['X'], label: 'Select the focused row in a list' },
+  { keys: ['⌫'], label: 'Delete the focused row, or move a post to the trash' },
+  { keys: ['⌥', '↑'], label: 'Move the focused FAQ or team member up (⌥↓ moves it down)' },
+  { keys: ['Right-click'], label: 'See every action for a row, with its key' },
 ];
 
 export function NavUser({ user }: { user: SessionUser }) {

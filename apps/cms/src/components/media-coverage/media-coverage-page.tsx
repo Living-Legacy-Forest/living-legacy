@@ -80,6 +80,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { formatDate } from '@/lib/format';
 import { reportInvalid } from '@/lib/form-validation';
 import { removedNotice } from '@/lib/notify';
+import { openInNewTab } from '@/lib/site';
 import { useAction } from '@/lib/use-action';
 import { useTimeZone } from '@/lib/use-time-zone';
 import { cn } from '@/lib/utils';
@@ -289,6 +290,14 @@ export function MediaCoveragePage({
                       isDesktop() ? select(m.id) : canWrite && view.open({ kind: 'edit', id: m.id })
                     }
                     onDoubleClick={() => canWrite && view.open({ kind: 'edit', id: m.id })}
+                    menu={[
+                      {
+                        label: m.kind === 'article' ? 'Open article' : 'Open video',
+                        icon: <ExternalLink aria-hidden />,
+                        onSelect: () => openInNewTab(m.externalUrl),
+                        shortcut: { key: 'v' },
+                      },
+                    ]}
                   >
                     <CoverageSummary item={m} />
                   </ListRow>

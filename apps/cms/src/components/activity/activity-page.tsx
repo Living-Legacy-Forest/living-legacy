@@ -1,17 +1,15 @@
-import { Link, useNavigate } from '@tanstack/react-router';
+import { createLink, useNavigate } from '@tanstack/react-router';
 import {
   ActivityIcon,
   ArrowRightLeft,
   CalendarClockIcon,
-  ChevronLeftIcon,
-  ChevronRightIcon,
   FileText,
   KeyIcon,
   Settings,
   UserCog,
   type LucideIcon,
 } from '@/components/icons';
-import { Button, buttonVariants } from '@/components/ui/button';
+import { Button } from '@/components/ui/button';
 import {
   Empty,
   EmptyContent,
@@ -27,9 +25,18 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
+import {
+  Pagination,
+  PaginationContent,
+  PaginationEllipsis,
+  PaginationItem,
+  PaginationLink,
+  PaginationNext,
+  PaginationPrevious,
+} from '@/components/ui/pagination';
 import { formatDateTime, formatRelative } from '@/lib/format';
+import { pageNumbers } from '@/lib/page-numbers';
 import { useTimeZone } from '@/lib/use-time-zone';
-import { cn } from '@/lib/utils';
 import {
   ACTIVITY_PAGE_SIZE,
   type ActivityKind,
@@ -92,7 +99,8 @@ export function ActivityPage({ data, search }: { data: ActivityLogData; search: 
         >
           <SelectTrigger
             aria-label="Kind of change"
-            className="touch:min-h-11 min-w-0 flex-1 sm:w-40 sm:flex-none"
+            size="sm"
+            className="bg-muted/60 text-ui touch:min-h-11 min-w-0 flex-1 border-0 shadow-none sm:w-40 sm:flex-none"
           >
             <SelectValue />
           </SelectTrigger>
@@ -111,7 +119,8 @@ export function ActivityPage({ data, search }: { data: ActivityLogData; search: 
         >
           <SelectTrigger
             aria-label="Person"
-            className="touch:min-h-11 min-w-0 flex-1 sm:w-44 sm:flex-none"
+            size="sm"
+            className="bg-muted/60 text-ui touch:min-h-11 min-w-0 flex-1 border-0 shadow-none sm:w-44 sm:flex-none"
           >
             <SelectValue />
           </SelectTrigger>
@@ -194,52 +203,85 @@ export function ActivityPage({ data, search }: { data: ActivityLogData; search: 
   );
 }
 
-/** "51–100 of 312" and the way to the pages either side; links, so they open in a new tab too. */
+// Pagination links that navigate inside the app, keeping the filters.
+const PageLink = createLink(PaginationLink);
+const PagePrevious = createLink(PaginationPrevious);
+const PageNext = createLink(PaginationNext);
+// Only the page shown counts as current; by default a link without ?page would
+// match every page.
+const EXACT = { exact: true } as const;
+
+/** Previous or Next at either end: shown, but not a link, so nothing marks it as the current page. */
+const endProps = {
+  'aria-disabled': true,
+  tabIndex: -1,
+  className: 'pointer-events-none opacity-50',
+} as const;
+
+/** "16–30 of 45" and the pages, as links, so they open in a new tab too. */
 function Pager({ data }: { data: ActivityLogData }) {
   const { page, pageCount, total } = data;
   const from = (page - 1) * ACTIVITY_PAGE_SIZE + 1;
   const to = Math.min(page * ACTIVITY_PAGE_SIZE, total);
-  const step = cn(
-    buttonVariants({ variant: 'ghost', size: 'icon-sm' }),
-    'touch:size-11',
-    'aria-disabled:pointer-events-none aria-disabled:opacity-50'
-  );
+  // Page 1 has no ?page, so its address stays the plain /activity.
+  const toPage = (n: number) => (prev: ActivitySearch) => ({
+    ...prev,
+    page: n > 1 ? n : undefined,
+  });
+
   return (
-    <nav
-      aria-label="Activity pages"
-      className="text-muted-foreground mt-3 flex items-center justify-between text-xs"
-    >
+    <div className="text-muted-foreground mt-3 flex flex-wrap items-center justify-between gap-2 text-xs">
       <span className="tabular-nums">
         {from}–{to} of {total}
       </span>
       {pageCount > 1 && (
-        <div className="flex items-center gap-1">
-          {/* The filters stay as they are; only the page changes. */}
-          <Link
-            to="/activity"
-            search={(prev) => ({ ...prev, page: page - 1 > 1 ? page - 1 : undefined })}
-            aria-label="Previous page"
-            aria-disabled={page <= 1}
-            tabIndex={page <= 1 ? -1 : undefined}
-            className={step}
-          >
-            <ChevronLeftIcon aria-hidden />
-          </Link>
-          <span className="tabular-nums">
-            Page {page} of {pageCount}
-          </span>
-          <Link
-            to="/activity"
-            search={(prev) => ({ ...prev, page: page + 1 })}
-            aria-label="Next page"
-            aria-disabled={page >= pageCount}
-            tabIndex={page >= pageCount ? -1 : undefined}
-            className={step}
-          >
-            <ChevronRightIcon aria-hidden />
-          </Link>
-        </div>
+        <Pagination aria-label="Activity pages" className="mx-0 w-auto justify-end">
+          <PaginationContent>
+            <PaginationItem>
+              {page <= 1 ? (
+                <PaginationPrevious {...endProps} />
+              ) : (
+                <PagePrevious
+                  to="/activity"
+                  activeOptions={EXACT}
+                  search={toPage(page - 1)}
+                  className="touch:min-h-11"
+                />
+              )}
+            </PaginationItem>
+            {pageNumbers(page, pageCount).map((n, i) => (
+              <PaginationItem key={n ?? `gap-${i}`}>
+                {n === null ? (
+                  <PaginationEllipsis />
+                ) : (
+                  <PageLink
+                    to="/activity"
+                    activeOptions={EXACT}
+                    search={toPage(n)}
+                    isActive={n === page}
+                    aria-label={`Page ${n}`}
+                    className="touch:size-11 tabular-nums"
+                  >
+                    {n}
+                  </PageLink>
+                )}
+              </PaginationItem>
+            ))}
+            <PaginationItem>
+              {page >= pageCount ? (
+                <PaginationNext {...endProps} />
+              ) : (
+                <PageNext
+                  to="/activity"
+                  activeOptions={EXACT}
+                  search={toPage(page + 1)}
+                  className="touch:min-h-11"
+                />
+              )}
+            </PaginationItem>
+          </PaginationContent>
+        </Pagination>
       )}
-    </nav>
+    </div>
   );
 }

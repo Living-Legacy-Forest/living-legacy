@@ -46,7 +46,7 @@ export function SearchInput({
         autoCorrect="off"
         spellCheck={false}
         // Phones zoom into a field under 16px, so the smaller size starts at md.
-        className="bg-muted/60 placeholder:text-muted-foreground focus-visible:bg-background focus-visible:ring-ring md:text-ui touch:h-11 h-8 w-full rounded-md pr-2 pl-8 text-base outline-none focus-visible:ring-1 max-md:h-9 max-md:rounded-[10px] max-md:bg-(--ios-fill) max-md:text-[1.0625rem] max-md:placeholder:text-(--ios-secondary) max-md:focus-visible:bg-(--ios-fill) max-md:focus-visible:ring-0"
+        className="bg-muted/60 placeholder:text-muted-foreground focus-visible:bg-background focus-visible:ring-ring md:text-ui touch:h-11 h-7 w-full rounded-md pr-2 pl-8 text-base outline-none focus-visible:ring-1 max-md:h-9 max-md:rounded-[10px] max-md:bg-(--ios-fill) max-md:text-[1.0625rem] max-md:placeholder:text-(--ios-secondary) max-md:focus-visible:bg-(--ios-fill) max-md:focus-visible:ring-0"
       />
     </div>
   );

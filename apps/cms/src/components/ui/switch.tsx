@@ -44,7 +44,9 @@ const switchVariants = cva(
       {
         variant: 'ios',
         size: 'default',
-        className: '[--switch-h:1.75rem] [--switch-thumb:1.5rem] [--switch-w:4rem]',
+        // iOS size for a finger; a little smaller where there is a mouse.
+        className:
+          '[--switch-h:1.75rem] [--switch-thumb:1.5rem] [--switch-w:4rem] pointer-fine:[--switch-h:1.5rem] pointer-fine:[--switch-thumb:1.25rem] pointer-fine:[--switch-w:3.25rem]',
       },
       {
         variant: 'ios',

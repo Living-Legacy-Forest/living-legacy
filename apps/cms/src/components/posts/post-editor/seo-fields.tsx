@@ -139,7 +139,7 @@ function CountedField({
           placeholder={placeholder}
           rows={3}
           onChange={(e) => onChange(e.target.value)}
-          className="text-ui"
+          className="text-ui md:text-ui"
         />
       ) : (
         <Input
@@ -147,7 +147,7 @@ function CountedField({
           value={value}
           placeholder={placeholder}
           onChange={(e) => onChange(e.target.value)}
-          className="text-ui h-8"
+          className="text-ui md:text-ui h-8"
         />
       )}
     </div>

@@ -1,5 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import {
+  contentTargetProblem,
+  contentTargetsFrom,
   SITE_SETTINGS_DEFAULTS,
   formatPageTitle,
   isEmailDomain,
@@ -76,5 +78,37 @@ describe('email domains', () => {
     expect(isEmailDomainAllowed('Jo@Example.com', 'example.com, other.org')).toBe(true);
     expect(isEmailDomainAllowed('jo@sub.example.com', 'example.com')).toBe(false);
     expect(isEmailDomainAllowed('jo@elsewhere.com', 'example.com')).toBe(false);
+  });
+});
+
+describe('content targets', () => {
+  it('default to the spec ranges when nothing is saved', () => {
+    expect(contentTargetsFrom(parseSiteSettings(undefined))).toEqual({
+      targetWordsMin: 600,
+      targetWordsMax: 2000,
+      targetHeadingsMin: 3,
+      targetHeadingsMax: 12,
+      targetParagraphsMin: 5,
+      targetImagesMin: 1,
+      targetImagesMax: 8,
+      targetFocusKeywordUses: 2,
+      targetRelatedTermUses: 1,
+    });
+  });
+
+  it('keep saved numbers and ignore values of the wrong type', () => {
+    const targets = contentTargetsFrom(
+      parseSiteSettings({ targetWordsMin: 300, targetWordsMax: '900' })
+    );
+    expect(targets.targetWordsMin).toBe(300);
+    expect(targets.targetWordsMax).toBe(2000);
+  });
+
+  it('report a minimum above its maximum', () => {
+    const targets = contentTargetsFrom(parseSiteSettings(undefined));
+    expect(contentTargetProblem(targets)).toBeNull();
+    expect(contentTargetProblem({ ...targets, targetImagesMin: 9 })).toBe(
+      'Images: the lowest target is above the highest.'
+    );
   });
 });

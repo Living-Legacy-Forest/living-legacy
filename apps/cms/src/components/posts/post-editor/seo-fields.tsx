@@ -1,10 +1,18 @@
-import { type PostInput, SEO_DESCRIPTION_LIMIT, SEO_TITLE_LIMIT } from '@ll/content';
+import {
+  FOCUS_KEYWORD_LIMIT,
+  type PostInput,
+  RELATED_TERMS_MAX,
+  RELATED_TERM_LIMIT,
+  SEO_DESCRIPTION_LIMIT,
+  SEO_TITLE_LIMIT,
+} from '@ll/content';
 import { ImageField } from '@/components/media/image-field';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
 import { Textarea } from '@/components/ui/textarea';
 import { cn } from '@/lib/utils';
+import { TermsInput } from './terms-input';
 
 export const SITE_HOST = 'livinglegacy.com.au';
 
@@ -47,6 +55,30 @@ export function SeoFields({
         multiline
         onChange={(seoDescription) => onChange({ seoDescription })}
       />
+      <div className="space-y-1">
+        <CountedField
+          id="seo-focus-keyword"
+          label="Focus keyword"
+          value={values.focusKeyword}
+          limit={FOCUS_KEYWORD_LIMIT}
+          placeholder="The phrase people search for"
+          onChange={(focusKeyword) => onChange({ focusKeyword })}
+        />
+        <p className="text-muted-foreground text-xs">Used only for the content score.</p>
+      </div>
+      <div className="space-y-1.5">
+        <Label htmlFor="seo-related-terms" className="text-muted-foreground text-xs font-normal">
+          Related terms
+        </Label>
+        <TermsInput
+          id="seo-related-terms"
+          terms={values.relatedTerms}
+          max={RELATED_TERMS_MAX}
+          maxLength={RELATED_TERM_LIMIT}
+          placeholder="Type a term, then press Enter"
+          onChange={(relatedTerms) => onChange({ relatedTerms })}
+        />
+      </div>
       <ImageField
         id="seo-share-image"
         aspect={1.91}
@@ -107,7 +139,7 @@ function CountedField({
           placeholder={placeholder}
           rows={3}
           onChange={(e) => onChange(e.target.value)}
-          className="text-ui"
+          className="text-ui md:text-ui"
         />
       ) : (
         <Input
@@ -115,7 +147,7 @@ function CountedField({
           value={value}
           placeholder={placeholder}
           onChange={(e) => onChange(e.target.value)}
-          className="text-ui h-8"
+          className="text-ui md:text-ui h-8"
         />
       )}
     </div>

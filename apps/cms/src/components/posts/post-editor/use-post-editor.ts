@@ -365,7 +365,7 @@ export function usePostEditor({
     if (!meta.id) return;
     setBusy('save');
     try {
-      const { seoTitle, seoDescription, noindex, ogMediaId } = values;
+      const { seoTitle, seoDescription, noindex, ogMediaId, focusKeyword, relatedTerms } = values;
       const result = await savePostSeo({
         data: {
           id: meta.id,
@@ -373,10 +373,20 @@ export function usePostEditor({
           seoDescription,
           noindex,
           ogMediaId,
+          focusKeyword,
+          relatedTerms,
           expectedUpdatedAt: meta.updatedAt,
         },
       });
-      setSaved((s) => ({ ...s, seoTitle, seoDescription, noindex, ogMediaId }));
+      setSaved((s) => ({
+        ...s,
+        seoTitle,
+        seoDescription,
+        noindex,
+        ogMediaId,
+        focusKeyword,
+        relatedTerms,
+      }));
       setMeta((m) => ({ ...m, updatedAt: result.updatedAt }));
       setLastSavedAt(result.updatedAt);
       notify.success({
@@ -468,6 +478,7 @@ export function usePostEditor({
     access,
     reviewers: data.reviewers,
     authors: data.authors,
+    contentTargets: data.contentTargets,
     tags: data.tags,
     revisions: data.revisions,
     values,

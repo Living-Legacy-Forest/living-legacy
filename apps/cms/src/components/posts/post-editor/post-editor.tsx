@@ -104,7 +104,9 @@ export function PostEditor({
       <aside
         id="post-properties"
         className={cn(
-          'text-ui min-w-0 space-y-6 lg:sticky lg:top-6 lg:self-start lg:overflow-hidden lg:transition-[padding] lg:duration-150 motion-reduce:lg:transition-none',
+          // From lg it matches the editor's height and scrolls on its own, so a long
+          // panel never drags the editor with it. No visible bar, like the app sidebar.
+          'text-ui lg:no-scrollbar min-w-0 space-y-6 lg:sticky lg:top-6 lg:h-[calc(100svh-7.5rem)] lg:self-start lg:overflow-x-hidden lg:overflow-y-auto lg:overscroll-contain lg:pb-6 lg:transition-[padding] lg:duration-150 motion-reduce:lg:transition-none',
           // Hidden only on lg and up: below that the panel sits under the editor
           // and has no toggle.
           showProperties ? 'lg:border-l lg:pl-6' : 'lg:hidden'

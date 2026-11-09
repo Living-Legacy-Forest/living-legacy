@@ -1,5 +1,7 @@
 import {
   SEO_DESCRIPTION_LIMIT,
+  contentTargetProblem,
+  contentTargetsFrom,
   isEmailDomain,
   isValidAbn,
   parseEmailDomains,
@@ -55,6 +57,7 @@ const sections = [
   { id: 'business', title: 'Contact & business' },
   { id: 'social', title: 'Social links' },
   { id: 'search', title: 'Search & sharing' },
+  { id: 'content-targets', title: 'Content targets' },
   { id: 'sign-in', title: 'Sign-in & security' },
   { id: 'appearance', title: 'Language & appearance' },
 ] as const;
@@ -138,6 +141,8 @@ function problem(v: SiteSettings): { field: string; message: string } | null {
       message: `The title pattern needs ${TITLE_TOKENS.page} where the page's own title goes.`,
     };
   }
+  const targets = contentTargetProblem(contentTargetsFrom(v));
+  if (targets) return { field: 'settings-target-words', message: targets };
   return null;
 }
 
@@ -211,7 +216,7 @@ export function SettingsPage({
       </div>
 
       <div className="lg:grid lg:grid-cols-[11rem_minmax(0,1fr)] lg:gap-10">
-        <SectionNav ids={seoOnly ? ['search'] : sections.map((x) => x.id)} />
+        <SectionNav ids={seoOnly ? ['search', 'content-targets'] : sections.map((x) => x.id)} />
 
         <form noValidate onSubmit={submit} className="space-y-10">
           {!seoOnly && (
@@ -457,6 +462,76 @@ export function SettingsPage({
                 value={values.bingVerification}
                 onChange={(e) => patch({ bingVerification: e.target.value })}
                 className={cn(fieldWidth, 'font-mono')}
+              />
+            </SettingsRow>
+          </SettingsSection>
+
+          <SettingsSection
+            id="content-targets"
+            title="Content targets"
+            description="What the content score measures blog posts against."
+          >
+            <SettingsRow id="settings-target-words" title="Words">
+              <TargetRange
+                id="settings-target-words"
+                noun="words"
+                min={values.targetWordsMin}
+                max={values.targetWordsMax}
+                onChange={(min, max) => patch({ targetWordsMin: min, targetWordsMax: max })}
+              />
+            </SettingsRow>
+            <SettingsRow id="settings-target-headings" title="Headings">
+              <TargetRange
+                id="settings-target-headings"
+                noun="headings"
+                min={values.targetHeadingsMin}
+                max={values.targetHeadingsMax}
+                onChange={(min, max) => patch({ targetHeadingsMin: min, targetHeadingsMax: max })}
+              />
+            </SettingsRow>
+            <SettingsRow
+              id="settings-target-paragraphs"
+              title="Paragraphs"
+              description="The fewest a post should have."
+            >
+              <TargetInput
+                id="settings-target-paragraphs"
+                label="Fewest paragraphs"
+                value={values.targetParagraphsMin}
+                onChange={(targetParagraphsMin) => patch({ targetParagraphsMin })}
+              />
+            </SettingsRow>
+            <SettingsRow id="settings-target-images" title="Images">
+              <TargetRange
+                id="settings-target-images"
+                noun="images"
+                min={values.targetImagesMin}
+                max={values.targetImagesMax}
+                onChange={(min, max) => patch({ targetImagesMin: min, targetImagesMax: max })}
+              />
+            </SettingsRow>
+            <SettingsRow
+              id="settings-target-keyword"
+              title="Focus keyword uses"
+              description="The fewest times the focus keyword should appear in the body."
+            >
+              <TargetInput
+                id="settings-target-keyword"
+                label="Fewest focus keyword uses"
+                value={values.targetFocusKeywordUses}
+                onChange={(targetFocusKeywordUses) => patch({ targetFocusKeywordUses })}
+              />
+            </SettingsRow>
+            <SettingsRow
+              id="settings-target-terms"
+              title="Related term uses"
+              description="The fewest times each related term should appear."
+            >
+              <TargetInput
+                id="settings-target-terms"
+                label="Fewest related term uses"
+                value={values.targetRelatedTermUses}
+                onChange={(targetRelatedTermUses) => patch({ targetRelatedTermUses })}
               />
             </SettingsRow>
           </SettingsSection>
@@ -721,6 +796,60 @@ function SectionNav({ ids }: { ids: string[] }) {
         ))}
       </ul>
     </nav>
+  );
+}
+
+function TargetInput({
+  id,
+  label,
+  value,
+  onChange,
+}: {
+  id?: string;
+  label: string;
+  value: number;
+  onChange: (value: number) => void;
+}) {
+  return (
+    <Input
+      id={id}
+      type="number"
+      inputMode="numeric"
+      min={0}
+      step={1}
+      value={value}
+      aria-label={label}
+      onChange={(e) => onChange(Math.max(0, Math.floor(Number(e.target.value) || 0)))}
+      className="touch:h-11 h-8 w-20 tabular-nums"
+    />
+  );
+}
+
+/** Two numbers, fewest and most, for one target. */
+function TargetRange({
+  id,
+  noun,
+  min,
+  max,
+  onChange,
+}: {
+  id: string;
+  noun: string;
+  min: number;
+  max: number;
+  onChange: (min: number, max: number) => void;
+}) {
+  return (
+    <div className="flex items-center gap-2">
+      <TargetInput
+        id={id}
+        label={`Fewest ${noun}`}
+        value={min}
+        onChange={(n) => onChange(n, max)}
+      />
+      <span className="text-muted-foreground text-xs">to</span>
+      <TargetInput label={`Most ${noun}`} value={max} onChange={(n) => onChange(min, n)} />
+    </div>
   );
 }
 

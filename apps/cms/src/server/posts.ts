@@ -2,6 +2,7 @@ import {
   type PostInput,
   blogPath,
   can,
+  contentTargetsFrom,
   postInputSchema,
   publishErrors,
   roles,
@@ -22,6 +23,7 @@ import { z } from 'zod';
 import { getDb } from '@/lib/db';
 import { cmsOrigin, sendReviewRequestedEmail } from '@/lib/email';
 import { type SessionUser, authMiddleware, requirePermission } from '@/lib/session';
+import { readSiteSettings } from '@/lib/site-settings';
 import { logActivity } from './activity-log';
 import {
   type PostRow,
@@ -220,7 +222,13 @@ export const getPostEditorData = createServerFn({ method: 'GET' })
         .where(inArray(user.role, publishRoles()))
         .orderBy(asc(user.name)),
     ]);
-    const options = { categories, tags: tags.map((t) => t.name), authors, reviewers };
+    const options = {
+      categories,
+      tags: tags.map((t) => t.name),
+      authors,
+      reviewers,
+      contentTargets: contentTargetsFrom(await readSiteSettings()),
+    };
 
     if (!data.id) return { post: null, revisions: [], ...options };
 
@@ -466,7 +474,14 @@ export const duplicatePost = createServerFn({ method: 'POST' })
   });
 
 const seoSchema = postInputSchema
-  .pick({ seoTitle: true, seoDescription: true, noindex: true, ogMediaId: true })
+  .pick({
+    seoTitle: true,
+    seoDescription: true,
+    noindex: true,
+    ogMediaId: true,
+    focusKeyword: true,
+    relatedTerms: true,
+  })
   .extend({ id: z.string(), expectedUpdatedAt: z.number().optional() });
 
 /**
@@ -487,6 +502,8 @@ export const savePostSeo = createServerFn({ method: 'POST' })
       seoDescription: data.seoDescription || null,
       noindex: data.noindex,
       ogMediaId: data.ogMediaId,
+      focusKeyword: data.focusKeyword || null,
+      relatedTerms: data.relatedTerms,
     };
     const now = new Date();
     const statements: Statement[] = [
@@ -501,6 +518,8 @@ export const savePostSeo = createServerFn({ method: 'POST' })
                 seoDescription: data.seoDescription,
                 noindex: data.noindex,
                 ogMediaId: data.ogMediaId,
+                focusKeyword: data.focusKeyword,
+                relatedTerms: data.relatedTerms,
               }
             : null,
           updatedAt: now,

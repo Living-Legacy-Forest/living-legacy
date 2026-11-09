@@ -95,7 +95,8 @@ export function ImageDropZone({
   busy?: boolean;
   multiple?: boolean;
   title?: string;
-  description?: string;
+  /** A line under the title; null leaves it out. */
+  description?: string | null;
   className?: string;
   /** More actions beside the file chooser, e.g. picking from Media. */
   children?: React.ReactNode;
@@ -118,7 +119,7 @@ export function ImageDropZone({
           {busy ? <Spinner /> : <UploadIcon aria-hidden />}
         </EmptyMedia>
         <EmptyTitle className="text-sm">{busy ? 'Uploading…' : title}</EmptyTitle>
-        <EmptyDescription className="text-xs">{description}</EmptyDescription>
+        {description && <EmptyDescription className="text-xs">{description}</EmptyDescription>}
       </EmptyHeader>
       <EmptyContent className="flex-row flex-wrap justify-center gap-2">
         <Button
@@ -130,7 +131,7 @@ export function ImageDropZone({
           disabled={busy}
           onClick={chooser.open}
         >
-          {multiple ? 'Choose images' : 'Choose an image'}
+          {multiple ? 'Upload images' : 'Upload'}
         </Button>
         {children}
       </EmptyContent>

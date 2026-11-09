@@ -15,11 +15,13 @@ import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/component
 import { formatDateTime } from '@/lib/format';
 import { useTimeZone } from '@/lib/use-time-zone';
 import { cn } from '@/lib/utils';
+import { ContentScorePanel } from './content-score/content-score-panel';
+import { useContentScore } from './content-score/use-content-score';
 import { MultiPicker, SinglePicker, UrlPicker, tagOptions } from './property-pickers';
 import { SeoFields } from './seo-fields';
 import type { PostEditorState } from './use-post-editor';
 
-/** The sidebar beside the post: properties, featured image, search listing, revisions. */
+/** The sidebar beside the post: content score, properties, featured image, search listing, revisions. */
 export function PropertiesPanel({
   editor,
   focus,
@@ -37,10 +39,15 @@ export function PropertiesPanel({
 
   const timeZone = useTimeZone();
   const { values, meta, update, contentLocked } = editor;
+  const score = useContentScore(values, editor.contentTargets);
 
   return (
     <>
-      <Section title="Properties" defaultOpen first>
+      <Section id="post-section-score" title="Content score" count={score.score} defaultOpen first>
+        <ContentScorePanel result={score} />
+      </Section>
+
+      <Section title="Properties" defaultOpen>
         {/* A disabled fieldset locks every picker inside for SEO and read-only access. */}
         <fieldset disabled={contentLocked} className="min-w-0 space-y-0.5 disabled:opacity-70">
           <Property label="Author" icon={UserIcon}>

@@ -1,5 +1,12 @@
 import { describe, expect, it } from 'vitest';
-import { isAllowedRichText, postInputSchema, publishErrors, slugify } from './posts';
+import {
+  type PostInput,
+  emptyPostInput,
+  isAllowedRichText,
+  postInputSchema,
+  publishErrors,
+  slugify,
+} from './posts';
 
 describe('slugify', () => {
   it('lowercases and hyphenates', () => {
@@ -174,5 +181,35 @@ describe('postInputSchema and publishErrors', () => {
       'Add a title before publishing.',
       'Add a permalink before publishing.',
     ]);
+  });
+});
+
+describe('postInputSchema focus keyword and related terms', () => {
+  it('fills both for input saved before they existed, such as an old revision', () => {
+    const older: Partial<PostInput> = { ...emptyPostInput };
+    delete older.focusKeyword;
+    delete older.relatedTerms;
+    const parsed = postInputSchema.parse(older);
+    expect(parsed.focusKeyword).toBe('');
+    expect(parsed.relatedTerms).toEqual([]);
+  });
+
+  it('trims terms and drops repeats regardless of case', () => {
+    const parsed = postInputSchema.parse({
+      ...emptyPostInput,
+      relatedTerms: [' Family ', 'family', 'Ceremony'],
+    });
+    expect(parsed.relatedTerms).toEqual(['Family', 'Ceremony']);
+  });
+
+  it('limits the keyword and the terms', () => {
+    const ok = (patch: Partial<PostInput>) =>
+      postInputSchema.safeParse({ ...emptyPostInput, ...patch }).success;
+    expect(ok({ focusKeyword: 'x'.repeat(80) })).toBe(true);
+    expect(ok({ focusKeyword: 'x'.repeat(81) })).toBe(false);
+    expect(ok({ relatedTerms: Array.from({ length: 10 }, (_, i) => `term ${i}`) })).toBe(true);
+    expect(ok({ relatedTerms: Array.from({ length: 11 }, (_, i) => `term ${i}`) })).toBe(false);
+    expect(ok({ relatedTerms: ['x'.repeat(61)] })).toBe(false);
+    expect(ok({ relatedTerms: ['   '] })).toBe(false);
   });
 });

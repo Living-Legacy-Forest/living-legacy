@@ -50,6 +50,16 @@ export const SITE_SETTINGS_DEFAULTS = {
   bingVerification: '',
   /** Ask search engines to leave the whole website out of their results. */
   hideFromSearch: false,
+  // What the content score measures blog posts against (Settings, Content targets).
+  targetWordsMin: 600,
+  targetWordsMax: 2000,
+  targetHeadingsMin: 3,
+  targetHeadingsMax: 12,
+  targetParagraphsMin: 5,
+  targetImagesMin: 1,
+  targetImagesMax: 8,
+  targetFocusKeywordUses: 2,
+  targetRelatedTermUses: 1,
   // CMS sign-in.
   /** Comma-separated; invites go only to these domains. Empty allows any. */
   allowedEmailDomains: '',
@@ -72,6 +82,40 @@ export function parseSiteSettings(data: unknown): SiteSettings {
     if (typeof value === typeof settings[key]) Object.assign(settings, { [key]: value });
   }
   return settings;
+}
+
+export const CONTENT_TARGET_KEYS = [
+  'targetWordsMin',
+  'targetWordsMax',
+  'targetHeadingsMin',
+  'targetHeadingsMax',
+  'targetParagraphsMin',
+  'targetImagesMin',
+  'targetImagesMax',
+  'targetFocusKeywordUses',
+  'targetRelatedTermUses',
+] as const satisfies readonly (keyof SiteSettings)[];
+
+export type ContentTargets = Pick<SiteSettings, (typeof CONTENT_TARGET_KEYS)[number]>;
+
+export function contentTargetsFrom(settings: SiteSettings): ContentTargets {
+  return Object.fromEntries(
+    CONTENT_TARGET_KEYS.map((key) => [key, settings[key]])
+  ) as ContentTargets;
+}
+
+const TARGET_RANGES = [
+  ['targetWordsMin', 'targetWordsMax', 'Words'],
+  ['targetHeadingsMin', 'targetHeadingsMax', 'Headings'],
+  ['targetImagesMin', 'targetImagesMax', 'Images'],
+] as const;
+
+/** A sentence naming the first range whose minimum is above its maximum. */
+export function contentTargetProblem(targets: ContentTargets): string | null {
+  for (const [min, max, label] of TARGET_RANGES) {
+    if (targets[min] > targets[max]) return `${label}: the lowest target is above the highest.`;
+  }
+  return null;
 }
 
 /** "{page} | {site}" with "Contact" → "Contact | Living Legacy". No page title gives the site title alone. */

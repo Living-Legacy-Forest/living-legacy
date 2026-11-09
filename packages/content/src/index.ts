@@ -18,3 +18,6 @@ export * from './phone';
 export * from './event-crm';
 export * from './zoned';
 export * from './recurrence';
+export * from './rich-text-outline';
+export * from './brand-language';
+export * from './content-score';

@@ -1,40 +1,24 @@
 import { Suspense, lazy } from 'react';
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
-import type { SessionUser } from '@/lib/session';
 import { cn } from '@/lib/utils';
 import type { DashboardData } from '@/server/dashboard';
 import { AppVersion } from './app-version';
-import { QuickActions } from './quick-actions';
+import { NeedsAttention } from './needs-attention';
 import { RecentPosts } from './recent-posts';
 import { DashboardStats } from './stats';
 
-// The chart library is most of this page's JavaScript; the rest of the
-// dashboard should not wait for it.
-const PublishingChart = lazy(() =>
-  import('./publishing-chart').then((m) => ({ default: m.PublishingChart }))
-);
-// The map library is heavy too.
+// The map library is most of this page's JavaScript; the rest should not wait for it.
 const LocationsCard = lazy(() =>
   import('./locations-card').then((m) => ({ default: m.LocationsCard }))
 );
 
-export function Dashboard({ data, user }: { data: DashboardData; user: SessionUser }) {
+/** What needs doing comes first; counts and recent work sit around it for context. */
+export function Dashboard({ data }: { data: DashboardData }) {
   return (
     <div data-slot="dashboard" className="grid grid-cols-2 gap-4 max-md:gap-3 lg:grid-cols-4">
       <DashboardStats data={data} />
-      <Suspense
-        fallback={
-          <ChartPlaceholder
-            title="Publishing activity"
-            className="col-span-2 lg:col-span-4"
-            chartClassName="h-60"
-            footer
-          />
-        }
-      >
-        <PublishingChart activity={data.activity} />
-      </Suspense>
+      <NeedsAttention attention={data.attention} />
       <Suspense
         fallback={
           <ChartPlaceholder title="Locations" className="col-span-2" chartClassName="h-72" footer />
@@ -43,7 +27,6 @@ export function Dashboard({ data, user }: { data: DashboardData; user: SessionUs
         <LocationsCard locations={data.locations} />
       </Suspense>
       <RecentPosts drafts={data.recentDrafts} published={data.recentlyPublished} />
-      <QuickActions user={user} />
       <AppVersion />
     </div>
   );

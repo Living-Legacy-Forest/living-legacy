@@ -14,16 +14,26 @@ import { useTimeZone } from '@/lib/use-time-zone';
 import { cn } from '@/lib/utils';
 import { type MissingPage, dismissMissingPage } from '@/server/not-found';
 
-export function MissingPagesPage({ data }: { data: MissingPage[] }) {
+export function MissingPagesPage({
+  data,
+  switcher,
+}: {
+  data: MissingPage[];
+  /** Switches back to Redirects, which shares this page. */
+  switcher?: React.ReactNode;
+}) {
   const timeZone = useTimeZone();
   const { run, pending } = useAction();
 
   return (
-    <div className="mx-auto w-full max-w-3xl">
-      <div className="mb-6 space-y-1">
-        <h1 data-slot="page-title" className="text-xl font-semibold tracking-tight">
-          Missing pages
-        </h1>
+    <div className="w-full max-w-3xl">
+      <div className="mb-6 space-y-3">
+        <div className="flex flex-wrap items-center gap-3">
+          <h1 data-slot="page-title" className="text-xl">
+            Redirects
+          </h1>
+          {switcher}
+        </div>
         <p className="text-muted-foreground text-sm">
           Addresses on the website that found nothing, busiest first. Redirect the ones people still
           follow, such as old links, and dismiss the rest. Paths unseen for 90 days drop off.

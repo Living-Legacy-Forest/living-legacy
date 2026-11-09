@@ -49,10 +49,13 @@ const DocumentEditor = lazy(() =>
  */
 export function PostEditor({
   data,
+  focus,
   access,
   onReload,
 }: {
   data: PostEditorData;
+  /** A sidebar section to open and scroll to on arrival. */
+  focus?: 'seo' | 'image';
   access: PostAccess;
   onReload: () => Promise<void>;
 }) {
@@ -107,7 +110,7 @@ export function PostEditor({
           showProperties ? 'lg:border-l lg:pl-6' : 'lg:hidden'
         )}
       >
-        <PropertiesPanel editor={editor} />
+        <PropertiesPanel editor={editor} focus={focus} />
       </aside>
 
       <AlertDialog open={editor.blocker.status === 'blocked'}>

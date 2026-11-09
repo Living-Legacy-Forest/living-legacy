@@ -14,7 +14,12 @@ import {
   isDesktop,
   useListPane,
 } from '@/components/list/list-page';
-import { ListRow } from '@/components/list/list-row';
+import {
+  ListRow,
+  editMenuItems,
+  featureMenuItem,
+  publishMenuItem,
+} from '@/components/list/list-row';
 import {
   ConfirmBulkDelete,
   SearchInput,
@@ -60,7 +65,7 @@ import { Spinner } from '@/components/ui/spinner';
 import { Textarea } from '@/components/ui/textarea';
 import { readStatus, readYesNo } from '@/lib/bulk-import';
 import { reportInvalid } from '@/lib/form-validation';
-import { removedNotice } from '@/lib/notify';
+import { featuredNotice, removedNotice, statusNotice } from '@/lib/notify';
 import { useAction } from '@/lib/use-action';
 import {
   type Testimonial,
@@ -69,6 +74,7 @@ import {
   deleteTestimonials,
   importTestimonials,
   saveTestimonial,
+  setTestimonialFlags,
 } from '@/server/testimonials';
 
 type Search = { selected?: string };
@@ -288,6 +294,28 @@ export function TestimonialsPage({
                     swipe={
                       canWrite
                         ? { label: 'Delete', onAction: () => setToDelete([t.id]) }
+                        : undefined
+                    }
+                    previews={isDesktop()}
+                    menu={
+                      canWrite
+                        ? [
+                            ...editMenuItems(isDesktop(), () =>
+                              view.open({ kind: 'edit', id: t.id })
+                            ),
+                            featureMenuItem(t.featured, (featured) =>
+                              run(() => setTestimonialFlags({ data: { id: t.id, featured } }), {
+                                success: featuredNotice(featured),
+                                error: 'Could not change it',
+                              })
+                            ),
+                            publishMenuItem(t.status === 'published', (status) =>
+                              run(() => setTestimonialFlags({ data: { id: t.id, status } }), {
+                                success: statusNotice(status),
+                                error: 'Could not change it',
+                              })
+                            ),
+                          ]
                         : undefined
                     }
                     // Large screens preview on a click and edit on a double click; smaller

@@ -2,7 +2,6 @@ import { describe, expect, it } from 'vitest';
 import {
   displayTime,
   formatBytes,
-  formatChartRange,
   formatDate,
   formatRelative,
   formatTimeRange,
@@ -35,18 +34,6 @@ describe('formatRelative', () => {
     expect(formatRelative(now - 5 * 60_000, now)).toBe('5 minutes ago');
     expect(formatRelative(now + 2 * 3_600_000, now)).toBe('in 2 hours');
     expect(formatRelative(now - 86_400_000, now)).toBe('yesterday');
-  });
-});
-
-describe('formatChartRange', () => {
-  it('shows one day on its own', () => {
-    expect(formatChartRange('2026-10-21', '2026-10-21')).toBe('21 Oct 2026');
-  });
-
-  it('drops the repeated month and year', () => {
-    expect(formatChartRange('2026-10-21', '2026-10-27')).toBe('21 to 27 Oct 2026');
-    expect(formatChartRange('2026-10-28', '2026-11-03')).toBe('28 Oct to 3 Nov 2026');
-    expect(formatChartRange('2026-12-29', '2027-01-04')).toBe('29 Dec 2026 to 4 Jan 2027');
   });
 });
 

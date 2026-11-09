@@ -1,7 +1,7 @@
+import { can } from '@ll/content';
 import { Link } from '@tanstack/react-router';
-import { BellIcon } from '@/components/icons';
+import { BellIcon, CalendarClockIcon, PencilLineIcon } from '@/components/icons';
 import { useCallback, useEffect, useState } from 'react';
-import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import {
   Empty,
@@ -16,7 +16,7 @@ import { useIsMobile } from '@/hooks/use-mobile';
 import { formatRelative } from '@/lib/format';
 import type { SessionUser } from '@/lib/session';
 import { cn } from '@/lib/utils';
-import { type ActivityItem, getRecentActivity } from '@/server/activity';
+import { type Notification, getNotifications } from '@/server/notifications';
 import { SheetHeader, sheetGroupClass } from './sheet-parts';
 
 const SEEN_KEY = 'cms:notifications-seen';
@@ -37,23 +37,15 @@ function writeSeen(value: number) {
   }
 }
 
-const initials = (name: string) =>
-  name
-    .split(' ')
-    .map((part) => part[0])
-    .join('')
-    .slice(0, 2)
-    .toUpperCase();
-
-/** Bell with an unread dot; lists recent team activity on posts. A sheet on phones. */
+/** Bell with an unread dot; lists what is for this person to act on. A sheet on phones. */
 export function Notifications({ user }: { user: SessionUser }) {
   const isPhone = useIsMobile();
   const [open, setOpen] = useState(false);
-  const [items, setItems] = useState<ActivityItem[] | null>(null);
+  const [items, setItems] = useState<Notification[] | null>(null);
   const [seen, setSeen] = useState(0);
 
   const load = useCallback(() => {
-    getRecentActivity().then(setItems, () => setItems([]));
+    getNotifications().then(setItems, () => setItems([]));
   }, []);
 
   useEffect(() => {
@@ -65,8 +57,7 @@ export function Notifications({ user }: { user: SessionUser }) {
     return () => window.removeEventListener('focus', onFocus);
   }, [load]);
 
-  // Only other people's activity counts as new.
-  const unread = (items ?? []).filter((item) => item.actorId !== user.id && item.at > seen);
+  const unread = (items ?? []).filter((item) => item.at > seen);
 
   const onOpenChange = (next: boolean) => {
     setOpen(next);
@@ -94,8 +85,19 @@ export function Notifications({ user }: { user: SessionUser }) {
       )}
     </>
   );
-  const list = (
-    <ActivityList items={items} user={user} seen={seen} phone={isPhone} onNavigate={close} />
+  const list = <NotificationList items={items} seen={seen} phone={isPhone} onNavigate={close} />;
+  // Team history is on its own page; the bell only points there.
+  const history = can(user.role, 'posts:publish') && (
+    <Link
+      to="/activity"
+      onClick={close}
+      className={cn(
+        'text-muted-foreground hover:text-foreground focus-visible:bg-muted block text-center outline-none',
+        isPhone ? 'text-tint mt-4 text-[0.9375rem]' : 'text-ui border-t px-3 py-2'
+      )}
+    >
+      See all team activity
+    </Link>
   );
 
   if (isPhone) {
@@ -106,9 +108,10 @@ export function Notifications({ user }: { user: SessionUser }) {
         </Button>
         <Drawer open={open} onOpenChange={onOpenChange}>
           <DrawerContent className="bg-(--ios-grouped)">
-            <SheetHeader title="Activity" onDone={close} />
+            <SheetHeader title="Notifications" onDone={close} />
             <DrawerBody className="pb-[calc(env(safe-area-inset-bottom)+1.5rem)]">
               {list}
+              {history}
             </DrawerBody>
           </DrawerContent>
         </Drawer>
@@ -119,23 +122,24 @@ export function Notifications({ user }: { user: SessionUser }) {
   return (
     <Popover open={open} onOpenChange={onOpenChange}>
       <PopoverTrigger render={<Button {...triggerProps} />}>{bell}</PopoverTrigger>
-      <PopoverContent align="end" className="w-80 p-0">
-        <div className="text-ui flex h-10 items-center border-b px-3 font-medium">Activity</div>
+      <PopoverContent align="end" className="w-80 gap-0 p-0">
+        <div className="text-ui flex h-10 items-center border-b px-3 font-medium">
+          Notifications
+        </div>
         {list}
+        {history}
       </PopoverContent>
     </Popover>
   );
 }
 
-function ActivityList({
+function NotificationList({
   items,
-  user,
   seen,
   phone,
   onNavigate,
 }: {
-  items: ActivityItem[] | null;
-  user: SessionUser;
+  items: Notification[] | null;
   seen: number;
   /** Grouped rows at body size, for the phone sheet. */
   phone: boolean;
@@ -164,64 +168,68 @@ function ActivityList({
           <EmptyMedia variant="icon">
             <BellIcon aria-hidden />
           </EmptyMedia>
-          <EmptyTitle>No activity yet</EmptyTitle>
+          <EmptyTitle>Nothing for you right now</EmptyTitle>
           <EmptyDescription>
-            When someone publishes or updates a post, it shows up here.
+            Posts sent to you for review and new event bookings show up here.
           </EmptyDescription>
         </EmptyHeader>
       </Empty>
     );
   }
 
-  const rowClass = phone
-    ? 'flex min-h-11 items-start gap-3 px-4 py-3 transition-colors'
-    : 'flex items-start gap-2.5 rounded-md px-2 py-2';
+  const rowClass = cn(
+    phone
+      ? 'flex min-h-11 items-start gap-3 px-4 py-3 transition-colors active:bg-muted'
+      : 'flex items-start gap-2.5 rounded-md px-2 py-2 hover:bg-muted',
+    '[&>svg]:text-muted-foreground [&>svg]:mt-0.5 [&>svg]:shrink-0',
+    phone ? '[&>svg]:size-5' : '[&>svg]:size-4'
+  );
+  const textClass = cn('min-w-0 flex-1 leading-snug', phone ? 'text-[0.9375rem]' : 'text-ui');
+  const metaClass = cn(
+    'text-muted-foreground mt-0.5 block',
+    phone ? 'text-[0.8125rem]' : 'text-xs'
+  );
 
   return (
     <ul className={phone ? sheetGroupClass : 'max-h-96 overflow-y-auto p-1'}>
       {items.map((item) => {
-        const isNew = item.actorId !== user.id && item.at > seen;
-        const who = item.actorId === user.id ? 'You' : item.actor;
-        const body = (
-          <>
-            <Avatar className={cn('shrink-0', phone ? 'size-8' : 'size-6')}>
-              <AvatarFallback className={phone ? 'text-xs' : 'text-[10px]'}>
-                {initials(item.actor)}
-              </AvatarFallback>
-            </Avatar>
-            <span
-              className={cn('min-w-0 flex-1 leading-snug', phone ? 'text-[0.9375rem]' : 'text-ui')}
-            >
-              <span className="font-medium">{who}</span>{' '}
-              <span className="text-muted-foreground">{item.action}</span>{' '}
-              <span className="font-medium">{item.title}</span>
-              <span
-                className={cn(
-                  'text-muted-foreground mt-0.5 block',
-                  phone ? 'text-[0.8125rem]' : 'text-xs'
-                )}
-              >
-                {formatRelative(item.at)}
-                {item.trashed && ' · now in the trash'}
-              </span>
-            </span>
-            {isNew && (
-              <span aria-label="New" className="mt-1.5 size-2 shrink-0 rounded-full bg-sky-500" />
-            )}
-          </>
+        const isNew = item.at > seen;
+        const dot = isNew && (
+          <span aria-label="New" className="mt-1.5 size-2 shrink-0 rounded-full bg-sky-500" />
         );
         return (
           <li key={item.id}>
-            {item.trashed ? (
-              <div className={rowClass}>{body}</div>
-            ) : (
+            {item.kind === 'review' ? (
               <Link
                 to="/posts/$postId"
                 params={{ postId: item.postId }}
                 onClick={onNavigate}
-                className={cn(rowClass, phone ? 'active:bg-muted' : 'hover:bg-muted')}
+                className={rowClass}
               >
-                {body}
+                <PencilLineIcon aria-hidden />
+                <span className={textClass}>
+                  <span className="text-muted-foreground">Review </span>
+                  <span className="font-medium">{item.title}</span>
+                  <span className={metaClass}>Asked {formatRelative(item.at)}</span>
+                </span>
+                {dot}
+              </Link>
+            ) : (
+              <Link
+                to="/events"
+                search={{ open: item.eventId }}
+                onClick={onNavigate}
+                className={rowClass}
+              >
+                <CalendarClockIcon aria-hidden />
+                <span className={textClass}>
+                  <span className="text-muted-foreground">
+                    New booking for {item.partySize} at{' '}
+                  </span>
+                  <span className="font-medium">{item.title}</span>
+                  <span className={metaClass}>Booked {formatRelative(item.at)}</span>
+                </span>
+                {dot}
               </Link>
             )}
           </li>

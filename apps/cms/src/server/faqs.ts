@@ -295,3 +295,30 @@ export const importFaqs = createServerFn({ method: 'POST' })
     }
     return result;
   });
+
+/** One switch from the list's row menu, without sending the whole form. */
+export const setFaqStatus = createServerFn({ method: 'POST' })
+  .middleware([requirePermission('content:write')])
+  .validator(
+    z.object({
+      id: z.string(),
+      status: z.enum(['draft', 'published']).optional(),
+    })
+  )
+  .handler(async ({ data, context }) => {
+    const db = getDb();
+    const now = new Date();
+    const existing = await db.query.faqs.findFirst({ where: eq(faqs.id, data.id) });
+    if (!existing) throw new Error('That FAQ no longer exists.');
+    await db
+      .update(faqs)
+      .set({
+        ...(data.status && {
+          status: data.status,
+          publishedAt: data.status === 'published' ? (existing.publishedAt ?? now) : null,
+        }),
+        updatedAt: now,
+        updatedBy: context.user.id,
+      })
+      .where(eq(faqs.id, data.id));
+  });

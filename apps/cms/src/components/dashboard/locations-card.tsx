@@ -14,8 +14,8 @@ import type { DashboardData } from '@/server/dashboard';
 
 /** How the footer counts each stage, e.g. "3 coming soon". */
 const stageCount: Record<LocationStage, (n: number) => string> = {
-  live: (n) => `${n} live`,
-  external: (n) => `${n} on ${n === 1 ? 'its' : 'their'} own website`,
+  live: (n) => `${n} with a page on this website`,
+  external: (n) => `${n} with ${n === 1 ? 'its' : 'their'} page on another website`,
   coming_soon: (n) => `${n} coming soon`,
 };
 

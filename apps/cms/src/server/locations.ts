@@ -195,3 +195,30 @@ export const deleteLocations = createServerFn({ method: 'POST' })
     await getDb().delete(locations).where(inArray(locations.id, data.ids));
     return { removed: data.ids.length };
   });
+
+/** One switch from the list's row menu, without sending the whole form. */
+export const setLocationStatus = createServerFn({ method: 'POST' })
+  .middleware([requirePermission('content:write')])
+  .validator(
+    z.object({
+      id: z.string(),
+      status: z.enum(['draft', 'published']).optional(),
+    })
+  )
+  .handler(async ({ data, context }) => {
+    const db = getDb();
+    const now = new Date();
+    const existing = await db.query.locations.findFirst({ where: eq(locations.id, data.id) });
+    if (!existing) throw new Error('This location no longer exists.');
+    await db
+      .update(locations)
+      .set({
+        ...(data.status && {
+          status: data.status,
+          publishedAt: data.status === 'published' ? (existing.publishedAt ?? now) : null,
+        }),
+        updatedAt: now,
+        updatedBy: context.user.id,
+      })
+      .where(eq(locations.id, data.id));
+  });

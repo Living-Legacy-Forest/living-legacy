@@ -21,7 +21,7 @@ import {
   PaneFrame,
   useListPane,
 } from '@/components/list/list-page';
-import { ListRow, moveMenuItems } from '@/components/list/list-row';
+import { ListRow, moveMenuItems, publishMenuItem } from '@/components/list/list-row';
 import {
   ConfirmBulkDelete,
   SearchInput,
@@ -58,7 +58,7 @@ import { Spinner } from '@/components/ui/spinner';
 import { Textarea } from '@/components/ui/textarea';
 import { readStatus } from '@/lib/bulk-import';
 import { reportInvalid } from '@/lib/form-validation';
-import { removedNotice } from '@/lib/notify';
+import { removedNotice, statusNotice } from '@/lib/notify';
 import { useAction } from '@/lib/use-action';
 import {
   type TeamListData,
@@ -68,6 +68,7 @@ import {
   importTeamMembers,
   moveTeamMember,
   saveTeamMember,
+  setTeamMemberStatus,
 } from '@/server/team';
 
 const NOUN: [string, string] = ['team member', 'team members'];
@@ -262,14 +263,28 @@ export function TeamPage({ data, canWrite }: { data: TeamListData; canWrite: boo
                       }
                       menu={
                         canWrite
-                          ? moveMenuItems(
-                              !query && index > 0,
-                              !query && index < data.length - 1,
-                              (direction) =>
-                                run(() => moveTeamMember({ data: { id: member.id, direction } }), {
-                                  error: 'Could not move the team member',
-                                })
-                            )
+                          ? [
+                              ...moveMenuItems(
+                                !query && index > 0,
+                                !query && index < data.length - 1,
+                                (direction) =>
+                                  run(
+                                    () => moveTeamMember({ data: { id: member.id, direction } }),
+                                    {
+                                      error: 'Could not move the team member',
+                                    }
+                                  )
+                              ),
+                              publishMenuItem(member.status === 'published', (status) =>
+                                run(
+                                  () => setTeamMemberStatus({ data: { id: member.id, status } }),
+                                  {
+                                    success: statusNotice(status),
+                                    error: 'Could not change it',
+                                  }
+                                )
+                              ),
+                            ]
                           : undefined
                       }
                       actions={

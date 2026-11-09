@@ -1,18 +1,8 @@
-import { can } from '@ll/content';
 import { createFileRoute, redirect } from '@tanstack/react-router';
-import { MissingPagesPage } from '@/components/missing-pages/missing-pages-page';
-import { listMissingPages } from '@/server/not-found';
 
+// Missing pages moved into Redirects; this keeps old links and bookmarks working.
 export const Route = createFileRoute('/_app/missing-pages/')({
-  beforeLoad: ({ context }) => {
-    if (!can(context.user.role, 'redirects:write')) throw redirect({ to: '/' });
+  beforeLoad: () => {
+    throw redirect({ to: '/redirects', search: { view: 'missing' }, replace: true });
   },
-  loader: () => listMissingPages(),
-  head: () => ({ meta: [{ title: 'Missing pages | Living Legacy CMS' }] }),
-  component: MissingPagesRoute,
 });
-
-function MissingPagesRoute() {
-  const data = Route.useLoaderData();
-  return <MissingPagesPage data={data} />;
-}

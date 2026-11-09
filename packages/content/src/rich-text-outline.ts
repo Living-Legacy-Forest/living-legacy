@@ -118,12 +118,12 @@ export function outlineRichText(doc: RichTextDoc | null | undefined): RichTextOu
       const c = child as Node;
       if (c.type === 'text' && typeof c.text === 'string') {
         text += c.text;
-        const href = linkHref(c);
+        const href: string | null = linkHref(c);
         if (href !== null && open && open.href === href) {
           open.text += c.text;
           continue;
         }
-        const kind = href === null ? null : linkKind(href);
+        const kind: ReturnType<typeof linkKind> = href === null ? null : linkKind(href);
         open = kind && href ? { href, text: c.text, internal: kind === 'internal' } : null;
         if (open) links.push(open);
         continue;

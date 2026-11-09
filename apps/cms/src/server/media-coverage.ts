@@ -143,3 +143,34 @@ export const deleteMediaCoverage = createServerFn({ method: 'POST' })
     await getDb().delete(mediaCoverage).where(inArray(mediaCoverage.id, data.ids));
     return { removed: data.ids.length };
   });
+
+/** One switch from the list's row menu, without sending the whole form. */
+export const setMediaCoverageFlags = createServerFn({ method: 'POST' })
+  .middleware([requirePermission('content:write')])
+  .validator(
+    z.object({
+      id: z.string(),
+      status: z.enum(['draft', 'published']).optional(),
+      featured: z.boolean().optional(),
+    })
+  )
+  .handler(async ({ data, context }) => {
+    const db = getDb();
+    const now = new Date();
+    const existing = await db.query.mediaCoverage.findFirst({
+      where: eq(mediaCoverage.id, data.id),
+    });
+    if (!existing) throw new Error('That item no longer exists.');
+    await db
+      .update(mediaCoverage)
+      .set({
+        ...(data.status && {
+          status: data.status,
+          publishedAt: data.status === 'published' ? (existing.publishedAt ?? now) : null,
+        }),
+        ...(data.featured !== undefined && { featured: data.featured }),
+        updatedAt: now,
+        updatedBy: context.user.id,
+      })
+      .where(eq(mediaCoverage.id, data.id));
+  });

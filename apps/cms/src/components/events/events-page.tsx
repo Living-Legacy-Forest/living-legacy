@@ -1,5 +1,5 @@
 import { groupEventDates } from '@ll/content';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { CalendarClockIcon, PlusIcon } from '@/components/icons';
 import {
   DialogActions,
@@ -62,8 +62,24 @@ function inFilter(e: EventRow, filter: Filter, now: number) {
   return true;
 }
 
-export function EventsPage({ data }: { data: EventsData }) {
+export function EventsPage({
+  data,
+  initialOpen,
+  onOpenedInitial,
+}: {
+  data: EventsData;
+  /** An event date to open on arrival, from ?open= in the address. */
+  initialOpen?: string;
+  /** Clears ?open= once used, so going back does not open it again. */
+  onOpenedInitial?: () => void;
+}) {
   const view = useListPane<Target>();
+  useEffect(() => {
+    if (!initialOpen) return;
+    view.open({ kind: 'edit', id: initialOpen });
+    onOpenedInitial?.();
+    // Only on arrival with ?open=, not on every render that has it.
+  }, [initialOpen]);
   const [query, setQuery] = useState('');
   const [filter, setFilter] = useState<Filter>('upcoming');
   const [toDelete, setToDelete] = useState<string[] | null>(null);

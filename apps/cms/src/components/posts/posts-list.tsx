@@ -403,31 +403,40 @@ export function PostsList({
               </>
             ) : (
               <nav aria-label="Post status" className="no-scrollbar flex gap-0.5 overflow-x-auto">
-                {tabs.map((tab) => {
-                  const active = tab.value === search.status;
-                  return (
-                    <Link
-                      key={tab.value}
-                      to="/posts"
-                      search={(prev) => ({
-                        ...prev,
-                        status: tab.value,
-                        page: undefined,
-                        selected: undefined,
-                      })}
-                      aria-current={active ? 'page' : undefined}
-                      className={cn(
-                        'text-muted-foreground hover:text-foreground text-ui flex h-7 shrink-0 items-center gap-1.5 rounded-md px-2.5 whitespace-nowrap transition-colors',
-                        active && 'bg-muted text-foreground font-medium'
-                      )}
-                    >
-                      {tab.label}
-                      <span className="text-muted-foreground text-xs tabular-nums">
-                        {data.counts[tab.value]}
-                      </span>
-                    </Link>
-                  );
-                })}
+                {tabs
+                  // Empty tabs only crowd the row (and pushed Trash out of sight); All and the
+                  // current tab always stay.
+                  .filter(
+                    (tab) =>
+                      tab.value === 'all' ||
+                      tab.value === search.status ||
+                      data.counts[tab.value] > 0
+                  )
+                  .map((tab) => {
+                    const active = tab.value === search.status;
+                    return (
+                      <Link
+                        key={tab.value}
+                        to="/posts"
+                        search={(prev) => ({
+                          ...prev,
+                          status: tab.value,
+                          page: undefined,
+                          selected: undefined,
+                        })}
+                        aria-current={active ? 'page' : undefined}
+                        className={cn(
+                          'text-muted-foreground hover:text-foreground text-ui flex h-7 shrink-0 items-center gap-1.5 rounded-md px-2.5 whitespace-nowrap transition-colors',
+                          active && 'bg-muted text-foreground font-medium'
+                        )}
+                      >
+                        {tab.label}
+                        <span className="text-muted-foreground text-xs tabular-nums">
+                          {data.counts[tab.value]}
+                        </span>
+                      </Link>
+                    );
+                  })}
               </nav>
             )}
             {canPublish && checkedIds.length === 0 && (
@@ -605,6 +614,13 @@ function PostListItem({
       ? row.publishedAt
       : (row.scheduledAt ?? row.updatedAt);
   const meta = [row.categories.map((c) => c.name).join(', '), row.author].filter(Boolean);
+  // Only live posts: a draft is expected to be unfinished.
+  const gaps =
+    row.status === 'published' && !inTrash
+      ? [row.noDescription && 'search description', row.noShareImage && 'share image'].filter(
+          (gap): gap is string => Boolean(gap)
+        )
+      : [];
 
   const open = () =>
     inTrash ? undefined : navigate({ to: '/posts/$postId', params: { postId: row.id } });
@@ -616,6 +632,7 @@ function PostListItem({
       select={select}
       swipe={swipe}
       menu={menu}
+      previews={!inTrash && isDesktop()}
       // Below lg there is no preview pane: a tap opens the editor instead.
       onOpen={() => (isDesktop() ? onSelect() : open())}
       onDoubleClick={open}
@@ -643,6 +660,12 @@ function PostListItem({
         />
         {meta.length > 0 && <span className="min-w-0 truncate">{['', ...meta].join(' · ')}</span>}
       </span>
+      {gaps.length > 0 && (
+        <span className="mt-0.5 flex items-center gap-1 text-xs text-amber-700 dark:text-amber-400">
+          <CircleAlertIcon aria-hidden className="size-3 shrink-0" />
+          <span className="truncate">No {gaps.join(' or ')}</span>
+        </span>
+      )}
     </ListRow>
   );
 }

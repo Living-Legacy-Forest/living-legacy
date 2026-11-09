@@ -126,6 +126,9 @@ export const listPosts = createServerFn({ method: 'GET' })
           reviewerId: posts.reviewerId,
           createdBy: posts.createdBy,
           author: teamMembers.name,
+          // The same gaps Content checks lists, so the list can flag them too.
+          noDescription: sql<boolean>`coalesce(trim(${posts.seoDescription}), '') = '' and coalesce(trim(${posts.excerpt}), '') = ''`,
+          noShareImage: sql<boolean>`${posts.ogMediaId} is null and ${posts.featuredMediaId} is null`,
         })
         .from(posts)
         .leftJoin(teamMembers, eq(teamMembers.id, posts.authorId))
@@ -161,6 +164,8 @@ export const listPosts = createServerFn({ method: 'GET' })
       rows: rows.map((row) => ({
         ...row,
         hasDraft: Boolean(row.hasDraft),
+        noDescription: Boolean(row.noDescription),
+        noShareImage: Boolean(row.noShareImage),
         publishedAt: row.publishedAt?.getTime() ?? null,
         updatedAt: row.updatedAt.getTime(),
         deletedAt: row.deletedAt?.getTime() ?? null,

@@ -163,7 +163,7 @@ function PhoneBar({ editor, canDiscard, onImport }: ActionsProps) {
 
   if (access === 'full' || access === 'author') {
     add({
-      label: isLive ? 'Save changes' : 'Save draft',
+      label: 'Save draft',
       onClick: editor.save,
       disabled: working || (!dirty && meta.id !== null),
     });
@@ -209,7 +209,7 @@ function PhoneBar({ editor, canDiscard, onImport }: ActionsProps) {
         {editor.busy === 'publish'
           ? 'Publishing…'
           : isLive
-            ? 'Update'
+            ? 'Publish changes'
             : meta.scheduledAt
               ? 'Publish now'
               : 'Publish'}
@@ -243,7 +243,7 @@ function PublisherActions({ editor, canDiscard, onImport }: ActionsProps) {
       {canDiscard && <DiscardButton editor={editor} />}
       <SaveButton
         editor={editor}
-        label={isLive ? 'Save changes' : 'Save draft'}
+        label={'Save draft'}
         // A plain text button reads as a label on a phone; outline it there.
         className="max-md:bg-background max-md:flex-1 max-md:border max-md:shadow-xs"
       />
@@ -262,7 +262,7 @@ function PublisherActions({ editor, canDiscard, onImport }: ActionsProps) {
           ) : (
             <>
               <SendIcon aria-hidden data-icon="inline-start" />
-              {isLive ? 'Update' : meta.scheduledAt ? 'Publish now' : 'Publish'}
+              {isLive ? 'Publish changes' : meta.scheduledAt ? 'Publish now' : 'Publish'}
             </>
           )}
         </Button>

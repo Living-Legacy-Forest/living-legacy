@@ -20,7 +20,7 @@ function DashboardPage() {
       <h1 data-slot="page-title" className="text-2xl">
         Welcome, {firstName}
       </h1>
-      <Dashboard data={data} user={user} />
+      <Dashboard data={data} />
     </div>
   );
 }

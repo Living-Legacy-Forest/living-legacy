@@ -9,7 +9,6 @@ import {
   FileText,
   MediaIcon,
   LayoutDashboard,
-  Link2Off,
   ListTodo,
   MegaphoneIcon,
   MapPinIcon,
@@ -42,7 +41,6 @@ export type NavItem = {
     | '/media'
     | '/locations'
     | '/media-coverage'
-    | '/missing-pages'
     | '/redirects'
     | '/settings'
     | '/team'
@@ -69,7 +67,6 @@ export const navGroups: NavGroup[] = [
         icon: FileText,
         items: [
           { title: 'All posts', to: '/posts' },
-          { title: 'Add new', to: '/posts/new' },
           { title: 'Categories', to: '/posts/categories' },
           { title: 'Tags', to: '/posts/tags' },
         ],
@@ -105,12 +102,6 @@ export const navGroups: NavGroup[] = [
     items: [
       { title: 'Activity', icon: ActivityIcon, to: '/activity', permission: 'posts:publish' },
       { title: 'Redirects', icon: ArrowRightLeft, to: '/redirects', permission: 'redirects:write' },
-      {
-        title: 'Missing pages',
-        icon: Link2Off,
-        to: '/missing-pages',
-        permission: 'redirects:write',
-      },
       { title: 'Users', icon: UserCog, to: '/users', permission: 'users:manage' },
       { title: 'API keys', icon: KeyIcon, to: '/api-keys', permission: 'settings:write' },
       {
@@ -133,7 +124,8 @@ export const phoneTabs: (NavItem & { to: NonNullable<NavItem['to']>; icon: Lucid
   { title: 'Dashboard', icon: LayoutDashboard, to: '/' },
   { title: 'Posts', icon: FileText, to: '/posts' },
   { title: 'Media', icon: MediaIcon, to: '/media', permission: 'media:write' },
-  { title: 'Locations', icon: MapPinIcon, to: '/locations' },
+  // Events over Locations: guest check-in on open days is what a phone is used for.
+  { title: 'Events', icon: CalendarClockIcon, to: '/events', permission: 'events:manage' },
 ];
 
 /** The post editor, which has the whole screen on phones (no tab bar). */

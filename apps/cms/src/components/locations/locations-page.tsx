@@ -21,7 +21,7 @@ import {
   isDesktop,
   useListPane,
 } from '@/components/list/list-page';
-import { ListRow } from '@/components/list/list-row';
+import { ListRow, editMenuItems, publishMenuItem } from '@/components/list/list-row';
 import {
   ConfirmBulkDelete,
   SearchInput,
@@ -76,7 +76,8 @@ import {
 import { Spinner } from '@/components/ui/spinner';
 import { Textarea } from '@/components/ui/textarea';
 import { reportInvalid } from '@/lib/form-validation';
-import { removedNotice } from '@/lib/notify';
+import { removedNotice, statusNotice } from '@/lib/notify';
+import { openInNewTab } from '@/lib/site';
 import { useAction } from '@/lib/use-action';
 import { cn } from '@/lib/utils';
 import {
@@ -84,6 +85,7 @@ import {
   type LocationsData,
   deleteLocations,
   saveLocation,
+  setLocationStatus,
 } from '@/server/locations';
 
 type Search = { selected?: string };
@@ -271,6 +273,35 @@ export function LocationsPage({
                         ? { label: 'Delete', onAction: () => setToDelete([l.id]) }
                         : undefined
                     }
+                    previews={isDesktop()}
+                    menu={[
+                      ...editMenuItems(canWrite && isDesktop(), () =>
+                        view.open({ kind: 'edit', id: l.id })
+                      ),
+                      ...(l.latitude !== null && l.longitude !== null
+                        ? [
+                            {
+                              label: 'Open in Maps',
+                              icon: <MapPinIcon aria-hidden />,
+                              onSelect: () =>
+                                openInNewTab(
+                                  `https://www.google.com/maps/search/?api=1&query=${l.latitude},${l.longitude}`
+                                ),
+                              shortcut: { key: 'm' },
+                            },
+                          ]
+                        : []),
+                      ...(canWrite
+                        ? [
+                            publishMenuItem(l.status === 'published', (status) =>
+                              run(() => setLocationStatus({ data: { id: l.id, status } }), {
+                                success: statusNotice(status),
+                                error: 'Could not change it',
+                              })
+                            ),
+                          ]
+                        : []),
+                    ]}
                     // Large screens preview on a click and edit on a double click; smaller
                     // ones have no preview, so a tap edits.
                     onOpen={() =>

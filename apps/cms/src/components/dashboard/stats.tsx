@@ -1,35 +1,31 @@
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { formatBytes, formatInteger } from '@/lib/format';
 import type { DashboardData } from '@/server/dashboard';
-import { Delta, DeltaIcon, DeltaValue } from './delta';
 
 type Stat = {
   label: string;
   value: number;
-  /** Percent change; omitted when there is nothing to compare against. */
-  delta?: number;
   hint: string;
 };
 
-/** "2 live, 1 coming soon": the stages that matter for visitors, as a short line. */
+/** "2 open to visitors, 1 coming soon": the stages that matter for visitors, as a short line. */
 function locationHint(locations: DashboardData['locations']) {
   if (locations.length === 0) return 'None added yet';
   const live = locations.filter((l) => l.stage !== 'coming_soon').length;
   const soon = locations.length - live;
-  return [live > 0 && `${live} open`, soon > 0 && `${soon} coming soon`].filter(Boolean).join(', ');
+  return [live > 0 && `${live} open to visitors`, soon > 0 && `${soon} coming soon`]
+    .filter(Boolean)
+    .join(', ');
 }
 
 function buildStats({ posts, media, locations }: DashboardData): Stat[] {
-  const { publishedLast30: last, publishedPrior30: prior } = posts;
   return [
     {
       label: 'Published posts',
       value: posts.published,
-      ...(prior > 0
-        ? { delta: ((last - prior) / prior) * 100, hint: 'published vs prior 30 days' }
-        : { hint: `${formatInteger(last)} in the last 30 days` }),
+      hint: `${formatInteger(posts.publishedLast30)} in the last 30 days`,
     },
-    { label: 'Drafts', value: posts.drafts, hint: 'Waiting to be published' },
+    { label: 'Drafts', value: posts.drafts, hint: 'Not on the website yet' },
     {
       label: 'Media files',
       value: media.files,
@@ -53,7 +49,7 @@ export function DashboardStats({ data }: { data: DashboardData }) {
 }
 
 function StatCard({ stat }: { stat: Stat }) {
-  const { label, value, delta, hint } = stat;
+  const { label, value, hint } = stat;
   return (
     <Card>
       <CardHeader>
@@ -65,12 +61,6 @@ function StatCard({ stat }: { stat: Stat }) {
         </p>
       </CardContent>
       <CardFooter className="mt-auto gap-1.5 text-xs">
-        {delta !== undefined && (
-          <Delta value={delta} variant="default">
-            <DeltaIcon />
-            <DeltaValue precision={0} />
-          </Delta>
-        )}
         <span className="text-muted-foreground text-pretty">{hint}</span>
       </CardFooter>
     </Card>

@@ -29,6 +29,8 @@ import {
   ExternalLinkIcon,
   LinkIcon,
   PlusIcon,
+  ToggleOffIcon,
+  ToggleOnIcon,
   Trash2Icon,
   UploadIcon,
 } from '@/components/icons';
@@ -75,6 +77,7 @@ import {
   deleteRedirects,
   importRedirects,
   saveRedirect,
+  setRedirectEnabled,
 } from '@/server/redirects';
 
 type Code = '301' | '302' | '410';
@@ -168,8 +171,11 @@ export function RedirectsPage({
   data,
   initialFrom,
   onOpenedInitial,
+  switcher,
 }: {
   data: RedirectsData;
+  /** Switches to Missing pages, which shares this page. */
+  switcher?: React.ReactNode;
   /** An old path to start a new redirect for, from ?from= in the address. */
   initialFrom?: string;
   /** Clears ?from= once used, so going back does not open the form again. */
@@ -270,9 +276,12 @@ export function RedirectsPage({
   return (
     <div className="flex flex-1 flex-col gap-4 lg:h-[calc(100svh-7.5rem)] lg:flex-none">
       <div className="flex flex-wrap items-center gap-3">
-        <h1 data-slot="page-title" className="mr-auto text-xl">
-          Redirects
-        </h1>
+        <div className="mr-auto flex flex-wrap items-center gap-3 max-md:w-full">
+          <h1 data-slot="page-title" className="text-xl">
+            Redirects
+          </h1>
+          {switcher}
+        </div>
         {data.length > 0 && (
           <>
             <SearchInput
@@ -366,7 +375,35 @@ export function RedirectsPage({
                       onToggle: () => selection.toggle(r.id),
                     }}
                     swipe={{ label: 'Delete', onAction: () => setToDelete([r.id]) }}
-                    menu={redirectMenu(r)}
+                    menu={[
+                      ...(redirectMenu(r) ?? []),
+                      {
+                        label: r.enabled ? 'Turn off' : 'Turn on',
+                        icon: r.enabled ? (
+                          <ToggleOffIcon aria-hidden />
+                        ) : (
+                          <ToggleOnIcon aria-hidden />
+                        ),
+                        destructive: r.enabled,
+                        shortcut: { key: 'o' },
+                        onSelect: () =>
+                          void run(
+                            () => setRedirectEnabled({ data: { id: r.id, enabled: !r.enabled } }),
+                            {
+                              success: r.enabled
+                                ? {
+                                    title: 'Redirect turned off',
+                                    description: `${r.fromPath} no longer redirects.`,
+                                  }
+                                : {
+                                    title: 'Redirect turned on',
+                                    description: `${r.fromPath} redirects again.`,
+                                  },
+                              error: 'Could not change it',
+                            }
+                          ),
+                      },
+                    ]}
                     onOpen={() => view.open({ kind: 'edit', id: r.id })}
                   >
                     <RedirectSummary redirect={r} />

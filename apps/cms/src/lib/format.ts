@@ -2,36 +2,6 @@ import { parseClock } from '@ll/content';
 
 const LOCALE = 'en-AU';
 
-/** Noon anchor avoids off-by-one labels around timezone boundaries for ISO date strings. */
-function parseIsoCalendarDate(isoDate: string): Date {
-  return new Date(`${isoDate}T12:00:00`);
-}
-
-/** Chart axis label for a day: "21 Oct". */
-export function formatChartAxisTick(isoDate: string): string {
-  return parseIsoCalendarDate(isoDate).toLocaleDateString(LOCALE, {
-    day: 'numeric',
-    month: 'short',
-  });
-}
-
-/** Chart tooltip label for a run of days: "21 to 27 Oct 2026", or one day on its own. */
-export function formatChartRange(startIso: string, endIso: string): string {
-  const start = parseIsoCalendarDate(startIso);
-  const end = parseIsoCalendarDate(endIso);
-  const full = { day: 'numeric', month: 'short', year: 'numeric' } as const;
-  if (startIso === endIso) return end.toLocaleDateString(LOCALE, full);
-  const from = start.toLocaleDateString(
-    LOCALE,
-    start.getFullYear() !== end.getFullYear()
-      ? full
-      : start.getMonth() !== end.getMonth()
-        ? { day: 'numeric', month: 'short' }
-        : { day: 'numeric' }
-  );
-  return `${from} to ${end.toLocaleDateString(LOCALE, full)}`;
-}
-
 export function formatInteger(value: number) {
   return new Intl.NumberFormat(LOCALE).format(value);
 }

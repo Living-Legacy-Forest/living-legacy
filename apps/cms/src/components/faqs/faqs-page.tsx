@@ -14,7 +14,7 @@ import {
   PaneFrame,
   useListPane,
 } from '@/components/list/list-page';
-import { ListRow, moveMenuItems } from '@/components/list/list-row';
+import { ListRow, moveMenuItems, publishMenuItem } from '@/components/list/list-row';
 import {
   ConfirmBulkDelete,
   SearchInput,
@@ -73,7 +73,7 @@ import { Spinner } from '@/components/ui/spinner';
 import { Textarea } from '@/components/ui/textarea';
 import { readStatus } from '@/lib/bulk-import';
 import { reportInvalid } from '@/lib/form-validation';
-import { removedNotice } from '@/lib/notify';
+import { removedNotice, statusNotice } from '@/lib/notify';
 import { useAction } from '@/lib/use-action';
 import {
   type Faq,
@@ -86,6 +86,7 @@ import {
   moveFaq,
   saveFaq,
   saveFaqGroup,
+  setFaqStatus,
 } from '@/server/faqs';
 import { TagInput } from './tag-input';
 import { FormBlock, FormCell, FormSection, FormSwitchCell } from '@/components/form-cells';
@@ -565,14 +566,22 @@ function FaqSection({
               swipe={canWrite ? { label: 'Delete', onAction: () => onDelete(faq) } : undefined}
               menu={
                 canWrite
-                  ? moveMenuItems(
-                      !searching && index > 0,
-                      !searching && index < faqs.length - 1,
-                      (direction) =>
-                        run(() => moveFaq({ data: { id: faq.id, direction } }), {
-                          error: 'Could not move the FAQ',
+                  ? [
+                      ...moveMenuItems(
+                        !searching && index > 0,
+                        !searching && index < faqs.length - 1,
+                        (direction) =>
+                          run(() => moveFaq({ data: { id: faq.id, direction } }), {
+                            error: 'Could not move the FAQ',
+                          })
+                      ),
+                      publishMenuItem(faq.status === 'published', (status) =>
+                        run(() => setFaqStatus({ data: { id: faq.id, status } }), {
+                          success: statusNotice(status),
+                          error: 'Could not change it',
                         })
-                    )
+                      ),
+                    ]
                   : undefined
               }
               actions={

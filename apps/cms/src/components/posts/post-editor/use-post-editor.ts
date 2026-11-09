@@ -158,7 +158,7 @@ export function usePostEditor({
         notify.success(
           kind === 'publish'
             ? meta.status === 'published'
-              ? { title: 'Post updated', description: 'The changes are live on the website.' }
+              ? { title: 'Changes published', description: 'They are live on the website.' }
               : meta.scheduledAt
                 ? {
                     title: 'Post published',
@@ -167,8 +167,8 @@ export function usePostEditor({
                 : { title: 'Post published', description: 'It is live on the website.' }
             : meta.status === 'published'
               ? {
-                  title: 'Changes saved',
-                  description: 'They go live when you update the post.',
+                  title: 'Draft saved',
+                  description: 'The live post stays as it is until you publish the changes.',
                 }
               : { title: 'Draft saved', description: 'Only people in the CMS can see it.' }
         );
@@ -404,7 +404,7 @@ export function usePostEditor({
         title: 'Revision loaded',
         description:
           meta.status === 'published'
-            ? 'Update the post to make it live.'
+            ? 'Publish the changes to make it live.'
             : 'Save the post to keep it.',
       });
     } catch (error) {

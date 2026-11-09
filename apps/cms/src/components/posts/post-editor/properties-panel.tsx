@@ -1,4 +1,4 @@
-import type { ReactNode } from 'react';
+import { type ReactNode, useEffect } from 'react';
 import {
   CalendarClockIcon,
   ChevronRightIcon,
@@ -20,7 +20,21 @@ import { SeoFields } from './seo-fields';
 import type { PostEditorState } from './use-post-editor';
 
 /** The sidebar beside the post: properties, featured image, search listing, revisions. */
-export function PropertiesPanel({ editor }: { editor: PostEditorState }) {
+export function PropertiesPanel({
+  editor,
+  focus,
+}: {
+  editor: PostEditorState;
+  focus?: 'seo' | 'image';
+}) {
+  // Arriving to fix one thing: bring its section into view.
+  useEffect(() => {
+    if (!focus) return;
+    document
+      .getElementById(`post-section-${focus}`)
+      ?.scrollIntoView({ block: 'center', behavior: 'smooth' });
+  }, [focus]);
+
   const timeZone = useTimeZone();
   const { values, meta, update, contentLocked } = editor;
 
@@ -80,7 +94,7 @@ export function PropertiesPanel({ editor }: { editor: PostEditorState }) {
         </fieldset>
       </Section>
 
-      <Section title="Featured image" defaultOpen>
+      <Section id="post-section-image" title="Featured image" defaultOpen>
         <fieldset disabled={contentLocked} className="min-w-0 disabled:opacity-70">
           <ImageField
             id="post-featured"
@@ -94,7 +108,7 @@ export function PropertiesPanel({ editor }: { editor: PostEditorState }) {
         </fieldset>
       </Section>
 
-      <Section title="Search listing">
+      <Section id="post-section-seo" title="Search listing" defaultOpen={focus === 'seo'}>
         <fieldset disabled={editor.access === 'readonly'} className="min-w-0">
           <SeoFields values={values} onChange={update} />
         </fieldset>
@@ -154,12 +168,14 @@ function Property({
 }
 
 function Section({
+  id,
   title,
   count,
   defaultOpen = false,
   first = false,
   children,
 }: {
+  id?: string;
   title: string;
   count?: number;
   defaultOpen?: boolean;
@@ -168,7 +184,11 @@ function Section({
   children: ReactNode;
 }) {
   return (
-    <Collapsible defaultOpen={defaultOpen} className={cn('pt-4', !first && 'border-t')}>
+    <Collapsible
+      id={id}
+      defaultOpen={defaultOpen}
+      className={cn('scroll-mt-6 pt-4', !first && 'border-t')}
+    >
       <CollapsibleTrigger className="group text-muted-foreground hover:text-foreground flex w-full items-center gap-1 text-xs font-medium">
         <ChevronRightIcon
           aria-hidden

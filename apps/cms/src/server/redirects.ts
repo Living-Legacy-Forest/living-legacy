@@ -323,3 +323,23 @@ export const importRedirects = createServerFn({ method: 'POST' })
     result.added = inserts.length;
     return result;
   });
+
+/** Turns a redirect on or off from the list's row menu. */
+export const setRedirectEnabled = createServerFn({ method: 'POST' })
+  .middleware([requirePermission('redirects:write')])
+  .validator(z.object({ id: z.string(), enabled: z.boolean() }))
+  .handler(async ({ data, context }) => {
+    const db = getDb();
+    const existing = await db.query.redirects.findFirst({ where: eq(redirects.id, data.id) });
+    if (!existing) throw new Error('That redirect no longer exists.');
+    await db
+      .update(redirects)
+      .set({ enabled: data.enabled, updatedAt: new Date() })
+      .where(eq(redirects.id, data.id));
+    await logActivity(db, {
+      actorId: context.user.id,
+      actorName: context.user.name,
+      action: 'redirect.updated',
+      summary: `Turned ${data.enabled ? 'on' : 'off'} the redirect from ${existing.fromPath}`,
+    });
+  });

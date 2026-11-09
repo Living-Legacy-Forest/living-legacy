@@ -23,34 +23,7 @@ const DAY_MS = 24 * 60 * 60 * 1000;
 export const listMissingPages = createServerFn({ method: 'GET' })
   .middleware([requirePermission('redirects:write')])
   .handler(async () => {
-    const db = getDb();
-    const [rows, rules] = await db.batch([
-      db
-        .select()
-        .from(notFoundPaths)
-        .where(isNull(notFoundPaths.dismissedAt))
-        .orderBy(desc(notFoundPaths.hits), desc(notFoundPaths.lastSeenAt))
-        .limit(SHOWN * 2),
-      db
-        .select({
-          id: redirects.id,
-          fromPath: redirects.fromPath,
-          toPath: redirects.toPath,
-          statusCode: redirects.statusCode,
-          keepQuery: redirects.keepQuery,
-        })
-        .from(redirects)
-        .where(eq(redirects.enabled, true)),
-    ]);
-    const open = rows
-      .filter((r) => !matchRedirect(rules satisfies RedirectRule[], r.path))
-      .slice(0, SHOWN);
-    return open.map((r) => ({
-      path: r.path,
-      hits: r.hits,
-      firstSeenAt: r.firstSeenAt.getTime(),
-      lastSeenAt: r.lastSeenAt.getTime(),
-    }));
+    return loadMissingPages(getDb());
   });
 
 export type MissingPage = Awaited<ReturnType<typeof listMissingPages>>[number];
@@ -85,4 +58,35 @@ export async function pruneMissingPages(d1: D1Database, now: Date) {
   } catch (error) {
     console.error('[not found] could not prune missing pages', error);
   }
+}
+
+/** Missing paths no redirect catches yet, busiest first; the page and the dashboard share it. */
+export async function loadMissingPages(db: ReturnType<typeof getDb>) {
+  const [rows, rules] = await db.batch([
+    db
+      .select()
+      .from(notFoundPaths)
+      .where(isNull(notFoundPaths.dismissedAt))
+      .orderBy(desc(notFoundPaths.hits), desc(notFoundPaths.lastSeenAt))
+      .limit(SHOWN * 2),
+    db
+      .select({
+        id: redirects.id,
+        fromPath: redirects.fromPath,
+        toPath: redirects.toPath,
+        statusCode: redirects.statusCode,
+        keepQuery: redirects.keepQuery,
+      })
+      .from(redirects)
+      .where(eq(redirects.enabled, true)),
+  ]);
+  const open = rows
+    .filter((r) => !matchRedirect(rules satisfies RedirectRule[], r.path))
+    .slice(0, SHOWN);
+  return open.map((r) => ({
+    path: r.path,
+    hits: r.hits,
+    firstSeenAt: r.firstSeenAt.getTime(),
+    lastSeenAt: r.lastSeenAt.getTime(),
+  }));
 }

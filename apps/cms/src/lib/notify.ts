@@ -46,3 +46,17 @@ export function removedNotice(count: number, [one, many]: readonly [string, stri
     description: `${count === 1 ? 'It is' : 'They are'} gone from the CMS and the website.`,
   };
 }
+
+/** The toast after a row's Publish or Unpublish. */
+export function statusNotice(status: 'draft' | 'published'): Notice {
+  return status === 'published'
+    ? { title: 'Published', description: 'It shows on the website now.' }
+    : { title: 'Unpublished', description: 'It is hidden from the website, and kept as a draft.' };
+}
+
+/** The toast after a row's Feature or Remove from featured. */
+export function featuredNotice(featured: boolean): Notice {
+  return featured
+    ? { title: 'Featured', description: 'The website shows it ahead of the others.' }
+    : { title: 'No longer featured', description: 'It takes its usual place on the website.' };
+}

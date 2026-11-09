@@ -242,7 +242,7 @@ export function UrlPicker({
         </div>
         {(changed || (liveSlug !== null && slugify(draft) !== liveSlug)) && (
           <p className="text-muted-foreground text-xs">
-            The old link /blog/{liveSlug} will redirect here once you update the post.
+            The old link /blog/{liveSlug} will redirect here once you publish the changes.
           </p>
         )}
         <div className="flex justify-end">

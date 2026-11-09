@@ -4,7 +4,12 @@ import {
   ArrowUpIcon,
   ChevronRightIcon,
   CircleCheckIcon,
+  EyeIcon,
+  EyeOffIcon,
   PanelRightIcon,
+  PencilIcon,
+  SendIcon,
+  StarIcon,
   Trash2Icon,
 } from '@/components/icons';
 import {
@@ -68,19 +73,21 @@ function matchesShortcut(event: React.KeyboardEvent, { key, alt }: RowShortcut) 
 /** Open, Select, the page's items, then the red group: the menu and the shortcuts share it. */
 function rowActions({
   onOpen,
+  previews,
   onSelect,
   items,
   swipe,
 }: {
   onOpen: () => void;
+  previews?: boolean;
   onSelect?: () => void;
   items: RowMenuItem[];
   swipe?: { label: string; onAction: () => void };
 }) {
   const actions: RowMenuItem[] = [
     {
-      label: 'Open',
-      icon: <PanelRightIcon aria-hidden />,
+      label: previews ? 'Preview' : 'Open',
+      icon: previews ? <EyeIcon aria-hidden /> : <PanelRightIcon aria-hidden />,
       onSelect: onOpen,
       shortcut: { key: 'Enter' },
     },
@@ -110,6 +117,54 @@ function rowActions({
       : []),
   ];
   return { actions, destructive };
+}
+
+/** Publish, or Unpublish (with the red actions), for content with a draft/published switch. */
+export function publishMenuItem(
+  published: boolean,
+  setStatus: (status: 'draft' | 'published') => void
+): RowMenuItem {
+  return published
+    ? {
+        label: 'Unpublish',
+        icon: <EyeOffIcon aria-hidden />,
+        onSelect: () => setStatus('draft'),
+        destructive: true,
+        shortcut: { key: 'u' },
+      }
+    : {
+        label: 'Publish',
+        icon: <SendIcon aria-hidden />,
+        onSelect: () => setStatus('published'),
+        shortcut: { key: 'p' },
+      };
+}
+
+/** Feature, or take off the featured spot. */
+export function featureMenuItem(
+  featured: boolean,
+  setFeatured: (next: boolean) => void
+): RowMenuItem {
+  return {
+    label: featured ? 'Remove from featured' : 'Feature',
+    icon: <StarIcon aria-hidden />,
+    onSelect: () => setFeatured(!featured),
+    shortcut: { key: 'f' },
+  };
+}
+
+/** Edit, for rows whose click shows a preview. Where a click already edits, leave it out. */
+export function editMenuItems(show: boolean, onEdit: () => void): RowMenuItem[] {
+  return show
+    ? [
+        {
+          label: 'Edit',
+          icon: <PencilIcon aria-hidden />,
+          onSelect: onEdit,
+          shortcut: { key: 'e' },
+        },
+      ]
+    : [];
 }
 
 /** Move up and Move down for a hand-sorted list, leaving out a move that can't happen. */
@@ -161,6 +216,7 @@ export function ListRow({
   trailing,
   swipe,
   menu,
+  previews,
   onOpen,
   onDoubleClick,
   buttonProps,
@@ -178,6 +234,8 @@ export function ListRow({
   swipe?: { label: string; onAction: () => void };
   /** Extra actions for the row's context menu, between Open and the swipe action. */
   menu?: RowMenuItem[];
+  /** A click shows a preview here rather than the edit form, so the menu says Preview. */
+  previews?: boolean;
   onOpen: () => void;
   onDoubleClick?: () => void;
   /** Extra attributes for the row's main button (e.g. keyboard handling). */
@@ -190,6 +248,7 @@ export function ListRow({
   const hasMenu = !selecting && !!(menu?.length || swipe || select);
   const { actions: menuActions, destructive } = rowActions({
     onOpen,
+    previews,
     onSelect: select?.onToggle,
     items: menu ?? [],
     swipe,
@@ -380,7 +439,7 @@ function RowMenu({
               >
                 {preview}
               </div>
-              <div className="w-62 max-w-full overflow-hidden rounded-[13px] bg-(--ios-cell-raised)/90 shadow-xl backdrop-blur-xl">
+              <div className="w-72 max-w-full overflow-hidden rounded-[13px] bg-(--ios-cell-raised)/90 shadow-xl backdrop-blur-xl">
                 <div className="divide-y divide-(--ios-separator)">
                   {actions.map((item) => (
                     <TouchMenuItem key={item.label} item={item} />
@@ -398,9 +457,14 @@ function RowMenu({
           </ContextMenuPrimitive.Positioner>
         </ContextMenuPrimitive.Portal>
       ) : (
-        <ContextMenuContent>
+        <ContextMenuContent className="min-w-56 p-1.5">
           {actions.map((item) => (
-            <ContextMenuItem key={item.label} disabled={item.disabled} onClick={item.onSelect}>
+            <ContextMenuItem
+              key={item.label}
+              className={DESKTOP_ITEM}
+              disabled={item.disabled}
+              onClick={item.onSelect}
+            >
               {item.icon}
               {item.label}
               {item.shortcut && <ShortcutKeys shortcut={item.shortcut} />}
@@ -410,6 +474,7 @@ function RowMenu({
           {destructive.map((item) => (
             <ContextMenuItem
               key={item.label}
+              className={DESKTOP_ITEM}
               variant="destructive"
               disabled={item.disabled}
               onClick={item.onSelect}
@@ -425,6 +490,9 @@ function RowMenu({
   );
 }
 
+/** Roomier rows with smaller type than the default menu, so a long menu stays easy to scan. */
+const DESKTOP_ITEM = "text-ui gap-2 py-1.5 [&_svg:not([class*='size-'])]:size-3.5";
+
 /** A UIKit menu row: body-sized label, icon at the trailing edge. */
 function TouchMenuItem({ item, destructive }: { item: RowMenuItem; destructive?: boolean }) {
   return (
@@ -432,7 +500,7 @@ function TouchMenuItem({ item, destructive }: { item: RowMenuItem; destructive?:
       disabled={item.disabled}
       onClick={item.onSelect}
       className={cn(
-        'flex min-h-11 w-full items-center justify-between gap-3 px-4 text-[1.0625rem] outline-none select-none active:bg-(--ios-fill) data-disabled:opacity-40 [&_svg]:size-5',
+        'flex min-h-11 w-full items-center justify-between gap-3 px-4 text-[0.9375rem] outline-none select-none active:bg-(--ios-fill) data-disabled:opacity-40 [&_svg]:size-4',
         destructive && 'text-destructive'
       )}
     >

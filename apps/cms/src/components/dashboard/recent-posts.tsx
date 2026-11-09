@@ -27,7 +27,7 @@ export function RecentPosts({
   published: PostSummary[];
 }) {
   return (
-    <Card className="col-span-2">
+    <Card className="col-span-2 lg:col-span-4">
       <CardHeader>
         <CardTitle>Recent posts</CardTitle>
       </CardHeader>
@@ -100,7 +100,7 @@ function PostList({
                 )}
               </ItemMedia>
               <ItemContent>
-                <ItemTitle className="line-clamp-1">{post.title || 'Untitled'}</ItemTitle>
+                <ItemTitle className="line-clamp-2">{post.title || 'Untitled'}</ItemTitle>
                 <ItemDescription>
                   {verb} {formatRelative(post.at)}
                 </ItemDescription>

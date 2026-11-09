@@ -54,6 +54,8 @@ export const posts = sqliteTable(
     seoDescription: text('seo_description'),
     ogMediaId: text('og_media_id').references(() => media.id, { onDelete: 'set null' }),
     noindex: integer('noindex', { mode: 'boolean' }).notNull().default(false),
+    focusKeyword: text('focus_keyword'),
+    relatedTerms: text('related_terms', { mode: 'json' }).$type<string[]>().notNull().default([]),
     /** When a draft goes live on its own; cleared on publish, unschedule or trash. */
     scheduledAt: integer('scheduled_at', { mode: 'timestamp_ms' }),
     // Set when an author asks for review; publishing clears it.

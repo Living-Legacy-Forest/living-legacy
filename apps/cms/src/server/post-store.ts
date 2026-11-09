@@ -59,6 +59,8 @@ export async function liveInput(db: Db, row: PostRow): Promise<PostInput> {
     seoDescription: row.seoDescription ?? '',
     ogMediaId: row.ogMediaId,
     noindex: row.noindex,
+    focusKeyword: row.focusKeyword ?? '',
+    relatedTerms: row.relatedTerms ?? [],
   };
 }
 
@@ -127,6 +129,8 @@ export async function columnWrites(db: Db, id: string, input: PostInput) {
     seoDescription: input.seoDescription || null,
     ogMediaId: input.ogMediaId,
     noindex: input.noindex,
+    focusKeyword: input.focusKeyword || null,
+    relatedTerms: input.relatedTerms,
   };
   const termStatements: Statement[] = [
     db.delete(postTerms).where(eq(postTerms.postId, id)),

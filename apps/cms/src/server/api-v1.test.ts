@@ -28,6 +28,8 @@ const row = (overrides: Partial<PostRow> = {}): PostRow => ({
   seoDescription: null,
   ogMediaId: null,
   noindex: false,
+  focusKeyword: null,
+  relatedTerms: [],
   scheduledAt: null,
   reviewRequestedAt: null,
   reviewerId: null,

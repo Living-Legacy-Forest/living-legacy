@@ -3,6 +3,20 @@ import { z } from 'zod';
 export const SLUG_PATTERN = /^[a-z0-9]+(?:-[a-z0-9]+)*$/;
 export const SEO_TITLE_LIMIT = 60;
 export const SEO_DESCRIPTION_LIMIT = 160;
+export const FOCUS_KEYWORD_LIMIT = 80;
+export const RELATED_TERM_LIMIT = 60;
+export const RELATED_TERMS_MAX = 10;
+
+/** Keeps the first of terms that differ only in case. */
+export function uniqueTerms(terms: string[]): string[] {
+  const seen = new Set<string>();
+  return terms.filter((term) => {
+    const key = term.toLocaleLowerCase('en-AU');
+    if (seen.has(key)) return false;
+    seen.add(key);
+    return true;
+  });
+}
 
 /** Public URL path of a blog post on the website. */
 export const blogPath = (slug: string) => `/blog/${slug}`;
@@ -132,6 +146,14 @@ export const postInputSchema = z.object({
   seoDescription: z.string().trim().max(320),
   ogMediaId: z.string().nullable(),
   noindex: z.boolean(),
+  // For the CMS content score only; the website never renders them. The
+  // defaults keep drafts and revisions saved before these existed readable.
+  focusKeyword: z.string().trim().max(FOCUS_KEYWORD_LIMIT).default(''),
+  relatedTerms: z
+    .array(z.string().trim().min(1).max(RELATED_TERM_LIMIT))
+    .max(RELATED_TERMS_MAX)
+    .transform(uniqueTerms)
+    .default([]),
 });
 
 export type PostInput = z.infer<typeof postInputSchema>;
@@ -149,6 +171,8 @@ export const emptyPostInput: PostInput = {
   seoDescription: '',
   ogMediaId: null,
   noindex: false,
+  focusKeyword: '',
+  relatedTerms: [],
 };
 
 /** Extra rules that only apply when a post goes live. */

@@ -24,6 +24,7 @@ const row = (overrides: Partial<PostRow> = {}): PostRow => ({
   body: null,
   featuredMediaId: null,
   authorId: null,
+  locationId: null,
   seoTitle: null,
   seoDescription: null,
   ogMediaId: null,

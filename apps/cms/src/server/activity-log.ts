@@ -22,7 +22,8 @@ export function logActivity(db: Db, entry: LogEntry) {
   return db.insert(activityLog).values(entry);
 }
 
-export const ACTIVITY_PAGE_SIZE = 50;
+/** Entries per page on the Activity page. */
+export const ACTIVITY_PAGE_SIZE = 15;
 
 /** What the log can be narrowed to: the part of each action before the dot. */
 export const activityKinds = ['post', 'event', 'user', 'redirect', 'settings', 'api_key'] as const;

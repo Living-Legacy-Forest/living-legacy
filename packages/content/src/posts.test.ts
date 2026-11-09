@@ -194,6 +194,12 @@ describe('postInputSchema focus keyword and related terms', () => {
     expect(parsed.relatedTerms).toEqual([]);
   });
 
+  it('gives input saved before locations existed no location', () => {
+    const older: Partial<PostInput> = { ...emptyPostInput };
+    delete older.locationId;
+    expect(postInputSchema.parse(older).locationId).toBeNull();
+  });
+
   it('trims terms and drops repeats regardless of case', () => {
     const parsed = postInputSchema.parse({
       ...emptyPostInput,

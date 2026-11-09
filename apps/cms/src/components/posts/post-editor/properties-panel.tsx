@@ -6,6 +6,7 @@ import {
   GlobeIcon,
   LinkIcon,
   type LucideIcon,
+  MapPinIcon,
   TagIcon,
   UserIcon,
 } from '@/components/icons';
@@ -67,6 +68,15 @@ export function PropertiesPanel({
               placeholder="Add categories"
               onChange={(categoryIds) => update({ categoryIds })}
               onCreate={editor.addCategory}
+            />
+          </Property>
+          <Property label="Location" icon={MapPinIcon}>
+            <SinglePicker
+              label="Location"
+              options={editor.locations}
+              value={values.locationId}
+              placeholder="No location"
+              onChange={(locationId) => update({ locationId })}
             />
           </Property>
           <Property label="Tags" icon={TagIcon}>

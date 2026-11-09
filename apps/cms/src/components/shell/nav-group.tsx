@@ -94,7 +94,7 @@ export function NavGroup({
                         {sub.to ? (
                           <SidebarMenuSubButton
                             isActive={isNavItemActive(sub, pathname)}
-                            className="text-ui h-7"
+                            className="text-ui data-[size=md]:text-ui h-7"
                             render={<Link to={sub.to} />}
                           >
                             <span>{sub.title}</span>
@@ -102,7 +102,7 @@ export function NavGroup({
                         ) : (
                           <SidebarMenuSubButton
                             aria-disabled
-                            className={cn('text-ui h-7', navItemSoonClass)}
+                            className={cn('text-ui data-[size=md]:text-ui h-7', navItemSoonClass)}
                           >
                             <span>{sub.title}</span>
                           </SidebarMenuSubButton>

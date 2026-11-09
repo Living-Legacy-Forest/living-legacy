@@ -14,7 +14,7 @@ import {
   PaneFrame,
   useListPane,
 } from '@/components/list/list-page';
-import { ListRow } from '@/components/list/list-row';
+import { ListRow, moveMenuItems } from '@/components/list/list-row';
 import {
   ConfirmBulkDelete,
   SearchInput,
@@ -563,6 +563,18 @@ function FaqSection({
                   : undefined
               }
               swipe={canWrite ? { label: 'Delete', onAction: () => onDelete(faq) } : undefined}
+              menu={
+                canWrite
+                  ? moveMenuItems(
+                      !searching && index > 0,
+                      !searching && index < faqs.length - 1,
+                      (direction) =>
+                        run(() => moveFaq({ data: { id: faq.id, direction } }), {
+                          error: 'Could not move the FAQ',
+                        })
+                    )
+                  : undefined
+              }
               actions={
                 canWrite && (
                   <MoveButtons

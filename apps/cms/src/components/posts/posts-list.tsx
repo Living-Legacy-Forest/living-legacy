@@ -1,12 +1,15 @@
-import { can } from '@ll/content';
+import { blogPath, can } from '@ll/content';
 import { Link, useNavigate } from '@tanstack/react-router';
 import {
   CalendarClockIcon,
   ChevronLeftIcon,
   ChevronRightIcon,
   CircleAlertIcon,
+  CopyIcon,
   ExternalLinkIcon,
+  EyeOffIcon,
   FileTextIcon,
+  LinkIcon,
   type LucideIcon,
   MoreHorizontalIcon,
   PanelRightIcon,
@@ -32,7 +35,7 @@ import {
 } from '@/components/ui/alert-dialog';
 import { Button } from '@/components/ui/button';
 import { ListRows, isDesktop } from '@/components/list/list-page';
-import { ListRow } from '@/components/list/list-row';
+import { ListRow, type RowMenuItem } from '@/components/list/list-row';
 import { SearchInput, useSelection } from '@/components/list/list-tools';
 import { PageActions } from '@/components/shell/page-actions';
 import {
@@ -59,6 +62,7 @@ import {
 } from '@/components/ui/select';
 import { formatDate, formatRelative } from '@/lib/format';
 import type { SessionUser } from '@/lib/session';
+import { copyLink, openInNewTab, siteUrl } from '@/lib/site';
 import { useAction } from '@/lib/use-action';
 import { useTimeZone } from '@/lib/use-time-zone';
 import { cn } from '@/lib/utils';
@@ -68,9 +72,11 @@ import {
   type PostListRow,
   type PostStatusTab,
   deletePosts,
+  duplicatePost,
   requestReview,
   restorePosts,
   trashPosts,
+  unpublishPost,
 } from '@/server/posts';
 import { PostArticle } from './post-article';
 import { PostStatusBadge } from './post-status-badge';
@@ -176,6 +182,83 @@ export function PostsList({
       error: 'Could not delete',
     });
     setConfirmDelete(null);
+  };
+  const unpublish = async (id: string) => {
+    clearPostPreviews();
+    await run(() => unpublishPost({ data: { id } }), {
+      success: {
+        title: 'Post unpublished',
+        description: 'It is off the website and a draft again.',
+      },
+      error: 'Could not unpublish',
+    });
+  };
+  const duplicate = async (id: string) => {
+    const copy = await run(() => duplicatePost({ data: { id } }), {
+      success: { title: 'Post duplicated', description: 'You are now editing the copy.' },
+      error: 'Could not duplicate',
+    });
+    if (copy) await navigate({ to: '/posts/$postId', params: { postId: copy.id } });
+  };
+  /** The row's context menu. Publishing needs the editor, which checks the post first. */
+  const rowMenu = (row: PostListRow): RowMenuItem[] => {
+    if (inTrash) {
+      return canPublish
+        ? [
+            {
+              label: 'Restore',
+              icon: <RotateCcwIcon aria-hidden />,
+              onSelect: () => void restore([row.id]),
+              shortcut: { key: 'r' },
+            },
+          ]
+        : [];
+    }
+    const live = row.status === 'published' ? siteUrl(`${blogPath(row.slug)}/`) : null;
+    const items: RowMenuItem[] = [];
+    // On phones Open already goes to the editor.
+    if (canWrite && isDesktop()) {
+      items.push({
+        label: 'Edit',
+        icon: <PencilIcon aria-hidden />,
+        onSelect: () => void navigate({ to: '/posts/$postId', params: { postId: row.id } }),
+        shortcut: { key: 'e' },
+      });
+    }
+    if (canWrite) {
+      items.push({
+        label: 'Duplicate',
+        icon: <CopyIcon aria-hidden />,
+        onSelect: () => void duplicate(row.id),
+        shortcut: { key: 'd' },
+      });
+    }
+    if (live) {
+      items.push(
+        {
+          label: 'View on website',
+          icon: <ExternalLinkIcon aria-hidden />,
+          onSelect: () => openInNewTab(live),
+          shortcut: { key: 'v' },
+        },
+        {
+          label: 'Copy link',
+          icon: <LinkIcon aria-hidden />,
+          onSelect: () => void copyLink(live),
+          shortcut: { key: 'c' },
+        }
+      );
+      if (canPublish) {
+        items.push({
+          label: 'Unpublish',
+          icon: <EyeOffIcon aria-hidden />,
+          destructive: true,
+          onSelect: () => void unpublish(row.id),
+          shortcut: { key: 'u' },
+        });
+      }
+    }
+    return items;
   };
   const submitReview = async (id: string, reviewerId: string | null) => {
     const result = await run(() => requestReview({ data: { id, reviewerId } }), {
@@ -389,6 +472,7 @@ export function PostsList({
                         ? { label: 'Trash', onAction: () => trash([row.id]) }
                         : undefined
                   }
+                  menu={rowMenu(row)}
                   onSelect={() => select(row.id)}
                 />
               ))}
@@ -501,6 +585,7 @@ function PostListItem({
   selected,
   select,
   swipe,
+  menu,
   onSelect,
 }: {
   row: PostListRow;
@@ -509,6 +594,7 @@ function PostListItem({
   /** Only people who may trash or restore get tick boxes. */
   select?: React.ComponentProps<typeof ListRow>['select'];
   swipe?: React.ComponentProps<typeof ListRow>['swipe'];
+  menu: RowMenuItem[];
   onSelect: () => void;
 }) {
   const navigate = useNavigate();
@@ -529,6 +615,7 @@ function PostListItem({
       current={selected}
       select={select}
       swipe={swipe}
+      menu={menu}
       // Below lg there is no preview pane: a tap opens the editor instead.
       onOpen={() => (isDesktop() ? onSelect() : open())}
       onDoubleClick={open}

@@ -16,6 +16,7 @@ import {
   useListPane,
 } from '@/components/list/list-page';
 import { ListRow } from '@/components/list/list-row';
+import { copyLink, openInNewTab, siteUrl } from '@/lib/site';
 import {
   ConfirmBulkDelete,
   SearchInput,
@@ -23,7 +24,14 @@ import {
   matchesSearch,
   useSelection,
 } from '@/components/list/list-tools';
-import { ArrowRightIcon, PlusIcon, Trash2Icon, UploadIcon } from '@/components/icons';
+import {
+  ArrowRightIcon,
+  ExternalLinkIcon,
+  LinkIcon,
+  PlusIcon,
+  Trash2Icon,
+  UploadIcon,
+} from '@/components/icons';
 import { useEffect, useState } from 'react';
 import {
   AlertDialog,
@@ -131,6 +139,30 @@ type Target =
   /** `fromPath` fills in the old path, from a link on Missing pages. */
   | { kind: 'new'; fromPath?: string }
   | { kind: 'bulk' };
+
+/** A path ending in * stands for many pages, so there is no one link to test or copy. */
+function redirectMenu(r: Redirect) {
+  if (r.fromPath.endsWith('*')) return undefined;
+  const url = siteUrl(r.fromPath);
+  return [
+    ...(r.enabled
+      ? [
+          {
+            label: 'Test redirect',
+            icon: <ExternalLinkIcon aria-hidden />,
+            onSelect: () => openInNewTab(url),
+            shortcut: { key: 't' },
+          },
+        ]
+      : []),
+    {
+      label: 'Copy old link',
+      icon: <LinkIcon aria-hidden />,
+      onSelect: () => void copyLink(url),
+      shortcut: { key: 'c' },
+    },
+  ];
+}
 
 export function RedirectsPage({
   data,
@@ -334,6 +366,7 @@ export function RedirectsPage({
                       onToggle: () => selection.toggle(r.id),
                     }}
                     swipe={{ label: 'Delete', onAction: () => setToDelete([r.id]) }}
+                    menu={redirectMenu(r)}
                     onOpen={() => view.open({ kind: 'edit', id: r.id })}
                   >
                     <RedirectSummary redirect={r} />

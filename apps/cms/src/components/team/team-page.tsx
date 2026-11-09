@@ -21,7 +21,7 @@ import {
   PaneFrame,
   useListPane,
 } from '@/components/list/list-page';
-import { ListRow } from '@/components/list/list-row';
+import { ListRow, moveMenuItems } from '@/components/list/list-row';
 import {
   ConfirmBulkDelete,
   SearchInput,
@@ -258,6 +258,18 @@ export function TeamPage({ data, canWrite }: { data: TeamListData; canWrite: boo
                       swipe={
                         canWrite
                           ? { label: 'Delete', onAction: () => setToDelete([member.id]) }
+                          : undefined
+                      }
+                      menu={
+                        canWrite
+                          ? moveMenuItems(
+                              !query && index > 0,
+                              !query && index < data.length - 1,
+                              (direction) =>
+                                run(() => moveTeamMember({ data: { id: member.id, direction } }), {
+                                  error: 'Could not move the team member',
+                                })
+                            )
                           : undefined
                       }
                       actions={

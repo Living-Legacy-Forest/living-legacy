@@ -259,6 +259,19 @@ export function AnnouncementsPage({
                           </Button>
                         )
                       }
+                      menu={
+                        canWrite && (rowStatus === 'off' || rowStatus === 'ended')
+                          ? [
+                              {
+                                label: 'Publish',
+                                icon: <SendIcon aria-hidden />,
+                                disabled: pending,
+                                onSelect: () => quickPublish(a, rowStatus),
+                                shortcut: { key: 'p' },
+                              },
+                            ]
+                          : undefined
+                      }
                       onOpen={() => canWrite && view.open({ kind: 'edit', id: a.id })}
                     >
                       <AnnouncementSummary

@@ -184,11 +184,8 @@ export function ImageField({
           id={`${id}-choose`}
           busy={upload.uploading}
           onFiles={(files) => upload.start(files[0]!)}
-          description={
-            aspect
-              ? 'It is cropped to the shape the website shows.'
-              : 'JPG, PNG, WebP, AVIF or GIF.'
-          }
+          // The crop step shows the shape, so the box keeps to the title and buttons.
+          description={null}
         >
           <Button
             type="button"

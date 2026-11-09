@@ -65,13 +65,13 @@ function Structure({ structure }: { structure: StructureCount[] }) {
   return (
     <section aria-labelledby="score-structure" className="space-y-2">
       <Heading id="score-structure">Structure</Heading>
-      <dl className="grid grid-cols-4 divide-x text-center">
+      <dl className="grid grid-cols-2 gap-2">
         {structure.map((s) => (
-          <div key={s.key} className="min-w-0 px-1">
+          <div key={s.key} className="bg-muted/50 min-w-0 rounded-md px-2.5 py-2">
             <dt className="text-muted-foreground truncate text-[0.65rem] tracking-wide uppercase">
               {s.label}
             </dt>
-            <dd className="flex items-center justify-center gap-0.5 font-semibold tabular-nums">
+            <dd className="flex items-center gap-0.5 font-semibold tabular-nums">
               {s.value.toLocaleString('en-AU')}
               <RangeMark state={s.state} />
             </dd>

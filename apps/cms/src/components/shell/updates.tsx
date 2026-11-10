@@ -1,6 +1,6 @@
 import { Link } from '@tanstack/react-router';
 import { type ReactNode, createContext, useContext, useEffect, useMemo, useState } from 'react';
-import { MegaphoneIcon, RotateCcwIcon, XIcon } from '@/components/icons';
+import { ArrowRight, MegaphoneIcon, RotateCcwIcon, XIcon } from '@/components/icons';
 import { Button } from '@/components/ui/button';
 import {
   Dialog,
@@ -70,7 +70,14 @@ export function UpdatesProvider({ joinedAt, children }: { joinedAt: number; chil
   // Read after mount: storage does not exist while rendering on the server.
   const [seen, setSeen] = useState<string | null | undefined>(undefined);
   const [newDeploy, setNewDeploy] = useState(false);
-  const [dialog, setDialog] = useState<'unseen' | 'all' | null>(null);
+  const [dialogOpen, setDialogOpen] = useState(false);
+  // What the dialog shows, fixed when it opens. Closing marks the notes seen,
+  // which empties `unseen`; reading from it directly would blank the dialog
+  // while it is still animating out.
+  const [dialog, setDialog] = useState<{ entries: WhatsNewEntry[]; markSeen: boolean }>({
+    entries: [],
+    markSeen: false,
+  });
 
   useEffect(() => setSeen(readSeen()), []);
 
@@ -107,7 +114,10 @@ export function UpdatesProvider({ joinedAt, children }: { joinedAt: number; chil
     () => ({
       unseen,
       newDeploy,
-      openDialog: setDialog,
+      openDialog: (which) => {
+        setDialog({ entries: which === 'all' ? whatsNew : unseen, markSeen: which === 'unseen' });
+        setDialogOpen(true);
+      },
       dismiss: () => {
         const latest = whatsNew[0]?.id;
         if (!latest) return;
@@ -118,48 +128,64 @@ export function UpdatesProvider({ joinedAt, children }: { joinedAt: number; chil
     [unseen, newDeploy]
   );
 
-  const shown = dialog === 'all' ? whatsNew : unseen;
+  const shown = dialog.entries;
   // However the dialog closes (button, outside click or following a link),
   // having opened the new notes counts as seeing them.
   const closeDialog = () => {
-    if (dialog === 'unseen') value.dismiss();
-    setDialog(null);
+    if (dialog.markSeen) value.dismiss();
+    setDialogOpen(false);
   };
 
   return (
     <UpdatesContext.Provider value={value}>
       {children}
-      <Dialog open={dialog !== null} onOpenChange={(open) => !open && closeDialog()}>
-        <DialogContent className="max-h-[85svh] overflow-y-auto sm:max-w-lg">
-          <DialogHeader>
+      <Dialog open={dialogOpen} onOpenChange={(open) => !open && closeDialog()}>
+        <DialogContent
+          initialFocus={false}
+          className="max-h-[85svh] gap-0 overflow-y-auto p-0 sm:max-w-md"
+        >
+          <DialogHeader className="border-b px-5 py-4">
             <DialogTitle>What's new</DialogTitle>
-            <DialogDescription>Changes to the CMS, newest first.</DialogDescription>
+            <DialogDescription className="sr-only">
+              Changes to the CMS, newest first.
+            </DialogDescription>
           </DialogHeader>
-          <div className="space-y-6">
+          <div className="divide-y">
             {shown.map((entry) => (
-              <section key={entry.id} className="space-y-3">
-                <h3 className="text-muted-foreground text-xs">
-                  {new Date(`${entry.id}T12:00:00`).toLocaleDateString('en-AU', {
-                    day: 'numeric',
-                    month: 'long',
-                    year: 'numeric',
-                  })}
-                </h3>
-                <ul className="space-y-3">
+              <section key={entry.id} className="space-y-4 px-5 py-5">
+                <header className="space-y-1">
+                  <p className="text-muted-foreground text-xs tabular-nums">
+                    {new Date(`${entry.id}T12:00:00`).toLocaleDateString('en-AU', {
+                      day: 'numeric',
+                      month: 'long',
+                      year: 'numeric',
+                    })}
+                  </p>
+                  <h3 className="text-sm leading-snug font-semibold">{entry.title}</h3>
+                </header>
+                <ul className="space-y-4">
                   {entry.items.map((item) => (
-                    <li key={item.title} className="text-ui space-y-0.5">
-                      <p className="font-medium">{item.title}</p>
-                      <p className="text-muted-foreground">{item.body}</p>
-                      {item.link && (
-                        <Link
-                          to={item.link.to}
-                          hash={item.link.hash}
-                          onClick={closeDialog}
-                          className="text-xs font-medium underline-offset-4 hover:underline"
-                        >
-                          {item.link.label}
-                        </Link>
-                      )}
+                    <li key={item.title} className="grid grid-cols-[0.375rem_1fr] gap-x-3">
+                      {/* Lined up with the first line of the item's title. */}
+                      <span
+                        aria-hidden
+                        className="bg-foreground/30 mt-[0.4375rem] size-1.5 rounded-full"
+                      />
+                      <div className="min-w-0 space-y-1">
+                        <p className="text-ui font-medium">{item.title}</p>
+                        <p className="text-muted-foreground text-ui leading-relaxed">{item.body}</p>
+                        {item.link && (
+                          <Link
+                            to={item.link.to}
+                            hash={item.link.hash}
+                            onClick={closeDialog}
+                            className="text-muted-foreground hover:text-foreground focus-visible:ring-ring/50 touch:min-h-11 inline-flex items-center gap-1 rounded-sm pt-0.5 text-xs transition-colors outline-none focus-visible:ring-2"
+                          >
+                            {item.link.label}
+                            <ArrowRight aria-hidden className="size-3" />
+                          </Link>
+                        )}
+                      </div>
                     </li>
                   ))}
                 </ul>

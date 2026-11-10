@@ -38,6 +38,7 @@ export type NavItem = {
     | '/announcements'
     | '/events'
     | '/faqs'
+    | '/legal'
     | '/media'
     | '/locations'
     | '/media-coverage'
@@ -95,6 +96,7 @@ export const navGroups: NavGroup[] = [
       { title: 'Team', icon: Users, to: '/team' },
       { title: 'Testimonials', icon: Quote, to: '/testimonials' },
       { title: 'FAQs', icon: CircleHelp, to: '/faqs' },
+      { title: 'Legal pages', icon: FileText, to: '/legal', permission: 'content:write' },
     ],
   },
   {

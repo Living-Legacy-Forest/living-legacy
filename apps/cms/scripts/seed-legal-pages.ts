@@ -40,4 +40,4 @@ const statements = pages.flatMap((p) => {
 });
 
 writeFileSync(out, `${statements.join('\n--> statement-breakpoint\n')}\n`);
-console.log(`Wrote ${statements.length} statements to ${out}`);
+process.stdout.write(`Wrote ${statements.length} statements to ${out}\n`);

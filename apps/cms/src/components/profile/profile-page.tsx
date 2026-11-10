@@ -169,10 +169,17 @@ export function ProfilePage({
               aria-label="Change photo"
               disabled={avatarUploading}
               onClick={() => fileInput.current?.click()}
-              className="bg-background touch:hidden absolute inset-0 flex items-center justify-center rounded-full opacity-0 ring-1 ring-black/10 transition-opacity group-hover:opacity-90 disabled:opacity-90"
+              className="bg-background absolute inset-0 flex items-center justify-center rounded-full opacity-0 ring-1 ring-black/10 transition-opacity group-hover:opacity-90 focus-visible:opacity-90 disabled:opacity-90"
             >
               {avatarUploading ? <Spinner /> : <CameraIcon aria-hidden className="size-5" />}
             </button>
+            {/* Touch screens have no hover to reveal the camera: show it as a badge. */}
+            <span
+              aria-hidden
+              className="bg-background text-foreground touch:flex pointer-events-none absolute right-0 bottom-0 hidden size-7 items-center justify-center rounded-full border shadow-sm"
+            >
+              <CameraIcon className="size-3.5" />
+            </span>
             <input
               ref={fileInput}
               type="file"
@@ -197,28 +204,19 @@ export function ProfilePage({
               </Badge>
               Member since {memberSince}
             </p>
-            <div className="flex gap-2 pt-1 max-md:justify-center">
+            {/* Changing the photo is a click on it; removing needs its own way in. */}
+            {user.image && (
               <Button
                 type="button"
-                variant="outline"
+                variant="ghost"
                 size="sm"
-                disabled={avatarUploading}
-                onClick={() => fileInput.current?.click()}
+                className="text-muted-foreground -ml-2.5 max-md:ml-0"
+                disabled={pending || avatarUploading}
+                onClick={removePhoto}
               >
-                {user.image ? 'Change photo' : 'Add a photo'}
+                Remove photo
               </Button>
-              {user.image && (
-                <Button
-                  type="button"
-                  variant="ghost"
-                  size="sm"
-                  disabled={pending || avatarUploading}
-                  onClick={removePhoto}
-                >
-                  Remove
-                </Button>
-              )}
-            </div>
+            )}
           </div>
         </div>
 

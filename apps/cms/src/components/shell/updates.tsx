@@ -153,27 +153,29 @@ export function UpdatesProvider({ joinedAt, children }: { joinedAt: number; chil
                   </p>
                   <h3 className="text-sm leading-snug font-semibold">{entry.title}</h3>
                 </header>
-                <ul className="border-border space-y-4 border-l pl-4">
+                <ul className="space-y-4">
                   {entry.items.map((item) => (
-                    <li key={item.title} className="relative space-y-1">
-                      {/* A dot on the rule, so each item reads as a step. */}
+                    <li key={item.title} className="grid grid-cols-[0.375rem_1fr] gap-x-3">
+                      {/* Lined up with the first line of the item's title. */}
                       <span
                         aria-hidden
-                        className="bg-foreground/25 absolute top-1.5 -left-[1.2rem] size-1.5 rounded-full"
+                        className="bg-foreground/30 mt-[0.4375rem] size-1.5 rounded-full"
                       />
-                      <p className="text-ui font-medium">{item.title}</p>
-                      <p className="text-muted-foreground text-ui leading-relaxed">{item.body}</p>
-                      {item.link && (
-                        <Link
-                          to={item.link.to}
-                          hash={item.link.hash}
-                          onClick={closeDialog}
-                          className="text-muted-foreground hover:text-foreground focus-visible:ring-ring/50 touch:min-h-11 inline-flex items-center gap-1 rounded-sm pt-0.5 text-xs transition-colors outline-none focus-visible:ring-2"
-                        >
-                          {item.link.label}
-                          <ArrowRight aria-hidden className="size-3" />
-                        </Link>
-                      )}
+                      <div className="min-w-0 space-y-1">
+                        <p className="text-ui font-medium">{item.title}</p>
+                        <p className="text-muted-foreground text-ui leading-relaxed">{item.body}</p>
+                        {item.link && (
+                          <Link
+                            to={item.link.to}
+                            hash={item.link.hash}
+                            onClick={closeDialog}
+                            className="text-muted-foreground hover:text-foreground focus-visible:ring-ring/50 touch:min-h-11 inline-flex items-center gap-1 rounded-sm pt-0.5 text-xs transition-colors outline-none focus-visible:ring-2"
+                          >
+                            {item.link.label}
+                            <ArrowRight aria-hidden className="size-3" />
+                          </Link>
+                        )}
+                      </div>
                     </li>
                   ))}
                 </ul>

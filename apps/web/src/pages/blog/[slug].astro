@@ -13,7 +13,7 @@ import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
 import { type BlogPost, lastUpdatedAt } from '@/lib/blog';
 import { getBlogPostBySlug, getRelatedBlogPosts } from '@/lib/blog-posts';
-import { getSiteSettings } from '@/lib/settings';
+import { blogPostingJsonLd, breadcrumbJsonLd } from '@ll/content';
 
 export const prerender = false;
 
@@ -37,48 +37,37 @@ try {
 }
 
 const seoTitle = post.seoTitle ?? post.title;
-const { siteTitle } = await getSiteSettings();
 const seoDescription = post.seoDescription ?? post.excerpt ?? '';
 
 // A smaller rendition where the source has one, so social platforms are not
 // each downloading a full-resolution original.
 const ogImage = post.ogImageUrl ?? post.image?.url;
 
-const jsonLd = {
-  '@context': 'https://schema.org',
-  '@type': 'BlogPosting',
-  headline: post.title,
-  datePublished: post.publishedAt,
-  dateModified: lastUpdatedAt(post),
-  mainEntityOfPage: { '@type': 'WebPage', '@id': shareUrl },
-  ...(seoDescription ? { description: seoDescription } : {}),
-  ...(ogImage ? { image: [ogImage] } : {}),
-  ...(post.author ? { author: { '@type': 'Person', name: post.author.name } } : {}),
-  publisher: {
-    '@type': 'Organization',
-    name: siteTitle,
-    url: 'https://livinglegacy.com.au',
-  },
-};
+const siteUrl = (Astro.site ?? Astro.url).toString();
+const publishedTime = post.publishedAt;
+const modifiedTime = lastUpdatedAt(post);
+const section = post.categories[0]?.title;
+const tags = post.tags.map((tag) => tag.title);
 
-const breadcrumbLd = {
-  '@context': 'https://schema.org',
-  '@type': 'BreadcrumbList',
-  itemListElement: [
-    { '@type': 'ListItem', position: 1, name: 'Home', item: new URL('/', Astro.site).toString() },
-    {
-      '@type': 'ListItem',
-      position: 2,
-      name: 'Blog',
-      item: new URL('/blog/', Astro.site).toString(),
-    },
-    { '@type': 'ListItem', position: 3, name: post.title, item: shareUrl },
-  ],
-};
-
-// `<` cannot appear unescaped inside a script body: a title or excerpt that
-// happens to contain "</script>" would otherwise terminate the tag early.
-const toJsonLd = (value: unknown) => JSON.stringify(value).replace(/</g, '\\u003c');
+const jsonLd = [
+  blogPostingJsonLd({
+    siteUrl,
+    url: shareUrl,
+    headline: post.title,
+    datePublished: publishedTime,
+    dateModified: modifiedTime,
+    description: seoDescription || undefined,
+    image: ogImage,
+    authorName: post.author?.name,
+    section,
+    keywords: tags,
+  }),
+  breadcrumbJsonLd([
+    { name: 'Home', url: new URL('/', siteUrl).toString() },
+    { name: 'Blog', url: new URL('/blog/', siteUrl).toString() },
+    { name: post.title, url: shareUrl },
+  ]),
+];
 ---
 
 <BaseLayout
@@ -87,10 +76,9 @@ const toJsonLd = (value: unknown) => JSON.stringify(value).replace(/</g, '\\u003
   canonical={shareUrl}
   ogImage={ogImage}
   noindex={post.noindex}
+  article={{ publishedTime, modifiedTime, section, tags }}
+  jsonLd={jsonLd}
 >
-  <script type="application/ld+json" is:inline set:html={toJsonLd(jsonLd)} />
-  <script type="application/ld+json" is:inline set:html={toJsonLd(breadcrumbLd)} />
-
   <!-- The article names a view timeline that the reading-progress bar,
        a sibling, follows; timeline-scope lets the bar see it. -->
   <div class="[timeline-scope:--article]">

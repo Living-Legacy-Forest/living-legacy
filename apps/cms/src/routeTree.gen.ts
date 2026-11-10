@@ -18,6 +18,8 @@ import { Route as AppApiKeysIndexRouteImport } from './routes/_app/api-keys/inde
 import { Route as AppChecksIndexRouteImport } from './routes/_app/checks/index'
 import { Route as AppEventsIndexRouteImport } from './routes/_app/events/index'
 import { Route as AppFaqsIndexRouteImport } from './routes/_app/faqs/index'
+import { Route as AppLegalIndexRouteImport } from './routes/_app/legal/index'
+import { Route as AppLegalSlugRouteImport } from './routes/_app/legal/$slug'
 import { Route as AppLocationsIndexRouteImport } from './routes/_app/locations/index'
 import { Route as AppMediaCoverageIndexRouteImport } from './routes/_app/media-coverage/index'
 import { Route as AppMediaIndexRouteImport } from './routes/_app/media/index'
@@ -37,6 +39,7 @@ import { Route as ApiAvatarKeyRouteImport } from './routes/api/avatar/$key'
 import { Route as ApiMediaIndexRouteImport } from './routes/api/media/index'
 import { Route as ApiV1TermsRouteImport } from './routes/api/v1/terms'
 import { Route as PreviewEventsDraftIdRouteImport } from './routes/preview/events/$draftId'
+import { Route as PreviewLegalSlugRouteImport } from './routes/preview/legal/$slug'
 import { Route as PreviewPostsPostIdRouteImport } from './routes/preview/posts/$postId'
 import { Route as AppPostsCategoriesIndexRouteImport } from './routes/_app/posts/categories/index'
 import { Route as AppPostsTagsIndexRouteImport } from './routes/_app/posts/tags/index'
@@ -85,6 +88,16 @@ const AppEventsIndexRoute = AppEventsIndexRouteImport.update({
 const AppFaqsIndexRoute = AppFaqsIndexRouteImport.update({
   id: '/faqs/',
   path: '/faqs/',
+  getParentRoute: () => AppRoute,
+} as any)
+const AppLegalIndexRoute = AppLegalIndexRouteImport.update({
+  id: '/legal/',
+  path: '/legal/',
+  getParentRoute: () => AppRoute,
+} as any)
+const AppLegalSlugRoute = AppLegalSlugRouteImport.update({
+  id: '/legal/$slug',
+  path: '/legal/$slug',
   getParentRoute: () => AppRoute,
 } as any)
 const AppLocationsIndexRoute = AppLocationsIndexRouteImport.update({
@@ -182,6 +195,11 @@ const PreviewEventsDraftIdRoute = PreviewEventsDraftIdRouteImport.update({
   path: '/preview/events/$draftId',
   getParentRoute: () => rootRouteImport,
 } as any)
+const PreviewLegalSlugRoute = PreviewLegalSlugRouteImport.update({
+  id: '/preview/legal/$slug',
+  path: '/preview/legal/$slug',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const PreviewPostsPostIdRoute = PreviewPostsPostIdRouteImport.update({
   id: '/preview/posts/$postId',
   path: '/preview/posts/$postId',
@@ -211,12 +229,14 @@ const ApiV1PostsIdRoute = ApiV1PostsIdRouteImport.update({
 export interface FileRoutesByFullPath {
   '/': typeof AppIndexRoute
   '/login': typeof LoginRoute
+  '/legal/$slug': typeof AppLegalSlugRoute
   '/posts/$postId': typeof AppPostsPostIdRoute
   '/posts/new': typeof AppPostsNewRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
   '/api/avatar/$key': typeof ApiAvatarKeyRoute
   '/api/v1/terms': typeof ApiV1TermsRoute
   '/preview/events/$draftId': typeof PreviewEventsDraftIdRoute
+  '/preview/legal/$slug': typeof PreviewLegalSlugRoute
   '/preview/posts/$postId': typeof PreviewPostsPostIdRoute
   '/activity/': typeof AppActivityIndexRoute
   '/announcements/': typeof AppAnnouncementsIndexRoute
@@ -224,6 +244,7 @@ export interface FileRoutesByFullPath {
   '/checks/': typeof AppChecksIndexRoute
   '/events/': typeof AppEventsIndexRoute
   '/faqs/': typeof AppFaqsIndexRoute
+  '/legal/': typeof AppLegalIndexRoute
   '/locations/': typeof AppLocationsIndexRoute
   '/media-coverage/': typeof AppMediaCoverageIndexRoute
   '/media/': typeof AppMediaIndexRoute
@@ -245,12 +266,14 @@ export interface FileRoutesByFullPath {
 export interface FileRoutesByTo {
   '/login': typeof LoginRoute
   '/': typeof AppIndexRoute
+  '/legal/$slug': typeof AppLegalSlugRoute
   '/posts/$postId': typeof AppPostsPostIdRoute
   '/posts/new': typeof AppPostsNewRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
   '/api/avatar/$key': typeof ApiAvatarKeyRoute
   '/api/v1/terms': typeof ApiV1TermsRoute
   '/preview/events/$draftId': typeof PreviewEventsDraftIdRoute
+  '/preview/legal/$slug': typeof PreviewLegalSlugRoute
   '/preview/posts/$postId': typeof PreviewPostsPostIdRoute
   '/activity': typeof AppActivityIndexRoute
   '/announcements': typeof AppAnnouncementsIndexRoute
@@ -258,6 +281,7 @@ export interface FileRoutesByTo {
   '/checks': typeof AppChecksIndexRoute
   '/events': typeof AppEventsIndexRoute
   '/faqs': typeof AppFaqsIndexRoute
+  '/legal': typeof AppLegalIndexRoute
   '/locations': typeof AppLocationsIndexRoute
   '/media-coverage': typeof AppMediaCoverageIndexRoute
   '/media': typeof AppMediaIndexRoute
@@ -281,12 +305,14 @@ export interface FileRoutesById {
   '/_app': typeof AppRouteWithChildren
   '/login': typeof LoginRoute
   '/_app/': typeof AppIndexRoute
+  '/_app/legal/$slug': typeof AppLegalSlugRoute
   '/_app/posts/$postId': typeof AppPostsPostIdRoute
   '/_app/posts/new': typeof AppPostsNewRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
   '/api/avatar/$key': typeof ApiAvatarKeyRoute
   '/api/v1/terms': typeof ApiV1TermsRoute
   '/preview/events/$draftId': typeof PreviewEventsDraftIdRoute
+  '/preview/legal/$slug': typeof PreviewLegalSlugRoute
   '/preview/posts/$postId': typeof PreviewPostsPostIdRoute
   '/_app/activity/': typeof AppActivityIndexRoute
   '/_app/announcements/': typeof AppAnnouncementsIndexRoute
@@ -294,6 +320,7 @@ export interface FileRoutesById {
   '/_app/checks/': typeof AppChecksIndexRoute
   '/_app/events/': typeof AppEventsIndexRoute
   '/_app/faqs/': typeof AppFaqsIndexRoute
+  '/_app/legal/': typeof AppLegalIndexRoute
   '/_app/locations/': typeof AppLocationsIndexRoute
   '/_app/media-coverage/': typeof AppMediaCoverageIndexRoute
   '/_app/media/': typeof AppMediaIndexRoute
@@ -317,12 +344,14 @@ export interface FileRouteTypes {
   fullPaths:
     | '/'
     | '/login'
+    | '/legal/$slug'
     | '/posts/$postId'
     | '/posts/new'
     | '/api/auth/$'
     | '/api/avatar/$key'
     | '/api/v1/terms'
     | '/preview/events/$draftId'
+    | '/preview/legal/$slug'
     | '/preview/posts/$postId'
     | '/activity/'
     | '/announcements/'
@@ -330,6 +359,7 @@ export interface FileRouteTypes {
     | '/checks/'
     | '/events/'
     | '/faqs/'
+    | '/legal/'
     | '/locations/'
     | '/media-coverage/'
     | '/media/'
@@ -351,12 +381,14 @@ export interface FileRouteTypes {
   to:
     | '/login'
     | '/'
+    | '/legal/$slug'
     | '/posts/$postId'
     | '/posts/new'
     | '/api/auth/$'
     | '/api/avatar/$key'
     | '/api/v1/terms'
     | '/preview/events/$draftId'
+    | '/preview/legal/$slug'
     | '/preview/posts/$postId'
     | '/activity'
     | '/announcements'
@@ -364,6 +396,7 @@ export interface FileRouteTypes {
     | '/checks'
     | '/events'
     | '/faqs'
+    | '/legal'
     | '/locations'
     | '/media-coverage'
     | '/media'
@@ -386,12 +419,14 @@ export interface FileRouteTypes {
     | '/_app'
     | '/login'
     | '/_app/'
+    | '/_app/legal/$slug'
     | '/_app/posts/$postId'
     | '/_app/posts/new'
     | '/api/auth/$'
     | '/api/avatar/$key'
     | '/api/v1/terms'
     | '/preview/events/$draftId'
+    | '/preview/legal/$slug'
     | '/preview/posts/$postId'
     | '/_app/activity/'
     | '/_app/announcements/'
@@ -399,6 +434,7 @@ export interface FileRouteTypes {
     | '/_app/checks/'
     | '/_app/events/'
     | '/_app/faqs/'
+    | '/_app/legal/'
     | '/_app/locations/'
     | '/_app/media-coverage/'
     | '/_app/media/'
@@ -425,6 +461,7 @@ export interface RootRouteChildren {
   ApiAvatarKeyRoute: typeof ApiAvatarKeyRoute
   ApiV1TermsRoute: typeof ApiV1TermsRoute
   PreviewEventsDraftIdRoute: typeof PreviewEventsDraftIdRoute
+  PreviewLegalSlugRoute: typeof PreviewLegalSlugRoute
   PreviewPostsPostIdRoute: typeof PreviewPostsPostIdRoute
   ApiAvatarIndexRoute: typeof ApiAvatarIndexRoute
   ApiMediaIndexRoute: typeof ApiMediaIndexRoute
@@ -495,6 +532,20 @@ declare module '@tanstack/react-router' {
       path: '/faqs'
       fullPath: '/faqs/'
       preLoaderRoute: typeof AppFaqsIndexRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/_app/legal/': {
+      id: '/_app/legal/'
+      path: '/legal'
+      fullPath: '/legal/'
+      preLoaderRoute: typeof AppLegalIndexRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/_app/legal/$slug': {
+      id: '/_app/legal/$slug'
+      path: '/legal/$slug'
+      fullPath: '/legal/$slug'
+      preLoaderRoute: typeof AppLegalSlugRouteImport
       parentRoute: typeof AppRoute
     }
     '/_app/locations/': {
@@ -630,6 +681,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof PreviewEventsDraftIdRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/preview/legal/$slug': {
+      id: '/preview/legal/$slug'
+      path: '/preview/legal/$slug'
+      fullPath: '/preview/legal/$slug'
+      preLoaderRoute: typeof PreviewLegalSlugRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/preview/posts/$postId': {
       id: '/preview/posts/$postId'
       path: '/preview/posts/$postId'
@@ -670,6 +728,7 @@ declare module '@tanstack/react-router' {
 
 interface AppRouteChildren {
   AppIndexRoute: typeof AppIndexRoute
+  AppLegalSlugRoute: typeof AppLegalSlugRoute
   AppPostsPostIdRoute: typeof AppPostsPostIdRoute
   AppPostsNewRoute: typeof AppPostsNewRoute
   AppActivityIndexRoute: typeof AppActivityIndexRoute
@@ -678,6 +737,7 @@ interface AppRouteChildren {
   AppChecksIndexRoute: typeof AppChecksIndexRoute
   AppEventsIndexRoute: typeof AppEventsIndexRoute
   AppFaqsIndexRoute: typeof AppFaqsIndexRoute
+  AppLegalIndexRoute: typeof AppLegalIndexRoute
   AppLocationsIndexRoute: typeof AppLocationsIndexRoute
   AppMediaCoverageIndexRoute: typeof AppMediaCoverageIndexRoute
   AppMediaIndexRoute: typeof AppMediaIndexRoute
@@ -695,6 +755,7 @@ interface AppRouteChildren {
 
 const AppRouteChildren: AppRouteChildren = {
   AppIndexRoute: AppIndexRoute,
+  AppLegalSlugRoute: AppLegalSlugRoute,
   AppPostsPostIdRoute: AppPostsPostIdRoute,
   AppPostsNewRoute: AppPostsNewRoute,
   AppActivityIndexRoute: AppActivityIndexRoute,
@@ -703,6 +764,7 @@ const AppRouteChildren: AppRouteChildren = {
   AppChecksIndexRoute: AppChecksIndexRoute,
   AppEventsIndexRoute: AppEventsIndexRoute,
   AppFaqsIndexRoute: AppFaqsIndexRoute,
+  AppLegalIndexRoute: AppLegalIndexRoute,
   AppLocationsIndexRoute: AppLocationsIndexRoute,
   AppMediaCoverageIndexRoute: AppMediaCoverageIndexRoute,
   AppMediaIndexRoute: AppMediaIndexRoute,
@@ -727,6 +789,7 @@ const rootRouteChildren: RootRouteChildren = {
   ApiAvatarKeyRoute: ApiAvatarKeyRoute,
   ApiV1TermsRoute: ApiV1TermsRoute,
   PreviewEventsDraftIdRoute: PreviewEventsDraftIdRoute,
+  PreviewLegalSlugRoute: PreviewLegalSlugRoute,
   PreviewPostsPostIdRoute: PreviewPostsPostIdRoute,
   ApiAvatarIndexRoute: ApiAvatarIndexRoute,
   ApiMediaIndexRoute: ApiMediaIndexRoute,

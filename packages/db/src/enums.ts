@@ -9,6 +9,7 @@ export const entityTypes = [
   'media_coverage',
   'location',
   'settings',
+  'legal_page',
 ] as const;
 export type EntityType = (typeof entityTypes)[number];
 
@@ -35,6 +36,8 @@ export const activityActions = [
   'event.guest_added',
   'event.guest_cancelled',
   'media.replaced',
+  'legal_page.published',
+  'legal_page.review_requested',
 ] as const;
 export type ActivityAction = (typeof activityActions)[number];
 

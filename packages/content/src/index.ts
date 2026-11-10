@@ -21,3 +21,5 @@ export * from './recurrence';
 export * from './rich-text-outline';
 export * from './brand-language';
 export * from './content-score';
+export * from './structured-data';
+export * from './legal-pages';

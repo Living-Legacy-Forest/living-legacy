@@ -1,6 +1,5 @@
 ---
 import BaseLayout from '@/layouts/BaseLayout.astro';
-import { getSiteSettings, socialLinks } from '@/lib/settings';
 import Hero from '@/components/sections/home/Hero.astro';
 import PromoBanner from '@/components/sections/home/PromoBanner.astro';
 import LegacyQuote from '@/components/sections/home/LegacyQuote.astro';
@@ -16,19 +15,6 @@ import Faq from '@/components/sections/home/Faq.astro';
 
 const description =
   'Return to the earth and live on through nature with Living Legacy. Our patented process transforms cremated ashes into beautiful living memorial trees, an eco-friendly alternative to traditional burial, with family memorial options available across Australia. Pre-planning is also available.';
-
-const settings = await getSiteSettings();
-const organizationJsonLd = {
-  '@context': 'https://schema.org',
-  '@type': 'Organization',
-  name: settings.siteTitle,
-  url: 'https://livinglegacy.com.au/',
-  ...(settings.legalName ? { legalName: settings.legalName } : {}),
-  ...(settings.contactEmail ? { email: settings.contactEmail } : {}),
-  ...(settings.phone ? { telephone: settings.phone } : {}),
-  ...(settings.address ? { address: settings.address } : {}),
-  sameAs: socialLinks(settings).map((link) => link.href),
-};
 ---
 
 <BaseLayout title="Living memorial trees in Australia" description={description}>
@@ -48,5 +34,3 @@ const organizationJsonLd = {
     <Faq />
   </div>
 </BaseLayout>
-
-<script type="application/ld+json" is:inline set:html={JSON.stringify(organizationJsonLd)} />

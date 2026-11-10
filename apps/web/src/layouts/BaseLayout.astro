@@ -7,8 +7,14 @@ import Footer from '@/components/layout/Footer.astro';
 import Reveal from '@/components/Reveal.astro';
 import { Toaster } from '@/components/ui/sonner';
 import { isIndexableHost } from '@/lib/seo';
-import { getSiteSettings } from '@/lib/settings';
-import { formatPageTitle } from '@ll/content';
+import { getSiteSettings, siteIconUrl, socialLinks } from '@/lib/settings';
+import {
+  formatPageTitle,
+  organizationJsonLd,
+  serializeJsonLd,
+  websiteJsonLd,
+  type JsonLd,
+} from '@ll/content';
 
 interface Props {
   /** The page's own title; the site title is added by the CMS title pattern. */
@@ -21,6 +27,10 @@ interface Props {
   ogImage?: string;
   /** Skips Header and Footer — for the 404 page and anything else that draws its own chrome. */
   bare?: boolean;
+  /** Marks the page as an article for social cards (og:type article and its dates and topics). */
+  article?: { publishedTime: string; modifiedTime?: string; section?: string; tags?: string[] };
+  /** The page's own structured data. The organisation and website are added on every page. */
+  jsonLd?: JsonLd[];
 }
 
 /** Every canonical URL on the site ends with a trailing slash, matching the live URLs. */
@@ -36,6 +46,8 @@ const {
   canonical = new URL(withTrailingSlash(Astro.url.pathname), Astro.site).toString(),
   ogImage = settings.seoImageUrl || undefined,
   bare = false,
+  article,
+  jsonLd = [],
 } = Astro.props;
 const title = formatPageTitle(settings.titlePattern, pageTitle, settings.siteTitle);
 
@@ -45,6 +57,22 @@ const title = formatPageTitle(settings.titlePattern, pageTitle, settings.siteTit
 // the host check. Settings can also hide the whole site (Hide from search engines).
 const blockIndexing =
   noindex === true || settings.hideFromSearch || !isIndexableHost(Astro.url.host);
+
+const siteUrl = (Astro.site ?? Astro.url).toString();
+const iconUrl = siteIconUrl(settings);
+const structuredData = [
+  organizationJsonLd({
+    siteUrl,
+    name: settings.siteTitle,
+    legalName: settings.legalName,
+    email: settings.contactEmail,
+    telephone: settings.phone,
+    address: settings.address,
+    sameAs: socialLinks(settings).map((link) => link.href),
+  }),
+  websiteJsonLd({ siteUrl, name: settings.siteTitle, locale: settings.locale }),
+  ...jsonLd,
+];
 ---
 
 <!doctype html>
@@ -56,11 +84,22 @@ const blockIndexing =
     {description && <meta name="description" content={description} />}
     {blockIndexing && <meta name="robots" content="noindex, nofollow" />}
     <link rel="canonical" href={canonical} />
-    <link rel="icon" href="/favicon.ico" sizes="32x32" />
-    <link rel="icon" type="image/png" href="/icon-192.png" sizes="192x192" />
-    <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
+    {
+      iconUrl ? (
+        <>
+          <link rel="icon" href={iconUrl} />
+          <link rel="apple-touch-icon" href={iconUrl} />
+        </>
+      ) : (
+        <>
+          <link rel="icon" href="/favicon.ico" sizes="32x32" />
+          <link rel="icon" type="image/png" href="/icon-192.png" sizes="192x192" />
+          <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
+        </>
+      )
+    }
     <meta name="theme-color" content="#fbf9f5" />
-    <meta property="og:type" content="website" />
+    <meta property="og:type" content={article ? 'article' : 'website'} />
     <meta property="og:site_name" content={settings.siteTitle} />
     <meta property="og:title" content={title} />
     {description && <meta property="og:description" content={description} />}
@@ -68,6 +107,21 @@ const blockIndexing =
     {ogImage && <meta property="og:image" content={ogImage} />}
     <meta name="twitter:card" content="summary_large_image" />
     {ogImage && <meta name="twitter:image" content={ogImage} />}
+    {
+      article && (
+        <>
+          <meta property="article:published_time" content={article.publishedTime} />
+          {article.modifiedTime && (
+            <meta property="article:modified_time" content={article.modifiedTime} />
+          )}
+          {article.section && <meta property="article:section" content={article.section} />}
+          {article.tags?.map((tag) => (
+            <meta property="article:tag" content={tag} />
+          ))}
+        </>
+      )
+    }
+    <script type="application/ld+json" is:inline set:html={serializeJsonLd(structuredData)} />
     {
       settings.googleVerification && (
         <meta name="google-site-verification" content={settings.googleVerification} />

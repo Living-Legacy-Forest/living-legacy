@@ -63,7 +63,10 @@ describe('replaceMediaFile', () => {
     expect(after.updatedAt.getTime()).toBeGreaterThanOrEqual(before.updatedAt.getTime());
     expect(await env.MEDIA.head(after.r2Key)).not.toBeNull();
     expect(await env.MEDIA.head(before.r2Key)).toBeNull();
-    expect(cleared).toHaveBeenCalledWith(new Request(`${origin}/api/media/${before.id}`));
+    // Compared by URL: Request objects carry internals that differ between runtimes.
+    expect(cleared.mock.calls.map(([key]) => key.url)).toContain(
+      `${origin}/api/media/${before.id}`
+    );
   });
 
   it('records the replacement in the activity log', async () => {

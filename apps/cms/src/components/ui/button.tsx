@@ -7,7 +7,10 @@ const buttonVariants = cva(
   {
     variants: {
       variant: {
-        default: 'bg-primary text-primary-foreground hover:bg-primary/80',
+        // Raised look: a top-lit gradient, a one-pixel highlight along the top edge and a
+        // darker rim, all mixed from --primary so it follows the theme and dark mode.
+        default:
+          '[--btn-edge:color-mix(in_oklch,var(--primary),black_10%)] [--btn-hi:color-mix(in_oklch,var(--primary),white_30%)] [--btn-top:color-mix(in_oklch,var(--primary),white_15%)] border-(--btn-edge) bg-primary bg-linear-to-b from-(--btn-top) to-primary text-primary-foreground shadow-[inset_0_1px_0_0_var(--btn-hi),0_1px_2px_0_rgb(0_0_0/0.05)] hover:from-(--btn-hi)',
         outline:
           'border-border bg-background hover:bg-muted hover:text-foreground aria-expanded:bg-muted aria-expanded:text-foreground dark:border-input dark:bg-input/30 dark:hover:bg-input/50',
         secondary:

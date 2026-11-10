@@ -42,19 +42,22 @@ export function FormCell({
   label,
   htmlFor,
   hint,
+  error,
   aside,
   children,
 }: {
   label: string;
   htmlFor?: string;
   hint?: ReactNode;
+  /** What is wrong with the value, shown under it; give the control aria-invalid too. */
+  error?: string;
   /** A note level with the label (a character count); under the label on phones. */
   aside?: ReactNode;
   children: ReactNode;
 }) {
   const labelEl = <Label htmlFor={htmlFor}>{label}</Label>;
   return (
-    <div data-slot="form-cell" className="space-y-1.5">
+    <div data-slot="form-cell" data-invalid={error ? '' : undefined} className="space-y-1.5">
       {aside ? (
         <div data-slot="form-label-row" className="flex items-center justify-between gap-2">
           {labelEl}
@@ -64,10 +67,21 @@ export function FormCell({
         labelEl
       )}
       {children}
-      {hint && (
-        <p data-slot="form-hint" className="text-muted-foreground text-xs">
-          {hint}
+      {error ? (
+        <p
+          id={htmlFor ? `${htmlFor}-error` : undefined}
+          data-slot="form-error"
+          role="alert"
+          className="text-destructive text-xs"
+        >
+          {error}
         </p>
+      ) : (
+        hint && (
+          <p data-slot="form-hint" className="text-muted-foreground text-xs">
+            {hint}
+          </p>
+        )
       )}
     </div>
   );

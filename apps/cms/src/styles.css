@@ -283,11 +283,6 @@
   [data-sonner-toaster][data-y-position='top'] [data-sonner-toast][data-styled='true'] {
     border-radius: 16px;
   }
-  /* While a form sheet is open its top bar holds Cancel and Save; a toast drops in
-     below that bar, so a validation message never sits over Save. */
-  body:has([data-slot='sheet-header']) [data-sonner-toaster][data-y-position='top'] {
-    top: calc(env(safe-area-inset-top) + 5.5rem) !important;
-  }
 
   /* Settings rows (settings-page.tsx) read like form cells. */
   [data-slot='settings-row'] [data-slot='label'] {

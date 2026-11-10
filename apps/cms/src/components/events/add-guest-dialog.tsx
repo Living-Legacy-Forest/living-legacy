@@ -7,7 +7,6 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Spinner } from '@/components/ui/spinner';
 import { Textarea } from '@/components/ui/textarea';
-import { notify } from '@/lib/notify';
 import { useAction } from '@/lib/use-action';
 import { cn } from '@/lib/utils';
 import type { EventRow } from '@/server/events';
@@ -29,6 +28,11 @@ type Field = keyof typeof empty;
 const onlyName = (text: string) => text.replace(/[^\p{L}\p{M}' ’.-]/gu, '');
 const onlyPhone = (text: string) => text.replace(/[^\d+() .-]/g, '');
 const onlyDigits = (text: string) => text.replace(/\D/g, '');
+
+// These are someone else's details, so the browser must not offer the editor's
+// own. Browsers ignore autocomplete="off" on name and contact fields but leave
+// a field alone when the token is one they do not recognise.
+const NO_AUTOFILL = 'off-guest';
 
 /** Top to bottom, so the first problem is the one reported. */
 const FIELDS: Record<Field, { id: string; label: string }> = {
@@ -68,17 +72,25 @@ export function AddGuestDialog({
   onAdded: () => void;
 }) {
   const [values, setValues] = useState(empty);
-  const patch = (next: Partial<typeof empty>) => setValues((v) => ({ ...v, ...next }));
+  // The field to fix, shown under it rather than in a toast.
+  const [problem, setProblem] = useState<{ field: Field; message: string } | null>(null);
+  const patch = (next: Partial<typeof empty>) => {
+    setValues((v) => ({ ...v, ...next }));
+    // Typing in the field that was wrong clears its message.
+    if (problem && problem.field in next) setProblem(null);
+  };
+  const invalid = (field: Field) =>
+    problem?.field === field
+      ? { 'aria-invalid': true, 'aria-describedby': `${FIELDS[field].id}-error` }
+      : {};
   const { run, pending } = useAction();
 
   async function submit(e: React.FormEvent) {
     e.preventDefault();
-    const problem = firstProblem(event.id, values);
-    if (problem) {
-      const { id, label } = FIELDS[problem.field];
-      const missing = values[problem.field] === '';
-      notify.error(missing ? `${label} is required` : `${label} is not valid`, problem.message);
-      document.getElementById(id)?.focus();
+    const found = firstProblem(event.id, values);
+    setProblem(found);
+    if (found) {
+      document.getElementById(FIELDS[found.field].id)?.focus();
       return;
     }
     const result = await run(
@@ -111,44 +123,58 @@ export function AddGuestDialog({
       <form noValidate onSubmit={submit} className={cn('space-y-4 max-md:space-y-7', TOUCH_FIELDS)}>
         <FormSection>
           <div className="grid grid-cols-2 gap-4 max-md:contents">
-            <FormCell label="First name" htmlFor={FIELDS.firstName.id}>
+            <FormCell
+              label="First name"
+              htmlFor={FIELDS.firstName.id}
+              error={problem?.field === 'firstName' ? problem.message : undefined}
+            >
               <Input
                 id={FIELDS.firstName.id}
+                {...invalid('firstName')}
                 value={values.firstName}
                 required
                 maxLength={60}
-                autoComplete="off"
+                autoComplete={NO_AUTOFILL}
                 autoCapitalize="words"
                 autoCorrect="off"
                 spellCheck={false}
                 enterKeyHint="next"
-                placeholder="First name"
+                placeholder="Required"
                 onChange={(e) => patch({ firstName: onlyName(e.target.value) })}
               />
             </FormCell>
-            <FormCell label="Last name (optional)" htmlFor={FIELDS.lastName.id}>
+            <FormCell
+              label="Last name (optional)"
+              htmlFor={FIELDS.lastName.id}
+              error={problem?.field === 'lastName' ? problem.message : undefined}
+            >
               <Input
                 id={FIELDS.lastName.id}
+                {...invalid('lastName')}
                 value={values.lastName}
                 maxLength={60}
-                autoComplete="off"
+                autoComplete={NO_AUTOFILL}
                 autoCapitalize="words"
                 autoCorrect="off"
                 spellCheck={false}
                 enterKeyHint="next"
-                placeholder="Last name"
                 onChange={(e) => patch({ lastName: onlyName(e.target.value) })}
               />
             </FormCell>
           </div>
           <div className="grid grid-cols-[minmax(0,1fr)_5rem] gap-4 max-md:contents sm:grid-cols-[1fr_7rem]">
-            <FormCell label="Email (optional)" htmlFor={FIELDS.email.id}>
+            <FormCell
+              label="Email (optional)"
+              htmlFor={FIELDS.email.id}
+              error={problem?.field === 'email' ? problem.message : undefined}
+            >
               <Input
                 id={FIELDS.email.id}
+                {...invalid('email')}
                 value={values.email}
                 type="email"
                 maxLength={200}
-                autoComplete="off"
+                autoComplete={NO_AUTOFILL}
                 autoCapitalize="none"
                 autoCorrect="off"
                 spellCheck={false}
@@ -157,9 +183,14 @@ export function AddGuestDialog({
                 onChange={(e) => patch({ email: e.target.value.replace(/\s/g, '') })}
               />
             </FormCell>
-            <FormCell label="People" htmlFor={FIELDS.partySize.id}>
+            <FormCell
+              label="People"
+              htmlFor={FIELDS.partySize.id}
+              error={problem?.field === 'partySize' ? problem.message : undefined}
+            >
               <Input
                 id={FIELDS.partySize.id}
+                {...invalid('partySize')}
                 value={values.partySize}
                 inputMode="numeric"
                 required
@@ -172,14 +203,16 @@ export function AddGuestDialog({
           <FormCell
             label="Phone (optional)"
             htmlFor={FIELDS.phone.id}
+            error={problem?.field === 'phone' ? problem.message : undefined}
             hint="Australian mobile or landline."
           >
             <Input
               id={FIELDS.phone.id}
+              {...invalid('phone')}
               value={values.phone}
               type="tel"
               maxLength={20}
-              autoComplete="off"
+              autoComplete={NO_AUTOFILL}
               placeholder="0400 000 000"
               onChange={(e) => patch({ phone: onlyPhone(e.target.value) })}
               onBlur={() => {
@@ -191,9 +224,14 @@ export function AddGuestDialog({
           </FormCell>
         </FormSection>
         <FormSection>
-          <FormCell label="Note (optional)" htmlFor={FIELDS.note.id}>
+          <FormCell
+            label="Note (optional)"
+            htmlFor={FIELDS.note.id}
+            error={problem?.field === 'note' ? problem.message : undefined}
+          >
             <Textarea
               id={FIELDS.note.id}
+              {...invalid('note')}
               rows={2}
               maxLength={500}
               value={values.note}

@@ -272,7 +272,7 @@ export function DialogActions({
   });
 
   // Phones: the submit button joins Cancel in the sheet's top bar, as plain
-  // tint-coloured text. Everything else (Back, Next, Preview, Delete) stays at
+  // tint-coloured text (no fill, and no gradient image from the raised style). Everything else (Back, Next, Preview, Delete) stays at
   // the end of the form. The children render in both places, each showing its part.
   if (isPhone && slot) {
     return (
@@ -282,7 +282,7 @@ export function DialogActions({
             ref={barRef}
             data-slot="sheet-submit"
             onClickCapture={submitSheetForm}
-            className="[&>button]:text-tint! flex items-center [&>*:not(button[type=submit])]:hidden [&>button]:h-11 [&>button]:border-0 [&>button]:bg-transparent! [&>button]:px-0 [&>button]:text-[1.0625rem] [&>button]:font-semibold [&>button]:shadow-none [&>button]:active:opacity-50 [&>button]:disabled:opacity-40"
+            className="[&>button]:text-tint! flex items-center [&>*:not(button[type=submit])]:hidden [&>button]:h-11 [&>button]:border-0 [&>button]:bg-transparent! [&>button]:bg-none! [&>button]:px-0 [&>button]:text-[1.0625rem] [&>button]:font-semibold [&>button]:shadow-none [&>button]:active:opacity-50 [&>button]:disabled:opacity-40"
           >
             {children}
           </div>,

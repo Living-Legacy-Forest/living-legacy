@@ -198,25 +198,17 @@ export function UpdatesProvider({ joinedAt, children }: { joinedAt: number; chil
   );
 }
 
-/** The notice itself, as a sidebar card or a strip above the page on phones. */
-function UpdateNotice({ variant }: { variant: 'card' | 'strip' }) {
+/** The sidebar card above View website. Hidden when the sidebar is icons only. */
+function SidebarCard() {
   const { unseen, newDeploy, openDialog, dismiss } = useUpdates();
   if (!newDeploy && unseen.length === 0) return null;
-
-  const card = variant === 'card';
-  const box = cn(
-    'text-ui flex gap-2',
-    card
-      ? 'bg-sidebar-accent/60 text-sidebar-foreground mx-2 flex-col rounded-lg border p-3 group-data-[collapsible=icon]:hidden'
-      : 'bg-muted/60 items-center rounded-lg border px-3 py-2 md:hidden'
-  );
+  const box =
+    'text-ui bg-sidebar-accent/60 text-sidebar-foreground mx-2 flex flex-col gap-2 rounded-lg border p-3 group-data-[collapsible=icon]:hidden';
 
   if (newDeploy) {
     return (
       <div role="status" className={box}>
-        <p className={card ? '' : 'flex-1'}>
-          The CMS has been updated. Reload to get the latest version.
-        </p>
+        <p>The CMS has been updated. Reload to get the latest version.</p>
         <Button size="sm" variant="outline" onClick={() => window.location.reload()}>
           <RotateCcwIcon aria-hidden data-icon="inline-start" />
           Reload
@@ -225,29 +217,28 @@ function UpdateNotice({ variant }: { variant: 'card' | 'strip' }) {
     );
   }
 
-  const latest = unseen[0]!;
   return (
     <div role="status" className={cn(box, 'relative')}>
-      <div className={cn('min-w-0', !card && 'flex-1')}>
+      <div className="min-w-0">
         <p className="text-muted-foreground flex items-center gap-1.5 text-xs">
           <MegaphoneIcon aria-hidden className="size-3.5" />
           What's new
         </p>
-        <p className={cn('font-medium', card ? 'mt-1 pr-5' : 'line-clamp-2')}>{latest.title}</p>
+        <p className="mt-1 pr-5 font-medium">{unseen[0]!.title}</p>
       </div>
       <Button
         size="sm"
-        variant={card ? 'outline' : 'ghost'}
-        className={card ? 'self-start' : 'touch:min-h-11 shrink-0'}
+        variant="outline"
+        className="self-start"
         onClick={() => openDialog('unseen')}
       >
-        {card ? "See what's new" : 'View'}
+        See what's new
       </Button>
       <Button
         size="icon-xs"
         variant="ghost"
         aria-label="Dismiss"
-        className={card ? 'absolute top-2 right-2' : 'touch:size-11 shrink-0'}
+        className="absolute top-2 right-2"
         onClick={dismiss}
       >
         <XIcon aria-hidden />
@@ -256,5 +247,56 @@ function UpdateNotice({ variant }: { variant: 'card' | 'strip' }) {
   );
 }
 
-export const SidebarUpdateCard = () => <UpdateNotice variant="card" />;
-export const PhoneUpdateStrip = () => <UpdateNotice variant="strip" />;
+/**
+ * Phones: one slim line above the page, so it never pushes the page title far
+ * down. Tapping it opens the notes; the cross dismisses them.
+ */
+function PhoneStrip() {
+  const { unseen, newDeploy, openDialog, dismiss } = useUpdates();
+  if (!newDeploy && unseen.length === 0) return null;
+  const strip =
+    'bg-muted/70 flex h-11 items-center gap-1 rounded-full border pl-3.5 pr-1 text-[0.875rem] md:hidden';
+
+  if (newDeploy) {
+    return (
+      <div role="status" className={strip}>
+        <RotateCcwIcon aria-hidden className="text-muted-foreground size-4 shrink-0" />
+        <span className="min-w-0 flex-1 truncate pl-1.5">The CMS has been updated</span>
+        <button
+          type="button"
+          onClick={() => window.location.reload()}
+          className="text-tint h-11 shrink-0 px-3 font-semibold active:opacity-50"
+        >
+          Reload
+        </button>
+      </div>
+    );
+  }
+
+  return (
+    <div role="status" className={strip}>
+      <button
+        type="button"
+        onClick={() => openDialog('unseen')}
+        className="flex h-11 min-w-0 flex-1 items-center gap-2 text-left active:opacity-60"
+      >
+        <MegaphoneIcon aria-hidden className="text-muted-foreground size-4 shrink-0" />
+        <span className="min-w-0 truncate">
+          <span className="text-muted-foreground">New: </span>
+          <span className="font-medium">{unseen[0]!.title}</span>
+        </span>
+      </button>
+      <button
+        type="button"
+        aria-label="Dismiss what's new"
+        onClick={dismiss}
+        className="text-muted-foreground flex size-11 shrink-0 items-center justify-center rounded-full active:opacity-50"
+      >
+        <XIcon aria-hidden className="size-4" />
+      </button>
+    </div>
+  );
+}
+
+export const SidebarUpdateCard = SidebarCard;
+export const PhoneUpdateStrip = PhoneStrip;

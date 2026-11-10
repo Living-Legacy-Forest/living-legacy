@@ -38,7 +38,6 @@ export const legalPages = sqliteTable('legal_pages', {
   /** Set on every publish; drives "Last updated". (`publishedAt` is the first publish.) */
   lastPublishedAt: integer('last_published_at', { mode: 'timestamp_ms' }),
   reviewRequestedAt: integer('review_requested_at', { mode: 'timestamp_ms' }),
-  reviewerId: text('reviewer_id').references(() => user.id, { onDelete: 'set null' }),
   ...lifecycle(),
 });
 ```
@@ -79,7 +78,7 @@ stays in the template.
 | `listLegalPages` | `authMiddleware` | Both rows with status, `hasDraft`, `reviewRequestedAt`, `lastPublishedAt`. |
 | `getLegalPageEditorData` | `authMiddleware` | One page: live fields, draft, `updatedAt`, and its published versions (from `revisions`, newest first, with publisher name). |
 | `saveLegalPage` | `requirePermission('content:write')` | Writes `draft` and `updatedBy`. Takes `expectedUpdatedAt`; a mismatch throws the same conflict error as posts. |
-| `requestLegalReview` | `requirePermission('content:write')` | Sets `reviewRequestedAt` and `reviewerId`; logs `legal_page.review_requested`. |
+| `requestLegalReview` | `requirePermission('content:write')` | Sets `reviewRequestedAt`; logs `legal_page.review_requested`. |
 | `publishLegalPage` | `requirePermission('legal:publish')` | Copies draft onto the columns, clears `draft` and the review fields, sets `lastPublishedAt` (and `publishedAt` if empty). In one batch: the update, a `revisions` row (snapshot of `{ title, body, seoDescription }`), a `publish_events` row (`action: 'publish'`, `paths: ['/<slug>/']`) and the activity entry. Checks `expectedUpdatedAt`. |
 | `discardLegalDraft` | `requirePermission('legal:publish')` | Clears `draft` and the review fields. |
 | `getLegalRevision` | `authMiddleware` | One revision's snapshot, for the read-only history view. |

@@ -81,6 +81,19 @@ export const posts = sqliteTable(
   ]
 );
 
+/** The privacy policy and the terms: live columns, pending edits in `draft`. */
+export const legalPages = sqliteTable('legal_pages', {
+  id: id(),
+  slug: text('slug').notNull().unique(),
+  title: text('title').notNull(),
+  body: richText('body'),
+  seoDescription: text('seo_description'),
+  /** Set on every publish; drives "Last updated". `publishedAt` is the first publish. */
+  lastPublishedAt: integer('last_published_at', { mode: 'timestamp_ms' }),
+  reviewRequestedAt: integer('review_requested_at', { mode: 'timestamp_ms' }),
+  ...lifecycle(),
+});
+
 export const terms = sqliteTable(
   'terms',
   {

@@ -169,6 +169,13 @@
       "when": 1794207045420,
       "tag": "0023_post-location",
       "breakpoints": true
+    },
+    {
+      "idx": 24,
+      "version": "6",
+      "when": 1794281002694,
+      "tag": "0024_legal-pages",
+      "breakpoints": true
     }
   ]
 }

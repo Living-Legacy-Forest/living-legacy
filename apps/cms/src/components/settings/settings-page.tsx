@@ -7,7 +7,7 @@ import {
   parseEmailDomains,
   sessionDayOptions,
 } from '@ll/content';
-import { getRouteApi, useBlocker, useRouter } from '@tanstack/react-router';
+import { Link, getRouteApi, useBlocker, useRouter } from '@tanstack/react-router';
 import { type ReactNode, useEffect, useRef, useState } from 'react';
 import {
   AlertDialog,
@@ -19,6 +19,8 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
+import { ArrowRight } from '@/components/icons';
+import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -33,11 +35,13 @@ import { Spinner } from '@/components/ui/spinner';
 import { Switch } from '@/components/ui/switch';
 import { Textarea } from '@/components/ui/textarea';
 import { reportInvalid } from '@/lib/form-validation';
-import { zoneOffset } from '@/lib/format';
+import { formatDate, zoneOffset } from '@/lib/format';
 import { notify } from '@/lib/notify';
 import { useAction } from '@/lib/use-action';
+import { useTimeZone } from '@/lib/use-time-zone';
 import { setTheme, useThemeSync } from '@/lib/use-theme-sync';
 import { cn } from '@/lib/utils';
+import type { LegalPageSummary } from '@/server/legal-page-store';
 import {
   type Locale,
   type SiteSettings,
@@ -58,6 +62,7 @@ const sections = [
   { id: 'social', title: 'Social links' },
   { id: 'search', title: 'Search & sharing' },
   { id: 'content-targets', title: 'Content targets' },
+  { id: 'legal', title: 'Legal' },
   { id: 'sign-in', title: 'Sign-in & security' },
   { id: 'appearance', title: 'Language & appearance' },
 ] as const;
@@ -149,10 +154,13 @@ function problem(v: SiteSettings): { field: string; message: string } | null {
 export function SettingsPage({
   data,
   seoOnly = false,
+  legalPages,
 }: {
   data: SiteSettings;
   /** For SEO people: only the Search & sharing section. */
   seoOnly?: boolean;
+  /** The legal pages, for people who can edit them; absent for everyone else. */
+  legalPages?: LegalPageSummary[];
 }) {
   const [saved, setSaved] = useState(data);
   const [values, setValues] = useState(data);
@@ -216,7 +224,15 @@ export function SettingsPage({
       </div>
 
       <div className="lg:grid lg:grid-cols-[11rem_minmax(0,1fr)] lg:gap-10">
-        <SectionNav ids={seoOnly ? ['search', 'content-targets'] : sections.map((x) => x.id)} />
+        <SectionNav
+          ids={sections
+            .map((x) => x.id)
+            .filter((id) =>
+              id === 'legal'
+                ? legalPages !== undefined
+                : !seoOnly || id === 'search' || id === 'content-targets'
+            )}
+        />
 
         <form noValidate onSubmit={submit} className="space-y-10">
           {!seoOnly && (
@@ -535,6 +551,8 @@ export function SettingsPage({
               />
             </SettingsRow>
           </SettingsSection>
+
+          {legalPages && <LegalPagesSection pages={legalPages} />}
 
           {!seoOnly && (
             <SettingsSection
@@ -970,5 +988,43 @@ function SettingsRow({
         {children}
       </div>
     </div>
+  );
+}
+
+/** The privacy and terms pages, each opening its editor. */
+function LegalPagesSection({ pages }: { pages: LegalPageSummary[] }) {
+  const timeZone = useTimeZone();
+  return (
+    <SettingsSection
+      id="legal"
+      title="Legal"
+      description="Changes go live when an admin publishes them. Every published version is kept."
+    >
+      {pages.map((page) => (
+        <Link
+          key={page.slug}
+          to="/legal/$slug"
+          params={{ slug: page.slug }}
+          className="hover:bg-muted/50 touch:min-h-11 flex items-center gap-3 px-4 py-3"
+        >
+          <span className="min-w-0 flex-1">
+            <span className="text-ui block font-medium">{page.title}</span>
+            <span className="text-muted-foreground block text-xs">
+              {page.lastPublishedAt
+                ? `Last updated ${formatDate(page.lastPublishedAt, timeZone)}`
+                : 'Not published'}
+            </span>
+          </span>
+          {page.reviewRequestedAt ? (
+            <Badge variant="secondary">Review requested</Badge>
+          ) : page.hasDraft ? (
+            <Badge variant="outline">Unpublished changes</Badge>
+          ) : (
+            <Badge variant="outline">Published</Badge>
+          )}
+          <ArrowRight aria-hidden className="text-muted-foreground size-4" />
+        </Link>
+      ))}
+    </SettingsSection>
   );
 }

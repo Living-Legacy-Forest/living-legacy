@@ -38,7 +38,6 @@ export type NavItem = {
     | '/announcements'
     | '/events'
     | '/faqs'
-    | '/legal'
     | '/media'
     | '/locations'
     | '/media-coverage'
@@ -96,7 +95,6 @@ export const navGroups: NavGroup[] = [
       { title: 'Team', icon: Users, to: '/team' },
       { title: 'Testimonials', icon: Quote, to: '/testimonials' },
       { title: 'FAQs', icon: CircleHelp, to: '/faqs' },
-      { title: 'Legal pages', icon: FileText, to: '/legal', permission: 'content:write' },
     ],
   },
   {
@@ -162,6 +160,8 @@ export function navItemIcon(item: NavItem): LucideIcon | undefined {
  * to the closest parent, so /posts/abc shows "All posts".
  */
 export function findNavItem(pathname: string): NavItem | undefined {
+  // The legal page editors are opened from Settings, so they sit under it.
+  if (pathname.startsWith('/legal/')) return allNavItems.find((item) => item.to === '/settings');
   const exact = allNavItems.find((item) => item.to === pathname);
   if (exact) return exact;
   return allNavItems

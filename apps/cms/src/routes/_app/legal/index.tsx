@@ -1,9 +1,9 @@
-import { createFileRoute } from '@tanstack/react-router';
-import { LegalPagesList } from '@/components/legal/legal-pages-list';
-import { listLegalPages } from '@/server/legal-pages';
+import { createFileRoute, redirect } from '@tanstack/react-router';
 
+// The two legal pages are listed in Settings; this keeps old links and the
+// editor's breadcrumb working.
 export const Route = createFileRoute('/_app/legal/')({
-  loader: () => listLegalPages(),
-  head: () => ({ meta: [{ title: 'Legal pages | Living Legacy CMS' }] }),
-  component: () => <LegalPagesList pages={Route.useLoaderData()} />,
+  beforeLoad: () => {
+    throw redirect({ to: '/settings', hash: 'legal' });
+  },
 });

@@ -16,6 +16,7 @@ import type { SQLiteColumn, SQLiteTable } from 'drizzle-orm/sqlite-core';
 import { z } from 'zod';
 import { getDb } from '@/lib/db';
 import { authMiddleware, requirePermission } from '@/lib/session';
+import { renamedFilename } from '@/lib/filename';
 import { forgetCachedMedia } from './media-delivery';
 
 function toItem(r: typeof media.$inferSelect) {
@@ -62,16 +63,24 @@ export const updateMedia = createServerFn({ method: 'POST' })
       id: z.string(),
       alt: z.string().trim().max(300).optional(),
       caption: z.string().trim().max(500).optional(),
+      /** The new name without its extension, which always stays the original. */
+      filename: z.string().max(300).optional(),
     })
   )
   .handler(async ({ data }) => {
+    const db = getDb();
     // Only what was sent: an image field edits the alt text alone and must
     // not clear a caption set in the Media library.
-    const patch: { alt?: string | null; caption?: string | null } = {};
+    const patch: { alt?: string | null; caption?: string | null; filename?: string } = {};
     if (data.alt !== undefined) patch.alt = data.alt || null;
     if (data.caption !== undefined) patch.caption = data.caption || null;
+    if (data.filename !== undefined) {
+      const row = await db.query.media.findFirst({ where: eq(media.id, data.id) });
+      if (!row) throw new Error('That file is no longer in the media library.');
+      patch.filename = renamedFilename(row.filename, data.filename);
+    }
     if (Object.keys(patch).length === 0) return;
-    await getDb().update(media).set(patch).where(eq(media.id, data.id));
+    await db.update(media).set(patch).where(eq(media.id, data.id));
   });
 
 // Everywhere an image can be used: image fields, rich text (which stores

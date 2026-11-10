@@ -24,6 +24,12 @@ import {
   EmptyTitle,
 } from '@/components/ui/empty';
 import { Input } from '@/components/ui/input';
+import {
+  InputGroup,
+  InputGroupAddon,
+  InputGroupInput,
+  InputGroupText,
+} from '@/components/ui/input-group';
 import { Label } from '@/components/ui/label';
 import {
   Sheet,
@@ -38,6 +44,7 @@ import { Spinner } from '@/components/ui/spinner';
 import { Textarea } from '@/components/ui/textarea';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { notify, removedNotice } from '@/lib/notify';
+import { splitFilename } from '@/lib/filename';
 import { formatBytes } from '@/lib/format';
 import { canCrop } from '@/lib/prepare-image';
 import { IMAGE_ACCEPT, mediaSrc, uploadMedia } from '@/lib/upload-media';
@@ -332,6 +339,8 @@ function MediaEditForm({
   inSheet?: boolean;
 }) {
   const router = useRouter();
+  const { base: originalName, ext } = splitFilename(item.filename);
+  const [name, setName] = useState(originalName);
   const [alt, setAlt] = useState(item.alt);
   const [caption, setCaption] = useState(item.caption);
   // The file being cropped, fetched back from the library.
@@ -346,13 +355,22 @@ function MediaEditForm({
 
   async function save(e: React.FormEvent) {
     e.preventDefault();
-    const result = await run(() => updateMedia({ data: { id: item.id, alt, caption } }), {
-      success: {
-        title: 'Details saved',
-        description: 'The alt text and caption are updated in the media library.',
-      },
-      error: 'Could not save the details',
-    });
+    const renamed = name.trim() !== originalName;
+    const result = await run(
+      () =>
+        updateMedia({
+          data: { id: item.id, alt, caption, ...(renamed && { filename: name }) },
+        }),
+      {
+        success: {
+          title: 'Details saved',
+          description: renamed
+            ? 'The new name shows in the media library. Anything using the file is unchanged.'
+            : 'The alt text and caption are updated in the media library.',
+        },
+        error: 'Could not save the details',
+      }
+    );
     if (result !== undefined) onClose();
   }
 
@@ -480,6 +498,23 @@ function MediaEditForm({
       )}
     </div>
   );
+  const nameInput = (
+    <InputGroup>
+      <InputGroupInput
+        id="m-name"
+        required
+        maxLength={120}
+        value={name}
+        onChange={(e) => setName(e.target.value)}
+        aria-describedby={ext ? 'm-name-ext' : undefined}
+      />
+      {ext && (
+        <InputGroupAddon align="inline-end">
+          <InputGroupText id="m-name-ext">{ext}</InputGroupText>
+        </InputGroupAddon>
+      )}
+    </InputGroup>
+  );
   const altInput = (
     <Input
       id="m-alt"
@@ -511,6 +546,9 @@ function MediaEditForm({
             {crop}
           </FormSection>
           <FormSection>
+            <FormCell label="Name" htmlFor="m-name">
+              {nameInput}
+            </FormCell>
             <FormCell label="Alt text" htmlFor="m-alt">
               {altInput}
             </FormCell>
@@ -564,6 +602,13 @@ function MediaEditForm({
         <div className="grid flex-1 auto-rows-min gap-6 overflow-y-auto px-4">
           {preview}
           {crop && <div className="-mt-3">{crop}</div>}
+          <div className="grid gap-3">
+            <Label htmlFor="m-name">Name</Label>
+            {nameInput}
+            <p className="text-muted-foreground -mt-1 text-xs">
+              Only the name in the library changes. Anything using this file keeps working.
+            </p>
+          </div>
           <div className="grid gap-3">
             <Label htmlFor="m-alt">Alt text</Label>
             {altInput}

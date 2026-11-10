@@ -18,8 +18,9 @@ import { getDb } from '@/lib/db';
 
 const MEDIA_PATH = /^\/api\/media\/([\w-]+)$/;
 
-// Objects are never overwritten in place, so browsers may keep them for good.
-const BROWSER_CACHE = 'public, max-age=31536000, immutable';
+// A file can be replaced under the same URL, so browsers keep it for a day and
+// then check the ETag, which costs a 304 rather than the image when unchanged.
+const BROWSER_CACHE = 'public, max-age=86400';
 // The edge keeps a copy for a day, so a deleted image stops being served
 // everywhere within that time (deleting also clears the local copy at once).
 const EDGE_CACHE = 'public, max-age=86400';
@@ -75,6 +76,7 @@ export async function serveMedia(
       'Content-Type': variant?.mime ?? row.mime,
       'Content-Length': String(object.size),
       'Cache-Control': EDGE_CACHE,
+      ETag: object.httpEtag,
       ...UPLOAD_HEADERS,
     },
   });
@@ -100,9 +102,14 @@ export async function forgetCachedMedia(origin: string, ids: string[]) {
   );
 }
 
-function withBrowserCache(response: Response, request: Request) {
+export function withBrowserCache(response: Response, request: Request) {
   const headers = new Headers(response.headers);
   headers.set('Cache-Control', BROWSER_CACHE);
+  const etag = headers.get('ETag');
+  if (etag && request.headers.get('If-None-Match') === etag) {
+    headers.delete('Content-Length');
+    return new Response(null, { status: 304, headers });
+  }
   return new Response(request.method === 'HEAD' ? null : response.body, {
     status: response.status,
     headers,

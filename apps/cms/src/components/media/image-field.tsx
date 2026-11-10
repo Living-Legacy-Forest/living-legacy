@@ -6,6 +6,7 @@
 // A new image can be dropped on the field or chosen from the computer, and is
 // cropped to the shape the website shows it in before it is uploaded.
 import { useEffect, useState } from 'react';
+import { mediaSrc } from '@/lib/upload-media';
 import { SearchInput, matchesSearch } from '@/components/list/list-tools';
 import { UploadIcon } from '@/components/icons';
 import { useImageUpload } from '@/components/media/image-crop-dialog';
@@ -145,7 +146,7 @@ export function ImageField({
           >
             {item ? (
               <img
-                src={`${item.url}?w=640`}
+                src={mediaSrc(item, 640)}
                 alt={item.alt || item.filename}
                 className="size-full object-cover"
               />
@@ -423,7 +424,7 @@ export function MediaPicker({
                     )}
                   >
                     <img
-                      src={`${m.url}?w=640`}
+                      src={mediaSrc(m, 640)}
                       alt={m.alt || m.filename}
                       loading="lazy"
                       className="size-full object-cover"

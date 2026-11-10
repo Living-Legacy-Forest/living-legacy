@@ -34,6 +34,7 @@ export const activityActions = [
   'event.deleted',
   'event.guest_added',
   'event.guest_cancelled',
+  'media.replaced',
 ] as const;
 export type ActivityAction = (typeof activityActions)[number];
 

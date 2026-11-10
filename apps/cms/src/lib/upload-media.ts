@@ -17,10 +17,20 @@ async function measure(file: File): Promise<{ width: number; height: number } | 
 }
 
 /**
- * Uploads one image to the Media library and returns it. Images larger than
- * the website ever shows are scaled down first (see prepare-image.ts).
+ * An image's address at a given width, for previews in the CMS. The version
+ * changes when the file is replaced, so the browser fetches the new one rather
+ * than showing the copy it kept. Never stored: posts keep the plain URL.
  */
-export async function uploadMedia(original: File): Promise<MediaItem> {
+export function mediaSrc(item: Pick<MediaItem, 'url' | 'version'>, width: number): string {
+  return `${item.url}?w=${width}&v=${item.version}`;
+}
+
+/**
+ * Uploads one image to the Media library and returns it. Images larger than
+ * the website ever shows are scaled down first (see prepare-image.ts). With
+ * `replace`, the file goes behind that existing image instead, keeping its id.
+ */
+export async function uploadMedia(original: File, replace?: string): Promise<MediaItem> {
   const file = await prepareImage(original);
   const form = new FormData();
   form.set('file', file);
@@ -32,6 +42,7 @@ export async function uploadMedia(original: File): Promise<MediaItem> {
   // Best effort: without them the website loads the full-size image instead.
   const sizes = await makeSizes(file, mediaVariantWidths).catch(() => []);
   for (const s of sizes) form.set(`size-${s.width}`, s.file);
+  if (replace) form.set('replace', replace);
   const res = await fetch('/api/media', { method: 'POST', body: form });
   const body = (await res.json().catch(() => null)) as (MediaItem & { error?: string }) | null;
   if (!res.ok || !body?.id) throw new Error(body?.error ?? 'Upload failed.');

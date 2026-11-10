@@ -187,13 +187,18 @@ export interface SitemapEntry {
 }
 
 /**
- * Every blog URL for the on-demand sitemap: posts that may be indexed, plus
+ * Every blog URL for the on-demand sitemap: the blog index, posts that may be indexed, plus
  * the category, tag and author archives that have at least one post.
  */
 export async function getBlogSitemapEntries(): Promise<SitemapEntry[]> {
   const posts = (await getAllBlogPosts()).filter((p) => !p.noindex);
   const unique = (paths: string[]) => [...new Set(paths)].map((path) => ({ path }));
+  const newest = posts
+    .map((post) => post.updatedAt ?? post.publishedAt)
+    .sort()
+    .at(-1);
   return [
+    { path: '/blog/', lastmod: newest },
     ...posts.map((post) => ({
       path: `/blog/${post.slug}/`,
       lastmod: post.updatedAt ?? post.publishedAt,

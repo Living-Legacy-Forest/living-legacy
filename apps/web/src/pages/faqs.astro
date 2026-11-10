@@ -22,9 +22,7 @@ const description =
   'Find answers to common questions about Living Legacy, our process of turning ashes into living memorial trees, eco-friendly memorial options, and how it works across Australia.';
 ---
 
-<BaseLayout title={title} description={description}>
-  <script type="application/ld+json" set:html={JSON.stringify(jsonLd)} is:inline />
-
+<BaseLayout title={title} description={description} jsonLd={[jsonLd]}>
   <div class="mx-auto max-w-6xl px-6 py-20 sm:px-10 lg:py-28">
     <p class="eyebrow">Support</p>
     <h1 class="display-title mt-4">Frequently asked questions</h1>

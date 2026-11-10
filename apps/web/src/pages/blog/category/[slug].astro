@@ -2,6 +2,7 @@
 // Category archive. Paginated via ?page=, since a taxonomy archive does not
 // need its own numbered route tree the way the main index does.
 import BaseLayout from '@/layouts/BaseLayout.astro';
+import { breadcrumbJsonLd } from '@ll/content';
 import BlogCard from '@/components/blog/BlogCard.astro';
 import BlogPagination from '@/components/blog/BlogPagination.astro';
 import {
@@ -34,12 +35,19 @@ if (pageCount > 0 && page > pageCount) {
 }
 
 const canonicalPath = `/blog/category/${category.slug}/`;
+const siteUrl = (Astro.site ?? Astro.url).toString();
+const breadcrumbs = breadcrumbJsonLd([
+  { name: 'Home', url: new URL('/', siteUrl).toString() },
+  { name: 'Blog', url: new URL('/blog/', siteUrl).toString() },
+  { name: category.title, url: new URL(canonicalPath, siteUrl).toString() },
+]);
 const description =
   category.description ||
   `${total} ${total === 1 ? 'post' : 'posts'} filed under ${category.title} on the Living Legacy blog.`;
 ---
 
 <BaseLayout
+  jsonLd={[breadcrumbs]}
   title={`${category.title} | Blog`}
   description={description}
   canonical={new URL(canonicalPath, Astro.site).toString()}

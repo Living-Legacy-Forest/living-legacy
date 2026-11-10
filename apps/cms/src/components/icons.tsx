@@ -2,8 +2,8 @@
 // call sites (`<FileTextIcon aria-hidden className="size-4" />`) don't change.
 import * as H from '@hugeicons/core-free-icons';
 import { HugeiconsIcon } from '@hugeicons/react';
-import { useEffect, useRef } from 'react';
-import { Calendar01Icon as AnimatedCalendar01Icon } from '@animateicons/react/huge/calendar-0-1-icon';
+import { useEffect, useRef, useState } from 'react';
+import { CalendarClock as AnimatedCalendarClock } from '@/components/animate-ui/icons/hugeicons/calendar-clock';
 import { ActivityIcon as AnimatedActivityIcon } from '@animateicons/react/huge/activity-icon';
 import { Add01Icon as AnimatedAdd01Icon } from '@animateicons/react/huge/add-0-1-icon';
 import { AlertCircleIcon as AnimatedAlertCircleIcon } from '@animateicons/react/huge/alert-circle-icon';
@@ -115,6 +115,61 @@ const HOVER_TARGET =
 const QUIET =
   '[role="menu"], [role="listbox"], [role="menuitem"], [role="option"], [data-slot="select-trigger"], [data-slot="list-rows"], [data-slot="input-group"], [data-slot="badge"], [data-slot="breadcrumb"], [data-slot="calendar"], [data-slot="empty"], table';
 
+/**
+ * Calls start and stop as the control around an icon is hovered, if that
+ * control is one that animates (HOVER_TARGET) and is not somewhere quiet.
+ */
+function useHoverPlay(
+  anchor: React.RefObject<HTMLSpanElement | null>,
+  start: () => void,
+  stop: () => void
+) {
+  useEffect(() => {
+    const target = anchor.current?.parentElement?.closest<HTMLElement>(HOVER_TARGET);
+    if (!target || target.closest(QUIET)) return;
+    target.addEventListener('pointerenter', start);
+    target.addEventListener('pointerleave', stop);
+    return () => {
+      target.removeEventListener('pointerenter', start);
+      target.removeEventListener('pointerleave', stop);
+    };
+    // start and stop only reach refs and setters, so the first ones serve.
+  }, [anchor]);
+}
+
+/**
+ * Icons from Animate UI (components/animate-ui/icons), also Hugeicons
+ * drawings, for ones AnimateIcons does not animate. They take an \`animate\`
+ * flag rather than a handle; the same hover rule switches it.
+ */
+function animateUi(
+  Icon: React.ComponentType<{
+    animate?: boolean;
+    className?: string;
+    strokeWidth?: number | string;
+  }>
+): LucideIcon {
+  return function AnimateUiIcon({ className, strokeWidth, ...props }) {
+    const anchor = useRef<HTMLSpanElement>(null);
+    const [on, setOn] = useState(false);
+    useHoverPlay(
+      anchor,
+      () => setOn(true),
+      () => setOn(false)
+    );
+    return (
+      <span ref={anchor} className="contents">
+        <Icon
+          {...(props as object)}
+          animate={on}
+          strokeWidth={strokeWidth ?? 1.5}
+          className={cn('shrink-0', className)}
+        />
+      </span>
+    );
+  };
+}
+
 function animated(Icon: AnimatedComponent): LucideIcon {
   return function AnimatedIcon({ className, strokeWidth, style, ...props }) {
     const handle = useRef<AnimatedHandle>(null);
@@ -122,19 +177,11 @@ function animated(Icon: AnimatedComponent): LucideIcon {
 
     // Play when the whole button is hovered, not only the small icon inside
     // it. Reduced motion is honoured by the icons themselves.
-    useEffect(() => {
-      const span = anchor.current;
-      const target = span?.parentElement?.closest<HTMLElement>(HOVER_TARGET);
-      if (!target || target.closest(QUIET)) return;
-      const start = () => handle.current?.startAnimation();
-      const stop = () => handle.current?.stopAnimation();
-      target.addEventListener('pointerenter', start);
-      target.addEventListener('pointerleave', stop);
-      return () => {
-        target.removeEventListener('pointerenter', start);
-        target.removeEventListener('pointerleave', stop);
-      };
-    }, []);
+    useHoverPlay(
+      anchor,
+      () => handle.current?.startAnimation(),
+      () => handle.current?.stopAnimation()
+    );
 
     // The drawing is a fixed 24px inside a wrapper. When the call site sizes
     // the icon (size-4 and so on), stretch the drawing to fill it; otherwise
@@ -244,7 +291,8 @@ export const Quote = animated(AnimatedQuoteIcon);
 export const Table = animated(AnimatedTableIcon);
 
 // Shared UI ("Icon"-suffixed names)
-export const CalendarClockIcon = animated(AnimatedCalendar01Icon);
+// Calendar with a clock, whose hands turn: no fixed date printed on it.
+export const CalendarClockIcon = animateUi(AnimatedCalendarClock);
 export const FileTextIcon = animated(AnimatedFile01Icon);
 export const GlobeIcon = animated(AnimatedGlobe02Icon);
 export const CheckIcon = DrawnCheckIcon;

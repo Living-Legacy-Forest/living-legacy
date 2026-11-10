@@ -20,7 +20,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
-import { ArrowRight } from '@/components/icons';
+import { ArrowRight, ChevronDownIcon } from '@/components/icons';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -922,26 +922,37 @@ function SiteIconRow({
       description="Shown in browser tabs, bookmarks and on phone home screens, for the website and the CMS. Use a square image at least 512 by 512 pixels; PNG works best."
       stacked
     >
-      <div className="bg-muted/60 flex max-w-md items-center gap-4 rounded-lg border p-3">
+      <div className="bg-muted/50 flex max-w-lg items-center gap-5 rounded-xl border p-4 max-sm:flex-col max-sm:items-stretch">
+        {/* The icon as a phone's home screen shows it. */}
         <img
           src={src}
           alt=""
-          className="size-14 shrink-0 rounded-xl object-cover shadow-sm ring-1 ring-black/5"
+          className="size-16 shrink-0 rounded-[1.1rem] object-cover shadow-md ring-1 ring-black/10 max-sm:self-center"
         />
+        {/* The icon as a browser tab shows it, in a desktop window's tab bar. */}
         <div
           aria-hidden
-          className="flex h-10 min-w-0 flex-1 items-center gap-2.5 rounded-lg bg-neutral-900 px-3 text-xs text-neutral-100 shadow-sm"
+          className="min-w-0 flex-1 overflow-hidden rounded-xl bg-[#1f1f22] shadow-md ring-1 ring-black/20"
         >
-          <span className="flex shrink-0 gap-1">
-            <span className="size-2 rounded-full bg-neutral-600" />
-            <span className="size-2 rounded-full bg-neutral-600" />
-            <span className="size-2 rounded-full bg-neutral-600" />
-          </span>
-          <span className="flex min-w-0 flex-1 items-center gap-2 rounded-md bg-neutral-700/80 px-2 py-1.5">
-            <img src={src} alt="" className="size-4 shrink-0 rounded-sm object-cover" />
-            <span className="truncate">{siteTitle || 'Site title'}</span>
-            <span className="ml-auto pl-1 text-neutral-400">×</span>
-          </span>
+          <div className="flex h-11 items-center gap-2.5 px-3">
+            <span className="flex shrink-0 gap-1.5">
+              <span className="size-3 rounded-full bg-[#ff5f57]" />
+              <span className="size-3 rounded-full bg-[#febc2e]" />
+              <span className="size-3 rounded-full bg-[#28c840]" />
+            </span>
+            <span className="flex size-6 shrink-0 items-center justify-center rounded-md bg-white/10 text-neutral-300">
+              <ChevronDownIcon className="size-3.5" />
+            </span>
+            <span className="flex h-8 min-w-0 flex-1 items-center gap-2 rounded-lg bg-white/[0.09] px-2.5 text-xs text-neutral-100">
+              <img src={src} alt="" className="size-4 shrink-0 rounded-[3px] object-cover" />
+              <span className="truncate">{siteTitle || 'Site title'}</span>
+              <span className="ml-auto pl-2 text-sm leading-none text-neutral-400">×</span>
+            </span>
+          </div>
+          {/* A hint of the toolbar under the tabs, so it reads as a window. */}
+          <div className="flex h-7 items-center border-t border-white/5 bg-[#2a2a2e] px-3">
+            <span className="h-3 w-2/3 rounded-full bg-white/[0.07]" />
+          </div>
         </div>
       </div>
       {problem && <p className="text-destructive text-xs">{problem}</p>}

@@ -16,6 +16,14 @@ describe('can', () => {
     expect(can('viewer', 'events:manage')).toBe(false);
   });
 
+  it('lets only admins publish legal pages', () => {
+    expect(can('admin', 'legal:publish')).toBe(true);
+    for (const role of ['editor', 'author', 'seo', 'viewer'] as const) {
+      expect(can(role, 'legal:publish')).toBe(false);
+    }
+    expect(can('editor', 'content:write')).toBe(true);
+  });
+
   it('lets admins do everything', () => {
     expect(can('admin', 'users:manage')).toBe(true);
     expect(can('admin', 'content:purge')).toBe(true);

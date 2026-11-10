@@ -16,9 +16,11 @@ import {
   sessionDayOptions,
   themes,
   timeZones,
+  siteIconProblem,
 } from '@ll/content';
-import { siteSettings } from '@ll/db/schema';
+import { media, siteSettings } from '@ll/db/schema';
 import { createServerFn } from '@tanstack/react-start';
+import { eq } from 'drizzle-orm';
 import { z } from 'zod';
 import { getDb } from '@/lib/db';
 import { authMiddleware, requirePermission } from '@/lib/session';
@@ -38,8 +40,8 @@ export const getSiteSettings = createServerFn({ method: 'GET' })
  * scheduling UI needs the time zone everywhere.
  */
 export const getRootSettings = createServerFn({ method: 'GET' }).handler(async () => {
-  const { theme, timeZone } = await readSiteSettings();
-  return { theme, timeZone };
+  const { theme, timeZone, siteIconMediaId } = await readSiteSettings();
+  return { theme, timeZone, siteIconMediaId };
 });
 
 const text = (max: number) => z.string().trim().max(max).default('');
@@ -76,6 +78,7 @@ const settingsSchema = z
     ),
     seoDescription: text(SEO_DESCRIPTION_LIMIT),
     seoImageUrl: link,
+    siteIconMediaId: z.string().max(64),
     googleVerification: verification,
     bingVerification: verification,
     hideFromSearch: z.boolean(),
@@ -130,6 +133,12 @@ export const saveSiteSettings = createServerFn({ method: 'POST' })
           ...Object.fromEntries(SEO_KEYS.map((key) => [key, data[key]])),
         };
     const db = getDb();
+    if (value.siteIconMediaId) {
+      const icon = await db.query.media.findFirst({ where: eq(media.id, value.siteIconMediaId) });
+      if (!icon) throw new Error('That site icon is no longer in the media library.');
+      const problem = siteIconProblem(icon);
+      if (problem) throw new Error(problem);
+    }
     await db
       .insert(siteSettings)
       .values({ id: 'site', data: value, updatedBy: context.user.id })

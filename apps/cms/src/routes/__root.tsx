@@ -33,11 +33,26 @@ function themeColorMeta(theme: Theme): { content: string; media?: string }[] {
   ];
 }
 
+function iconLinks(siteIconMediaId: string | undefined) {
+  if (siteIconMediaId) {
+    const href = `/api/media/${siteIconMediaId}?w=640`;
+    return [
+      { rel: 'icon', href },
+      { rel: 'apple-touch-icon', href },
+    ];
+  }
+  return [
+    { rel: 'icon', href: '/favicon.ico', sizes: '32x32' },
+    { rel: 'icon', type: 'image/png', href: '/icon-192.png', sizes: '192x192' },
+    { rel: 'apple-touch-icon', href: '/apple-touch-icon.png' },
+  ];
+}
+
 export const Route = createRootRoute({
   loader: () => getRootSettings(),
   // Otherwise this reloads on every navigation. Saving settings invalidates it.
   staleTime: 5 * 60_000,
-  head: () => ({
+  head: ({ loaderData }) => ({
     meta: [
       { charSet: 'utf-8' },
       // viewport-fit=cover lets the app paint under the notch and home bar;
@@ -48,11 +63,9 @@ export const Route = createRootRoute({
     ],
     links: [
       { rel: 'stylesheet', href: styles },
-      // The same icons as the public website (apps/web/public), so the CMS tab
-      // is recognisable among the site's own.
-      { rel: 'icon', href: '/favicon.ico', sizes: '32x32' },
-      { rel: 'icon', type: 'image/png', href: '/icon-192.png', sizes: '192x192' },
-      { rel: 'apple-touch-icon', href: '/apple-touch-icon.png' },
+      // The same icon as the public website (Settings, Site icon, or the built-in
+      // files in public/), so the CMS tab is recognisable among the site's own.
+      ...iconLinks(loaderData?.siteIconMediaId),
     ],
   }),
   shellComponent: RootDocument,

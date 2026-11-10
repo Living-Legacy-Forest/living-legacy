@@ -21,6 +21,7 @@ export const permissions = [
   'redirects:write',
   'settings:write',
   'users:manage',
+  'legal:publish',
 ] as const;
 export type Permission = (typeof permissions)[number];
 

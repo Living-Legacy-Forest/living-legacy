@@ -214,6 +214,21 @@ function NotificationList({
                 </span>
                 {dot}
               </Link>
+            ) : item.kind === 'legal_review' ? (
+              <Link
+                to="/legal/$slug"
+                params={{ slug: item.slug }}
+                onClick={onNavigate}
+                className={rowClass}
+              >
+                <PencilLineIcon aria-hidden />
+                <span className={textClass}>
+                  <span className="text-muted-foreground">Review </span>
+                  <span className="font-medium">{item.title}</span>
+                  <span className={metaClass}>Asked {formatRelative(item.at)}</span>
+                </span>
+                {dot}
+              </Link>
             ) : (
               <Link
                 to="/events"

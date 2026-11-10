@@ -123,6 +123,13 @@ share `components/list/`. A new list page should too:
   applied; `cloudflare:workers`'s `env` holds them. Each file gets a fresh database; clear the
   tables a test relies on in `beforeEach`. Helpers are in `apps/cms/test/fixtures.ts`.
 
+### What's new
+
+A change editors would want to know about (a new screen, a new action, a moved control) gets an
+entry at the top of `lib/whats-new.ts` in the same PR: the date it ships and a sentence or two in
+plain English per item, with a link to where to find it. The CMS shows it once to each person.
+Fixes and polish nobody would notice do not need one.
+
 ### Rich-text editor
 
 `components/editor`, `components/extensions`, `components/templates` and

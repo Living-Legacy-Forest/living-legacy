@@ -16,6 +16,7 @@ import { cn } from '@/lib/utils';
 import { CommandMenu } from './command-menu';
 import { NavGroup } from './nav-group';
 import { navItemClass } from './nav-styles';
+import { SidebarUpdateCard } from './updates';
 
 export function AppSidebar({
   user,
@@ -68,6 +69,7 @@ export function AppSidebar({
       </SidebarContent>
 
       <SidebarFooter>
+        <SidebarUpdateCard />
         <SidebarMenu>
           {footerLinks.map((link) => (
             <SidebarMenuItem key={link.title}>

@@ -13,6 +13,8 @@ export type SessionUser = {
   imageAlt: string | null;
   bio: string | null;
   role: Role;
+  /** When the account was made, so What's new skips what came before. */
+  createdAt: number;
 };
 
 /** `fresh` skips the session cookie cache, for when stale details would show. */
@@ -22,7 +24,7 @@ async function loadUser({ fresh = false } = {}): Promise<SessionUser | null> {
     query: { disableCookieCache: fresh },
   });
   if (!session) return null;
-  const { id, name, email, image, imageAlt, bio, role } = session.user;
+  const { id, name, email, image, imageAlt, bio, role, createdAt } = session.user;
   return {
     id,
     name,
@@ -31,6 +33,7 @@ async function loadUser({ fresh = false } = {}): Promise<SessionUser | null> {
     imageAlt: (imageAlt as string | null) ?? null,
     bio: (bio as string | null) ?? null,
     role: role as Role,
+    createdAt: new Date(createdAt).getTime(),
   };
 }
 

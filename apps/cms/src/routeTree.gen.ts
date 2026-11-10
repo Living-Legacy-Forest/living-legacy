@@ -12,6 +12,7 @@ import { Route as rootRouteImport } from './routes/__root'
 import { Route as AppRouteImport } from './routes/_app'
 import { Route as LoginRouteImport } from './routes/login'
 import { Route as AppIndexRouteImport } from './routes/_app/index'
+import { Route as ApiBuildRouteImport } from './routes/api/build'
 import { Route as AppActivityIndexRouteImport } from './routes/_app/activity/index'
 import { Route as AppAnnouncementsIndexRouteImport } from './routes/_app/announcements/index'
 import { Route as AppApiKeysIndexRouteImport } from './routes/_app/api-keys/index'
@@ -59,6 +60,11 @@ const AppIndexRoute = AppIndexRouteImport.update({
   id: '/',
   path: '/',
   getParentRoute: () => AppRoute,
+} as any)
+const ApiBuildRoute = ApiBuildRouteImport.update({
+  id: '/api/build',
+  path: '/api/build',
+  getParentRoute: () => rootRouteImport,
 } as any)
 const AppActivityIndexRoute = AppActivityIndexRouteImport.update({
   id: '/activity/',
@@ -229,6 +235,7 @@ const ApiV1PostsIdRoute = ApiV1PostsIdRouteImport.update({
 export interface FileRoutesByFullPath {
   '/': typeof AppIndexRoute
   '/login': typeof LoginRoute
+  '/api/build': typeof ApiBuildRoute
   '/legal/$slug': typeof AppLegalSlugRoute
   '/posts/$postId': typeof AppPostsPostIdRoute
   '/posts/new': typeof AppPostsNewRoute
@@ -265,6 +272,7 @@ export interface FileRoutesByFullPath {
 }
 export interface FileRoutesByTo {
   '/login': typeof LoginRoute
+  '/api/build': typeof ApiBuildRoute
   '/': typeof AppIndexRoute
   '/legal/$slug': typeof AppLegalSlugRoute
   '/posts/$postId': typeof AppPostsPostIdRoute
@@ -304,6 +312,7 @@ export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/_app': typeof AppRouteWithChildren
   '/login': typeof LoginRoute
+  '/api/build': typeof ApiBuildRoute
   '/_app/': typeof AppIndexRoute
   '/_app/legal/$slug': typeof AppLegalSlugRoute
   '/_app/posts/$postId': typeof AppPostsPostIdRoute
@@ -344,6 +353,7 @@ export interface FileRouteTypes {
   fullPaths:
     | '/'
     | '/login'
+    | '/api/build'
     | '/legal/$slug'
     | '/posts/$postId'
     | '/posts/new'
@@ -380,6 +390,7 @@ export interface FileRouteTypes {
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/login'
+    | '/api/build'
     | '/'
     | '/legal/$slug'
     | '/posts/$postId'
@@ -418,6 +429,7 @@ export interface FileRouteTypes {
     | '__root__'
     | '/_app'
     | '/login'
+    | '/api/build'
     | '/_app/'
     | '/_app/legal/$slug'
     | '/_app/posts/$postId'
@@ -457,6 +469,7 @@ export interface FileRouteTypes {
 export interface RootRouteChildren {
   AppRoute: typeof AppRouteWithChildren
   LoginRoute: typeof LoginRoute
+  ApiBuildRoute: typeof ApiBuildRoute
   ApiAuthSplatRoute: typeof ApiAuthSplatRoute
   ApiAvatarKeyRoute: typeof ApiAvatarKeyRoute
   ApiV1TermsRoute: typeof ApiV1TermsRoute
@@ -491,6 +504,13 @@ declare module '@tanstack/react-router' {
       fullPath: '/'
       preLoaderRoute: typeof AppIndexRouteImport
       parentRoute: typeof AppRoute
+    }
+    '/api/build': {
+      id: '/api/build'
+      path: '/api/build'
+      fullPath: '/api/build'
+      preLoaderRoute: typeof ApiBuildRouteImport
+      parentRoute: typeof rootRouteImport
     }
     '/_app/activity/': {
       id: '/_app/activity/'
@@ -785,6 +805,7 @@ const AppRouteWithChildren = AppRoute._addFileChildren(AppRouteChildren)
 const rootRouteChildren: RootRouteChildren = {
   AppRoute: AppRouteWithChildren,
   LoginRoute: LoginRoute,
+  ApiBuildRoute: ApiBuildRoute,
   ApiAuthSplatRoute: ApiAuthSplatRoute,
   ApiAvatarKeyRoute: ApiAvatarKeyRoute,
   ApiV1TermsRoute: ApiV1TermsRoute,

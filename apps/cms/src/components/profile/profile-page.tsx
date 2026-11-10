@@ -16,6 +16,7 @@ import { reportInvalid } from '@/lib/form-validation';
 import { type SessionUser, forgetCachedUser } from '@/lib/session';
 import { notify } from '@/lib/notify';
 import { useAction } from '@/lib/use-action';
+import { defaultAvatarUrl } from '@/lib/avatar';
 
 async function uploadAvatar(file: File) {
   const form = new FormData();
@@ -135,7 +136,10 @@ export function ProfilePage({
         <div className="flex items-center gap-4 max-md:flex-col max-md:gap-2 max-md:text-center">
           <div className="group relative">
             <Avatar size="lg" className="size-16">
-              {user.image && <AvatarImage src={user.image} alt={user.imageAlt ?? ''} />}
+              <AvatarImage
+                src={user.image ?? defaultAvatarUrl(user.id)}
+                alt={user.imageAlt ?? ''}
+              />
               <AvatarFallback className="text-base">{initials}</AvatarFallback>
             </Avatar>
             <button

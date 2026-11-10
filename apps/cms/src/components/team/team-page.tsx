@@ -70,6 +70,7 @@ import {
   saveTeamMember,
   setTeamMemberStatus,
 } from '@/server/team';
+import { defaultAvatarUrl } from '@/lib/avatar';
 
 const NOUN: [string, string] = ['team member', 'team members'];
 
@@ -381,14 +382,16 @@ export function TeamPage({ data, canWrite }: { data: TeamListData; canWrite: boo
 function MemberSummary({ member }: { member: TeamMember }) {
   return (
     <span className="flex min-w-0 items-center gap-2.5">
-      {member.photoMediaId && (
-        <img
-          src={`/api/media/${member.photoMediaId}?w=640`}
-          alt=""
-          loading="lazy"
-          className="size-8 shrink-0 rounded-full border object-cover"
-        />
-      )}
+      <img
+        src={
+          member.photoMediaId
+            ? `/api/media/${member.photoMediaId}?w=640`
+            : defaultAvatarUrl(member.id)
+        }
+        alt=""
+        loading="lazy"
+        className="size-8 shrink-0 rounded-full border object-cover"
+      />
       <span className="min-w-0 flex-1">
         <span className="flex items-center gap-2">
           <span className="text-ui truncate font-medium">{member.name}</span>

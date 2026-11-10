@@ -29,4 +29,12 @@ describe('unseenEntries', () => {
     ]);
     expect(unseenEntries(entries, null, day('2026-12-05'))).toEqual([]);
   });
+
+  it('orders a second note on the same day after the first', () => {
+    const sameDay = [entry('2026-11-10-2'), entry('2026-11-10')];
+    expect(unseenEntries(sameDay, '2026-11-10', day('2026-01-01')).map((e) => e.id)).toEqual([
+      '2026-11-10-2',
+    ]);
+    expect(unseenEntries(sameDay, null, day('2026-11-01'))).toHaveLength(2);
+  });
 });

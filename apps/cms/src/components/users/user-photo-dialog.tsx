@@ -21,6 +21,7 @@ import { type Notice, notify } from '@/lib/notify';
 import { forgetCachedUser } from '@/lib/session';
 import { IMAGE_ACCEPT } from '@/lib/upload-media';
 import { updateUserPhoto } from '@/server/users';
+import { defaultAvatarUrl } from '@/lib/avatar';
 
 type PhotoUser = {
   id: string;
@@ -143,7 +144,10 @@ export function UserPhotoDialog({
             <div className="my-5 space-y-5">
               <div className="flex items-center gap-4">
                 <Avatar className="size-16">
-                  {user.image && <AvatarImage src={user.image} alt={user.imageAlt ?? ''} />}
+                  <AvatarImage
+                    src={user.image ?? defaultAvatarUrl(user.id)}
+                    alt={user.imageAlt ?? ''}
+                  />
                   <AvatarFallback className="bg-muted text-base font-medium">
                     {initials}
                   </AvatarFallback>

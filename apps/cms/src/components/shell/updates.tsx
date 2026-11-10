@@ -1,6 +1,6 @@
 import { Link } from '@tanstack/react-router';
 import { type ReactNode, createContext, useContext, useEffect, useMemo, useState } from 'react';
-import { MegaphoneIcon, RotateCcwIcon, XIcon } from '@/components/icons';
+import { ArrowRight, MegaphoneIcon, RotateCcwIcon, XIcon } from '@/components/icons';
 import { Button } from '@/components/ui/button';
 import {
   Dialog,
@@ -130,34 +130,48 @@ export function UpdatesProvider({ joinedAt, children }: { joinedAt: number; chil
     <UpdatesContext.Provider value={value}>
       {children}
       <Dialog open={dialog !== null} onOpenChange={(open) => !open && closeDialog()}>
-        <DialogContent className="max-h-[85svh] overflow-y-auto sm:max-w-lg">
-          <DialogHeader>
+        <DialogContent
+          initialFocus={false}
+          className="max-h-[85svh] gap-0 overflow-y-auto p-0 sm:max-w-md"
+        >
+          <DialogHeader className="border-b px-5 py-4">
             <DialogTitle>What's new</DialogTitle>
-            <DialogDescription>Changes to the CMS, newest first.</DialogDescription>
+            <DialogDescription className="sr-only">
+              Changes to the CMS, newest first.
+            </DialogDescription>
           </DialogHeader>
-          <div className="space-y-6">
+          <div className="divide-y">
             {shown.map((entry) => (
-              <section key={entry.id} className="space-y-3">
-                <h3 className="text-muted-foreground text-xs">
-                  {new Date(`${entry.id}T12:00:00`).toLocaleDateString('en-AU', {
-                    day: 'numeric',
-                    month: 'long',
-                    year: 'numeric',
-                  })}
-                </h3>
-                <ul className="space-y-3">
+              <section key={entry.id} className="space-y-4 px-5 py-5">
+                <header className="space-y-1">
+                  <p className="text-muted-foreground text-xs tabular-nums">
+                    {new Date(`${entry.id}T12:00:00`).toLocaleDateString('en-AU', {
+                      day: 'numeric',
+                      month: 'long',
+                      year: 'numeric',
+                    })}
+                  </p>
+                  <h3 className="text-sm leading-snug font-semibold">{entry.title}</h3>
+                </header>
+                <ul className="border-border space-y-4 border-l pl-4">
                   {entry.items.map((item) => (
-                    <li key={item.title} className="text-ui space-y-0.5">
-                      <p className="font-medium">{item.title}</p>
-                      <p className="text-muted-foreground">{item.body}</p>
+                    <li key={item.title} className="relative space-y-1">
+                      {/* A dot on the rule, so each item reads as a step. */}
+                      <span
+                        aria-hidden
+                        className="bg-foreground/25 absolute top-1.5 -left-[1.2rem] size-1.5 rounded-full"
+                      />
+                      <p className="text-ui font-medium">{item.title}</p>
+                      <p className="text-muted-foreground text-ui leading-relaxed">{item.body}</p>
                       {item.link && (
                         <Link
                           to={item.link.to}
                           hash={item.link.hash}
                           onClick={closeDialog}
-                          className="text-xs font-medium underline-offset-4 hover:underline"
+                          className="text-muted-foreground hover:text-foreground focus-visible:ring-ring/50 touch:min-h-11 inline-flex items-center gap-1 rounded-sm pt-0.5 text-xs transition-colors outline-none focus-visible:ring-2"
                         >
                           {item.link.label}
+                          <ArrowRight aria-hidden className="size-3" />
                         </Link>
                       )}
                     </li>

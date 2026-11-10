@@ -22,6 +22,17 @@ export type WhatsNewEntry = {
 
 export const whatsNew: WhatsNewEntry[] = [
   {
+    id: '2026-11-10-3',
+    title: 'Rename files in Media',
+    items: [
+      {
+        title: 'Rename a file',
+        body: 'In Media, open a file and change its name. Anything already using it keeps working, and it is easier to find by search.',
+        link: { label: 'Open Media', to: '/media' },
+      },
+    ],
+  },
+  {
     id: '2026-11-10-2',
     title: 'A tidier profile, your own theme and avatars',
     items: [

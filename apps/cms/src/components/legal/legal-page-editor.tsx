@@ -95,13 +95,16 @@ export function LegalPageEditor({
   }
 
   async function discard() {
-    await run(() => discardLegalPageDraft({ data: { slug: data.slug } }), {
-      success: {
-        title: 'Changes discarded',
-        description: 'The page is back to the published version.',
-      },
-      error: 'Could not discard the changes',
-    });
+    await run(
+      () => discardLegalPageDraft({ data: { slug: data.slug, expectedUpdatedAt: version } }),
+      {
+        success: {
+          title: 'Changes discarded',
+          description: 'The page is back to the published version.',
+        },
+        error: 'Could not discard the changes',
+      }
+    );
   }
 
   const hasChanges = data.hasDraft || dirty;

@@ -85,6 +85,36 @@ describe('legal pages', () => {
     expect(logged).toHaveLength(1);
   });
 
+  it('lets only one of two simultaneous saves through', async () => {
+    const stale = await version();
+    const results = await Promise.allSettled([
+      saveLegalDraft(testDb(), 'privacy', values('From Ana'), stale, actor),
+      saveLegalDraft(testDb(), 'privacy', values('From Ben'), stale, actor),
+    ]);
+    expect(results.filter((r) => r.status === 'fulfilled')).toHaveLength(1);
+  });
+
+  it('lets only one of a save and a publish from the same version through', async () => {
+    await saveLegalDraft(testDb(), 'privacy', values('Reviewed'), await version(), actor);
+    const current = await version();
+    const results = await Promise.allSettled([
+      publishLegalDraft(testDb(), 'privacy', current, actor),
+      saveLegalDraft(testDb(), 'privacy', values('Late edit'), current, actor),
+    ]);
+    expect(results.filter((r) => r.status === 'fulfilled')).toHaveLength(1);
+    const history = await listLegalHistory(testDb(), (await loadLegalPage(testDb(), 'privacy')).id);
+    const published = results[0]!.status === 'fulfilled';
+    expect(history).toHaveLength(published ? 1 : 0);
+  });
+
+  it('refuses a discard from an out-of-date editor', async () => {
+    const stale = await version();
+    await saveLegalDraft(testDb(), 'privacy', values('Newer edit'), stale, actor);
+    await expect(discardLegalDraft(testDb(), 'privacy', stale, actor)).rejects.toThrow(
+      'Someone else saved this page'
+    );
+  });
+
   it('refuses to publish with no changes', async () => {
     await expect(publishLegalDraft(testDb(), 'privacy', await version(), actor)).rejects.toThrow(
       'There are no changes to publish.'
@@ -115,7 +145,7 @@ describe('legal pages', () => {
   it('discarding drops the draft and the review request', async () => {
     await saveLegalDraft(testDb(), 'privacy', values('Draft'), await version(), actor);
     await requestLegalReview(testDb(), 'privacy', actor);
-    await discardLegalDraft(testDb(), 'privacy', actor);
+    await discardLegalDraft(testDb(), 'privacy', await version(), actor);
     const row = await loadLegalPage(testDb(), 'privacy');
     expect(row.draft).toBeNull();
     expect(row.reviewRequestedAt).toBeNull();

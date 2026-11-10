@@ -2,7 +2,7 @@ import { legalSlugSchema, legalValuesSchema } from '@ll/content';
 import { createServerFn } from '@tanstack/react-start';
 import { z } from 'zod';
 import { getDb } from '@/lib/db';
-import { authMiddleware, requirePermission } from '@/lib/session';
+import { requirePermission } from '@/lib/session';
 import {
   currentValues,
   discardLegalDraft,
@@ -63,16 +63,19 @@ export const publishLegalPage = createServerFn({ method: 'POST' })
 
 export const discardLegalPageDraft = createServerFn({ method: 'POST' })
   .middleware([requirePermission('legal:publish')])
-  .validator(slugInput)
-  .handler(({ data, context }) => discardLegalDraft(getDb(), data.slug, actorOf(context.user)));
+  .validator(slugInput.extend({ expectedUpdatedAt: z.number() }))
+  .handler(({ data, context }) =>
+    discardLegalDraft(getDb(), data.slug, data.expectedUpdatedAt, actorOf(context.user))
+  );
 
 export const getLegalRevision = createServerFn({ method: 'GET' })
   .middleware([requirePermission('content:write')])
   .validator(z.object({ id: z.string().max(64) }))
   .handler(({ data }) => loadLegalRevision(getDb(), data.id));
 
+// Drafts are unpublished legal text: only people who can edit them may read them.
 export const getLegalPagePreview = createServerFn({ method: 'GET' })
-  .middleware([authMiddleware])
+  .middleware([requirePermission('content:write')])
   .validator(slugInput)
   .handler(async ({ data }) => {
     const row = await loadLegalPage(getDb(), data.slug);

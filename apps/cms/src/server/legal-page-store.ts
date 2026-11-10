@@ -3,8 +3,8 @@
 // `draft` until an admin publishes them.
 import { type LegalSlug, type LegalValues, legalPath, legalPublishErrors } from '@ll/content';
 import type { Db } from '@ll/db';
-import { legalPages, publishEvents, revisions, user } from '@ll/db/schema';
-import { and, desc, eq, isNotNull } from 'drizzle-orm';
+import { activityLog, legalPages, publishEvents, revisions, user } from '@ll/db/schema';
+import { and, desc, eq, isNotNull, sql } from 'drizzle-orm';
 import { logActivity } from './activity-log';
 
 export type LegalPageRow = typeof legalPages.$inferSelect;
@@ -44,6 +44,12 @@ function assertVersion(row: LegalPageRow, expectedUpdatedAt: number) {
   if (row.updatedAt.getTime() !== expectedUpdatedAt) throw conflictError();
 }
 
+// Writes only land on the version the editor loaded. The check above fails
+// fast; this one makes it atomic, so two people saving at the same moment
+// cannot both pass and have one silently overwrite the other.
+const atVersion = (id: string, expectedUpdatedAt: number) =>
+  and(eq(legalPages.id, id), eq(legalPages.updatedAt, new Date(expectedUpdatedAt)));
+
 export async function listLegalPageSummaries(db: Db): Promise<LegalPageSummary[]> {
   const rows = await db.select().from(legalPages).orderBy(legalPages.slug);
   return rows.map((r) => ({
@@ -65,10 +71,12 @@ export async function saveLegalDraft(
   const row = await loadLegalPage(db, slug);
   assertVersion(row, expectedUpdatedAt);
   const now = new Date();
-  await db
+  const written = await db
     .update(legalPages)
     .set({ draft: values, updatedAt: now, updatedBy: actor.id })
-    .where(eq(legalPages.id, row.id));
+    .where(atVersion(row.id, expectedUpdatedAt))
+    .returning({ id: legalPages.id });
+  if (!written.length) throw conflictError();
   return { updatedAt: now.getTime() };
 }
 
@@ -105,7 +113,12 @@ export async function publishLegalDraft(
   if (errors.length) throw new Error(errors.join(' '));
 
   const now = new Date();
-  await db.batch([
+  // The history, publish and activity rows are each inserted from a select of
+  // this page at the version the update just set, so they only appear if the
+  // update landed. One batch, so one transaction.
+  const landed = and(eq(legalPages.id, row.id), eq(legalPages.updatedAt, now));
+  const value = <T>(v: T, column: string) => sql<T>`${v}`.as(column);
+  const [written] = await db.batch([
     db
       .update(legalPages)
       .set({
@@ -120,37 +133,67 @@ export async function publishLegalDraft(
         updatedAt: now,
         updatedBy: actor.id,
       })
-      .where(eq(legalPages.id, row.id)),
-    db.insert(revisions).values({
-      entityType: 'legal_page',
-      entityId: row.id,
-      snapshot: values,
-      createdBy: actor.id,
-      createdAt: now,
-    }),
-    db.insert(publishEvents).values({
-      entityType: 'legal_page',
-      entityId: row.id,
-      action: 'publish',
-      paths: [legalPath(slug)],
-    }),
-    logActivity(db, {
-      actorId: actor.id,
-      actorName: actor.name,
-      action: 'legal_page.published',
-      summary: `Published ${values.title}`,
-    }),
+      .where(atVersion(row.id, expectedUpdatedAt))
+      .returning({ id: legalPages.id }),
+    db.insert(revisions).select(
+      db
+        .select({
+          id: value(crypto.randomUUID(), 'id'),
+          entityType: value('legal_page' as const, 'entity_type'),
+          entityId: legalPages.id,
+          snapshot: value(JSON.stringify(values), 'snapshot'),
+          createdBy: value(actor.id, 'created_by'),
+          createdAt: value(now.getTime(), 'created_at'),
+        })
+        .from(legalPages)
+        .where(landed)
+    ),
+    db.insert(publishEvents).select(
+      db
+        .select({
+          id: value(crypto.randomUUID(), 'id'),
+          entityType: value('legal_page' as const, 'entity_type'),
+          entityId: legalPages.id,
+          action: value('publish' as const, 'action'),
+          paths: value(JSON.stringify([legalPath(slug)]), 'paths'),
+          createdAt: value(now.getTime(), 'created_at'),
+        })
+        .from(legalPages)
+        .where(landed)
+    ),
+    db.insert(activityLog).select(
+      db
+        .select({
+          id: value(crypto.randomUUID(), 'id'),
+          actorId: value(actor.id, 'actor_id'),
+          actorName: value(actor.name, 'actor_name'),
+          action: value('legal_page.published' as const, 'action'),
+          summary: value(`Published ${values.title}`, 'summary'),
+          createdAt: value(now.getTime(), 'created_at'),
+        })
+        .from(legalPages)
+        .where(landed)
+    ),
   ]);
+  if (!written.length) throw conflictError();
   return { updatedAt: now.getTime(), lastPublishedAt: now.getTime() };
 }
 
-export async function discardLegalDraft(db: Db, slug: LegalSlug, actor: Actor) {
+export async function discardLegalDraft(
+  db: Db,
+  slug: LegalSlug,
+  expectedUpdatedAt: number,
+  actor: Actor
+) {
   const row = await loadLegalPage(db, slug);
+  assertVersion(row, expectedUpdatedAt);
   const now = new Date();
-  await db
+  const written = await db
     .update(legalPages)
     .set({ draft: null, reviewRequestedAt: null, updatedAt: now, updatedBy: actor.id })
-    .where(eq(legalPages.id, row.id));
+    .where(atVersion(row.id, expectedUpdatedAt))
+    .returning({ id: legalPages.id });
+  if (!written.length) throw conflictError();
   return { updatedAt: now.getTime() };
 }
 

@@ -18,6 +18,7 @@
     "db:seed:local": "wrangler d1 execute DB --local --file scripts/seed-dev.sql"
   },
   "dependencies": {
+    "@animate-ui/react": "^2.4.3",
     "@animateicons/react": "0.13.0",
     "@base-ui/react": "^1.8.0",
     "@dicebear/core": "^9.4.3",
@@ -61,6 +62,7 @@
     "lowlight": "^3.3.0",
     "mammoth": "^1.13.0",
     "maplibre-gl": "^6",
+    "motion": "^14.10.1",
     "react": "^19.3.0",
     "react-day-picker": "^10.0.2",
     "react-dom": "^19.3.0",

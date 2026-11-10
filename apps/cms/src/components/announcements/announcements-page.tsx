@@ -638,13 +638,13 @@ function AnnouncementForm({
           </div>
         </FormSection>
         {overlaps.length > 0 && (
-          <p className="flex gap-2 rounded-md border border-amber-500/40 bg-amber-500/10 px-3 py-2 text-xs max-md:mt-3">
+          <div className="flex gap-2 rounded-md border border-amber-500/40 bg-amber-500/10 px-3 py-2 text-xs max-md:mt-3">
             <TriangleAlertIcon aria-hidden className="mt-px size-3.5 shrink-0 text-amber-600" />
-            <span>
+            <p>
               Overlaps with {overlaps.map((o) => o.title).join(', ')}. While both are live, the one
               that went live most recently is shown.
-            </span>
-          </p>
+            </p>
+          </div>
         )}
       </fieldset>
 

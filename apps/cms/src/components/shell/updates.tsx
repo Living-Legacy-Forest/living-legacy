@@ -220,10 +220,10 @@ function SidebarCard() {
   return (
     <div role="status" className={cn(box, 'relative')}>
       <div className="min-w-0">
-        <p className="text-muted-foreground flex items-center gap-1.5 text-xs">
+        <div className="text-muted-foreground flex items-center gap-1.5 text-xs">
           <MegaphoneIcon aria-hidden className="size-3.5" />
           What's new
-        </p>
+        </div>
         <p className="mt-1 pr-5 font-medium">{unseen[0]!.title}</p>
       </div>
       <Button

@@ -52,7 +52,6 @@ import { Alert02Icon as AnimatedAlert02Icon } from '@animateicons/react/huge/ale
 import { Analytics01Icon as AnimatedAnalytics01Icon } from '@animateicons/react/huge/analytics-0-1-icon';
 import { ArrowLeftRightIcon as AnimatedArrowLeftRightIcon } from '@animateicons/react/huge/arrow-left-right-icon';
 import { ArrowUpRight01Icon as AnimatedArrowUpRight01Icon } from '@animateicons/react/huge/arrow-up-right-0-1-icon';
-import { Calendar01Icon as AnimatedCalendar01Icon } from '@animateicons/react/huge/calendar-0-1-icon';
 import { ChartLineIcon as AnimatedChartLineIcon } from '@animateicons/react/huge/chart-line-icon';
 import { CheckListIcon as AnimatedCheckListIcon } from '@animateicons/react/huge/check-list-icon';
 import { CheckmarkCircle01Icon as AnimatedCheckmarkCircle01Icon } from '@animateicons/react/huge/checkmark-circle-0-1-icon';
@@ -244,7 +243,8 @@ export const Quote = animated(AnimatedQuoteIcon);
 export const Table = animated(AnimatedTableIcon);
 
 // Shared UI ("Icon"-suffixed names)
-export const CalendarClockIcon = animated(AnimatedCalendar01Icon);
+// A plain dot grid: Calendar 01, the only animated calendar, prints a fixed "17".
+export const CalendarClockIcon = make(H.Calendar03Icon);
 export const FileTextIcon = animated(AnimatedFile01Icon);
 export const GlobeIcon = animated(AnimatedGlobe02Icon);
 export const CheckIcon = DrawnCheckIcon;

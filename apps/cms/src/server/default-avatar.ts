@@ -1,7 +1,8 @@
-// The face shown for people and team members without a photo: a DiceBear
-// "Notionists" drawing seeded by their id, so it never changes when they are
-// renamed and no name ends up in a URL. Drawn here rather than by DiceBear's
-// web service, so nothing about our people leaves the CMS.
+// The drawn avatars people choose from (components/avatar-picker.tsx): a
+// DiceBear "Notionists" face for a random seed, which is what gets stored.
+// Nobody is given one automatically; without a photo or a choice, initials
+// show. Drawn here rather than by DiceBear's web service, so nothing about
+// our people leaves the CMS.
 //
 // Licences: DiceBear (MIT), Notionists by Zoish (CC0 1.0). No credit needed.
 import { createAvatar } from '@dicebear/core';

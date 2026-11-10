@@ -36,6 +36,8 @@ export const teamMembers = sqliteTable('team_members', {
   role: text('role'),
   bio: richText('bio'),
   photoMediaId: text('photo_media_id').references(() => media.id, { onDelete: 'set null' }),
+  /** A chosen drawn avatar (DiceBear seed), shown when there is no photo. */
+  avatarSeed: text('avatar_seed'),
   sortOrder: integer('sort_order').notNull().default(0),
   ...lifecycle(),
 });

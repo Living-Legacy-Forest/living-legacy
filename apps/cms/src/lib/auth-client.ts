@@ -9,6 +9,7 @@ export const authClient = createAuthClient({
         bio: { type: 'string', required: false },
         imageAlt: { type: 'string', required: false },
         theme: { type: 'string', required: false },
+        avatarSeed: { type: 'string', required: false },
       },
     }),
   ],

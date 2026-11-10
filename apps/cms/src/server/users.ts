@@ -35,6 +35,7 @@ export const listUsers = createServerFn({ method: 'GET' })
           email: user.email,
           image: user.image,
           imageAlt: user.imageAlt,
+          avatarSeed: user.avatarSeed,
           role: user.role,
           createdAt: user.createdAt,
         })
@@ -148,6 +149,11 @@ export const updateUserPhoto = createServerFn({ method: 'POST' })
       userId: z.string(),
       imageAlt: z.string().trim().max(300).optional(),
       remove: z.boolean().optional(),
+      /** Show this drawn avatar instead of a photo. */
+      avatarSeed: z
+        .string()
+        .regex(/^[\w-]{1,64}$/, 'That avatar could not be used.')
+        .optional(),
     })
   )
   .handler(async ({ data, context }) => {
@@ -155,11 +161,25 @@ export const updateUserPhoto = createServerFn({ method: 'POST' })
     const target = await db.query.user.findFirst({ where: eq(user.id, data.userId) });
     if (!target) throw new Error('That user no longer exists.');
 
+    if (data.avatarSeed) {
+      await deleteOwnAvatar(target.image, target.id);
+      await db
+        .update(user)
+        .set({ image: null, imageAlt: null, avatarSeed: data.avatarSeed, updatedAt: new Date() })
+        .where(eq(user.id, target.id));
+      await logActivity(db, {
+        actorId: context.user.id,
+        actorName: context.user.name,
+        action: 'user.photo_changed',
+        summary: `Chose an avatar for ${target.name}`,
+      });
+      return;
+    }
     if (data.remove) {
       await deleteOwnAvatar(target.image, target.id);
       await db
         .update(user)
-        .set({ image: null, imageAlt: null, updatedAt: new Date() })
+        .set({ image: null, imageAlt: null, avatarSeed: null, updatedAt: new Date() })
         .where(eq(user.id, target.id));
       await logActivity(db, {
         actorId: context.user.id,

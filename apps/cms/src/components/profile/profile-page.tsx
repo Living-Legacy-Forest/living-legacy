@@ -15,7 +15,16 @@ import { reportInvalid } from '@/lib/form-validation';
 import { type SessionUser, forgetCachedUser } from '@/lib/session';
 import { notify } from '@/lib/notify';
 import { useAction } from '@/lib/use-action';
-import { defaultAvatarUrl } from '@/lib/avatar';
+import { avatarSrc } from '@/lib/avatar';
+import { AvatarPicker } from '@/components/avatar-picker';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
+import { clearMyPicture, setMyAvatar } from '@/server/profile';
 import { AppearanceSection } from './appearance-section';
 import { DevicesSection } from './devices-section';
 
@@ -109,17 +118,33 @@ export function ProfilePage({
     );
   }
 
-  async function removePhoto() {
+  const [picking, setPicking] = useState(false);
+  const hasPicture = Boolean(user.image || user.avatarSeed);
+
+  async function chooseAvatar(seed: string) {
     await run(
       async () => {
-        const { error } = await authClient.updateUser({ image: null, imageAlt: null });
-        if (error) throw new Error(error.message ?? 'Could not remove the photo.');
+        await setMyAvatar({ data: { seed } });
         setImageAlt('');
         await refresh();
       },
       {
-        success: { title: 'Photo removed', description: 'Your drawn avatar shows instead.' },
-        error: 'Could not remove the photo',
+        success: { title: 'Avatar chosen', description: 'It shows wherever your name does.' },
+        error: 'Could not use that avatar',
+      }
+    );
+  }
+
+  async function removePicture() {
+    await run(
+      async () => {
+        await clearMyPicture();
+        setImageAlt('');
+        await refresh();
+      },
+      {
+        success: { title: 'Picture removed', description: 'Your initials show instead.' },
+        error: 'Could not remove the picture',
       }
     );
   }
@@ -158,21 +183,40 @@ export function ProfilePage({
         <div className="flex items-center gap-5 max-md:flex-col max-md:gap-3 max-md:text-center">
           <div className="group relative shrink-0">
             <Avatar size="lg" className="data-[size=lg]:size-20">
-              <AvatarImage
-                src={user.image ?? defaultAvatarUrl(user.id)}
-                alt={user.imageAlt ?? ''}
-              />
+              {avatarSrc(user) && <AvatarImage src={avatarSrc(user)} alt={user.imageAlt ?? ''} />}
               <AvatarFallback className="text-lg">{initials}</AvatarFallback>
             </Avatar>
-            <button
-              type="button"
-              aria-label="Change photo"
-              disabled={avatarUploading}
-              onClick={() => fileInput.current?.click()}
-              className="bg-background absolute inset-0 flex items-center justify-center rounded-full opacity-0 ring-1 ring-black/10 transition-opacity group-hover:opacity-90 focus-visible:opacity-90 disabled:opacity-90"
-            >
-              {avatarUploading ? <Spinner /> : <CameraIcon aria-hidden className="size-5" />}
-            </button>
+            <DropdownMenu>
+              <DropdownMenuTrigger
+                aria-label="Change picture"
+                disabled={avatarUploading}
+                className="bg-background focus-visible:ring-ring absolute inset-0 flex items-center justify-center rounded-full opacity-0 ring-1 ring-black/10 transition-opacity outline-none group-hover:opacity-90 focus-visible:opacity-90 focus-visible:ring-2 disabled:opacity-90 data-popup-open:opacity-90"
+              >
+                {avatarUploading ? <Spinner /> : <CameraIcon aria-hidden className="size-5" />}
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="start" className="min-w-48">
+                <DropdownMenuItem onClick={() => fileInput.current?.click()}>
+                  Upload a photo
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => setPicking(true)}>
+                  Choose an avatar
+                </DropdownMenuItem>
+                {hasPicture && (
+                  <>
+                    <DropdownMenuSeparator />
+                    <DropdownMenuItem variant="destructive" onClick={removePicture}>
+                      Remove picture
+                    </DropdownMenuItem>
+                  </>
+                )}
+              </DropdownMenuContent>
+            </DropdownMenu>
+            <AvatarPicker
+              open={picking}
+              onOpenChange={setPicking}
+              current={user.avatarSeed}
+              onPick={chooseAvatar}
+            />
             {/* Touch screens have no hover to reveal the camera: show it as a badge. */}
             <span
               aria-hidden
@@ -204,17 +248,16 @@ export function ProfilePage({
               </Badge>
               Member since {memberSince}
             </p>
-            {/* Changing the photo is a click on it; removing needs its own way in. */}
-            {user.image && (
+            {/* Nobody is given a face: until they choose, they see this prompt. */}
+            {!hasPicture && (
               <Button
                 type="button"
-                variant="ghost"
+                variant="outline"
                 size="sm"
-                className="text-muted-foreground -ml-2.5 max-md:ml-0"
-                disabled={pending || avatarUploading}
-                onClick={removePhoto}
+                className="mt-1"
+                onClick={() => setPicking(true)}
               >
-                Remove photo
+                Choose an avatar
               </Button>
             )}
           </div>

@@ -21,7 +21,8 @@ import { type Notice, notify } from '@/lib/notify';
 import { forgetCachedUser } from '@/lib/session';
 import { IMAGE_ACCEPT } from '@/lib/upload-media';
 import { updateUserPhoto } from '@/server/users';
-import { defaultAvatarUrl } from '@/lib/avatar';
+import { avatarSrc } from '@/lib/avatar';
+import { AvatarPicker } from '@/components/avatar-picker';
 
 type PhotoUser = {
   id: string;
@@ -29,6 +30,7 @@ type PhotoUser = {
   email: string;
   image: string | null;
   imageAlt: string | null;
+  avatarSeed: string | null;
 };
 
 async function uploadAvatarFor(userId: string, file: File) {
@@ -58,11 +60,11 @@ export function UserPhotoDialog({
   const router = useRouter();
   const label = user.name || user.email;
   const [alt, setAlt] = useState(user.imageAlt ?? '');
-  const [busy, setBusy] = useState<null | 'upload' | 'remove' | 'save'>(null);
+  const [busy, setBusy] = useState<null | 'upload' | 'remove' | 'save' | 'avatar'>(null);
   const fileInput = useRef<HTMLInputElement>(null);
 
   async function act(
-    kind: 'upload' | 'remove' | 'save',
+    kind: 'upload' | 'remove' | 'save' | 'avatar',
     action: () => Promise<void>,
     done: Notice,
     failure: string
@@ -110,9 +112,22 @@ export function UserPhotoDialog({
         await updateUserPhoto({ data: { userId: user.id, remove: true } });
         setAlt('');
       },
-      { title: 'Photo removed', description: 'Their initials show in its place.' },
-      'Could not remove the photo'
+      { title: 'Picture removed', description: 'Their initials show in its place.' },
+      'Could not remove the picture'
     );
+
+  const [picking, setPicking] = useState(false);
+  const chooseAvatar = async (seed: string) => {
+    await act(
+      'avatar',
+      async () => {
+        await updateUserPhoto({ data: { userId: user.id, avatarSeed: seed } });
+        setAlt('');
+      },
+      { title: 'Avatar chosen', description: 'It shows wherever their name does.' },
+      'Could not use that avatar'
+    );
+  };
 
   async function save(e: React.FormEvent) {
     e.preventDefault();
@@ -144,10 +159,9 @@ export function UserPhotoDialog({
             <div className="my-5 space-y-5">
               <div className="flex items-center gap-4">
                 <Avatar className="size-16">
-                  <AvatarImage
-                    src={user.image ?? defaultAvatarUrl(user.id)}
-                    alt={user.imageAlt ?? ''}
-                  />
+                  {avatarSrc(user) && (
+                    <AvatarImage src={avatarSrc(user)} alt={user.imageAlt ?? ''} />
+                  )}
                   <AvatarFallback className="bg-muted text-base font-medium">
                     {initials}
                   </AvatarFallback>
@@ -178,7 +192,24 @@ export function UserPhotoDialog({
                     )}
                     {user.image ? 'Replace' : 'Upload'}
                   </Button>
-                  {user.image && (
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    disabled={busy !== null}
+                    onClick={() => setPicking(true)}
+                  >
+                    {busy === 'avatar' && <Spinner />}
+                    Choose an avatar
+                  </Button>
+                  <AvatarPicker
+                    open={picking}
+                    onOpenChange={setPicking}
+                    current={user.avatarSeed}
+                    onPick={chooseAvatar}
+                    title={`Choose an avatar for ${user.name}`}
+                  />
+                  {(user.image || user.avatarSeed) && (
                     <Button
                       type="button"
                       variant="ghost"

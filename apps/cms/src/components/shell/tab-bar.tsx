@@ -22,7 +22,7 @@ import { authClient } from '@/lib/auth-client';
 import { type SessionUser, forgetCachedUser } from '@/lib/session';
 import { cn } from '@/lib/utils';
 import { SheetHeader, sheetGroupClass, sheetRowClass } from './sheet-parts';
-import { defaultAvatarUrl } from '@/lib/avatar';
+import { avatarSrc } from '@/lib/avatar';
 
 const tabClass =
   'flex min-w-0 flex-col items-center justify-center gap-0.5 text-[0.625rem] font-medium tracking-tight transition-opacity active:opacity-50 [&_svg]:size-6';
@@ -166,7 +166,7 @@ function MoreSheet({
             )}
           >
             <Avatar className="size-15">
-              <AvatarImage src={user.image ?? defaultAvatarUrl(user.id)} alt="" />
+              {avatarSrc(user) && <AvatarImage src={avatarSrc(user)} alt="" />}
               <AvatarFallback className="text-lg">{initialsOf(user)}</AvatarFallback>
             </Avatar>
             <span className="min-w-0 flex-1">

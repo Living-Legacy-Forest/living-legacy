@@ -1,6 +1,7 @@
 ---
 // Author archive. Paginated via ?page=, same pattern as the other archives.
 import BaseLayout from '@/layouts/BaseLayout.astro';
+import { breadcrumbJsonLd } from '@ll/content';
 import BlogCard from '@/components/blog/BlogCard.astro';
 import BlogPagination from '@/components/blog/BlogPagination.astro';
 import {
@@ -33,12 +34,19 @@ if (pageCount > 0 && page > pageCount) {
 }
 
 const canonicalPath = `/blog/author/${author.slug}/`;
+const siteUrl = (Astro.site ?? Astro.url).toString();
+const breadcrumbs = breadcrumbJsonLd([
+  { name: 'Home', url: new URL('/', siteUrl).toString() },
+  { name: 'Blog', url: new URL('/blog/', siteUrl).toString() },
+  { name: author.name, url: new URL(canonicalPath, siteUrl).toString() },
+]);
 const description =
   author.bio ||
   `${total} ${total === 1 ? 'post' : 'posts'} by ${author.name} on the Living Legacy blog.`;
 ---
 
 <BaseLayout
+  jsonLd={[breadcrumbs]}
   title={`${author.name} | Blog`}
   description={description}
   canonical={new URL(canonicalPath, Astro.site).toString()}

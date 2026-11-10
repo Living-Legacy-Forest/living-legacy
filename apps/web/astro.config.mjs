@@ -79,9 +79,12 @@ export default defineConfig({
   },
   integrations: [
     sitemap({
-      // Blog posts render on demand from the CMS and WordPress, so they are listed by the
-      // runtime sitemap at /sitemap-blog.xml rather than at build time.
-      customSitemaps: ['https://livinglegacy.com.au/sitemap-blog.xml'],
+      // Pages that render on request (the blog, FAQs, In the media) never reach the build-time
+      // sitemap, so runtime sitemaps list them instead.
+      customSitemaps: [
+        'https://livinglegacy.com.au/sitemap-blog.xml',
+        'https://livinglegacy.com.au/sitemap-pages.xml',
+      ],
       filter: (page) => !page.includes('/thank-you-contact'),
     }),
     react(),

@@ -37,6 +37,7 @@ import { Route as AppUsersIndexRouteImport } from './routes/_app/users/index'
 import { Route as ApiAuthSplatRouteImport } from './routes/api/auth/$'
 import { Route as ApiAvatarIndexRouteImport } from './routes/api/avatar/index'
 import { Route as ApiAvatarKeyRouteImport } from './routes/api/avatar/$key'
+import { Route as ApiAvatarsIdRouteImport } from './routes/api/avatars/$id'
 import { Route as ApiMediaIndexRouteImport } from './routes/api/media/index'
 import { Route as ApiV1TermsRouteImport } from './routes/api/v1/terms'
 import { Route as PreviewEventsDraftIdRouteImport } from './routes/preview/events/$draftId'
@@ -186,6 +187,11 @@ const ApiAvatarKeyRoute = ApiAvatarKeyRouteImport.update({
   path: '/api/avatar/$key',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ApiAvatarsIdRoute = ApiAvatarsIdRouteImport.update({
+  id: '/api/avatars/$id',
+  path: '/api/avatars/$id',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ApiMediaIndexRoute = ApiMediaIndexRouteImport.update({
   id: '/api/media/',
   path: '/api/media/',
@@ -241,6 +247,7 @@ export interface FileRoutesByFullPath {
   '/posts/new': typeof AppPostsNewRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
   '/api/avatar/$key': typeof ApiAvatarKeyRoute
+  '/api/avatars/$id': typeof ApiAvatarsIdRoute
   '/api/v1/terms': typeof ApiV1TermsRoute
   '/preview/events/$draftId': typeof PreviewEventsDraftIdRoute
   '/preview/legal/$slug': typeof PreviewLegalSlugRoute
@@ -279,6 +286,7 @@ export interface FileRoutesByTo {
   '/posts/new': typeof AppPostsNewRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
   '/api/avatar/$key': typeof ApiAvatarKeyRoute
+  '/api/avatars/$id': typeof ApiAvatarsIdRoute
   '/api/v1/terms': typeof ApiV1TermsRoute
   '/preview/events/$draftId': typeof PreviewEventsDraftIdRoute
   '/preview/legal/$slug': typeof PreviewLegalSlugRoute
@@ -319,6 +327,7 @@ export interface FileRoutesById {
   '/_app/posts/new': typeof AppPostsNewRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
   '/api/avatar/$key': typeof ApiAvatarKeyRoute
+  '/api/avatars/$id': typeof ApiAvatarsIdRoute
   '/api/v1/terms': typeof ApiV1TermsRoute
   '/preview/events/$draftId': typeof PreviewEventsDraftIdRoute
   '/preview/legal/$slug': typeof PreviewLegalSlugRoute
@@ -359,6 +368,7 @@ export interface FileRouteTypes {
     | '/posts/new'
     | '/api/auth/$'
     | '/api/avatar/$key'
+    | '/api/avatars/$id'
     | '/api/v1/terms'
     | '/preview/events/$draftId'
     | '/preview/legal/$slug'
@@ -397,6 +407,7 @@ export interface FileRouteTypes {
     | '/posts/new'
     | '/api/auth/$'
     | '/api/avatar/$key'
+    | '/api/avatars/$id'
     | '/api/v1/terms'
     | '/preview/events/$draftId'
     | '/preview/legal/$slug'
@@ -436,6 +447,7 @@ export interface FileRouteTypes {
     | '/_app/posts/new'
     | '/api/auth/$'
     | '/api/avatar/$key'
+    | '/api/avatars/$id'
     | '/api/v1/terms'
     | '/preview/events/$draftId'
     | '/preview/legal/$slug'
@@ -472,6 +484,7 @@ export interface RootRouteChildren {
   ApiBuildRoute: typeof ApiBuildRoute
   ApiAuthSplatRoute: typeof ApiAuthSplatRoute
   ApiAvatarKeyRoute: typeof ApiAvatarKeyRoute
+  ApiAvatarsIdRoute: typeof ApiAvatarsIdRoute
   ApiV1TermsRoute: typeof ApiV1TermsRoute
   PreviewEventsDraftIdRoute: typeof PreviewEventsDraftIdRoute
   PreviewLegalSlugRoute: typeof PreviewLegalSlugRoute
@@ -680,6 +693,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiAvatarKeyRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/avatars/$id': {
+      id: '/api/avatars/$id'
+      path: '/api/avatars/$id'
+      fullPath: '/api/avatars/$id'
+      preLoaderRoute: typeof ApiAvatarsIdRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/api/media/': {
       id: '/api/media/'
       path: '/api/media'
@@ -808,6 +828,7 @@ const rootRouteChildren: RootRouteChildren = {
   ApiBuildRoute: ApiBuildRoute,
   ApiAuthSplatRoute: ApiAuthSplatRoute,
   ApiAvatarKeyRoute: ApiAvatarKeyRoute,
+  ApiAvatarsIdRoute: ApiAvatarsIdRoute,
   ApiV1TermsRoute: ApiV1TermsRoute,
   PreviewEventsDraftIdRoute: PreviewEventsDraftIdRoute,
   PreviewLegalSlugRoute: PreviewLegalSlugRoute,

@@ -32,6 +32,7 @@ import { footerLinks } from '@/lib/nav';
 import { type SessionUser, forgetCachedUser } from '@/lib/session';
 import { cn } from '@/lib/utils';
 import { SheetHeader, sheetGroupClass, sheetRowClass } from './sheet-parts';
+import { avatarSrc } from '@/lib/avatar';
 
 const shortcuts: { keys: string[]; label: string }[] = [
   { keys: ['⌘', 'K'], label: 'Search or jump to a page' },
@@ -64,7 +65,7 @@ export function NavUser({ user }: { user: SessionUser }) {
 
   const avatar = (
     <>
-      {user.image && <AvatarImage src={user.image} alt="" />}
+      {avatarSrc(user) && <AvatarImage src={avatarSrc(user)} alt="" />}
       <AvatarFallback className="text-xs">{initials}</AvatarFallback>
     </>
   );

@@ -70,6 +70,8 @@ import {
   saveTeamMember,
   setTeamMemberStatus,
 } from '@/server/team';
+import { avatarUrl, initialsOf } from '@/lib/avatar';
+import { AvatarPicker } from '@/components/avatar-picker';
 
 const NOUN: [string, string] = ['team member', 'team members'];
 
@@ -381,13 +383,24 @@ export function TeamPage({ data, canWrite }: { data: TeamListData; canWrite: boo
 function MemberSummary({ member }: { member: TeamMember }) {
   return (
     <span className="flex min-w-0 items-center gap-2.5">
-      {member.photoMediaId && (
+      {member.photoMediaId || member.avatarSeed ? (
         <img
-          src={`/api/media/${member.photoMediaId}?w=640`}
+          src={
+            member.photoMediaId
+              ? `/api/media/${member.photoMediaId}?w=640`
+              : avatarUrl(member.avatarSeed!)
+          }
           alt=""
           loading="lazy"
           className="size-8 shrink-0 rounded-full border object-cover"
         />
+      ) : (
+        <span
+          aria-hidden
+          className="bg-muted text-muted-foreground flex size-8 shrink-0 items-center justify-center rounded-full border text-xs font-medium"
+        >
+          {initialsOf(member.name)}
+        </span>
       )}
       <span className="min-w-0 flex-1">
         <span className="flex items-center gap-2">
@@ -517,6 +530,8 @@ function MemberForm({
   const [bio, setBio] = useState(member?.bio ?? '');
   const [published, setPublished] = useState(member?.status === 'published');
   const [photoMediaId, setPhotoMediaId] = useState(member?.photoMediaId ?? null);
+  const [avatarSeed, setAvatarSeed] = useState(member?.avatarSeed ?? null);
+  const [pickingAvatar, setPickingAvatar] = useState(false);
   const { run, pending } = useAction();
 
   async function submit(e: React.FormEvent) {
@@ -532,6 +547,7 @@ function MemberForm({
             bio: bio || undefined,
             status: published ? 'published' : 'draft',
             photoMediaId,
+            avatarSeed,
           },
         }),
       {
@@ -577,6 +593,50 @@ function MemberForm({
           mediaId={photoMediaId}
           onChange={setPhotoMediaId}
         />
+        {/* Without a photo: a drawn avatar someone chose for them, else initials. */}
+        <FormCell
+          label="Avatar"
+          htmlFor="member-avatar"
+          hint={photoMediaId ? 'Shown only when there is no photo.' : undefined}
+        >
+          <div className="flex items-center gap-3">
+            {avatarSeed ? (
+              <img
+                src={avatarUrl(avatarSeed)}
+                alt=""
+                className="size-10 shrink-0 rounded-full border"
+              />
+            ) : (
+              <span
+                aria-hidden
+                className="bg-muted text-muted-foreground flex size-10 shrink-0 items-center justify-center rounded-full border text-xs font-medium"
+              >
+                {initialsOf(name || '?')}
+              </span>
+            )}
+            <Button
+              id="member-avatar"
+              type="button"
+              variant="outline"
+              size="sm"
+              onClick={() => setPickingAvatar(true)}
+            >
+              {avatarSeed ? 'Change avatar' : 'Choose an avatar'}
+            </Button>
+            {avatarSeed && (
+              <Button type="button" variant="ghost" size="sm" onClick={() => setAvatarSeed(null)}>
+                Remove
+              </Button>
+            )}
+          </div>
+          <AvatarPicker
+            open={pickingAvatar}
+            onOpenChange={setPickingAvatar}
+            current={avatarSeed}
+            onPick={setAvatarSeed}
+            title={name ? `Choose an avatar for ${name}` : 'Choose an avatar'}
+          />
+        </FormCell>
       </FormSection>
       <FormSection>
         <FormCell label="Bio" htmlFor="member-bio">

@@ -48,6 +48,7 @@ import {
   removeUser,
   revokeInvitation,
 } from '@/server/users';
+import { avatarSrc } from '@/lib/avatar';
 
 const roleItems = [
   { value: 'editor', label: 'Editor', description: 'Write and publish all content.' },
@@ -287,7 +288,7 @@ function UserAvatar({ user, isSelf }: { user: TeamUser; isSelf: boolean }) {
         className="group focus-visible:ring-ring relative shrink-0 rounded-full outline-none focus-visible:ring-2"
       >
         <Avatar className="size-9">
-          {user.image && <AvatarImage src={user.image} alt={user.imageAlt ?? ''} />}
+          {avatarSrc(user) && <AvatarImage src={avatarSrc(user)} alt={user.imageAlt ?? ''} />}
           <AvatarFallback className="bg-muted text-xs font-medium">
             {initials(label)}
           </AvatarFallback>

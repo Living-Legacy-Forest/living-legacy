@@ -188,6 +188,9 @@ export const SendIcon = animated(AnimatedSendIcon);
 export const Bold = animated(AnimatedTextBoldIcon);
 export const Code = animated(AnimatedCodeIcon);
 export const CropIcon = make(H.CropIcon);
+export const LaptopIcon = make(H.LaptopIcon);
+export const SmartphoneIcon = make(H.SmartPhone01Icon);
+export const TabletIcon = make(H.Tablet01Icon);
 export const ToggleOnIcon = make(H.ToggleOnIcon);
 export const ToggleOffIcon = make(H.ToggleOffIcon);
 /** A breadcrumb separator: static, since it sits in every header. */

@@ -183,6 +183,20 @@
       "when": 1794281081440,
       "tag": "0025_legal-pages-seed",
       "breakpoints": true
+    },
+    {
+      "idx": 26,
+      "version": "6",
+      "when": 1794289766645,
+      "tag": "0026_user-theme",
+      "breakpoints": true
+    },
+    {
+      "idx": 27,
+      "version": "6",
+      "when": 1794290437001,
+      "tag": "0027_avatar-seed",
+      "breakpoints": true
     }
   ]
 }

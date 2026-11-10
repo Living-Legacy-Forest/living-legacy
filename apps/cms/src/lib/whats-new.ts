@@ -7,17 +7,41 @@ export type WhatsNewItem = {
   title: string;
   body: string;
   /** Where to try it. */
-  link?: { label: string; to: '/settings' | '/media'; hash?: string };
+  link?: { label: string; to: '/settings' | '/media' | '/profile'; hash?: string };
 };
 
 export type WhatsNewEntry = {
-  /** The day it shipped, YYYY-MM-DD. Also what "seen" is measured against. */
+  /**
+   * The day it shipped, YYYY-MM-DD, with -2, -3 for a second or third note that
+   * day. Also what "seen" is measured against, so it must sort newest last.
+   */
   id: string;
   title: string;
   items: WhatsNewItem[];
 };
 
 export const whatsNew: WhatsNewEntry[] = [
+  {
+    id: '2026-11-10-2',
+    title: 'A tidier profile, your own theme and avatars',
+    items: [
+      {
+        title: 'Choose an avatar',
+        body: 'No photo? Click your picture in your profile and choose a drawn avatar that feels like you. Team members can have one too.',
+        link: { label: 'Open your profile', to: '/profile' },
+      },
+      {
+        title: 'Your own theme',
+        body: 'Choose light, dark or to match your device in your profile. It only changes the CMS for you.',
+        link: { label: 'Open your profile', to: '/profile', hash: 'appearance' },
+      },
+      {
+        title: 'Signed-in devices',
+        body: 'See everywhere you are signed in, and sign out a lost or shared device from your profile.',
+        link: { label: 'Open your profile', to: '/profile', hash: 'devices' },
+      },
+    ],
+  },
   {
     id: '2026-11-10',
     title: 'Legal pages, replacing images and a site icon',
@@ -42,7 +66,7 @@ export const whatsNew: WhatsNewEntry[] = [
 ];
 
 /** Midnight in Melbourne on the entry's day. */
-const shippedAt = (entry: WhatsNewEntry) => Date.parse(`${entry.id}T00:00:00+11:00`);
+const shippedAt = (entry: WhatsNewEntry) => Date.parse(`${entry.id.slice(0, 10)}T00:00:00+11:00`);
 
 /**
  * The entries this person has not seen, newest first. Before they have

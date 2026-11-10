@@ -1,14 +1,13 @@
 import { useRouter } from '@tanstack/react-router';
 import { useEffect, useRef, useState } from 'react';
 import { CameraIcon, MailIcon } from '@/components/icons';
-import { FormCell, FormSection, groupHeadingClass } from '@/components/form-cells';
 import { useImageUpload } from '@/components/media/image-crop-dialog';
 import { PageActions } from '@/components/shell/page-actions';
+import { SettingsRow, SettingsSection } from '@/components/settings/settings-section';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
 import { Spinner } from '@/components/ui/spinner';
 import { Textarea } from '@/components/ui/textarea';
 import { authClient } from '@/lib/auth-client';
@@ -16,6 +15,18 @@ import { reportInvalid } from '@/lib/form-validation';
 import { type SessionUser, forgetCachedUser } from '@/lib/session';
 import { notify } from '@/lib/notify';
 import { useAction } from '@/lib/use-action';
+import { avatarSrc } from '@/lib/avatar';
+import { AvatarPicker } from '@/components/avatar-picker';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
+import { clearMyPicture, setMyAvatar } from '@/server/profile';
+import { AppearanceSection } from './appearance-section';
+import { DevicesSection } from './devices-section';
 
 async function uploadAvatar(file: File) {
   const form = new FormData();
@@ -107,8 +118,44 @@ export function ProfilePage({
     );
   }
 
+  const [picking, setPicking] = useState(false);
+  const hasPicture = Boolean(user.image || user.avatarSeed);
+
+  async function chooseAvatar(seed: string) {
+    await run(
+      async () => {
+        await setMyAvatar({ data: { seed } });
+        setImageAlt('');
+        await refresh();
+      },
+      {
+        success: { title: 'Avatar chosen', description: 'It shows wherever your name does.' },
+        error: 'Could not use that avatar',
+      }
+    );
+  }
+
+  async function removePicture() {
+    await run(
+      async () => {
+        await clearMyPicture();
+        setImageAlt('');
+        await refresh();
+      },
+      {
+        success: { title: 'Picture removed', description: 'Your initials show instead.' },
+        error: 'Could not remove the picture',
+      }
+    );
+  }
+
+  const memberSince = new Date(user.createdAt).toLocaleDateString('en-AU', {
+    month: 'long',
+    year: 'numeric',
+  });
+
   return (
-    <div className="mx-auto w-full max-w-lg">
+    <div className="mx-auto w-full max-w-2xl">
       <div className="mb-8 space-y-1">
         <h1 data-slot="page-title" className="text-xl font-semibold tracking-tight">
           Your profile
@@ -118,35 +165,65 @@ export function ProfilePage({
         </p>
       </div>
 
-      <div className="space-y-8">
-        {/* Phones: Save in the top bar, as iOS edits a profile. */}
-        <PageActions
-          primary={
-            <button
-              type="button"
-              disabled={pending || !dirty}
-              onClick={() => formRef.current?.requestSubmit()}
-            >
-              Save
-            </button>
-          }
-        />
-        {/* Phones: the photo and name centred over the groups, as iOS's account page. */}
-        <div className="flex items-center gap-4 max-md:flex-col max-md:gap-2 max-md:text-center">
-          <div className="group relative">
-            <Avatar size="lg" className="size-16">
-              {user.image && <AvatarImage src={user.image} alt={user.imageAlt ?? ''} />}
-              <AvatarFallback className="text-base">{initials}</AvatarFallback>
+      {/* Phones: Save in the top bar, as iOS edits a profile. */}
+      <PageActions
+        primary={
+          <button
+            type="button"
+            disabled={pending || !dirty}
+            onClick={() => formRef.current?.requestSubmit()}
+          >
+            Save
+          </button>
+        }
+      />
+
+      <div className="space-y-10">
+        {/* Who you are at a glance. Phones: centred, as iOS's account page. */}
+        <div className="flex items-center gap-5 max-md:flex-col max-md:gap-3 max-md:text-center">
+          <div className="group relative shrink-0">
+            <Avatar size="lg" className="data-[size=lg]:size-20">
+              {avatarSrc(user) && <AvatarImage src={avatarSrc(user)} alt={user.imageAlt ?? ''} />}
+              <AvatarFallback className="text-lg">{initials}</AvatarFallback>
             </Avatar>
-            <button
-              type="button"
-              aria-label="Change photo"
-              disabled={avatarUploading}
-              onClick={() => fileInput.current?.click()}
-              className="bg-background absolute inset-0 flex items-center justify-center rounded-full opacity-0 ring-1 ring-black/10 transition-opacity group-hover:opacity-90 disabled:opacity-90"
+            <DropdownMenu>
+              <DropdownMenuTrigger
+                aria-label="Change picture"
+                disabled={avatarUploading}
+                className="bg-background focus-visible:ring-ring absolute inset-0 flex items-center justify-center rounded-full opacity-0 ring-1 ring-black/10 transition-opacity outline-none group-hover:opacity-90 focus-visible:opacity-90 focus-visible:ring-2 disabled:opacity-90 data-popup-open:opacity-90"
+              >
+                {avatarUploading ? <Spinner /> : <CameraIcon aria-hidden className="size-5" />}
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="start" className="min-w-48">
+                <DropdownMenuItem onClick={() => fileInput.current?.click()}>
+                  Upload a photo
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => setPicking(true)}>
+                  Choose an avatar
+                </DropdownMenuItem>
+                {hasPicture && (
+                  <>
+                    <DropdownMenuSeparator />
+                    <DropdownMenuItem variant="destructive" onClick={removePicture}>
+                      Remove picture
+                    </DropdownMenuItem>
+                  </>
+                )}
+              </DropdownMenuContent>
+            </DropdownMenu>
+            <AvatarPicker
+              open={picking}
+              onOpenChange={setPicking}
+              current={user.avatarSeed}
+              onPick={chooseAvatar}
+            />
+            {/* Touch screens have no hover to reveal the camera: show it as a badge. */}
+            <span
+              aria-hidden
+              className="bg-background text-foreground touch:flex pointer-events-none absolute right-0 bottom-0 hidden size-7 items-center justify-center rounded-full border shadow-sm"
             >
-              {avatarUploading ? <Spinner /> : <CameraIcon aria-hidden className="size-4" />}
-            </button>
+              <CameraIcon className="size-3.5" />
+            </span>
             <input
               ref={fileInput}
               type="file"
@@ -160,32 +237,49 @@ export function ProfilePage({
             />
             {crop.dialog}
           </div>
-          <div>
-            <p className="text-sm font-medium">{user.name}</p>
-            <Badge variant="secondary" className="mt-1 capitalize">
-              {user.role}
-            </Badge>
+          <div className="min-w-0 space-y-1.5">
+            <div>
+              <p className="truncate text-base font-semibold">{user.name}</p>
+              <p className="text-muted-foreground truncate text-sm">{user.email}</p>
+            </div>
+            <p className="text-muted-foreground flex flex-wrap items-center gap-2 text-xs max-md:justify-center">
+              <Badge variant="secondary" className="capitalize">
+                {user.role}
+              </Badge>
+              Member since {memberSince}
+            </p>
+            {/* Nobody is given a face: until they choose, they see this prompt. */}
+            {!hasPicture && (
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                className="mt-1"
+                onClick={() => setPicking(true)}
+              >
+                Choose an avatar
+              </Button>
+            )}
           </div>
         </div>
 
-        <form
-          ref={formRef}
-          noValidate
-          onSubmit={saveProfile}
-          className="space-y-5 [--form-gap:1.25rem] max-md:space-y-7"
-        >
-          <FormSection>
-            <FormCell label="Name" htmlFor="profile-name">
+        <form ref={formRef} noValidate onSubmit={saveProfile}>
+          <SettingsSection
+            id="profile"
+            title="Profile"
+            description="Shown next to your work across the CMS."
+          >
+            <SettingsRow id="profile-name" title="Name">
               <Input
                 id="profile-name"
                 required
                 maxLength={80}
                 value={name}
                 onChange={(e) => setName(e.target.value)}
-                className="max-w-xs"
+                className="w-full sm:w-72"
               />
-            </FormCell>
-            <FormCell label="Bio" htmlFor="profile-bio">
+            </SettingsRow>
+            <SettingsRow id="profile-bio" title="Bio" stacked>
               <Textarea
                 id="profile-bio"
                 rows={3}
@@ -194,12 +288,12 @@ export function ProfilePage({
                 onChange={(e) => setBio(e.target.value)}
                 placeholder="A line or two about you"
               />
-            </FormCell>
+            </SettingsRow>
             {user.image && (
-              <FormCell
-                label="Photo alt text"
-                htmlFor="profile-photo-alt"
-                hint="Read out by screen readers."
+              <SettingsRow
+                id="profile-photo-alt"
+                title="Photo description"
+                description="Read out by screen readers in place of your photo."
               >
                 <Input
                   id="profile-photo-alt"
@@ -207,22 +301,40 @@ export function ProfilePage({
                   value={imageAlt}
                   onChange={(e) => setImageAlt(e.target.value)}
                   placeholder="Describe your photo"
+                  className="w-full sm:w-72"
                 />
-              </FormCell>
+              </SettingsRow>
             )}
-          </FormSection>
-          <Button
-            type="submit"
-            variant="outline"
-            className="max-md:hidden"
-            disabled={pending || !dirty}
-          >
-            {pending ? <Spinner /> : null}
-            Save
-          </Button>
+          </SettingsSection>
+
+          {/* Only there while something is unsaved, so it takes no room otherwise. */}
+          {dirty && (
+            <div className="bg-background/95 animate-in fade-in slide-in-from-bottom-2 sticky bottom-[calc(var(--tab-bar-height)+1rem)] z-10 mt-4 flex items-center gap-3 rounded-lg border px-4 py-3 shadow-lg backdrop-blur max-md:hidden">
+              <span className="mr-auto text-sm">You have unsaved changes.</span>
+              <Button
+                type="button"
+                variant="ghost"
+                size="sm"
+                disabled={pending}
+                onClick={() => {
+                  setName(user.name);
+                  setBio(user.bio ?? '');
+                  setImageAlt(user.imageAlt ?? '');
+                }}
+              >
+                Discard
+              </Button>
+              <Button type="submit" size="sm" disabled={pending}>
+                {pending ? <Spinner /> : null}
+                Save changes
+              </Button>
+            </div>
+          )}
         </form>
 
         <ChangeEmail currentEmail={user.email} />
+        <AppearanceSection />
+        <DevicesSection />
       </div>
     </div>
   );
@@ -256,29 +368,26 @@ function ChangeEmail({ currentEmail }: { currentEmail: string }) {
   }
 
   return (
-    <div className="space-y-1.5">
-      <Label htmlFor="profile-email" className={groupHeadingClass}>
-        Email
-      </Label>
-      <div className="flex items-center gap-2 max-md:min-h-11 max-md:rounded-[10px] max-md:bg-(--ios-cell) max-md:pr-2">
-        <div className="bg-muted/60 text-muted-foreground text-ui flex h-8 max-w-xs flex-1 items-center gap-2 rounded-md px-3 max-md:bg-transparent max-md:px-4 max-md:text-[1.0625rem]">
-          <MailIcon aria-hidden className="size-3.5 shrink-0" />
-          <span className="truncate">{currentEmail}</span>
+    <SettingsSection
+      id="sign-in"
+      title="Sign-in"
+      description="There is no password: you sign in with a link sent to this address."
+    >
+      <SettingsRow id="profile-email" title="Email">
+        <div className="flex items-center gap-2 max-md:justify-end">
+          <span className="text-muted-foreground text-ui flex min-w-0 items-center gap-2">
+            <MailIcon aria-hidden className="size-3.5 shrink-0" />
+            <span className="truncate">{currentEmail}</span>
+          </span>
+          {!editing && (
+            <Button type="button" variant="outline" size="sm" onClick={() => setEditing(true)}>
+              Change
+            </Button>
+          )}
         </div>
-        {!editing && (
-          <Button
-            type="button"
-            variant="outline"
-            className="max-md:text-tint max-md:border-0 max-md:bg-transparent max-md:text-[1.0625rem] max-md:shadow-none"
-            onClick={() => setEditing(true)}
-          >
-            Change
-          </Button>
-        )}
-      </div>
-
+      </SettingsRow>
       {editing && (
-        <form noValidate onSubmit={send} className="flex gap-2 pt-1">
+        <form noValidate onSubmit={send} className="flex flex-wrap gap-2 px-4 py-3">
           <Input
             id="profile-email"
             type="email"
@@ -286,7 +395,7 @@ function ChangeEmail({ currentEmail }: { currentEmail: string }) {
             placeholder="new@address.com"
             value={newEmail}
             onChange={(e) => setNewEmail(e.target.value)}
-            className="max-w-xs"
+            className="w-full sm:w-72"
           />
           <Button type="submit" disabled={pending}>
             {pending ? <Spinner /> : null}
@@ -297,16 +406,12 @@ function ChangeEmail({ currentEmail }: { currentEmail: string }) {
           </Button>
         </form>
       )}
-
       {sentTo && (
-        <p className="text-muted-foreground pt-1 text-xs">
+        <p className="text-muted-foreground px-4 py-3 text-xs">
           We sent a confirmation link to <span className="text-foreground">{sentTo}</span>. Your
           sign-in email changes once you click it.
         </p>
       )}
-      <p className="text-muted-foreground text-xs max-md:px-4 max-md:text-[0.8125rem]">
-        There is no password; this is also what you sign in with.
-      </p>
-    </div>
+    </SettingsSection>
   );
 }

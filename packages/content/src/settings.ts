@@ -46,6 +46,8 @@ export const SITE_SETTINGS_DEFAULTS = {
   titlePattern: `${TITLE_TOKENS.page} | ${TITLE_TOKENS.site}`,
   seoDescription: '',
   seoImageUrl: '',
+  /** Media library image for browser tabs and home screens; '' uses the built-in icons. */
+  siteIconMediaId: '',
   googleVerification: '',
   bingVerification: '',
   /** Ask search engines to leave the whole website out of their results. */
@@ -74,6 +76,22 @@ export const SITE_SETTINGS_DEFAULTS = {
 export type SiteSettings = typeof SITE_SETTINGS_DEFAULTS;
 
 /** A stored row over the defaults. Keys this version does not know, or of the wrong type, are dropped. */
+/** The smallest side a site icon may have: phones ask for up to 512 pixels. */
+export const SITE_ICON_MIN = 512;
+
+/** Why an image cannot be the site icon, or null when it can. */
+export function siteIconProblem(size: { width: number | null; height: number | null }) {
+  const { width, height } = size;
+  if (!width || !height) return 'That image could not be measured. Upload it again as a PNG.';
+  if (width !== height) {
+    return `The site icon must be square. This image is ${width} by ${height} pixels.`;
+  }
+  if (width < SITE_ICON_MIN) {
+    return `The site icon must be at least ${SITE_ICON_MIN} by ${SITE_ICON_MIN} pixels. This image is ${width} by ${height}.`;
+  }
+  return null;
+}
+
 export function parseSiteSettings(data: unknown): SiteSettings {
   const stored = data && typeof data === 'object' ? (data as Record<string, unknown>) : {};
   const settings = { ...SITE_SETTINGS_DEFAULTS };

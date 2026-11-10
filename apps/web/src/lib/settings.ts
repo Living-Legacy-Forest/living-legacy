@@ -6,6 +6,7 @@
  * the row lacks always reads as its default.
  */
 import { type SiteSettings, parseSiteSettings } from '@ll/content';
+import { CMS_URL } from 'astro:env/server';
 import { env } from 'cloudflare:workers';
 
 /** The slice of the D1 binding used here, so the site needs no Workers type package. */
@@ -58,4 +59,10 @@ export function socialLinks(
   return (Object.keys(SOCIAL_LABELS) as SocialKey[])
     .filter((key) => settings[key])
     .map((key) => ({ key, label: SOCIAL_LABELS[key], href: settings[key] }));
+}
+
+/** The icon chosen in the CMS (Settings, Site icon), or null for the built-in files. */
+export function siteIconUrl(settings: SiteSettings): string | null {
+  if (!settings.siteIconMediaId) return null;
+  return `${CMS_URL.replace(/\/+$/, '')}/api/media/${settings.siteIconMediaId}?w=640`;
 }

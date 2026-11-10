@@ -6,6 +6,7 @@ import {
   isValidAbn,
   parseEmailDomains,
   sessionDayOptions,
+  siteIconProblem,
 } from '@ll/content';
 import { Link, getRouteApi, useBlocker, useRouter } from '@tanstack/react-router';
 import { type ReactNode, useEffect, useRef, useState } from 'react';
@@ -24,6 +25,7 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { MediaPicker, useMediaItem } from '@/components/media/image-field';
 import {
   Select,
   SelectContent,
@@ -267,6 +269,11 @@ export function SettingsPage({
                   className={fieldWidth}
                 />
               </SettingsRow>
+              <SiteIconRow
+                mediaId={values.siteIconMediaId || null}
+                siteTitle={values.siteTitle}
+                onChange={(id) => patch({ siteIconMediaId: id ?? '' })}
+              />
               <SettingsRow
                 id="settings-email"
                 title="Contact email"
@@ -885,6 +892,95 @@ function Counter({ value, limit }: { value: string; limit: number }) {
 }
 
 /** A small preview of the share image, at the 1.91:1 shape link previews use. */
+/**
+ * The icon for browser tabs and home screens. Shown on its own and in a browser
+ * tab, at the size people actually see it, with the built-in icon until one is
+ * chosen.
+ */
+function SiteIconRow({
+  mediaId,
+  siteTitle,
+  onChange,
+}: {
+  mediaId: string | null;
+  siteTitle: string;
+  onChange: (mediaId: string | null) => void;
+}) {
+  const { item, update } = useMediaItem(mediaId);
+  const [picking, setPicking] = useState(false);
+  const src = item ? `${item.url}?w=640` : '/icon-192.png';
+  // Saving checks this too; saying so on picking saves a round trip.
+  const problem = item ? siteIconProblem(item) : null;
+
+  return (
+    <SettingsRow
+      id="settings-site-icon"
+      title="Site icon"
+      description="Shown in browser tabs, bookmarks and on phone home screens, for the website and the CMS. Use a square image at least 512 by 512 pixels; PNG works best."
+      stacked
+    >
+      <div className="bg-muted/60 flex max-w-md items-center gap-4 rounded-lg border p-3">
+        <img
+          src={src}
+          alt=""
+          className="size-14 shrink-0 rounded-xl object-cover shadow-sm ring-1 ring-black/5"
+        />
+        <div
+          aria-hidden
+          className="flex h-10 min-w-0 flex-1 items-center gap-2.5 rounded-lg bg-neutral-900 px-3 text-xs text-neutral-100 shadow-sm"
+        >
+          <span className="flex shrink-0 gap-1">
+            <span className="size-2 rounded-full bg-neutral-600" />
+            <span className="size-2 rounded-full bg-neutral-600" />
+            <span className="size-2 rounded-full bg-neutral-600" />
+          </span>
+          <span className="flex min-w-0 flex-1 items-center gap-2 rounded-md bg-neutral-700/80 px-2 py-1.5">
+            <img src={src} alt="" className="size-4 shrink-0 rounded-sm object-cover" />
+            <span className="truncate">{siteTitle || 'Site title'}</span>
+            <span className="ml-auto pl-1 text-neutral-400">×</span>
+          </span>
+        </div>
+      </div>
+      {problem && <p className="text-destructive text-xs">{problem}</p>}
+      <div className="flex items-center gap-2 pt-1">
+        <Button
+          id="settings-site-icon"
+          type="button"
+          variant="outline"
+          size="sm"
+          onClick={() => setPicking(true)}
+        >
+          {mediaId ? 'Change icon' : 'Choose icon'}
+        </Button>
+        {mediaId ? (
+          <Button
+            type="button"
+            variant="ghost"
+            size="sm"
+            className="text-destructive hover:text-destructive"
+            onClick={() => onChange(null)}
+          >
+            Remove
+          </Button>
+        ) : (
+          <span className="text-muted-foreground text-xs">Using the built-in icon.</span>
+        )}
+      </div>
+      <MediaPicker
+        open={picking}
+        onOpenChange={setPicking}
+        selectedId={mediaId}
+        aspect={1}
+        onSelect={(picked) => {
+          update(picked);
+          onChange(picked.id);
+          setPicking(false);
+        }}
+      />
+    </SettingsRow>
+  );
+}
+
 function SharePreview({ url }: { url: string }) {
   const [broken, setBroken] = useState(false);
   useEffect(() => setBroken(false), [url]);

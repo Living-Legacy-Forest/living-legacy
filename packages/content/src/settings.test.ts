@@ -9,6 +9,7 @@ import {
   parseEmailDomains,
   parseSiteSettings,
   telHref,
+  siteIconProblem,
 } from './settings';
 
 describe('parseSiteSettings', () => {
@@ -109,6 +110,31 @@ describe('content targets', () => {
     expect(contentTargetProblem(targets)).toBeNull();
     expect(contentTargetProblem({ ...targets, targetImagesMin: 9 })).toBe(
       'Images: the lowest target is above the highest.'
+    );
+  });
+});
+
+describe('siteIconProblem', () => {
+  it('accepts a square image of at least 512 pixels', () => {
+    expect(siteIconProblem({ width: 512, height: 512 })).toBeNull();
+    expect(siteIconProblem({ width: 1024, height: 1024 })).toBeNull();
+  });
+
+  it('refuses an image that is not square', () => {
+    expect(siteIconProblem({ width: 800, height: 600 })).toBe(
+      'The site icon must be square. This image is 800 by 600 pixels.'
+    );
+  });
+
+  it('refuses a small image', () => {
+    expect(siteIconProblem({ width: 256, height: 256 })).toBe(
+      'The site icon must be at least 512 by 512 pixels. This image is 256 by 256.'
+    );
+  });
+
+  it('refuses an image whose size is unknown', () => {
+    expect(siteIconProblem({ width: null, height: null })).toBe(
+      'That image could not be measured. Upload it again as a PNG.'
     );
   });
 });

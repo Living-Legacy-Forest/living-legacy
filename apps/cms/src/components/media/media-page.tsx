@@ -8,7 +8,7 @@ import {
   matchesSearch,
   useSelection,
 } from '@/components/list/list-tools';
-import { CropIcon, MediaIcon, Trash2Icon, UploadIcon } from '@/components/icons';
+import { ArrowRightLeft, CropIcon, MediaIcon, Trash2Icon, UploadIcon } from '@/components/icons';
 import { FormCell, FormSection } from '@/components/form-cells';
 import { DialogActions, ListDialog } from '@/components/list/list-page';
 import { PageActions } from '@/components/shell/page-actions';
@@ -40,7 +40,7 @@ import { useIsMobile } from '@/hooks/use-mobile';
 import { notify, removedNotice } from '@/lib/notify';
 import { formatBytes } from '@/lib/format';
 import { canCrop } from '@/lib/prepare-image';
-import { IMAGE_ACCEPT, uploadMedia } from '@/lib/upload-media';
+import { IMAGE_ACCEPT, mediaSrc, uploadMedia } from '@/lib/upload-media';
 import { useAction } from '@/lib/use-action';
 import { cn } from '@/lib/utils';
 import { type MediaItem, type MediaListData, deleteMedia, updateMedia } from '@/server/media';
@@ -300,7 +300,7 @@ function MediaTile({
         className="focus-visible:ring-ring absolute inset-0 outline-none focus-visible:ring-2"
       >
         <img
-          src={`${item.url}?w=640`}
+          src={mediaSrc(item, 640)}
           alt={item.alt || item.filename}
           loading="lazy"
           className="size-full object-cover transition-opacity group-hover:opacity-80"
@@ -339,6 +339,9 @@ function MediaEditForm({
   const [loadingCrop, setLoadingCrop] = useState(false);
   // Deleting asks again in the footer itself, rather than in a second modal.
   const [confirmingDelete, setConfirmingDelete] = useState(false);
+  // The file picked to go behind this image, waiting for a yes.
+  const [replacement, setReplacement] = useState<File | null>(null);
+  const replaceInput = useRef<HTMLInputElement>(null);
   const { run, pending } = useAction();
 
   async function save(e: React.FormEvent) {
@@ -356,7 +359,7 @@ function MediaEditForm({
   async function startCrop() {
     setLoadingCrop(true);
     try {
-      const res = await fetch(item.url);
+      const res = await fetch(`${item.url}?v=${item.version}`);
       if (!res.ok) throw new Error('Could not load this image.');
       const blob = await res.blob();
       setCropping(new File([blob], item.filename, { type: blob.type || item.mime }));
@@ -383,6 +386,20 @@ function MediaEditForm({
     onOpen(copy.id);
   }
 
+  // Same id and URL, so every post, page and person using it shows the new file.
+  async function replaceFile() {
+    if (!replacement) return;
+    const result = await run(() => uploadMedia(replacement, item.id), {
+      success: {
+        title: 'File replaced',
+        description:
+          'Everything using this image shows the new file. The website updates within a day.',
+      },
+      error: 'Could not replace the file',
+    });
+    if (result !== undefined) setReplacement(null);
+  }
+
   async function remove() {
     const result = await run(() => deleteMedia({ data: { ids: [item.id] } }), {
       success: removedNotice(1, NOUN),
@@ -393,24 +410,74 @@ function MediaEditForm({
 
   const preview = (
     <img
-      src={`${item.url}?w=1280`}
+      src={mediaSrc(item, 1280)}
       alt={item.alt || item.filename}
       className="bg-muted max-h-72 w-full rounded-md border object-contain"
     />
   );
-  const crop = canCrop({ type: item.mime }) && (
-    <div className="flex items-center gap-3">
-      <Button
-        type="button"
-        variant="outline"
-        size="sm"
-        disabled={loadingCrop || pending}
-        onClick={startCrop}
-      >
-        {loadingCrop ? <Spinner /> : <CropIcon aria-hidden data-icon="inline-start" />}
-        Crop a copy
-      </Button>
-      <p className="text-muted-foreground text-xs">The original stays as it is.</p>
+  const crop = (
+    <div className="grid gap-3">
+      <div className="flex flex-wrap items-center gap-2">
+        {canCrop({ type: item.mime }) && (
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            disabled={loadingCrop || pending}
+            onClick={startCrop}
+          >
+            {loadingCrop ? <Spinner /> : <CropIcon aria-hidden data-icon="inline-start" />}
+            Crop a copy
+          </Button>
+        )}
+        <Button
+          type="button"
+          variant="outline"
+          size="sm"
+          disabled={pending}
+          onClick={() => replaceInput.current?.click()}
+        >
+          <ArrowRightLeft aria-hidden data-icon="inline-start" />
+          Replace file
+        </Button>
+        <input
+          ref={replaceInput}
+          type="file"
+          accept={IMAGE_ACCEPT}
+          className="hidden"
+          onChange={(e) => {
+            setReplacement(e.target.files?.[0] ?? null);
+            e.target.value = '';
+          }}
+        />
+      </div>
+      {replacement ? (
+        <div className="bg-muted/50 grid gap-3 rounded-md border p-3">
+          <p className="text-ui">
+            Replace with <span className="font-medium break-all">{replacement.name}</span>?
+            Everything using this image shows the new file. The alt text and caption stay.
+          </p>
+          <div className="flex gap-2">
+            <Button type="button" size="sm" disabled={pending} onClick={replaceFile}>
+              {pending ? <Spinner /> : null}
+              Replace
+            </Button>
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              disabled={pending}
+              onClick={() => setReplacement(null)}
+            >
+              Cancel
+            </Button>
+          </div>
+        </div>
+      ) : (
+        <p className="text-muted-foreground text-xs">
+          A crop is saved as a new file. Replacing keeps this image's address.
+        </p>
+      )}
     </div>
   );
   const altInput = (

@@ -30,6 +30,8 @@ function toItem(r: typeof media.$inferSelect) {
     caption: r.caption ?? '',
     url: `/api/media/${r.id}`,
     createdAt: r.createdAt.getTime(),
+    /** Changes when the file is replaced; added to previews so the CMS shows the new one. */
+    version: r.updatedAt.getTime(),
   };
 }
 

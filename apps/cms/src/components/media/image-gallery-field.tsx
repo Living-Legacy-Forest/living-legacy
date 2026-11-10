@@ -2,6 +2,7 @@
 // a gallery. The first is the cover. Like ImageField, the alt text belongs to
 // the image and is saved straight to the library.
 import { useRef, useState } from 'react';
+import { mediaSrc } from '@/lib/upload-media';
 import { ChevronDownIcon, ChevronUpIcon } from '@/components/icons';
 import { useImageUpload } from '@/components/media/image-crop-dialog';
 import { ImageDropZone } from '@/components/media/image-drop-zone';
@@ -77,7 +78,7 @@ export function ImageGalleryField({
                 <div className="bg-muted relative size-24 shrink-0 overflow-hidden rounded-md border">
                   {item ? (
                     <img
-                      src={`${item.url}?w=640`}
+                      src={mediaSrc(item, 640)}
                       alt={item.alt || item.filename}
                       className="size-full object-cover"
                     />

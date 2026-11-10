@@ -35,6 +35,7 @@ export const activityActions = [
   'event.deleted',
   'event.guest_added',
   'event.guest_cancelled',
+  'media.replaced',
   'legal_page.published',
   'legal_page.review_requested',
 ] as const;

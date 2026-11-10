@@ -1,19 +1,17 @@
 /**
- * Upload. A raw handler rather than a server function, since a server
- * function's validator expects JSON and this receives multipart form data.
+ * Upload, or replace the file behind an existing image (`replace=<id>`). A raw
+ * handler rather than a server function, since a server function's validator
+ * expects JSON and this receives multipart form data.
  */
-import { type Role, can, imageExtension, imageSize } from '@ll/content';
+import { type Role, can } from '@ll/content';
 import { schema } from '@ll/db';
-import { type MediaVariant, maxImageSide, mediaVariantWidths } from '@ll/db/enums';
 import { createFileRoute } from '@tanstack/react-router';
 import { env } from 'cloudflare:workers';
 import { getAuth } from '@/lib/auth';
 import { getDb } from '@/lib/db';
+import { UploadError, replaceMediaFile, storeUpload } from '@/server/media-store';
 
 const { media } = schema;
-
-const MAX_BYTES = 10 * 1024 * 1024;
-const ALLOWED_MIME = new Set(['image/jpeg', 'image/png', 'image/webp', 'image/avif', 'image/gif']);
 
 export const Route = createFileRoute('/api/media/')({
   server: {
@@ -26,92 +24,49 @@ export const Route = createFileRoute('/api/media/')({
         }
 
         const form = await request.formData();
-        const file = form.get('file');
-        if (!(file instanceof File)) {
-          return Response.json({ error: 'No file was uploaded.' }, { status: 400 });
-        }
-        if (!ALLOWED_MIME.has(file.type)) {
-          return Response.json(
-            { error: 'Only JPEG, PNG, WebP, AVIF and GIF images are supported.' },
-            { status: 400 }
-          );
-        }
-        if (file.size > MAX_BYTES) {
-          return Response.json({ error: 'That file is larger than 10 MB.' }, { status: 400 });
-        }
+        const replace = form.get('replace');
+        const db = getDb();
 
-        // Sizes come from the file itself: the browser scales large images
-        // down, but anything that skips that (an old tab, a script) must not
-        // store a 6000px original for the website to serve.
-        const bytes = new Uint8Array(await file.arrayBuffer());
-        const measured = imageSize(bytes);
-        if (!measured) {
-          return Response.json({ error: 'That image could not be read.' }, { status: 400 });
-        }
-        if (Math.max(measured.width, measured.height) > maxImageSide) {
-          return Response.json(
-            { error: `Images can be at most ${maxImageSide} pixels on the longest side.` },
-            { status: 400 }
-          );
-        }
-        // The browser's reading wins when it is the same size turned: a JPEG's
-        // header ignores the EXIF rotation the browser applies.
-        const dimension = (key: string) => {
-          const n = Number(form.get(key));
-          return Number.isInteger(n) && n > 0 ? n : null;
-        };
-        const reported = { width: dimension('width'), height: dimension('height') };
-        const { width, height } =
-          (reported.width === measured.width && reported.height === measured.height) ||
-          (reported.width === measured.height && reported.height === measured.width)
-            ? (reported as { width: number; height: number })
-            : measured;
-
-        const base = crypto.randomUUID();
-        // Under media/ so these can be told apart from avatars in the bucket. The
-        // extension comes from the checked type, never the file's own name.
-        const r2Key = `media/${base}.${imageExtension(file.type)}`;
-
-        // Smaller copies made in the browser. One that is not actually smaller
-        // than the original, or not the width it claims, is dropped.
-        const sizes: { variant: MediaVariant; bytes: Uint8Array }[] = [];
-        for (const w of mediaVariantWidths) {
-          const copy = form.get(`size-${w}`);
-          if (!(copy instanceof File) || !ALLOWED_MIME.has(copy.type)) continue;
-          if (copy.type === 'image/gif' || copy.size >= file.size || w >= width) continue;
-          const copyBytes = new Uint8Array(await copy.arrayBuffer());
-          if (imageSize(copyBytes)?.width !== w) continue;
-          const key = `media/${base}-w${w}.${imageExtension(copy.type)}`;
-          sizes.push({ variant: { width: w, key, mime: copy.type }, bytes: copyBytes });
-        }
-
-        const keys = [r2Key, ...sizes.map((s) => s.variant.key)];
+        let stored;
         try {
-          await Promise.all([
-            env.MEDIA.put(r2Key, bytes, { httpMetadata: { contentType: file.type } }),
-            ...sizes.map((s) =>
-              env.MEDIA.put(s.variant.key, s.bytes, {
-                httpMetadata: { contentType: s.variant.mime },
-              })
-            ),
-          ]);
+          stored = await storeUpload(form);
         } catch (error) {
-          await env.MEDIA.delete(keys).catch(() => {});
+          if (error instanceof UploadError) {
+            return Response.json({ error: error.message }, { status: error.status });
+          }
           throw error;
+        }
+
+        if (typeof replace === 'string' && replace) {
+          try {
+            const row = await replaceMediaFile(db, {
+              id: replace,
+              stored,
+              actor: { id: session.user.id, name: session.user.name },
+              origin: new URL(request.url).origin,
+            });
+            return Response.json(toResponse(row));
+          } catch (error) {
+            if (error instanceof UploadError) {
+              return Response.json({ error: error.message }, { status: error.status });
+            }
+            console.error('[media] could not replace the file', error);
+            return Response.json({ error: 'Could not replace the file.' }, { status: 500 });
+          }
         }
 
         // Without a row nothing points at the files, so they go too. Anything
         // this misses is cleared by the daily sweep (server/media-sweep.ts).
-        const row = await getDb()
+        const row = await db
           .insert(media)
           .values({
-            r2Key,
-            filename: file.name || r2Key,
-            mime: file.type,
-            size: file.size,
-            width,
-            height,
-            variants: sizes.length ? sizes.map((s) => s.variant) : null,
+            r2Key: stored.r2Key,
+            filename: stored.filename,
+            mime: stored.mime,
+            size: stored.size,
+            width: stored.width,
+            height: stored.height,
+            variants: stored.variants,
             uploadedBy: session.user.id,
           })
           .returning()
@@ -121,23 +76,28 @@ export const Route = createFileRoute('/api/media/')({
             return undefined;
           });
         if (!row) {
-          await env.MEDIA.delete(keys).catch(() => {});
+          await env.MEDIA.delete(stored.keys).catch(() => {});
           return Response.json({ error: 'Could not save the upload.' }, { status: 500 });
         }
 
-        return Response.json({
-          id: row.id,
-          filename: row.filename,
-          mime: row.mime,
-          size: row.size,
-          width: row.width,
-          height: row.height,
-          alt: '',
-          caption: '',
-          createdAt: row.createdAt.getTime(),
-          url: `/api/media/${row.id}`,
-        });
+        return Response.json(toResponse(row));
       },
     },
   },
 });
+
+function toResponse(row: typeof media.$inferSelect) {
+  return {
+    id: row.id,
+    filename: row.filename,
+    mime: row.mime,
+    size: row.size,
+    width: row.width,
+    height: row.height,
+    alt: row.alt ?? '',
+    caption: row.caption ?? '',
+    createdAt: row.createdAt.getTime(),
+    version: row.updatedAt.getTime(),
+    url: `/api/media/${row.id}`,
+  };
+}

@@ -252,7 +252,7 @@ function PublisherActions({ editor, canDiscard, onImport }: ActionsProps) {
           size="sm"
           disabled={working || (isLive && !dirty && !meta.hasDraft)}
           onClick={editor.publish}
-          className={cn('max-md:flex-1', !isLive && 'rounded-r-none')}
+          className={cn('max-md:flex-1', !isLive && 'rounded-r-none border-r-0')}
         >
           {editor.busy === 'publish' ? (
             <>

@@ -124,7 +124,9 @@ export function SchedulePopover({
               size="sm"
               disabled={disabled}
               aria-label={scheduledAt ? 'Change schedule' : 'Schedule for later'}
-              className="border-primary-foreground/20 rounded-l-none border-l px-1.5"
+              // The second half of the Publish button: the same rim on its outer
+              // sides, none where the two meet, and a fine divider instead.
+              className="before:bg-primary-foreground/25 relative rounded-l-none border-l-0 px-1.5 before:absolute before:inset-y-1.5 before:left-0 before:w-px"
             />
           )
         }

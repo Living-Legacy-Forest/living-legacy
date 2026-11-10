@@ -3,6 +3,7 @@
 import * as H from '@hugeicons/core-free-icons';
 import { HugeiconsIcon } from '@hugeicons/react';
 import { useEffect, useRef } from 'react';
+import { Calendar01Icon as AnimatedCalendar01Icon } from '@animateicons/react/huge/calendar-0-1-icon';
 import { ActivityIcon as AnimatedActivityIcon } from '@animateicons/react/huge/activity-icon';
 import { Add01Icon as AnimatedAdd01Icon } from '@animateicons/react/huge/add-0-1-icon';
 import { AlertCircleIcon as AnimatedAlertCircleIcon } from '@animateicons/react/huge/alert-circle-icon';
@@ -243,8 +244,7 @@ export const Quote = animated(AnimatedQuoteIcon);
 export const Table = animated(AnimatedTableIcon);
 
 // Shared UI ("Icon"-suffixed names)
-// A plain dot grid: Calendar 01, the only animated calendar, prints a fixed "17".
-export const CalendarClockIcon = make(H.Calendar03Icon);
+export const CalendarClockIcon = animated(AnimatedCalendar01Icon);
 export const FileTextIcon = animated(AnimatedFile01Icon);
 export const GlobeIcon = animated(AnimatedGlobe02Icon);
 export const CheckIcon = DrawnCheckIcon;

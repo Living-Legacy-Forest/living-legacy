@@ -70,7 +70,14 @@ export function UpdatesProvider({ joinedAt, children }: { joinedAt: number; chil
   // Read after mount: storage does not exist while rendering on the server.
   const [seen, setSeen] = useState<string | null | undefined>(undefined);
   const [newDeploy, setNewDeploy] = useState(false);
-  const [dialog, setDialog] = useState<'unseen' | 'all' | null>(null);
+  const [dialogOpen, setDialogOpen] = useState(false);
+  // What the dialog shows, fixed when it opens. Closing marks the notes seen,
+  // which empties `unseen`; reading from it directly would blank the dialog
+  // while it is still animating out.
+  const [dialog, setDialog] = useState<{ entries: WhatsNewEntry[]; markSeen: boolean }>({
+    entries: [],
+    markSeen: false,
+  });
 
   useEffect(() => setSeen(readSeen()), []);
 
@@ -107,7 +114,10 @@ export function UpdatesProvider({ joinedAt, children }: { joinedAt: number; chil
     () => ({
       unseen,
       newDeploy,
-      openDialog: setDialog,
+      openDialog: (which) => {
+        setDialog({ entries: which === 'all' ? whatsNew : unseen, markSeen: which === 'unseen' });
+        setDialogOpen(true);
+      },
       dismiss: () => {
         const latest = whatsNew[0]?.id;
         if (!latest) return;
@@ -118,18 +128,18 @@ export function UpdatesProvider({ joinedAt, children }: { joinedAt: number; chil
     [unseen, newDeploy]
   );
 
-  const shown = dialog === 'all' ? whatsNew : unseen;
+  const shown = dialog.entries;
   // However the dialog closes (button, outside click or following a link),
   // having opened the new notes counts as seeing them.
   const closeDialog = () => {
-    if (dialog === 'unseen') value.dismiss();
-    setDialog(null);
+    if (dialog.markSeen) value.dismiss();
+    setDialogOpen(false);
   };
 
   return (
     <UpdatesContext.Provider value={value}>
       {children}
-      <Dialog open={dialog !== null} onOpenChange={(open) => !open && closeDialog()}>
+      <Dialog open={dialogOpen} onOpenChange={(open) => !open && closeDialog()}>
         <DialogContent
           initialFocus={false}
           className="max-h-[85svh] gap-0 overflow-y-auto p-0 sm:max-w-md"

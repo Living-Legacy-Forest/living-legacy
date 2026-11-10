@@ -61,10 +61,12 @@ export function AppHeader({ user }: { user: SessionUser }) {
         />
       )}
 
-      {/* The large title's compact twin, shown once the large one scrolls away. */}
+      {/* The large title's compact twin, shown once the large one scrolls away.
+          Centred on the screen, clear of the sides: at most a short back label on
+          the left and two 44pt buttons on the right, so 6.5rem each side. */}
       <div
         aria-hidden
-        className="pointer-events-none absolute inset-x-0 bottom-0 flex h-14 items-center justify-center px-36 transition-opacity duration-200 md:hidden"
+        className="pointer-events-none absolute inset-x-0 bottom-0 flex h-14 items-center justify-center px-[6.5rem] transition-opacity duration-200 md:hidden"
         style={{ opacity: collapsed ? 1 : 0 }}
       >
         <span className="truncate text-[1.0625rem] font-semibold">{title}</span>

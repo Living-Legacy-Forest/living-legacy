@@ -9,10 +9,6 @@ import { AlertCircleIcon as AnimatedAlertCircleIcon } from '@animateicons/react/
 import { Camera01Icon as AnimatedCamera01Icon } from '@animateicons/react/huge/camera-0-1-icon';
 import { Cancel01Icon as AnimatedCancel01Icon } from '@animateicons/react/huge/cancel-0-1-icon';
 import { CancelCircleIcon as AnimatedCancelCircleIcon } from '@animateicons/react/huge/cancel-circle-icon';
-import { ChevronDownIcon as AnimatedChevronDownIcon } from '@animateicons/react/huge/chevron-down-icon';
-import { ChevronLeftIcon as AnimatedChevronLeftIcon } from '@animateicons/react/huge/chevron-left-icon';
-import { ChevronRightIcon as AnimatedChevronRightIcon } from '@animateicons/react/huge/chevron-right-icon';
-import { ChevronUpIcon as AnimatedChevronUpIcon } from '@animateicons/react/huge/chevron-up-icon';
 import { CodeIcon as AnimatedCodeIcon } from '@animateicons/react/huge/code-icon';
 import { CopyIcon as AnimatedCopyIcon } from '@animateicons/react/huge/copy-icon';
 import { Delete02Icon as AnimatedDelete02Icon } from '@animateicons/react/huge/delete-0-2-icon';
@@ -32,8 +28,6 @@ import { Logout01Icon as AnimatedLogout01Icon } from '@animateicons/react/huge/l
 import { Mail01Icon as AnimatedMail01Icon } from '@animateicons/react/huge/mail-0-1-icon';
 import { MailCheckIcon as AnimatedMailCheckIcon } from '@animateicons/react/huge/mail-check-icon';
 import { Megaphone01Icon as AnimatedMegaphone01Icon } from '@animateicons/react/huge/megaphone-0-1-icon';
-import { MoreHorizontalIcon as AnimatedMoreHorizontalIcon } from '@animateicons/react/huge/more-horizontal-icon';
-import { MoreVerticalIcon as AnimatedMoreVerticalIcon } from '@animateicons/react/huge/more-vertical-icon';
 import { NotificationIcon as AnimatedNotificationIcon } from '@animateicons/react/huge/notification-icon';
 import { RedoIcon as AnimatedRedoIcon } from '@animateicons/react/huge/redo-icon';
 import { SearchIcon as AnimatedSearchIcon } from '@animateicons/react/huge/search-icon';
@@ -56,8 +50,6 @@ import { UserIcon as AnimatedUserIcon } from '@animateicons/react/huge/user-icon
 import { UserSettings01Icon as AnimatedUserSettings01Icon } from '@animateicons/react/huge/user-settings-0-1-icon';
 import { Alert02Icon as AnimatedAlert02Icon } from '@animateicons/react/huge/alert-0-2-icon';
 import { Analytics01Icon as AnimatedAnalytics01Icon } from '@animateicons/react/huge/analytics-0-1-icon';
-import { AnalyticsDownIcon as AnimatedAnalyticsDownIcon } from '@animateicons/react/huge/analytics-down-icon';
-import { AnalyticsUpIcon as AnimatedAnalyticsUpIcon } from '@animateicons/react/huge/analytics-up-icon';
 import { ArrowLeftRightIcon as AnimatedArrowLeftRightIcon } from '@animateicons/react/huge/arrow-left-right-icon';
 import { ArrowUpRight01Icon as AnimatedArrowUpRight01Icon } from '@animateicons/react/huge/arrow-up-right-0-1-icon';
 import { Calendar01Icon as AnimatedCalendar01Icon } from '@animateicons/react/huge/calendar-0-1-icon';
@@ -76,7 +68,6 @@ import { LeftToRightListBulletIcon as AnimatedLeftToRightListBulletIcon } from '
 import { LeftToRightListNumberIcon as AnimatedLeftToRightListNumberIcon } from '@animateicons/react/huge/left-to-right-list-number-icon';
 import { LinkOffIcon as AnimatedLinkOffIcon } from '@animateicons/react/huge/link-off-icon';
 import { Message01Icon as AnimatedMessage01Icon } from '@animateicons/react/huge/message-0-1-icon';
-import { MinusSignIcon as AnimatedMinusSignIcon } from '@animateicons/react/huge/minus-sign-icon';
 import { Location01Icon as AnimatedLocation01Icon } from '@animateicons/react/huge/location-0-1-icon';
 import { NewspaperIcon as AnimatedNewspaperIcon } from '@animateicons/react/huge/newspaper-icon';
 import { Pen01Icon as AnimatedPen01Icon } from '@animateicons/react/huge/pen-0-1-icon';
@@ -115,20 +106,26 @@ type AnimatedComponent = React.ForwardRefExoticComponent<
 >;
 
 /** Where hovering should play an icon: the control it sits in, if any. */
+// Movement is kept for controls someone points at on purpose: buttons, tabs
+// and the sidebar. In menus, select boxes, list rows, form fields and other
+// places an icon only labels or decorates, it stays still, so the movement
+// that is left still means "this responds to you".
 const HOVER_TARGET =
-  'a, button, label, summary, [role="menuitem"], [role="option"], [role="tab"], [data-slot="sidebar-menu-button"]';
+  'button, a[data-slot="button"], [role="tab"], [data-slot="sidebar-menu-button"]';
+const QUIET =
+  '[role="menu"], [role="listbox"], [role="menuitem"], [role="option"], [data-slot="select-trigger"], [data-slot="list-rows"], [data-slot="input-group"], [data-slot="badge"], [data-slot="breadcrumb"], [data-slot="calendar"], [data-slot="empty"], table';
 
 function animated(Icon: AnimatedComponent): LucideIcon {
   return function AnimatedIcon({ className, strokeWidth, style, ...props }) {
     const handle = useRef<AnimatedHandle>(null);
     const anchor = useRef<HTMLSpanElement>(null);
 
-    // Play when the whole button or menu row is hovered, not only the small
-    // icon inside it. Reduced motion is honoured by the icons themselves.
+    // Play when the whole button is hovered, not only the small icon inside
+    // it. Reduced motion is honoured by the icons themselves.
     useEffect(() => {
       const span = anchor.current;
-      const target = span?.parentElement?.closest<HTMLElement>(HOVER_TARGET) ?? span;
-      if (!target) return;
+      const target = span?.parentElement?.closest<HTMLElement>(HOVER_TARGET);
+      if (!target || target.closest(QUIET)) return;
       const start = () => handle.current?.startAnimation();
       const stop = () => handle.current?.stopAnimation();
       target.addEventListener('pointerenter', start);
@@ -169,11 +166,11 @@ function animated(Icon: AnimatedComponent): LucideIcon {
 // Dashboard & stats
 export const ChartPieIcon = animated(AnimatedAnalytics01Icon);
 export const ChartAreaIcon = animated(AnimatedChartLineIcon);
-export const TrendingUpIcon = animated(AnimatedAnalyticsUpIcon);
-export const TrendingDownIcon = animated(AnimatedAnalyticsDownIcon);
-export const ArrowUpIcon = animated(AnimatedChevronUpIcon);
-export const ArrowDownIcon = animated(AnimatedChevronDownIcon);
-export const MinusIcon = animated(AnimatedMinusSignIcon);
+export const TrendingUpIcon = make(H.AnalyticsUpIcon);
+export const TrendingDownIcon = make(H.AnalyticsDownIcon);
+export const ArrowUpIcon = make(H.ArrowUp01Icon);
+export const ArrowDownIcon = make(H.ArrowDown01Icon);
+export const MinusIcon = make(H.MinusSignIcon);
 export const FilePlus2Icon = animated(AnimatedFileAddIcon);
 export const MessageCircleQuestionIcon = animated(AnimatedHelpCircleIcon);
 export const DownloadIcon = animated(AnimatedDownloadIcon);
@@ -209,7 +206,7 @@ export const Link = animated(AnimatedLink01Icon);
 export const Link2Off = animated(AnimatedLinkOffIcon);
 export const List = animated(AnimatedLeftToRightListBulletIcon);
 export const ListOrdered = animated(AnimatedLeftToRightListNumberIcon);
-export const Minus = animated(AnimatedMinusSignIcon);
+export const Minus = make(H.MinusSignIcon);
 export const Redo2 = animated(AnimatedRedoIcon);
 export const RemoveFormatting = make(H.RemoveFormattingIcon);
 export const SquareCode = animated(AnimatedCodeXmlIcon);
@@ -227,18 +224,18 @@ export const AlignCenter = animated(AnimatedTextAlignCenterIcon);
 export const AlignLeft = animated(AnimatedTextAlignLeftIcon);
 export const AlignRight = animated(AnimatedTextAlignRightIcon);
 export const AlignJustify = animated(AnimatedTextAlignJustifyIcon);
-export const MoreHorizontal = animated(AnimatedMoreHorizontalIcon);
+export const MoreHorizontal = make(H.MoreHorizontalIcon);
 export const Trash2 = animated(AnimatedDelete02Icon);
-export const MoreVertical = animated(AnimatedMoreVerticalIcon);
+export const MoreVertical = make(H.MoreVerticalIcon);
 export const Plus = animated(AnimatedAdd01Icon);
-export const ArrowRight = animated(AnimatedChevronRightIcon);
-export const ArrowLeft = animated(AnimatedChevronLeftIcon);
-export const ArrowUp = animated(AnimatedChevronUpIcon);
-export const ArrowDown = animated(AnimatedChevronDownIcon);
+export const ArrowRight = make(H.ArrowRight01Icon);
+export const ArrowLeft = make(H.ArrowLeft01Icon);
+export const ArrowUp = make(H.ArrowUp01Icon);
+export const ArrowDown = make(H.ArrowDown01Icon);
 export const Keyboard = animated(AnimatedKeyboardIcon);
 export const Ban = animated(AnimatedCancelCircleIcon);
 export const Baseline = make(H.BaselineIcon);
-export const ChevronDown = animated(AnimatedChevronDownIcon);
+export const ChevronDown = make(H.ArrowDown01Icon);
 export const Code2 = animated(AnimatedCodeIcon);
 export const IndentDecrease = animated(AnimatedTextIndentLessIcon);
 export const IndentIncrease = animated(AnimatedTextIndentMoreIcon);
@@ -253,10 +250,10 @@ export const GlobeIcon = animated(AnimatedGlobe02Icon);
 export const CheckIcon = DrawnCheckIcon;
 /** The tick inside a checkbox: static, since it sits in every list row. */
 export const CheckboxTickIcon = make(H.Tick02Icon);
-export const ChevronUpIcon = animated(AnimatedChevronUpIcon);
-export const ChevronDownIcon = animated(AnimatedChevronDownIcon);
-export const ChevronLeftIcon = animated(AnimatedChevronLeftIcon);
-export const ChevronRightIcon = animated(AnimatedChevronRightIcon);
+export const ChevronUpIcon = make(H.ArrowUp01Icon);
+export const ChevronDownIcon = make(H.ArrowDown01Icon);
+export const ChevronLeftIcon = make(H.ArrowLeft01Icon);
+export const ChevronRightIcon = make(H.ArrowRight01Icon);
 export const EyeIcon = animated(AnimatedEyeIcon);
 export const EyeOffIcon = animated(AnimatedEyeOffIcon);
 export const FolderIcon = animated(AnimatedFolder01Icon);
@@ -268,14 +265,14 @@ export const Undo2Icon = animated(AnimatedUndoIcon);
 export const UserIcon = animated(AnimatedUserIcon);
 export const CircleAlertIcon = animated(AnimatedAlertCircleIcon);
 export const ExternalLinkIcon = animated(AnimatedArrowUpRight01Icon);
-export const MoreHorizontalIcon = animated(AnimatedMoreHorizontalIcon);
+export const MoreHorizontalIcon = make(H.MoreHorizontalIcon);
 export const PanelRightIcon = animated(AnimatedSidebarRightIcon);
 export const PencilIcon = animated(AnimatedEdit02Icon);
 export const RotateCcwIcon = animated(AnimatedUndoIcon);
 export const SearchIcon = animated(AnimatedSearchIcon);
 export const SearchXIcon = make(H.SearchRemoveIcon);
 export const XIcon = animated(AnimatedCancel01Icon);
-export const ArrowRightIcon = animated(AnimatedChevronRightIcon);
+export const ArrowRightIcon = make(H.ArrowRight01Icon);
 export const ArchiveIcon = animated(AnimatedDeliveryBox01Icon);
 export const LayoutDashboardIcon = animated(AnimatedLayoutDashboardIcon);
 export const PanelLeftIcon = animated(AnimatedSidebarLeftIcon);

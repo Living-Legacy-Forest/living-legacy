@@ -8,6 +8,7 @@ export const authClient = createAuthClient({
       user: {
         bio: { type: 'string', required: false },
         imageAlt: { type: 'string', required: false },
+        theme: { type: 'string', required: false },
       },
     }),
   ],

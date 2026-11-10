@@ -12,6 +12,8 @@ export const user = sqliteTable('user', {
   /** Describes the photo for screen readers; set on the profile or by an admin. */
   imageAlt: text('image_alt'),
   bio: text('bio'),
+  /** This person's light or dark choice; null follows the site setting. */
+  theme: text('theme', { enum: ['system', 'light', 'dark'] }),
   role: text('role', { enum: ['admin', 'editor', 'author', 'seo', 'viewer'] })
     .notNull()
     .default('editor'),

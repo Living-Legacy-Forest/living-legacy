@@ -20,8 +20,10 @@ import {
 } from '@ll/content';
 import { media, siteSettings } from '@ll/db/schema';
 import { createServerFn } from '@tanstack/react-start';
+import { getRequest } from '@tanstack/react-start/server';
 import { eq } from 'drizzle-orm';
 import { z } from 'zod';
+import { getAuth } from '@/lib/auth';
 import { getDb } from '@/lib/db';
 import { authMiddleware, requirePermission } from '@/lib/session';
 import { readSiteSettings } from '@/lib/site-settings';
@@ -37,12 +39,36 @@ export const getSiteSettings = createServerFn({ method: 'GET' })
 /**
  * The settings every page needs, with no auth: the theme renders the right
  * colour scheme server-side before a session is known (e.g. login), and
- * scheduling UI needs the time zone everywhere.
+ * scheduling UI needs the time zone everywhere. A signed-in person's own
+ * theme (Profile, Appearance) wins over the site's.
  */
 export const getRootSettings = createServerFn({ method: 'GET' }).handler(async () => {
-  const { theme, timeZone, siteIconMediaId } = await readSiteSettings();
-  return { theme, timeZone, siteIconMediaId };
+  const [{ theme: siteTheme, timeZone, siteIconMediaId }, personal] = await Promise.all([
+    readSiteSettings(),
+    personalTheme(),
+  ]);
+  return {
+    theme: personal ?? siteTheme,
+    siteTheme,
+    personalTheme: personal,
+    timeZone,
+    siteIconMediaId,
+  };
 });
+
+/** The signed-in person's theme, read fresh so a change shows on the next load. */
+async function personalTheme(): Promise<Theme | null> {
+  try {
+    const session = await getAuth().api.getSession({
+      headers: getRequest().headers,
+      query: { disableCookieCache: true },
+    });
+    const value = (session?.user as { theme?: unknown } | undefined)?.theme;
+    return (themes as readonly unknown[]).includes(value) ? (value as Theme) : null;
+  } catch {
+    return null;
+  }
+}
 
 const text = (max: number) => z.string().trim().max(max).default('');
 const link = text(300).refine(

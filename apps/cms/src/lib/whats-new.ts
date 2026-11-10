@@ -23,12 +23,22 @@ export type WhatsNewEntry = {
 export const whatsNew: WhatsNewEntry[] = [
   {
     id: '2026-11-10-2',
-    title: 'A face for everyone without a photo',
+    title: 'A tidier profile, your own theme and a face for everyone',
     items: [
       {
         title: 'Drawn avatars',
         body: 'People and team members without a photo now get their own drawn face instead of initials. Add a photo any time and it takes over.',
         link: { label: 'Add your photo', to: '/profile' },
+      },
+      {
+        title: 'Your own theme',
+        body: 'Choose light, dark or to match your device in your profile. It only changes the CMS for you.',
+        link: { label: 'Open your profile', to: '/profile', hash: 'appearance' },
+      },
+      {
+        title: 'Signed-in devices',
+        body: 'See everywhere you are signed in, and sign out a lost or shared device from your profile.',
+        link: { label: 'Open your profile', to: '/profile', hash: 'devices' },
       },
     ],
   },

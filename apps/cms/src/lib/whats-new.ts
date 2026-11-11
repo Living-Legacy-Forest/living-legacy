@@ -22,6 +22,16 @@ export type WhatsNewEntry = {
 
 export const whatsNew: WhatsNewEntry[] = [
   {
+    id: '2026-11-11',
+    title: 'Trends on the dashboard',
+    items: [
+      {
+        title: 'See the last 12 weeks at a glance',
+        body: 'The figures at the top of the dashboard now show how posts, drafts and media have changed week by week, and how many locations are open or coming soon. Point at a chart to see a week’s count.',
+      },
+    ],
+  },
+  {
     id: '2026-11-10-3',
     title: 'Rename files in Media',
     items: [

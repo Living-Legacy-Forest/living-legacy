@@ -585,6 +585,9 @@ const postFields = [
   'categoryIds',
   'seoTitle',
   'seoDescription',
+  'socialTitle',
+  'socialDescription',
+  'canonicalUrl',
 ];
 
 function ApiReference() {

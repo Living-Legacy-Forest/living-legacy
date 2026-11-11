@@ -1,7 +1,8 @@
 // Redirect matching, shared by the website (which serves redirects) and the
 // CMS (which checks new ones for loops and chains before saving).
 
-export const redirectStatusCodes = [301, 302, 410] as const;
+// 307 and 308 are 302 and 301 that keep the request's method (a form post stays a post).
+export const redirectStatusCodes = [301, 302, 307, 308, 410] as const;
 export type RedirectStatusCode = (typeof redirectStatusCodes)[number];
 
 export type RedirectRule = {
@@ -140,7 +141,7 @@ export function checkRedirect(fromPath: string, toPath: string, statusCode: numb
   if (/\s/.test(fromPath)) return 'The old path cannot contain spaces.';
   if (fromPath.slice(0, -1).includes('*')) return 'A * can only end the old path.';
   if (!(redirectStatusCodes as readonly number[]).includes(statusCode)) {
-    return 'The type must be 301, 302 or 410.';
+    return 'The type must be 301, 302, 307, 308 or 410.';
   }
   if (statusCode === 410) return null;
   if (!toPath) return 'The destination is empty.';

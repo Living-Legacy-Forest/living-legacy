@@ -56,6 +56,42 @@ describe('focus keyword and related terms', () => {
   });
 });
 
+describe('search and sharing fields', () => {
+  it('are saved with a new post and read back, with empty text stored as null', async () => {
+    const userId = await addUser('editor');
+    const db = testDb();
+    const row = await createDraft(
+      db,
+      {
+        ...emptyPostInput,
+        title: 'Planting day',
+        canonicalUrl: 'https://example.com.au/stories/planting-day/',
+        socialTitle: 'Come plant with us',
+        nofollow: true,
+        noimageindex: true,
+      },
+      userId
+    );
+    const stored = await db.query.posts.findFirst({ where: eq(posts.id, row.id) });
+    expect(stored).toMatchObject({
+      canonicalUrl: 'https://example.com.au/stories/planting-day/',
+      socialTitle: 'Come plant with us',
+      socialDescription: null,
+      nofollow: true,
+      nosnippet: false,
+      noimageindex: true,
+    });
+    expect(await liveInput(db, stored!)).toMatchObject({
+      canonicalUrl: 'https://example.com.au/stories/planting-day/',
+      socialTitle: 'Come plant with us',
+      socialDescription: '',
+      nofollow: true,
+      nosnippet: false,
+      noimageindex: true,
+    });
+  });
+});
+
 describe('location', () => {
   const addLocation = async (values: Partial<typeof locations.$inferInsert> = {}) => {
     const [row] = await testDb()

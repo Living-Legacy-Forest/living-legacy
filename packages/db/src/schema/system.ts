@@ -23,7 +23,7 @@ export const redirects = sqliteTable('redirects', {
   // A trailing * on from_path matches everything under it; a * in to_path
   // receives the matched rest. 410 means "gone", and to_path is then empty.
   statusCode: integer('status_code', { mode: 'number' })
-    .$type<301 | 302 | 410>()
+    .$type<301 | 302 | 307 | 308 | 410>()
     .notNull()
     .default(301),
   enabled: integer('enabled', { mode: 'boolean' }).notNull().default(true),

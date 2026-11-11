@@ -27,7 +27,7 @@ export const onRequest = defineMiddleware(async (context, next) => {
       ? await next()
       : redirect.location === null
         ? await gone(context.rewrite('/404'))
-        : context.redirect(redirect.location, redirect.rule.statusCode === 302 ? 302 : 301);
+        : context.redirect(redirect.location, redirect.rule.statusCode as 301 | 302 | 307 | 308);
 
     if (!redirect && response.status === 404) {
       context.locals.cfContext?.waitUntil(recordNotFound(context.url.pathname));

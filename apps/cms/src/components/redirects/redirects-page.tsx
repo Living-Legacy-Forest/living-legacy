@@ -1,4 +1,4 @@
-import { checkRedirect } from '@ll/content';
+import { type RedirectStatusCode, checkRedirect } from '@ll/content';
 import { BulkCsvForm } from '@/components/bulk/bulk-csv-form';
 import { FormCell, FormSection, FormSwitchCell } from '@/components/form-cells';
 import { PageActions } from '@/components/shell/page-actions';
@@ -80,11 +80,13 @@ import {
   setRedirectEnabled,
 } from '@/server/redirects';
 
-type Code = '301' | '302' | '410';
+type Code = '301' | '302' | '307' | '308' | '410';
 
 const codeItems: { value: Code; label: string }[] = [
   { value: '301', label: '301 - Permanent' },
   { value: '302', label: '302 - Temporary' },
+  { value: '308', label: '308 - Permanent, keeps form posts' },
+  { value: '307', label: '307 - Temporary, keeps form posts' },
   { value: '410', label: '410 - Removed, no replacement' },
 ];
 
@@ -96,12 +98,14 @@ function usage(r: Redirect) {
   return r.lastHitAt ? `${times}, last on ${dateFormat.format(r.lastHitAt)}` : times;
 }
 
-type Filter = 'all' | '301' | '302' | '410' | 'off' | 'unused';
+type Filter = 'all' | '301' | '302' | '307' | '308' | '410' | 'off' | 'unused';
 
 const filterItems: { value: Filter; label: string }[] = [
   { value: 'all', label: 'All types' },
   { value: '301', label: '301 - Permanent' },
   { value: '302', label: '302 - Temporary' },
+  { value: '308', label: '308 - Permanent' },
+  { value: '307', label: '307 - Temporary' },
   { value: '410', label: '410 - Removed' },
   { value: 'off', label: 'Turned off' },
   { value: 'unused', label: 'Never used' },
@@ -642,7 +646,7 @@ function RedirectForm({
             id: redirect?.id,
             fromPath,
             toPath: removed ? '' : toPath,
-            statusCode: Number(statusCode) as 301 | 302 | 410,
+            statusCode: Number(statusCode) as RedirectStatusCode,
             enabled,
             keepQuery,
             note: note || undefined,

@@ -40,7 +40,8 @@ jobs:
       (github.event.pull_request.head.repo.full_name == github.repository &&
       github.actor != 'dependabot[bot]')
     runs-on: ubuntu-latest
-    timeout-minutes: 15
+    # Room for the build plus up to ten minutes waiting on migrations.
+    timeout-minutes: 25
     permissions:
       contents: read
       pull-requests: write # sticky preview comment
@@ -96,6 +97,23 @@ jobs:
           bunx wrangler versions upload --message "PR #$PR_NUMBER" 2>&1 | tee "$RUNNER_TEMP/wrangler.log"
           url=$(sed -n 's/.*Version Preview URL: \(https:[^ ]*\).*/\1/p' "$RUNNER_TEMP/wrangler.log" | tail -1)
           echo "url=$url" >> "$GITHUB_OUTPUT"
+
+      # Deploy CMS applies database migrations and starts on the same push, so
+      # this code (which may read new columns) waits until none are pending.
+      # Read-only from the CMS's config: only Deploy CMS migrates.
+      - name: Wait for database migrations
+        if: github.event_name != 'pull_request'
+        working-directory: apps/cms
+        run: |
+          for attempt in $(seq 1 40); do
+            if bunx wrangler d1 migrations list DB --remote 2>&1 | grep -q 'No migrations to apply'; then
+              exit 0
+            fi
+            echo "Migrations still pending (check $attempt of 40); waiting 15 seconds."
+            sleep 15
+          done
+          echo "::error::Database migrations were still pending after 10 minutes. Check the Deploy CMS run."
+          exit 1
 
       - name: Deploy
         if: github.event_name != 'pull_request'

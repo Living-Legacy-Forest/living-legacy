@@ -41,6 +41,12 @@ type PostRow = {
   seo_title: string | null;
   seo_description: string | null;
   noindex: number;
+  canonical_url: string | null;
+  social_title: string | null;
+  social_description: string | null;
+  nofollow: number;
+  nosnippet: number;
+  noimageindex: number;
   published_at: number;
   image_id: string | null;
   image_alt: string | null;
@@ -86,7 +92,8 @@ async function load(): Promise<BlogPost[]> {
     db
       .prepare(
         `SELECT p.id, p.title, p.slug, p.excerpt, p.body, p.seo_title, p.seo_description,
-                p.noindex, p.published_at,
+                p.noindex, p.canonical_url, p.social_title, p.social_description,
+                p.nofollow, p.nosnippet, p.noimageindex, p.published_at,
                 fm.id AS image_id, fm.alt AS image_alt, fm.width AS image_width, fm.height AS image_height,
                 fm.variants AS image_variants,
                 p.og_media_id AS og_image_id,
@@ -136,6 +143,12 @@ async function load(): Promise<BlogPost[]> {
       seoTitle: row.seo_title || undefined,
       seoDescription: row.seo_description || undefined,
       noindex: row.noindex === 1,
+      canonicalUrl: row.canonical_url || undefined,
+      socialTitle: row.social_title || undefined,
+      socialDescription: row.social_description || undefined,
+      nofollow: row.nofollow === 1,
+      nosnippet: row.nosnippet === 1,
+      noimageindex: row.noimageindex === 1,
       image: row.image_id ? cmsImage(row, row.image_id) : undefined,
       ogImageUrl: row.og_image_id ? mediaUrl(row.og_image_id) : undefined,
       category: categories[0],

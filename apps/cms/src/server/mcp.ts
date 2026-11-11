@@ -73,8 +73,9 @@ const tool = <S extends z.ZodType>(t: Tool<S>) => t as unknown as Tool;
 
 const postId = z.string().min(1).describe('The post id, from list_posts.');
 
-// What the model may send. `body` (editor JSON) and `noindex` stay REST-only:
-// Markdown is the body a model writes well, and noindex is an SEO decision.
+// What the model may send. `body` (editor JSON), the robots switches and the
+// canonical URL stay REST-only: Markdown is the body a model writes well, and
+// the others are SEO decisions.
 const draftFields = {
   markdown: writeFields.markdown.describe(
     'The body in Markdown: ## to #### headings, paragraphs, - and 1. lists, > quotes, ``` code, ---, **bold**, *italic*, `code` and [links](https://…). Start with ##; the title is the page heading.'
@@ -87,6 +88,12 @@ const draftFields = {
   categoryIds: writeFields.categoryIds.describe('Category ids from list_terms.'),
   seoTitle: writeFields.seoTitle.describe('The title for search results, if not the post title.'),
   seoDescription: writeFields.seoDescription.describe('The description for search results.'),
+  socialTitle: writeFields.socialTitle.describe(
+    'The title on social share cards, if not the search title.'
+  ),
+  socialDescription: writeFields.socialDescription.describe(
+    'The description on social share cards, if not the search description.'
+  ),
 };
 
 const tools: Tool[] = [

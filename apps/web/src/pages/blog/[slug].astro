@@ -73,9 +73,12 @@ const jsonLd = [
 <BaseLayout
   title={seoTitle}
   description={seoDescription}
-  canonical={shareUrl}
+  canonical={post.canonicalUrl ?? shareUrl}
   ogImage={ogImage}
+  socialTitle={post.socialTitle}
+  socialDescription={post.socialDescription}
   noindex={post.noindex}
+  robots={{ nofollow: post.nofollow, nosnippet: post.nosnippet, noimageindex: post.noimageindex }}
   article={{ publishedTime, modifiedTime, section, tags }}
   jsonLd={jsonLd}
 >

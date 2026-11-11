@@ -25,6 +25,11 @@ interface Props {
   canonical?: string;
   /** Absolute URL for og:image / twitter:image. Falls back to the CMS default share image. */
   ogImage?: string;
+  /** The share card's own title and description, used as given; they default to the page's. */
+  socialTitle?: string;
+  socialDescription?: string;
+  /** Finer directives for a page that may be indexed; ignored when it is blocked. */
+  robots?: { nofollow?: boolean; nosnippet?: boolean; noimageindex?: boolean };
   /** Skips Header and Footer — for the 404 page and anything else that draws its own chrome. */
   bare?: boolean;
   /** Marks the page as an article for social cards (og:type article and its dates and topics). */
@@ -45,6 +50,9 @@ const {
   noindex,
   canonical = new URL(withTrailingSlash(Astro.url.pathname), Astro.site).toString(),
   ogImage = settings.seoImageUrl || undefined,
+  socialTitle,
+  socialDescription,
+  robots,
   bare = false,
   article,
   jsonLd = [],
@@ -57,6 +65,24 @@ const title = formatPageTitle(settings.titlePattern, pageTitle, settings.siteTit
 // the host check. Settings can also hide the whole site (Hide from search engines).
 const blockIndexing =
   noindex === true || settings.hideFromSearch || !isIndexableHost(Astro.url.host);
+
+// Articles also let search engines show a large image preview, as Discover needs.
+const robotsContent = blockIndexing
+  ? 'noindex, nofollow'
+  : [
+      robots?.nofollow && 'nofollow',
+      robots?.nosnippet && 'nosnippet',
+      robots?.noimageindex && 'noimageindex',
+      article && 'max-image-preview:large',
+    ]
+      .filter(Boolean)
+      .join(', ');
+
+// Shares point at this site even when the canonical credits a page elsewhere.
+const ogUrl =
+  new URL(canonical).origin === new URL(Astro.site ?? Astro.url).origin
+    ? canonical
+    : new URL(withTrailingSlash(Astro.url.pathname), Astro.site).toString();
 
 const siteUrl = (Astro.site ?? Astro.url).toString();
 const iconUrl = siteIconUrl(settings);
@@ -82,7 +108,7 @@ const structuredData = [
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>{title}</title>
     {description && <meta name="description" content={description} />}
-    {blockIndexing && <meta name="robots" content="noindex, nofollow" />}
+    {robotsContent && <meta name="robots" content={robotsContent} />}
     <link rel="canonical" href={canonical} />
     {
       iconUrl ? (
@@ -101,9 +127,13 @@ const structuredData = [
     <meta name="theme-color" content="#fbf9f5" />
     <meta property="og:type" content={article ? 'article' : 'website'} />
     <meta property="og:site_name" content={settings.siteTitle} />
-    <meta property="og:title" content={title} />
-    {description && <meta property="og:description" content={description} />}
-    <meta property="og:url" content={canonical} />
+    <meta property="og:title" content={socialTitle || title} />
+    {
+      (socialDescription || description) && (
+        <meta property="og:description" content={socialDescription || description} />
+      )
+    }
+    <meta property="og:url" content={ogUrl} />
     {ogImage && <meta property="og:image" content={ogImage} />}
     <meta name="twitter:card" content="summary_large_image" />
     {ogImage && <meta name="twitter:image" content={ogImage} />}

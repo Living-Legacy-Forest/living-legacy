@@ -128,6 +128,8 @@ const usageSources = [
     id: events.id,
     label: events.title,
     text: [events.heroMediaId, events.galleryMediaIds, events.description],
+    // Each date of a repeating event is its own row; list the series once.
+    group: events.seriesId,
   },
 ] satisfies {
   kind: string;
@@ -135,24 +137,33 @@ const usageSources = [
   id: SQLiteColumn;
   label: SQLiteColumn;
   text: SQLiteColumn[];
+  group?: SQLiteColumn;
 }[];
 
 /** Where each of `ids` is still used, as "post “Title”" labels. */
 async function findUsage(db: ReturnType<typeof getDb>, ids: string[]) {
   const found = await Promise.all(
-    usageSources.map(async ({ kind, table, id: idColumn, label, text }) => {
+    usageSources.map(async (source) => {
+      const { kind, table, id: idColumn, label, text } = source;
+      const group = 'group' in source ? source.group : idColumn;
       const haystack = sql<string>`(${sql.join(
         text.map((c) => sql`coalesce(${c}, '')`),
         sql` || ' ' || `
       )})`;
       // Media ids are ULIDs, so they hold no LIKE wildcards.
       const rows = await db
-        .select({ id: sql<string>`${idColumn}`, label: sql<string>`${label}`, haystack })
+        .select({
+          id: sql<string>`${idColumn}`,
+          group: sql<string>`coalesce(${group}, ${idColumn})`,
+          label: sql<string>`${label}`,
+          haystack,
+        })
         .from(table)
         .where(or(...ids.map((id) => sql`${haystack} like ${`%${id}%`}`)));
       return rows.map((r) => ({
         kind,
         id: r.id,
+        group: r.group,
         label: r.label,
         name: `${kind} “${r.label}”`,
         haystack: r.haystack,
@@ -168,7 +179,14 @@ export const getMediaUsage = createServerFn({ method: 'GET' })
   .validator(z.object({ id: z.string().max(64) }))
   .handler(async ({ data }) => {
     const found = await findUsage(getDb(), [data.id]);
-    return found.map(({ kind, id, label }) => ({ kind, id, label }));
+    const uses = new Map<string, { kind: string; id: string; label: string; count: number }>();
+    for (const { kind, id, group, label } of found) {
+      const key = `${kind}:${group}`;
+      const use = uses.get(key);
+      if (use) use.count++;
+      else uses.set(key, { kind, id, label, count: 1 });
+    }
+    return [...uses.values()];
   });
 
 export type MediaUsage = Awaited<ReturnType<typeof getMediaUsage>>;

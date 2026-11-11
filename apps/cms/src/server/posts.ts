@@ -1,5 +1,7 @@
 import {
+  POST_SEO_KEYS,
   type PostInput,
+  type PostSeoInput,
   blogPath,
   can,
   contentTargetsFrom,
@@ -39,6 +41,7 @@ import {
   loadTermsFor,
   publishValues,
   saveEdits,
+  seoColumns,
   uniqueSlug,
 } from './post-store';
 
@@ -482,14 +485,11 @@ export const duplicatePost = createServerFn({ method: 'POST' })
   });
 
 const seoSchema = postInputSchema
-  .pick({
-    seoTitle: true,
-    seoDescription: true,
-    noindex: true,
-    ogMediaId: true,
-    focusKeyword: true,
-    relatedTerms: true,
-  })
+  .pick(
+    Object.fromEntries(POST_SEO_KEYS.map((key) => [key, true])) as {
+      [K in (typeof POST_SEO_KEYS)[number]]: true;
+    }
+  )
   .extend({ id: z.string(), expectedUpdatedAt: z.number().optional() });
 
 /**
@@ -505,14 +505,8 @@ export const savePostSeo = createServerFn({ method: 'POST' })
     const row = await loadPost(db, data.id);
     if (row.deletedAt) throw new Error('Restore this post from the trash first.');
     assertVersion(row, data.expectedUpdatedAt);
-    const seo = {
-      seoTitle: data.seoTitle || null,
-      seoDescription: data.seoDescription || null,
-      noindex: data.noindex,
-      ogMediaId: data.ogMediaId,
-      focusKeyword: data.focusKeyword || null,
-      relatedTerms: data.relatedTerms,
-    };
+    const input = Object.fromEntries(POST_SEO_KEYS.map((key) => [key, data[key]])) as PostSeoInput;
+    const seo = seoColumns(input);
     // The columns change, so their score does too.
     const contentScore = scorePost(
       scoreInputFromColumns({ ...row, ...seo }),
@@ -525,17 +519,7 @@ export const savePostSeo = createServerFn({ method: 'POST' })
         .set({
           ...seo,
           contentScore,
-          draft: row.draft
-            ? {
-                ...row.draft,
-                seoTitle: data.seoTitle,
-                seoDescription: data.seoDescription,
-                noindex: data.noindex,
-                ogMediaId: data.ogMediaId,
-                focusKeyword: data.focusKeyword,
-                relatedTerms: data.relatedTerms,
-              }
-            : null,
+          draft: row.draft ? { ...row.draft, ...input } : null,
           updatedAt: now,
           updatedBy: context.user.id,
         })

@@ -103,7 +103,9 @@ describe('checkRedirect', () => {
   it('explains what is wrong', () => {
     expect(checkRedirect('a', '/b', 301)).toBe('The old path must start with a slash.');
     expect(checkRedirect('/a*/b', '/b', 301)).toBe('A * can only end the old path.');
-    expect(checkRedirect('/a', '/b', 999)).toBe('The type must be 301, 302 or 410.');
+    expect(checkRedirect('/a', '/b', 999)).toBe('The type must be 301, 302, 307, 308 or 410.');
+    expect(checkRedirect('/a', '/b', 307)).toBeNull();
+    expect(checkRedirect('/a', '/b', 308)).toBeNull();
     expect(checkRedirect('/a', '', 301)).toBe('The destination is empty.');
     expect(checkRedirect('/a', '/b/*', 301)).toBe(
       'A * in the destination needs a * at the end of the old path.'

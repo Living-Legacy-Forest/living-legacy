@@ -86,6 +86,13 @@ export const writeFields = {
   seoTitle: postInputSchema.shape.seoTitle,
   seoDescription: postInputSchema.shape.seoDescription,
   noindex: postInputSchema.shape.noindex,
+  // Without their defaults, so a field left out keeps its value instead of resetting.
+  canonicalUrl: postInputSchema.shape.canonicalUrl.unwrap(),
+  socialTitle: postInputSchema.shape.socialTitle.unwrap(),
+  socialDescription: postInputSchema.shape.socialDescription.unwrap(),
+  nofollow: postInputSchema.shape.nofollow.unwrap(),
+  nosnippet: postInputSchema.shape.nosnippet.unwrap(),
+  noimageindex: postInputSchema.shape.noimageindex.unwrap(),
 };
 
 const oneBody = (v: { markdown?: string; body?: unknown }) =>

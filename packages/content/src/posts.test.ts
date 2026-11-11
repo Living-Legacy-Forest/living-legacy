@@ -2,7 +2,9 @@ import { describe, expect, it } from 'vitest';
 import {
   type PostInput,
   emptyPostInput,
+  POST_SEO_KEYS,
   isAllowedRichText,
+  pickPostSeo,
   postInputSchema,
   publishErrors,
   slugify,
@@ -217,5 +219,47 @@ describe('postInputSchema focus keyword and related terms', () => {
     expect(ok({ relatedTerms: Array.from({ length: 11 }, (_, i) => `term ${i}`) })).toBe(false);
     expect(ok({ relatedTerms: ['x'.repeat(61)] })).toBe(false);
     expect(ok({ relatedTerms: ['   '] })).toBe(false);
+  });
+});
+
+describe('postInputSchema search and sharing fields', () => {
+  it('fills them for input saved before they existed', () => {
+    const older: Partial<PostInput> = { ...emptyPostInput };
+    for (const key of [
+      'canonicalUrl',
+      'socialTitle',
+      'socialDescription',
+      'nofollow',
+      'nosnippet',
+      'noimageindex',
+    ] as const) {
+      delete older[key];
+    }
+    const parsed = postInputSchema.parse(older);
+    expect(parsed).toMatchObject({
+      canonicalUrl: '',
+      socialTitle: '',
+      socialDescription: '',
+      nofollow: false,
+      nosnippet: false,
+      noimageindex: false,
+    });
+  });
+
+  it('takes a full address as the canonical URL, or nothing', () => {
+    const ok = (canonicalUrl: string) =>
+      postInputSchema.safeParse({ ...emptyPostInput, canonicalUrl }).success;
+    expect(ok('')).toBe(true);
+    expect(ok('https://example.com.au/stories/planting-day/')).toBe(true);
+    expect(ok(' https://example.com/a ')).toBe(true);
+    expect(ok('/blog/planting-day/')).toBe(false);
+    expect(ok('example.com/a')).toBe(false);
+    expect(ok('https://')).toBe(false);
+  });
+
+  it('picks exactly the search and sharing fields', () => {
+    const picked = pickPostSeo({ ...emptyPostInput, title: 'Kept out', socialTitle: 'Card' });
+    expect(Object.keys(picked).sort()).toEqual([...POST_SEO_KEYS].sort());
+    expect(picked.socialTitle).toBe('Card');
   });
 });

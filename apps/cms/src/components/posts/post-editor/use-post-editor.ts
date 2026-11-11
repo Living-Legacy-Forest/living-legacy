@@ -1,4 +1,4 @@
-import { type PostInput, emptyPostInput, publishErrors, slugify } from '@ll/content';
+import { type PostInput, emptyPostInput, pickPostSeo, publishErrors, slugify } from '@ll/content';
 import { useBlocker, useNavigate, useRouter } from '@tanstack/react-router';
 import { useEffect, useRef, useState } from 'react';
 import { type Notice, notify } from '@/lib/notify';
@@ -365,28 +365,11 @@ export function usePostEditor({
     if (!meta.id) return;
     setBusy('save');
     try {
-      const { seoTitle, seoDescription, noindex, ogMediaId, focusKeyword, relatedTerms } = values;
+      const seo = pickPostSeo(values);
       const result = await savePostSeo({
-        data: {
-          id: meta.id,
-          seoTitle,
-          seoDescription,
-          noindex,
-          ogMediaId,
-          focusKeyword,
-          relatedTerms,
-          expectedUpdatedAt: meta.updatedAt,
-        },
+        data: { id: meta.id, ...seo, expectedUpdatedAt: meta.updatedAt },
       });
-      setSaved((s) => ({
-        ...s,
-        seoTitle,
-        seoDescription,
-        noindex,
-        ogMediaId,
-        focusKeyword,
-        relatedTerms,
-      }));
+      setSaved((s) => ({ ...s, ...seo }));
       setMeta((m) => ({ ...m, updatedAt: result.updatedAt }));
       setLastSavedAt(result.updatedAt);
       notify.success({

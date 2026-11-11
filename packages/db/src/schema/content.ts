@@ -65,6 +65,15 @@ export const posts = sqliteTable(
     seoDescription: text('seo_description'),
     ogMediaId: text('og_media_id').references(() => media.id, { onDelete: 'set null' }),
     noindex: integer('noindex', { mode: 'boolean' }).notNull().default(false),
+    /** Where search engines should treat the post as living, if not its own URL. */
+    canonicalUrl: text('canonical_url'),
+    /** The share card's own wording; empty uses the search title and description. */
+    socialTitle: text('social_title'),
+    socialDescription: text('social_description'),
+    // Finer robots directives, for when the post is indexed.
+    nofollow: integer('nofollow', { mode: 'boolean' }).notNull().default(false),
+    nosnippet: integer('nosnippet', { mode: 'boolean' }).notNull().default(false),
+    noimageindex: integer('noimageindex', { mode: 'boolean' }).notNull().default(false),
     focusKeyword: text('focus_keyword'),
     /** The content score of the post's columns (its live version once published). Advice only. */
     contentScore: integer('content_score'),

@@ -47,6 +47,15 @@ export interface BlogPost {
   seoTitle?: string;
   seoDescription?: string;
   noindex?: boolean;
+  /** Another page search engines should credit instead; such posts leave the sitemap. */
+  canonicalUrl?: string;
+  /** The share card's wording, when it differs from the search listing. */
+  socialTitle?: string;
+  socialDescription?: string;
+  /** Finer robots directives for an indexed post. */
+  nofollow?: boolean;
+  nosnippet?: boolean;
+  noimageindex?: boolean;
   image?: BlogImage;
   /** The share image, when it differs from the featured image. */
   ogImageUrl?: string;

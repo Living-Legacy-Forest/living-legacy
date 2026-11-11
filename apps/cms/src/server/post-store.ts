@@ -1,4 +1,4 @@
-import { type PostInput, blogPath, publishErrors, slugify } from '@ll/content';
+import { type PostInput, type PostSeoInput, blogPath, publishErrors, slugify } from '@ll/content';
 import type { Db } from '@ll/db';
 import {
   locations,
@@ -70,8 +70,32 @@ export async function liveInput(db: Db, row: PostRow): Promise<PostInput> {
     seoDescription: row.seoDescription ?? '',
     ogMediaId: row.ogMediaId,
     noindex: row.noindex,
+    canonicalUrl: row.canonicalUrl ?? '',
+    socialTitle: row.socialTitle ?? '',
+    socialDescription: row.socialDescription ?? '',
+    nofollow: row.nofollow,
+    nosnippet: row.nosnippet,
+    noimageindex: row.noimageindex,
     focusKeyword: row.focusKeyword ?? '',
     relatedTerms: row.relatedTerms ?? [],
+  };
+}
+
+/** The search and sharing fields as columns: empty text is stored as null. */
+export function seoColumns(input: PostSeoInput) {
+  return {
+    seoTitle: input.seoTitle || null,
+    seoDescription: input.seoDescription || null,
+    ogMediaId: input.ogMediaId,
+    noindex: input.noindex,
+    canonicalUrl: input.canonicalUrl || null,
+    socialTitle: input.socialTitle || null,
+    socialDescription: input.socialDescription || null,
+    nofollow: input.nofollow,
+    nosnippet: input.nosnippet,
+    noimageindex: input.noimageindex,
+    focusKeyword: input.focusKeyword || null,
+    relatedTerms: input.relatedTerms,
   };
 }
 
@@ -152,12 +176,7 @@ export async function columnWrites(db: Db, id: string, input: PostInput) {
     authorId: input.authorId,
     locationId: await validLocationId(db, input.locationId),
     featuredMediaId: input.featuredMediaId,
-    seoTitle: input.seoTitle || null,
-    seoDescription: input.seoDescription || null,
-    ogMediaId: input.ogMediaId,
-    noindex: input.noindex,
-    focusKeyword: input.focusKeyword || null,
-    relatedTerms: input.relatedTerms,
+    ...seoColumns(input),
     contentScore,
   };
   const termStatements: Statement[] = [

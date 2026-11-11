@@ -21,7 +21,7 @@ import { cn } from '@/lib/utils';
 import { ContentScorePanel } from './content-score/content-score-panel';
 import { useContentScore } from './content-score/use-content-score';
 import { MultiPicker, SinglePicker, UrlPicker, tagOptions } from './property-pickers';
-import { SeoFields } from './seo-fields';
+import { SeoFields, SocialFields } from './seo-fields';
 import type { PostEditorState } from './use-post-editor';
 
 /** The sidebar beside the post: content score, properties, featured image, search listing, revisions. */
@@ -146,6 +146,12 @@ export function PropertiesPanel({
       <Section id="post-section-seo" title="Search listing" defaultOpen={focus === 'seo'}>
         <fieldset disabled={editor.access === 'readonly'} className="min-w-0">
           <SeoFields values={values} onChange={update} />
+        </fieldset>
+      </Section>
+
+      <Section id="post-section-social" title="Social sharing" defaultOpen={focus === 'seo'}>
+        <fieldset disabled={editor.access === 'readonly'} className="min-w-0">
+          <SocialFields values={values} onChange={update} />
         </fieldset>
       </Section>
 

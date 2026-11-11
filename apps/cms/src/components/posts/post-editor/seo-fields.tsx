@@ -26,6 +26,7 @@ export function SeoFields({
 }) {
   const title = values.seoTitle || values.title || 'Post title';
   const description = values.seoDescription || values.excerpt;
+  const ownUrl = `https://${SITE_HOST}/blog/${values.slug || '…'}/`;
 
   return (
     <div className="space-y-4">
@@ -35,7 +36,9 @@ export function SeoFields({
         </p>
         <p className="line-clamp-2 font-medium">{title}</p>
         <p className="text-muted-foreground line-clamp-2 text-xs">
-          {description || 'Add a summary or description to control this text.'}
+          {values.nosnippet
+            ? 'No description: search engines are asked not to show one.'
+            : description || 'Add a summary or description to control this text.'}
         </p>
       </div>
       <CountedField
@@ -79,25 +82,149 @@ export function SeoFields({
           onChange={(relatedTerms) => onChange({ relatedTerms })}
         />
       </div>
+
+      <div className="space-y-3 border-t pt-4">
+        <p className="text-xs font-medium">Advanced</p>
+        <div className="space-y-1.5">
+          <Label htmlFor="seo-canonical" className="text-muted-foreground text-xs font-normal">
+            Canonical URL
+          </Label>
+          <Input
+            id="seo-canonical"
+            type="url"
+            inputMode="url"
+            value={values.canonicalUrl}
+            placeholder={ownUrl}
+            onChange={(e) => onChange({ canonicalUrl: e.target.value })}
+            className="text-ui md:text-ui h-8"
+          />
+          <p className="text-muted-foreground text-xs">
+            Only if this post first appeared elsewhere. Search engines then credit that page, and
+            the post leaves the sitemap.
+          </p>
+        </div>
+        <RobotsSwitch
+          id="seo-noindex"
+          label="Hide from search engines"
+          checked={values.noindex}
+          onChange={(noindex) => onChange({ noindex })}
+        />
+        {/* Hidden posts already ask search engines not to follow their links, and the rest only matter once a post is listed. */}
+        <RobotsSwitch
+          id="seo-nofollow"
+          label="Don’t follow links in this post"
+          checked={values.noindex || values.nofollow}
+          disabled={values.noindex}
+          onChange={(nofollow) => onChange({ nofollow })}
+        />
+        <RobotsSwitch
+          id="seo-nosnippet"
+          label="Don’t show a text snippet"
+          checked={values.nosnippet}
+          disabled={values.noindex}
+          onChange={(nosnippet) => onChange({ nosnippet })}
+        />
+        <RobotsSwitch
+          id="seo-noimageindex"
+          label="Keep images out of image search"
+          checked={values.noimageindex}
+          disabled={values.noindex}
+          onChange={(noimageindex) => onChange({ noimageindex })}
+        />
+      </div>
+    </div>
+  );
+}
+
+function RobotsSwitch({
+  id,
+  label,
+  checked,
+  disabled = false,
+  onChange,
+}: {
+  id: string;
+  label: string;
+  checked: boolean;
+  disabled?: boolean;
+  onChange: (checked: boolean) => void;
+}) {
+  return (
+    <div className="flex items-center justify-between gap-3">
+      <Label htmlFor={id} className={cn('text-ui font-normal', disabled && 'opacity-50')}>
+        {label}
+      </Label>
+      <Switch
+        id={id}
+        aria-label={label}
+        checked={checked}
+        disabled={disabled}
+        onCheckedChange={onChange}
+      />
+    </div>
+  );
+}
+
+/** How the post looks when shared: a preview of the card, then its own wording and image. */
+export function SocialFields({
+  values,
+  onChange,
+}: {
+  values: PostInput;
+  onChange: (patch: Partial<PostInput>) => void;
+}) {
+  const searchTitle = values.seoTitle || values.title;
+  const searchDescription = values.seoDescription || values.excerpt;
+  const title = values.socialTitle || searchTitle || 'Post title';
+  const description = values.socialDescription || searchDescription;
+  const imageId = values.ogMediaId ?? values.featuredMediaId;
+
+  return (
+    <div className="space-y-4">
+      <div className="overflow-hidden rounded-md border">
+        <div className="bg-muted aspect-[1.91] w-full">
+          {imageId && (
+            <img
+              src={`/api/media/${imageId}?w=640`}
+              alt=""
+              className="size-full object-cover"
+              loading="lazy"
+            />
+          )}
+        </div>
+        <div className="space-y-0.5 border-t p-3">
+          <p className="text-muted-foreground truncate text-xs">{SITE_HOST}</p>
+          <p className="line-clamp-2 font-medium">{title}</p>
+          {description && (
+            <p className="text-muted-foreground line-clamp-2 text-xs">{description}</p>
+          )}
+        </div>
+      </div>
+      <CountedField
+        id="social-title"
+        label="Title"
+        value={values.socialTitle}
+        limit={SEO_TITLE_LIMIT}
+        placeholder={searchTitle}
+        onChange={(socialTitle) => onChange({ socialTitle })}
+      />
+      <CountedField
+        id="social-description"
+        label="Description"
+        value={values.socialDescription}
+        limit={SEO_DESCRIPTION_LIMIT}
+        placeholder={searchDescription || 'Uses the search description if left empty.'}
+        multiline
+        onChange={(socialDescription) => onChange({ socialDescription })}
+      />
       <ImageField
         id="seo-share-image"
         aspect={1.91}
         label="Share image"
-        description="Shown when the post is shared on social media. Uses the featured image if left empty."
+        description="Uses the featured image if left empty."
         mediaId={values.ogMediaId}
         onChange={(ogMediaId) => onChange({ ogMediaId })}
       />
-      <div className="flex items-center justify-between gap-3">
-        <Label htmlFor="seo-noindex" className="text-ui font-normal">
-          Hide from search engines
-        </Label>
-        <Switch
-          id="seo-noindex"
-          aria-label="Hide from search engines"
-          checked={values.noindex}
-          onCheckedChange={(noindex) => onChange({ noindex })}
-        />
-      </div>
     </div>
   );
 }

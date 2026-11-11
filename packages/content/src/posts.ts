@@ -148,6 +148,21 @@ export const postInputSchema = z.object({
   seoDescription: z.string().trim().max(320),
   ogMediaId: z.string().nullable(),
   noindex: z.boolean(),
+  // The defaults keep drafts and revisions saved before these existed readable.
+  /** A full URL, or empty for the post's own. */
+  canonicalUrl: z
+    .string()
+    .trim()
+    .max(500)
+    .refine((url) => url === '' || /^https?:\/\/[^\s/]+\.[^\s]+$/.test(url), {
+      message: 'The canonical URL must be a full address starting with https://.',
+    })
+    .default(''),
+  socialTitle: z.string().trim().max(120).default(''),
+  socialDescription: z.string().trim().max(320).default(''),
+  nofollow: z.boolean().default(false),
+  nosnippet: z.boolean().default(false),
+  noimageindex: z.boolean().default(false),
   // For the CMS content score only; the website never renders them. The
   // defaults keep drafts and revisions saved before these existed readable.
   focusKeyword: z.string().trim().max(FOCUS_KEYWORD_LIMIT).default(''),
@@ -174,9 +189,40 @@ export const emptyPostInput: PostInput = {
   seoDescription: '',
   ogMediaId: null,
   noindex: false,
+  canonicalUrl: '',
+  socialTitle: '',
+  socialDescription: '',
+  nofollow: false,
+  nosnippet: false,
+  noimageindex: false,
   focusKeyword: '',
   relatedTerms: [],
 };
+
+/**
+ * The search and sharing fields, which people with SEO access may change on a
+ * post they cannot otherwise edit (savePostSeo).
+ */
+export const POST_SEO_KEYS = [
+  'seoTitle',
+  'seoDescription',
+  'ogMediaId',
+  'noindex',
+  'canonicalUrl',
+  'socialTitle',
+  'socialDescription',
+  'nofollow',
+  'nosnippet',
+  'noimageindex',
+  'focusKeyword',
+  'relatedTerms',
+] as const satisfies readonly (keyof PostInput)[];
+
+export type PostSeoInput = Pick<PostInput, (typeof POST_SEO_KEYS)[number]>;
+
+export function pickPostSeo(input: PostInput): PostSeoInput {
+  return Object.fromEntries(POST_SEO_KEYS.map((key) => [key, input[key]])) as PostSeoInput;
+}
 
 /** Extra rules that only apply when a post goes live. */
 export function publishErrors(input: Pick<PostInput, 'title' | 'slug'>): string[] {

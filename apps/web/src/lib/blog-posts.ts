@@ -199,10 +199,13 @@ export async function getBlogSitemapEntries(): Promise<SitemapEntry[]> {
     .at(-1);
   return [
     { path: '/blog/', lastmod: newest },
-    ...posts.map((post) => ({
-      path: `/blog/${post.slug}/`,
-      lastmod: post.updatedAt ?? post.publishedAt,
-    })),
+    // A post that credits another page is not this site's to list.
+    ...posts
+      .filter((post) => !post.canonicalUrl)
+      .map((post) => ({
+        path: `/blog/${post.slug}/`,
+        lastmod: post.updatedAt ?? post.publishedAt,
+      })),
     ...unique(posts.flatMap((p) => p.categories.map((c) => `/blog/category/${c.slug}/`))),
     ...unique(posts.flatMap((p) => p.tags.map((t) => `/blog/tag/${t.slug}/`))),
     ...unique(posts.flatMap((p) => (p.author ? [`/blog/author/${p.author.slug}/`] : []))),

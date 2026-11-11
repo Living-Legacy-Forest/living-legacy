@@ -26,6 +26,24 @@ export type WhatsNewEntry = {
 
 export const whatsNew: WhatsNewEntry[] = [
   {
+    id: '2026-11-11-7',
+    title: 'More control over search and sharing',
+    items: [
+      {
+        title: 'Social sharing for posts',
+        body: 'Posts have a Social sharing section with a preview of the card, and a title and description of its own for when the post is shared. Left empty, they use the search listing.',
+      },
+      {
+        title: 'Advanced search settings',
+        body: 'Under Search listing, Advanced sets a canonical URL for a post that first appeared elsewhere, and can ask search engines not to follow its links, show a text snippet or index its images.',
+      },
+      {
+        title: 'Two more redirect types',
+        body: 'Redirects can now be 307 or 308: like 302 and 301, but a form sent to the old address is sent on to the new one too.',
+      },
+    ],
+  },
+  {
     id: '2026-11-11-6',
     title: 'Choose the CMS colour and font',
     items: [

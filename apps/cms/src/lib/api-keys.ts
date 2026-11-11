@@ -45,6 +45,10 @@ export type ApiActor = {
   role: Role;
 };
 
+/** Whether a key may create and edit drafts: a write key, held by someone who can still write posts. */
+export const canWrite = (actor: Pick<ApiActor, 'scope' | 'role'>) =>
+  actor.scope === 'write' && can(actor.role, 'posts:write');
+
 /** A JSON error in the API's one shape: `{ "error": "…" }`. */
 export function apiError(status: number, message: string): Response {
   return Response.json({ error: message }, { status });
@@ -82,7 +86,7 @@ export async function authenticateApiRequest(
   if (!row) return apiError(401, 'That API key is not valid, or has been revoked.');
 
   const role = row.role as Role;
-  if (needs === 'write' && (row.scope !== 'write' || !can(role, 'posts:write'))) {
+  if (needs === 'write' && !canWrite({ scope: row.scope, role })) {
     return apiError(403, 'This API key can only read. Create a key with write access.');
   }
 

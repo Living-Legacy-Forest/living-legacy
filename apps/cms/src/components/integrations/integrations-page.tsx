@@ -1,5 +1,12 @@
 import { useEffect, useState } from 'react';
-import { CheckIcon, CopyIcon, KeyIcon, PlusIcon, Trash2Icon } from '@/components/icons';
+import {
+  CheckIcon,
+  ChevronRightIcon,
+  CopyIcon,
+  KeyIcon,
+  PlusIcon,
+  Trash2Icon,
+} from '@/components/icons';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -20,6 +27,16 @@ import {
   CodeBlockCopyButton,
 } from '@/components/ui/code-block';
 import { FormCell, FormSection, groupBoxClass, groupHeadingClass } from '@/components/form-cells';
+import { SegmentedControl } from '@/components/segmented-control';
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
+import {
+  Empty,
+  EmptyContent,
+  EmptyDescription,
+  EmptyHeader,
+  EmptyMedia,
+  EmptyTitle,
+} from '@/components/ui/empty';
 import { DialogActions, ListDialog } from '@/components/list/list-page';
 import { PageActions } from '@/components/shell/page-actions';
 import { useSheetSaved } from '@/components/ui/drawer';
@@ -45,75 +62,110 @@ import { type ApiKeyRow, createApiKey, revokeApiKey } from '@/server/api-keys';
 type Scope = ApiKeyRow['scope'];
 
 const scopeItems: { value: Scope; label: string; description: string }[] = [
-  { value: 'read', label: 'Read only', description: 'List and read posts, categories and tags.' },
+  {
+    value: 'read',
+    label: 'Read only',
+    description: 'Read posts, categories and tags, and check wording against the brand guide.',
+  },
   {
     value: 'write',
     label: 'Read and write',
-    description: 'Also create and edit drafts. Publishing stays in the CMS.',
+    description: 'Also create drafts and edit posts. Publishing stays in the CMS.',
   },
 ];
 
 const tableCellPadding = '[&_td]:px-4 [&_th]:px-4';
 
-export function ApiKeysPage({ keys }: { keys: ApiKeyRow[] }) {
+export function IntegrationsPage({ keys, origin }: { keys: ApiKeyRow[]; origin: string }) {
   const [creating, setCreating] = useState(false);
   const active = keys.filter((k) => !k.revokedAt);
   const revoked = keys.filter((k) => k.revokedAt);
+  const create = () => setCreating(true);
 
   return (
     <div className="mx-auto w-full max-w-3xl space-y-8">
       <div className="flex items-start justify-between gap-4">
         <div className="space-y-1">
           <h1 data-slot="page-title" className="text-xl font-semibold tracking-tight">
-            API keys
+            Integrations
           </h1>
           <p className="text-muted-foreground text-sm">
-            Let other tools read posts and write drafts through the CMS API. A key acts as the admin
-            who created it.
+            Connect AI tools such as Claude, and your own scripts, to read posts and write drafts.
+            Each connection uses an API key, which acts as the admin who created it.
           </p>
         </div>
-        <Button size="sm" className="max-md:hidden" onClick={() => setCreating(true)}>
+        <Button size="sm" className="max-md:hidden" onClick={create}>
           <PlusIcon aria-hidden data-icon="inline-start" />
           New API key
         </Button>
-        <PageActions add={{ label: 'New API key', onClick: () => setCreating(true) }} />
-        <CreateKeyDialog open={creating} onOpenChange={setCreating} />
+        <PageActions add={{ label: 'New API key', onClick: create }} />
+        <CreateKeyDialog open={creating} onOpenChange={setCreating} origin={origin} />
       </div>
 
       <section className="space-y-2.5 max-md:space-y-1.5">
         <div className={cn('flex items-baseline gap-2', groupHeadingClass)}>
           <h2 className="text-sm font-medium max-md:text-[0.8125rem] max-md:font-normal">
-            Active keys
+            Active API keys
           </h2>
-          <span className="text-muted-foreground text-xs tabular-nums">{active.length}</span>
-        </div>
-        <div className={groupBoxClass}>
-          {active.length ? (
-            <KeysTable keys={active} />
-          ) : (
-            <p className="text-muted-foreground px-4 py-6 text-center text-sm">
-              No keys yet. Create one to connect a tool.
-            </p>
+          {active.length > 0 && (
+            <span className="text-muted-foreground text-xs tabular-nums">{active.length}</span>
           )}
         </div>
+        {active.length ? (
+          <div className={groupBoxClass}>
+            <KeysTable keys={active} />
+          </div>
+        ) : (
+          <Empty className="rounded-lg border max-md:border-0 max-md:bg-(--ios-cell)">
+            <EmptyHeader>
+              <EmptyMedia variant="icon">
+                <KeyIcon aria-hidden />
+              </EmptyMedia>
+              <EmptyTitle>No API keys yet</EmptyTitle>
+              <EmptyDescription>
+                Create a key for each tool you connect, so you can revoke one without the others.
+              </EmptyDescription>
+            </EmptyHeader>
+            <EmptyContent>
+              <Button size="sm" onClick={create}>
+                <PlusIcon aria-hidden data-icon="inline-start" />
+                New API key
+              </Button>
+            </EmptyContent>
+          </Empty>
+        )}
       </section>
 
-      {revoked.length > 0 && (
-        <section className="space-y-2.5 max-md:space-y-1.5">
-          <div className={cn('flex items-baseline gap-2', groupHeadingClass)}>
-            <h2 className="text-sm font-medium max-md:text-[0.8125rem] max-md:font-normal">
-              Revoked
-            </h2>
-            <span className="text-muted-foreground text-xs tabular-nums">{revoked.length}</span>
-          </div>
-          <div className={groupBoxClass}>
-            <KeysTable keys={revoked} />
-          </div>
-        </section>
-      )}
+      {revoked.length > 0 && <RevokedKeys keys={revoked} />}
 
-      <UsageGuide />
+      <ConnectGuide origin={origin} />
     </div>
+  );
+}
+
+function RevokedKeys({ keys }: { keys: ApiKeyRow[] }) {
+  return (
+    <Collapsible>
+      <CollapsibleTrigger
+        className={cn(
+          'group text-muted-foreground hover:text-foreground touch:min-h-11 flex min-h-8 items-center gap-1 text-sm font-medium',
+          groupHeadingClass
+        )}
+      >
+        <ChevronRightIcon
+          aria-hidden
+          className="size-3.5 transition-transform duration-150 group-data-[panel-open]:rotate-90 motion-reduce:transition-none"
+        />
+        Revoked API keys
+        <span className="ml-1 text-xs font-normal tabular-nums">{keys.length}</span>
+      </CollapsibleTrigger>
+      {/* Height animates from Base UI's measured panel height; instant with reduced motion. */}
+      <CollapsibleContent className="h-(--collapsible-panel-height) overflow-hidden transition-[height,opacity] duration-200 ease-[cubic-bezier(0.25,1,0.5,1)] data-ending-style:h-0 data-ending-style:opacity-0 data-starting-style:h-0 data-starting-style:opacity-0 motion-reduce:transition-none">
+        <div className={cn('mt-2.5 max-md:mt-1.5', groupBoxClass)}>
+          <KeysTable keys={keys} />
+        </div>
+      </CollapsibleContent>
+    </Collapsible>
   );
 }
 
@@ -145,7 +197,9 @@ function KeysTable({ keys }: { keys: ApiKeyRow[] }) {
               </div>
             </TableCell>
             <TableCell>
-              <Badge variant={k.scope === 'write' ? 'default' : 'secondary'}>
+              <Badge
+                variant={k.revokedAt ? 'outline' : k.scope === 'write' ? 'default' : 'secondary'}
+              >
                 {k.scope === 'write' ? 'Read and write' : 'Read only'}
               </Badge>
             </TableCell>
@@ -214,9 +268,11 @@ function RevokeKey({ name, onConfirm }: { name: string; onConfirm: () => void })
 function CreateKeyDialog({
   open,
   onOpenChange: setOpen,
+  origin,
 }: {
   open: boolean;
   onOpenChange: (open: boolean) => void;
+  origin: string;
 }) {
   const [name, setName] = useState('');
   const [scope, setScope] = useState<Scope>('read');
@@ -260,7 +316,7 @@ function CreateKeyDialog({
       }
     >
       {created ? (
-        <CreatedKey value={created} onDone={close} />
+        <CreatedKey value={created} origin={origin} onDone={close} />
       ) : (
         <form noValidate onSubmit={submit} className="space-y-5 max-md:space-y-7">
           <FormSection>
@@ -318,9 +374,18 @@ function CreateKeyDialog({
  * The new key, shown once. The key is saved, so closing loses nothing: no
  * "Discard changes?" on phones and no Cancel beside Done.
  */
-function CreatedKey({ value, onDone }: { value: string; onDone: () => void }) {
+function CreatedKey({
+  value,
+  origin,
+  onDone,
+}: {
+  value: string;
+  origin: string;
+  onDone: () => void;
+}) {
   const markSaved = useSheetSaved();
   useEffect(markSaved, [markSaved]);
+  const command = connectSnippet('claude', origin, value);
   return (
     // A form so Done takes the sheet bar's place for Save on phones.
     <form
@@ -331,6 +396,17 @@ function CreatedKey({ value, onDone }: { value: string; onDone: () => void }) {
       className="space-y-5"
     >
       <CopyableKey value={value} />
+      <div className="space-y-2">
+        <p className="text-muted-foreground text-sm">
+          To connect Claude Code, run this in a terminal. The key is already in it.
+        </p>
+        <CodeBlock size="sm">
+          <CodeBlockActions>
+            <CodeBlockCopyButton value={command} />
+          </CodeBlockActions>
+          <CodeBlockContent wrap>{command}</CodeBlockContent>
+        </CodeBlock>
+      </div>
       <DialogActions cancel={false}>
         <Button type="submit">Done</Button>
       </DialogActions>
@@ -370,49 +446,174 @@ function CopyableKey({ value }: { value: string }) {
   );
 }
 
-function UsageGuide() {
-  // Filled in after hydration: the server does not know the address the page is on.
-  const [base, setBase] = useState('');
-  useEffect(() => setBase(window.location.origin), []);
-  const example = `curl -X POST ${base}/api/v1/posts \\
-  -H "Authorization: Bearer llk_…" \\
+type Method = 'claude' | 'mcp' | 'api';
+
+const methods: { value: Method; label: string }[] = [
+  { value: 'claude', label: 'Claude Code' },
+  { value: 'mcp', label: 'Other AI apps' },
+  { value: 'api', label: 'REST API' },
+];
+
+const PLACEHOLDER_KEY = 'llk_…';
+
+function connectSnippet(method: Method, origin: string, key = PLACEHOLDER_KEY) {
+  switch (method) {
+    case 'claude':
+      return `claude mcp add --transport http living-legacy ${origin}/mcp \\
+  --header "Authorization: Bearer ${key}"`;
+    case 'mcp':
+      return JSON.stringify(
+        {
+          mcpServers: {
+            'living-legacy': {
+              type: 'http',
+              url: `${origin}/mcp`,
+              headers: { Authorization: `Bearer ${key}` },
+            },
+          },
+        },
+        null,
+        2
+      );
+    case 'api':
+      return `curl -X POST ${origin}/api/v1/posts \\
+  -H "Authorization: Bearer ${key}" \\
   -H "Content-Type: application/json" \\
   -d '{"title": "My draft", "markdown": "## Hello\\n\\nWritten elsewhere."}'`;
+  }
+}
+
+// What an AI tool connected over MCP can do, in the order it tends to do it.
+const abilities: { text: string; write?: boolean }[] = [
+  { text: 'List and read posts, with their text as Markdown' },
+  { text: 'Read the brand language guide before it writes' },
+  { text: 'Check wording against the guide, and see a post’s content score' },
+  { text: 'Create drafts, and edit posts', write: true },
+];
+
+function ConnectGuide({ origin }: { origin: string }) {
+  const [method, setMethod] = useState<Method>('claude');
+  const snippet = connectSnippet(method, origin);
 
   return (
     <section className="space-y-2.5 max-md:space-y-1.5">
-      <h2 className="text-sm font-medium">Using the API</h2>
-      <div className="space-y-4 rounded-lg border p-4 text-sm">
-        <p className="text-muted-foreground">
-          Send the key in an <code className="font-mono text-xs">Authorization: Bearer</code>{' '}
-          header. Writes only ever create or edit drafts: nothing goes live until someone publishes
-          it here.
-        </p>
-        <ul className="space-y-1.5 font-mono text-xs">
-          <li>GET /api/v1/posts?status=draft&amp;q=words&amp;page=1</li>
-          <li>GET /api/v1/posts/:id</li>
-          <li>POST /api/v1/posts (write)</li>
-          <li>PATCH /api/v1/posts/:id (write)</li>
-          <li>GET /api/v1/terms</li>
-        </ul>
-        <p className="text-muted-foreground">
-          Post fields: <code className="font-mono text-xs">title</code>,{' '}
-          <code className="font-mono text-xs">markdown</code> (or the editor's{' '}
-          <code className="font-mono text-xs">body</code> JSON),{' '}
-          <code className="font-mono text-xs">excerpt</code>,{' '}
-          <code className="font-mono text-xs">slug</code>,{' '}
-          <code className="font-mono text-xs">tags</code>,{' '}
-          <code className="font-mono text-xs">categoryIds</code>,{' '}
-          <code className="font-mono text-xs">seoTitle</code>,{' '}
-          <code className="font-mono text-xs">seoDescription</code>.
-        </p>
+      <h2 className={cn('text-sm font-medium', groupHeadingClass)}>Connect a tool</h2>
+      <div className="space-y-4 rounded-lg border p-4 text-sm max-md:rounded-[10px] max-md:border-0 max-md:bg-(--ios-cell)">
+        <SegmentedControl
+          label="How to connect"
+          value={method}
+          onValueChange={setMethod}
+          options={methods}
+        />
+
+        {method === 'claude' && (
+          <p className="text-muted-foreground">
+            Run this in a terminal, with your key in place of{' '}
+            <code className="font-mono text-xs">{PLACEHOLDER_KEY}</code>. Then ask Claude to draft a
+            post: it finds the CMS’s tools and the brand guide on its own.
+          </p>
+        )}
+        {method === 'mcp' && (
+          <p className="text-muted-foreground">
+            The CMS is an MCP server at <code className="font-mono text-xs">{origin}/mcp</code>.
+            Apps that take a server address and headers, such as Cursor, accept an entry like this.
+            Connectors in the Claude app need a sign-in step the CMS does not offer yet, so use
+            Claude Code there.
+          </p>
+        )}
+        {method === 'api' && (
+          <p className="text-muted-foreground">
+            For your own scripts. Send the key in an{' '}
+            <code className="font-mono text-xs">Authorization: Bearer</code> header.
+          </p>
+        )}
+
         <CodeBlock>
           <CodeBlockActions>
-            <CodeBlockCopyButton value={example} />
+            <CodeBlockCopyButton value={snippet} />
           </CodeBlockActions>
-          <CodeBlockContent wrap>{example}</CodeBlockContent>
+          <CodeBlockContent wrap>{snippet}</CodeBlockContent>
         </CodeBlock>
+
+        {method === 'api' ? <ApiReference /> : <Abilities />}
       </div>
     </section>
+  );
+}
+
+function Abilities() {
+  return (
+    <div className="space-y-2 border-t pt-4">
+      <h3 className="text-sm font-medium">What it can do</h3>
+      <ul className="space-y-1.5">
+        {abilities.map((a) => (
+          <li key={a.text} className="flex items-start gap-2">
+            <CheckIcon aria-hidden className="text-muted-foreground mt-0.5 size-4 shrink-0" />
+            <span>
+              {a.text}
+              {a.write && (
+                <Badge variant="secondary" className="ml-2 align-middle">
+                  Read and write key
+                </Badge>
+              )}
+            </span>
+          </li>
+        ))}
+      </ul>
+      <p className="text-muted-foreground">
+        Nothing it writes goes live. Drafts and edits wait here until someone publishes them, and
+        each change shows in Activity under the key’s name.
+      </p>
+    </div>
+  );
+}
+
+const endpoints: { method: string; path: string; write?: boolean }[] = [
+  { method: 'GET', path: '/api/v1/posts?status=draft&q=words&page=1' },
+  { method: 'GET', path: '/api/v1/posts/:id' },
+  { method: 'POST', path: '/api/v1/posts', write: true },
+  { method: 'PATCH', path: '/api/v1/posts/:id', write: true },
+  { method: 'GET', path: '/api/v1/terms' },
+];
+
+const postFields = [
+  'title',
+  'markdown',
+  'excerpt',
+  'slug',
+  'tags',
+  'categoryIds',
+  'seoTitle',
+  'seoDescription',
+];
+
+function ApiReference() {
+  return (
+    <div className="space-y-3 border-t pt-4">
+      <ul className="space-y-1.5 font-mono text-xs">
+        {endpoints.map((e) => (
+          <li key={e.method + e.path} className="flex items-baseline gap-2">
+            <span className="text-muted-foreground w-12 shrink-0">{e.method}</span>
+            <span className="min-w-0 break-all">{e.path}</span>
+            {e.write && (
+              <Badge variant="secondary" className="ml-auto font-sans">
+                Write
+              </Badge>
+            )}
+          </li>
+        ))}
+      </ul>
+      <p className="text-muted-foreground">
+        Post fields:{' '}
+        {postFields.map((f, i) => (
+          <span key={f}>
+            <code className="font-mono text-xs">{f}</code>
+            {i < postFields.length - 1 ? ', ' : '. '}
+          </span>
+        ))}
+        Send <code className="font-mono text-xs">body</code> with the editor’s JSON instead of
+        markdown if you have it. Writes only create or edit drafts.
+      </p>
+    </div>
   );
 }

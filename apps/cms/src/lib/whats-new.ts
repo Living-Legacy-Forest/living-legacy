@@ -26,6 +26,16 @@ export type WhatsNewEntry = {
 
 export const whatsNew: WhatsNewEntry[] = [
   {
+    id: '2026-11-11-4',
+    title: 'Draft posts with Claude',
+    items: [
+      {
+        title: 'Connect an AI tool to the CMS',
+        body: 'Admins can connect Claude, or another tool that speaks MCP, from Integrations. It can read posts, check wording against the brand guide and write drafts. Nothing it writes goes live until someone publishes it. Integrations explains how to connect.',
+      },
+    ],
+  },
+  {
     id: '2026-11-11-3',
     title: 'Bring back an earlier privacy or terms page',
     items: [

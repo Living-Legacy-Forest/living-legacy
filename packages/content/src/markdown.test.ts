@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
-import { markdownToRichText } from './markdown';
-import { isAllowedRichText } from './posts';
+import { markdownToRichText, richTextToMarkdown } from './markdown';
+import { type RichTextDoc, isAllowedRichText } from './posts';
 
 const blocks = (md: string) => markdownToRichText(md).content ?? [];
 
@@ -91,5 +91,61 @@ describe('markdownToRichText', () => {
     const md =
       '# A\n\nText with **bold**, *it*, `c` and [l](/faqs/).\n\n- one\n1. two\n\n> q\n\n---';
     expect(isAllowedRichText(markdownToRichText(md))).toBe(true);
+  });
+});
+
+describe('richTextToMarkdown', () => {
+  it('round-trips what markdownToRichText reads', () => {
+    const markdown = [
+      '## Planting day',
+      'We met at **the [forest](https://example.com) gate** at *nine*, with `tea`.',
+      '- Gloves\n- Water',
+      '3. First\n4. Second',
+      '> A quiet morning.',
+      '```\nkeep as is\n```',
+      '---',
+    ].join('\n\n');
+    const doc = markdownToRichText(markdown);
+    const back = richTextToMarkdown(doc);
+    expect(back.editorOnly).toEqual([]);
+    expect(markdownToRichText(back.markdown)).toEqual(doc);
+  });
+
+  it('names what Markdown would lose, and keeps its words', () => {
+    const doc = {
+      type: 'doc',
+      content: [
+        { type: 'image', attrs: { src: '/api/media/m1' } },
+        {
+          type: 'paragraph',
+          content: [
+            { type: 'text', text: 'Under', marks: [{ type: 'underline' }] },
+            { type: 'hardBreak' },
+            { type: 'text', text: 'lined' },
+          ],
+        },
+        {
+          type: 'table',
+          content: [
+            {
+              type: 'tableRow',
+              content: [
+                {
+                  type: 'tableCell',
+                  content: [{ type: 'paragraph', content: [{ type: 'text', text: 'Cell' }] }],
+                },
+              ],
+            },
+          ],
+        },
+      ],
+    } as RichTextDoc;
+    const { markdown, editorOnly } = richTextToMarkdown(doc);
+    expect(editorOnly).toEqual(['hardBreak', 'image', 'table', 'underline']);
+    expect(markdown).toBe('Under lined\n\nCell');
+  });
+
+  it('gives an empty body as empty Markdown', () => {
+    expect(richTextToMarkdown(null)).toEqual({ markdown: '', editorOnly: [] });
   });
 });

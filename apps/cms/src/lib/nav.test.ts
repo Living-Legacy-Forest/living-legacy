@@ -14,7 +14,7 @@ describe('isNavItemAllowed', () => {
   it('hides management pages from viewers', () => {
     const viewer = visibleTo('viewer');
     expect(viewer).toContain('Posts');
-    for (const hidden of ['Media', 'Users', 'API keys', 'Redirects', 'Settings', 'Activity']) {
+    for (const hidden of ['Media', 'Users', 'Integrations', 'Redirects', 'Settings', 'Activity']) {
       expect(viewer).not.toContain(hidden);
     }
   });

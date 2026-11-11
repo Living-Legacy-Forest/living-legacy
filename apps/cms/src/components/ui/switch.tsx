@@ -27,7 +27,7 @@ const switchVariants = cva(
         default:
           'bg-foreground/20 data-checked:bg-primary data-[drag=off]:bg-foreground/20 data-[drag=on]:bg-primary dark:bg-foreground/25 dark:data-[drag=off]:bg-foreground/25',
         // iOS: a light track with a hairline edge, a wider thumb, and system green when on.
-        ios: 'bg-foreground/10 inset-ring-[0.5px] inset-ring-foreground/5 [--switch-on:#34c759] [--switch-thumb-w:calc(var(--switch-thumb)*1.5)] data-checked:bg-(--switch-on) data-checked:inset-ring-transparent data-[drag=off]:bg-foreground/10 data-[drag=on]:bg-(--switch-on) dark:bg-foreground/20 dark:[--switch-on:#30d158] dark:data-[drag=off]:bg-foreground/20',
+        ios: 'bg-foreground/10 inset-ring-[0.5px] inset-ring-foreground/3 [--switch-on:#34c759] [--switch-thumb-w:calc(var(--switch-thumb)*1.5)] data-checked:bg-(--switch-on) data-checked:inset-ring-transparent data-[drag=off]:bg-foreground/10 data-[drag=on]:bg-(--switch-on) dark:bg-foreground/20 dark:[--switch-on:#30d158] dark:data-[drag=off]:bg-foreground/20',
       },
       size: {
         sm: '[--switch-h:1rem] [--switch-thumb:0.75rem] [--switch-w:1.75rem]',
@@ -198,7 +198,7 @@ function Switch({
     >
       <SwitchPrimitive.Thumb
         data-slot="switch-thumb"
-        className="bg-background ring-foreground/5 dark:bg-foreground dark:group-data-[variant=default]/switch:group-data-checked/switch:bg-primary-foreground pointer-events-none relative z-1 h-(--switch-thumb) w-[calc(var(--switch-thumb-w)+var(--switch-stretch))] translate-x-[calc(var(--switch-x)*var(--switch-dir))] rounded-full shadow-[0_3px_8px_rgb(0_0_0/0.15),0_3px_1px_rgb(0_0_0/0.06)] ring-[0.5px] transition-[translate,width] duration-300 ease-[cubic-bezier(0.34,1.36,0.64,1)] group-data-dragging/switch:transition-none motion-reduce:transition-none forced-colors:border"
+        className="bg-background ring-foreground/3 dark:bg-foreground dark:group-data-[variant=default]/switch:group-data-checked/switch:bg-primary-foreground pointer-events-none relative z-1 h-(--switch-thumb) w-[calc(var(--switch-thumb-w)+var(--switch-stretch))] translate-x-[calc(var(--switch-x)*var(--switch-dir))] rounded-full shadow-[0_3px_8px_rgb(0_0_0/0.15),0_3px_1px_rgb(0_0_0/0.06)] ring-[0.5px] transition-[translate,width] duration-300 ease-[cubic-bezier(0.34,1.36,0.64,1)] group-data-dragging/switch:transition-none motion-reduce:transition-none forced-colors:border"
       />
     </SwitchPrimitive.Root>
   );

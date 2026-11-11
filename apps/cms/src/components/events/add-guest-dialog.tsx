@@ -7,6 +7,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Spinner } from '@/components/ui/spinner';
 import { Textarea } from '@/components/ui/textarea';
+import { notify } from '@/lib/notify';
 import { useAction } from '@/lib/use-action';
 import { cn } from '@/lib/utils';
 import type { EventRow } from '@/server/events';
@@ -72,17 +73,14 @@ export function AddGuestDialog({
   onAdded: () => void;
 }) {
   const [values, setValues] = useState(empty);
-  // The field to fix, shown under it rather than in a toast.
+  // The field to fix: named in a toast, as other forms do, and outlined until it is edited.
   const [problem, setProblem] = useState<{ field: Field; message: string } | null>(null);
   const patch = (next: Partial<typeof empty>) => {
     setValues((v) => ({ ...v, ...next }));
     // Typing in the field that was wrong clears its message.
     if (problem && problem.field in next) setProblem(null);
   };
-  const invalid = (field: Field) =>
-    problem?.field === field
-      ? { 'aria-invalid': true, 'aria-describedby': `${FIELDS[field].id}-error` }
-      : {};
+  const invalid = (field: Field) => (problem?.field === field ? { 'aria-invalid': true } : {});
   const { run, pending } = useAction();
 
   async function submit(e: React.FormEvent) {
@@ -90,6 +88,7 @@ export function AddGuestDialog({
     const found = firstProblem(event.id, values);
     setProblem(found);
     if (found) {
+      notify.error('Check the guest', found.message);
       document.getElementById(FIELDS[found.field].id)?.focus();
       return;
     }
@@ -123,11 +122,7 @@ export function AddGuestDialog({
       <form noValidate onSubmit={submit} className={cn('space-y-4 max-md:space-y-7', TOUCH_FIELDS)}>
         <FormSection>
           <div className="grid grid-cols-2 gap-4 max-md:contents">
-            <FormCell
-              label="First name"
-              htmlFor={FIELDS.firstName.id}
-              error={problem?.field === 'firstName' ? problem.message : undefined}
-            >
+            <FormCell label="First name" htmlFor={FIELDS.firstName.id}>
               <Input
                 id={FIELDS.firstName.id}
                 {...invalid('firstName')}
@@ -143,11 +138,7 @@ export function AddGuestDialog({
                 onChange={(e) => patch({ firstName: onlyName(e.target.value) })}
               />
             </FormCell>
-            <FormCell
-              label="Last name (optional)"
-              htmlFor={FIELDS.lastName.id}
-              error={problem?.field === 'lastName' ? problem.message : undefined}
-            >
+            <FormCell label="Last name (optional)" htmlFor={FIELDS.lastName.id}>
               <Input
                 id={FIELDS.lastName.id}
                 {...invalid('lastName')}
@@ -163,11 +154,7 @@ export function AddGuestDialog({
             </FormCell>
           </div>
           <div className="grid grid-cols-[minmax(0,1fr)_5rem] gap-4 max-md:contents sm:grid-cols-[1fr_7rem]">
-            <FormCell
-              label="Email (optional)"
-              htmlFor={FIELDS.email.id}
-              error={problem?.field === 'email' ? problem.message : undefined}
-            >
+            <FormCell label="Email (optional)" htmlFor={FIELDS.email.id}>
               <Input
                 id={FIELDS.email.id}
                 {...invalid('email')}
@@ -183,11 +170,7 @@ export function AddGuestDialog({
                 onChange={(e) => patch({ email: e.target.value.replace(/\s/g, '') })}
               />
             </FormCell>
-            <FormCell
-              label="People"
-              htmlFor={FIELDS.partySize.id}
-              error={problem?.field === 'partySize' ? problem.message : undefined}
-            >
+            <FormCell label="People" htmlFor={FIELDS.partySize.id}>
               <Input
                 id={FIELDS.partySize.id}
                 {...invalid('partySize')}
@@ -203,7 +186,6 @@ export function AddGuestDialog({
           <FormCell
             label="Phone (optional)"
             htmlFor={FIELDS.phone.id}
-            error={problem?.field === 'phone' ? problem.message : undefined}
             hint="Australian mobile or landline."
           >
             <Input
@@ -224,11 +206,7 @@ export function AddGuestDialog({
           </FormCell>
         </FormSection>
         <FormSection>
-          <FormCell
-            label="Note (optional)"
-            htmlFor={FIELDS.note.id}
-            error={problem?.field === 'note' ? problem.message : undefined}
-          >
+          <FormCell label="Note (optional)" htmlFor={FIELDS.note.id}>
             <Textarea
               id={FIELDS.note.id}
               {...invalid('note')}

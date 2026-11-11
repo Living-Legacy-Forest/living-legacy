@@ -26,11 +26,12 @@ export function AppHeader({ user }: { user: SessionUser }) {
 
   // Desktop: the page scrolls behind the inset frame, so the header pins where
   // the frame starts and paints the gap and corners above it in the sidebar colour.
+  // Its background reaches under the bottom border, which is see-through, and draws the line.
   return (
     <header
       data-slot="app-header"
       data-scrolled={scrolled || undefined}
-      className="bg-background/80 max-md:data-scrolled:border-border/70 md:before:bg-sidebar md:after:bg-background sticky top-0 z-20 flex h-14 shrink-0 items-center gap-3 rounded-t-[inherit] border-b px-4 backdrop-blur max-md:h-[calc(3.5rem+env(safe-area-inset-top))] max-md:border-transparent max-md:pt-[env(safe-area-inset-top)] max-md:pr-[max(0.5rem,env(safe-area-inset-right))] max-md:pl-[max(0.5rem,env(safe-area-inset-left))] max-md:backdrop-blur-xl max-md:backdrop-saturate-150 max-md:transition-colors md:top-2 md:bg-transparent md:px-6 md:backdrop-blur-none md:before:absolute md:before:inset-x-0 md:before:-top-2 md:before:-z-20 md:before:h-5 md:after:absolute md:after:inset-0 md:after:-z-10 md:after:rounded-t-[inherit]"
+      className="bg-background/80 max-md:data-scrolled:border-border/70 md:before:bg-sidebar md:after:bg-background md:after:border-border sticky top-0 z-20 flex h-14 shrink-0 items-center gap-3 rounded-t-[inherit] border-b px-4 backdrop-blur max-md:h-[calc(3.5rem+env(safe-area-inset-top))] max-md:border-transparent max-md:pt-[env(safe-area-inset-top)] max-md:pr-[max(0.5rem,env(safe-area-inset-right))] max-md:pl-[max(0.5rem,env(safe-area-inset-left))] max-md:backdrop-blur-xl max-md:backdrop-saturate-150 max-md:transition-colors md:top-2 md:bg-transparent md:px-6 md:backdrop-blur-none md:before:absolute md:before:inset-x-0 md:before:-top-2 md:before:-z-20 md:before:h-5 md:after:absolute md:after:inset-x-0 md:after:top-0 md:after:-bottom-px md:after:-z-10 md:after:rounded-t-[inherit] md:after:border-b"
     >
       <div className="flex min-w-0 items-center gap-3 max-md:hidden">
         <CustomSidebarTrigger />

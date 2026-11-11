@@ -16,6 +16,14 @@
    where anything revealed on hover needs another way in. */
 @custom-variant touch (@media (hover: none));
 
+/* Scrolls without showing a scrollbar: panes, lists and dialogs, where the content shows it moves. */
+@utility no-scrollbar {
+  scrollbar-width: none;
+  &::-webkit-scrollbar {
+    display: none;
+  }
+}
+
 /* One typeface for the whole CMS. Mono is pointed at Inter too, so code,
    paths and keys (font-mono, var(--font-mono)) never fall back to the
    system's monospace font; tabular figures keep numbers aligned instead. */
@@ -694,6 +702,15 @@
 @layer base {
   * {
     @apply border-border outline-ring/50;
+    /* Slim and faint, so a long page still shows it scrolls without the bar drawing the eye. */
+    scrollbar-width: thin;
+    scrollbar-color: color-mix(in oklch, var(--muted-foreground) 30%, transparent) transparent;
+  }
+
+  /* Room for the page's scrollbar is always kept, so content doesn't jump sideways
+     when a page grows long enough to scroll, or stops. */
+  html {
+    scrollbar-gutter: stable;
   }
 
   html {

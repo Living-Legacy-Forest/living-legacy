@@ -18,6 +18,7 @@ import { Route as AppAnnouncementsIndexRouteImport } from './routes/_app/announc
 import { Route as AppApiKeysIndexRouteImport } from './routes/_app/api-keys/index'
 import { Route as AppChecksIndexRouteImport } from './routes/_app/checks/index'
 import { Route as AppEventsIndexRouteImport } from './routes/_app/events/index'
+import { Route as AppEventsOverviewRouteImport } from './routes/_app/events/overview'
 import { Route as AppFaqsIndexRouteImport } from './routes/_app/faqs/index'
 import { Route as AppLegalIndexRouteImport } from './routes/_app/legal/index'
 import { Route as AppLegalSlugRouteImport } from './routes/_app/legal/$slug'
@@ -90,6 +91,11 @@ const AppChecksIndexRoute = AppChecksIndexRouteImport.update({
 const AppEventsIndexRoute = AppEventsIndexRouteImport.update({
   id: '/events/',
   path: '/events/',
+  getParentRoute: () => AppRoute,
+} as any)
+const AppEventsOverviewRoute = AppEventsOverviewRouteImport.update({
+  id: '/events/overview',
+  path: '/events/overview',
   getParentRoute: () => AppRoute,
 } as any)
 const AppFaqsIndexRoute = AppFaqsIndexRouteImport.update({
@@ -242,6 +248,7 @@ export interface FileRoutesByFullPath {
   '/': typeof AppIndexRoute
   '/login': typeof LoginRoute
   '/api/build': typeof ApiBuildRoute
+  '/events/overview': typeof AppEventsOverviewRoute
   '/legal/$slug': typeof AppLegalSlugRoute
   '/posts/$postId': typeof AppPostsPostIdRoute
   '/posts/new': typeof AppPostsNewRoute
@@ -281,6 +288,7 @@ export interface FileRoutesByTo {
   '/login': typeof LoginRoute
   '/api/build': typeof ApiBuildRoute
   '/': typeof AppIndexRoute
+  '/events/overview': typeof AppEventsOverviewRoute
   '/legal/$slug': typeof AppLegalSlugRoute
   '/posts/$postId': typeof AppPostsPostIdRoute
   '/posts/new': typeof AppPostsNewRoute
@@ -322,6 +330,7 @@ export interface FileRoutesById {
   '/login': typeof LoginRoute
   '/api/build': typeof ApiBuildRoute
   '/_app/': typeof AppIndexRoute
+  '/_app/events/overview': typeof AppEventsOverviewRoute
   '/_app/legal/$slug': typeof AppLegalSlugRoute
   '/_app/posts/$postId': typeof AppPostsPostIdRoute
   '/_app/posts/new': typeof AppPostsNewRoute
@@ -363,6 +372,7 @@ export interface FileRouteTypes {
     | '/'
     | '/login'
     | '/api/build'
+    | '/events/overview'
     | '/legal/$slug'
     | '/posts/$postId'
     | '/posts/new'
@@ -402,6 +412,7 @@ export interface FileRouteTypes {
     | '/login'
     | '/api/build'
     | '/'
+    | '/events/overview'
     | '/legal/$slug'
     | '/posts/$postId'
     | '/posts/new'
@@ -442,6 +453,7 @@ export interface FileRouteTypes {
     | '/login'
     | '/api/build'
     | '/_app/'
+    | '/_app/events/overview'
     | '/_app/legal/$slug'
     | '/_app/posts/$postId'
     | '/_app/posts/new'
@@ -558,6 +570,13 @@ declare module '@tanstack/react-router' {
       path: '/events'
       fullPath: '/events/'
       preLoaderRoute: typeof AppEventsIndexRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/_app/events/overview': {
+      id: '/_app/events/overview'
+      path: '/events/overview'
+      fullPath: '/events/overview'
+      preLoaderRoute: typeof AppEventsOverviewRouteImport
       parentRoute: typeof AppRoute
     }
     '/_app/faqs/': {
@@ -768,6 +787,7 @@ declare module '@tanstack/react-router' {
 
 interface AppRouteChildren {
   AppIndexRoute: typeof AppIndexRoute
+  AppEventsOverviewRoute: typeof AppEventsOverviewRoute
   AppLegalSlugRoute: typeof AppLegalSlugRoute
   AppPostsPostIdRoute: typeof AppPostsPostIdRoute
   AppPostsNewRoute: typeof AppPostsNewRoute
@@ -795,6 +815,7 @@ interface AppRouteChildren {
 
 const AppRouteChildren: AppRouteChildren = {
   AppIndexRoute: AppIndexRoute,
+  AppEventsOverviewRoute: AppEventsOverviewRoute,
   AppLegalSlugRoute: AppLegalSlugRoute,
   AppPostsPostIdRoute: AppPostsPostIdRoute,
   AppPostsNewRoute: AppPostsNewRoute,

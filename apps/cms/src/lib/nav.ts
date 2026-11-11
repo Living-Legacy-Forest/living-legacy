@@ -37,6 +37,7 @@ export type NavItem = {
     | '/checks'
     | '/announcements'
     | '/events'
+    | '/events/overview'
     | '/faqs'
     | '/media'
     | '/locations'
@@ -86,7 +87,15 @@ export const navGroups: NavGroup[] = [
     label: 'Places',
     items: [
       { title: 'Locations', icon: MapPinIcon, to: '/locations' },
-      { title: 'Events', icon: CalendarClockIcon, to: '/events', permission: 'events:manage' },
+      {
+        title: 'Events',
+        icon: CalendarClockIcon,
+        permission: 'events:manage',
+        items: [
+          { title: 'Overview', to: '/events/overview', permission: 'events:manage' },
+          { title: 'All events', to: '/events', permission: 'events:manage' },
+        ],
+      },
     ],
   },
   {

@@ -38,6 +38,7 @@ import { removedNotice } from '@/lib/notify';
 import { useAction } from '@/lib/use-action';
 import { type EventRow, type EventsData, type LocationOption, deleteEvents } from '@/server/events';
 import { EventForm, type FormActions } from './event-form';
+import { EventDashboardPanel } from './dashboard/event-dashboard';
 import { EventGuests } from './event-guests';
 import { SeriesDatePicker, dateStatus, startsIn } from './series-date-picker';
 
@@ -62,18 +63,25 @@ function inFilter(e: EventRow, filter: Filter, now: number) {
   return true;
 }
 
+export type PanelView = 'details' | 'guests' | 'dashboard';
+
 export function EventsPage({
   data,
   initialOpen,
+  initialView,
   onOpenedInitial,
 }: {
   data: EventsData;
   /** An event date to open on arrival, from ?open= in the address. */
   initialOpen?: string;
+  /** Its tab to open on, from ?view=. */
+  initialView?: PanelView;
   /** Clears ?open= once used, so going back does not open it again. */
   onOpenedInitial?: () => void;
 }) {
   const view = useListPane<Target>();
+  // Kept after the address is cleared, so the panel it opens starts on that tab.
+  const [arrival] = useState({ id: initialOpen, view: initialView });
   useEffect(() => {
     if (!initialOpen) return;
     view.open({ kind: 'edit', id: initialOpen });
@@ -130,6 +138,7 @@ export function EventsPage({
             : []
         }
         onPickDate={(id) => view.open({ kind: 'edit', id })}
+        initialView={event && event.id === arrival.id ? arrival.view : undefined}
         locations={data.locations}
         onSaved={onDone}
         actions={actions}
@@ -348,6 +357,7 @@ function EventPanel({
   event,
   dates,
   onPickDate,
+  initialView = 'details',
   locations,
   onSaved,
   actions,
@@ -356,11 +366,12 @@ function EventPanel({
   /** All the dates of its series, soonest first; empty if it does not repeat. */
   dates: EventRow[];
   onPickDate: (id: string) => void;
+  initialView?: PanelView;
   locations: LocationOption[];
   onSaved: (id: string | null) => void;
   actions: FormActions;
 }) {
-  const [view, setView] = useState<'details' | 'guests'>('details');
+  const [view, setView] = useState<PanelView>(initialView);
   const details = (
     <EventForm
       key={event?.id ?? 'new'}
@@ -381,10 +392,18 @@ function EventPanel({
         options={[
           { value: 'details', label: 'Details' },
           { value: 'guests', label: 'Guests' },
+          { value: 'dashboard', label: 'Dashboard' },
         ]}
       />
       <div key={view} className="animate-in fade-in duration-200 motion-reduce:animate-none">
-        {view === 'details' ? details : <EventGuests key={event.id} event={event} />}
+        {view === 'details' ? (
+          details
+        ) : view === 'guests' ? (
+          <EventGuests key={event.id} event={event} />
+        ) : (
+          // The whole event, whichever of its dates is open; it picks dates itself.
+          <EventDashboardPanel eventId={event.id} onOpenGuests={() => setView('guests')} />
+        )}
       </div>
     </div>
   );

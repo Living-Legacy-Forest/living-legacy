@@ -10,6 +10,7 @@ import {
   loadLegalRevision,
   publishLegalDraft,
   requestLegalReview,
+  restoreLegalRevision,
   saveLegalDraft,
 } from './legal-page-store';
 
@@ -163,5 +164,42 @@ describe('legal pages', () => {
     await expect(requestLegalReview(testDb(), 'privacy', actor)).rejects.toThrow(
       'Save your changes before asking for a review.'
     );
+  });
+
+  it('restores an earlier version as a draft, leaving the live text alone', async () => {
+    await saveLegalDraft(testDb(), 'privacy', values('First wording'), await version(), actor);
+    await publishLegalDraft(testDb(), 'privacy', await version(), actor);
+    await saveLegalDraft(testDb(), 'privacy', values('Second wording'), await version(), actor);
+    await publishLegalDraft(testDb(), 'privacy', await version(), actor);
+    const [, first] = await listLegalHistory(
+      testDb(),
+      (await loadLegalPage(testDb(), 'privacy')).id
+    );
+
+    await restoreLegalRevision(testDb(), 'privacy', first!.id, await version(), actor);
+
+    const page = await loadLegalPage(testDb(), 'privacy');
+    expect(page.body).toEqual(doc('Second wording'));
+    expect(page.draft).toMatchObject({ body: doc('First wording') });
+  });
+
+  it('refuses to restore a version of another page', async () => {
+    await saveLegalDraft(testDb(), 'privacy', values('Privacy wording'), await version(), actor);
+    await publishLegalDraft(testDb(), 'privacy', await version(), actor);
+    const [privacy] = await listLegalHistory(
+      testDb(),
+      (await loadLegalPage(testDb(), 'privacy')).id
+    );
+    const terms = await loadLegalPage(testDb(), 'terms-and-conditions');
+
+    await expect(
+      restoreLegalRevision(
+        testDb(),
+        'terms-and-conditions',
+        privacy!.id,
+        terms.updatedAt.getTime(),
+        actor
+      )
+    ).rejects.toThrow('That version could not be found.');
   });
 });

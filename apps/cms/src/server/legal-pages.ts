@@ -12,6 +12,7 @@ import {
   loadLegalRevision,
   publishLegalDraft,
   requestLegalReview,
+  restoreLegalRevision,
   saveLegalDraft,
 } from './legal-page-store';
 
@@ -66,6 +67,19 @@ export const discardLegalPageDraft = createServerFn({ method: 'POST' })
   .validator(slugInput.extend({ expectedUpdatedAt: z.number() }))
   .handler(({ data, context }) =>
     discardLegalDraft(getDb(), data.slug, data.expectedUpdatedAt, actorOf(context.user))
+  );
+
+export const restoreLegalVersion = createServerFn({ method: 'POST' })
+  .middleware([requirePermission('content:write')])
+  .validator(slugInput.extend({ revisionId: z.string().max(64), expectedUpdatedAt: z.number() }))
+  .handler(({ data, context }) =>
+    restoreLegalRevision(
+      getDb(),
+      data.slug,
+      data.revisionId,
+      data.expectedUpdatedAt,
+      actorOf(context.user)
+    )
   );
 
 export const getLegalRevision = createServerFn({ method: 'GET' })

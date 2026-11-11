@@ -51,6 +51,11 @@ type Props = {
   onBodyChange: (body: RichTextDoc | null) => void;
   /** Show the post without letting it be changed (no toolbar, nothing editable). */
   readOnly?: boolean;
+  /**
+   * Grow with the text and let the page scroll, keeping the toolbar under the
+   * header (legal pages). By default the editor fills its box and scrolls inside.
+   */
+  pageScroll?: boolean;
 };
 
 /**
@@ -64,6 +69,7 @@ export function DocumentEditor({
   body,
   onBodyChange,
   readOnly = false,
+  pageScroll = false,
 }: Props) {
   const editorRef = useRef<Editor | null>(null);
   const editor = useEditor({
@@ -104,18 +110,34 @@ export function DocumentEditor({
 
   return (
     // No border of its own: it sits inside the editor page's bordered card.
-    <div className="bg-background flex h-full min-h-[24rem] flex-col overflow-hidden md:min-h-[32rem]">
+    <div
+      className={cn(
+        'bg-background flex min-h-[24rem] flex-col md:min-h-[32rem]',
+        !pageScroll && 'h-full overflow-hidden'
+      )}
+    >
       <RichTextEditor
         editor={editor}
         variant="subtle"
         // A column, so the page below the toolbar can grow to fill the editor.
         className={cn(
-          'flex min-h-0 flex-1 flex-col overflow-y-auto rounded-none! border-0! shadow-none!',
+          'flex min-h-0 flex-1 flex-col rounded-none! border-0! shadow-none!',
+          // A scroll box of its own would hold the toolbar inside it, so with page scrolling it has none.
+          !pageScroll && 'overflow-y-auto',
           CANVAS,
           SCROLLBAR
         )}
       >
-        {!readOnly && <Toolbar editor={editor} state={state} />}
+        {!readOnly && (
+          <Toolbar
+            editor={editor}
+            state={state}
+            // Under the app header: 3.5rem plus the notch on phones, and 4rem (it sits 0.5rem down) above.
+            className={
+              pageScroll ? 'top-[calc(3.5rem+env(safe-area-inset-top))] md:top-16' : undefined
+            }
+          />
+        )}
         {/* The page fills the editor's height, and the writing area fills the
             page, so clicking anywhere below the text lands in it. */}
         <article className="bg-background flex flex-1 flex-col px-4 py-5 sm:mx-auto sm:mt-4 sm:mb-6 sm:w-full sm:max-w-3xl sm:rounded-md sm:border sm:px-14 sm:py-12 sm:shadow-xs [&>.relative]:flex [&>.relative]:flex-1 [&>.relative]:flex-col">

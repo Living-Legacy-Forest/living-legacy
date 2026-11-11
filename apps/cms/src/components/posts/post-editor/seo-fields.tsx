@@ -102,7 +102,7 @@ export function SeoFields({
   );
 }
 
-function CountedField({
+export function CountedField({
   id,
   label,
   value,

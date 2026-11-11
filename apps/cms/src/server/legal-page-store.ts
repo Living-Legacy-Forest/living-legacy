@@ -1,7 +1,13 @@
 // Database work for the legal pages, shared by the server functions and the
 // integration tests. The typed columns are the live version; edits wait in
 // `draft` until an admin publishes them.
-import { type LegalSlug, type LegalValues, legalPath, legalPublishErrors } from '@ll/content';
+import {
+  type LegalSlug,
+  type LegalValues,
+  legalPath,
+  legalPublishErrors,
+  legalValuesSchema,
+} from '@ll/content';
 import type { Db } from '@ll/db';
 import { activityLog, legalPages, publishEvents, revisions, user } from '@ll/db/schema';
 import { and, desc, eq, isNotNull, sql } from 'drizzle-orm';
@@ -213,6 +219,29 @@ export async function loadLegalRevision(db: Db, revisionId: string) {
   });
   if (!row) throw new Error('That version could not be found.');
   return { ...(row.snapshot as LegalValues), createdAt: row.createdAt.getTime() };
+}
+
+/** Copies a published version of this page into its draft, to check and publish again. */
+export async function restoreLegalRevision(
+  db: Db,
+  slug: LegalSlug,
+  revisionId: string,
+  expectedUpdatedAt: number,
+  actor: Actor
+) {
+  const row = await loadLegalPage(db, slug);
+  const revision = await db.query.revisions.findFirst({
+    where: and(
+      eq(revisions.id, revisionId),
+      eq(revisions.entityType, 'legal_page'),
+      eq(revisions.entityId, row.id)
+    ),
+  });
+  if (!revision) throw new Error('That version could not be found.');
+  // Old snapshots predate any later rule changes, so check them as a save would.
+  const parsed = legalValuesSchema.safeParse(revision.snapshot);
+  if (!parsed.success) throw new Error('That version can no longer be restored.');
+  return saveLegalDraft(db, slug, parsed.data, expectedUpdatedAt, actor);
 }
 
 export async function listLegalReviewRequests(db: Db) {

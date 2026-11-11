@@ -26,6 +26,22 @@ export type WhatsNewEntry = {
 
 export const whatsNew: WhatsNewEntry[] = [
   {
+    id: '2026-11-11-6',
+    title: 'Choose the CMS colour and font',
+    items: [
+      {
+        title: 'A colour for the CMS',
+        body: 'Settings, Language & appearance now has Colour: tint buttons, highlights and the sidebar in Stone, Forest, Ocean or Clay, or keep the plain Neutral. It works in light and dark, and changes the CMS for everyone.',
+        link: { label: 'Open Settings', to: '/settings', hash: 'appearance' },
+      },
+      {
+        title: 'A font for the CMS',
+        body: 'Settings, Language & appearance now has Font: pick Inter, Geist, IBM Plex Sans, Atkinson Hyperlegible or your device’s own font. It changes the CMS for everyone, not the website.',
+        link: { label: 'Open Settings', to: '/settings', hash: 'appearance' },
+      },
+    ],
+  },
+  {
     id: '2026-11-11-5',
     title: 'Faster media and your own brand words',
     items: [

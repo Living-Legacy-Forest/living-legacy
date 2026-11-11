@@ -4,9 +4,13 @@ import {
   SEO_DESCRIPTION_LIMIT,
   type SiteSettings,
   TITLE_TOKENS,
+  type CmsColour,
+  type CmsFont,
   type Theme,
   type TimeZone,
   can,
+  cmsColours,
+  cmsFonts,
   brandRulesSchema,
   contentTargetProblem,
   formatAbn,
@@ -30,8 +34,8 @@ import { authMiddleware, requirePermission } from '@/lib/session';
 import { readSiteSettings } from '@/lib/site-settings';
 import { logActivity } from './activity-log';
 
-export { TITLE_TOKENS, timeZones };
-export type { Locale, SiteSettings, Theme, TimeZone };
+export { TITLE_TOKENS, cmsColours, cmsFonts, timeZones };
+export type { CmsColour, CmsFont, Locale, SiteSettings, Theme, TimeZone };
 
 export const getSiteSettings = createServerFn({ method: 'GET' })
   .middleware([authMiddleware])
@@ -44,14 +48,14 @@ export const getSiteSettings = createServerFn({ method: 'GET' })
  * theme (Profile, Appearance) wins over the site's.
  */
 export const getRootSettings = createServerFn({ method: 'GET' }).handler(async () => {
-  const [{ theme: siteTheme, timeZone, siteIconMediaId }, personal] = await Promise.all([
-    readSiteSettings(),
-    personalTheme(),
-  ]);
+  const [{ theme: siteTheme, cmsFont, cmsColour, timeZone, siteIconMediaId }, personal] =
+    await Promise.all([readSiteSettings(), personalTheme()]);
   return {
     theme: personal ?? siteTheme,
     siteTheme,
     personalTheme: personal,
+    cmsFont,
+    cmsColour,
     timeZone,
     siteIconMediaId,
   };
@@ -131,6 +135,8 @@ const settingsSchema = z
       .refine((n) => (sessionDayOptions as readonly number[]).includes(n), 'Pick 1, 7 or 30 days.'),
     locale: z.enum(locales),
     theme: z.enum(themes),
+    cmsFont: z.enum(cmsFonts),
+    cmsColour: z.enum(cmsColours),
     timeZone: z.enum(timeZones),
   })
   .superRefine((value, ctx) => {

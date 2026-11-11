@@ -7,6 +7,14 @@ import { BRAND_RULES, type BrandRule, parseBrandRules } from './brand-language';
 export const themes = ['system', 'light', 'dark'] as const;
 export type Theme = (typeof themes)[number];
 
+/** The typefaces the CMS can use (Settings, Language & appearance). The website keeps its own. */
+export const cmsFonts = ['inter', 'geist', 'ibm-plex-sans', 'atkinson', 'system'] as const;
+export type CmsFont = (typeof cmsFonts)[number];
+
+/** The CMS colour palettes, in light and dark alike. Neutral is the plain greys. */
+export const cmsColours = ['neutral', 'stone', 'forest', 'ocean', 'clay'] as const;
+export type CmsColour = (typeof cmsColours)[number];
+
 export const locales = ['en-AU', 'en-US', 'en-GB'] as const;
 export type Locale = (typeof locales)[number];
 
@@ -73,6 +81,8 @@ export const SITE_SETTINGS_DEFAULTS = {
   sessionDays: 7,
   locale: 'en-AU' as Locale,
   theme: 'system' as Theme,
+  cmsFont: 'inter' as CmsFont,
+  cmsColour: 'neutral' as CmsColour,
   timeZone: 'Australia/Melbourne' as TimeZone,
 };
 
@@ -103,6 +113,12 @@ export function parseSiteSettings(data: unknown): SiteSettings {
     if (typeof value === typeof settings[key]) Object.assign(settings, { [key]: value });
   }
   // A list needs more than a type check: an invalid one falls back to the defaults.
+  if (!(cmsFonts as readonly string[]).includes(settings.cmsFont)) {
+    settings.cmsFont = SITE_SETTINGS_DEFAULTS.cmsFont;
+  }
+  if (!(cmsColours as readonly string[]).includes(settings.cmsColour)) {
+    settings.cmsColour = SITE_SETTINGS_DEFAULTS.cmsColour;
+  }
   settings.brandRules = parseBrandRules(stored.brandRules) ?? SITE_SETTINGS_DEFAULTS.brandRules;
   return settings;
 }

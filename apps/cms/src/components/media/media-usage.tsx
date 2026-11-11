@@ -106,6 +106,9 @@ export function MediaUsageList({ id }: { id: string }) {
               <span className="min-w-0 truncate">
                 <UseLink use={use} />
               </span>
+              {use.count > 1 && (
+                <span className="text-muted-foreground ml-auto shrink-0">{use.count} dates</span>
+              )}
             </li>
           ))}
         </ul>

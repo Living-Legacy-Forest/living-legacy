@@ -1,7 +1,21 @@
 import { type Role, can } from '@ll/content';
 import { eventBookings, events, locations, media, posts } from '@ll/db/schema';
 import { createServerFn } from '@tanstack/react-start';
-import { and, asc, count, desc, eq, gte, isNotNull, isNull, lt, sql, sum } from 'drizzle-orm';
+import {
+  type SQL,
+  and,
+  asc,
+  count,
+  desc,
+  eq,
+  gte,
+  isNotNull,
+  isNull,
+  lt,
+  sql,
+  sum,
+} from 'drizzle-orm';
+import type { SQLiteColumn } from 'drizzle-orm/sqlite-core';
 import { getDb } from '@/lib/db';
 import { authMiddleware } from '@/lib/session';
 import { loadContentChecks } from './content-checks';
@@ -9,6 +23,18 @@ import { loadMissingPages } from './not-found';
 import { loadScoreSummary } from './post-score';
 
 const DAY_MS = 86_400_000;
+const WEEK_MS = 7 * DAY_MS;
+/** How far back the stat cards' trend bars go. */
+export const TREND_WEEKS = 12;
+
+/** Counts per week, oldest first; the last entry is the seven days up to now. */
+function toWeeks(rows: { week: number; n: number }[]) {
+  const weeks = Array.from({ length: TREND_WEEKS }, () => 0);
+  for (const { week, n } of rows) {
+    if (week >= 0 && week < TREND_WEEKS) weeks[TREND_WEEKS - 1 - week] = Number(n);
+  }
+  return weeks;
+}
 
 export type PostSummary = {
   id: string;
@@ -31,9 +57,28 @@ export const getDashboardData = createServerFn({ method: 'GET' })
     const notTrashed = isNull(posts.deletedAt);
     const isPublished = and(eq(posts.status, 'published'), notTrashed);
     const since = (days: number) => new Date(now - days * DAY_MS);
+    const trendStart = new Date(now - TREND_WEEKS * WEEK_MS);
+    // Rows per week for the stat cards' trend bars: 0 is this week, 1 the one before.
+    const weekly = (table: typeof posts | typeof media, at: SQLiteColumn, where?: SQL) => {
+      const week = sql<number>`cast((${now} - ${at}) / ${WEEK_MS} as integer)`;
+      return db
+        .select({ week, n: count() })
+        .from(table)
+        .where(and(gte(at, trendStart), where))
+        .groupBy(week);
+    };
 
     // One round trip to the database for the settings and every panel.
-    const [postCounts, mediaTotals, locationRows, drafts, published] = await db.batch([
+    const [
+      postCounts,
+      mediaTotals,
+      locationRows,
+      drafts,
+      published,
+      publishedWeekly,
+      startedWeekly,
+      uploadedWeekly,
+    ] = await db.batch([
       db
         .select({
           published: sql<number>`coalesce(sum(${posts.status} = 'published'), 0)`,
@@ -83,6 +128,9 @@ export const getDashboardData = createServerFn({ method: 'GET' })
         .where(isPublished)
         .orderBy(desc(posts.publishedAt))
         .limit(5),
+      weekly(posts, posts.publishedAt, isPublished),
+      weekly(posts, posts.createdAt, notTrashed),
+      weekly(media, media.createdAt),
     ]);
 
     const counts = postCounts[0];
@@ -103,11 +151,14 @@ export const getDashboardData = createServerFn({ method: 'GET' })
         published: Number(counts?.published ?? 0),
         drafts: Number(counts?.drafts ?? 0),
         publishedLast30: Number(counts?.last30 ?? 0),
+        publishedWeekly: toWeeks(publishedWeekly),
+        startedWeekly: toWeeks(startedWeekly),
       },
       media: {
         files: mediaTotals[0]?.files ?? 0,
         bytes: Number(mediaTotals[0]?.bytes ?? 0),
         missingAlt: Number(mediaTotals[0]?.missingAlt ?? 0),
+        uploadedWeekly: toWeeks(uploadedWeekly),
       },
       locations: locationRows,
       recentDrafts: drafts.map(toSummary),

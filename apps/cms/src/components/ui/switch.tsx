@@ -18,7 +18,7 @@ const switchVariants = cva(
     '[&:active:not([data-disabled]):not([data-readonly])]:[--switch-stretch:4px]',
     // A bigger target than the track, more so for a finger.
     'after:absolute after:-inset-1.5 pointer-coarse:after:-inset-3',
-    'focus-visible:ring-ring/50 aria-invalid:ring-destructive/20 focus-visible:ring-3 aria-invalid:ring-3',
+    'focus-visible:ring-ring/50 aria-invalid:ring-destructive/20 focus-visible:ring-3',
     'data-disabled:cursor-not-allowed data-disabled:opacity-50 data-readonly:cursor-default forced-colors:border forced-colors:data-checked:bg-[Highlight]',
   ].join(' '),
   {

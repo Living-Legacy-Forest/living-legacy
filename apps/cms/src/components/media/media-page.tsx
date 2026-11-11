@@ -1,16 +1,26 @@
-import { useRouter } from '@tanstack/react-router';
-import { useRef, useState } from 'react';
+import { useNavigate, useRouter, useRouterState } from '@tanstack/react-router';
+import { useEffect, useRef, useState } from 'react';
 import {
   ConfirmBulkDelete,
   RowCheckbox,
   SearchInput,
   SelectionBar,
-  matchesSearch,
   useSelection,
 } from '@/components/list/list-tools';
-import { ArrowRightLeft, CropIcon, MediaIcon, Trash2Icon, UploadIcon } from '@/components/icons';
+import {
+  ArrowRightLeft,
+  CircleCheckIcon,
+  CropIcon,
+  DownloadIcon,
+  LinkIcon,
+  MediaIcon,
+  PanelRightIcon,
+  Trash2Icon,
+  UploadIcon,
+} from '@/components/icons';
 import { FormCell, FormSection } from '@/components/form-cells';
 import { DialogActions, ListDialog } from '@/components/list/list-page';
+import { type RowMenuItem, RowMenu } from '@/components/list/list-row';
 import { PageActions } from '@/components/shell/page-actions';
 import { ImageCropDialog } from '@/components/media/image-crop-dialog';
 import { MediaUsageList } from '@/components/media/media-usage';
@@ -42,7 +52,10 @@ import {
 } from '@/components/ui/sheet';
 import { Spinner } from '@/components/ui/spinner';
 import { Textarea } from '@/components/ui/textarea';
+import { useLoadMore } from '@/hooks/use-load-more';
+import { MEDIA_MAX_SHOWN, MEDIA_PAGE_SIZE } from '@/lib/media-paging';
 import { useIsMobile } from '@/hooks/use-mobile';
+import { readableError } from '@/lib/errors';
 import { notify, removedNotice } from '@/lib/notify';
 import { splitFilename } from '@/lib/filename';
 import { formatBytes } from '@/lib/format';
@@ -56,35 +69,87 @@ const NOUN: [string, string] = ['file', 'files'];
 
 export function MediaPage({
   data,
+  search,
   canDelete,
   initialSelected,
 }: {
   data: MediaListData;
+  search: { q?: string };
   canDelete: boolean;
   /** Opened in the panel on arrival. */
   initialSelected?: string;
 }) {
-  const [query, setQuery] = useState('');
+  const items = data.items;
+  const [query, setQuery] = useState(search.q ?? '');
+  const navigate = useNavigate({ from: '/media/' });
   const [editingId, setEditingId] = useState<string | null>(initialSelected ?? null);
   const isPhone = useIsMobile();
-  const [confirmDelete, setConfirmDelete] = useState(false);
+  // Ticked files, or the one a context menu deletes; null when nothing is waiting.
+  const [toDelete, setToDelete] = useState<string[] | null>(null);
   const [dragOver, setDragOver] = useState(false);
   const fileInput = useRef<HTMLInputElement>(null);
-  const selection = useSelection(data.map((m) => m.id));
+  const selection = useSelection(items.map((m) => m.id));
   const { run, pending } = useAction();
+  const router = useRouter();
+  const editing =
+    items.find((m) => m.id === editingId) ??
+    (data.included?.id === editingId ? data.included : null);
 
-  const visible = data.filter((m) => matchesSearch(query, [m.filename, m.alt, m.caption]));
-  const editing = data.find((m) => m.id === editingId) ?? null;
+  // The library is searched on the server, so the search goes in the URL once
+  // typing pauses, and a new search starts again from the first page.
+  useEffect(() => {
+    if (query === (search.q ?? '')) return;
+    const timer = setTimeout(() => {
+      void navigate({
+        search: (prev) => ({ ...prev, q: query || undefined, show: undefined }),
+        replace: true,
+      });
+    }, 300);
+    return () => clearTimeout(timer);
+  }, [query, search.q, navigate]);
+
+  // Files load a page at a time as the grid scrolls.
+  const loading = useRouterState({ select: (s) => s.status === 'pending' });
+  const hasMore = data.nextCursor !== null && items.length < MEDIA_MAX_SHOWN;
+  const showMore = () =>
+    void navigate({
+      search: (prev) => ({
+        ...prev,
+        show: Math.min(MEDIA_MAX_SHOWN, items.length + MEDIA_PAGE_SIZE),
+      }),
+      replace: true,
+      resetScroll: false,
+    });
+  const sentinel = useLoadMore<HTMLDivElement>(showMore, hasMore && !loading);
+  const libraryEmpty = data.total === 0 && !search.q;
 
   async function upload(files: FileList | File[]) {
     const list = Array.from(files).filter((f) => f.type.startsWith('image/'));
     if (list.length === 0) return;
+    // One toast follows the whole batch: which file is going up, then the outcome.
+    const toastId = `media-upload-${Date.now()}`;
+    const total = list.length;
     await run(
       async () => {
-        for (const file of list) await uploadMedia(file);
-        return list.length;
+        for (const [i, file] of list.entries()) {
+          notify.loading({
+            id: toastId,
+            title: total === 1 ? 'Uploading image' : `Uploading ${i + 1} of ${total}`,
+            description: file.name,
+          });
+          try {
+            await uploadMedia(file);
+            // Show it in the grid now, while the rest are still uploading.
+            void router.invalidate();
+          } catch (error) {
+            const before = i === 0 ? '' : ` The ${i === 1 ? 'one' : i} before it uploaded.`;
+            throw new Error(`${file.name}: ${readableError(error)}${before}`);
+          }
+        }
+        return total;
       },
       {
+        toastId,
         success: (n) => ({
           title: n === 1 ? 'Image uploaded' : `${n} images uploaded`,
           description: 'Resized for the web and ready to use in posts and pages.',
@@ -94,8 +159,7 @@ export function MediaPage({
     );
   }
 
-  async function removeChecked() {
-    const ids = selection.checkedIds;
+  async function remove(ids: string[]) {
     const result = await run(() => deleteMedia({ data: { ids } }), {
       success: (r) => removedNotice(r.removed, NOUN),
       error: 'Could not remove',
@@ -123,7 +187,7 @@ export function MediaPage({
         <h1 data-slot="page-title" className="mr-auto text-xl">
           Media
         </h1>
-        {data.length > 0 && (
+        {!libraryEmpty && (
           <SearchInput
             label="Search media"
             placeholder="Search filenames and captions"
@@ -167,7 +231,7 @@ export function MediaPage({
         />
       </div>
 
-      {data.length === 0 ? (
+      {libraryEmpty ? (
         <Empty className={cn('flex-1 rounded-lg border', dragOver && 'border-ring bg-accent/40')}>
           <EmptyHeader>
             <EmptyMedia variant="icon">
@@ -196,13 +260,13 @@ export function MediaPage({
         >
           <SelectionBar
             selection={selection}
-            visibleIds={visible.map((m) => m.id)}
+            visibleIds={items.map((m) => m.id)}
             title="All"
-            total={data.length}
+            total={data.total}
             pending={pending}
-            onDelete={canDelete ? () => setConfirmDelete(true) : undefined}
+            onDelete={canDelete ? () => setToDelete(selection.checkedIds) : undefined}
           />
-          {visible.length === 0 ? (
+          {items.length === 0 ? (
             <div className="text-muted-foreground flex flex-1 flex-col items-center justify-center gap-2 p-6 text-center text-sm">
               No media match that search.
               <Button variant="ghost" size="sm" onClick={() => setQuery('')}>
@@ -210,30 +274,44 @@ export function MediaPage({
               </Button>
             </div>
           ) : (
-            <div className="grid flex-1 grid-cols-2 gap-3 overflow-y-auto p-3 max-md:-mx-4 max-md:grid-cols-3 max-md:gap-0.5 max-md:overflow-visible max-md:p-0 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6">
-              {visible.map((m) => (
-                <MediaTile
-                  key={m.id}
-                  item={m}
-                  checked={selection.isChecked(m.id)}
-                  selecting={selection.selecting || selection.checkedIds.length > 0}
-                  onToggle={() => selection.toggle(m.id)}
-                  // In Edit mode a tap ticks the tile, as in Photos.
-                  onOpen={() => (selection.selecting ? selection.toggle(m.id) : setEditingId(m.id))}
-                />
-              ))}
+            <div className="flex-1 overflow-y-auto p-3 max-md:-mx-4 max-md:overflow-visible max-md:p-0">
+              <div className="grid grid-cols-2 gap-3 max-md:grid-cols-3 max-md:gap-0.5 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6">
+                {items.map((m) => (
+                  <MediaTile
+                    key={m.id}
+                    item={m}
+                    checked={selection.isChecked(m.id)}
+                    selecting={selection.selecting || selection.checkedIds.length > 0}
+                    onToggle={() => selection.toggle(m.id)}
+                    // In Edit mode a tap ticks the tile, as in Photos.
+                    onOpen={() =>
+                      selection.selecting ? selection.toggle(m.id) : setEditingId(m.id)
+                    }
+                    onEdit={() => setEditingId(m.id)}
+                    onDelete={canDelete ? () => setToDelete([m.id]) : undefined}
+                  />
+                ))}
+              </div>
+              {hasMore && (
+                <div ref={sentinel} className="flex justify-center pt-4 max-md:py-4">
+                  <Button variant="ghost" size="sm" disabled={loading} onClick={showMore}>
+                    {loading && <Spinner data-icon="inline-start" />}
+                    Show more
+                  </Button>
+                </div>
+              )}
             </div>
           )}
         </div>
       )}
 
       <ConfirmBulkDelete
-        open={confirmDelete}
-        onOpenChange={setConfirmDelete}
-        count={selection.checkedIds.length}
+        open={toDelete !== null}
+        onOpenChange={(open) => !open && setToDelete(null)}
+        count={toDelete?.length ?? 0}
         noun={NOUN}
         description="They are removed for good. Anything using one, like a post or a team member, loses that image."
-        onConfirm={removeChecked}
+        onConfirm={() => toDelete && remove(toDelete)}
       />
 
       {/* Phones get the iOS form sheet the other pages use; wider screens a side panel. */}
@@ -280,18 +358,28 @@ function MediaTile({
   selecting,
   onToggle,
   onOpen,
+  onEdit,
+  onDelete,
 }: {
   item: MediaItem;
   checked: boolean;
   selecting: boolean;
   onToggle: () => void;
   onOpen: () => void;
+  /** Opens the details panel, even in Edit mode. */
+  onEdit: () => void;
+  /** Absent for people who cannot delete files. */
+  onDelete?: () => void;
 }) {
-  return (
+  const anchor = useRef<HTMLDivElement>(null);
+  const tile = (
     <div
+      ref={anchor}
       className={cn(
         'group max-md:bg-muted relative aspect-square overflow-hidden rounded-md border max-md:rounded-none max-md:border-0',
-        checked && 'ring-ring ring-2 max-md:ring-inset'
+        checked && 'ring-ring ring-2 max-md:ring-inset',
+        // While its context menu is open, so it is clear which file the menu acts on.
+        'group-data-popup-open/row-menu:ring-ring group-data-popup-open/row-menu:ring-2'
       )}
     >
       <RowCheckbox
@@ -307,7 +395,7 @@ function MediaTile({
         className="focus-visible:ring-ring absolute inset-0 outline-none focus-visible:ring-2"
       >
         <img
-          src={mediaSrc(item, 640)}
+          src={mediaSrc(item, 320)}
           alt={item.alt || item.filename}
           loading="lazy"
           className="size-full object-cover transition-opacity group-hover:opacity-80"
@@ -315,6 +403,51 @@ function MediaTile({
       </button>
     </div>
   );
+
+  // In Edit mode a tap ticks; the menu would only get in the way, as in the lists.
+  if (selecting) return tile;
+
+  const actions: RowMenuItem[] = [
+    { label: 'Open', icon: <PanelRightIcon aria-hidden />, onSelect: onEdit },
+    { label: 'Select', icon: <CircleCheckIcon aria-hidden />, onSelect: onToggle },
+    { label: 'Copy link', icon: <LinkIcon aria-hidden />, onSelect: () => void copyLink(item) },
+    { label: 'Download', icon: <DownloadIcon aria-hidden />, onSelect: () => download(item) },
+  ];
+  const destructive: RowMenuItem[] = onDelete
+    ? [{ label: 'Delete', icon: <Trash2Icon aria-hidden />, onSelect: onDelete }]
+    : [];
+
+  return (
+    <RowMenu
+      actions={actions}
+      destructive={destructive}
+      anchorRef={anchor}
+      previewClassName="p-0"
+      preview={
+        <img src={mediaSrc(item, 640)} alt="" className="aspect-square w-full object-cover" />
+      }
+    >
+      {tile}
+    </RowMenu>
+  );
+}
+
+/** The file's full address, for pasting into an email or another site. */
+async function copyLink(item: MediaItem) {
+  try {
+    await navigator.clipboard.writeText(new URL(item.url, window.location.origin).href);
+    notify.success({ title: 'Link copied', description: `${item.filename} is ready to paste.` });
+  } catch {
+    notify.error('Could not copy the link', 'Open the file and copy its address instead.');
+  }
+}
+
+/** Saves the original file under its own name. */
+function download(item: MediaItem) {
+  const link = document.createElement('a');
+  link.href = item.url;
+  link.download = item.filename;
+  link.click();
 }
 
 /** Size and dimensions, under the file name. */

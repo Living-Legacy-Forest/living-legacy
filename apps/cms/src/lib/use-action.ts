@@ -7,6 +7,8 @@ export type RunOptions<T> = {
   success?: Notice | ((result: T) => Notice);
   /** Heading for the toast when it fails; the reason goes under it. */
   error: string;
+  /** A loading toast for the outcome to replace, e.g. one showing progress. */
+  toastId?: string | number;
 };
 
 /**
@@ -17,15 +19,18 @@ export function useAction() {
   const router = useRouter();
   const [pending, setPending] = useState(false);
 
-  async function run<T>(action: () => Promise<T>, { success, error }: RunOptions<T>) {
+  async function run<T>(action: () => Promise<T>, { success, error, toastId }: RunOptions<T>) {
     setPending(true);
     try {
       const result = await action();
-      if (success) notify.success(typeof success === 'function' ? success(result) : success);
+      if (success) {
+        const notice = typeof success === 'function' ? success(result) : success;
+        notify.success({ id: toastId, ...notice });
+      }
       await router.invalidate();
       return result;
     } catch (caught) {
-      notify.error(error, caught);
+      notify.error(error, caught, { id: toastId });
       return undefined;
     } finally {
       setPending(false);

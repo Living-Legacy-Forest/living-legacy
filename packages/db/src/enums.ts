@@ -48,5 +48,5 @@ export type ApiKeyScope = (typeof apiKeyScopes)[number];
 export const maxImageSide = 2560;
 
 /** Widths of the smaller copies made of each image at upload, for `?w=`. */
-export const mediaVariantWidths = [640, 1280] as const;
+export const mediaVariantWidths = [320, 640, 1280] as const;
 export type MediaVariant = { width: number; key: string; mime: string };

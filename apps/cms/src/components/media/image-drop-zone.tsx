@@ -23,9 +23,14 @@ const carriesFiles = (e: React.DragEvent) => e.dataTransfer.types.includes('File
 
 /**
  * Drop handlers for an element, and whether files are being dragged over it.
- * Only image files are passed on; dragging text or links is ignored.
+ * Only image files are passed on (or whatever `pick` keeps); dragging text or
+ * links is ignored.
  */
-export function useImageDrop(onFiles: (files: File[]) => void, disabled = false) {
+export function useImageDrop(
+  onFiles: (files: File[]) => void,
+  disabled = false,
+  pick: (list: FileList | null) => File[] = imagesIn
+) {
   // dragenter and dragleave also fire for every child crossed, so count them.
   const depth = useRef(0);
   const [over, setOver] = useState(false);
@@ -53,7 +58,7 @@ export function useImageDrop(onFiles: (files: File[]) => void, disabled = false)
       e.preventDefault();
       depth.current = 0;
       setOver(false);
-      const files = imagesIn(e.dataTransfer.files);
+      const files = pick(e.dataTransfer.files);
       if (files.length > 0) onFiles(files);
     },
   };

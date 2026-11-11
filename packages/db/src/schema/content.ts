@@ -13,22 +13,27 @@ import type { MediaVariant } from '../enums';
 import { user } from './auth';
 import { id, lifecycle, richText, timestamps } from './columns';
 
-export const media = sqliteTable('media', {
-  id: id(),
-  r2Key: text('r2_key').notNull().unique(),
-  filename: text('filename').notNull(),
-  mime: text('mime').notNull(),
-  size: integer('size').notNull(),
-  width: integer('width'),
-  height: integer('height'),
-  // Smaller copies made in the browser at upload, served for `?w=`. Images
-  // uploaded before these existed have none and are served full size.
-  variants: text('variants', { mode: 'json' }).$type<MediaVariant[]>(),
-  alt: text('alt'),
-  caption: text('caption'),
-  uploadedBy: text('uploaded_by').references(() => user.id, { onDelete: 'set null' }),
-  ...timestamps(),
-});
+export const media = sqliteTable(
+  'media',
+  {
+    id: id(),
+    r2Key: text('r2_key').notNull().unique(),
+    filename: text('filename').notNull(),
+    mime: text('mime').notNull(),
+    size: integer('size').notNull(),
+    width: integer('width'),
+    height: integer('height'),
+    // Smaller copies made in the browser at upload, served for `?w=`. Images
+    // uploaded before these existed have none and are served full size.
+    variants: text('variants', { mode: 'json' }).$type<MediaVariant[]>(),
+    alt: text('alt'),
+    caption: text('caption'),
+    uploadedBy: text('uploaded_by').references(() => user.id, { onDelete: 'set null' }),
+    ...timestamps(),
+  },
+  // The library and the image picker page through files newest first.
+  (t) => [index('media_created').on(t.createdAt, t.id)]
+);
 
 export const teamMembers = sqliteTable('team_members', {
   id: id(),

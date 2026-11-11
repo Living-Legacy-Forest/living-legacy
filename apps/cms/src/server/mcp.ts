@@ -135,7 +135,10 @@ const tools: Tool[] = [
     description:
       'Finds words the brand guide rules out, with what to write instead. Quick to run on a passage before it goes into a draft.',
     input: z.object({ text: z.string().min(1).max(200_000) }).strict(),
-    run: async ({ text }) => ({ problems: findBrandProblems(text) }),
+    // The list as edited in Settings, the same one posts are scored against.
+    run: async ({ text }, { db }) => ({
+      problems: findBrandProblems(text, (await loadContentTargets(db)).brandRules),
+    }),
   }),
   tool({
     name: 'check_post',

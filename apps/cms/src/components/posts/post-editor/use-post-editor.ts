@@ -422,11 +422,11 @@ export function usePostEditor({
     }
   }
 
-  /** Replaces the body with a Word document's content, after asking. */
-  async function importDocx(file: File) {
-    if (values.body && !window.confirm(`Replace the current content with ${file.name}?`)) {
-      return;
-    }
+  /**
+   * Replaces the body with a Word document's content. The import dialog has
+   * already said so. Resolves to whether it worked.
+   */
+  async function importDocx(file: File): Promise<boolean> {
     setImportingDocx(true);
     try {
       const { body, failedImages } = await docxToBody(file);
@@ -439,8 +439,10 @@ export function usePostEditor({
             ? `${file.name} is in. ${failedImages} image${failedImages === 1 ? '' : 's'} could not be imported; add ${failedImages === 1 ? 'it' : 'them'} by hand.`
             : `${file.name} replaced the content. Save to keep it.`,
       });
+      return true;
     } catch {
-      notify.error('Could not import', 'Make sure the file is a .docx document.');
+      notify.error('Could not import', 'Make sure the file is a Word document (.docx).');
+      return false;
     } finally {
       setImportingDocx(false);
     }

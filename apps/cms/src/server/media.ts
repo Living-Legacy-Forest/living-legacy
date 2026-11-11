@@ -11,39 +11,22 @@ import {
 import { createServerFn } from '@tanstack/react-start';
 import { getRequest } from '@tanstack/react-start/server';
 import { env } from 'cloudflare:workers';
-import { desc, eq, inArray, or, sql } from 'drizzle-orm';
+import { eq, inArray, or, sql } from 'drizzle-orm';
 import type { SQLiteColumn, SQLiteTable } from 'drizzle-orm/sqlite-core';
 import { z } from 'zod';
 import { getDb } from '@/lib/db';
 import { authMiddleware, requirePermission } from '@/lib/session';
 import { renamedFilename } from '@/lib/filename';
 import { forgetCachedMedia } from './media-delivery';
+import { listMediaPage, listMediaSchema, toItem } from './media-list';
 
-function toItem(r: typeof media.$inferSelect) {
-  return {
-    id: r.id,
-    filename: r.filename,
-    mime: r.mime,
-    size: r.size,
-    width: r.width,
-    height: r.height,
-    alt: r.alt ?? '',
-    caption: r.caption ?? '',
-    url: `/api/media/${r.id}`,
-    createdAt: r.createdAt.getTime(),
-    /** Changes when the file is replaced; added to previews so the CMS shows the new one. */
-    version: r.updatedAt.getTime(),
-  };
-}
+export type { MediaItem } from './media-list';
 
-export type MediaItem = ReturnType<typeof toItem>;
-
+/** A page of the library, newest first. */
 export const listMedia = createServerFn({ method: 'GET' })
   .middleware([authMiddleware])
-  .handler(async () => {
-    const rows = await getDb().select().from(media).orderBy(desc(media.createdAt));
-    return rows.map(toItem);
-  });
+  .validator(listMediaSchema)
+  .handler(({ data }) => listMediaPage(getDb(), data));
 
 export type MediaListData = Awaited<ReturnType<typeof listMedia>>;
 

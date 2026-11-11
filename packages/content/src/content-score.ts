@@ -2,7 +2,7 @@
 // into a score out of 100. Advice only. It does not predict search rankings
 // and never blocks saving or publishing. Pure, so the editor and the server
 // can both run it.
-import { type BrandFinding, findBrandProblems } from './brand-language';
+import { type BrandFinding, type BrandRule, findBrandProblems } from './brand-language';
 import { type PostInput, slugify } from './posts';
 import { countPhrase, outlineRichText, splitWords } from './rich-text-outline';
 import type { ContentTargets } from './settings';
@@ -18,6 +18,8 @@ export interface ContentGuidelines {
   paragraphs: Range;
   images: Range;
   terms: TermTarget[];
+  /** The words to flag; the built-in list when left out. */
+  brandRules?: readonly BrandRule[];
 }
 
 export type ScoreInput = Pick<
@@ -156,6 +158,7 @@ export function guidelinesFromSettings(
     headings: { min: targets.targetHeadingsMin, max: targets.targetHeadingsMax },
     paragraphs: { min: targets.targetParagraphsMin, max: null },
     images: { min: targets.targetImagesMin, max: targets.targetImagesMax },
+    brandRules: targets.brandRules,
     terms: [
       ...(focus
         ? [{ term: focus, min: targets.targetFocusKeywordUses, kind: 'focus' as const }]
@@ -517,7 +520,7 @@ export function analysePost(input: ScoreInput, guidelines: ContentGuidelines): C
     outline.text,
     ...outline.imageAlts,
   ].join('\n');
-  const brand = findBrandProblems(brandText);
+  const brand = findBrandProblems(brandText, guidelines.brandRules);
   // With no text yet there is nothing to judge, so these are skipped, not passed.
   const hasText = brandText.trim() !== '';
   const brandStatus = (ok: boolean, otherwise: 'warning' | 'critical' = 'warning') =>

@@ -1,4 +1,4 @@
-import { useRef } from 'react';
+import { useState } from 'react';
 import {
   CopyIcon,
   EyeIcon,
@@ -25,6 +25,7 @@ import { cn } from '@/lib/utils';
 import { PostStatusBadge } from '../post-status-badge';
 import { ReviewerPopover } from '../reviewer-popover';
 import { SchedulePopover } from './schedule-popover';
+import { ImportDocumentDialog } from './import-document-dialog';
 import type { PostEditorState } from './use-post-editor';
 
 /**
@@ -42,8 +43,11 @@ export function EditorToolbar({
   onToggleProperties: () => void;
 }) {
   const { access, meta, dirty, working } = editor;
-  const docxInputRef = useRef<HTMLInputElement>(null);
-  const chooseDocx = () => docxInputRef.current?.click();
+  const [importing, setImporting] = useState(false);
+  const chooseDocx = () => setImporting(true);
+  const importDialog = (
+    <ImportDocumentDialog editor={editor} open={importing} onOpenChange={setImporting} />
+  );
   const canDiscard = meta.hasDraft && !dirty && meta.id !== null;
   const isPhone = useIsMobile();
 
@@ -75,7 +79,7 @@ export function EditorToolbar({
           </div>
         )}
         <PhoneBar editor={editor} canDiscard={canDiscard} onImport={chooseDocx} />
-        <DocxInput inputRef={docxInputRef} editor={editor} />
+        {importDialog}
       </header>
     );
   }
@@ -128,30 +132,8 @@ export function EditorToolbar({
           <PanelRightIcon aria-hidden />
         </Button>
       </div>
-      <DocxInput inputRef={docxInputRef} editor={editor} />
+      {importDialog}
     </header>
-  );
-}
-
-function DocxInput({
-  inputRef,
-  editor,
-}: {
-  inputRef: React.RefObject<HTMLInputElement | null>;
-  editor: PostEditorState;
-}) {
-  return (
-    <input
-      ref={inputRef}
-      type="file"
-      accept=".docx,application/vnd.openxmlformats-officedocument.wordprocessingml.document"
-      className="hidden"
-      onChange={(e) => {
-        const file = e.target.files?.[0];
-        e.target.value = '';
-        if (file) void editor.importDocx(file);
-      }}
-    />
   );
 }
 
@@ -178,7 +160,7 @@ function PhoneBar({ editor, canDiscard, onImport }: ActionsProps) {
   add({ label: 'Preview', onClick: editor.preview, disabled: working || !meta.id });
   add(canDiscard && { label: 'Discard changes', onClick: editor.discard, disabled: working });
   if (access === 'full' || access === 'author') {
-    add({ label: 'Import Word doc', onClick: onImport, disabled: working || editor.importingDocx });
+    add({ label: 'Import document', onClick: onImport, disabled: working || editor.importingDocx });
     add(!!meta.id && { label: 'Duplicate', onClick: editor.duplicate, disabled: working });
   }
   add({
@@ -288,7 +270,7 @@ function PublisherActions({ editor, canDiscard, onImport }: ActionsProps) {
           </DropdownMenuItem>
           <DropdownMenuItem disabled={working || editor.importingDocx} onClick={onImport}>
             {editor.importingDocx ? <Spinner /> : <UploadIcon aria-hidden />}
-            Import Word doc
+            Import document
           </DropdownMenuItem>
           {meta.id && (
             <DropdownMenuItem disabled={working} onClick={editor.duplicate}>
@@ -326,7 +308,7 @@ function AuthorActions({ editor, canDiscard, onImport }: ActionsProps) {
       <Button
         variant="ghost"
         size="icon-sm"
-        aria-label="Import Word doc"
+        aria-label="Import document"
         disabled={working || editor.importingDocx}
         onClick={onImport}
       >

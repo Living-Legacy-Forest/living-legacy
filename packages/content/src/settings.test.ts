@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest';
+import { BRAND_RULES } from './brand-language';
 import {
   contentTargetProblem,
   contentTargetsFrom,
@@ -94,6 +95,7 @@ describe('content targets', () => {
       targetImagesMax: 8,
       targetFocusKeywordUses: 2,
       targetRelatedTermUses: 1,
+      brandRules: [...BRAND_RULES],
     });
   });
 
@@ -136,5 +138,24 @@ describe('siteIconProblem', () => {
     expect(siteIconProblem({ width: null, height: null })).toBe(
       'That image could not be measured. Upload it again as a PNG.'
     );
+  });
+});
+
+describe('brand rules in settings', () => {
+  it('start as the guide list and keep a valid edited one', () => {
+    expect(parseSiteSettings({}).brandRules).toEqual([...BRAND_RULES]);
+    const edited = [{ match: 'cheap', instead: 'affordable', severity: 'warning' }];
+    expect(parseSiteSettings({ brandRules: edited }).brandRules).toEqual(edited);
+  });
+
+  it('fall back to the guide list when the stored one is broken', () => {
+    expect(parseSiteSettings({ brandRules: [{ match: 1 }] }).brandRules).toEqual([...BRAND_RULES]);
+    expect(parseSiteSettings({ brandRules: { plot: true } }).brandRules).toEqual([...BRAND_RULES]);
+  });
+
+  it('travel with the content targets to the score', () => {
+    const edited = [{ match: 'cheap', instead: 'affordable', severity: 'critical' as const }];
+    const targets = contentTargetsFrom(parseSiteSettings({ brandRules: edited }));
+    expect(targets.brandRules).toEqual(edited);
   });
 });

@@ -4,9 +4,13 @@
  * uploads from before it did have none, and are served at full size only.
  */
 
+// A card shows its image about 360px wide, so 640 covers it on sharp screens.
+// Smaller copies (320) are for srcset, where the browser picks by width.
+const CARD_WIDTH = 640;
+
 /**
- * A `srcset` listing the copies an image has plus the original, and the
- * smallest copy's URL; both undefined when it has no copies.
+ * A `srcset` listing the copies an image has plus the original, and a copy
+ * big enough for a card; both undefined when it has no copies.
  */
 export function mediaSources(
   url: string,
@@ -26,7 +30,7 @@ export function mediaSources(
   if (!widths.length) return {};
   return {
     srcset: [...widths.map((w) => `${url}?w=${w} ${w}w`), `${url} ${width}w`].join(', '),
-    smallUrl: `${url}?w=${widths[0]}`,
+    smallUrl: `${url}?w=${widths.find((w) => w >= CARD_WIDTH) ?? widths.at(-1)}`,
   };
 }
 

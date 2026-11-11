@@ -383,17 +383,20 @@ export function ListRow({
  * screen). The press gives up once the finger moves 10px, the same distance
  * that starts a swipe, so the two never both happen.
  */
-function RowMenu({
+export function RowMenu({
   actions,
   destructive,
   anchorRef,
   preview,
+  previewClassName = 'px-4 py-2.5',
   children,
 }: {
   actions: RowMenuItem[];
   destructive: RowMenuItem[];
   anchorRef: React.RefObject<HTMLDivElement | null>;
   preview: React.ReactNode;
+  /** Padding for the lifted card on touch; an image tile fills it instead. */
+  previewClassName?: string;
   children: React.ReactNode;
 }) {
   const [touch, setTouch] = useState(false);
@@ -435,7 +438,10 @@ function RowMenu({
             <ContextMenuPrimitive.Popup className="flex w-(--anchor-width) origin-(--transform-origin) flex-col gap-2 transition-[opacity,scale] duration-200 ease-out outline-none data-ending-style:scale-95 data-ending-style:opacity-0 data-starting-style:scale-95 data-starting-style:opacity-0 data-[side=top]:flex-col-reverse motion-reduce:transition-none">
               <div
                 aria-hidden
-                className="pointer-events-none flex min-h-(--anchor-height) flex-col justify-center rounded-xl bg-(--ios-cell) px-4 py-2.5 shadow-lg"
+                className={cn(
+                  'pointer-events-none flex min-h-(--anchor-height) flex-col justify-center overflow-hidden rounded-xl bg-(--ios-cell) shadow-lg',
+                  previewClassName
+                )}
               >
                 {preview}
               </div>

@@ -5,9 +5,9 @@
 //
 // A new image can be dropped on the field or chosen from the computer, and is
 // cropped to the shape the website shows it in before it is uploaded.
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { mediaSrc } from '@/lib/upload-media';
-import { SearchInput, matchesSearch } from '@/components/list/list-tools';
+import { SearchInput } from '@/components/list/list-tools';
 import { UploadIcon } from '@/components/icons';
 import { useImageUpload } from '@/components/media/image-crop-dialog';
 import { ImageDropZone, useFileChooser, useImageDrop } from '@/components/media/image-drop-zone';
@@ -26,6 +26,7 @@ import { Label } from '@/components/ui/label';
 import { Spinner } from '@/components/ui/spinner';
 import { notify } from '@/lib/notify';
 import { cn } from '@/lib/utils';
+import { useLoadMore } from '@/hooks/use-load-more';
 import { type MediaItem, getMediaItems, listMedia, updateMedia } from '@/server/media';
 
 // Images seen this session, so reopening a form shows its image at once.
@@ -301,7 +302,15 @@ export function MediaPicker({
 }) {
   const many = onSelectMany !== undefined;
   const [items, setItems] = useState<MediaItem[] | null>(null);
+  // The image already chosen, when it is further down than the pages loaded.
+  const [current, setCurrent] = useState<MediaItem | null>(null);
+  const [cursor, setCursor] = useState<string | null>(null);
+  const [loadingMore, setLoadingMore] = useState(false);
   const [query, setQuery] = useState('');
+  // The search sent to the server, once typing pauses.
+  const [searched, setSearched] = useState('');
+  // Bumped by every new search, so a late page from an older one is dropped.
+  const generation = useRef(0);
   const [chosen, setChosen] = useState<string[]>(selectedId ? [selectedId] : []);
   const choose = (id: string) =>
     setChosen((list) => {
@@ -325,27 +334,57 @@ export function MediaPicker({
     if (!open) return;
     setChosen(selectedId ? [selectedId] : []);
     setQuery('');
-    let current = true;
-    listMedia()
-      .then((list) => {
-        if (!current) return;
-        list.forEach(remember);
-        setItems(list);
-      })
-      .catch((error) => notify.error('Could not load the media library', error));
-    return () => {
-      current = false;
-    };
+    setSearched('');
+    setItems(null);
   }, [open, selectedId]);
 
-  const visible = (items ?? []).filter(
-    (m) =>
-      // The library also holds documents, which cannot be used as an image.
-      m.mime.startsWith('image/') &&
-      !hiddenIds?.includes(m.id) &&
-      matchesSearch(query, [m.filename, m.alt, m.caption])
+  useEffect(() => {
+    const timer = setTimeout(() => setSearched(query.trim()), 300);
+    return () => clearTimeout(timer);
+  }, [query]);
+
+  useEffect(() => {
+    if (!open) return;
+    const mine = ++generation.current;
+    listMedia({
+      data: { imagesOnly: true, q: searched || undefined, include: selectedId ?? undefined },
+    })
+      .then((page) => {
+        if (mine !== generation.current) return;
+        page.items.forEach(remember);
+        if (page.included) remember(page.included);
+        setItems(page.items);
+        setCurrent(page.included);
+        setCursor(page.nextCursor);
+      })
+      .catch((error) => notify.error('Could not load the media library', error));
+  }, [open, searched, selectedId]);
+
+  function loadMore() {
+    if (!cursor || loadingMore) return;
+    const mine = generation.current;
+    setLoadingMore(true);
+    listMedia({ data: { imagesOnly: true, q: searched || undefined, cursor } })
+      .then((page) => {
+        if (mine !== generation.current) return;
+        page.items.forEach(remember);
+        // An upload since the first page shifts the list; skip any repeats.
+        setItems((list) => {
+          const seen = new Set((list ?? []).map((m) => m.id));
+          return [...(list ?? []), ...page.items.filter((m) => !seen.has(m.id))];
+        });
+        setCursor(page.nextCursor);
+      })
+      .catch((error) => notify.error('Could not load more images', error))
+      .finally(() => setLoadingMore(false));
+  }
+  const sentinel = useLoadMore<HTMLDivElement>(loadMore, open && cursor !== null && !loadingMore);
+
+  // Documents are left out by the server; images already in use here by us.
+  const visible = (items ?? []).filter((m) => !hiddenIds?.includes(m.id));
+  const picked = chosen.flatMap(
+    (id) => items?.find((m) => m.id === id) ?? (current?.id === id ? current : [])
   );
-  const picked = chosen.flatMap((id) => items?.find((m) => m.id === id) ?? []);
   const summary = many
     ? picked.length === 0
       ? 'No images selected'
@@ -399,9 +438,7 @@ export function MediaPicker({
               </div>
             ) : visible.length === 0 ? (
               <p className="text-muted-foreground flex h-48 items-center justify-center text-center text-sm">
-                {items.length === 0
-                  ? 'No images yet. Upload one, or drop it here.'
-                  : 'No images match.'}
+                {searched ? 'No images match.' : 'No images yet. Upload one, or drop it here.'}
               </p>
             ) : (
               <div
@@ -424,13 +461,27 @@ export function MediaPicker({
                     )}
                   >
                     <img
-                      src={mediaSrc(m, 640)}
+                      src={mediaSrc(m, 320)}
                       alt={m.alt || m.filename}
                       loading="lazy"
                       className="size-full object-cover"
                     />
                   </button>
                 ))}
+              </div>
+            )}
+            {cursor !== null && items !== null && (
+              <div ref={sentinel} className="flex justify-center pt-3">
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="sm"
+                  disabled={loadingMore}
+                  onClick={loadMore}
+                >
+                  {loadingMore && <Spinner data-icon="inline-start" />}
+                  Show more
+                </Button>
               </div>
             )}
           </div>

@@ -1,4 +1,5 @@
 import { MUTED, type Stat, StatCard } from '@/components/stat-card/stat-card';
+import { sum } from '@/components/stat-card/shared';
 import { formatBytes, formatInteger } from '@/lib/format';
 import type { DashboardData } from '@/server/dashboard';
 
@@ -12,20 +13,21 @@ function locationHint(locations: DashboardData['locations']) {
     .join(', ');
 }
 
-function buildStats({ posts, media, locations }: DashboardData): Stat[] {
+function buildStats({ posts, media, locations, trendEndsAt: endsAt }: DashboardData): Stat[] {
   const open = locations.filter((l) => l.stage !== 'coming_soon').length;
   return [
     {
       label: 'Published posts',
       value: posts.published,
-      hint: `${formatInteger(posts.publishedLast30)} in the last 30 days`,
-      trend: { kind: 'area', weeks: posts.publishedWeekly, counted: 'posts published' },
+      // The same 12 weeks the chart above it shows.
+      hint: `${formatInteger(sum(posts.publishedWeekly))} in the last ${posts.publishedWeekly.length} weeks`,
+      trend: { kind: 'area', weeks: posts.publishedWeekly, counted: 'posts published', endsAt },
     },
     {
       label: 'Drafts',
       value: posts.drafts,
       hint: 'Not on the website yet',
-      trend: { kind: 'bar', weeks: posts.startedWeekly, counted: 'posts started' },
+      trend: { kind: 'bar', weeks: posts.startedWeekly, counted: 'posts started', endsAt },
     },
     {
       label: 'Media files',
@@ -39,6 +41,7 @@ function buildStats({ posts, media, locations }: DashboardData): Stat[] {
         weeks: media.uploadedWeekly,
         counted: 'files uploaded',
         total: { value: media.files, label: 'files in the library' },
+        endsAt,
       },
     },
     {

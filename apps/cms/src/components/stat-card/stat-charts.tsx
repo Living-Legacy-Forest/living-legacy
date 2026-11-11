@@ -19,17 +19,14 @@ import {
   ChartTooltipContent,
 } from '@/components/ui/chart';
 import { formatInteger } from '@/lib/format';
-import { MUTED, type Part, type Trend, sum } from './shared';
+import { useTimeZone } from '@/lib/use-time-zone';
+import { MUTED, type Part, type Trend, dayMonth, sum, weekName, weekStart } from './shared';
 
 // The chart library is loaded with these, after the card's figures are on screen.
 
-function weeksAgo(i: number, total: number) {
-  const ago = total - 1 - i;
-  return ago === 0 ? 'This week' : ago === 1 ? 'Last week' : `${ago} weeks ago`;
-}
-
 /** Each week's count, or the running total at the end of each week when `total` is given. */
-function trendData({ weeks, total }: Trend) {
+function trendData({ weeks, total, endsAt }: Trend, timeZone: string) {
+  const name = (i: number) => weekName(i, weeks.length, endsAt, timeZone);
   const values = [...weeks];
   if (total) {
     // Walk back from today: each week ends at the total less what came after it.
@@ -39,7 +36,7 @@ function trendData({ weeks, total }: Trend) {
       running -= weeks[i] ?? 0;
     }
   }
-  return values.map((count, i) => ({ week: weeksAgo(i, weeks.length), count }));
+  return values.map((count, i) => ({ week: name(i), count }));
 }
 
 const MARGIN = { top: 2, right: 2, bottom: 2, left: 2 };
@@ -55,7 +52,8 @@ const tooltip = <ChartTooltip cursor={false} content={<ChartTooltipContent indic
 /** The last twelve weeks as an area, bars or a line. Hover for each week's figure. */
 export function TrendChart(trend: Trend) {
   const gradient = useId();
-  const data = trendData(trend);
+  const timeZone = useTimeZone();
+  const data = trendData(trend, timeZone);
   const label = trend.total?.label ?? trend.counted;
   const config = { count: { label, color: 'var(--primary)' } } satisfies ChartConfig;
   const description = !trend.total
@@ -115,6 +113,16 @@ export function TrendChart(trend: Trend) {
           </BarChart>
         )}
       </ChartContainer>
+      {trend.endsAt !== undefined && (
+        // Only the two ends: enough to say what span the chart covers.
+        <div
+          aria-hidden
+          className="text-muted-foreground mt-1 flex justify-between text-[10px] leading-none tabular-nums"
+        >
+          <span>{dayMonth(weekStart(0, trend.weeks.length, trend.endsAt), timeZone)}</span>
+          <span>This week</span>
+        </div>
+      )}
       <p className="sr-only">{description}</p>
     </div>
   );

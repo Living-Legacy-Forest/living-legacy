@@ -2,6 +2,7 @@
 // (footer, contact page, form fallbacks, page titles and search defaults).
 // Stored as one JSON row in `site_settings`; these defaults fill any key the
 // row lacks, so a field added later never reads as undefined.
+import { BRAND_RULES, type BrandRule, parseBrandRules } from './brand-language';
 
 export const themes = ['system', 'light', 'dark'] as const;
 export type Theme = (typeof themes)[number];
@@ -62,6 +63,8 @@ export const SITE_SETTINGS_DEFAULTS = {
   targetImagesMax: 8,
   targetFocusKeywordUses: 2,
   targetRelatedTermUses: 1,
+  /** The words the content score flags (Settings, Brand language). Starts as the guide's list. */
+  brandRules: [...BRAND_RULES] as BrandRule[],
   // CMS sign-in.
   /** Comma-separated; invites go only to these domains. Empty allows any. */
   allowedEmailDomains: '',
@@ -99,6 +102,8 @@ export function parseSiteSettings(data: unknown): SiteSettings {
     const value = stored[key];
     if (typeof value === typeof settings[key]) Object.assign(settings, { [key]: value });
   }
+  // A list needs more than a type check: an invalid one falls back to the defaults.
+  settings.brandRules = parseBrandRules(stored.brandRules) ?? SITE_SETTINGS_DEFAULTS.brandRules;
   return settings;
 }
 
@@ -112,6 +117,7 @@ export const CONTENT_TARGET_KEYS = [
   'targetImagesMax',
   'targetFocusKeywordUses',
   'targetRelatedTermUses',
+  'brandRules',
 ] as const satisfies readonly (keyof SiteSettings)[];
 
 export type ContentTargets = Pick<SiteSettings, (typeof CONTENT_TARGET_KEYS)[number]>;

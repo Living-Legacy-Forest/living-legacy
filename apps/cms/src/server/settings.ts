@@ -7,6 +7,7 @@ import {
   type Theme,
   type TimeZone,
   can,
+  brandRulesSchema,
   contentTargetProblem,
   formatAbn,
   isEmailDomain,
@@ -117,6 +118,7 @@ const settingsSchema = z
     targetImagesMax: target,
     targetFocusKeywordUses: target,
     targetRelatedTermUses: target,
+    brandRules: brandRulesSchema,
     allowedEmailDomains: text(500)
       .refine(
         (v) => parseEmailDomains(v).every(isEmailDomain),

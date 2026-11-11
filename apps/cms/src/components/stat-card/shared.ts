@@ -9,6 +9,12 @@ export type Trend = {
   counted: string;
   /** Draw the running total, ending at this, instead of each week's count. */
   total?: { value: number; label: string };
+  /**
+   * When the last week ends (now, on the server), to date the weeks: the axis
+   * reads "19 Aug … This week" and each tooltip "Week of 3 Nov". Without it
+   * the tooltip says "3 weeks ago" and there is no axis.
+   */
+  endsAt?: number;
 };
 
 export type Part = { key: string; label: string; value: number; color: string };
@@ -33,4 +39,25 @@ export function change(weeks: number[]) {
   const diff = sum(weeks.slice(-4)) - sum(weeks.slice(-8, -4));
   if (diff === 0) return null;
   return { diff, text: `${diff > 0 ? '+' : '\u2212'}${formatInteger(Math.abs(diff))}` };
+}
+
+const WEEK_MS = 7 * 86_400_000;
+
+/** "3 Nov", in the site's time zone. */
+export const dayMonth = (timestamp: number, timeZone: string) =>
+  new Date(timestamp).toLocaleDateString('en-AU', { timeZone, day: 'numeric', month: 'short' });
+
+/** When week `i` (oldest first) starts: the weeks are the seven-day spans up to `endsAt`. */
+export const weekStart = (i: number, count: number, endsAt: number) =>
+  endsAt - (count - i) * WEEK_MS;
+
+/**
+ * What a week is called in the tooltip: "Week of 3 Nov", or "This week" for the
+ * last. Without `endsAt` to date them, "3 weeks ago".
+ */
+export function weekName(i: number, count: number, endsAt: number | undefined, timeZone: string) {
+  const ago = count - 1 - i;
+  if (ago === 0) return 'This week';
+  if (endsAt === undefined) return ago === 1 ? 'Last week' : `${ago} weeks ago`;
+  return `Week of ${dayMonth(weekStart(i, count, endsAt), timeZone)}`;
 }

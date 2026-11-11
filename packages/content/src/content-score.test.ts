@@ -382,3 +382,18 @@ describe('analysePost credit', () => {
     expect(full.score).toBeGreaterThan(short.score);
   });
 });
+
+describe('brand language from Settings', () => {
+  it('scores against the edited list instead of the built-in one', () => {
+    const input = { ...good, body: doc(p(t('A cheap plot by the gate.'))) };
+    const builtIn = analysePost(input, loose).brand.map((f) => f.found);
+    expect(builtIn).toContain('plot');
+    expect(builtIn).not.toContain('cheap');
+
+    const edited = analysePost(input, {
+      ...loose,
+      brandRules: [{ match: 'cheap', instead: 'affordable', severity: 'critical' }],
+    }).brand.map((f) => f.found);
+    expect(edited).toEqual(['cheap']);
+  });
+});

@@ -56,7 +56,6 @@ export const getDashboardData = createServerFn({ method: 'GET' })
       can(role, 'posts:publish') || can(role, 'seo:write') ? loadScoreSummary(db) : null;
     const notTrashed = isNull(posts.deletedAt);
     const isPublished = and(eq(posts.status, 'published'), notTrashed);
-    const since = (days: number) => new Date(now - days * DAY_MS);
     const trendStart = new Date(now - TREND_WEEKS * WEEK_MS);
     // Rows per week for the stat cards' trend bars: 0 is this week, 1 the one before.
     const weekly = (table: typeof posts | typeof media, at: SQLiteColumn, where?: SQL) => {
@@ -83,7 +82,6 @@ export const getDashboardData = createServerFn({ method: 'GET' })
         .select({
           published: sql<number>`coalesce(sum(${posts.status} = 'published'), 0)`,
           drafts: sql<number>`coalesce(sum(${posts.status} = 'draft'), 0)`,
-          last30: sql<number>`coalesce(sum(${posts.status} = 'published' and ${posts.publishedAt} >= ${since(30).getTime()}), 0)`,
         })
         .from(posts)
         .where(notTrashed),
@@ -150,7 +148,6 @@ export const getDashboardData = createServerFn({ method: 'GET' })
       posts: {
         published: Number(counts?.published ?? 0),
         drafts: Number(counts?.drafts ?? 0),
-        publishedLast30: Number(counts?.last30 ?? 0),
         publishedWeekly: toWeeks(publishedWeekly),
         startedWeekly: toWeeks(startedWeekly),
       },
@@ -161,6 +158,8 @@ export const getDashboardData = createServerFn({ method: 'GET' })
         uploadedWeekly: toWeeks(uploadedWeekly),
       },
       locations: locationRows,
+      /** When the trend weeks end: the last one is the seven days up to this. */
+      trendEndsAt: now,
       recentDrafts: drafts.map(toSummary),
       recentlyPublished: published.map(toSummary),
       attention: await attention,

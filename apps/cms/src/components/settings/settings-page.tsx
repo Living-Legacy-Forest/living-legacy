@@ -1,5 +1,6 @@
 import {
   SEO_DESCRIPTION_LIMIT,
+  brandRulesProblem,
   contentTargetProblem,
   contentTargetsFrom,
   isEmailDomain,
@@ -24,6 +25,7 @@ import { ArrowRight, ChevronDownIcon } from '@/components/icons';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { BrandRulesEditor } from '@/components/settings/brand-rules-editor';
 import { SettingsRow, SettingsSection } from '@/components/settings/settings-section';
 import { MediaPicker, useMediaItem } from '@/components/media/image-field';
 import {
@@ -64,6 +66,7 @@ const sections = [
   { id: 'social', title: 'Social links' },
   { id: 'search', title: 'Search & sharing' },
   { id: 'content-targets', title: 'Content targets' },
+  { id: 'brand-language', title: 'Brand language' },
   { id: 'legal', title: 'Legal' },
   { id: 'sign-in', title: 'Sign-in & security' },
   { id: 'appearance', title: 'Language & appearance' },
@@ -150,6 +153,8 @@ function problem(v: SiteSettings): { field: string; message: string } | null {
   }
   const targets = contentTargetProblem(contentTargetsFrom(v));
   if (targets) return { field: 'settings-target-words', message: targets };
+  const brand = brandRulesProblem(v.brandRules);
+  if (brand) return { field: 'brand-language', message: brand };
   return null;
 }
 
@@ -235,7 +240,7 @@ export function SettingsPage({
             .filter((id) =>
               id === 'legal'
                 ? legalPages !== undefined
-                : !seoOnly || id === 'search' || id === 'content-targets'
+                : !seoOnly || id === 'search' || id === 'content-targets' || id === 'brand-language'
             )}
         />
 
@@ -562,6 +567,17 @@ export function SettingsPage({
             </SettingsRow>
           </SettingsSection>
 
+          <SettingsSection
+            id="brand-language"
+            title="Brand language"
+            description="Words the content score flags in posts, and what to write instead. Never use counts as critical; Check is usually wrong but sometimes fine. The AI wording check uses this list too."
+          >
+            <BrandRulesEditor
+              rules={values.brandRules}
+              onChange={(brandRules) => patch({ brandRules })}
+            />
+          </SettingsSection>
+
           {legalPages && <LegalPagesSection pages={legalPages} />}
 
           {!seoOnly && (
@@ -666,7 +682,29 @@ export function SettingsPage({
                   </SelectContent>
                 </Select>
               </SettingsRow>
-              <SettingsRow id="settings-theme" title="Theme">
+              <SettingsRow
+                id="settings-theme"
+                title="Theme"
+                description={
+                  // Their own choice wins over this one, so without this the
+                  // setting would seem to do nothing for them.
+                  personalTheme ? (
+                    <>
+                      You use your own theme ({themeLabels[personalTheme].toLowerCase()}), so this
+                      changes the CMS for everyone else. To follow it yourself, choose Site setting
+                      in{' '}
+                      <Link
+                        to="/profile"
+                        hash="appearance"
+                        className="underline underline-offset-2"
+                      >
+                        your profile
+                      </Link>
+                      .
+                    </>
+                  ) : undefined
+                }
+              >
                 <Select
                   items={themeItems}
                   value={values.theme}

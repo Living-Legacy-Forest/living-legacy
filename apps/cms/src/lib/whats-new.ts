@@ -26,6 +26,31 @@ export type WhatsNewEntry = {
 
 export const whatsNew: WhatsNewEntry[] = [
   {
+    id: '2026-11-11-5',
+    title: 'Faster media and your own brand words',
+    items: [
+      {
+        title: 'Media loads as you scroll',
+        body: 'The media library and the image picker show the newest files first and load more as you scroll. Search now looks through every file, including ones not loaded yet.',
+        link: { label: 'Open Media', to: '/media' },
+      },
+      {
+        title: 'See uploads as they happen',
+        body: 'Uploading several images shows which one is going up, and each appears in the library as soon as it is done. Right-click a file, or press and hold on a phone, to open, copy its link, download or delete it.',
+        link: { label: 'Open Media', to: '/media' },
+      },
+      {
+        title: 'Edit the brand language list',
+        body: 'Settings now has Brand language: the words the content score flags in posts, and what to write instead. Add, change or remove them to suit how you write.',
+        link: { label: 'Open Settings', to: '/settings', hash: 'brand-language' },
+      },
+      {
+        title: 'Import a document',
+        body: 'In a post, choose Import document from the … menu and drop in a Word file, or choose one. It replaces the post’s content until you save.',
+      },
+    ],
+  },
+  {
     id: '2026-11-11-4',
     title: 'Draft posts with Claude',
     items: [

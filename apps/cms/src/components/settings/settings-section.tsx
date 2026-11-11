@@ -49,7 +49,7 @@ export function SettingsRow({
   /** The field's id, so the title labels it (and error toasts can name it). */
   id: string;
   title: string;
-  description?: string;
+  description?: ReactNode;
   suffix?: ReactNode;
   stacked?: boolean;
   children: ReactNode;

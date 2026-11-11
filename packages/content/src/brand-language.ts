@@ -1,5 +1,7 @@
 // Words the brand language guide rules out, for the content score. Source:
-// docs/brand-language.md. When the guide changes, update both together.
+// docs/brand-language.md. BRAND_RULES is the starting list; admins edit their
+// own copy in Settings (`brandRules`), which is what posts are scored against.
+import { z } from 'zod';
 import { phraseRegex } from './rich-text-outline';
 
 export type BrandSeverity = 'critical' | 'warning';
@@ -67,14 +69,75 @@ export const BRAND_RULES: readonly BrandRule[] = [
   { match: 'officiant', instead: 'celebrant', severity: 'warning' },
 ];
 
-// Longest first, and each match is blanked out once found, so "final resting
-// place" is not reported again as "resting place".
-const LONGEST_FIRST = [...BRAND_RULES].sort((a, b) => b.match.length - a.match.length);
+export const brandSeverities = ['critical', 'warning'] as const;
 
-export function findBrandProblems(text: string): BrandFinding[] {
+/** One rule as an admin edits it in Settings. */
+export const brandRuleSchema = z.object({
+  match: z
+    .string()
+    .trim()
+    .min(1, 'Each rule needs a word or phrase to look for.')
+    .max(60, 'Keep each word or phrase to 60 characters.'),
+  instead: z
+    .string()
+    .trim()
+    .min(1, 'Each rule needs what to write instead.')
+    .max(160, 'Keep "write instead" to 160 characters.'),
+  severity: z.enum(brandSeverities),
+});
+
+export const BRAND_RULES_MAX = 200;
+
+export const brandRulesSchema = z
+  .array(brandRuleSchema)
+  .max(BRAND_RULES_MAX, `Keep the list to ${BRAND_RULES_MAX} rules.`)
+  .superRefine((rules, ctx) => {
+    const problem = brandRulesProblem(rules);
+    if (problem) ctx.addIssue({ code: 'custom', message: problem });
+  });
+
+/** A sentence naming the first blank or repeated word, or null. */
+export function brandRulesProblem(
+  rules: readonly (Pick<BrandRule, 'match'> & { instead?: string })[]
+): string | null {
+  const seen = new Set<string>();
+  for (const { match, instead } of rules) {
+    if (!match.trim()) return 'A brand language rule has no word or phrase.';
+    if (instead !== undefined && !instead.trim()) {
+      return `"${match.trim()}" in the brand language list needs what to write instead.`;
+    }
+    const key = match.trim().toLowerCase();
+    if (seen.has(key)) return `"${match.trim()}" is in the brand language list twice.`;
+    seen.add(key);
+  }
+  return null;
+}
+
+/** A stored list, or null when there is none or it is not valid (the defaults apply). */
+export function parseBrandRules(value: unknown): BrandRule[] | null {
+  const parsed = brandRulesSchema.safeParse(value);
+  return parsed.success ? parsed.data : null;
+}
+
+// Longest first, and each match is blanked out once found, so "final resting
+// place" is not reported again as "resting place". Sorted once per list.
+const longestFirst = new WeakMap<readonly BrandRule[], BrandRule[]>();
+function sortedRules(rules: readonly BrandRule[]) {
+  let sorted = longestFirst.get(rules);
+  if (!sorted) {
+    sorted = [...rules].sort((a, b) => b.match.length - a.match.length);
+    longestFirst.set(rules, sorted);
+  }
+  return sorted;
+}
+
+export function findBrandProblems(
+  text: string,
+  rules: readonly BrandRule[] = BRAND_RULES
+): BrandFinding[] {
   const findings: BrandFinding[] = [];
   let rest = text;
-  for (const rule of LONGEST_FIRST) {
+  for (const rule of sortedRules(rules)) {
     let found = '';
     let count = 0;
     rest = rest.replace(phraseRegex(rule.match), (match) => {

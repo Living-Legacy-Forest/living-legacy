@@ -1,5 +1,10 @@
 import { describe, expect, it } from 'vitest';
-import { findBrandProblems } from './brand-language';
+import {
+  BRAND_RULES,
+  brandRulesProblem,
+  findBrandProblems,
+  parseBrandRules,
+} from './brand-language';
 
 describe('findBrandProblems', () => {
   it('reports a never-use word with how it was written and how often', () => {
@@ -77,5 +82,46 @@ describe('findBrandProblems', () => {
   it('lists critical findings before warnings', () => {
     const severities = findBrandProblems('A cemetery, a plot.').map((f) => f.severity);
     expect(severities).toEqual(['critical', 'warning']);
+  });
+});
+
+describe('an edited rule list', () => {
+  const rules = [
+    { match: 'cheap', instead: 'affordable', severity: 'critical' as const },
+    { match: 'plot', instead: 'Legacy Ground', severity: 'warning' as const },
+  ];
+
+  it('flags only the words on it, with its own severity', () => {
+    const found = findBrandProblems('A cheap plot near the grave.', rules);
+    expect(found.map((f) => [f.found, f.severity])).toEqual([
+      ['cheap', 'critical'],
+      ['plot', 'warning'],
+    ]);
+  });
+
+  it('still checks how EarthSApHE is spelt', () => {
+    expect(findBrandProblems('Earthsaphe', []).map((f) => f.kind)).toEqual(['spelling']);
+  });
+
+  it('refuses a word listed twice, in any case', () => {
+    expect(brandRulesProblem([{ match: 'Plot' }, { match: ' plot ' }])).toBe(
+      '"plot" is in the brand language list twice.'
+    );
+    expect(brandRulesProblem(BRAND_RULES)).toBeNull();
+  });
+
+  it('refuses a rule with a blank word or nothing to write instead', () => {
+    expect(brandRulesProblem([{ match: ' ', instead: 'x' }])).toBe(
+      'A brand language rule has no word or phrase.'
+    );
+    expect(brandRulesProblem([{ match: 'cheap', instead: '' }])).toBe(
+      '"cheap" in the brand language list needs what to write instead.'
+    );
+  });
+
+  it('reads a stored list, or null when it is not valid', () => {
+    expect(parseBrandRules(rules)).toEqual(rules);
+    expect(parseBrandRules([{ match: '', instead: 'x', severity: 'critical' }])).toBeNull();
+    expect(parseBrandRules('plot')).toBeNull();
   });
 });

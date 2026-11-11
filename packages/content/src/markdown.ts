@@ -156,3 +156,84 @@ export function markdownToRichText(markdown: string): RichTextDoc {
 
   return { type: 'doc', content } as RichTextDoc;
 }
+
+// ---------------------------------------------------------------------------
+// And back again, for AI tools that read a post before editing it. It writes
+// only what markdownToRichText reads, so a post that round-trips comes back
+// the same. Anything else (images, tables, underline, line breaks…) is named
+// in `editorOnly`: sending the Markdown back would lose it.
+
+const plainText = (node: Node): string =>
+  node.text ?? (node.content ?? []).map(plainText).join(' ');
+
+export function richTextToMarkdown(doc: RichTextDoc | null): {
+  markdown: string;
+  editorOnly: string[];
+} {
+  const editorOnly = new Set<string>();
+
+  const inlineText = (nodes: Node[] = []): string =>
+    nodes
+      .map((node) => {
+        if (node.type !== 'text') {
+          editorOnly.add(node.type);
+          return node.type === 'hardBreak' ? ' ' : plainText(node);
+        }
+        // The first mark is the outermost, as markdownToRichText nests them.
+        let text = node.text ?? '';
+        for (const mark of [...(node.marks ?? [])].reverse()) {
+          if (mark.type === 'code') text = `\`${text}\``;
+          else if (mark.type === 'italic') text = `*${text}*`;
+          else if (mark.type === 'bold') text = `**${text}**`;
+          else if (mark.type === 'link' && mark.attrs?.href) text = `[${text}](${mark.attrs.href})`;
+          else editorOnly.add(mark.type);
+        }
+        return text;
+      })
+      .join('')
+      // Two bold runs side by side read as one: "**a ****b**" is "**a b**".
+      .replace(/(?<!\*)\*{4}(?!\*)/g, '');
+
+  const block = (node: Node): string => {
+    switch (node.type) {
+      case 'paragraph':
+        return inlineText(node.content);
+      case 'heading':
+        return `${'#'.repeat(Number(node.attrs?.level) || 2)} ${inlineText(node.content)}`;
+      case 'bulletList':
+      case 'orderedList': {
+        const start = Number(node.attrs?.start) || 1;
+        return (node.content ?? [])
+          .map((item, i) => {
+            const [first, ...more] = item.content ?? [];
+            if (more.length || (first && first.type !== 'paragraph')) editorOnly.add('nested list');
+            const text = (item.content ?? []).map(block).join(' ');
+            return `${node.type === 'orderedList' ? `${start + i}.` : '-'} ${text}`;
+          })
+          .join('\n');
+      }
+      case 'blockquote':
+        return blocks(node.content)
+          .split('\n')
+          .map((line) => (line ? `> ${line}` : '>'))
+          .join('\n');
+      case 'codeBlock':
+        return `\`\`\`\n${(node.content ?? []).map((n) => n.text ?? '').join('')}\n\`\`\``;
+      case 'horizontalRule':
+        return '---';
+      default:
+        // Kept as plain text, so whatever reads it still sees the words.
+        editorOnly.add(node.type);
+        return plainText(node);
+    }
+  };
+
+  const blocks = (nodes: Node[] = []) =>
+    nodes
+      .map(block)
+      .filter((text) => text.trim())
+      .join('\n\n');
+
+  const markdown = blocks((doc?.content ?? []) as Node[]);
+  return { markdown, editorOnly: [...editorOnly].sort() };
+}

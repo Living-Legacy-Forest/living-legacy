@@ -5,8 +5,14 @@ import { and, desc, eq, isNull } from 'drizzle-orm';
 import { z } from 'zod';
 import { generateApiKey, hashApiKey } from '@/lib/api-keys';
 import { getDb } from '@/lib/db';
+import { cmsOrigin } from '@/lib/email';
 import { requirePermission } from '@/lib/session';
 import { logActivity } from './activity-log';
+
+/** The CMS's own address, for the connection examples: the configured one, not whatever host the page was reached on. */
+export const getCmsOrigin = createServerFn({ method: 'GET' })
+  .middleware([requirePermission('settings:write')])
+  .handler(() => cmsOrigin());
 
 /** Every key, newest first, including revoked ones (shown as such). */
 export const listApiKeys = createServerFn({ method: 'GET' })

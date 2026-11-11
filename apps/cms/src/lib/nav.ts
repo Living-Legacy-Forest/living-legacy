@@ -3,7 +3,7 @@ import {
   ActivityIcon,
   ArrowRightLeft,
   CalendarClockIcon,
-  KeyIcon,
+  IntegrationsIcon,
   CircleHelp,
   ExternalLink,
   FileText,
@@ -33,7 +33,7 @@ export type NavItem = {
     | '/posts/tags'
     | '/profile'
     | '/activity'
-    | '/api-keys'
+    | '/integrations'
     | '/checks'
     | '/announcements'
     | '/events'
@@ -112,7 +112,12 @@ export const navGroups: NavGroup[] = [
       { title: 'Activity', icon: ActivityIcon, to: '/activity', permission: 'posts:publish' },
       { title: 'Redirects', icon: ArrowRightLeft, to: '/redirects', permission: 'redirects:write' },
       { title: 'Users', icon: UserCog, to: '/users', permission: 'users:manage' },
-      { title: 'API keys', icon: KeyIcon, to: '/api-keys', permission: 'settings:write' },
+      {
+        title: 'Integrations',
+        icon: IntegrationsIcon,
+        to: '/integrations',
+        permission: 'settings:write',
+      },
       {
         title: 'Settings',
         icon: Settings,

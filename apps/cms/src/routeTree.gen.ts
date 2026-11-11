@@ -11,6 +11,7 @@
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as AppRouteImport } from './routes/_app'
 import { Route as LoginRouteImport } from './routes/login'
+import { Route as McpRouteImport } from './routes/mcp'
 import { Route as AppIndexRouteImport } from './routes/_app/index'
 import { Route as ApiBuildRouteImport } from './routes/api/build'
 import { Route as AppActivityIndexRouteImport } from './routes/_app/activity/index'
@@ -20,6 +21,7 @@ import { Route as AppChecksIndexRouteImport } from './routes/_app/checks/index'
 import { Route as AppEventsIndexRouteImport } from './routes/_app/events/index'
 import { Route as AppEventsOverviewRouteImport } from './routes/_app/events/overview'
 import { Route as AppFaqsIndexRouteImport } from './routes/_app/faqs/index'
+import { Route as AppIntegrationsIndexRouteImport } from './routes/_app/integrations/index'
 import { Route as AppLegalIndexRouteImport } from './routes/_app/legal/index'
 import { Route as AppLegalSlugRouteImport } from './routes/_app/legal/$slug'
 import { Route as AppLocationsIndexRouteImport } from './routes/_app/locations/index'
@@ -56,6 +58,11 @@ const AppRoute = AppRouteImport.update({
 const LoginRoute = LoginRouteImport.update({
   id: '/login',
   path: '/login',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const McpRoute = McpRouteImport.update({
+  id: '/mcp',
+  path: '/mcp',
   getParentRoute: () => rootRouteImport,
 } as any)
 const AppIndexRoute = AppIndexRouteImport.update({
@@ -101,6 +108,11 @@ const AppEventsOverviewRoute = AppEventsOverviewRouteImport.update({
 const AppFaqsIndexRoute = AppFaqsIndexRouteImport.update({
   id: '/faqs/',
   path: '/faqs/',
+  getParentRoute: () => AppRoute,
+} as any)
+const AppIntegrationsIndexRoute = AppIntegrationsIndexRouteImport.update({
+  id: '/integrations/',
+  path: '/integrations/',
   getParentRoute: () => AppRoute,
 } as any)
 const AppLegalIndexRoute = AppLegalIndexRouteImport.update({
@@ -247,6 +259,7 @@ const ApiV1PostsIdRoute = ApiV1PostsIdRouteImport.update({
 export interface FileRoutesByFullPath {
   '/': typeof AppIndexRoute
   '/login': typeof LoginRoute
+  '/mcp': typeof McpRoute
   '/api/build': typeof ApiBuildRoute
   '/events/overview': typeof AppEventsOverviewRoute
   '/legal/$slug': typeof AppLegalSlugRoute
@@ -265,6 +278,7 @@ export interface FileRoutesByFullPath {
   '/checks/': typeof AppChecksIndexRoute
   '/events/': typeof AppEventsIndexRoute
   '/faqs/': typeof AppFaqsIndexRoute
+  '/integrations/': typeof AppIntegrationsIndexRoute
   '/legal/': typeof AppLegalIndexRoute
   '/locations/': typeof AppLocationsIndexRoute
   '/media-coverage/': typeof AppMediaCoverageIndexRoute
@@ -286,6 +300,7 @@ export interface FileRoutesByFullPath {
 }
 export interface FileRoutesByTo {
   '/login': typeof LoginRoute
+  '/mcp': typeof McpRoute
   '/api/build': typeof ApiBuildRoute
   '/': typeof AppIndexRoute
   '/events/overview': typeof AppEventsOverviewRoute
@@ -305,6 +320,7 @@ export interface FileRoutesByTo {
   '/checks': typeof AppChecksIndexRoute
   '/events': typeof AppEventsIndexRoute
   '/faqs': typeof AppFaqsIndexRoute
+  '/integrations': typeof AppIntegrationsIndexRoute
   '/legal': typeof AppLegalIndexRoute
   '/locations': typeof AppLocationsIndexRoute
   '/media-coverage': typeof AppMediaCoverageIndexRoute
@@ -328,6 +344,7 @@ export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/_app': typeof AppRouteWithChildren
   '/login': typeof LoginRoute
+  '/mcp': typeof McpRoute
   '/api/build': typeof ApiBuildRoute
   '/_app/': typeof AppIndexRoute
   '/_app/events/overview': typeof AppEventsOverviewRoute
@@ -347,6 +364,7 @@ export interface FileRoutesById {
   '/_app/checks/': typeof AppChecksIndexRoute
   '/_app/events/': typeof AppEventsIndexRoute
   '/_app/faqs/': typeof AppFaqsIndexRoute
+  '/_app/integrations/': typeof AppIntegrationsIndexRoute
   '/_app/legal/': typeof AppLegalIndexRoute
   '/_app/locations/': typeof AppLocationsIndexRoute
   '/_app/media-coverage/': typeof AppMediaCoverageIndexRoute
@@ -371,6 +389,7 @@ export interface FileRouteTypes {
   fullPaths:
     | '/'
     | '/login'
+    | '/mcp'
     | '/api/build'
     | '/events/overview'
     | '/legal/$slug'
@@ -389,6 +408,7 @@ export interface FileRouteTypes {
     | '/checks/'
     | '/events/'
     | '/faqs/'
+    | '/integrations/'
     | '/legal/'
     | '/locations/'
     | '/media-coverage/'
@@ -410,6 +430,7 @@ export interface FileRouteTypes {
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/login'
+    | '/mcp'
     | '/api/build'
     | '/'
     | '/events/overview'
@@ -429,6 +450,7 @@ export interface FileRouteTypes {
     | '/checks'
     | '/events'
     | '/faqs'
+    | '/integrations'
     | '/legal'
     | '/locations'
     | '/media-coverage'
@@ -451,6 +473,7 @@ export interface FileRouteTypes {
     | '__root__'
     | '/_app'
     | '/login'
+    | '/mcp'
     | '/api/build'
     | '/_app/'
     | '/_app/events/overview'
@@ -470,6 +493,7 @@ export interface FileRouteTypes {
     | '/_app/checks/'
     | '/_app/events/'
     | '/_app/faqs/'
+    | '/_app/integrations/'
     | '/_app/legal/'
     | '/_app/locations/'
     | '/_app/media-coverage/'
@@ -493,6 +517,7 @@ export interface FileRouteTypes {
 export interface RootRouteChildren {
   AppRoute: typeof AppRouteWithChildren
   LoginRoute: typeof LoginRoute
+  McpRoute: typeof McpRoute
   ApiBuildRoute: typeof ApiBuildRoute
   ApiAuthSplatRoute: typeof ApiAuthSplatRoute
   ApiAvatarKeyRoute: typeof ApiAvatarKeyRoute
@@ -521,6 +546,13 @@ declare module '@tanstack/react-router' {
       path: '/login'
       fullPath: '/login'
       preLoaderRoute: typeof LoginRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/mcp': {
+      id: '/mcp'
+      path: '/mcp'
+      fullPath: '/mcp'
+      preLoaderRoute: typeof McpRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/_app/': {
@@ -584,6 +616,13 @@ declare module '@tanstack/react-router' {
       path: '/faqs'
       fullPath: '/faqs/'
       preLoaderRoute: typeof AppFaqsIndexRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/_app/integrations/': {
+      id: '/_app/integrations/'
+      path: '/integrations'
+      fullPath: '/integrations/'
+      preLoaderRoute: typeof AppIntegrationsIndexRouteImport
       parentRoute: typeof AppRoute
     }
     '/_app/legal/': {
@@ -797,6 +836,7 @@ interface AppRouteChildren {
   AppChecksIndexRoute: typeof AppChecksIndexRoute
   AppEventsIndexRoute: typeof AppEventsIndexRoute
   AppFaqsIndexRoute: typeof AppFaqsIndexRoute
+  AppIntegrationsIndexRoute: typeof AppIntegrationsIndexRoute
   AppLegalIndexRoute: typeof AppLegalIndexRoute
   AppLocationsIndexRoute: typeof AppLocationsIndexRoute
   AppMediaCoverageIndexRoute: typeof AppMediaCoverageIndexRoute
@@ -825,6 +865,7 @@ const AppRouteChildren: AppRouteChildren = {
   AppChecksIndexRoute: AppChecksIndexRoute,
   AppEventsIndexRoute: AppEventsIndexRoute,
   AppFaqsIndexRoute: AppFaqsIndexRoute,
+  AppIntegrationsIndexRoute: AppIntegrationsIndexRoute,
   AppLegalIndexRoute: AppLegalIndexRoute,
   AppLocationsIndexRoute: AppLocationsIndexRoute,
   AppMediaCoverageIndexRoute: AppMediaCoverageIndexRoute,
@@ -846,6 +887,7 @@ const AppRouteWithChildren = AppRoute._addFileChildren(AppRouteChildren)
 const rootRouteChildren: RootRouteChildren = {
   AppRoute: AppRouteWithChildren,
   LoginRoute: LoginRoute,
+  McpRoute: McpRoute,
   ApiBuildRoute: ApiBuildRoute,
   ApiAuthSplatRoute: ApiAuthSplatRoute,
   ApiAvatarKeyRoute: ApiAvatarKeyRoute,

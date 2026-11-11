@@ -47,11 +47,15 @@ import { setTheme, useThemeSync } from '@/lib/use-theme-sync';
 import { cn } from '@/lib/utils';
 import type { LegalPageSummary } from '@/server/legal-page-store';
 import {
+  type CmsColour,
+  type CmsFont,
   type Locale,
   type SiteSettings,
   TITLE_TOKENS,
   type Theme,
   type TimeZone,
+  cmsColours,
+  cmsFonts,
   saveSiteSettings,
   timeZones,
 } from '@/server/settings';
@@ -88,6 +92,65 @@ const themeLabels: Record<Theme, string> = {
   light: 'Light',
   dark: 'Dark',
 };
+
+const fontLabels: Record<CmsFont, string> = {
+  inter: 'Inter',
+  geist: 'Geist',
+  'ibm-plex-sans': 'IBM Plex Sans',
+  atkinson: 'Atkinson Hyperlegible',
+  system: 'System font',
+};
+
+// Each option is shown in its own face (styles.css, [data-font]).
+const fontItems: { value: CmsFont; label: ReactNode }[] = cmsFonts.map((value) => ({
+  value,
+  label: (
+    <span data-font={value} className="font-sans">
+      {fontLabels[value]}
+    </span>
+  ),
+}));
+
+const colourLabels: Record<CmsColour, string> = {
+  neutral: 'Neutral',
+  stone: 'Stone',
+  forest: 'Forest',
+  ocean: 'Ocean',
+  clay: 'Clay',
+};
+
+// The swatch takes its colour from the palette's own values (styles.css, [data-colour]).
+const colourItems: { value: CmsColour; label: ReactNode }[] = cmsColours.map((value) => ({
+  value,
+  label: (
+    <span className="flex items-center gap-1.5">
+      <span
+        data-colour={value}
+        aria-hidden
+        className="size-3 shrink-0 rounded-full bg-[oklch(var(--tint-l)_var(--tint-c)_var(--tint-h))] ring-1 ring-black/10 dark:bg-[oklch(var(--tint-l-dark)_var(--tint-c)_var(--tint-h))] dark:ring-white/15"
+      />
+      {colourLabels[value]}
+    </span>
+  ),
+}));
+
+/**
+ * Shows an unsaved choice app-wide as <html data-…> while it is picked, and
+ * restores the saved one on leaving, so an unsaved preview never sticks.
+ */
+function usePreviewAttribute(name: 'font' | 'colour', value: string, persisted: string) {
+  useEffect(() => {
+    document.documentElement.dataset[name] = value;
+  }, [name, value]);
+  const persistedRef = useRef(persisted);
+  persistedRef.current = persisted;
+  useEffect(
+    () => () => {
+      document.documentElement.dataset[name] = persistedRef.current;
+    },
+    [name]
+  );
+}
 
 const timeZoneLabels: Record<TimeZone, string> = {
   'Australia/Perth': 'Perth',
@@ -187,6 +250,11 @@ export function SettingsPage({
   const persistedThemeRef = useRef(persistedTheme);
   persistedThemeRef.current = persistedTheme;
   useEffect(() => () => setTheme(persistedThemeRef.current), []);
+
+  // Font and colour preview the same way, and are put back the same way on leaving.
+  const { cmsFont, cmsColour } = rootRoute.useLoaderData();
+  usePreviewAttribute('font', values.cmsFont, cmsFont);
+  usePreviewAttribute('colour', values.cmsColour, cmsColour);
 
   // Ask before leaving with unsaved changes, in the app and on tab close.
   const blocker = useBlocker({
@@ -640,7 +708,7 @@ export function SettingsPage({
             <SettingsSection
               id="appearance"
               title="Language & appearance"
-              description="The site's language, time zone and the CMS colour theme."
+              description="The site's language, time zone, and the CMS theme, colour and font."
             >
               <SettingsRow id="settings-locale" title="Language">
                 <Select
@@ -715,6 +783,50 @@ export function SettingsPage({
                   </SelectTrigger>
                   <SelectContent>
                     {themeItems.map((item) => (
+                      <SelectItem key={item.value} value={item.value}>
+                        {item.label}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </SettingsRow>
+              <SettingsRow
+                id="settings-colour"
+                title="Colour"
+                description="Tints buttons, highlights and the sidebar, in light and dark."
+              >
+                <Select
+                  items={colourItems}
+                  value={values.cmsColour}
+                  onValueChange={(value) => value && patch({ cmsColour: value as CmsColour })}
+                >
+                  <SelectTrigger id="settings-colour" className="w-56">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {colourItems.map((item) => (
+                      <SelectItem key={item.value} value={item.value}>
+                        {item.label}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </SettingsRow>
+              <SettingsRow
+                id="settings-font"
+                title="Font"
+                description="The typeface the CMS uses, for everyone. The website keeps its own."
+              >
+                <Select
+                  items={fontItems}
+                  value={values.cmsFont}
+                  onValueChange={(value) => value && patch({ cmsFont: value as CmsFont })}
+                >
+                  <SelectTrigger id="settings-font" className="w-56">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {fontItems.map((item) => (
                       <SelectItem key={item.value} value={item.value}>
                         {item.label}
                       </SelectItem>

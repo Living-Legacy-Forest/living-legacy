@@ -73,13 +73,15 @@ export const Route = createRootRoute({
 });
 
 function RootDocument({ children }: { children: ReactNode }) {
-  const { theme } = Route.useLoaderData();
+  const { theme, cmsFont, cmsColour } = Route.useLoaderData();
   useThemeSync(theme);
 
   return (
     <html
       lang="en-AU"
       data-theme-pref={theme}
+      data-font={cmsFont}
+      data-colour={cmsColour}
       className={theme === 'dark' ? 'dark' : undefined}
       suppressHydrationWarning
     >

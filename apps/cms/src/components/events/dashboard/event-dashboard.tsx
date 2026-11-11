@@ -2,24 +2,16 @@ import { Suspense, lazy, useEffect, useState } from 'react';
 import { MUTED, type Stat, StatCard } from '@/components/stat-card/stat-card';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Spinner } from '@/components/ui/spinner';
 import { formatDate, formatInteger, formatLongDate, formatTimeRange } from '@/lib/format';
 import { notify } from '@/lib/notify';
+import { SeriesCalendar } from '../series-calendar';
 import { type EventDashboard as Dashboard, getEventDashboard } from '@/server/event-stats';
 
 const EventCharts = lazy(() => import('./event-charts').then((m) => ({ default: m.EventCharts })));
 
 type EventDate = Dashboard['dates'][number];
-
-const ALL_DATES = 'all';
 
 const plural = (n: number, one: string, many = `${one}s`) =>
   `${formatInteger(n)} ${n === 1 ? one : many}`;
@@ -169,48 +161,39 @@ function EventDashboard({
   const { date, dates, now } = data;
   const firstDate = dates[0];
   const lastDate = dates.at(-1);
-  const dateItems = [
-    { value: ALL_DATES, label: 'All dates' },
-    ...dates.map((d) => ({
-      value: d.id,
-      label: d.status === 'published' ? shortDate(d) : `${shortDate(d)} (${dateStatus(d, now)})`,
-    })),
-  ];
 
   return (
     <div className="@container space-y-4">
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        <p className="text-muted-foreground min-w-0 text-sm">
-          <Badge variant="outline" className="mr-2 align-middle">
-            {date ? dateStatus(date, now) : plural(dates.length, 'date')}
-          </Badge>
-          {date
-            ? `${formatLongDate(date.startsAt, date.timeZone)}, ${formatTimeRange(date.startsAt, date.endsAt, date.timeZone)}`
-            : firstDate && lastDate
-              ? `${formatDate(firstDate.startsAt, data.timeZone)} to ${formatDate(lastDate.startsAt, data.timeZone)}`
-              : null}
-        </p>
-        {dates.length > 1 && (
-          <Select
-            items={dateItems}
-            value={date?.id ?? ALL_DATES}
-            onValueChange={(value) =>
-              onDateChange(value && value !== ALL_DATES ? value : undefined)
-            }
-          >
-            <SelectTrigger aria-label="Dates to show" className="w-full @md:w-56">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              {dateItems.map((item) => (
-                <SelectItem key={item.value} value={item.value}>
-                  {item.label}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        )}
-      </div>
+      {dates.length > 1 ? (
+        // The picked date's day, time and status are on the picker already; only
+        // "All dates" needs the span spelled out beside it.
+        <div className="flex flex-wrap items-start gap-x-3 gap-y-2">
+          <SeriesCalendar
+            dates={dates}
+            selectedId={date?.id ?? null}
+            onPick={(id) => onDateChange(id ?? undefined)}
+            label={date ? `${shortDate(date)} · ${dateStatus(date, now)}` : 'All dates'}
+            allDates
+            className="w-full @md:w-64"
+          />
+          {!date && firstDate && lastDate && (
+            <p className="text-muted-foreground py-1.5 text-sm">
+              {plural(dates.length, 'date')}, {formatDate(firstDate.startsAt, data.timeZone)} to{' '}
+              {formatDate(lastDate.startsAt, data.timeZone)}
+            </p>
+          )}
+        </div>
+      ) : (
+        date && (
+          <p className="text-muted-foreground text-sm">
+            <Badge variant="outline" className="mr-2 align-middle">
+              {dateStatus(date, now)}
+            </Badge>
+            {formatLongDate(date.startsAt, date.timeZone)},{' '}
+            {formatTimeRange(date.startsAt, date.endsAt, date.timeZone)}
+          </p>
+        )
+      )}
 
       <div className="grid grid-cols-2 gap-3 @4xl:grid-cols-4">
         {buildStats(data).map((stat) => (

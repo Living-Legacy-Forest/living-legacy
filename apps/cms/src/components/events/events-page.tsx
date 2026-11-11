@@ -384,7 +384,10 @@ function EventPanel({
   if (!event) return details;
   return (
     <div className="space-y-5">
-      {dates.length > 1 && <SeriesDatePicker event={event} dates={dates} onPick={onPickDate} />}
+      {/* The dashboard picks its dates itself, so a second picker above it would repeat it. */}
+      {dates.length > 1 && view !== 'dashboard' && (
+        <SeriesDatePicker event={event} dates={dates} onPick={onPickDate} />
+      )}
       <SegmentedControl
         label="Show"
         value={view}

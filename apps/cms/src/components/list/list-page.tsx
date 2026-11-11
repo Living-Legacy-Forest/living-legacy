@@ -348,9 +348,10 @@ export function ListDialog({
         // Phones have Cancel in the sheet's top bar instead of a close button.
         showCloseButton={!isPhone}
         // Long forms scroll inside the dialog rather than running off the screen. Phones
-        // get a sheet, which already does.
+        // get a sheet, which already does. No position class here: it would replace the
+        // dialog's own `fixed` and drop it into the page.
         className={cn(
-          'no-scrollbar relative md:max-h-[90svh] md:overflow-y-auto',
+          'no-scrollbar md:max-h-[90svh] md:overflow-y-auto',
           size === 'sm' ? 'sm:max-w-sm' : size === 'lg' ? 'sm:max-w-lg' : 'sm:max-w-md'
         )}
       >

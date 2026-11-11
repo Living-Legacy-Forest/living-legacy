@@ -3,6 +3,7 @@ import { useState } from 'react';
 import {
   ChevronRightIcon,
   FilePlus2Icon,
+  ChartAreaIcon,
   FolderIcon,
   MoreHorizontalIcon,
   TagIcon,
@@ -97,6 +98,7 @@ const childIcons: Partial<Record<NonNullable<NavItem['to']>, NavItem['icon']>> =
   '/posts/new': FilePlus2Icon,
   '/posts/categories': FolderIcon,
   '/posts/tags': TagIcon,
+  '/events/overview': ChartAreaIcon,
 };
 
 /** Two initials for the avatar's fallback. */

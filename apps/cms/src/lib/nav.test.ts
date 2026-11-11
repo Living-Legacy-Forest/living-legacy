@@ -29,11 +29,12 @@ describe('isNavItemAllowed', () => {
 describe('findNavItem', () => {
   it('matches a page exactly', () => {
     expect(findNavItem('/posts/categories')?.title).toBe('Categories');
+    expect(findNavItem('/events/overview')?.title).toBe('Overview');
   });
 
   it('falls back to the closest parent', () => {
     expect(findNavItem('/posts/01J0ABC')?.title).toBe('All posts');
-    expect(findNavItem('/events/01J0ABC/guests')?.title).toBe('Events');
+    expect(findNavItem('/events/01J0ABC/guests')?.title).toBe('All events');
   });
 
   it('knows pages that have no sidebar entry', () => {

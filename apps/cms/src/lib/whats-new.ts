@@ -7,7 +7,11 @@ export type WhatsNewItem = {
   title: string;
   body: string;
   /** Where to try it. */
-  link?: { label: string; to: '/settings' | '/media' | '/profile'; hash?: string };
+  link?: {
+    label: string;
+    to: '/settings' | '/media' | '/profile' | '/events/overview';
+    hash?: string;
+  };
 };
 
 export type WhatsNewEntry = {
@@ -21,6 +25,32 @@ export type WhatsNewEntry = {
 };
 
 export const whatsNew: WhatsNewEntry[] = [
+  {
+    id: '2026-11-11-3',
+    title: 'Bring back an earlier privacy or terms page',
+    items: [
+      {
+        title: 'Restore a version',
+        body: 'On the privacy policy or terms page, open a version under History and choose Restore as draft. Check it, then publish it to make it live again.',
+        link: { label: 'Open Settings', to: '/settings' },
+      },
+    ],
+  },
+  {
+    id: '2026-11-11-2',
+    title: 'An overview of your events',
+    items: [
+      {
+        title: 'See how events are going',
+        body: 'Events now has an Overview: the next 30 days and how full each date is, then bookings, turn-up and locations over the last 30 days, 90 days or 12 months.',
+        link: { label: 'Open the overview', to: '/events/overview' },
+      },
+      {
+        title: 'A dashboard for each event',
+        body: 'Open an event and choose Dashboard, beside Details and Guests, to see how it filled, how far ahead people booked, party sizes and who came. For a repeating event, look at all its dates together or one at a time.',
+      },
+    ],
+  },
   {
     id: '2026-11-11',
     title: 'Trends on the dashboard',

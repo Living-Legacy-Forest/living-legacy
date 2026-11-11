@@ -1,23 +1,21 @@
-import type { LegalValues } from '@ll/content';
+import { type LegalValues, SEO_DESCRIPTION_LIMIT } from '@ll/content';
 import { ClientOnly } from '@tanstack/react-router';
 import { Suspense, lazy, useEffect, useState } from 'react';
 import { DocumentEditorSkeleton } from '@/components/posts/post-editor/document-editor-skeleton';
-import { Badge } from '@/components/ui/badge';
+import { CountedField, SITE_HOST } from '@/components/posts/post-editor/seo-fields';
 import { Button } from '@/components/ui/button';
-import { Label } from '@/components/ui/label';
 import { Spinner } from '@/components/ui/spinner';
-import { Textarea } from '@/components/ui/textarea';
-import { formatDate } from '@/lib/format';
 import { useAction } from '@/lib/use-action';
-import { useTimeZone } from '@/lib/use-time-zone';
 import {
   type LegalPageEditorData,
   discardLegalPageDraft,
   publishLegalPage,
   requestLegalPageReview,
+  restoreLegalVersion,
   saveLegalPage,
 } from '@/server/legal-pages';
 import { LegalHistory } from './legal-history';
+import { LegalStatus } from './legal-status';
 
 const DocumentEditor = lazy(() =>
   import('@/components/posts/post-editor/document-editor').then((m) => ({
@@ -32,7 +30,6 @@ export function LegalPageEditor({
   data: LegalPageEditorData;
   canPublish: boolean;
 }) {
-  const timeZone = useTimeZone();
   const { run, pending } = useAction();
   const [values, setValues] = useState<LegalValues>(data.values);
   const [version, setVersion] = useState(data.updatedAt);
@@ -109,6 +106,26 @@ export function LegalPageEditor({
 
   const hasChanges = data.hasDraft || dirty;
 
+  async function restore(revisionId: string) {
+    const result = await run(
+      () =>
+        restoreLegalVersion({
+          data: { slug: data.slug, revisionId, expectedUpdatedAt: version },
+        }),
+      {
+        success: {
+          title: 'Version restored',
+          description: 'It is now the draft. Check it, then publish it to make it live.',
+        },
+        error: 'Could not restore that version',
+      }
+    );
+    if (result === undefined) return false;
+    // The page reloads with the restored draft, so these edits are gone on purpose.
+    setDirty(false);
+    return true;
+  }
+
   return (
     <div className="grid grid-cols-1 gap-6 lg:grid-cols-[minmax(0,1fr)_18rem]">
       <div className="min-w-0 space-y-3">
@@ -149,7 +166,8 @@ export function LegalPageEditor({
             </Button>
           )}
         </div>
-        <div className="bg-background min-h-[32rem] overflow-hidden rounded-lg border">
+        {/* Clip, not hidden: hidden would make a scroll box and stop the toolbar sticking. */}
+        <div className="bg-background min-h-[32rem] overflow-clip rounded-lg border">
           <ClientOnly fallback={<DocumentEditorSkeleton />}>
             <Suspense fallback={<DocumentEditorSkeleton />}>
               <DocumentEditor
@@ -157,6 +175,7 @@ export function LegalPageEditor({
                 onTitleChange={(title) => update({ title })}
                 body={values.body}
                 onBodyChange={(body) => update({ body })}
+                pageScroll
               />
             </Suspense>
           </ClientOnly>
@@ -164,31 +183,36 @@ export function LegalPageEditor({
       </div>
 
       <aside className="text-ui min-w-0 space-y-6">
-        <div className="space-y-1">
-          {data.reviewRequestedAt ? (
-            <Badge variant="secondary">Review requested</Badge>
-          ) : hasChanges ? (
-            <Badge variant="outline">Unpublished changes</Badge>
-          ) : (
-            <Badge variant="outline">Published</Badge>
-          )}
-          <p className="text-muted-foreground text-xs">
-            {data.lastPublishedAt
-              ? `Last updated ${formatDate(data.lastPublishedAt, timeZone)}`
-              : 'Not published yet'}
-          </p>
-        </div>
-        <div className="grid gap-2">
-          <Label htmlFor="legal-seo">Search description</Label>
-          <Textarea
+        <LegalStatus data={data} dirty={dirty} />
+        <section className="space-y-3" aria-labelledby="legal-search">
+          <h2 id="legal-search" className="font-medium">
+            In search results
+          </h2>
+          <div className="space-y-0.5 rounded-md border p-3">
+            <p className="text-muted-foreground truncate text-xs">
+              {SITE_HOST} › {data.slug}
+            </p>
+            <p className="line-clamp-2 font-medium">{values.title || 'Page title'}</p>
+            <p className="text-muted-foreground line-clamp-2 text-xs">
+              {values.seoDescription ||
+                'Without a description, search engines pick text from the page.'}
+            </p>
+          </div>
+          <CountedField
             id="legal-seo"
-            rows={3}
-            maxLength={300}
+            label="Description"
             value={values.seoDescription}
-            onChange={(e) => update({ seoDescription: e.target.value })}
+            limit={SEO_DESCRIPTION_LIMIT}
+            placeholder="What the page covers, in a sentence or two."
+            multiline
+            onChange={(seoDescription) => update({ seoDescription })}
           />
-        </div>
-        <LegalHistory history={data.history} />
+        </section>
+        <LegalHistory
+          history={data.history}
+          restoreReplacesEdits={hasChanges}
+          onRestore={restore}
+        />
       </aside>
     </div>
   );

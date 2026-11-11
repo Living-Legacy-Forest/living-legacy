@@ -131,7 +131,7 @@ export function ListRows({
       // 16px of padding, then a 60px thumbnail and a 12px gap before the text.
       style={{ '--row-inset': inset === 'media' ? '5.5rem' : '1rem' } as React.CSSProperties}
       className={cn(
-        'min-h-0 flex-1 space-y-px overflow-y-auto p-1.5',
+        'no-scrollbar min-h-0 flex-1 space-y-px overflow-y-auto p-1.5',
         'max-md:flex-none max-md:space-y-0 max-md:overflow-hidden max-md:rounded-[10px] max-md:bg-(--ios-cell) max-md:p-0',
         className
       )}
@@ -203,7 +203,9 @@ export function PaneFrame({
         <span className="min-w-0 truncate text-sm font-medium">{title}</span>
         {actions && <div className="ml-auto flex items-center gap-1">{actions}</div>}
       </div>
-      <div className="min-h-0 flex-1 overflow-y-auto px-4 py-6">
+      {/* Relative, so anything positioned inside (screen-reader text in charts) scrolls with the
+          pane instead of stretching the page. */}
+      <div className="no-scrollbar relative min-h-0 flex-1 overflow-y-auto px-4 py-6">
         <div className={cn('mx-auto', width === 'lg' ? 'max-w-lg' : 'max-w-md')}>{children}</div>
       </div>
     </>
@@ -348,7 +350,7 @@ export function ListDialog({
         // Long forms scroll inside the dialog rather than running off the screen. Phones
         // get a sheet, which already does.
         className={cn(
-          'md:max-h-[90svh] md:overflow-y-auto',
+          'no-scrollbar relative md:max-h-[90svh] md:overflow-y-auto',
           size === 'sm' ? 'sm:max-w-sm' : size === 'lg' ? 'sm:max-w-lg' : 'sm:max-w-md'
         )}
       >

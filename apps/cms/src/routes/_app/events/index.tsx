@@ -5,19 +5,23 @@ import { listEvents } from '@/server/events';
 
 export const Route = createFileRoute('/_app/events/')({
   // An event date to open on arrival, for links that fix one thing (Content checks).
-  validateSearch: z.object({ open: z.string().max(64).optional().catch(undefined) }),
+  validateSearch: z.object({
+    open: z.string().max(64).optional().catch(undefined),
+    view: z.enum(['details', 'guests', 'dashboard']).optional().catch(undefined),
+  }),
   loader: () => listEvents(),
   head: () => ({ meta: [{ title: 'Events | Living Legacy CMS' }] }),
   component: EventsRoute,
 });
 
 function EventsRoute() {
-  const { open } = Route.useSearch();
+  const { open, view } = Route.useSearch();
   const navigate = useNavigate({ from: '/events/' });
   return (
     <EventsPage
       data={Route.useLoaderData()}
       initialOpen={open}
+      initialView={view}
       onOpenedInitial={() => navigate({ search: {}, replace: true })}
     />
   );

@@ -120,9 +120,9 @@ export function NeedsAttention({ attention }: { attention: Attention }) {
         <CardTitle>Needs attention</CardTitle>
         <CardDescription>What is waiting on you, and where to sort it out.</CardDescription>
       </CardHeader>
-      <CardContent>
+      <CardContent className="flex flex-1 flex-col">
         {tasks.length === 0 ? (
-          <Empty className="border py-8">
+          <Empty className="min-h-56 border py-8">
             <EmptyHeader>
               <EmptyMedia variant="icon">
                 <CircleCheckIcon aria-hidden />

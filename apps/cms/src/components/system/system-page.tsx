@@ -25,8 +25,12 @@ import type { SystemStatus } from '@/server/system';
 import { type HealthStatus, checkTone, jobTone, summariseTones } from '@/lib/system-status';
 import { StatusPulse } from './status-pulse';
 
-// The org is the one vite.config.ts uploads source maps to.
-const SENTRY_CRONS_URL = 'https://living-legacy.sentry.io/crons/';
+// Uptime, heartbeats and their alerts live in Better Stack; errors in Sentry
+// (the org vite.config.ts uploads source maps to).
+const LINKS = [
+  { label: 'Uptime', href: 'https://uptime.betterstack.com/' },
+  { label: 'Errors', href: 'https://living-legacy.sentry.io/issues/' },
+];
 
 const JOB_LABEL: Record<JobHealth, string> = {
   ok: 'Working',
@@ -57,7 +61,7 @@ function versionLine(timeZone: string) {
 
 /**
  * Admins' view of the services the CMS depends on and the jobs it runs on a
- * timer. Sentry has the history and sends the alerts.
+ * timer. Better Stack and Sentry have the history and send the alerts.
  */
 export function SystemPage({ data }: { data: SystemStatus }) {
   const timeZone = useTimeZone();
@@ -80,22 +84,27 @@ export function SystemPage({ data }: { data: SystemStatus }) {
             className="text-sm whitespace-normal"
             label={
               red > 0
-                ? `${formatInteger(red)} ${red === 1 ? 'thing needs' : 'things need'} a look. Sentry has the full details.`
+                ? `${formatInteger(red)} ${red === 1 ? 'thing needs' : 'things need'} a look.`
                 : yellow > 0
                   ? `Working, with ${formatInteger(yellow)} ${yellow === 1 ? 'thing' : 'things'} to keep an eye on.`
                   : 'Everything is working.'
             }
           />
         </div>
-        <a
-          href={SENTRY_CRONS_URL}
-          target="_blank"
-          rel="noreferrer"
-          className={cn(buttonVariants({ variant: 'outline', size: 'sm' }), 'touch:min-h-11')}
-        >
-          Open in Sentry
-          <ExternalLinkIcon aria-hidden />
-        </a>
+        <div className="flex gap-2">
+          {LINKS.map((link) => (
+            <a
+              key={link.label}
+              href={link.href}
+              target="_blank"
+              rel="noreferrer"
+              className={cn(buttonVariants({ variant: 'outline', size: 'sm' }), 'touch:min-h-11')}
+            >
+              {link.label}
+              <ExternalLinkIcon aria-hidden />
+            </a>
+          ))}
+        </div>
       </div>
 
       <Card>

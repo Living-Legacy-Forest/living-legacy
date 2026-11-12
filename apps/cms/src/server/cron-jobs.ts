@@ -1,30 +1,14 @@
-import { type CronJobKey, type CronSchedule, cronSchedules } from '@/lib/cron-jobs';
-import type { Monitor } from './cron-monitor';
+import type { CronJobKey, CronSchedule } from '@/lib/cron-jobs';
 
 type Jobs = Partial<Record<CronJobKey, () => Promise<unknown>>>;
 
 /**
- * The Sentry monitor for a schedule, or null for none. The first check-in
- * creates it; Sentry alerts when a run fails, runs past maxRuntime, or has not
- * started checkinMargin minutes after it was due. Times are UTC, as wrangler's are.
- *
- * Only the 5-minute schedule has one: Sentry includes a single cron monitor and
- * charges for more, and a monitor past the allowance is created disabled. The
- * daily jobs still report every error to Sentry, and the System page flags
- * them once they go 25 hours without a run.
+ * The Better Stack heartbeat a schedule pings after each run (Worker secrets,
+ * so the addresses stay private). Better Stack raises an incident when pings
+ * stop or say /fail; Sentry keeps the errors themselves.
  */
-export function monitorFor(schedule: CronSchedule): Monitor | null {
-  if (schedule === 'daily') return null;
-  return {
-    slug: cronSchedules[schedule].monitorSlug,
-    config: {
-      schedule: { type: 'crontab', value: cronSchedules[schedule].cron },
-      timezone: 'UTC',
-      // 10 minutes past a missed run is 15 without one (staleAfterMs).
-      checkinMargin: 10,
-      maxRuntime: 5,
-    },
-  };
+export function heartbeatFor(schedule: CronSchedule, env: Cloudflare.Env) {
+  return schedule === 'daily' ? env.HEARTBEAT_URL_DAILY : env.HEARTBEAT_URL_EVERY_5_MINUTES;
 }
 
 /**

@@ -11,12 +11,9 @@ declare namespace Cloudflare {
     RESEND_API_KEY?: string;
     // HubSpot private app token; event bookings sync once it is set (server/event-crm.ts).
     HUBSPOT_ACCESS_TOKEN?: string;
-    // Better Stack heartbeat addresses the cron schedules ping after each run
-    // (server/cron-jobs.ts). Unset locally, where nothing is pinged.
-    HEARTBEAT_URL_EVERY_5_MINUTES?: string;
-    HEARTBEAT_URL_DAILY?: string;
-    // Optional heartbeats of single jobs: JSON of job key to address (server/cron-jobs.ts).
-    HEARTBEAT_URLS_BY_JOB?: string;
+    // Better Stack heartbeat addresses, one JSON object for all of them: keys are
+    // schedules or jobs (server/cron-jobs.ts). Unset locally, where nothing is pinged.
+    HEARTBEAT_URLS?: string;
   }
 }
 

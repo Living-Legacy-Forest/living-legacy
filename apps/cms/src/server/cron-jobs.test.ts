@@ -1,41 +1,44 @@
 import { describe, expect, it } from 'vitest';
-import { jobHeartbeats } from './cron-jobs';
+import { heartbeatFor, jobHeartbeats } from './cron-jobs';
 
-const env = (value?: string) => ({ HEARTBEAT_URLS_BY_JOB: value }) as unknown as Cloudflare.Env;
+const env = (value?: unknown) =>
+  ({
+    HEARTBEAT_URLS:
+      typeof value === 'string' || value === undefined ? value : JSON.stringify(value),
+  }) as unknown as Cloudflare.Env;
 
-describe('jobHeartbeats', () => {
-  it('reads the addresses of known jobs', () => {
-    expect(
-      jobHeartbeats(
-        env(
-          JSON.stringify({
-            'publish-posts': 'https://uptime.example.test/a',
-            'sync-bookings': 'https://uptime.example.test/b',
-          })
-        )
-      )
-    ).toEqual({
-      'publish-posts': 'https://uptime.example.test/a',
-      'sync-bookings': 'https://uptime.example.test/b',
+describe('heartbeat addresses', () => {
+  const all = env({
+    'every-5-minutes': 'https://uptime.example.test/five',
+    daily: 'https://uptime.example.test/daily',
+    'publish-posts': 'https://uptime.example.test/posts',
+    'sync-bookings': 'https://uptime.example.test/sync',
+  });
+
+  it("reads each schedule's heartbeat from the one secret", () => {
+    expect(heartbeatFor('every-5-minutes', all)).toBe('https://uptime.example.test/five');
+    expect(heartbeatFor('daily', all)).toBe('https://uptime.example.test/daily');
+  });
+
+  it('reads the jobs that have their own heartbeat, and only those', () => {
+    expect(jobHeartbeats(all)).toEqual({
+      'publish-posts': 'https://uptime.example.test/posts',
+      'sync-bookings': 'https://uptime.example.test/sync',
     });
   });
 
-  it('drops unknown jobs and anything that is not an https address', () => {
-    expect(
-      jobHeartbeats(
-        env(
-          JSON.stringify({
-            'no-such-job': 'https://uptime.example.test/a',
-            'publish-posts': 'http://uptime.example.test/b',
-            'sync-bookings': 42,
-          })
-        )
-      )
-    ).toEqual({});
+  it('drops unknown keys and anything that is not an https address', () => {
+    const odd = env({
+      'no-such-job': 'https://uptime.example.test/a',
+      'publish-posts': 'http://uptime.example.test/b',
+      daily: 42,
+    });
+    expect(jobHeartbeats(odd)).toEqual({});
+    expect(heartbeatFor('daily', odd)).toBeUndefined();
   });
 
-  it('is empty when unset or unreadable', () => {
-    expect(jobHeartbeats(env())).toEqual({});
+  it('pings nothing when unset or unreadable', () => {
+    expect(heartbeatFor('daily', env())).toBeUndefined();
     expect(jobHeartbeats(env('not json'))).toEqual({});
   });
 });

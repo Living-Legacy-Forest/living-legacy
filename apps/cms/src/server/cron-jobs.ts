@@ -1,36 +1,41 @@
-import { type CronJobKey, type CronSchedule, cronJobs } from '@/lib/cron-jobs';
+import { type CronJobKey, type CronSchedule, cronJobs, cronSchedules } from '@/lib/cron-jobs';
 
 type Jobs = Partial<Record<CronJobKey, () => Promise<unknown>>>;
 
 /**
- * The Better Stack heartbeat a schedule pings after each run (Worker secrets,
- * so the addresses stay private). Better Stack raises an incident when pings
- * stop or say /fail; Sentry keeps the errors themselves.
+ * Every Better Stack heartbeat address, from the HEARTBEAT_URLS Worker secret
+ * (private, so it is not in the code): a JSON object whose keys are schedules
+ * ("every-5-minutes", "daily") or jobs ("sync-bookings"). Better Stack raises
+ * an incident when pings stop or say /fail; Sentry keeps the errors. An unset,
+ * unreadable or partly wrong value pings only what it can.
  */
-export function heartbeatFor(schedule: CronSchedule, env: Cloudflare.Env) {
-  return schedule === 'daily' ? env.HEARTBEAT_URL_DAILY : env.HEARTBEAT_URL_EVERY_5_MINUTES;
-}
-
-/**
- * The jobs with a heartbeat of their own, from HEARTBEAT_URLS_BY_JOB: a JSON
- * object of job key to Better Stack heartbeat address (a Worker secret). An
- * unset, unreadable or partly wrong value pings only what it can.
- */
-export function jobHeartbeats(env: Cloudflare.Env): Partial<Record<CronJobKey, string>> {
+function heartbeatUrls(env: Cloudflare.Env): Record<string, string> {
+  const known = new Set<string>([...Object.keys(cronSchedules), ...cronJobs.map((j) => j.key)]);
   try {
-    const parsed: unknown = JSON.parse(env.HEARTBEAT_URLS_BY_JOB ?? '{}');
+    const parsed: unknown = JSON.parse(env.HEARTBEAT_URLS ?? '{}');
     if (!parsed || typeof parsed !== 'object') return {};
     return Object.fromEntries(
       Object.entries(parsed).filter(
-        ([key, url]) =>
-          cronJobs.some((j) => j.key === key) &&
-          typeof url === 'string' &&
-          url.startsWith('https://')
+        (entry): entry is [string, string] =>
+          known.has(entry[0]) && typeof entry[1] === 'string' && entry[1].startsWith('https://')
       )
-    ) as Partial<Record<CronJobKey, string>>;
+    );
   } catch {
     return {};
   }
+}
+
+/** The heartbeat a schedule pings after each run, if it has one. */
+export function heartbeatFor(schedule: CronSchedule, env: Cloudflare.Env): string | undefined {
+  return heartbeatUrls(env)[schedule];
+}
+
+/** The jobs with a heartbeat of their own, so an alert names the job. */
+export function jobHeartbeats(env: Cloudflare.Env): Partial<Record<CronJobKey, string>> {
+  const urls = heartbeatUrls(env);
+  return Object.fromEntries(
+    cronJobs.filter((j) => urls[j.key]).map((j) => [j.key, urls[j.key]!])
+  ) as Partial<Record<CronJobKey, string>>;
 }
 
 /**

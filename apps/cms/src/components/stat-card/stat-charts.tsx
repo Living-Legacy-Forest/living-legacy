@@ -59,8 +59,8 @@ export function TrendChart(trend: Trend) {
   const fill = (
     <defs>
       <linearGradient id={gradient} x1="0" y1="0" x2="0" y2="1">
-        <stop offset="0%" stopColor="var(--color-count)" stopOpacity={0.3} />
-        <stop offset="100%" stopColor="var(--color-count)" stopOpacity={0} />
+        <stop offset="0%" stopColor="var(--color-count)" stopOpacity={0.4} />
+        <stop offset="100%" stopColor="var(--color-count)" stopOpacity={0.02} />
       </linearGradient>
     </defs>
   );
@@ -94,22 +94,40 @@ export function TrendChart(trend: Trend) {
             {fill}
             {axes}
             <ChartTooltip cursor={lineCursor} content={tooltipContent} />
-            <Area
-              dataKey="count"
-              type="monotone"
-              stroke="var(--color-count)"
-              strokeWidth={2}
-              fill={`url(#${gradient})`}
-              fillOpacity={trend.kind === 'line' ? 0.6 : 1}
-              // The line kind marks every week, so a running total reads as steps taken.
-              dot={
-                trend.kind === 'line'
-                  ? { r: 2.5, fill: 'var(--card)', stroke: 'var(--color-count)', strokeWidth: 1.5 }
-                  : false
-              }
-              activeDot={activeDot}
-              isAnimationActive={false}
-            />
+            {trend.kind === 'line' ? (
+              // A running total only climbs: monotone keeps it honest, and a dot
+              // marks every week, so it reads as steps taken.
+              <Area
+                dataKey="count"
+                type="monotone"
+                stroke="var(--color-count)"
+                strokeWidth={2}
+                fill={`url(#${gradient})`}
+                fillOpacity={0.6}
+                dot={{
+                  r: 2.5,
+                  fill: 'var(--card)',
+                  stroke: 'var(--color-count)',
+                  strokeWidth: 1.5,
+                }}
+                activeDot={activeDot}
+                isAnimationActive={false}
+              />
+            ) : (
+              // Weekly counts are small whole numbers, which monotone draws as flat
+              // shelves. A B-spline flows through them instead, never below zero or
+              // above the peak. It passes near, not through, each week, so there is
+              // no hover dot; the guide line and tooltip give the figure.
+              <Area
+                dataKey="count"
+                type="basis"
+                stroke="var(--color-count)"
+                strokeWidth={2}
+                fill={`url(#${gradient})`}
+                activeDot={false}
+                isAnimationActive={false}
+              />
+            )}
           </AreaChart>
         )}
       </ChartContainer>

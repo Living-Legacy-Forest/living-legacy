@@ -210,7 +210,10 @@ export function PaneFrame({
       </div>
       {/* Relative, so anything positioned inside (screen-reader text in charts) scrolls with the
           pane instead of stretching the page. */}
-      <div className="no-scrollbar relative min-h-0 flex-1 overflow-y-auto px-4 py-6">
+      <div
+        data-slot="pane-body"
+        className="no-scrollbar relative min-h-0 flex-1 overflow-y-auto px-4 py-6"
+      >
         <div
           className={cn(
             'mx-auto',
@@ -238,7 +241,7 @@ export function PaneActions({
   children: React.ReactNode;
 }) {
   return (
-    <div className="flex items-center justify-end gap-2">
+    <div data-slot="form-actions" className="flex items-center justify-end gap-2">
       {start && <div className="mr-auto">{start}</div>}
       <Button type="button" variant="outline" onClick={onCancel}>
         Cancel

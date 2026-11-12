@@ -16,6 +16,9 @@ const loadApp = () =>
 
 const OLD_HOST = 'living-legacy-cms.living-legacy.workers.dev';
 
+// The health check Sentry's uptime monitor watches (server/health-check.ts).
+const HEALTH_PATH = '/api/health';
+
 /**
  * No other site may show the CMS in a frame, where a signed-in editor could be
  * tricked into clicking something (clickjacking). The session cookie being
@@ -47,8 +50,11 @@ export default Sentry.withSentry(
     ...sentryOptions,
     // Every image in a list is its own request; tracing them would bury the rest.
     tracesSampler: ({ name, normalizedRequest }) => {
+      // So is the health check, which Sentry's uptime monitor calls every minute.
       const path = normalizedRequest?.url ? new URL(normalizedRequest.url).pathname : name;
-      return path.includes('/api/media/') ? 0 : sentryOptions.tracesSampleRate;
+      return path.includes('/api/media/') || path === HEALTH_PATH
+        ? 0
+        : sentryOptions.tracesSampleRate;
     },
   }),
   {
@@ -65,6 +71,11 @@ export default Sentry.withSentry(
       // The busiest route, and it needs nothing from the app: serve it directly.
       const mediaId = mediaIdFromPath(url.pathname);
       if (mediaId) return serveMedia(request, mediaId, ctx);
+      // Public, for Sentry's uptime monitor; it needs nothing from the app either.
+      if (url.pathname === HEALTH_PATH) {
+        const { healthResponse } = await import('./server/health-check');
+        return healthResponse(request, env.DB);
+      }
       return noFraming(await (await loadApp()).fetch(request));
     },
     // Each run checks in with its Sentry monitor and is kept for the System

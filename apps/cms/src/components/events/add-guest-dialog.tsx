@@ -1,5 +1,5 @@
 import { STAFF_MAX_PARTY_SIZE, auPhone, guestInputSchema } from '@ll/content';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { TOUCH_FIELDS } from '@/components/form-steps';
 import { FormCell, FormSection } from '@/components/form-cells';
 import { DialogActions, ListDialog } from '@/components/list/list-page';
@@ -11,7 +11,7 @@ import { notify } from '@/lib/notify';
 import { useAction } from '@/lib/use-action';
 import { cn } from '@/lib/utils';
 import type { EventRow } from '@/server/events';
-import { addGuest } from '@/server/event-guests';
+import { type Guest, addGuest, updateGuest } from '@/server/event-guests';
 
 const empty = {
   firstName: '',
@@ -60,19 +60,36 @@ function firstProblem(eventId: string, values: typeof empty) {
   return null;
 }
 
-/** A phone booking or a walk-in, added by staff. */
+/** A guest's details as the form holds them. */
+const fromGuest = (g: Guest): typeof empty => ({
+  firstName: g.firstName,
+  lastName: g.lastName,
+  email: g.email,
+  phone: g.phone,
+  partySize: String(g.partySize),
+  note: g.note,
+});
+
+/** A phone booking or a walk-in added by staff, or, given `guest`, a change to a booking. */
 export function AddGuestDialog({
   event,
+  guest = null,
   open,
   onOpenChange,
   onAdded,
 }: {
   event: EventRow;
+  /** The booking to edit; null adds a new one. */
+  guest?: Guest | null;
   open: boolean;
   onOpenChange: (open: boolean) => void;
   onAdded: () => void;
 }) {
   const [values, setValues] = useState(empty);
+  // Opening on a booking fills the form with it; adding starts empty.
+  useEffect(() => {
+    if (open) setValues(guest ? fromGuest(guest) : empty);
+  }, [open, guest]);
   // The field to fix: named in a toast, as other forms do, and outlined until it is edited.
   const [problem, setProblem] = useState<{ field: Field; message: string } | null>(null);
   const patch = (next: Partial<typeof empty>) => {
@@ -92,19 +109,19 @@ export function AddGuestDialog({
       document.getElementById(FIELDS[found.field].id)?.focus();
       return;
     }
-    const result = await run(
-      () =>
-        addGuest({
-          data: { eventId: event.id, ...values, partySize: Number(values.partySize) },
-        }),
-      {
-        success: (r) => ({
-          title: 'Guest added',
-          description: `Booking ${r.reference}. HubSpot sends their emails once it is connected.`,
-        }),
-        error: 'Could not add the guest',
-      }
-    );
+    const data = { eventId: event.id, ...values, partySize: Number(values.partySize) };
+    const result = guest
+      ? await run(() => updateGuest({ data: { ...data, id: guest.id } }).then(() => true), {
+          success: { title: 'Booking updated', description: `Booking ${guest.reference}.` },
+          error: 'Could not update the booking',
+        })
+      : await run(() => addGuest({ data }), {
+          success: (r) => ({
+            title: 'Guest added',
+            description: `Booking ${r.reference}. HubSpot sends their emails once it is connected.`,
+          }),
+          error: 'Could not add the guest',
+        });
     if (result) {
       setValues(empty);
       onOpenChange(false);
@@ -116,8 +133,12 @@ export function AddGuestDialog({
     <ListDialog
       open={open}
       onClose={() => onOpenChange(false)}
-      title="Add a guest"
-      description={`A phone booking or a walk-in for ${event.title}.`}
+      title={guest ? 'Edit booking' : 'Add a guest'}
+      description={
+        guest
+          ? `Booking ${guest.reference} for ${event.title}.`
+          : `A phone booking or a walk-in for ${event.title}.`
+      }
     >
       <form noValidate onSubmit={submit} className={cn('space-y-4 max-md:space-y-7', TOUCH_FIELDS)}>
         <FormSection>
@@ -223,8 +244,10 @@ export function AddGuestDialog({
             {pending ? (
               <>
                 <Spinner />
-                Adding…
+                {guest ? 'Saving…' : 'Adding…'}
               </>
+            ) : guest ? (
+              'Save changes'
             ) : (
               'Add guest'
             )}

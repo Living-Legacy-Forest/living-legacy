@@ -23,6 +23,8 @@ export type EventPreviewDraft = {
   galleryMediaIds: string[];
   capacity: number | null;
   maxPartySize: number;
+  /** Optional, so previews saved before it existed still open. */
+  bookingsOpenAt?: number | null;
   bookingsCloseAt: number | null;
   /** Places already booked. */
   booked: number;

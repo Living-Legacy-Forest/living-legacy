@@ -26,6 +26,25 @@ export type WhatsNewEntry = {
 
 export const whatsNew: WhatsNewEntry[] = [
   {
+    id: '2026-11-12',
+    title: 'Scan tickets at the door',
+    items: [
+      {
+        title: 'Check guests in with the camera',
+        body: 'In an event’s Guests tab, Scan tickets opens the camera. Point it at the QR code on a guest’s ticket and they are checked in straight away. It also tells you when a ticket is for another date, was cancelled or has already been scanned, and you can type a reference instead.',
+        link: { label: 'Open Events', to: '/events/overview' },
+      },
+      {
+        title: 'Edit a booking',
+        body: 'In the Guests tab, the … menu on a guest now has Edit booking: change their name, contact details, number of people or note. A bigger party still has to fit in the event.',
+      },
+      {
+        title: 'Choose when bookings open',
+        body: 'Under Date & time, Bookings open sets when online bookings start, next to when they close. New events also allow up to 10 people per booking.',
+      },
+    ],
+  },
+  {
     id: '2026-11-11-7',
     title: 'More control over search and sharing',
     items: [

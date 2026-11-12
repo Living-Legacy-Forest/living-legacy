@@ -1,6 +1,12 @@
 import { toCsv } from '@ll/content';
 import { useCallback, useEffect, useState } from 'react';
-import { CheckIcon, DownloadIcon, MoreHorizontalIcon, UserPlusIcon } from '@/components/icons';
+import {
+  CheckIcon,
+  DownloadIcon,
+  MoreHorizontalIcon,
+  ScanQrIcon,
+  UserPlusIcon,
+} from '@/components/icons';
 import { SearchInput, matchesSearch } from '@/components/list/list-tools';
 import {
   AlertDialog,
@@ -29,6 +35,7 @@ import type { EventRow } from '@/server/events';
 import { type Guest, cancelGuest, getGuests, setCheckedIn } from '@/server/event-guests';
 import { Reveal } from '@/components/reveal';
 import { AddGuestDialog } from './add-guest-dialog';
+import { TicketScanner } from './ticket-scanner';
 
 const fullName = (g: Guest) => [g.firstName, g.lastName].filter(Boolean).join(' ');
 const places = (n: number) => (n === 1 ? '1 place' : `${n} places`);
@@ -38,7 +45,11 @@ export function EventGuests({ event }: { event: EventRow }) {
   const [guests, setGuests] = useState<Guest[] | null>(null);
   const [query, setQuery] = useState('');
   const [adding, setAdding] = useState(false);
+  const [scanning, setScanning] = useState(false);
   const [toCancel, setToCancel] = useState<Guest | null>(null);
+  // Kept while the dialog closes, so its title does not change mid-animation.
+  const [editing, setEditing] = useState<Guest | null>(null);
+  const [editOpen, setEditOpen] = useState(false);
   const { run } = useAction();
   const zone = event.timeZone;
 
@@ -113,7 +124,9 @@ export function EventGuests({ event }: { event: EventRow }) {
         formatDateTime(g.createdAt, zone),
       ]),
     ];
-    const filename = `guests-${event.slug}.csv`;
+    // The dates of a repeating event share an address, so the date tells the files apart.
+    const day = new Date(event.startsAt).toLocaleDateString('en-CA', { timeZone: zone });
+    const filename = `guests-${event.slug}-${day}.csv`;
     const url = URL.createObjectURL(new Blob([toCsv(rows)], { type: 'text/csv;charset=utf-8' }));
     const link = Object.assign(document.createElement('a'), { href: url, download: filename });
     link.click();
@@ -153,6 +166,12 @@ export function EventGuests({ event }: { event: EventRow }) {
             <DownloadIcon aria-hidden data-icon="inline-start" />
             Export CSV
           </Button>
+          {editable && confirmed.length > 0 && (
+            <Button type="button" variant="outline" size="sm" onClick={() => setScanning(true)}>
+              <ScanQrIcon aria-hidden data-icon="inline-start" />
+              Scan tickets
+            </Button>
+          )}
           {editable && (
             <Button type="button" size="sm" onClick={() => setAdding(true)}>
               <UserPlusIcon aria-hidden data-icon="inline-start" />
@@ -209,6 +228,14 @@ export function EventGuests({ event }: { event: EventRow }) {
                       <MoreHorizontalIcon aria-hidden />
                     </DropdownMenuTrigger>
                     <DropdownMenuContent align="end">
+                      <DropdownMenuItem
+                        onClick={() => {
+                          setEditing(g);
+                          setEditOpen(true);
+                        }}
+                      >
+                        Edit booking
+                      </DropdownMenuItem>
                       <DropdownMenuItem variant="destructive" onClick={() => setToCancel(g)}>
                         Cancel booking
                       </DropdownMenuItem>
@@ -237,6 +264,19 @@ export function EventGuests({ event }: { event: EventRow }) {
       </Reveal>
 
       <AddGuestDialog event={event} open={adding} onOpenChange={setAdding} onAdded={reload} />
+      <AddGuestDialog
+        event={event}
+        guest={editing}
+        open={editOpen}
+        onOpenChange={setEditOpen}
+        onAdded={reload}
+      />
+      <TicketScanner
+        event={event}
+        open={scanning}
+        onOpenChange={setScanning}
+        onChange={() => void reload()}
+      />
 
       <AlertDialog open={toCancel !== null} onOpenChange={(open) => !open && setToCancel(null)}>
         <AlertDialogContent>

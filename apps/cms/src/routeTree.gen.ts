@@ -48,6 +48,8 @@ import { Route as PreviewLegalSlugRouteImport } from './routes/preview/legal/$sl
 import { Route as PreviewPostsPostIdRouteImport } from './routes/preview/posts/$postId'
 import { Route as AppPostsCategoriesIndexRouteImport } from './routes/_app/posts/categories/index'
 import { Route as AppPostsTagsIndexRouteImport } from './routes/_app/posts/tags/index'
+import { Route as ApiTicketsReferenceCalendarRouteImport } from './routes/api/tickets/$reference/calendar'
+import { Route as ApiTicketsReferenceQrRouteImport } from './routes/api/tickets/$reference/qr'
 import { Route as ApiV1PostsIndexRouteImport } from './routes/api/v1/posts/index'
 import { Route as ApiV1PostsIdRouteImport } from './routes/api/v1/posts/$id'
 
@@ -245,6 +247,17 @@ const AppPostsTagsIndexRoute = AppPostsTagsIndexRouteImport.update({
   path: '/posts/tags/',
   getParentRoute: () => AppRoute,
 } as any)
+const ApiTicketsReferenceCalendarRoute =
+  ApiTicketsReferenceCalendarRouteImport.update({
+    id: '/api/tickets/$reference/calendar',
+    path: '/api/tickets/$reference/calendar',
+    getParentRoute: () => rootRouteImport,
+  } as any)
+const ApiTicketsReferenceQrRoute = ApiTicketsReferenceQrRouteImport.update({
+  id: '/api/tickets/$reference/qr',
+  path: '/api/tickets/$reference/qr',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ApiV1PostsIndexRoute = ApiV1PostsIndexRouteImport.update({
   id: '/api/v1/posts/',
   path: '/api/v1/posts/',
@@ -293,6 +306,8 @@ export interface FileRoutesByFullPath {
   '/users/': typeof AppUsersIndexRoute
   '/api/avatar/': typeof ApiAvatarIndexRoute
   '/api/media/': typeof ApiMediaIndexRoute
+  '/api/tickets/$reference/calendar': typeof ApiTicketsReferenceCalendarRoute
+  '/api/tickets/$reference/qr': typeof ApiTicketsReferenceQrRoute
   '/api/v1/posts/$id': typeof ApiV1PostsIdRoute
   '/posts/categories/': typeof AppPostsCategoriesIndexRoute
   '/posts/tags/': typeof AppPostsTagsIndexRoute
@@ -335,6 +350,8 @@ export interface FileRoutesByTo {
   '/users': typeof AppUsersIndexRoute
   '/api/avatar': typeof ApiAvatarIndexRoute
   '/api/media': typeof ApiMediaIndexRoute
+  '/api/tickets/$reference/calendar': typeof ApiTicketsReferenceCalendarRoute
+  '/api/tickets/$reference/qr': typeof ApiTicketsReferenceQrRoute
   '/api/v1/posts/$id': typeof ApiV1PostsIdRoute
   '/posts/categories': typeof AppPostsCategoriesIndexRoute
   '/posts/tags': typeof AppPostsTagsIndexRoute
@@ -379,6 +396,8 @@ export interface FileRoutesById {
   '/_app/users/': typeof AppUsersIndexRoute
   '/api/avatar/': typeof ApiAvatarIndexRoute
   '/api/media/': typeof ApiMediaIndexRoute
+  '/api/tickets/$reference/calendar': typeof ApiTicketsReferenceCalendarRoute
+  '/api/tickets/$reference/qr': typeof ApiTicketsReferenceQrRoute
   '/api/v1/posts/$id': typeof ApiV1PostsIdRoute
   '/_app/posts/categories/': typeof AppPostsCategoriesIndexRoute
   '/_app/posts/tags/': typeof AppPostsTagsIndexRoute
@@ -423,6 +442,8 @@ export interface FileRouteTypes {
     | '/users/'
     | '/api/avatar/'
     | '/api/media/'
+    | '/api/tickets/$reference/calendar'
+    | '/api/tickets/$reference/qr'
     | '/api/v1/posts/$id'
     | '/posts/categories/'
     | '/posts/tags/'
@@ -465,6 +486,8 @@ export interface FileRouteTypes {
     | '/users'
     | '/api/avatar'
     | '/api/media'
+    | '/api/tickets/$reference/calendar'
+    | '/api/tickets/$reference/qr'
     | '/api/v1/posts/$id'
     | '/posts/categories'
     | '/posts/tags'
@@ -508,6 +531,8 @@ export interface FileRouteTypes {
     | '/_app/users/'
     | '/api/avatar/'
     | '/api/media/'
+    | '/api/tickets/$reference/calendar'
+    | '/api/tickets/$reference/qr'
     | '/api/v1/posts/$id'
     | '/_app/posts/categories/'
     | '/_app/posts/tags/'
@@ -528,6 +553,8 @@ export interface RootRouteChildren {
   PreviewPostsPostIdRoute: typeof PreviewPostsPostIdRoute
   ApiAvatarIndexRoute: typeof ApiAvatarIndexRoute
   ApiMediaIndexRoute: typeof ApiMediaIndexRoute
+  ApiTicketsReferenceCalendarRoute: typeof ApiTicketsReferenceCalendarRoute
+  ApiTicketsReferenceQrRoute: typeof ApiTicketsReferenceQrRoute
   ApiV1PostsIdRoute: typeof ApiV1PostsIdRoute
   ApiV1PostsIndexRoute: typeof ApiV1PostsIndexRoute
 }
@@ -807,6 +834,20 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppPostsTagsIndexRouteImport
       parentRoute: typeof AppRoute
     }
+    '/api/tickets/$reference/calendar': {
+      id: '/api/tickets/$reference/calendar'
+      path: '/api/tickets/$reference/calendar'
+      fullPath: '/api/tickets/$reference/calendar'
+      preLoaderRoute: typeof ApiTicketsReferenceCalendarRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/tickets/$reference/qr': {
+      id: '/api/tickets/$reference/qr'
+      path: '/api/tickets/$reference/qr'
+      fullPath: '/api/tickets/$reference/qr'
+      preLoaderRoute: typeof ApiTicketsReferenceQrRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/api/v1/posts/': {
       id: '/api/v1/posts/'
       path: '/api/v1/posts'
@@ -898,6 +939,8 @@ const rootRouteChildren: RootRouteChildren = {
   PreviewPostsPostIdRoute: PreviewPostsPostIdRoute,
   ApiAvatarIndexRoute: ApiAvatarIndexRoute,
   ApiMediaIndexRoute: ApiMediaIndexRoute,
+  ApiTicketsReferenceCalendarRoute: ApiTicketsReferenceCalendarRoute,
+  ApiTicketsReferenceQrRoute: ApiTicketsReferenceQrRoute,
   ApiV1PostsIdRoute: ApiV1PostsIdRoute,
   ApiV1PostsIndexRoute: ApiV1PostsIndexRoute,
 }

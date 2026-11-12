@@ -13,7 +13,7 @@ import {
 import type { Db } from '@ll/db';
 import { eventBookings, events, locations, media } from '@ll/db/schema';
 import { createServerFn } from '@tanstack/react-start';
-import { and, asc, desc, eq, gte, inArray, isNull, ne, sql } from 'drizzle-orm';
+import { and, asc, desc, eq, gte, inArray, isNull, ne, or, sql } from 'drizzle-orm';
 import { z } from 'zod';
 import { getDb } from '@/lib/db';
 import { requirePermission } from '@/lib/session';
@@ -70,6 +70,7 @@ export const listEvents = createServerFn({ method: 'GET' })
         galleryMediaIds: e.galleryMediaIds,
         capacity: e.capacity,
         maxPartySize: e.maxPartySize,
+        bookingsOpenAt: e.bookingsOpenAt?.getTime() ?? null,
         bookingsCloseAt: e.bookingsCloseAt?.getTime() ?? null,
         seriesId: e.seriesId,
         timeZone: e.timeZone,
@@ -104,7 +105,7 @@ const clockKey = (ms: number, zone: string) => {
   return `${pad(w.hour)}${pad(w.minute)}`;
 };
 
-/** "2026-11-14" in the event's time zone, for a series date's web address. */
+/** "2026-11-14" in the event's time zone, to name a date of a series. */
 const dayKey = (ms: number, zone: string) => {
   const w = toZoned(ms, zone);
   return `${w.year}-${pad(w.month + 1)}-${pad(w.day)}`;
@@ -132,6 +133,8 @@ async function peopleBooked(db: Db, eventId: string) {
 const MIN_PUBLISH_LEAD_MS = 60_000;
 const PUBLISH_LEAD_MESSAGE =
   'Pick a publish time at least a minute from now, or switch on Published instead.';
+
+const SLUG_TAKEN = 'Another event already uses that web address. Change the slug.';
 
 export const saveEvent = createServerFn({ method: 'POST' })
   .middleware([requirePermission('events:manage')])
@@ -166,42 +169,31 @@ export const saveEvent = createServerFn({ method: 'POST' })
       updatedBy: context.user.id,
       updatedAt: now,
     };
-    // Bookings close the same time ahead of each date.
-    const closeBefore = data.bookingsCloseAt === null ? null : data.startsAt - data.bookingsCloseAt;
-    const closeAt = (startsAt: number) =>
-      closeBefore === null ? null : new Date(startsAt - closeBefore);
+    // Bookings open and close the same time ahead of each date.
+    const ahead = (at: number | null) => (at === null ? null : data.startsAt - at);
+    const openBefore = ahead(data.bookingsOpenAt);
+    const closeBefore = ahead(data.bookingsCloseAt);
+    const bookingWindow = (startsAt: number) => ({
+      bookingsOpenAt: openBefore === null ? null : new Date(startsAt - openBefore),
+      bookingsCloseAt: closeBefore === null ? null : new Date(startsAt - closeBefore),
+    });
 
     if (!data.id) {
       if (publishAtProblem(null)) throw new Error(PUBLISH_LEAD_MESSAGE);
       const dates = [{ startsAt: data.startsAt, endsAt: data.endsAt }, ...data.moreDates];
       const seriesId = dates.length > 1 ? crypto.randomUUID() : null;
-      // Each date of a series has its own page, so its own address; with
-      // several times on one day, the time tells them apart.
-      const days = dates.map((d) => dayKey(d.startsAt, timeZone));
-      const sameDay = new Set(days).size < days.length;
-      const rows = dates.map((d, i) => ({
+      // Every date shares the event's one address; its page lists the dates.
+      const rows = dates.map((d) => ({
         ...shared,
         seriesId,
-        slug: seriesId
-          ? `${slug}-${days[i]}${sameDay ? `-${clockKey(d.startsAt, timeZone)}` : ''}`
-          : slug,
+        slug,
         startsAt: new Date(d.startsAt),
         endsAt: new Date(d.endsAt),
-        bookingsCloseAt: closeAt(d.startsAt),
+        ...bookingWindow(d.startsAt),
         createdBy: context.user.id,
       }));
-      const clash = await db
-        .select({ slug: events.slug })
-        .from(events)
-        .where(
-          inArray(
-            events.slug,
-            rows.map((r) => r.slug)
-          )
-        )
-        .limit(1);
-      if (clash.length) {
-        throw new Error('Another event already uses that web address. Change the slug.');
+      if (await db.query.events.findFirst({ where: eq(events.slug, slug) })) {
+        throw new Error(SLUG_TAKEN);
       }
       // One statement per date: D1 limits how many values one statement binds.
       const created = await db.batch([
@@ -226,10 +218,17 @@ export const saveEvent = createServerFn({ method: 'POST' })
       throw new Error('This event is cancelled and can no longer be changed.');
     }
     if (publishAtProblem(current.publishAt)) throw new Error(PUBLISH_LEAD_MESSAGE);
+    // The dates of one event share an address; no other event may use it.
     const clash = await db.query.events.findFirst({
-      where: and(eq(events.slug, slug), ne(events.id, current.id)),
+      where: and(
+        eq(events.slug, slug),
+        ne(events.id, current.id),
+        current.seriesId
+          ? or(isNull(events.seriesId), ne(events.seriesId, current.seriesId))
+          : undefined
+      ),
     });
-    if (clash) throw new Error('Another event already uses that web address. Change the slug.');
+    if (clash) throw new Error(SLUG_TAKEN);
 
     // The other dates take only what was changed here, so a date given its own
     // capacity or times earlier keeps them unless that is what changed.
@@ -278,7 +277,7 @@ export const saveEvent = createServerFn({ method: 'POST' })
         db
           .update(events)
           .set({
-            ...(isThis ? { ...shared, slug, bookingsCloseAt: closeAt(data.startsAt) } : patch),
+            ...(isThis ? { ...shared, slug, ...bookingWindow(data.startsAt) } : patch),
             ...(times
               ? { startsAt: new Date(times.startsAt), endsAt: new Date(times.endsAt) }
               : {}),
@@ -299,6 +298,10 @@ export const saveEvent = createServerFn({ method: 'POST' })
       ) {
         statements.push(resync(db, t.id));
       }
+    }
+    // A new address is the whole event's, whichever dates the change was for.
+    if (current.seriesId && slug !== current.slug) {
+      statements.push(db.update(events).set({ slug }).where(eq(events.seriesId, current.seriesId)));
     }
     statements.push(
       logActivity(db, {

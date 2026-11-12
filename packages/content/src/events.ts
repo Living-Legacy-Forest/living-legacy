@@ -61,6 +61,7 @@ export type BookableEvent = {
   status: EventStatus;
   startsAt: number;
   endsAt: number;
+  bookingsOpenAt: number | null;
   bookingsCloseAt: number | null;
   capacity: number | null;
   maxPartySize: number;
@@ -82,6 +83,9 @@ export function bookingProblem(
   if (event.status === 'cancelled') return 'This event has been cancelled.';
   if (by === 'website') {
     if (event.status !== 'published') return 'This event is not open for bookings.';
+    if (event.bookingsOpenAt !== null && now < event.bookingsOpenAt) {
+      return 'Bookings for this event are not open yet.';
+    }
     if (now >= (event.bookingsCloseAt ?? event.startsAt)) {
       return 'Bookings for this event have closed.';
     }
@@ -123,7 +127,7 @@ export function deleteEventProblem(
 }
 
 // No 0/O, 1/I/L: references are read out over the phone.
-const REFERENCE_ALPHABET = 'ABCDEFGHJKMNPQRSTUVWXYZ23456789';
+export const REFERENCE_ALPHABET = 'ABCDEFGHJKMNPQRSTUVWXYZ23456789';
 
 /** "LL-7K3QXM" from six random bytes. */
 export function bookingReference(bytes: Uint8Array): string {
@@ -174,6 +178,8 @@ export const eventInputSchema = z
       .default([]),
     capacity: z.number().int().min(1).max(100_000).nullable(),
     maxPartySize: z.number().int().min(1).max(STAFF_MAX_PARTY_SIZE),
+    // The default keeps forms and previews saved before it existed readable.
+    bookingsOpenAt: z.number().int().nullable().default(null),
     bookingsCloseAt: z.number().int().nullable(),
     status: z.enum(['draft', 'published']),
     /** A draft's time to go live, or null to stay a draft until published by hand. */
@@ -197,7 +203,14 @@ export const eventInputSchema = z
   .refine((e) => e.bookingsCloseAt === null || e.bookingsCloseAt <= e.startsAt, {
     path: ['bookingsCloseAt'],
     message: 'Bookings must close before the event starts.',
-  });
+  })
+  .refine(
+    (e) => e.bookingsOpenAt === null || e.bookingsOpenAt < (e.bookingsCloseAt ?? e.startsAt),
+    {
+      path: ['bookingsOpenAt'],
+      message: 'Bookings must open before they close.',
+    }
+  );
 export type EventInput = z.infer<typeof eventInputSchema>;
 
 /** Letters from any language, with the marks names use: O'Brien, Mary-Jane, St. John. */

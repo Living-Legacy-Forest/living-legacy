@@ -2,6 +2,7 @@
 // (confirmation, reminder, cancellation) from workflows that watch these
 // properties, so the CMS only keeps them current. A contact holds one booking
 // at a time: the most recently changed one.
+import { googleCalendarUrl, ticketCalendarPath, ticketQrPath } from './tickets';
 
 export type CrmBooking = {
   id: string;
@@ -17,6 +18,7 @@ export type CrmBooking = {
   event: {
     title: string;
     startsAt: number;
+    endsAt: number;
     venue: string;
     locationName: string;
     status: 'draft' | 'published' | 'cancelled';
@@ -36,6 +38,7 @@ export const eventBookingStatuses = [
 export const HUBSPOT_EVENT_PROPERTIES = [
   { name: 'll_event_name', label: 'Event: name', type: 'string', fieldType: 'text' },
   { name: 'll_event_start', label: 'Event: starts', type: 'datetime', fieldType: 'date' },
+  { name: 'll_event_end', label: 'Event: ends', type: 'datetime', fieldType: 'date' },
   { name: 'll_event_time_zone', label: 'Event: time zone', type: 'string', fieldType: 'text' },
   { name: 'll_event_venue', label: 'Event: venue', type: 'string', fieldType: 'text' },
   { name: 'll_event_location', label: 'Event: location', type: 'string', fieldType: 'text' },
@@ -53,10 +56,40 @@ export const HUBSPOT_EVENT_PROPERTIES = [
     fieldType: 'select',
     options: eventBookingStatuses.map((s, i) => ({ ...s, displayOrder: i })),
   },
+  // Links for the emails: the ticket's QR code image and adding the event to a calendar.
+  {
+    name: 'll_event_ticket_qr_url',
+    label: 'Event: ticket QR code',
+    type: 'string',
+    fieldType: 'text',
+  },
+  {
+    name: 'll_event_calendar_url',
+    label: 'Event: add to calendar (Apple, Outlook)',
+    type: 'string',
+    fieldType: 'text',
+  },
+  {
+    name: 'll_event_google_calendar_url',
+    label: 'Event: add to Google Calendar',
+    type: 'string',
+    fieldType: 'text',
+  },
 ] as const;
 
-/** The contact properties for one booking. Empty optional details are left out, not cleared. */
-export function hubspotBookingProperties(b: CrmBooking): Record<string, string> {
+/**
+ * The contact properties for one booking. Empty optional details are left out,
+ * not cleared. `cmsOrigin` ("https://cms.example.com") serves the ticket links.
+ */
+export function hubspotBookingProperties(b: CrmBooking, cmsOrigin: string): Record<string, string> {
+  const ticket = {
+    reference: b.reference,
+    title: b.event.title,
+    startsAt: b.event.startsAt,
+    endsAt: b.event.endsAt,
+    venue: b.event.venue,
+    partySize: b.partySize,
+  };
   const status =
     b.status === 'cancelled'
       ? 'cancelled'
@@ -70,12 +103,16 @@ export function hubspotBookingProperties(b: CrmBooking): Record<string, string> 
     ll_event_name: b.event.title,
     // HubSpot takes datetimes as epoch milliseconds.
     ll_event_start: String(b.event.startsAt),
+    ll_event_end: String(b.event.endsAt),
     ll_event_time_zone: b.event.timeZone,
     ll_event_venue: b.event.venue,
     ll_event_location: b.event.locationName,
     ll_event_party_size: String(b.partySize),
     ll_event_reference: b.reference,
     ll_event_status: status,
+    ll_event_ticket_qr_url: `${cmsOrigin}${ticketQrPath(b.reference)}`,
+    ll_event_calendar_url: `${cmsOrigin}${ticketCalendarPath(b.reference)}`,
+    ll_event_google_calendar_url: googleCalendarUrl(ticket),
   };
 }
 

@@ -28,6 +28,7 @@ export function SeriesCalendar({
   onPick,
   label,
   allDates = false,
+  compact = false,
   className,
 }: {
   id?: string;
@@ -40,6 +41,8 @@ export function SeriesCalendar({
   label: ReactNode;
   /** Offer an "All dates" choice under the calendar. */
   allDates?: boolean;
+  /** A small button sized to its text, for a toolbar, rather than a full-width field. */
+  compact?: boolean;
   className?: string;
 }) {
   const [open, setOpen] = useState(false);
@@ -61,7 +64,11 @@ export function SeriesCalendar({
               id={id}
               type="button"
               variant="outline"
-              className="touch:min-h-11 w-full justify-start px-2.5 font-normal"
+              size={compact ? 'sm' : 'default'}
+              className={cn(
+                'touch:min-h-11 justify-start px-2.5 font-normal',
+                compact ? 'max-w-full max-sm:w-full' : 'w-full'
+              )}
             />
           }
         >

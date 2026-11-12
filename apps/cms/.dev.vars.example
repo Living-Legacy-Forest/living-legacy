@@ -19,11 +19,10 @@ RESEND_API_KEY=
 GOOGLE_CLIENT_ID=
 GOOGLE_CLIENT_SECRET=
 
-# Production only: Better Stack heartbeat addresses the cron schedules ping
-# after each run, so a missed or failed run raises an incident. Leave unset
-# locally, where nothing is pinged.
-# HEARTBEAT_URL_EVERY_5_MINUTES=
-# HEARTBEAT_URL_DAILY=
+# Production only: Better Stack heartbeat addresses the cron schedules and
+# jobs ping after each run, as one JSON object keyed by schedule or job (see
+# docs/observability.md). Leave unset locally, where nothing is pinged.
+# HEARTBEAT_URLS={"every-5-minutes":"https://…","daily":"https://…"}
 
 # Optional: overrides the deployed URL in wrangler.jsonc for local dev.
 BETTER_AUTH_URL=http://localhost:3100

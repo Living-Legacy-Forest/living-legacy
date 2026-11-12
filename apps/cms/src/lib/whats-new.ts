@@ -27,6 +27,16 @@ export type WhatsNewEntry = {
 export const whatsNew: WhatsNewEntry[] = [
   {
     id: '2026-11-12-3',
+    title: 'Report a problem',
+    items: [
+      {
+        title: 'Tell us when something goes wrong',
+        body: 'Open your account menu (your picture, top right) and choose Report a problem. Say what you were doing and what happened, and add a screenshot if it helps. It reaches the developers with what they need to look into it.',
+      },
+    ],
+  },
+  {
+    id: '2026-11-12-3',
     title: 'A System page for admins',
     items: [
       {

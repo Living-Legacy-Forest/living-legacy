@@ -16,7 +16,26 @@ export function getRouter() {
   if (!router.isServer) {
     Sentry.init({
       ...sentryOptions,
-      integrations: [Sentry.tanstackRouterBrowserTracingIntegration(router)],
+      integrations: [
+        Sentry.tanstackRouterBrowserTracingIntegration(router),
+        // "Report a problem" in the account menu opens this form (lib/report-problem.ts).
+        // No name or email fields: reports carry the user's id, as errors do.
+        Sentry.feedbackIntegration({
+          autoInject: false,
+          colorScheme: 'system',
+          showBranding: false,
+          showName: false,
+          showEmail: false,
+          isNameRequired: false,
+          isEmailRequired: false,
+          enableScreenshot: true,
+          formTitle: 'Report a problem',
+          messageLabel: 'What went wrong?',
+          messagePlaceholder: 'What were you doing, and what happened instead?',
+          submitButtonLabel: 'Send report',
+          successMessageText: 'Thanks. Your report has been sent.',
+        }),
+      ],
     });
   }
 

@@ -4,6 +4,7 @@ import {
   ExternalLinkIcon,
   KeyboardIcon,
   LogOutIcon,
+  MessageCircleQuestionIcon,
   UserIcon,
 } from '@/components/icons';
 import { useState } from 'react';
@@ -33,6 +34,7 @@ import { type SessionUser, forgetCachedUser } from '@/lib/session';
 import { cn } from '@/lib/utils';
 import { SheetHeader, sheetGroupClass, sheetRowClass } from './sheet-parts';
 import { avatarSrc } from '@/lib/avatar';
+import { canReportProblem, openProblemReport } from '@/lib/report-problem';
 
 const shortcuts: { keys: string[]; label: string }[] = [
   { keys: ['⌘', 'K'], label: 'Search or jump to a page' },
@@ -50,6 +52,8 @@ export function NavUser({ user }: { user: SessionUser }) {
   const isPhone = useIsMobile();
   const [showShortcuts, setShowShortcuts] = useState(false);
   const [sheetOpen, setSheetOpen] = useState(false);
+  // Sentry runs in production only, so the item shows there; read once it has loaded.
+  const [canReport] = useState(() => typeof window !== 'undefined' && canReportProblem());
   const initials = user.name
     .split(' ')
     .map((part) => part[0])
@@ -118,6 +122,21 @@ export function NavUser({ user }: { user: SessionUser }) {
                     </a>
                   </li>
                 )}
+                {canReport && (
+                  <li>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        close();
+                        void openProblemReport();
+                      }}
+                      className={sheetRowClass}
+                    >
+                      <MessageCircleQuestionIcon aria-hidden className="text-muted-foreground" />
+                      <span className="flex-1 text-left">Report a problem</span>
+                    </button>
+                  </li>
+                )}
               </ul>
               <ul className={sheetGroupClass}>
                 <li>
@@ -184,6 +203,12 @@ export function NavUser({ user }: { user: SessionUser }) {
               <KeyboardIcon aria-hidden />
               Keyboard shortcuts
             </DropdownMenuItem>
+            {canReport && (
+              <DropdownMenuItem onClick={() => void openProblemReport()}>
+                <MessageCircleQuestionIcon aria-hidden />
+                Report a problem
+              </DropdownMenuItem>
+            )}
           </DropdownMenuGroup>
           <DropdownMenuSeparator />
           <DropdownMenuItem onClick={signOut}>

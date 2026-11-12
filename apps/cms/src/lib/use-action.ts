@@ -3,8 +3,8 @@ import { useState } from 'react';
 import { type Notice, notify } from './notify';
 
 export type RunOptions<T> = {
-  /** The toast when it works; none if left out (a reorder, say). */
-  success?: Notice | ((result: T) => Notice);
+  /** The toast when it works; none if left out (a reorder, say) or if the function returns none. */
+  success?: Notice | ((result: T) => Notice | undefined);
   /** Heading for the toast when it fails; the reason goes under it. */
   error: string;
   /** A loading toast for the outcome to replace, e.g. one showing progress. */
@@ -25,7 +25,7 @@ export function useAction() {
       const result = await action();
       if (success) {
         const notice = typeof success === 'function' ? success(result) : success;
-        notify.success({ id: toastId, ...notice });
+        if (notice) notify.success({ id: toastId, ...notice });
       }
       await router.invalidate();
       return result;

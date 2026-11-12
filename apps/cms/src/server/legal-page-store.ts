@@ -67,23 +67,36 @@ export async function listLegalPageSummaries(db: Db): Promise<LegalPageSummary[]
   }));
 }
 
+/**
+ * Saves pending edits. Someone who cannot publish changing a page that is
+ * waiting for review withdraws the request (`keepReview` false), so an admin
+ * never approves a page that is still changing; they ask again when it is
+ * ready. An admin editing during the review keeps it.
+ */
 export async function saveLegalDraft(
   db: Db,
   slug: LegalSlug,
   values: LegalValues,
   expectedUpdatedAt: number,
-  actor: Actor
+  actor: Actor,
+  keepReview: boolean
 ) {
   const row = await loadLegalPage(db, slug);
   assertVersion(row, expectedUpdatedAt);
   const now = new Date();
+  const reviewWithdrawn = row.reviewRequestedAt !== null && !keepReview;
   const written = await db
     .update(legalPages)
-    .set({ draft: values, updatedAt: now, updatedBy: actor.id })
+    .set({
+      draft: values,
+      ...(reviewWithdrawn ? { reviewRequestedAt: null } : {}),
+      updatedAt: now,
+      updatedBy: actor.id,
+    })
     .where(atVersion(row.id, expectedUpdatedAt))
     .returning({ id: legalPages.id });
   if (!written.length) throw conflictError();
-  return { updatedAt: now.getTime() };
+  return { updatedAt: now.getTime(), reviewWithdrawn };
 }
 
 export async function requestLegalReview(db: Db, slug: LegalSlug, actor: Actor) {
@@ -227,7 +240,9 @@ export async function restoreLegalRevision(
   slug: LegalSlug,
   revisionId: string,
   expectedUpdatedAt: number,
-  actor: Actor
+  actor: Actor,
+  /** As for saveLegalDraft: whether a pending review request survives. */
+  keepReview: boolean
 ) {
   const row = await loadLegalPage(db, slug);
   const revision = await db.query.revisions.findFirst({
@@ -241,7 +256,7 @@ export async function restoreLegalRevision(
   // Old snapshots predate any later rule changes, so check them as a save would.
   const parsed = legalValuesSchema.safeParse(revision.snapshot);
   if (!parsed.success) throw new Error('That version can no longer be restored.');
-  return saveLegalDraft(db, slug, parsed.data, expectedUpdatedAt, actor);
+  return saveLegalDraft(db, slug, parsed.data, expectedUpdatedAt, actor, keepReview);
 }
 
 export async function listLegalReviewRequests(db: Db) {

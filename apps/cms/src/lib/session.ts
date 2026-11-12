@@ -71,6 +71,10 @@ export const getLoginOptions = createServerFn({ method: 'GET' }).handler(async (
 export const authMiddleware = createMiddleware({ type: 'function' }).server(async ({ next }) => {
   const user = await loadUser();
   if (!user) throw new Error('You need to sign in.');
+  // Server errors from this request say whose and which role, by id only.
+  // Loaded here, on the server, so the browser bundle never gets this SDK.
+  const { getIsolationScope } = await import('@sentry/cloudflare');
+  getIsolationScope().setUser({ id: user.id }).setTag('role', user.role);
   return next({ context: { user } });
 });
 

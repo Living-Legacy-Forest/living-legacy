@@ -25,6 +25,7 @@ export const activityActions = [
   'redirect.updated',
   'redirect.deleted',
   'settings.updated',
+  'content.replaced',
   'api_key.created',
   'api_key.revoked',
   'post.created_via_api',

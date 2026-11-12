@@ -9,7 +9,7 @@ export type WhatsNewItem = {
   /** Where to try it. */
   link?: {
     label: string;
-    to: '/settings' | '/media' | '/profile' | '/events/overview';
+    to: '/settings' | '/media' | '/profile' | '/events/overview' | '/search-replace';
     hash?: string;
   };
 };
@@ -25,6 +25,21 @@ export type WhatsNewEntry = {
 };
 
 export const whatsNew: WhatsNewEntry[] = [
+  {
+    id: '2026-11-12-2',
+    title: 'Search and replace, and who else is editing',
+    items: [
+      {
+        title: 'See who else is editing a post',
+        body: 'When someone else has the same post open, a note above the editor says so. If they save while you are working, it tells you, with a Reload button, before you save over their changes.',
+      },
+      {
+        title: 'Change a phrase everywhere at once',
+        body: 'Admins can now find a word or phrase in posts, legal pages, events, FAQs, locations and the rest of the CMS, see every match, and replace it in one go. Published pages keep their previous version in their history.',
+        link: { label: 'Open Search & replace', to: '/search-replace' },
+      },
+    ],
+  },
   {
     id: '2026-11-12',
     title: 'Scan tickets at the door',

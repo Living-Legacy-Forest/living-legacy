@@ -321,6 +321,7 @@ export const PencilIcon = animated(AnimatedEdit02Icon);
 export const RotateCcwIcon = animated(AnimatedUndoIcon);
 export const SearchIcon = animated(AnimatedSearchIcon);
 export const SearchXIcon = make(H.SearchRemoveIcon);
+export const SearchReplaceIcon = make(H.SearchReplaceIcon);
 export const XIcon = animated(AnimatedCancel01Icon);
 export const ArrowRightIcon = make(H.ArrowRight01Icon);
 export const ArchiveIcon = animated(AnimatedDeliveryBox01Icon);

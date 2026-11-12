@@ -34,6 +34,7 @@ import type { PostEditorData } from '@/server/posts';
 import { DocumentEditorSkeleton } from './document-editor-skeleton';
 import { EditorToolbar } from './editor-toolbar';
 import type { PostAccess } from './post-access';
+import { PresenceNotice, usePostPresence } from './post-presence';
 import { PropertiesPanel } from './properties-panel';
 import { type PostEditorState, usePostEditor } from './use-post-editor';
 
@@ -60,6 +61,7 @@ export function PostEditor({
   onReload: () => Promise<void>;
 }) {
   const editor = usePostEditor({ data, access, onReload });
+  const presence = usePostPresence(editor.meta.id, editor.meta.updatedAt);
   const [showProperties, setShowProperties] = useState(true);
   const { values, update } = editor;
 
@@ -78,6 +80,7 @@ export function PostEditor({
           showProperties && 'lg:mr-6'
         )}
       >
+        <PresenceNotice presence={presence} dirty={editor.dirty} onReload={() => void onReload()} />
         <EditorToolbar
           editor={editor}
           showProperties={showProperties}

@@ -225,6 +225,20 @@
       "when": 1794453789839,
       "tag": "0031_event-shared-address",
       "breakpoints": true
+    },
+    {
+      "idx": 32,
+      "version": "6",
+      "when": 1794455697112,
+      "tag": "0032_post-presence",
+      "breakpoints": true
+    },
+    {
+      "idx": 33,
+      "version": "6",
+      "when": 1794455991904,
+      "tag": "0033_content-version",
+      "breakpoints": true
     }
   ]
 }

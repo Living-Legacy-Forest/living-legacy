@@ -33,6 +33,7 @@ import { Route as AppPostsPostIdRouteImport } from './routes/_app/posts/$postId'
 import { Route as AppPostsNewRouteImport } from './routes/_app/posts/new'
 import { Route as AppProfileIndexRouteImport } from './routes/_app/profile/index'
 import { Route as AppRedirectsIndexRouteImport } from './routes/_app/redirects/index'
+import { Route as AppSearchReplaceIndexRouteImport } from './routes/_app/search-replace/index'
 import { Route as AppSettingsIndexRouteImport } from './routes/_app/settings/index'
 import { Route as AppTeamIndexRouteImport } from './routes/_app/team/index'
 import { Route as AppTestimonialsIndexRouteImport } from './routes/_app/testimonials/index'
@@ -172,6 +173,11 @@ const AppRedirectsIndexRoute = AppRedirectsIndexRouteImport.update({
   path: '/redirects/',
   getParentRoute: () => AppRoute,
 } as any)
+const AppSearchReplaceIndexRoute = AppSearchReplaceIndexRouteImport.update({
+  id: '/search-replace/',
+  path: '/search-replace/',
+  getParentRoute: () => AppRoute,
+} as any)
 const AppSettingsIndexRoute = AppSettingsIndexRouteImport.update({
   id: '/settings/',
   path: '/settings/',
@@ -300,6 +306,7 @@ export interface FileRoutesByFullPath {
   '/posts/': typeof AppPostsIndexRoute
   '/profile/': typeof AppProfileIndexRoute
   '/redirects/': typeof AppRedirectsIndexRoute
+  '/search-replace/': typeof AppSearchReplaceIndexRoute
   '/settings/': typeof AppSettingsIndexRoute
   '/team/': typeof AppTeamIndexRoute
   '/testimonials/': typeof AppTestimonialsIndexRoute
@@ -344,6 +351,7 @@ export interface FileRoutesByTo {
   '/posts': typeof AppPostsIndexRoute
   '/profile': typeof AppProfileIndexRoute
   '/redirects': typeof AppRedirectsIndexRoute
+  '/search-replace': typeof AppSearchReplaceIndexRoute
   '/settings': typeof AppSettingsIndexRoute
   '/team': typeof AppTeamIndexRoute
   '/testimonials': typeof AppTestimonialsIndexRoute
@@ -390,6 +398,7 @@ export interface FileRoutesById {
   '/_app/posts/': typeof AppPostsIndexRoute
   '/_app/profile/': typeof AppProfileIndexRoute
   '/_app/redirects/': typeof AppRedirectsIndexRoute
+  '/_app/search-replace/': typeof AppSearchReplaceIndexRoute
   '/_app/settings/': typeof AppSettingsIndexRoute
   '/_app/team/': typeof AppTeamIndexRoute
   '/_app/testimonials/': typeof AppTestimonialsIndexRoute
@@ -436,6 +445,7 @@ export interface FileRouteTypes {
     | '/posts/'
     | '/profile/'
     | '/redirects/'
+    | '/search-replace/'
     | '/settings/'
     | '/team/'
     | '/testimonials/'
@@ -480,6 +490,7 @@ export interface FileRouteTypes {
     | '/posts'
     | '/profile'
     | '/redirects'
+    | '/search-replace'
     | '/settings'
     | '/team'
     | '/testimonials'
@@ -525,6 +536,7 @@ export interface FileRouteTypes {
     | '/_app/posts/'
     | '/_app/profile/'
     | '/_app/redirects/'
+    | '/_app/search-replace/'
     | '/_app/settings/'
     | '/_app/team/'
     | '/_app/testimonials/'
@@ -729,6 +741,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppRedirectsIndexRouteImport
       parentRoute: typeof AppRoute
     }
+    '/_app/search-replace/': {
+      id: '/_app/search-replace/'
+      path: '/search-replace'
+      fullPath: '/search-replace/'
+      preLoaderRoute: typeof AppSearchReplaceIndexRouteImport
+      parentRoute: typeof AppRoute
+    }
     '/_app/settings/': {
       id: '/_app/settings/'
       path: '/settings'
@@ -886,6 +905,7 @@ interface AppRouteChildren {
   AppPostsIndexRoute: typeof AppPostsIndexRoute
   AppProfileIndexRoute: typeof AppProfileIndexRoute
   AppRedirectsIndexRoute: typeof AppRedirectsIndexRoute
+  AppSearchReplaceIndexRoute: typeof AppSearchReplaceIndexRoute
   AppSettingsIndexRoute: typeof AppSettingsIndexRoute
   AppTeamIndexRoute: typeof AppTeamIndexRoute
   AppTestimonialsIndexRoute: typeof AppTestimonialsIndexRoute
@@ -915,6 +935,7 @@ const AppRouteChildren: AppRouteChildren = {
   AppPostsIndexRoute: AppPostsIndexRoute,
   AppProfileIndexRoute: AppProfileIndexRoute,
   AppRedirectsIndexRoute: AppRedirectsIndexRoute,
+  AppSearchReplaceIndexRoute: AppSearchReplaceIndexRoute,
   AppSettingsIndexRoute: AppSettingsIndexRoute,
   AppTeamIndexRoute: AppTeamIndexRoute,
   AppTestimonialsIndexRoute: AppTestimonialsIndexRoute,

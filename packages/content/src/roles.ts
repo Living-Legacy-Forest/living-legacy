@@ -22,6 +22,8 @@ export const permissions = [
   'settings:write',
   'users:manage',
   'legal:publish',
+  // Search and replace across all content at once. Admins only.
+  'content:replace',
 ] as const;
 export type Permission = (typeof permissions)[number];
 

@@ -16,7 +16,7 @@ const loadApp = () =>
 
 const OLD_HOST = 'living-legacy-cms.living-legacy.workers.dev';
 
-// The health check Sentry's uptime monitor watches (server/health-check.ts).
+// The health check the uptime monitor (Better Stack) watches (server/health-check.ts).
 const HEALTH_PATH = '/api/health';
 
 /**
@@ -50,7 +50,7 @@ export default Sentry.withSentry(
     ...sentryOptions,
     // Every image in a list is its own request; tracing them would bury the rest.
     tracesSampler: ({ name, normalizedRequest }) => {
-      // So is the health check, which Sentry's uptime monitor calls every minute.
+      // So is the health check, which the uptime monitor calls every few minutes.
       const path = normalizedRequest?.url ? new URL(normalizedRequest.url).pathname : name;
       return path.includes('/api/media/') || path === HEALTH_PATH
         ? 0
@@ -71,30 +71,28 @@ export default Sentry.withSentry(
       // The busiest route, and it needs nothing from the app: serve it directly.
       const mediaId = mediaIdFromPath(url.pathname);
       if (mediaId) return serveMedia(request, mediaId, ctx);
-      // Public, for Sentry's uptime monitor; it needs nothing from the app either.
+      // Public, for the uptime monitor; it needs nothing from the app either.
       if (url.pathname === HEALTH_PATH) {
         const { healthResponse } = await import('./server/health-check');
         return healthResponse(request, env.DB);
       }
       return noFraming(await (await loadApp()).fetch(request));
     },
-    // Each run checks in with its Sentry monitor and is kept for the System
-    // page. Awaited rather than handed to waitUntil, so the last check-in and
-    // any job's error are sent before withSentry flushes.
+    // Each run reports job errors to Sentry, pings its Better Stack heartbeat
+    // and is kept for the System page. Awaited rather than handed to
+    // waitUntil, so every error is sent before withSentry flushes.
     async scheduled(controller, env) {
       const now = new Date(controller.scheduledTime);
       const schedule: CronSchedule =
         controller.cron === cronSchedules.daily.cron ? 'daily' : 'every-5-minutes';
-      const [{ runMonitored }, { jobsFor, monitorFor }, { recordCronRuns }] = await Promise.all([
+      const [{ runMonitored }, { jobsFor, heartbeatFor }, { recordCronRuns }] = await Promise.all([
         import('./server/cron-monitor'),
         import('./server/cron-jobs'),
         import('./server/system-store'),
       ]);
-      const runs = await runMonitored(
-        monitorFor(schedule),
-        await jobsFor(schedule, env, now),
-        Sentry
-      );
+      const runs = await runMonitored(await jobsFor(schedule, env, now), Sentry, {
+        url: heartbeatFor(schedule, env),
+      });
       // The jobs' own failures are already in Sentry; this only loses the page's copy.
       await recordCronRuns(env.DB, runs).catch((error: unknown) =>
         Sentry.captureException(error, { tags: { job: 'record-runs' } })

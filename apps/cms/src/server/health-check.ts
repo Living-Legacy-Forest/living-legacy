@@ -7,11 +7,10 @@ import { judgeWebsite, probeWebsite } from './system-health';
 const FIVE_MINUTE_JOBS = cronJobs.filter((j) => j.schedule === 'every-5-minutes').map((j) => j.key);
 
 /**
- * The public health check behind /api/health, for Sentry's free uptime
- * monitor: one monitor then covers the CMS answering at all, the website
- * loading, and the 5-minute jobs still running. It says which of the two
- * failed and nothing more. (Sentry's free plan has one cron monitor, past
- * which monitors are disabled, so missed runs are caught here instead.)
+ * The public health check behind /api/health, for an uptime monitor (Better
+ * Stack): one check covers the CMS answering at all, the website loading, and
+ * the 5-minute jobs still running, a second line of defence beside their
+ * heartbeat. It says which of the two failed and nothing more.
  */
 export async function checkHealth(d1: D1Database, fetcher: typeof fetch, now: number) {
   const [website, [jobs]] = await Promise.all([

@@ -9,9 +9,10 @@ export const cronSchedules = {
     title: 'Every 5 minutes',
     /** Must match the first trigger in wrangler.jsonc. */
     cron: '*/5 * * * *',
-    /** Its Sentry cron monitor. The daily jobs have none (src/server/cron-jobs.ts). */
-    monitorSlug: 'cms-every-5-minutes',
-    /** No run for this long and the job counts as stopped (Sentry's margin too). */
+    /**
+     * No run for this long and the job counts as stopped, here and in the
+     * health check; set the Better Stack heartbeat's grace to match.
+     */
     staleAfterMs: 15 * MINUTE_MS,
   },
   daily: {

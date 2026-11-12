@@ -1,17 +1,16 @@
-import type { captureCheckIn } from '@sentry/cloudflare';
-
-type MonitorConfig = NonNullable<Parameters<typeof captureCheckIn>[1]>;
-
-/** A Sentry cron monitor: it alerts when a run fails, runs too long or never happens. */
-export interface Monitor {
-  slug: string;
-  config: MonitorConfig;
+/** The one Sentry call this needs, passed in so the tests need no Sentry. */
+export interface ErrorReporter {
+  captureException(error: unknown, context: { tags: { job: string } }): void;
 }
 
-/** The two Sentry calls this needs, passed in so the tests need no Sentry. */
-export interface CronReporter {
-  captureCheckIn: typeof captureCheckIn;
-  captureException(error: unknown, context: { tags: { job: string } }): void;
+/**
+ * Where a schedule tells its uptime service that it ran: a Better Stack
+ * heartbeat address, which raises an incident when pings stop or say /fail.
+ * Unset (local development, or not set up yet) means no ping.
+ */
+export interface Heartbeat {
+  url: string | undefined;
+  fetcher?: typeof fetch;
 }
 
 /** How one job's run went, as the System page shows it. */
@@ -24,26 +23,21 @@ export interface JobRun {
 }
 
 const ERROR_LENGTH = 500;
+const HEARTBEAT_TIMEOUT_MS = 5_000;
 
 /**
- * Runs one schedule's jobs side by side and, if it has one, checks in with
- * its monitor.
+ * Runs one schedule's jobs side by side, then pings its heartbeat.
  *
  * Each job is on its own: one failing does not stop the others, and each
  * failure goes to Sentry tagged with the job's name, so the issue says which
- * one broke. The run checks in as an error if any job failed. Never rejects,
- * so a failure is reported once, not again as an error from the cron handler.
+ * one broke. The heartbeat gets /fail if any job failed. Never rejects, so a
+ * failure is reported once, not again as an error from the cron handler.
  */
 export async function runMonitored(
-  monitor: Monitor | null,
   jobs: Record<string, () => Promise<unknown>>,
-  reporter: CronReporter
+  reporter: ErrorReporter,
+  heartbeat?: Heartbeat
 ): Promise<JobRun[]> {
-  const checkInId =
-    monitor &&
-    reporter.captureCheckIn({ monitorSlug: monitor.slug, status: 'in_progress' }, monitor.config);
-  const started = Date.now();
-
   const runs = await Promise.all(
     Object.entries(jobs).map(async ([job, run]): Promise<JobRun> => {
       const startedAt = new Date();
@@ -58,13 +52,18 @@ export async function runMonitored(
     })
   );
 
-  if (monitor && checkInId) {
-    reporter.captureCheckIn({
-      monitorSlug: monitor.slug,
-      status: runs.some((r) => r.error !== null) ? 'error' : 'ok',
-      checkInId,
-      duration: (Date.now() - started) / 1000,
-    });
+  if (heartbeat?.url) {
+    const failed = runs.some((r) => r.error !== null);
+    try {
+      const res = await (heartbeat.fetcher ?? fetch)(
+        failed ? `${heartbeat.url}/fail` : heartbeat.url,
+        { method: 'POST', signal: AbortSignal.timeout(HEARTBEAT_TIMEOUT_MS) }
+      );
+      await res.body?.cancel();
+    } catch (error) {
+      // A missed ping is the uptime service's to notice; the jobs still ran.
+      reporter.captureException(error, { tags: { job: 'heartbeat' } });
+    }
   }
   return runs;
 }

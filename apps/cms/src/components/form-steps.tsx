@@ -62,6 +62,7 @@ export function FormSteps({
 }) {
   return (
     <ol
+      data-slot="form-steps"
       className="grid gap-2"
       style={{ gridTemplateColumns: `repeat(${labels.length}, minmax(0, 1fr))` }}
       aria-label="Steps"
@@ -102,7 +103,11 @@ export function FormSteps({
   );
 }
 
-/** The current step's fields, sliding in from the side the steps moved towards. */
+/**
+ * The current step's fields. Opening the form reveals them with the rest of the form's fields
+ * (the form rules in styles.css); moving to another step slides them in from the side the
+ * steps moved towards.
+ */
 export function FormStep({
   step,
   forward,
@@ -114,12 +119,20 @@ export function FormStep({
   className?: string;
   children: React.ReactNode;
 }) {
+  // Adjusting state during render, so the slide applies to the very first paint of a new step.
+  const [shownStep, setShownStep] = useState(step);
+  const [moved, setMoved] = useState(false);
+  if (step !== shownStep) {
+    setShownStep(step);
+    setMoved(true);
+  }
   return (
     <div
       key={step}
+      data-moved={moved || undefined}
       className={cn(
-        'animate-in fade-in duration-200 ease-out motion-reduce:animate-none',
-        forward ? 'slide-in-from-right-3' : 'slide-in-from-left-3',
+        moved && 'animate-in fade-in duration-200 ease-out motion-reduce:animate-none',
+        moved && (forward ? 'slide-in-from-right-3' : 'slide-in-from-left-3'),
         className
       )}
     >

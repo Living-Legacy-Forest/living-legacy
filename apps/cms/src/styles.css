@@ -1024,6 +1024,73 @@
   }
 }
 
+/* A form opening to add or edit, in the pane or a dialog: fields rise one after another,
+   then the buttons. Plays each time one opens or a different item loads (the form remounts),
+   so it is brief. Dialogs on phones are sheets that slide in themselves, so are left alone. */
+@media (width >= 48rem) {
+  :is([data-slot='pane-body'], [data-slot='dialog-content']) [data-slot='form-section'] {
+    --section: 0;
+  }
+  :is([data-slot='pane-body'], [data-slot='dialog-content'])
+    [data-slot='form-section']:nth-of-type(2) {
+    --section: 1;
+  }
+  :is([data-slot='pane-body'], [data-slot='dialog-content'])
+    [data-slot='form-section']:nth-of-type(n + 3) {
+    --section: 2;
+  }
+  :is([data-slot='pane-body'], [data-slot='dialog-content'])
+    :is(
+      [data-slot='form-steps'],
+      [data-slot='form-cell'],
+      [data-slot='form-switch-cell'],
+      [data-slot='form-block'],
+      [data-slot='form-section-footer']
+    ):not([data-moved] *) {
+    animation: dashboard-text 350ms cubic-bezier(0.23, 1, 0.32, 1) backwards;
+    animation-delay: calc(30ms + var(--section, 0) * 90ms + var(--cell, 0) * 35ms);
+  }
+  :is([data-slot='pane-body'], [data-slot='dialog-content'])
+    [data-slot='form-group']
+    > :nth-child(2) {
+    --cell: 1;
+  }
+  :is([data-slot='pane-body'], [data-slot='dialog-content'])
+    [data-slot='form-group']
+    > :nth-child(3) {
+    --cell: 2;
+  }
+  :is([data-slot='pane-body'], [data-slot='dialog-content'])
+    [data-slot='form-group']
+    > :nth-child(4) {
+    --cell: 3;
+  }
+  :is([data-slot='pane-body'], [data-slot='dialog-content'])
+    [data-slot='form-group']
+    > :nth-child(n + 5) {
+    --cell: 4;
+  }
+  [data-slot='pane-body'] [data-slot='form-actions'],
+  [data-slot='dialog-content'] [data-slot='dialog-footer'] {
+    animation: dashboard-text 350ms cubic-bezier(0.23, 1, 0.32, 1) 260ms backwards;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  :is([data-slot='pane-body'], [data-slot='dialog-content'])
+    :is(
+      [data-slot='form-steps'],
+      [data-slot='form-cell'],
+      [data-slot='form-switch-cell'],
+      [data-slot='form-block'],
+      [data-slot='form-section-footer']
+    ),
+  [data-slot='pane-body'] [data-slot='form-actions'],
+  [data-slot='dialog-content'] [data-slot='dialog-footer'] {
+    animation: none;
+  }
+}
+
 /* Empty states: the icon settles in, then the title, description and action follow.
    Quick, because one can appear at any moment (a search with no matches, a closed pane).
    The dashboard's own empty cards keep their own reveal. */

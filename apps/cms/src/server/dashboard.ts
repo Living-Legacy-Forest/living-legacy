@@ -68,6 +68,8 @@ export const getDashboardData = createServerFn({ method: 'GET' })
         .where(and(gte(at, trendStart), where))
         .groupBy(week);
     };
+    // People booked per week, by when they booked (cancellations left out).
+    const bookedWeek = sql<number>`cast((${now} - ${eventBookings.createdAt}) / ${WEEK_MS} as integer)`;
 
     // One round trip to the database for the settings and every panel.
     const [
@@ -79,6 +81,8 @@ export const getDashboardData = createServerFn({ method: 'GET' })
       publishedWeekly,
       startedWeekly,
       uploadedWeekly,
+      upcomingEvents,
+      bookedWeekly,
     ] = await db.batch([
       db
         .select({
@@ -131,6 +135,16 @@ export const getDashboardData = createServerFn({ method: 'GET' })
       weekly(posts, posts.publishedAt, isPublished),
       weekly(posts, posts.createdAt, notTrashed),
       weekly(media, media.createdAt),
+      db
+        .select({ title: events.title, startsAt: events.startsAt })
+        .from(events)
+        .where(and(eq(events.status, 'published'), gte(events.startsAt, new Date(now))))
+        .orderBy(asc(events.startsAt)),
+      db
+        .select({ week: bookedWeek, n: sql<number>`coalesce(sum(${eventBookings.partySize}), 0)` })
+        .from(eventBookings)
+        .where(and(gte(eventBookings.createdAt, trendStart), eq(eventBookings.status, 'confirmed')))
+        .groupBy(bookedWeek),
     ]);
 
     const counts = postCounts[0];
@@ -158,6 +172,15 @@ export const getDashboardData = createServerFn({ method: 'GET' })
         bytes: Number(mediaTotals[0]?.bytes ?? 0),
         missingAlt: Number(mediaTotals[0]?.missingAlt ?? 0),
         uploadedWeekly: toWeeks(uploadedWeekly),
+      },
+      events: {
+        upcoming: upcomingEvents.length,
+        next: upcomingEvents[0]
+          ? { title: upcomingEvents[0].title, startsAt: upcomingEvents[0].startsAt.getTime() }
+          : null,
+        bookedWeekly: toWeeks(bookedWeekly),
+        /** Whether the card may lead to the events overview. */
+        canManage: can(role, 'events:manage'),
       },
       locations: locationRows,
       /** When the trend weeks end: the last one is the seven days up to this. */

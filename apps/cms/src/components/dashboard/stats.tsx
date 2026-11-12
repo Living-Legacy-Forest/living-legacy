@@ -1,6 +1,6 @@
 import { MUTED, type Stat, StatCard } from '@/components/stat-card/stat-card';
-import { sum } from '@/components/stat-card/shared';
-import { formatBytes, formatInteger } from '@/lib/format';
+import { formatBytes, formatDate, formatInteger } from '@/lib/format';
+import { useTimeZone } from '@/lib/use-time-zone';
 import type { DashboardData } from '@/server/dashboard';
 
 /** "2 open to visitors, 1 coming soon": the stages that matter for visitors, as a short line. */
@@ -13,23 +13,41 @@ function locationHint(locations: DashboardData['locations']) {
     .join(', ');
 }
 
-function buildStats({ posts, media, locations, trendEndsAt: endsAt }: DashboardData): Stat[] {
+const plural = (n: number, one: string, many: string) =>
+  `${formatInteger(n)} ${n === 1 ? one : many}`;
+
+function buildStats(
+  { posts, events, media, locations, trendEndsAt: endsAt }: DashboardData,
+  timeZone: string
+): Stat[] {
   const open = locations.filter((l) => l.stage !== 'coming_soon').length;
   return [
     {
-      label: 'Published posts',
+      // Published and drafts in one: what is live, and what is on its way.
+      label: 'Posts',
       value: posts.published,
-      // The same 12 weeks the chart above it shows.
-      hint: `${formatInteger(sum(posts.publishedWeekly))} in the last ${posts.publishedWeekly.length} weeks`,
-      trend: { kind: 'area', weeks: posts.publishedWeekly, counted: 'posts published', endsAt },
-      link: { to: '/posts', search: { status: 'published' } },
+      hint:
+        posts.drafts > 0
+          ? `Published, plus ${plural(posts.drafts, 'draft', 'drafts')} in progress`
+          : 'Published, with no drafts in progress',
+      trend: {
+        kind: 'area',
+        weeks: posts.publishedWeekly,
+        counted: 'posts published',
+        compare: { weeks: posts.startedWeekly, counted: 'posts started' },
+        endsAt,
+      },
+      link: { to: '/posts' },
     },
     {
-      label: 'Drafts',
-      value: posts.drafts,
-      hint: 'Not on the website yet',
-      trend: { kind: 'bar', weeks: posts.startedWeekly, counted: 'posts started', endsAt },
-      link: { to: '/posts', search: { status: 'draft' } },
+      label: 'Events',
+      value: events.upcoming,
+      hint: events.next
+        ? `Next: ${events.next.title}, ${formatDate(events.next.startsAt, timeZone)}`
+        : 'Nothing coming up',
+      trend: { kind: 'bar', weeks: events.bookedWeekly, counted: 'people booked', endsAt },
+      // The overview is for people who run events.
+      link: events.canManage ? { to: '/events/overview' } : undefined,
     },
     {
       label: 'Media files',
@@ -61,9 +79,10 @@ function buildStats({ posts, media, locations, trendEndsAt: endsAt }: DashboardD
 }
 
 export function DashboardStats({ data }: { data: DashboardData }) {
+  const timeZone = useTimeZone();
   return (
     <>
-      {buildStats(data).map((stat) => (
+      {buildStats(data, timeZone).map((stat) => (
         <StatCard key={stat.label} stat={stat} />
       ))}
     </>

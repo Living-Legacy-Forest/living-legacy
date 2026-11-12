@@ -13,7 +13,8 @@ import { type Part, type Trend, dayMonth, sum, weekName, weekStart } from './sha
 // The chart library is loaded with these, after the card's figures are on screen.
 
 /** Each week's count, or the running total at the end of each week when `total` is given. */
-function trendData({ weeks, total, endsAt }: Trend, timeZone: string) {
+function trendData(trend: Trend, timeZone: string) {
+  const { weeks, total, endsAt } = trend;
   const name = (i: number) => weekName(i, weeks.length, endsAt, timeZone);
   const values = [...weeks];
   if (total) {
@@ -24,7 +25,11 @@ function trendData({ weeks, total, endsAt }: Trend, timeZone: string) {
       running -= weeks[i] ?? 0;
     }
   }
-  return values.map((count, i) => ({ week: name(i), count }));
+  return values.map((count, i) => ({
+    week: name(i),
+    count,
+    ...(trend.compare && { compare: trend.compare.weeks[i] ?? 0 }),
+  }));
 }
 
 // Room for the hover dot and its ring, so a peak or a zero is never cut off.
@@ -51,7 +56,14 @@ export function TrendChart(trend: Trend) {
   const timeZone = useTimeZone();
   const data = trendData(trend, timeZone);
   const label = sentence(trend.total?.label ?? trend.counted);
-  const config = { count: { label, color: 'var(--primary)' } } satisfies ChartConfig;
+  const config = {
+    count: { label, color: 'var(--primary)' },
+    // The second wave is the same colour, quieter, so the first still leads.
+    compare: {
+      label: sentence(trend.compare?.counted ?? ''),
+      color: 'color-mix(in oklch, var(--primary) 45%, transparent)',
+    },
+  } satisfies ChartConfig;
   const description = !trend.total
     ? `${formatInteger(sum(trend.weeks))} ${trend.counted} in the last ${trend.weeks.length} weeks.`
     : `${formatInteger(sum(trend.weeks))} ${trend.counted} in the last ${trend.weeks.length} weeks, ${formatInteger(trend.total.value)} in all.`;
@@ -61,6 +73,10 @@ export function TrendChart(trend: Trend) {
       <linearGradient id={gradient} x1="0" y1="0" x2="0" y2="1">
         <stop offset="0%" stopColor="var(--color-count)" stopOpacity={0.4} />
         <stop offset="100%" stopColor="var(--color-count)" stopOpacity={0.02} />
+      </linearGradient>
+      <linearGradient id={`${gradient}-compare`} x1="0" y1="0" x2="0" y2="1">
+        <stop offset="0%" stopColor="var(--color-compare)" stopOpacity={0.3} />
+        <stop offset="100%" stopColor="var(--color-compare)" stopOpacity={0} />
       </linearGradient>
     </defs>
   );
@@ -118,15 +134,31 @@ export function TrendChart(trend: Trend) {
               // shelves. A B-spline flows through them instead, never below zero or
               // above the peak. It passes near, not through, each week, so there is
               // no hover dot; the guide line and tooltip give the figure.
-              <Area
-                dataKey="count"
-                type="basis"
-                stroke="var(--color-count)"
-                strokeWidth={2}
-                fill={`url(#${gradient})`}
-                activeDot={false}
-                isAnimationActive={false}
-              />
+              [
+                trend.compare && (
+                  // Drawn first, so it sits behind the leading wave.
+                  <Area
+                    key="compare"
+                    dataKey="compare"
+                    type="basis"
+                    stroke="var(--color-compare)"
+                    strokeWidth={1.5}
+                    fill={`url(#${gradient}-compare)`}
+                    activeDot={false}
+                    isAnimationActive={false}
+                  />
+                ),
+                <Area
+                  key="count"
+                  dataKey="count"
+                  type="basis"
+                  stroke="var(--color-count)"
+                  strokeWidth={2}
+                  fill={`url(#${gradient})`}
+                  activeDot={false}
+                  isAnimationActive={false}
+                />,
+              ]
             )}
           </AreaChart>
         )}

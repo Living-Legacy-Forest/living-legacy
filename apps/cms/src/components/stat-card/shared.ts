@@ -10,6 +10,8 @@ export type Trend = {
   counted: string;
   /** Draw the running total, ending at this, instead of each week's count. */
   total?: { value: number; label: string };
+  /** A second, quieter wave behind the first (area charts only), such as posts started. */
+  compare?: { weeks: number[]; counted: string };
   /**
    * When the last week ends (now, on the server), to date the weeks: the axis
    * reads "19 Aug … This week" and each tooltip "Week of 3 Nov". Without it

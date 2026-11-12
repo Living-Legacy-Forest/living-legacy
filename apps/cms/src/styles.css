@@ -778,7 +778,301 @@
   }
 }
 
+/* The dashboard arrives in reading order: the greeting word by word, then each
+   card rising into place, then inside each card its title, chart, figure (which
+   counts up, components/stat-card/count-up.tsx) and hint, and list rows one by one.
+   CSS rather than JavaScript, so it plays from the server's first paint and keeps
+   time while the map and chart code are still loading.
+
+   Each grid cell sets --reveal, when it starts; what is inside adds its own offset. */
+[data-slot='reveal-word'] {
+  display: inline-block;
+  animation: dashboard-text 500ms cubic-bezier(0.23, 1, 0.32, 1) backwards;
+  animation-delay: calc(var(--word, 0) * 70ms);
+}
+
+[data-slot='dashboard'] > * {
+  --reveal: 120ms;
+  animation: dashboard-rise 500ms cubic-bezier(0.23, 1, 0.32, 1) backwards;
+  animation-delay: var(--reveal);
+}
+[data-slot='dashboard'] > :nth-child(2) {
+  --reveal: 180ms;
+}
+[data-slot='dashboard'] > :nth-child(3) {
+  --reveal: 240ms;
+}
+[data-slot='dashboard'] > :nth-child(4) {
+  --reveal: 300ms;
+}
+[data-slot='dashboard'] > :nth-child(5) {
+  --reveal: 360ms;
+}
+[data-slot='dashboard'] > :nth-child(6) {
+  --reveal: 420ms;
+}
+[data-slot='dashboard'] > :nth-child(n + 7) {
+  --reveal: 480ms;
+}
+
+/* Inside a card: text sharpens and rises a little, in steps. */
+/* :where, so the steps below can set --at without out-ranking this. */
+[data-slot='dashboard']
+  :where(
+    [data-reveal],
+    [data-slot='card-header'],
+    [data-slot='card-footer'],
+    [data-slot='empty'],
+    [data-slot='card-content'] section > h2,
+    [data-slot='item-group'] > *
+  ) {
+  --at: 80ms;
+  animation: dashboard-text 450ms cubic-bezier(0.23, 1, 0.32, 1) backwards;
+  animation-delay: calc(var(--reveal) + var(--at));
+}
+[data-slot='dashboard'] [data-slot='card-content'] section > h2 {
+  --at: 120ms;
+}
+[data-slot='dashboard'] [data-reveal='2'] {
+  --at: 140ms;
+}
+[data-slot='dashboard'] :is([data-reveal='3'], [data-slot='empty']) {
+  --at: 200ms;
+}
+[data-slot='dashboard'] [data-reveal='4'] {
+  --at: 260ms;
+}
+[data-slot='dashboard'] [data-slot='card-footer'] {
+  --at: 320ms;
+}
+/* The change against last month slides in once its figure has nearly counted up. */
+[data-slot='dashboard'] [data-reveal='5'] {
+  --at: 800ms;
+  animation-name: dashboard-nudge;
+}
+/* List rows follow each other down the card. */
+[data-slot='dashboard'] [data-slot='item-group'] > * {
+  --at: calc(160ms + var(--row, 0) * 45ms);
+}
+[data-slot='dashboard'] [data-slot='item-group'] > :nth-child(2) {
+  --row: 1;
+}
+[data-slot='dashboard'] [data-slot='item-group'] > :nth-child(3) {
+  --row: 2;
+}
+[data-slot='dashboard'] [data-slot='item-group'] > :nth-child(4) {
+  --row: 3;
+}
+[data-slot='dashboard'] [data-slot='item-group'] > :nth-child(5) {
+  --row: 4;
+}
+[data-slot='dashboard'] [data-slot='item-group'] > :nth-child(n + 6) {
+  --row: 5;
+}
+
+/* A card whose code arrived late fades in over its placeholder instead of swapping. */
+[data-slot='dashboard-lazy'] > [data-slot='card']:not([aria-busy]) {
+  animation: dashboard-fade 150ms cubic-bezier(0.23, 1, 0.32, 1);
+}
+
+@keyframes dashboard-rise {
+  from {
+    opacity: 0;
+    transform: translateY(12px) scale(0.98);
+  }
+}
+
+@keyframes dashboard-text {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+    filter: blur(4px);
+  }
+}
+
+@keyframes dashboard-nudge {
+  from {
+    opacity: 0;
+    transform: translateX(-6px);
+  }
+}
+
+@keyframes dashboard-fade {
+  from {
+    opacity: 0;
+  }
+}
+
+/* The shell arrives with the page on a fresh load: the sidebar's links slide in from
+   the edge they sit against, group by group, the header's controls drop into the bar,
+   and on phones the tabs rise into theirs. The shell stays mounted from page to page,
+   so this plays once per load, not on every navigation. Only the desktop sidebar: on
+   phones it is a sheet opened on demand, and opening it should be instant. Sub-menu
+   items are left out for the same reason, as expanding a section mounts them. */
+[data-slot='sidebar-container']
+  :where(
+    /* Every row is an li; an expandable section's is the collapsible's, not a menu item's. */
+    [data-slot='sidebar-menu'] > li,
+    [data-slot='sidebar-group-label'],
+    [data-slot='sidebar-footer'] > :not([data-slot='sidebar-menu'])
+  ) {
+  animation: shell-from-side 350ms cubic-bezier(0.23, 1, 0.32, 1) backwards;
+  animation-delay: calc(var(--shell-at, 0ms) + var(--shell-item, 0) * 25ms);
+}
+/* Each group starts a beat after the one above; within it, items follow each other. */
+[data-slot='sidebar-container'] [data-slot='sidebar-content'] > :nth-child(1) {
+  --shell-at: 60ms;
+}
+[data-slot='sidebar-container'] [data-slot='sidebar-content'] > :nth-child(2) {
+  --shell-at: 130ms;
+}
+[data-slot='sidebar-container'] [data-slot='sidebar-content'] > :nth-child(3) {
+  --shell-at: 200ms;
+}
+[data-slot='sidebar-container'] [data-slot='sidebar-content'] > :nth-child(4) {
+  --shell-at: 270ms;
+}
+[data-slot='sidebar-container'] [data-slot='sidebar-content'] > :nth-child(n + 5) {
+  --shell-at: 340ms;
+}
+[data-slot='sidebar-container'] [data-slot='sidebar-footer'] {
+  --shell-at: 420ms;
+}
+[data-slot='sidebar-container'] [data-slot='sidebar-menu'] > :nth-child(1) {
+  --shell-item: 1;
+}
+[data-slot='sidebar-container'] [data-slot='sidebar-menu'] > :nth-child(2) {
+  --shell-item: 2;
+}
+[data-slot='sidebar-container'] [data-slot='sidebar-menu'] > :nth-child(3) {
+  --shell-item: 3;
+}
+[data-slot='sidebar-container'] [data-slot='sidebar-menu'] > :nth-child(4) {
+  --shell-item: 4;
+}
+[data-slot='sidebar-container'] [data-slot='sidebar-menu'] > :nth-child(5) {
+  --shell-item: 5;
+}
+[data-slot='sidebar-container'] [data-slot='sidebar-menu'] > :nth-child(n + 6) {
+  --shell-item: 6;
+}
+
+/* The header: on the left the sidebar toggle, divider and breadcrumbs, then on the
+   right status, notifications and the account. The phone's bar holds the page's own
+   buttons, which come and go with each page, so it is left still. */
+@media (width >= 48rem) {
+  [data-slot='app-header'] > :first-child > *,
+  [data-slot='app-header'] > :last-child > :not(.contents),
+  [data-slot='app-header'] > :last-child > .contents > * {
+    animation: shell-from-top 350ms cubic-bezier(0.23, 1, 0.32, 1) backwards;
+    animation-delay: calc(var(--shell-at) + var(--shell-item, 0) * 40ms);
+  }
+  [data-slot='app-header'] > :first-child {
+    --shell-at: 60ms;
+  }
+  [data-slot='app-header'] > :last-child {
+    --shell-at: 180ms;
+  }
+  [data-slot='app-header'] > :is(:first-child, :last-child) > :nth-child(2) {
+    --shell-item: 1;
+  }
+  [data-slot='app-header'] > :is(:first-child, :last-child) > :nth-child(3) {
+    --shell-item: 2;
+  }
+  [data-slot='app-header'] > :is(:first-child, :last-child) > :nth-child(n + 4) {
+    --shell-item: 3;
+  }
+}
+
+/* A section's links drop in one after another as it expands, in step with the panel
+   opening (components/shell/nav-group.tsx). The panel mounts them on each open, so
+   this plays every time; kept quick, as people open these many times a day. */
+[data-slot='collapsible-content'] [data-slot='sidebar-menu-sub-item'] {
+  animation: shell-from-top 200ms cubic-bezier(0.23, 1, 0.32, 1) backwards;
+  animation-delay: calc(var(--sub-item, 0) * 30ms);
+}
+[data-slot='collapsible-content'] [data-slot='sidebar-menu-sub-item']:nth-child(2) {
+  --sub-item: 1;
+}
+[data-slot='collapsible-content'] [data-slot='sidebar-menu-sub-item']:nth-child(3) {
+  --sub-item: 2;
+}
+[data-slot='collapsible-content'] [data-slot='sidebar-menu-sub-item']:nth-child(n + 4) {
+  --sub-item: 3;
+}
+
+[data-slot='tab-bar'] > div > * {
+  animation: shell-from-bottom 350ms cubic-bezier(0.23, 1, 0.32, 1) backwards;
+  animation-delay: calc(120ms + var(--shell-item, 0) * 40ms);
+}
+[data-slot='tab-bar'] > div > :nth-child(2) {
+  --shell-item: 1;
+}
+[data-slot='tab-bar'] > div > :nth-child(3) {
+  --shell-item: 2;
+}
+[data-slot='tab-bar'] > div > :nth-child(4) {
+  --shell-item: 3;
+}
+[data-slot='tab-bar'] > div > :nth-child(n + 5) {
+  --shell-item: 4;
+}
+
+@keyframes shell-from-side {
+  from {
+    opacity: 0;
+    transform: translateX(-8px);
+  }
+}
+
+@keyframes shell-from-top {
+  from {
+    opacity: 0;
+    transform: translateY(-6px);
+  }
+}
+
+@keyframes shell-from-bottom {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
+  /* The cards still fade in, so nothing pops, but nothing moves or blurs, and
+     what is inside them is simply there with the card. */
+  [data-slot='dashboard'] > * {
+    animation-name: dashboard-fade;
+  }
+  [data-slot='reveal-word'],
+  [data-slot='dashboard']
+    :where(
+      [data-reveal],
+      [data-slot='card-header'],
+      [data-slot='card-footer'],
+      [data-slot='empty'],
+      [data-slot='card-content'] section > h2,
+      [data-slot='item-group'] > *
+    ) {
+    /* Beats the per-step rules above, which out-rank this selector. */
+    animation: none !important;
+  }
+  /* The shell is simply there. */
+  [data-slot='sidebar-container']
+    :where(
+      [data-slot='sidebar-menu'] > li,
+      [data-slot='sidebar-group-label'],
+      [data-slot='sidebar-footer'] > :not([data-slot='sidebar-menu'])
+    ),
+  [data-slot='app-header'] > :is(:first-child, :last-child) > *,
+  [data-slot='app-header'] > :last-child > .contents > *,
+  [data-slot='collapsible-content'] [data-slot='sidebar-menu-sub-item'],
+  [data-slot='tab-bar'] > div > * {
+    /* As above: some of the rules it undoes are more specific. */
+    animation: none !important;
+  }
+
   [data-slot='sidebar-gap'],
   [data-slot='sidebar-container'],
   [data-slot='sidebar-inner'] {

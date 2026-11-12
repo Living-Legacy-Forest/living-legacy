@@ -4,6 +4,7 @@ import { ChevronRightIcon, TrendingDownIcon, TrendingUpIcon } from '@/components
 import { Card, CardTitle } from '@/components/ui/card';
 import { formatInteger } from '@/lib/format';
 import { cn } from '@/lib/utils';
+import { CountUp } from './count-up';
 import { type Stat, change } from './shared';
 
 export { MUTED, type Part, type Stat, type Trend } from './shared';
@@ -24,10 +25,11 @@ export function StatCard({ stat }: { stat: Stat }) {
     <>
       <span className="flex min-w-0 items-baseline gap-2">
         <span className="text-3xl font-semibold tracking-tight text-balance tabular-nums">
-          {display ?? formatInteger(value)}
+          {display ?? <CountUp value={value} />}
         </span>
         {delta && (
           <span
+            data-reveal="5"
             className="text-muted-foreground inline-flex items-center gap-1 text-xs tabular-nums"
             title={`${delta.text} ${trend.counted} in the last 4 weeks, against the 4 before`}
           >
@@ -51,13 +53,16 @@ export function StatCard({ stat }: { stat: Stat }) {
 
   return (
     <Card className="gap-0">
-      <CardTitle className="text-muted-foreground px-(--card-spacing) text-xs font-normal">
+      <CardTitle
+        data-reveal="1"
+        className="text-muted-foreground px-(--card-spacing) text-xs font-normal"
+      >
         {label}
       </CardTitle>
       {(trend || parts) && (
         // Holds the chart's height while the chart library loads.
         <Suspense fallback={<div className="mt-3 h-24" />}>
-          <div className="px-(--card-spacing)">
+          <div data-reveal="2" className="px-(--card-spacing)">
             {trend && <TrendChart {...trend} />}
             {parts && <PartsChart parts={parts} />}
           </div>
@@ -67,6 +72,7 @@ export function StatCard({ stat }: { stat: Stat }) {
         {link ? (
           <Link
             {...link}
+            data-reveal="3"
             aria-label={`${label}: ${display ?? formatInteger(value)}. Open the list.`}
             className={cn(
               figureClass,
@@ -76,9 +82,13 @@ export function StatCard({ stat }: { stat: Stat }) {
             {figure}
           </Link>
         ) : (
-          <div className={figureClass}>{figure}</div>
+          <div data-reveal="3" className={figureClass}>
+            {figure}
+          </div>
         )}
-        <p className="text-muted-foreground mt-1 text-xs text-pretty">{hint}</p>
+        <p data-reveal="4" className="text-muted-foreground mt-1 text-xs text-pretty">
+          {hint}
+        </p>
       </div>
     </Card>
   );

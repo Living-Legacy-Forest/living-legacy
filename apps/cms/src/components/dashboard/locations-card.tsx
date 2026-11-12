@@ -27,7 +27,7 @@ export function LocationsCard({ locations }: { locations: DashboardData['locatio
     .filter((s) => s.count > 0);
 
   return (
-    <Card className="col-span-2">
+    <Card>
       <CardHeader>
         <CardTitle>Locations</CardTitle>
         <CardAction>

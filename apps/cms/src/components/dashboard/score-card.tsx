@@ -21,6 +21,8 @@ import {
   EmptyTitle,
 } from '@/components/ui/empty';
 import { Item, ItemActions, ItemContent, ItemGroup, ItemTitle } from '@/components/ui/item';
+import { CountUp } from '@/components/stat-card/count-up';
+import { chartReveal } from '@/lib/chart-motion';
 import { cn } from '@/lib/utils';
 import type { ScoreSummary } from '@/server/post-score';
 
@@ -40,7 +42,7 @@ export function ScoreCard({ scores }: { scores: ScoreSummary }) {
   const data = BANDS.map((band) => ({ ...band, count: scores.bands[band.key] }));
 
   return (
-    <Card className="col-span-2 lg:col-span-4">
+    <Card>
       <CardHeader>
         <CardTitle>Content score</CardTitle>
         <CardAction>
@@ -64,9 +66,9 @@ export function ScoreCard({ scores }: { scores: ScoreSummary }) {
           <>
             <section aria-labelledby="score-card-published" className="space-y-3">
               <Heading id="score-card-published">Published posts</Heading>
-              <p className="flex items-baseline gap-2">
+              <p data-reveal="3" className="flex items-baseline gap-2">
                 <span className="text-3xl font-semibold tabular-nums">
-                  {scores.average ?? 'None'}
+                  {scores.average === null ? 'None' : <CountUp value={scores.average} />}
                 </span>
                 <span className="text-muted-foreground text-sm">
                   {scores.average === null
@@ -77,7 +79,12 @@ export function ScoreCard({ scores }: { scores: ScoreSummary }) {
               <p className="sr-only">
                 {data.map((d) => `${d.label}: ${posts(d.count)}`).join('. ')}.
               </p>
-              <ChartContainer config={chartConfig} className="aspect-auto h-28 w-full" aria-hidden>
+              <ChartContainer
+                data-reveal="4"
+                config={chartConfig}
+                className="aspect-auto h-28 w-full"
+                aria-hidden
+              >
                 <BarChart data={data} layout="vertical" margin={{ left: 0, right: 32 }}>
                   <YAxis
                     dataKey="label"
@@ -87,7 +94,7 @@ export function ScoreCard({ scores }: { scores: ScoreSummary }) {
                     width={96}
                   />
                   <XAxis type="number" hide allowDecimals={false} />
-                  <Bar dataKey="count" radius={4} isAnimationActive={false}>
+                  <Bar dataKey="count" radius={4} {...chartReveal}>
                     {data.map((d) => (
                       <Cell key={d.key} fill={d.fill} />
                     ))}

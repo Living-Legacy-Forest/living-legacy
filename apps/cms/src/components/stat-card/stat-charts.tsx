@@ -6,6 +6,7 @@ import {
   ChartTooltip,
   ChartTooltipContent,
 } from '@/components/ui/chart';
+import { chartReveal, chartStagger } from '@/lib/chart-motion';
 import { formatInteger } from '@/lib/format';
 import { useTimeZone } from '@/lib/use-time-zone';
 import { type Part, type Trend, dayMonth, sum, weekName, weekStart } from './shared';
@@ -92,7 +93,7 @@ export function TrendChart(trend: Trend) {
           >
             {axes}
             <ChartTooltip cursor={barCursor} content={tooltipContent} />
-            <Bar dataKey="count" radius={4} minPointSize={3} isAnimationActive={false}>
+            <Bar dataKey="count" radius={4} minPointSize={3} {...chartReveal}>
               {/* This week in full; the weeks before sit back, and empty weeks barely show. */}
               {data.map((d, i) => (
                 <Cell
@@ -136,7 +137,7 @@ export function TrendChart(trend: Trend) {
                   )
                 }
                 activeDot={false}
-                isAnimationActive={false}
+                {...chartReveal}
               />
             ) : (
               // Weekly counts are small whole numbers, which monotone draws as flat
@@ -154,7 +155,7 @@ export function TrendChart(trend: Trend) {
                     strokeWidth={1.5}
                     fill={`url(#${gradient}-compare)`}
                     activeDot={false}
-                    isAnimationActive={false}
+                    {...chartReveal}
                   />
                 ),
                 <Area
@@ -165,7 +166,8 @@ export function TrendChart(trend: Trend) {
                   strokeWidth={2}
                   fill={`url(#${gradient})`}
                   activeDot={false}
-                  isAnimationActive={false}
+                  {...chartReveal}
+                  animationBegin={trend.compare ? chartStagger : 0}
                 />,
               ]
             )}
@@ -215,7 +217,7 @@ export function PartsChart({ parts }: { parts: Part[] }) {
               paddingAngle={shown.length > 1 ? 4 : 0}
               cornerRadius={3}
               stroke="none"
-              isAnimationActive={false}
+              {...chartReveal}
             />
           </PieChart>
         </ChartContainer>

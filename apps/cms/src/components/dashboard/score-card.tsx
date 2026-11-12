@@ -21,6 +21,7 @@ import {
   EmptyTitle,
 } from '@/components/ui/empty';
 import { Item, ItemActions, ItemContent, ItemGroup, ItemTitle } from '@/components/ui/item';
+import { chartReveal } from '@/lib/chart-motion';
 import { cn } from '@/lib/utils';
 import type { ScoreSummary } from '@/server/post-score';
 
@@ -87,7 +88,7 @@ export function ScoreCard({ scores }: { scores: ScoreSummary }) {
                     width={96}
                   />
                   <XAxis type="number" hide allowDecimals={false} />
-                  <Bar dataKey="count" radius={4} isAnimationActive={false}>
+                  <Bar dataKey="count" radius={4} {...chartReveal}>
                     {data.map((d) => (
                       <Cell key={d.key} fill={d.fill} />
                     ))}

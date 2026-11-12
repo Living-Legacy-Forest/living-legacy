@@ -69,6 +69,7 @@ import { readYesNo } from '@/lib/bulk-import';
 import { reportInvalid } from '@/lib/form-validation';
 import { notify, removedNotice } from '@/lib/notify';
 import { useAction } from '@/lib/use-action';
+import { useRevealOnce } from '@/lib/use-reveal-once';
 import { cn } from '@/lib/utils';
 import {
   type Redirect,
@@ -197,6 +198,7 @@ export function RedirectsPage({
   const [toDelete, setToDelete] = useState<string[] | null>(null);
   const selection = useSelection(data.map((r) => r.id));
   const { run, pending } = useAction();
+  const revealing = useRevealOnce();
 
   const redirectFor = (target: Target | null) =>
     target?.kind === 'edit' ? (data.find((r) => r.id === target.id) ?? null) : null;
@@ -278,8 +280,12 @@ export function RedirectsPage({
   const dialogRedirect = redirectFor(view.dialog);
 
   return (
-    <div className="flex flex-1 flex-col gap-4 lg:h-[calc(100svh-7.5rem)] lg:flex-none">
-      <div className="flex flex-wrap items-center gap-3">
+    <div
+      data-slot="list-page"
+      data-revealing={revealing || undefined}
+      className="flex flex-1 flex-col gap-4 lg:h-[calc(100svh-7.5rem)] lg:flex-none"
+    >
+      <div data-slot="list-toolbar" className="flex flex-wrap items-center gap-3">
         <div className="mr-auto flex flex-wrap items-center gap-3 max-md:w-full">
           <h1 data-slot="page-title" className="text-xl">
             Redirects

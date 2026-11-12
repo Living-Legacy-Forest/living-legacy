@@ -74,7 +74,9 @@ import { Textarea } from '@/components/ui/textarea';
 import { readStatus } from '@/lib/bulk-import';
 import { reportInvalid } from '@/lib/form-validation';
 import { removedNotice, statusNotice } from '@/lib/notify';
+import { RevealWords } from '@/components/dashboard/reveal-words';
 import { useAction } from '@/lib/use-action';
+import { useRevealOnce } from '@/lib/use-reveal-once';
 import {
   type Faq,
   type FaqData,
@@ -146,6 +148,7 @@ export function FaqsPage({ data, canWrite }: { data: FaqData; canWrite: boolean 
   const [toDelete, setToDelete] = useState<string[] | null>(null);
   const selection = useSelection(data.faqs.map((f) => f.id));
   const { run, pending } = useAction();
+  const revealing = useRevealOnce();
 
   // Targets hold an id, so the form always edits the live row.
   const faqFor = (target: Target | null) =>
@@ -238,10 +241,14 @@ export function FaqsPage({ data, canWrite }: { data: FaqData; canWrite: boolean 
   const dialogFaq = faqFor(view.dialog);
 
   return (
-    <div className="flex flex-1 flex-col gap-4 lg:h-[calc(100svh-7.5rem)] lg:flex-none">
-      <div className="flex flex-wrap items-center gap-3">
+    <div
+      data-slot="list-page"
+      data-revealing={revealing || undefined}
+      className="flex flex-1 flex-col gap-4 lg:h-[calc(100svh-7.5rem)] lg:flex-none"
+    >
+      <div data-slot="list-toolbar" className="flex flex-wrap items-center gap-3">
         <h1 data-slot="page-title" className="mr-auto text-xl">
-          FAQs
+          <RevealWords text="FAQs" />
         </h1>
         {data.faqs.length > 0 && (
           <SearchInput

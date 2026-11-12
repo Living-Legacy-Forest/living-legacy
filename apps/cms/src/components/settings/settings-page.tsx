@@ -59,6 +59,8 @@ import {
   saveSiteSettings,
   timeZones,
 } from '@/server/settings';
+import { useRevealOnce } from '@/lib/use-reveal-once';
+import { RevealWords } from '@/components/dashboard/reveal-words';
 
 const rootRoute = getRouteApi('__root__');
 
@@ -290,11 +292,17 @@ export function SettingsPage({
     .replace(TITLE_TOKENS.page, 'Our story')
     .replace(TITLE_TOKENS.site, values.siteTitle);
 
+  const revealing = useRevealOnce();
+
   return (
-    <div className="mx-auto w-full max-w-4xl">
+    <div
+      data-slot="stack-page"
+      data-revealing={revealing || undefined}
+      className="mx-auto w-full max-w-4xl"
+    >
       <div className="mb-8 space-y-1">
         <h1 data-slot="page-title" className="text-xl font-semibold tracking-tight">
-          Settings
+          <RevealWords text="Settings" />
         </h1>
         <p className="text-muted-foreground text-sm">
           Site-wide details used across the CMS and, once connected, the public website.

@@ -43,6 +43,8 @@ import {
   type ActivityLogData,
   type ActivityLogEntry,
 } from '@/server/activity-log';
+import { useRevealOnce } from '@/lib/use-reveal-once';
+import { RevealWords } from '@/components/dashboard/reveal-words';
 
 export type ActivitySearch = { page?: number; kind?: ActivityKind; who?: string };
 
@@ -78,11 +80,17 @@ export function ActivityPage({ data, search }: { data: ActivityLogData; search: 
     ...data.people.map((p) => ({ value: p.id, label: p.name })),
   ];
 
+  const revealing = useRevealOnce();
+
   return (
-    <div className="mx-auto w-full max-w-2xl">
+    <div
+      data-slot="stack-page"
+      data-revealing={revealing || undefined}
+      className="mx-auto w-full max-w-2xl"
+    >
       <div className="mb-6 space-y-1">
         <h1 data-slot="page-title" className="text-xl font-semibold tracking-tight">
-          Activity
+          <RevealWords text="Activity" />
         </h1>
         <p className="text-muted-foreground text-sm">
           Changes to posts, events, people, redirects, settings and API keys, most recent first.

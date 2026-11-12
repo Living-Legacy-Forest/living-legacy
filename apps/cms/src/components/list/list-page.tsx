@@ -81,6 +81,7 @@ export function ListPageLayout({
 }) {
   return (
     <div
+      data-slot="list-panes"
       className={cn(
         'grid min-h-0 flex-1 grid-cols-1 overflow-hidden rounded-lg border lg:grid-cols-[minmax(20rem,1fr)_minmax(0,1fr)]',
         // Phones: no frame. The list is an iOS grouped list that ends with its rows.
@@ -152,7 +153,10 @@ export function NoMatches({
   onClear: () => void;
 }) {
   return (
-    <div className="text-muted-foreground flex flex-1 flex-col items-center justify-center gap-2 p-6 text-center text-sm">
+    <div
+      data-slot="no-matches"
+      className="text-muted-foreground flex flex-1 flex-col items-center justify-center gap-2 p-6 text-center text-sm"
+    >
       {children}
       <Button variant="ghost" size="sm" onClick={onClear}>
         {clearLabel}

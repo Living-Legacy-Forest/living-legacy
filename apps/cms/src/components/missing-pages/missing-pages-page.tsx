@@ -13,6 +13,8 @@ import { useAction } from '@/lib/use-action';
 import { useTimeZone } from '@/lib/use-time-zone';
 import { cn } from '@/lib/utils';
 import { type MissingPage, dismissMissingPage } from '@/server/not-found';
+import { useRevealOnce } from '@/lib/use-reveal-once';
+import { RevealWords } from '@/components/dashboard/reveal-words';
 
 export function MissingPagesPage({
   data,
@@ -25,12 +27,18 @@ export function MissingPagesPage({
   const timeZone = useTimeZone();
   const { run, pending } = useAction();
 
+  const revealing = useRevealOnce();
+
   return (
-    <div className="w-full max-w-3xl">
+    <div
+      data-slot="stack-page"
+      data-revealing={revealing || undefined}
+      className="w-full max-w-3xl"
+    >
       <div className="mb-6 space-y-3">
         <div className="flex flex-wrap items-center gap-3">
           <h1 data-slot="page-title" className="text-xl">
-            Redirects
+            <RevealWords text="Redirects" />
           </h1>
           {switcher}
         </div>

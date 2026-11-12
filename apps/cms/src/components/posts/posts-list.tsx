@@ -63,7 +63,9 @@ import {
 import { formatDate, formatRelative } from '@/lib/format';
 import type { SessionUser } from '@/lib/session';
 import { copyLink, openInNewTab, siteUrl } from '@/lib/site';
+import { RevealWords } from '@/components/dashboard/reveal-words';
 import { useAction } from '@/lib/use-action';
+import { useRevealOnce } from '@/lib/use-reveal-once';
 import { useTimeZone } from '@/lib/use-time-zone';
 import { cn } from '@/lib/utils';
 import {
@@ -113,6 +115,7 @@ export function PostsList({
 }) {
   const navigate = useNavigate({ from: '/posts/' });
   const { run, pending } = useAction();
+  const revealing = useRevealOnce();
   const selection = useSelection(data.rows.map((r) => r.id));
   const [confirmDelete, setConfirmDelete] = useState<string[] | null>(null);
   const [query, setQuery] = useState(search.q ?? '');
@@ -284,10 +287,14 @@ export function PostsList({
   const selectedRow = data.rows.find((r) => r.id === selectedId) ?? null;
 
   return (
-    <div className="flex flex-col gap-4 lg:h-[calc(100svh-7.5rem)]">
-      <div className="flex flex-wrap items-center gap-3">
+    <div
+      data-slot="list-page"
+      data-revealing={revealing || undefined}
+      className="flex flex-col gap-4 lg:h-[calc(100svh-7.5rem)]"
+    >
+      <div data-slot="list-toolbar" className="flex flex-wrap items-center gap-3">
         <h1 data-slot="page-title" className="mr-auto text-xl">
-          Posts
+          <RevealWords text="Posts" />
         </h1>
         <SearchInput
           label="Search posts by title"
@@ -352,7 +359,10 @@ export function PostsList({
         />
       </div>
 
-      <div className="grid min-h-0 flex-1 grid-cols-1 overflow-hidden rounded-lg border max-md:flex-none max-md:overflow-visible max-md:rounded-none max-md:border-0 lg:grid-cols-[minmax(20rem,2fr)_minmax(0,3fr)]">
+      <div
+        data-slot="list-panes"
+        className="grid min-h-0 flex-1 grid-cols-1 overflow-hidden rounded-lg border max-md:flex-none max-md:overflow-visible max-md:rounded-none max-md:border-0 lg:grid-cols-[minmax(20rem,2fr)_minmax(0,3fr)]"
+      >
         <section aria-label="Post list" className="flex min-h-0 flex-col lg:border-r">
           <div className="flex h-11 shrink-0 items-center gap-1 border-b px-2 max-md:mb-2 max-md:border-0 max-md:px-0">
             {checkedIds.length > 0 ? (

@@ -86,7 +86,9 @@ import { formatDate } from '@/lib/format';
 import { reportInvalid } from '@/lib/form-validation';
 import { featuredNotice, removedNotice, statusNotice } from '@/lib/notify';
 import { openInNewTab } from '@/lib/site';
+import { RevealWords } from '@/components/dashboard/reveal-words';
 import { useAction } from '@/lib/use-action';
+import { useRevealOnce } from '@/lib/use-reveal-once';
 import { useTimeZone } from '@/lib/use-time-zone';
 import { cn } from '@/lib/utils';
 import {
@@ -123,6 +125,7 @@ export function MediaCoveragePage({
 }) {
   const navigate = useNavigate({ from: '/media-coverage/' });
   const { run, pending } = useAction();
+  const revealing = useRevealOnce();
   const view = useListPane<Target>();
   const [query, setQuery] = useState('');
   const [toDelete, setToDelete] = useState<string[] | null>(null);
@@ -188,10 +191,14 @@ export function MediaCoveragePage({
   const dialogItem = itemFor(view.dialog);
 
   return (
-    <div className="flex flex-col gap-4 lg:h-[calc(100svh-7.5rem)]">
-      <div className="flex flex-wrap items-center gap-3">
+    <div
+      data-slot="list-page"
+      data-revealing={revealing || undefined}
+      className="flex flex-col gap-4 lg:h-[calc(100svh-7.5rem)]"
+    >
+      <div data-slot="list-toolbar" className="flex flex-wrap items-center gap-3">
         <h1 data-slot="page-title" className="mr-auto text-xl">
-          Media coverage
+          <RevealWords text="Media coverage" />
         </h1>
         {data.length > 0 && (
           <SearchInput

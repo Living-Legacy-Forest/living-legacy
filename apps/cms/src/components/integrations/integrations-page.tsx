@@ -58,6 +58,8 @@ import { useAction } from '@/lib/use-action';
 import { useTimeZone } from '@/lib/use-time-zone';
 import { cn } from '@/lib/utils';
 import { type ApiKeyRow, createApiKey, revokeApiKey } from '@/server/api-keys';
+import { useRevealOnce } from '@/lib/use-reveal-once';
+import { RevealWords } from '@/components/dashboard/reveal-words';
 
 type Scope = ApiKeyRow['scope'];
 
@@ -82,12 +84,18 @@ export function IntegrationsPage({ keys, origin }: { keys: ApiKeyRow[]; origin: 
   const revoked = keys.filter((k) => k.revokedAt);
   const create = () => setCreating(true);
 
+  const revealing = useRevealOnce();
+
   return (
-    <div className="mx-auto w-full max-w-3xl space-y-8">
+    <div
+      data-slot="stack-page"
+      data-revealing={revealing || undefined}
+      className="mx-auto w-full max-w-3xl space-y-8"
+    >
       <div className="flex items-start justify-between gap-4">
         <div className="space-y-1">
           <h1 data-slot="page-title" className="text-xl font-semibold tracking-tight">
-            Integrations
+            <RevealWords text="Integrations" />
           </h1>
           <p className="text-muted-foreground text-sm">
             Connect AI tools such as Claude, and your own scripts, to read posts and write drafts.

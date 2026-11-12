@@ -66,7 +66,9 @@ import { Textarea } from '@/components/ui/textarea';
 import { readStatus, readYesNo } from '@/lib/bulk-import';
 import { reportInvalid } from '@/lib/form-validation';
 import { featuredNotice, removedNotice, statusNotice } from '@/lib/notify';
+import { RevealWords } from '@/components/dashboard/reveal-words';
 import { useAction } from '@/lib/use-action';
+import { useRevealOnce } from '@/lib/use-reveal-once';
 import {
   type Testimonial,
   type TestimonialsData,
@@ -121,6 +123,7 @@ export function TestimonialsPage({
 }) {
   const navigate = useNavigate({ from: '/testimonials/' });
   const { run, pending } = useAction();
+  const revealing = useRevealOnce();
   const view = useListPane<Target>();
   const [query, setQuery] = useState('');
   const [toDelete, setToDelete] = useState<string[] | null>(null);
@@ -214,10 +217,14 @@ export function TestimonialsPage({
   const dialogTestimonial = testimonialFor(view.dialog);
 
   return (
-    <div className="flex flex-col gap-4 lg:h-[calc(100svh-7.5rem)]">
-      <div className="flex flex-wrap items-center gap-3">
+    <div
+      data-slot="list-page"
+      data-revealing={revealing || undefined}
+      className="flex flex-col gap-4 lg:h-[calc(100svh-7.5rem)]"
+    >
+      <div data-slot="list-toolbar" className="flex flex-wrap items-center gap-3">
         <h1 data-slot="page-title" className="mr-auto text-xl">
-          Testimonials
+          <RevealWords text="Testimonials" />
         </h1>
         {data.length > 0 && (
           <SearchInput

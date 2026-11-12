@@ -114,6 +114,26 @@ describe('runMonitored', () => {
     expect(broken?.error?.startsWith('Error: xxx')).toBe(true);
   });
 
+  it('without a monitor, still reports failures but checks in with nothing', async () => {
+    const { reporter, checkIns, errors } = fakeReporter();
+    const boom = new Error('sweep stopped');
+
+    const runs = await runMonitored(
+      null,
+      {
+        fine: async () => {},
+        broken: async () => {
+          throw boom;
+        },
+      },
+      reporter
+    );
+
+    expect(checkIns).toEqual([]);
+    expect(errors).toEqual([{ error: boom, job: 'broken' }]);
+    expect(runs).toHaveLength(2);
+  });
+
   it('never rejects, so a failed job cannot also become an unrelated error', async () => {
     const { reporter } = fakeReporter();
     await expect(

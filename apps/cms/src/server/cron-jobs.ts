@@ -4,21 +4,25 @@ import type { Monitor } from './cron-monitor';
 type Jobs = Partial<Record<CronJobKey, () => Promise<unknown>>>;
 
 /**
- * The Sentry monitor for a schedule. The first check-in creates it; Sentry
- * emails when a run fails, runs past maxRuntime, or has not started
- * checkinMargin minutes after it was due. Times are UTC, as wrangler's are.
+ * The Sentry monitor for a schedule, or null for none. The first check-in
+ * creates it; Sentry alerts when a run fails, runs past maxRuntime, or has not
+ * started checkinMargin minutes after it was due. Times are UTC, as wrangler's are.
+ *
+ * Only the 5-minute schedule has one: Sentry includes a single cron monitor and
+ * charges for more, and a monitor past the allowance is created disabled. The
+ * daily jobs still report every error to Sentry, and the System page flags
+ * them once they go 25 hours without a run.
  */
-export function monitorFor(schedule: CronSchedule): Monitor {
-  const { monitorSlug, cron } = cronSchedules[schedule];
-  const daily = schedule === 'daily';
+export function monitorFor(schedule: CronSchedule): Monitor | null {
+  if (schedule === 'daily') return null;
   return {
-    slug: monitorSlug,
+    slug: cronSchedules[schedule].monitorSlug,
     config: {
-      schedule: { type: 'crontab', value: cron },
+      schedule: { type: 'crontab', value: cronSchedules[schedule].cron },
       timezone: 'UTC',
-      // 10 minutes past a missed 5-minute run is 15 without one (staleAfterMs).
-      checkinMargin: daily ? 60 : 10,
-      maxRuntime: daily ? 15 : 5,
+      // 10 minutes past a missed run is 15 without one (staleAfterMs).
+      checkinMargin: 10,
+      maxRuntime: 5,
     },
   };
 }

@@ -48,7 +48,14 @@ export default defineConfig({
     sentryTanstackStart({
       org: 'living-legacy',
       project: 'living-legacy-cms',
-      release: { name: process.env.VITE_APP_COMMIT },
+      release: {
+        name: process.env.VITE_APP_COMMIT,
+        // Marks the release as deployed to production, so Sentry can say which
+        // deploy an issue first appeared in. Only CI's production build has
+        // the token to send it.
+        deploy:
+          process.env.VITE_SENTRY_ENVIRONMENT === 'production' ? { env: 'production' } : false,
+      },
       telemetry: false,
       // It cannot follow `.middleware([requirePermission(…)])` and warns on
       // every server file; request and server function spans cover it.

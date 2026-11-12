@@ -26,7 +26,8 @@ export interface JobRun {
 const ERROR_LENGTH = 500;
 
 /**
- * Runs one schedule's jobs side by side and checks in with its monitor.
+ * Runs one schedule's jobs side by side and, if it has one, checks in with
+ * its monitor.
  *
  * Each job is on its own: one failing does not stop the others, and each
  * failure goes to Sentry tagged with the job's name, so the issue says which
@@ -34,14 +35,13 @@ const ERROR_LENGTH = 500;
  * so a failure is reported once, not again as an error from the cron handler.
  */
 export async function runMonitored(
-  monitor: Monitor,
+  monitor: Monitor | null,
   jobs: Record<string, () => Promise<unknown>>,
   reporter: CronReporter
 ): Promise<JobRun[]> {
-  const checkInId = reporter.captureCheckIn(
-    { monitorSlug: monitor.slug, status: 'in_progress' },
-    monitor.config
-  );
+  const checkInId =
+    monitor &&
+    reporter.captureCheckIn({ monitorSlug: monitor.slug, status: 'in_progress' }, monitor.config);
   const started = Date.now();
 
   const runs = await Promise.all(
@@ -58,11 +58,13 @@ export async function runMonitored(
     })
   );
 
-  reporter.captureCheckIn({
-    monitorSlug: monitor.slug,
-    status: runs.some((r) => r.error !== null) ? 'error' : 'ok',
-    checkInId,
-    duration: (Date.now() - started) / 1000,
-  });
+  if (monitor && checkInId) {
+    reporter.captureCheckIn({
+      monitorSlug: monitor.slug,
+      status: runs.some((r) => r.error !== null) ? 'error' : 'ok',
+      checkInId,
+      duration: (Date.now() - started) / 1000,
+    });
+  }
   return runs;
 }

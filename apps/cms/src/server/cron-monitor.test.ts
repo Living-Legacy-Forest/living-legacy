@@ -134,4 +134,33 @@ describe('runMonitored', () => {
       runMonitored({ a: () => Promise.reject(new Error('x')) }, reporter)
     ).resolves.toHaveLength(1);
   });
+
+  it('pings each job’s own heartbeat, or its /fail, beside the schedule’s', async () => {
+    const { reporter, fetcher, pings } = fakes();
+    await runMonitored(
+      {
+        'publish-posts': async () => {},
+        'sync-bookings': async () => {
+          throw new Error('HubSpot 500');
+        },
+        'publish-events': async () => {},
+      },
+      reporter,
+      {
+        url: HEARTBEAT,
+        jobs: {
+          'publish-posts': 'https://heartbeat.example.test/posts',
+          'sync-bookings': 'https://heartbeat.example.test/sync',
+        },
+        fetcher,
+      }
+    );
+    expect(pings.sort()).toEqual(
+      [
+        `${HEARTBEAT}/fail`,
+        'https://heartbeat.example.test/posts',
+        'https://heartbeat.example.test/sync/fail',
+      ].sort()
+    );
+  });
 });

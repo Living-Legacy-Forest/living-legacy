@@ -87,13 +87,15 @@ export default Sentry.withSentry(
       const now = new Date(controller.scheduledTime);
       const schedule: CronSchedule =
         controller.cron === cronSchedules.daily.cron ? 'daily' : 'every-5-minutes';
-      const [{ runMonitored }, { jobsFor, heartbeatFor }, { recordCronRuns }] = await Promise.all([
-        import('./server/cron-monitor'),
-        import('./server/cron-jobs'),
-        import('./server/system-store'),
-      ]);
+      const [{ runMonitored }, { jobsFor, heartbeatFor, jobHeartbeats }, { recordCronRuns }] =
+        await Promise.all([
+          import('./server/cron-monitor'),
+          import('./server/cron-jobs'),
+          import('./server/system-store'),
+        ]);
       const runs = await runMonitored(await jobsFor(schedule, env, now), Sentry, {
         url: heartbeatFor(schedule, env),
+        jobs: jobHeartbeats(env),
       });
       // The jobs' own failures are already in Sentry; this only loses the page's copy.
       await recordCronRuns(env.DB, runs).catch((error: unknown) =>

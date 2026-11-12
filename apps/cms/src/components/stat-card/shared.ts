@@ -1,3 +1,4 @@
+import type { LinkProps } from '@tanstack/react-router';
 import { formatInteger } from '@/lib/format';
 
 export type Trend = {
@@ -9,6 +10,8 @@ export type Trend = {
   counted: string;
   /** Draw the running total, ending at this, instead of each week's count. */
   total?: { value: number; label: string };
+  /** A second, quieter wave behind the first (area charts only), such as posts started. */
+  compare?: { weeks: number[]; counted: string };
   /**
    * When the last week ends (now, on the server), to date the weeks: the axis
    * reads "19 Aug … This week" and each tooltip "Week of 3 Nov". Without it
@@ -28,6 +31,8 @@ export type Stat = {
   trend?: Trend;
   /** Parts of the value, drawn as a donut. */
   parts?: Part[];
+  /** Where the figure leads: the list behind the number. */
+  link?: LinkProps;
 };
 
 export const MUTED = 'color-mix(in oklch, var(--muted-foreground) 35%, transparent)';

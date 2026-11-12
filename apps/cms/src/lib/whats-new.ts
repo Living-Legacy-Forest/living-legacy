@@ -9,7 +9,7 @@ export type WhatsNewItem = {
   /** Where to try it. */
   link?: {
     label: string;
-    to: '/settings' | '/media' | '/profile' | '/events/overview' | '/search-replace';
+    to: '/settings' | '/media' | '/profile' | '/events/overview' | '/search-replace' | '/system';
     hash?: string;
   };
 };
@@ -25,6 +25,17 @@ export type WhatsNewEntry = {
 };
 
 export const whatsNew: WhatsNewEntry[] = [
+  {
+    id: '2026-11-12-3',
+    title: 'A System page for admins',
+    items: [
+      {
+        title: 'See that everything is working',
+        body: 'Admins can now check the website, database, file storage, HubSpot and email in one place, and see the jobs the CMS runs on its own, such as publishing scheduled posts: when each last ran and any that failed. A coloured dot beside the bell shows how things are at a glance, and anything that needs a look also shows in Needs attention on the dashboard.',
+        link: { label: 'Open System', to: '/system' },
+      },
+    ],
+  },
   {
     id: '2026-11-12-2',
     title: 'Search and replace, and who else is editing',

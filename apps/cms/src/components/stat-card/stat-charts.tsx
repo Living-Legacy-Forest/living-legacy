@@ -1,17 +1,5 @@
 import { useId } from 'react';
-import {
-  Area,
-  AreaChart,
-  Bar,
-  BarChart,
-  Cell,
-  Line,
-  LineChart,
-  Pie,
-  PieChart,
-  XAxis,
-  YAxis,
-} from 'recharts';
+import { Area, AreaChart, Bar, BarChart, Cell, Pie, PieChart, XAxis, YAxis } from 'recharts';
 import {
   type ChartConfig,
   ChartContainer,
@@ -20,12 +8,13 @@ import {
 } from '@/components/ui/chart';
 import { formatInteger } from '@/lib/format';
 import { useTimeZone } from '@/lib/use-time-zone';
-import { MUTED, type Part, type Trend, dayMonth, sum, weekName, weekStart } from './shared';
+import { type Part, type Trend, dayMonth, sum, weekName, weekStart } from './shared';
 
 // The chart library is loaded with these, after the card's figures are on screen.
 
 /** Each week's count, or the running total at the end of each week when `total` is given. */
-function trendData({ weeks, total, endsAt }: Trend, timeZone: string) {
+function trendData(trend: Trend, timeZone: string) {
+  const { weeks, total, endsAt } = trend;
   const name = (i: number) => weekName(i, weeks.length, endsAt, timeZone);
   const values = [...weeks];
   if (total) {
@@ -36,88 +25,158 @@ function trendData({ weeks, total, endsAt }: Trend, timeZone: string) {
       running -= weeks[i] ?? 0;
     }
   }
-  return values.map((count, i) => ({ week: name(i), count }));
+  return values.map((count, i) => ({
+    week: name(i),
+    count,
+    ...(trend.compare && { compare: trend.compare.weeks[i] ?? 0 }),
+  }));
 }
 
-const MARGIN = { top: 2, right: 2, bottom: 2, left: 2 };
-// The hidden x-axis names each point, so the tooltip reads "3 weeks ago".
+// Room for the end dot and its ring, so a peak or this week's total is never cut off.
+const MARGIN = { top: 6, right: 7, bottom: 5, left: 5 };
+// The hidden x-axis names each point, so the tooltip reads "Week of 3 Nov".
+// The y-axis leaves a little air above the highest week.
 const axes = (
   <>
     <XAxis dataKey="week" hide />
-    <YAxis hide allowDecimals={false} domain={[0, (max: number) => Math.max(max, 1)]} />
+    <YAxis hide domain={[0, (max: number) => Math.max(max, 1) * 1.15]} />
   </>
 );
-const tooltip = <ChartTooltip cursor={false} content={<ChartTooltipContent indicator="line" />} />;
+const tooltipContent = <ChartTooltipContent indicator="line" />;
+// A faint guide under the pointer: a line on the curves, a column on the bars.
+const lineCursor = { stroke: 'var(--border)', strokeDasharray: '3 3' };
+const barCursor = { fill: 'color-mix(in oklch, var(--muted-foreground) 10%, transparent)' };
 
-/** The last twelve weeks as an area, bars or a line. Hover for each week's figure. */
+const tint = (share: number) => `color-mix(in oklch, var(--color-count) ${share}%, transparent)`;
+const sentence = (text: string) => text.charAt(0).toUpperCase() + text.slice(1);
+
+/** The last twelve weeks as an area, bars or a dotted line. Hover for each week's figure. */
 export function TrendChart(trend: Trend) {
   const gradient = useId();
   const timeZone = useTimeZone();
   const data = trendData(trend, timeZone);
-  const label = trend.total?.label ?? trend.counted;
-  const config = { count: { label, color: 'var(--primary)' } } satisfies ChartConfig;
+  const label = sentence(trend.total?.label ?? trend.counted);
+  const config = {
+    count: { label, color: 'var(--primary)' },
+    // The second wave is the same colour, quieter, so the first still leads.
+    compare: {
+      label: sentence(trend.compare?.counted ?? ''),
+      color: 'color-mix(in oklch, var(--primary) 45%, transparent)',
+    },
+  } satisfies ChartConfig;
   const description = !trend.total
     ? `${formatInteger(sum(trend.weeks))} ${trend.counted} in the last ${trend.weeks.length} weeks.`
     : `${formatInteger(sum(trend.weeks))} ${trend.counted} in the last ${trend.weeks.length} weeks, ${formatInteger(trend.total.value)} in all.`;
 
+  const fill = (
+    <defs>
+      <linearGradient id={gradient} x1="0" y1="0" x2="0" y2="1">
+        <stop offset="0%" stopColor="var(--color-count)" stopOpacity={0.4} />
+        <stop offset="100%" stopColor="var(--color-count)" stopOpacity={0.02} />
+      </linearGradient>
+      <linearGradient id={`${gradient}-compare`} x1="0" y1="0" x2="0" y2="1">
+        <stop offset="0%" stopColor="var(--color-compare)" stopOpacity={0.3} />
+        <stop offset="100%" stopColor="var(--color-compare)" stopOpacity={0} />
+      </linearGradient>
+    </defs>
+  );
+
   return (
-    <div className="mt-3">
-      <ChartContainer config={config} className="aspect-auto h-10 w-full">
-        {trend.kind === 'area' ? (
-          <AreaChart data={data} margin={MARGIN}>
-            <defs>
-              <linearGradient id={gradient} x1="0" y1="0" x2="0" y2="1">
-                <stop offset="0%" stopColor="var(--color-count)" stopOpacity={0.35} />
-                <stop offset="100%" stopColor="var(--color-count)" stopOpacity={0} />
-              </linearGradient>
-            </defs>
-            {axes}
-            {tooltip}
-            <Area
-              dataKey="count"
-              type="monotone"
-              stroke="var(--color-count)"
-              strokeWidth={1.5}
-              fill={`url(#${gradient})`}
-              isAnimationActive={false}
-            />
-          </AreaChart>
-        ) : trend.kind === 'line' ? (
-          <LineChart data={data} margin={MARGIN}>
-            {axes}
-            {tooltip}
-            <Line
-              dataKey="count"
-              type="monotone"
-              stroke="var(--color-count)"
-              strokeWidth={1.5}
-              dot={false}
-              activeDot={{ r: 3 }}
-              isAnimationActive={false}
-            />
-          </LineChart>
-        ) : (
+    <div className="mt-3 flex h-24 flex-col">
+      <ChartContainer config={config} className="aspect-auto min-h-0 w-full flex-1">
+        {trend.kind === 'bar' ? (
           <BarChart
             data={data}
-            margin={{ top: 0, right: 0, bottom: 0, left: 0 }}
-            barCategoryGap={2}
+            margin={{ top: 4, right: 0, bottom: 0, left: 0 }}
+            barCategoryGap={3}
           >
             {axes}
-            {tooltip}
-            <Bar dataKey="count" radius={[3, 3, 0, 0]} minPointSize={1} isAnimationActive={false}>
-              {/* This week stands out; the weeks before sit back. */}
+            <ChartTooltip cursor={barCursor} content={tooltipContent} />
+            <Bar dataKey="count" radius={4} minPointSize={3} isAnimationActive={false}>
+              {/* This week in full; the weeks before sit back, and empty weeks barely show. */}
               {data.map((d, i) => (
-                <Cell key={d.week} fill={i === data.length - 1 ? 'var(--color-count)' : MUTED} />
+                <Cell
+                  key={d.week}
+                  fill={
+                    i === data.length - 1 ? 'var(--color-count)' : d.count > 0 ? tint(55) : tint(15)
+                  }
+                />
               ))}
             </Bar>
           </BarChart>
+        ) : (
+          <AreaChart data={data} margin={MARGIN}>
+            {fill}
+            {axes}
+            <ChartTooltip cursor={lineCursor} content={tooltipContent} />
+            {trend.kind === 'line' ? (
+              // A running total, smoothed like the weekly waves (a B-spline of a
+              // total that only climbs still only climbs). The curve ends exactly
+              // on this week, so one dot there marks where the total stands.
+              <Area
+                dataKey="count"
+                type="basis"
+                stroke="var(--color-count)"
+                strokeWidth={2}
+                fill={`url(#${gradient})`}
+                fillOpacity={0.6}
+                dot={({ key, index, cx, cy }) =>
+                  index === data.length - 1 ? (
+                    <circle
+                      key={key}
+                      cx={cx}
+                      cy={cy}
+                      r={3.5}
+                      fill="var(--color-count)"
+                      stroke="var(--card)"
+                      strokeWidth={2}
+                    />
+                  ) : (
+                    <g key={key} />
+                  )
+                }
+                activeDot={false}
+                isAnimationActive={false}
+              />
+            ) : (
+              // Weekly counts are small whole numbers, which monotone draws as flat
+              // shelves. A B-spline flows through them instead, never below zero or
+              // above the peak. It passes near, not through, each week, so there is
+              // no hover dot; the guide line and tooltip give the figure.
+              [
+                trend.compare && (
+                  // Drawn first, so it sits behind the leading wave.
+                  <Area
+                    key="compare"
+                    dataKey="compare"
+                    type="basis"
+                    stroke="var(--color-compare)"
+                    strokeWidth={1.5}
+                    fill={`url(#${gradient}-compare)`}
+                    activeDot={false}
+                    isAnimationActive={false}
+                  />
+                ),
+                <Area
+                  key="count"
+                  dataKey="count"
+                  type="basis"
+                  stroke="var(--color-count)"
+                  strokeWidth={2}
+                  fill={`url(#${gradient})`}
+                  activeDot={false}
+                  isAnimationActive={false}
+                />,
+              ]
+            )}
+          </AreaChart>
         )}
       </ChartContainer>
       {trend.endsAt !== undefined && (
         // Only the two ends: enough to say what span the chart covers.
         <div
           aria-hidden
-          className="text-muted-foreground mt-1 flex justify-between text-[10px] leading-none tabular-nums"
+          className="text-muted-foreground mt-1.5 flex justify-between text-[10px] leading-none tabular-nums"
         >
           <span>{dayMonth(weekStart(0, trend.weeks.length, trend.endsAt), timeZone)}</span>
           <span>This week</span>
@@ -136,10 +195,11 @@ export function PartsChart({ parts }: { parts: Part[] }) {
   ) satisfies ChartConfig;
 
   return (
-    // The same height as the trend charts, so the four cards line up.
-    <div className="mt-3 flex h-10 items-center gap-3">
+    // The same height as the trend charts, so a row of cards lines up.
+    <div className="mt-3 flex h-24 items-center gap-3 md:gap-4">
       {shown.length > 0 && (
-        <ChartContainer config={config} className="aspect-square h-10 shrink-0">
+        // Smaller in a phone's half-width card, so the legend keeps its room.
+        <ChartContainer config={config} className="aspect-square h-14 shrink-0 md:h-20">
           <PieChart margin={{ top: 0, right: 0, bottom: 0, left: 0 }}>
             <ChartTooltip
               cursor={false}
@@ -149,19 +209,21 @@ export function PartsChart({ parts }: { parts: Part[] }) {
               data={shown.map((p) => ({ ...p, fill: `var(--color-${p.key})` }))}
               dataKey="value"
               nameKey="key"
-              innerRadius={12}
-              outerRadius={20}
+              // Shares of the box, so the ring scales with it.
+              innerRadius="68%"
+              outerRadius="96%"
               paddingAngle={shown.length > 1 ? 4 : 0}
+              cornerRadius={3}
               stroke="none"
               isAnimationActive={false}
             />
           </PieChart>
         </ChartContainer>
       )}
-      <ul className="text-muted-foreground grid gap-0.5 text-xs">
+      <ul className="text-muted-foreground grid min-w-0 gap-1 text-xs">
         {parts.map((p) => (
-          <li key={p.key} className="flex items-center gap-1.5">
-            <span className="size-2 shrink-0 rounded-[2px]" style={{ background: p.color }} />
+          <li key={p.key} className="flex items-center gap-1.5 leading-tight">
+            <span className="size-2 shrink-0 rounded-xs" style={{ background: p.color }} />
             <span className="text-foreground tabular-nums">{formatInteger(p.value)}</span>
             {p.label}
           </li>

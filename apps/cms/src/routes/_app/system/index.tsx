@@ -1,0 +1,17 @@
+import { can } from '@ll/content';
+import { createFileRoute, redirect } from '@tanstack/react-router';
+import { SystemPage } from '@/components/system/system-page';
+import { getSystemStatus } from '@/server/system';
+
+export const Route = createFileRoute('/_app/system/')({
+  beforeLoad: ({ context }) => {
+    if (!can(context.user.role, 'settings:write')) throw redirect({ to: '/' });
+  },
+  loader: () => getSystemStatus(),
+  head: () => ({ meta: [{ title: 'System | Living Legacy CMS' }] }),
+  component: SystemRoute,
+});
+
+function SystemRoute() {
+  return <SystemPage data={Route.useLoaderData()} />;
+}

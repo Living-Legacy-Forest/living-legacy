@@ -33,6 +33,7 @@ import { Megaphone01Icon as AnimatedMegaphone01Icon } from '@animateicons/react/
 import { NotificationIcon as AnimatedNotificationIcon } from '@animateicons/react/huge/notification-icon';
 import { RedoIcon as AnimatedRedoIcon } from '@animateicons/react/huge/redo-icon';
 import { SearchIcon as AnimatedSearchIcon } from '@animateicons/react/huge/search-icon';
+import { ServerIcon as AnimatedServerIcon } from '@animateicons/react/huge/server-icon';
 import { Settings01Icon as AnimatedSettings01Icon } from '@animateicons/react/huge/settings-0-1-icon';
 import { SidebarLeftIcon as AnimatedSidebarLeftIcon } from '@animateicons/react/huge/sidebar-left-icon';
 import { SidebarRightIcon as AnimatedSidebarRightIcon } from '@animateicons/react/huge/sidebar-right-icon';
@@ -214,8 +215,9 @@ function animated(Icon: AnimatedComponent): LucideIcon {
 // Dashboard & stats
 export const ChartPieIcon = animated(AnimatedAnalytics01Icon);
 export const ChartAreaIcon = animated(AnimatedChartLineIcon);
-export const TrendingUpIcon = make(H.AnalyticsUpIcon);
-export const TrendingDownIcon = make(H.AnalyticsDownIcon);
+// Plain arrows: beside a small figure, a boxed chart glyph reads as a blob.
+export const TrendingUpIcon = make(H.ArrowUpRight01Icon);
+export const TrendingDownIcon = make(H.ArrowDownRight01Icon);
 export const ArrowUpIcon = make(H.ArrowUp01Icon);
 export const ArrowDownIcon = make(H.ArrowDown01Icon);
 export const MinusIcon = make(H.MinusSignIcon);
@@ -330,6 +332,7 @@ export const PanelLeftIcon = animated(AnimatedSidebarLeftIcon);
 export const KeyboardIcon = animated(AnimatedKeyboardIcon);
 export const KeyIcon = animated(AnimatedKey01Icon);
 export const IntegrationsIcon = animateUi(AnimatedUnplug);
+export const SystemIcon = animated(AnimatedServerIcon);
 export const LogOutIcon = animated(AnimatedLogout01Icon);
 export const BellIcon = animated(AnimatedNotificationIcon);
 export const CircleCheckIcon = animated(AnimatedCheckmarkCircle01Icon);

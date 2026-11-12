@@ -10,6 +10,7 @@ import { AppBreadcrumbs } from './app-breadcrumbs';
 import { CustomSidebarTrigger } from './custom-sidebar-trigger';
 import { NavUser } from './nav-user';
 import { Notifications } from './notifications';
+import { SystemStatus } from './system-status';
 
 export function AppHeader({ user }: { user: SessionUser }) {
   const { pathname } = useLocation();
@@ -84,6 +85,10 @@ export function AppHeader({ user }: { user: SessionUser }) {
 
       <div className="relative z-10 ml-auto flex items-center gap-1.5 max-md:gap-0">
         {/* The editor's bar needs the room for its title and Publish. */}
+        {/* Desktop only: a phone's bar has no room, and admins see it on the dashboard. */}
+        <div className="max-md:hidden">
+          <SystemStatus user={user} />
+        </div>
         <div className={cn('contents', isEditorPath(pathname) && 'max-md:hidden')}>
           <Notifications user={user} />
         </div>

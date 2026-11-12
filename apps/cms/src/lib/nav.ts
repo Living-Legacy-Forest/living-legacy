@@ -20,6 +20,7 @@ import {
   UserIcon,
   Users,
   SearchReplaceIcon,
+  SystemIcon,
 } from '@/components/icons';
 
 export type NavItem = {
@@ -46,6 +47,7 @@ export type NavItem = {
     | '/redirects'
     | '/search-replace'
     | '/settings'
+    | '/system'
     | '/team'
     | '/testimonials'
     | '/users';
@@ -126,6 +128,7 @@ export const navGroups: NavGroup[] = [
         to: '/integrations',
         permission: 'settings:write',
       },
+      { title: 'System', icon: SystemIcon, to: '/system', permission: 'settings:write' },
       {
         title: 'Settings',
         icon: Settings,

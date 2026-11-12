@@ -129,5 +129,7 @@ export async function syncPending(d1: D1Database): Promise<void> {
           sent.map((b) => b.id)
         )
       );
+    // Still retried next run; thrown so the cron runner reports the failure.
+    throw error;
   }
 }

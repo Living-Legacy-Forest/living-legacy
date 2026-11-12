@@ -21,6 +21,8 @@ import { authMiddleware } from '@/lib/session';
 import { loadContentChecks } from './content-checks';
 import { loadMissingPages } from './not-found';
 import { loadScoreSummary } from './post-score';
+import { healthOptions, runHealthChecks } from './system-health';
+import { loadJobHealth } from './system-store';
 
 const DAY_MS = 86_400_000;
 const WEEK_MS = 7 * DAY_MS;
@@ -66,6 +68,8 @@ export const getDashboardData = createServerFn({ method: 'GET' })
         .where(and(gte(at, trendStart), where))
         .groupBy(week);
     };
+    // People booked per week, by when they booked (cancellations left out).
+    const bookedWeek = sql<number>`cast((${now} - ${eventBookings.createdAt}) / ${WEEK_MS} as integer)`;
 
     // One round trip to the database for the settings and every panel.
     const [
@@ -77,6 +81,8 @@ export const getDashboardData = createServerFn({ method: 'GET' })
       publishedWeekly,
       startedWeekly,
       uploadedWeekly,
+      upcomingEvents,
+      bookedWeekly,
     ] = await db.batch([
       db
         .select({
@@ -129,6 +135,16 @@ export const getDashboardData = createServerFn({ method: 'GET' })
       weekly(posts, posts.publishedAt, isPublished),
       weekly(posts, posts.createdAt, notTrashed),
       weekly(media, media.createdAt),
+      db
+        .select({ title: events.title, startsAt: events.startsAt })
+        .from(events)
+        .where(and(eq(events.status, 'published'), gte(events.startsAt, new Date(now))))
+        .orderBy(asc(events.startsAt)),
+      db
+        .select({ week: bookedWeek, n: sql<number>`coalesce(sum(${eventBookings.partySize}), 0)` })
+        .from(eventBookings)
+        .where(and(gte(eventBookings.createdAt, trendStart), eq(eventBookings.status, 'confirmed')))
+        .groupBy(bookedWeek),
     ]);
 
     const counts = postCounts[0];
@@ -157,6 +173,15 @@ export const getDashboardData = createServerFn({ method: 'GET' })
         missingAlt: Number(mediaTotals[0]?.missingAlt ?? 0),
         uploadedWeekly: toWeeks(uploadedWeekly),
       },
+      events: {
+        upcoming: upcomingEvents.length,
+        next: upcomingEvents[0]
+          ? { title: upcomingEvents[0].title, startsAt: upcomingEvents[0].startsAt.getTime() }
+          : null,
+        bookedWeekly: toWeeks(bookedWeekly),
+        /** Whether the card may lead to the events overview. */
+        canManage: can(role, 'events:manage'),
+      },
       locations: locationRows,
       /** When the trend weeks end: the last one is the seven days up to this. */
       trendEndsAt: now,
@@ -184,9 +209,10 @@ async function loadAttention(
   const canCheck = canPublish || can(user.role, 'seo:write');
   const canRedirect = can(user.role, 'redirects:write');
   const canEvents = can(user.role, 'events:manage');
+  const canSeeSystem = can(user.role, 'settings:write');
   const inReview = and(isNull(posts.deletedAt), isNotNull(posts.reviewRequestedAt));
 
-  const [reviews, scheduled, checks, missing, upcoming] = await Promise.all([
+  const [reviews, scheduled, checks, missing, upcoming, jobs, health] = await Promise.all([
     canPublish
       ? db
           .select({
@@ -231,6 +257,9 @@ async function loadAttention(
           .groupBy(events.id)
           .orderBy(asc(events.startsAt))
       : null,
+    canSeeSystem ? loadJobHealth(db, now) : null,
+    // Without the website and storage checks: the dashboard never waits on them.
+    canSeeSystem ? runHealthChecks(healthOptions(false)) : null,
   ]);
 
   return {
@@ -238,6 +267,12 @@ async function loadAttention(
       total: Number(reviews[0]?.total ?? 0),
       forYou: Number(reviews[0]?.forYou ?? 0),
     },
+    /** What the System page flags: jobs failed or stopped, and failing health checks. */
+    system: jobs &&
+      health && {
+        jobs: jobs.needsLook,
+        health: health.filter((check) => check.status === 'problem').length,
+      },
     scheduledThisWeek: scheduled && Number(scheduled[0]?.total ?? 0),
     contentIssues:
       checks &&

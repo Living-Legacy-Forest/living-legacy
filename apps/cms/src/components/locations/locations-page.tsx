@@ -78,7 +78,9 @@ import { Textarea } from '@/components/ui/textarea';
 import { reportInvalid } from '@/lib/form-validation';
 import { removedNotice, statusNotice } from '@/lib/notify';
 import { openInNewTab } from '@/lib/site';
+import { RevealWords } from '@/components/dashboard/reveal-words';
 import { useAction } from '@/lib/use-action';
+import { useRevealOnce } from '@/lib/use-reveal-once';
 import { cn } from '@/lib/utils';
 import {
   type LocationItem,
@@ -124,6 +126,7 @@ export function LocationsPage({
 }) {
   const navigate = useNavigate({ from: '/locations/' });
   const { run, pending } = useAction();
+  const revealing = useRevealOnce();
   const view = useListPane<Target>();
   const [query, setQuery] = useState('');
   const [toDelete, setToDelete] = useState<string[] | null>(null);
@@ -192,10 +195,14 @@ export function LocationsPage({
   const dialogItem = itemFor(view.dialog);
 
   return (
-    <div className="flex flex-col gap-4 lg:h-[calc(100svh-7.5rem)]">
-      <div className="flex flex-wrap items-center gap-3">
+    <div
+      data-slot="list-page"
+      data-revealing={revealing || undefined}
+      className="flex flex-col gap-4 lg:h-[calc(100svh-7.5rem)]"
+    >
+      <div data-slot="list-toolbar" className="flex flex-wrap items-center gap-3">
         <h1 data-slot="page-title" className="mr-auto text-xl">
-          Locations
+          <RevealWords text="Locations" />
         </h1>
         {data.length > 0 && (
           // Under the title and Add location on phones, beside them from sm.

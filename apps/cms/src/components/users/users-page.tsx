@@ -49,6 +49,8 @@ import {
   revokeInvitation,
 } from '@/server/users';
 import { avatarSrc } from '@/lib/avatar';
+import { useRevealOnce } from '@/lib/use-reveal-once';
+import { RevealWords } from '@/components/dashboard/reveal-words';
 
 const roleItems = [
   { value: 'editor', label: 'Editor', description: 'Write and publish all content.' },
@@ -97,12 +99,18 @@ function Section({
 
 export function UsersPage({ data }: { data: TeamData }) {
   const [inviting, setInviting] = useState(false);
+  const revealing = useRevealOnce();
+
   return (
-    <div className="mx-auto w-full max-w-3xl space-y-8">
+    <div
+      data-slot="stack-page"
+      data-revealing={revealing || undefined}
+      className="mx-auto w-full max-w-3xl space-y-8"
+    >
       <div className="flex items-start justify-between gap-4">
         <div className="space-y-1">
           <h1 data-slot="page-title" className="text-xl font-semibold tracking-tight">
-            Users
+            <RevealWords text="Users" />
           </h1>
           <p className="text-muted-foreground text-sm">People who can sign in to the CMS.</p>
         </div>

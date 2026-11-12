@@ -27,6 +27,8 @@ import {
 import { clearMyPicture, setMyAvatar } from '@/server/profile';
 import { AppearanceSection } from './appearance-section';
 import { DevicesSection } from './devices-section';
+import { useRevealOnce } from '@/lib/use-reveal-once';
+import { RevealWords } from '@/components/dashboard/reveal-words';
 
 async function uploadAvatar(file: File) {
   const form = new FormData();
@@ -154,11 +156,17 @@ export function ProfilePage({
     year: 'numeric',
   });
 
+  const revealing = useRevealOnce();
+
   return (
-    <div className="mx-auto w-full max-w-2xl">
+    <div
+      data-slot="stack-page"
+      data-revealing={revealing || undefined}
+      className="mx-auto w-full max-w-2xl"
+    >
       <div className="mb-8 space-y-1">
         <h1 data-slot="page-title" className="text-xl font-semibold tracking-tight">
-          Your profile
+          <RevealWords text="Your profile" />
         </h1>
         <p className="text-muted-foreground text-sm">
           How you appear and sign in to the Living Legacy CMS.

@@ -32,6 +32,8 @@ import {
   replaceContent,
   searchContent,
 } from '@/server/search-replace';
+import { useRevealOnce } from '@/lib/use-reveal-once';
+import { RevealWords } from '@/components/dashboard/reveal-words';
 
 const plural = (n: number, one: string, many = `${one}s`) => `${n} ${n === 1 ? one : many}`;
 
@@ -101,11 +103,17 @@ export function SearchReplacePage() {
       return next;
     });
 
+  const revealing = useRevealOnce();
+
   return (
-    <div className="mx-auto w-full max-w-4xl space-y-6">
+    <div
+      data-slot="stack-page"
+      data-revealing={revealing || undefined}
+      className="mx-auto w-full max-w-4xl space-y-6"
+    >
       <div className="space-y-1">
         <h1 data-slot="page-title" className="text-xl font-semibold tracking-tight">
-          Search &amp; replace
+          <RevealWords text="Search & replace" />
         </h1>
         <p className="text-muted-foreground text-sm">
           Find a word or phrase across posts, pages, events and the rest of the CMS, then replace it

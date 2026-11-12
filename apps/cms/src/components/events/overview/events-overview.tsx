@@ -13,6 +13,8 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { formatInteger } from '@/lib/format';
 import type { EventsOverview as Overview, OverviewRange } from '@/server/event-stats';
 import { UpcomingEvents } from './upcoming-events';
+import { useRevealOnce } from '@/lib/use-reveal-once';
+import { RevealWords } from '@/components/dashboard/reveal-words';
 
 const ResultsCharts = lazy(() =>
   import('./results-charts').then((m) => ({ default: m.ResultsCharts }))
@@ -91,11 +93,13 @@ export function EventsOverview({
     ...data.locations.map((l) => ({ value: l.id, label: l.name })),
   ];
 
+  const revealing = useRevealOnce();
+
   return (
-    <div className="space-y-6">
+    <div data-slot="stack-page" data-revealing={revealing || undefined} className="space-y-6">
       <div className="flex flex-wrap items-end justify-between gap-3">
         <h1 data-slot="page-title" className="text-2xl">
-          Events overview
+          <RevealWords text="Events overview" />
         </h1>
         {data.locations.length > 1 && (
           <Select

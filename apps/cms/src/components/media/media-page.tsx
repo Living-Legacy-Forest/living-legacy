@@ -64,6 +64,8 @@ import { IMAGE_ACCEPT, mediaSrc, uploadMedia } from '@/lib/upload-media';
 import { useAction } from '@/lib/use-action';
 import { cn } from '@/lib/utils';
 import { type MediaItem, type MediaListData, deleteMedia, updateMedia } from '@/server/media';
+import { useRevealOnce } from '@/lib/use-reveal-once';
+import { RevealWords } from '@/components/dashboard/reveal-words';
 
 const NOUN: [string, string] = ['file', 'files'];
 
@@ -169,8 +171,12 @@ export function MediaPage({
     selection.clear();
   }
 
+  const revealing = useRevealOnce();
+
   return (
     <div
+      data-slot="stack-page"
+      data-revealing={revealing || undefined}
       className="flex flex-1 flex-col gap-4"
       onDragOver={(e) => {
         e.preventDefault();
@@ -185,7 +191,7 @@ export function MediaPage({
     >
       <div className="flex flex-wrap items-center gap-3">
         <h1 data-slot="page-title" className="mr-auto text-xl">
-          Media
+          <RevealWords text="Media" />
         </h1>
         {!libraryEmpty && (
           <SearchInput

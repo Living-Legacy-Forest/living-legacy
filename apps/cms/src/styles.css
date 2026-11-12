@@ -903,6 +903,165 @@
   }
 }
 
+/* The posts pages arrive the way the dashboard does, once per visit (useRevealOnce drops
+   data-revealing afterwards, so a new page of results or a filter never replays it).
+   List: heading words, toolbar controls, then the two panes rise, their tabs and rows
+   following. Editor: the document panel and the sidebar rise, then the bar and the
+   sidebar's sections follow. Reuses the dashboard's keyframes. */
+[data-slot='list-page'][data-revealing] [data-slot='list-toolbar'] > :not(h1) {
+  animation: dashboard-text 450ms cubic-bezier(0.23, 1, 0.32, 1) backwards;
+  animation-delay: calc(100ms + var(--step, 0) * 50ms);
+}
+[data-slot='list-page'][data-revealing] [data-slot='list-toolbar'] > :nth-child(3) {
+  --step: 1;
+}
+[data-slot='list-page'][data-revealing] [data-slot='list-toolbar'] > :nth-child(4) {
+  --step: 2;
+}
+[data-slot='list-page'][data-revealing] [data-slot='list-toolbar'] > :nth-child(n + 5) {
+  --step: 3;
+}
+[data-slot='list-page'][data-revealing] [data-slot='list-panes'] {
+  animation: dashboard-rise 500ms cubic-bezier(0.23, 1, 0.32, 1) 180ms backwards;
+}
+[data-slot='list-page'][data-revealing] [data-slot='list-panes'] > section > :first-child {
+  animation: dashboard-text 450ms cubic-bezier(0.23, 1, 0.32, 1) 300ms backwards;
+}
+[data-slot='list-page'][data-revealing] [data-slot='list-rows'] > * {
+  animation: dashboard-text 450ms cubic-bezier(0.23, 1, 0.32, 1) backwards;
+  animation-delay: calc(340ms + var(--row, 0) * 45ms);
+}
+[data-slot='list-page'][data-revealing] [data-slot='list-rows'] > :nth-child(2) {
+  --row: 1;
+}
+[data-slot='list-page'][data-revealing] [data-slot='list-rows'] > :nth-child(3) {
+  --row: 2;
+}
+[data-slot='list-page'][data-revealing] [data-slot='list-rows'] > :nth-child(4) {
+  --row: 3;
+}
+[data-slot='list-page'][data-revealing] [data-slot='list-rows'] > :nth-child(5) {
+  --row: 4;
+}
+[data-slot='list-page'][data-revealing] [data-slot='list-rows'] > :nth-child(6) {
+  --row: 5;
+}
+[data-slot='list-page'][data-revealing] [data-slot='list-rows'] > :nth-child(n + 7) {
+  --row: 6;
+}
+
+[data-slot='post-editor'][data-revealing] > :first-child {
+  animation: dashboard-rise 500ms cubic-bezier(0.23, 1, 0.32, 1) 120ms backwards;
+}
+[data-slot='post-editor'][data-revealing] > :first-child > header {
+  animation: dashboard-text 450ms cubic-bezier(0.23, 1, 0.32, 1) 260ms backwards;
+}
+[data-slot='post-editor'][data-revealing] > aside > * {
+  animation: dashboard-text 450ms cubic-bezier(0.23, 1, 0.32, 1) backwards;
+  animation-delay: calc(240ms + var(--section, 0) * 70ms);
+}
+[data-slot='post-editor'][data-revealing] > aside > :nth-child(2) {
+  --section: 1;
+}
+[data-slot='post-editor'][data-revealing] > aside > :nth-child(3) {
+  --section: 2;
+}
+[data-slot='post-editor'][data-revealing] > aside > :nth-child(4) {
+  --section: 3;
+}
+[data-slot='post-editor'][data-revealing] > aside > :nth-child(n + 5) {
+  --section: 4;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  /* The panes still fade in so nothing pops; what is inside is simply there. */
+  [data-slot='list-page'][data-revealing] [data-slot='list-panes'],
+  [data-slot='post-editor'][data-revealing] > :first-child {
+    animation: dashboard-fade 300ms ease-out backwards;
+  }
+  [data-slot='list-page'][data-revealing] [data-slot='list-toolbar'] > :not(h1),
+  [data-slot='list-page'][data-revealing] [data-slot='list-panes'] > section > :first-child,
+  [data-slot='list-page'][data-revealing] [data-slot='list-rows'] > *,
+  [data-slot='post-editor'][data-revealing] > :first-child > header,
+  [data-slot='post-editor'][data-revealing] > aside > * {
+    /* Beats the per-step rules above. */
+    animation: none !important;
+  }
+}
+
+/* Pages that are a heading over stacked content (settings, activity, users, …): the
+   heading's words, its description and buttons, then each block rising in turn. Same
+   once-per-visit rule as above (useRevealOnce). A block that holds the heading is left
+   alone, since the words animate themselves. */
+[data-slot='stack-page'][data-revealing] > :first-child > :not(h1, :has(h1)),
+[data-slot='stack-page'][data-revealing] > :first-child p {
+  animation: dashboard-text 450ms cubic-bezier(0.23, 1, 0.32, 1) 140ms backwards;
+}
+[data-slot='stack-page'][data-revealing] > :not(:first-child) {
+  animation: dashboard-rise 500ms cubic-bezier(0.23, 1, 0.32, 1) backwards;
+  animation-delay: calc(160ms + var(--block, 0) * 70ms);
+}
+[data-slot='stack-page'][data-revealing] > :nth-child(3) {
+  --block: 1;
+}
+[data-slot='stack-page'][data-revealing] > :nth-child(4) {
+  --block: 2;
+}
+[data-slot='stack-page'][data-revealing] > :nth-child(5) {
+  --block: 3;
+}
+[data-slot='stack-page'][data-revealing] > :nth-child(n + 6) {
+  --block: 4;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  [data-slot='stack-page'][data-revealing] > :not(:first-child) {
+    animation: dashboard-fade 300ms ease-out backwards;
+  }
+  [data-slot='stack-page'][data-revealing] > :first-child > :not(h1, :has(h1)),
+  [data-slot='stack-page'][data-revealing] > :first-child p {
+    animation: none;
+  }
+}
+
+/* Empty states: the icon settles in, then the title, description and action follow.
+   Quick, because one can appear at any moment (a search with no matches, a closed pane).
+   The dashboard's own empty cards keep their own reveal. */
+[data-slot='empty']:not([data-slot='dashboard'] *) > * > [data-slot='empty-icon'] {
+  animation: empty-pop 400ms cubic-bezier(0.23, 1, 0.32, 1) backwards;
+}
+[data-slot='empty']:not([data-slot='dashboard'] *)
+  > [data-slot='empty-header']
+  > :is([data-slot='empty-title'], [data-slot='empty-description']),
+[data-slot='empty']:not([data-slot='dashboard'] *) > [data-slot='empty-content'],
+[data-slot='no-matches'] > * {
+  animation: dashboard-text 400ms cubic-bezier(0.23, 1, 0.32, 1) backwards;
+  animation-delay: var(--empty-at, 60ms);
+}
+[data-slot='empty'] [data-slot='empty-description'] {
+  --empty-at: 120ms;
+}
+[data-slot='empty'] > [data-slot='empty-content'],
+[data-slot='no-matches'] > :nth-child(2) {
+  --empty-at: 180ms;
+}
+
+@keyframes empty-pop {
+  from {
+    opacity: 0;
+    transform: scale(0.8);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  [data-slot='empty']:not([data-slot='dashboard'] *) > * > [data-slot='empty-icon'],
+  [data-slot='empty']:not([data-slot='dashboard'] *) > [data-slot='empty-header'] > *,
+  [data-slot='empty']:not([data-slot='dashboard'] *) > [data-slot='empty-content'],
+  [data-slot='no-matches'] > * {
+    animation: none;
+  }
+}
+
 /* The shell arrives with the page on a fresh load: the sidebar's links slide in from
    the edge they sit against, group by group, the header's controls drop into the bar,
    and on phones the tabs rise into theirs. The shell stays mounted from page to page,

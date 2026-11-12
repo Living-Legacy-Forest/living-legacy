@@ -20,6 +20,8 @@ import { useTimeZone } from '@/lib/use-time-zone';
 import { cn } from '@/lib/utils';
 import type { ContentChecks } from '@/server/content-checks';
 import { updateMedia } from '@/server/media';
+import { useRevealOnce } from '@/lib/use-reveal-once';
+import { RevealWords } from '@/components/dashboard/reveal-words';
 
 type CheckKey = 'noDescription' | 'noImage' | 'noAlt' | 'events';
 
@@ -68,11 +70,17 @@ export function ContentChecksPage({
   const failing = CHECKS.filter((check) => data[check.key].total > 0);
   const gaps = failing.reduce((sum, check) => sum + data[check.key].total, 0);
 
+  const revealing = useRevealOnce();
+
   return (
-    <div className="mx-auto w-full max-w-3xl space-y-6">
+    <div
+      data-slot="stack-page"
+      data-revealing={revealing || undefined}
+      className="mx-auto w-full max-w-3xl space-y-6"
+    >
       <div className="space-y-1">
         <h1 data-slot="page-title" className="text-xl font-semibold tracking-tight">
-          Content checks
+          <RevealWords text="Content checks" />
         </h1>
         <p className="text-muted-foreground text-sm">
           {gaps === 0

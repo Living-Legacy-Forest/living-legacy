@@ -24,6 +24,8 @@ import { cn } from '@/lib/utils';
 import type { SystemStatus } from '@/server/system';
 import { type HealthStatus, checkTone, jobTone, summariseTones } from '@/lib/system-status';
 import { StatusPulse } from './status-pulse';
+import { useRevealOnce } from '@/lib/use-reveal-once';
+import { RevealWords } from '@/components/dashboard/reveal-words';
 
 // Uptime, heartbeats and their alerts live in Better Stack; errors in Sentry
 // (the org vite.config.ts uploads source maps to).
@@ -71,12 +73,18 @@ export function SystemPage({ data }: { data: SystemStatus }) {
     ...schedules.flatMap((s) => s.jobs.map((job) => jobTone[job.health])),
   ]);
 
+  const revealing = useRevealOnce();
+
   return (
-    <div className="mx-auto w-full max-w-3xl space-y-6">
+    <div
+      data-slot="stack-page"
+      data-revealing={revealing || undefined}
+      className="mx-auto w-full max-w-3xl space-y-6"
+    >
       <div className="flex flex-wrap items-start justify-between gap-4">
         <div className="space-y-1">
           <h1 data-slot="page-title" className="text-xl font-semibold tracking-tight">
-            System
+            <RevealWords text="System" />
           </h1>
           <StatusPulse
             tone={overall}

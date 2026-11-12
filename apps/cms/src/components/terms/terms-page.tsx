@@ -34,6 +34,7 @@ import {
   matchesSearch,
   useSelection,
 } from '@/components/list/list-tools';
+import { RevealWords } from '@/components/dashboard/reveal-words';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import {
@@ -50,6 +51,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { reportInvalid } from '@/lib/form-validation';
 import { removedNotice } from '@/lib/notify';
 import { useAction } from '@/lib/use-action';
+import { useRevealOnce } from '@/lib/use-reveal-once';
 import { type Term, type TermsData, deleteTerms, saveTerm } from '@/server/terms';
 
 type TermType = 'category' | 'tag';
@@ -90,6 +92,7 @@ export function TermsPage({
   const [toDelete, setToDelete] = useState<string[] | null>(null);
   const selection = useSelection(data.map((t) => t.id));
   const { run, pending } = useAction();
+  const revealing = useRevealOnce();
 
   const sorted = [...data].sort((a, b) => a.name.localeCompare(b.name));
   const visible = sorted.filter((t) => matchesSearch(query, [t.name, t.slug, t.description]));
@@ -131,10 +134,14 @@ export function TermsPage({
   };
 
   return (
-    <div className="flex flex-1 flex-col gap-4 lg:h-[calc(100svh-7.5rem)] lg:flex-none">
-      <div className="flex flex-wrap items-center gap-3">
+    <div
+      data-slot="list-page"
+      data-revealing={revealing || undefined}
+      className="flex flex-1 flex-col gap-4 lg:h-[calc(100svh-7.5rem)] lg:flex-none"
+    >
+      <div data-slot="list-toolbar" className="flex flex-wrap items-center gap-3">
         <h1 data-slot="page-title" className="mr-auto text-xl">
-          {title}
+          <RevealWords text={title} />
         </h1>
         {data.length > 0 && (
           <SearchInput

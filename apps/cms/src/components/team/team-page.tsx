@@ -59,7 +59,9 @@ import { Textarea } from '@/components/ui/textarea';
 import { readStatus } from '@/lib/bulk-import';
 import { reportInvalid } from '@/lib/form-validation';
 import { removedNotice, statusNotice } from '@/lib/notify';
+import { RevealWords } from '@/components/dashboard/reveal-words';
 import { useAction } from '@/lib/use-action';
+import { useRevealOnce } from '@/lib/use-reveal-once';
 import {
   type TeamListData,
   type TeamMember,
@@ -95,6 +97,7 @@ export function TeamPage({ data, canWrite }: { data: TeamListData; canWrite: boo
   const [toDelete, setToDelete] = useState<string[] | null>(null);
   const selection = useSelection(data.map((m) => m.id));
   const { run, pending } = useAction();
+  const revealing = useRevealOnce();
 
   const memberFor = (target: Target | null) =>
     target?.kind === 'edit' ? (data.find((m) => m.id === target.id) ?? null) : null;
@@ -180,10 +183,14 @@ export function TeamPage({ data, canWrite }: { data: TeamListData; canWrite: boo
   const dialogMember = memberFor(view.dialog);
 
   return (
-    <div className="flex flex-1 flex-col gap-4 lg:h-[calc(100svh-7.5rem)] lg:flex-none">
-      <div className="flex flex-wrap items-center gap-3">
+    <div
+      data-slot="list-page"
+      data-revealing={revealing || undefined}
+      className="flex flex-1 flex-col gap-4 lg:h-[calc(100svh-7.5rem)] lg:flex-none"
+    >
+      <div data-slot="list-toolbar" className="flex flex-wrap items-center gap-3">
         <h1 data-slot="page-title" className="mr-auto text-xl">
-          Team
+          <RevealWords text="Team" />
         </h1>
         {data.length > 0 && (
           <SearchInput

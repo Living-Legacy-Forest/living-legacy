@@ -36,7 +36,9 @@ import {
   EmptyTitle,
 } from '@/components/ui/empty';
 import { removedNotice } from '@/lib/notify';
+import { RevealWords } from '@/components/dashboard/reveal-words';
 import { useAction } from '@/lib/use-action';
+import { useRevealOnce } from '@/lib/use-reveal-once';
 import { type EventRow, type EventsData, type LocationOption, deleteEvents } from '@/server/events';
 import { EventForm, type FormActions } from './event-form';
 import { EventDashboardPanel } from './dashboard/event-dashboard';
@@ -93,6 +95,7 @@ export function EventsPage({
   const [filter, setFilter] = useState<Filter>('upcoming');
   const [toDelete, setToDelete] = useState<string[] | null>(null);
   const { run, pending } = useAction();
+  const revealing = useRevealOnce();
 
   const now = Date.now();
   // One row for each event, however many dates it repeats on. Coming up reads
@@ -156,10 +159,14 @@ export function EventsPage({
   );
 
   return (
-    <div className="flex flex-1 flex-col gap-4 lg:h-[calc(100svh-7.5rem)] lg:flex-none">
-      <div className="flex flex-wrap items-center gap-3">
+    <div
+      data-slot="list-page"
+      data-revealing={revealing || undefined}
+      className="flex flex-1 flex-col gap-4 lg:h-[calc(100svh-7.5rem)] lg:flex-none"
+    >
+      <div data-slot="list-toolbar" className="flex flex-wrap items-center gap-3">
         <h1 data-slot="page-title" className="mr-auto text-xl">
-          Events
+          <RevealWords text="Events" />
         </h1>
         {data.events.length > 0 && (
           // Under the title and New event on phones, beside them from sm.

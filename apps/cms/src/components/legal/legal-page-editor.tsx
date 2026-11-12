@@ -16,6 +16,7 @@ import {
 } from '@/server/legal-pages';
 import { LegalHistory } from './legal-history';
 import { LegalStatus } from './legal-status';
+import { useRevealOnce } from '@/lib/use-reveal-once';
 
 const DocumentEditor = lazy(() =>
   import('@/components/posts/post-editor/document-editor').then((m) => ({
@@ -133,8 +134,14 @@ export function LegalPageEditor({
     return true;
   }
 
+  const revealing = useRevealOnce();
+
   return (
-    <div className="grid grid-cols-1 gap-6 lg:grid-cols-[minmax(0,1fr)_18rem]">
+    <div
+      data-slot="stack-page"
+      data-revealing={revealing || undefined}
+      className="grid grid-cols-1 gap-6 lg:grid-cols-[minmax(0,1fr)_18rem]"
+    >
       <div className="min-w-0 space-y-3">
         <div className="flex flex-wrap items-center gap-2">
           <h1 data-slot="page-title" className="mr-auto text-xl font-semibold">

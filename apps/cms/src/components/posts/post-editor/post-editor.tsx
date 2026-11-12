@@ -52,12 +52,15 @@ export function PostEditor({
   data,
   focus,
   access,
+  reveal = false,
   onReload,
 }: {
   data: PostEditorData;
   /** A sidebar section to open and scroll to on arrival. */
   focus?: 'seo' | 'image';
   access: PostAccess;
+  /** Plays the page's arrival animation; the route turns it off once it has played. */
+  reveal?: boolean;
   onReload: () => Promise<void>;
 }) {
   const editor = usePostEditor({ data, access, onReload });
@@ -69,6 +72,8 @@ export function PostEditor({
 
   return (
     <div
+      data-slot="post-editor"
+      data-revealing={reveal || undefined}
       className={cn(
         'grid flex-1 gap-6 lg:gap-0 lg:transition-[grid-template-columns] lg:duration-200 lg:ease-[cubic-bezier(0.25,1,0.5,1)] motion-reduce:lg:transition-none',
         showProperties ? 'lg:grid-cols-[minmax(0,1fr)_17rem]' : 'lg:grid-cols-[minmax(0,1fr)_0rem]'

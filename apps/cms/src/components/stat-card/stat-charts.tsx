@@ -32,8 +32,8 @@ function trendData(trend: Trend, timeZone: string) {
   }));
 }
 
-// Room for the hover dot and its ring, so a peak or a zero is never cut off.
-const MARGIN = { top: 6, right: 5, bottom: 5, left: 5 };
+// Room for the end dot and its ring, so a peak or this week's total is never cut off.
+const MARGIN = { top: 6, right: 7, bottom: 5, left: 5 };
 // The hidden x-axis names each point, so the tooltip reads "Week of 3 Nov".
 // The y-axis leaves a little air above the highest week.
 const axes = (
@@ -80,7 +80,6 @@ export function TrendChart(trend: Trend) {
       </linearGradient>
     </defs>
   );
-  const activeDot = { r: 4, fill: 'var(--color-count)', stroke: 'var(--card)', strokeWidth: 2 };
 
   return (
     <div className="mt-3 flex h-24 flex-col">
@@ -111,22 +110,32 @@ export function TrendChart(trend: Trend) {
             {axes}
             <ChartTooltip cursor={lineCursor} content={tooltipContent} />
             {trend.kind === 'line' ? (
-              // A running total only climbs: monotone keeps it honest, and a dot
-              // marks every week, so it reads as steps taken.
+              // A running total, smoothed like the weekly waves (a B-spline of a
+              // total that only climbs still only climbs). The curve ends exactly
+              // on this week, so one dot there marks where the total stands.
               <Area
                 dataKey="count"
-                type="monotone"
+                type="basis"
                 stroke="var(--color-count)"
                 strokeWidth={2}
                 fill={`url(#${gradient})`}
                 fillOpacity={0.6}
-                dot={{
-                  r: 2.5,
-                  fill: 'var(--card)',
-                  stroke: 'var(--color-count)',
-                  strokeWidth: 1.5,
-                }}
-                activeDot={activeDot}
+                dot={({ key, index, cx, cy }) =>
+                  index === data.length - 1 ? (
+                    <circle
+                      key={key}
+                      cx={cx}
+                      cy={cy}
+                      r={3.5}
+                      fill="var(--color-count)"
+                      stroke="var(--card)"
+                      strokeWidth={2}
+                    />
+                  ) : (
+                    <g key={key} />
+                  )
+                }
+                activeDot={false}
                 isAnimationActive={false}
               />
             ) : (

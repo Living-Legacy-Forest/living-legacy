@@ -141,7 +141,7 @@ async function probeStorage(bucket: R2Bucket) {
   }
 }
 
-async function probeWebsite(fetcher: typeof fetch) {
+export async function probeWebsite(fetcher: typeof fetch) {
   try {
     const { value, ms } = await timed(() =>
       fetcher(WEBSITE_URL, { signal: AbortSignal.timeout(WEBSITE_TIMEOUT_MS) })

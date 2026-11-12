@@ -46,12 +46,12 @@ const tint = (share: number) => `color-mix(in oklch, var(--color-count) ${share}
 const sentence = (text: string) => text.charAt(0).toUpperCase() + text.slice(1);
 
 /** The last twelve weeks as an area, bars or a dotted line. Hover for each week's figure. */
-export function TrendChart({ color = 'var(--primary)', ...trend }: Trend & { color?: string }) {
+export function TrendChart(trend: Trend) {
   const gradient = useId();
   const timeZone = useTimeZone();
   const data = trendData(trend, timeZone);
   const label = sentence(trend.total?.label ?? trend.counted);
-  const config = { count: { label, color } } satisfies ChartConfig;
+  const config = { count: { label, color: 'var(--primary)' } } satisfies ChartConfig;
   const description = !trend.total
     ? `${formatInteger(sum(trend.weeks))} ${trend.counted} in the last ${trend.weeks.length} weeks.`
     : `${formatInteger(sum(trend.weeks))} ${trend.counted} in the last ${trend.weeks.length} weeks, ${formatInteger(trend.total.value)} in all.`;

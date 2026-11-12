@@ -22,7 +22,6 @@ function buildStats({ posts, media, locations, trendEndsAt: endsAt }: DashboardD
       // The same 12 weeks the chart above it shows.
       hint: `${formatInteger(sum(posts.publishedWeekly))} in the last ${posts.publishedWeekly.length} weeks`,
       trend: { kind: 'area', weeks: posts.publishedWeekly, counted: 'posts published', endsAt },
-      color: 'var(--chart-1)',
       link: { to: '/posts', search: { status: 'published' } },
     },
     {
@@ -30,7 +29,6 @@ function buildStats({ posts, media, locations, trendEndsAt: endsAt }: DashboardD
       value: posts.drafts,
       hint: 'Not on the website yet',
       trend: { kind: 'bar', weeks: posts.startedWeekly, counted: 'posts started', endsAt },
-      color: 'var(--chart-2)',
       link: { to: '/posts', search: { status: 'draft' } },
     },
     {
@@ -47,7 +45,6 @@ function buildStats({ posts, media, locations, trendEndsAt: endsAt }: DashboardD
         total: { value: media.files, label: 'files in the library' },
         endsAt,
       },
-      color: 'var(--chart-3)',
       link: { to: '/media' },
     },
     {
@@ -55,7 +52,7 @@ function buildStats({ posts, media, locations, trendEndsAt: endsAt }: DashboardD
       value: locations.length,
       hint: locationHint(locations),
       parts: [
-        { key: 'open', label: 'Open', value: open, color: 'var(--chart-4)' },
+        { key: 'open', label: 'Open', value: open, color: 'var(--primary)' },
         { key: 'soon', label: 'Coming soon', value: locations.length - open, color: MUTED },
       ],
       link: { to: '/locations' },

@@ -175,11 +175,8 @@
   --sidebar-ring: oklch(0.556 0 0);
 
   --brand: #8fb08c;
-  /* The light theme's chart green and earth are too dark to read on a dark
-     background; the sage moves up so it stays apart from the green. */
+  /* The light theme's chart green is too dark to read on a dark background. */
   --chart-1: #8fb08c;
-  --chart-3: #b09c80;
-  --chart-4: #c2d6bf;
 }
 
 /* The site's CMS colour, set server-side as <html data-colour> (see __root.tsx).

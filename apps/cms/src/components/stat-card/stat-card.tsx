@@ -16,7 +16,7 @@ const PartsChart = lazy(() => import('./stat-charts').then((m) => ({ default: m.
  * so a row of cards lines its numbers up whether or not each has a chart.
  */
 export function StatCard({ stat }: { stat: Stat }) {
-  const { label, value, display, hint, trend, parts, color = 'var(--primary)', link } = stat;
+  const { label, value, display, hint, trend, parts, link } = stat;
   const delta = trend && change(trend.weeks);
   const Arrow = delta && delta.diff > 0 ? TrendingUpIcon : TrendingDownIcon;
 
@@ -58,7 +58,7 @@ export function StatCard({ stat }: { stat: Stat }) {
         // Holds the chart's height while the chart library loads.
         <Suspense fallback={<div className="mt-3 h-24" />}>
           <div className="px-(--card-spacing)">
-            {trend && <TrendChart {...trend} color={color} />}
+            {trend && <TrendChart {...trend} />}
             {parts && <PartsChart parts={parts} />}
           </div>
         </Suspense>

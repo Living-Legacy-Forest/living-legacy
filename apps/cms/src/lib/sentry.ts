@@ -18,4 +18,8 @@ export const sentryOptions = {
   // Editors type names, emails and unpublished content into the CMS. Keep
   // request bodies and cookies (the session) out of Sentry.
   dataCollection: { httpBodies: [], cookies: false },
+  // A tab still running the CMS from before a deploy calls server functions
+  // that no longer exist. It is offered a reload (components/shell/updates.tsx), so this is
+  // expected after every deploy, not a bug.
+  ignoreErrors: [/Server function info not found/],
 };

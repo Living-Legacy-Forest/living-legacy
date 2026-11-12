@@ -55,6 +55,8 @@ export function PageSkeleton({ pathname }: { pathname: string }) {
         <EditorSkeleton />
       ) : splitSections.includes(section) ? (
         <SplitSkeleton />
+      ) : section === 'media' ? (
+        <MediaSkeleton />
       ) : section === 'settings' ? (
         <SettingsSkeleton />
       ) : (
@@ -106,6 +108,31 @@ function SplitSkeleton() {
             <Lines count={5} className="space-y-2.5" />
           </div>
         </section>
+      </div>
+    </div>
+  );
+}
+
+/** Media: a heading and toolbar over the grid of square thumbnails. */
+function MediaSkeleton() {
+  return (
+    <div className="flex flex-1 flex-col gap-4">
+      <div className="flex items-center gap-3">
+        <Skeleton className="mr-auto h-7 w-24" />
+        <Skeleton className="h-8 w-48 max-md:hidden" />
+        <Skeleton className="h-8 w-24 max-md:hidden" />
+      </div>
+      <div className="flex min-h-0 flex-1 flex-col overflow-hidden rounded-lg border max-md:flex-none max-md:overflow-visible max-md:rounded-none max-md:border-0">
+        <div className="flex h-11 shrink-0 items-center gap-2 border-b px-3 max-md:hidden">
+          <Skeleton className="h-4 w-16" />
+        </div>
+        <div className="p-3 max-md:-mx-4 max-md:p-0">
+          <div className="grid grid-cols-2 gap-3 max-md:grid-cols-3 max-md:gap-0.5 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6">
+            {Array.from({ length: 18 }, (_, i) => (
+              <Skeleton key={i} className="aspect-square rounded-md max-md:rounded-none" />
+            ))}
+          </div>
+        </div>
       </div>
     </div>
   );

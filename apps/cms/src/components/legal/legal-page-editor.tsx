@@ -53,14 +53,21 @@ export function LegalPageEditor({
     const result = await run(
       () => saveLegalPage({ data: { slug: data.slug, values, expectedUpdatedAt: version } }),
       {
-        success: quiet
-          ? undefined
-          : {
-              title: 'Changes saved',
-              description: canPublish
-                ? 'Publish them when they are ready to go live.'
-                : 'They go live when an admin publishes them.',
-            },
+        success: (r) =>
+          r.reviewWithdrawn
+            ? {
+                title: 'Changes saved',
+                description:
+                  'The page changed, so the review request was withdrawn. Ask again when it is ready.',
+              }
+            : quiet
+              ? undefined
+              : {
+                  title: 'Changes saved',
+                  description: canPublish
+                    ? 'Publish them when they are ready to go live.'
+                    : 'They go live when an admin publishes them.',
+                },
         error: 'Could not save the changes',
       }
     );

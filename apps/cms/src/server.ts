@@ -1,3 +1,5 @@
+// First, so every log line from here on has email addresses masked.
+import './lib/redact-console';
 import * as Sentry from '@sentry/cloudflare';
 import { env } from 'cloudflare:workers';
 import { type CronSchedule, cronSchedules } from './lib/cron-jobs';

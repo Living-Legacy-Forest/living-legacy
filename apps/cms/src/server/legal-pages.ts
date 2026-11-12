@@ -1,4 +1,4 @@
-import { legalSlugSchema, legalValuesSchema } from '@ll/content';
+import { can, legalSlugSchema, legalValuesSchema } from '@ll/content';
 import { createServerFn } from '@tanstack/react-start';
 import { z } from 'zod';
 import { getDb } from '@/lib/db';
@@ -47,7 +47,14 @@ export const saveLegalPage = createServerFn({ method: 'POST' })
   .middleware([requirePermission('content:write')])
   .validator(slugInput.extend({ values: legalValuesSchema, expectedUpdatedAt: z.number() }))
   .handler(({ data, context }) =>
-    saveLegalDraft(getDb(), data.slug, data.values, data.expectedUpdatedAt, actorOf(context.user))
+    saveLegalDraft(
+      getDb(),
+      data.slug,
+      data.values,
+      data.expectedUpdatedAt,
+      actorOf(context.user),
+      can(context.user.role, 'legal:publish')
+    )
   );
 
 export const requestLegalPageReview = createServerFn({ method: 'POST' })
@@ -78,7 +85,8 @@ export const restoreLegalVersion = createServerFn({ method: 'POST' })
       data.slug,
       data.revisionId,
       data.expectedUpdatedAt,
-      actorOf(context.user)
+      actorOf(context.user),
+      can(context.user.role, 'legal:publish')
     )
   );
 

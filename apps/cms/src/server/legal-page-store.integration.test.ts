@@ -36,7 +36,7 @@ describe('legal pages', () => {
 
   it('saves edits as a draft without changing the live text', async () => {
     const before = await loadLegalPage(testDb(), 'privacy');
-    await saveLegalDraft(testDb(), 'privacy', values('New wording'), await version(), actor);
+    await saveLegalDraft(testDb(), 'privacy', values('New wording'), await version(), actor, true);
     const after = await loadLegalPage(testDb(), 'privacy');
     expect(after.body).toEqual(before.body);
     expect(after.draft).toMatchObject({ body: doc('New wording') });
@@ -44,14 +44,21 @@ describe('legal pages', () => {
 
   it('refuses a save from an out-of-date editor', async () => {
     const stale = await version();
-    await saveLegalDraft(testDb(), 'privacy', values('First'), stale, actor);
+    await saveLegalDraft(testDb(), 'privacy', values('First'), stale, actor, true);
     await expect(
-      saveLegalDraft(testDb(), 'privacy', values('Second'), stale, actor)
+      saveLegalDraft(testDb(), 'privacy', values('Second'), stale, actor, true)
     ).rejects.toThrow('Someone else saved this page');
   });
 
   it('publishes the draft and records it', async () => {
-    await saveLegalDraft(testDb(), 'privacy', values('Published wording'), await version(), actor);
+    await saveLegalDraft(
+      testDb(),
+      'privacy',
+      values('Published wording'),
+      await version(),
+      actor,
+      true
+    );
     await requestLegalReview(testDb(), 'privacy', actor);
     const { lastPublishedAt } = await publishLegalDraft(
       testDb(),
@@ -89,18 +96,18 @@ describe('legal pages', () => {
   it('lets only one of two simultaneous saves through', async () => {
     const stale = await version();
     const results = await Promise.allSettled([
-      saveLegalDraft(testDb(), 'privacy', values('From Ana'), stale, actor),
-      saveLegalDraft(testDb(), 'privacy', values('From Ben'), stale, actor),
+      saveLegalDraft(testDb(), 'privacy', values('From Ana'), stale, actor, true),
+      saveLegalDraft(testDb(), 'privacy', values('From Ben'), stale, actor, true),
     ]);
     expect(results.filter((r) => r.status === 'fulfilled')).toHaveLength(1);
   });
 
   it('lets only one of a save and a publish from the same version through', async () => {
-    await saveLegalDraft(testDb(), 'privacy', values('Reviewed'), await version(), actor);
+    await saveLegalDraft(testDb(), 'privacy', values('Reviewed'), await version(), actor, true);
     const current = await version();
     const results = await Promise.allSettled([
       publishLegalDraft(testDb(), 'privacy', current, actor),
-      saveLegalDraft(testDb(), 'privacy', values('Late edit'), current, actor),
+      saveLegalDraft(testDb(), 'privacy', values('Late edit'), current, actor, true),
     ]);
     expect(results.filter((r) => r.status === 'fulfilled')).toHaveLength(1);
     const history = await listLegalHistory(testDb(), (await loadLegalPage(testDb(), 'privacy')).id);
@@ -110,7 +117,7 @@ describe('legal pages', () => {
 
   it('refuses a discard from an out-of-date editor', async () => {
     const stale = await version();
-    await saveLegalDraft(testDb(), 'privacy', values('Newer edit'), stale, actor);
+    await saveLegalDraft(testDb(), 'privacy', values('Newer edit'), stale, actor, true);
     await expect(discardLegalDraft(testDb(), 'privacy', stale, actor)).rejects.toThrow(
       'Someone else saved this page'
     );
@@ -128,7 +135,8 @@ describe('legal pages', () => {
       'privacy',
       { title: 'Privacy policy', body: null, seoDescription: '' },
       await version(),
-      actor
+      actor,
+      true
     );
     await expect(publishLegalDraft(testDb(), 'privacy', await version(), actor)).rejects.toThrow(
       'Add the page text before publishing.'
@@ -137,14 +145,14 @@ describe('legal pages', () => {
 
   it('refuses a publish from an out-of-date editor', async () => {
     const stale = await version();
-    await saveLegalDraft(testDb(), 'privacy', values('Draft'), stale, actor);
+    await saveLegalDraft(testDb(), 'privacy', values('Draft'), stale, actor, true);
     await expect(publishLegalDraft(testDb(), 'privacy', stale, actor)).rejects.toThrow(
       'Someone else saved this page'
     );
   });
 
   it('discarding drops the draft and the review request', async () => {
-    await saveLegalDraft(testDb(), 'privacy', values('Draft'), await version(), actor);
+    await saveLegalDraft(testDb(), 'privacy', values('Draft'), await version(), actor, true);
     await requestLegalReview(testDb(), 'privacy', actor);
     await discardLegalDraft(testDb(), 'privacy', await version(), actor);
     const row = await loadLegalPage(testDb(), 'privacy');
@@ -152,8 +160,38 @@ describe('legal pages', () => {
     expect(row.reviewRequestedAt).toBeNull();
   });
 
+  it('withdraws a review request when someone who cannot publish changes the page', async () => {
+    await saveLegalDraft(testDb(), 'privacy', values('Ready'), await version(), actor, false);
+    await requestLegalReview(testDb(), 'privacy', actor);
+    const result = await saveLegalDraft(
+      testDb(),
+      'privacy',
+      values('Changed again'),
+      await version(),
+      actor,
+      false
+    );
+    expect(result.reviewWithdrawn).toBe(true);
+    expect((await loadLegalPage(testDb(), 'privacy')).reviewRequestedAt).toBeNull();
+  });
+
+  it('keeps the review request when an admin edits during the review', async () => {
+    await saveLegalDraft(testDb(), 'privacy', values('Ready'), await version(), actor, false);
+    await requestLegalReview(testDb(), 'privacy', actor);
+    const result = await saveLegalDraft(
+      testDb(),
+      'privacy',
+      values('Tidied by an admin'),
+      await version(),
+      actor,
+      true
+    );
+    expect(result.reviewWithdrawn).toBe(false);
+    expect((await loadLegalPage(testDb(), 'privacy')).reviewRequestedAt).not.toBeNull();
+  });
+
   it('lists review requests for the bell', async () => {
-    await saveLegalDraft(testDb(), 'privacy', values('Draft'), await version(), actor);
+    await saveLegalDraft(testDb(), 'privacy', values('Draft'), await version(), actor, true);
     await requestLegalReview(testDb(), 'privacy', actor);
     expect(await listLegalReviewRequests(testDb())).toEqual([
       expect.objectContaining({ slug: 'privacy', title: 'Privacy policy' }),
@@ -167,16 +205,30 @@ describe('legal pages', () => {
   });
 
   it('restores an earlier version as a draft, leaving the live text alone', async () => {
-    await saveLegalDraft(testDb(), 'privacy', values('First wording'), await version(), actor);
+    await saveLegalDraft(
+      testDb(),
+      'privacy',
+      values('First wording'),
+      await version(),
+      actor,
+      true
+    );
     await publishLegalDraft(testDb(), 'privacy', await version(), actor);
-    await saveLegalDraft(testDb(), 'privacy', values('Second wording'), await version(), actor);
+    await saveLegalDraft(
+      testDb(),
+      'privacy',
+      values('Second wording'),
+      await version(),
+      actor,
+      true
+    );
     await publishLegalDraft(testDb(), 'privacy', await version(), actor);
     const [, first] = await listLegalHistory(
       testDb(),
       (await loadLegalPage(testDb(), 'privacy')).id
     );
 
-    await restoreLegalRevision(testDb(), 'privacy', first!.id, await version(), actor);
+    await restoreLegalRevision(testDb(), 'privacy', first!.id, await version(), actor, true);
 
     const page = await loadLegalPage(testDb(), 'privacy');
     expect(page.body).toEqual(doc('Second wording'));
@@ -184,7 +236,14 @@ describe('legal pages', () => {
   });
 
   it('refuses to restore a version of another page', async () => {
-    await saveLegalDraft(testDb(), 'privacy', values('Privacy wording'), await version(), actor);
+    await saveLegalDraft(
+      testDb(),
+      'privacy',
+      values('Privacy wording'),
+      await version(),
+      actor,
+      true
+    );
     await publishLegalDraft(testDb(), 'privacy', await version(), actor);
     const [privacy] = await listLegalHistory(
       testDb(),
@@ -198,7 +257,8 @@ describe('legal pages', () => {
         'terms-and-conditions',
         privacy!.id,
         terms.updatedAt.getTime(),
-        actor
+        actor,
+        true
       )
     ).rejects.toThrow('That version could not be found.');
   });

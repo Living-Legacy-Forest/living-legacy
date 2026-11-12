@@ -21,6 +21,8 @@ import { authMiddleware } from '@/lib/session';
 import { loadContentChecks } from './content-checks';
 import { loadMissingPages } from './not-found';
 import { loadScoreSummary } from './post-score';
+import { healthOptions, runHealthChecks } from './system-health';
+import { loadJobHealth } from './system-store';
 
 const DAY_MS = 86_400_000;
 const WEEK_MS = 7 * DAY_MS;
@@ -184,9 +186,10 @@ async function loadAttention(
   const canCheck = canPublish || can(user.role, 'seo:write');
   const canRedirect = can(user.role, 'redirects:write');
   const canEvents = can(user.role, 'events:manage');
+  const canSeeSystem = can(user.role, 'settings:write');
   const inReview = and(isNull(posts.deletedAt), isNotNull(posts.reviewRequestedAt));
 
-  const [reviews, scheduled, checks, missing, upcoming] = await Promise.all([
+  const [reviews, scheduled, checks, missing, upcoming, jobs, health] = await Promise.all([
     canPublish
       ? db
           .select({
@@ -231,6 +234,9 @@ async function loadAttention(
           .groupBy(events.id)
           .orderBy(asc(events.startsAt))
       : null,
+    canSeeSystem ? loadJobHealth(db, now) : null,
+    // Without the website and storage checks: the dashboard never waits on them.
+    canSeeSystem ? runHealthChecks(healthOptions(false)) : null,
   ]);
 
   return {
@@ -238,6 +244,12 @@ async function loadAttention(
       total: Number(reviews[0]?.total ?? 0),
       forYou: Number(reviews[0]?.forYou ?? 0),
     },
+    /** What the System page flags: jobs failed or stopped, and failing health checks. */
+    system: jobs &&
+      health && {
+        jobs: jobs.needsLook,
+        health: health.filter((check) => check.status === 'problem').length,
+      },
     scheduledThisWeek: scheduled && Number(scheduled[0]?.total ?? 0),
     contentIssues:
       checks &&

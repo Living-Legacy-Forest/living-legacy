@@ -1,0 +1,202 @@
+import { CircleCheckIcon, ExternalLinkIcon } from '@/components/icons';
+import { buttonVariants } from '@/components/ui/button';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import {
+  Empty,
+  EmptyDescription,
+  EmptyHeader,
+  EmptyMedia,
+  EmptyTitle,
+} from '@/components/ui/empty';
+import {
+  Item,
+  ItemActions,
+  ItemContent,
+  ItemDescription,
+  ItemGroup,
+  ItemTitle,
+} from '@/components/ui/item';
+import { buildInfo } from '@/lib/build-info';
+import type { JobHealth } from '@/lib/cron-jobs';
+import { formatDateTime, formatInteger, formatRelative } from '@/lib/format';
+import { useTimeZone } from '@/lib/use-time-zone';
+import { cn } from '@/lib/utils';
+import type { SystemStatus } from '@/server/system';
+import { type HealthStatus, checkTone, jobTone, summariseTones } from '@/lib/system-status';
+import { StatusPulse } from './status-pulse';
+
+// The org is the one vite.config.ts uploads source maps to.
+const SENTRY_CRONS_URL = 'https://living-legacy.sentry.io/crons/';
+
+const JOB_LABEL: Record<JobHealth, string> = {
+  ok: 'Working',
+  waiting: 'Not run yet',
+  failed: 'Failed',
+  stale: 'Not run lately',
+};
+
+const CHECK_LABEL: Record<HealthStatus, string> = {
+  ok: 'Working',
+  warning: 'Check',
+  problem: 'Problem',
+};
+
+const rowClass = 'touch:min-h-11 -mx-2 px-2';
+
+function took(ms: number) {
+  if (ms < 1000) return 'took under a second';
+  const seconds = Math.round(ms / 1000);
+  return `took ${formatInteger(seconds)} ${seconds === 1 ? 'second' : 'seconds'}`;
+}
+
+function versionLine(timeZone: string) {
+  if (buildInfo.isDev) return 'Local development.';
+  const commit = buildInfo.commit ? `, commit ${buildInfo.commit}` : '';
+  return `Version ${buildInfo.version}${commit}, built ${formatDateTime(buildInfo.builtAt, timeZone)}.`;
+}
+
+/**
+ * Admins' view of the services the CMS depends on and the jobs it runs on a
+ * timer. Sentry has the history and sends the alerts.
+ */
+export function SystemPage({ data }: { data: SystemStatus }) {
+  const timeZone = useTimeZone();
+  const { schedules, failures, health } = data;
+  const { overall, red, yellow } = summariseTones([
+    ...health.map((check) => checkTone[check.status]),
+    ...schedules.flatMap((s) => s.jobs.map((job) => jobTone[job.health])),
+  ]);
+
+  return (
+    <div className="mx-auto w-full max-w-3xl space-y-6">
+      <div className="flex flex-wrap items-start justify-between gap-4">
+        <div className="space-y-1">
+          <h1 data-slot="page-title" className="text-xl font-semibold tracking-tight">
+            System
+          </h1>
+          <StatusPulse
+            tone={overall}
+            // A sentence, unlike the rows' one-word labels: let it wrap on phones.
+            className="text-sm whitespace-normal"
+            label={
+              red > 0
+                ? `${formatInteger(red)} ${red === 1 ? 'thing needs' : 'things need'} a look. Sentry has the full details.`
+                : yellow > 0
+                  ? `Working, with ${formatInteger(yellow)} ${yellow === 1 ? 'thing' : 'things'} to keep an eye on.`
+                  : 'Everything is working.'
+            }
+          />
+        </div>
+        <a
+          href={SENTRY_CRONS_URL}
+          target="_blank"
+          rel="noreferrer"
+          className={cn(buttonVariants({ variant: 'outline', size: 'sm' }), 'touch:min-h-11')}
+        >
+          Open in Sentry
+          <ExternalLinkIcon aria-hidden />
+        </a>
+      </div>
+
+      <Card>
+        <CardHeader>
+          <CardTitle>Health</CardTitle>
+          <CardDescription>Checked just now, when this page opened.</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <ItemGroup className="gap-0 divide-y">
+            {health.map((check) => {
+              const tone = checkTone[check.status];
+              return (
+                <Item key={check.key} size="sm" className={rowClass}>
+                  <ItemContent className="min-w-0">
+                    <ItemTitle>{check.title}</ItemTitle>
+                    <ItemDescription className="wrap-break-word">{check.detail}</ItemDescription>
+                  </ItemContent>
+                  <ItemActions>
+                    <StatusPulse tone={tone} label={CHECK_LABEL[check.status]} />
+                  </ItemActions>
+                </Item>
+              );
+            })}
+            <Item size="sm" className={rowClass}>
+              <ItemContent className="min-w-0">
+                <ItemTitle>This version</ItemTitle>
+                <ItemDescription>{versionLine(timeZone)}</ItemDescription>
+              </ItemContent>
+            </Item>
+          </ItemGroup>
+        </CardContent>
+      </Card>
+
+      {schedules.map((schedule) => (
+        <Card key={schedule.key}>
+          <CardHeader>
+            <CardTitle>{schedule.title}</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <ItemGroup className="gap-0 divide-y">
+              {schedule.jobs.map((job) => {
+                const tone = jobTone[job.health];
+                return (
+                  <Item key={job.key} size="sm" className={rowClass}>
+                    <ItemContent className="min-w-0">
+                      <ItemTitle>{job.title}</ItemTitle>
+                      <ItemDescription>
+                        {job.lastRun
+                          ? `Last ran ${formatRelative(job.lastRun.startedAt)}, ${took(job.lastRun.durationMs)}`
+                          : 'Has not run since this page was added.'}
+                      </ItemDescription>
+                      {job.lastRun?.error && (
+                        <p className="text-destructive text-sm wrap-break-word">
+                          {job.lastRun.error}
+                        </p>
+                      )}
+                    </ItemContent>
+                    <ItemActions>
+                      <StatusPulse tone={tone} label={JOB_LABEL[job.health]} />
+                    </ItemActions>
+                  </Item>
+                );
+              })}
+            </ItemGroup>
+          </CardContent>
+        </Card>
+      ))}
+
+      <Card>
+        <CardHeader>
+          <CardTitle>Recent failures</CardTitle>
+          <CardDescription>The last 14 days, newest first.</CardDescription>
+        </CardHeader>
+        <CardContent>
+          {failures.length === 0 ? (
+            <Empty className="border py-8">
+              <EmptyHeader>
+                <EmptyMedia variant="icon">
+                  <CircleCheckIcon aria-hidden />
+                </EmptyMedia>
+                <EmptyTitle className="text-sm">No failures</EmptyTitle>
+                <EmptyDescription>
+                  Every job has run without a problem for 14 days.
+                </EmptyDescription>
+              </EmptyHeader>
+            </Empty>
+          ) : (
+            <ItemGroup className="gap-0 divide-y">
+              {failures.map((failure) => (
+                <Item key={failure.id} size="sm" className={rowClass}>
+                  <ItemContent className="min-w-0">
+                    <ItemTitle>{failure.title}</ItemTitle>
+                    <ItemDescription>{formatDateTime(failure.startedAt, timeZone)}</ItemDescription>
+                    <p className="text-sm wrap-break-word">{failure.error}</p>
+                  </ItemContent>
+                </Item>
+              ))}
+            </ItemGroup>
+          )}
+        </CardContent>
+      </Card>
+    </div>
+  );
+}

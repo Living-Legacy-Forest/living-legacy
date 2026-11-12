@@ -1,3 +1,4 @@
+import type { LinkProps } from '@tanstack/react-router';
 import { formatInteger } from '@/lib/format';
 
 export type Trend = {
@@ -28,6 +29,10 @@ export type Stat = {
   trend?: Trend;
   /** Parts of the value, drawn as a donut. */
   parts?: Part[];
+  /** The trend's colour, so a row of cards reads apart at a glance. Defaults to the CMS colour. */
+  color?: string;
+  /** Where the figure leads: the list behind the number. */
+  link?: LinkProps;
 };
 
 export const MUTED = 'color-mix(in oklch, var(--muted-foreground) 35%, transparent)';

@@ -103,6 +103,25 @@ export const activityLog = sqliteTable(
   (t) => [index('activity_log_created_at').on(t.createdAt)]
 );
 
+// One row per job per run of the CMS's cron triggers (apps/cms/src/server.ts),
+// for the System page. The daily job clears rows older than 14 days.
+export const cronRuns = sqliteTable(
+  'cron_runs',
+  {
+    id: id(),
+    /** A key from the CMS's job list (apps/cms/src/lib/cron-jobs.ts). */
+    job: text('job').notNull(),
+    startedAt: integer('started_at', { mode: 'timestamp_ms' }).notNull(),
+    durationMs: integer('duration_ms').notNull(),
+    /** Why it failed, cut short; null when it ran without a problem. */
+    error: text('error'),
+  },
+  (t) => [
+    index('cron_runs_job_started').on(t.job, t.startedAt),
+    index('cron_runs_started').on(t.startedAt),
+  ]
+);
+
 // Keys for the CMS API (/api/v1). Only a SHA-256 hash of each key is stored;
 // the key itself is shown once, when it is created. A key acts as the admin
 // who created it, so it stops working if that person is removed or loses the

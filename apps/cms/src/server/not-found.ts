@@ -57,6 +57,8 @@ export async function pruneMissingPages(d1: D1Database, now: Date) {
     }
   } catch (error) {
     console.error('[not found] could not prune missing pages', error);
+    // On to the cron runner, which reports it and runs the other jobs regardless.
+    throw error;
   }
 }
 

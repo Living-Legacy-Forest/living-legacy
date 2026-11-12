@@ -1,5 +1,6 @@
 import * as Sentry from '@sentry/cloudflare';
 import { env } from 'cloudflare:workers';
+import { type CronSchedule, cronSchedules } from './lib/cron-jobs';
 import { sentryOptions } from './lib/sentry';
 import { mediaIdFromPath, serveMedia } from './server/media-delivery';
 
@@ -12,9 +13,6 @@ const loadApp = () =>
     import('@tanstack/react-start/server-entry'),
     import('@sentry/tanstackstart-react'),
   ]).then(([app, sentry]) => sentry.wrapFetchWithSentry(app.default));
-
-// Must match the second trigger in wrangler.jsonc.
-const MEDIA_SWEEP_CRON = '0 17 * * *';
 
 const OLD_HOST = 'living-legacy-cms.living-legacy.workers.dev';
 
@@ -40,7 +38,8 @@ function noFraming(response: Response) {
 // wrangler.jsonc: every five minutes, publish scheduled posts and events and
 // sync event bookings to HubSpot (once connected; HubSpot sends the guest
 // emails); daily, clear out unused stored files, delete bookings a year after
-// their event, forget missing pages nobody has asked for in 90 days, and rescore every post.
+// their event, forget missing pages nobody has asked for in 90 days, rescore every post,
+// and clear job history older than two weeks. The full list is src/lib/cron-jobs.ts.
 //
 // withSentry reports errors from both, and traces requests, cron runs and D1.
 export default Sentry.withSentry(
@@ -68,41 +67,26 @@ export default Sentry.withSentry(
       if (mediaId) return serveMedia(request, mediaId, ctx);
       return noFraming(await (await loadApp()).fetch(request));
     },
-    async scheduled(controller, env, ctx) {
+    // Each run checks in with its Sentry monitor and is kept for the System
+    // page. Awaited rather than handed to waitUntil, so the last check-in and
+    // any job's error are sent before withSentry flushes.
+    async scheduled(controller, env) {
       const now = new Date(controller.scheduledTime);
-      if (controller.cron === MEDIA_SWEEP_CRON) {
-        const [
-          { sweepOrphanedMedia },
-          { purgeOldBookings },
-          { pruneMissingPages },
-          { rescorePosts },
-        ] = await Promise.all([
-          import('./server/media-sweep'),
-          import('./server/event-jobs'),
-          import('./server/not-found'),
-          import('./server/post-score'),
-        ]);
-        ctx.waitUntil(
-          Promise.all([
-            sweepOrphanedMedia(env.DB, env.MEDIA, now),
-            purgeOldBookings(env.DB, now),
-            pruneMissingPages(env.DB, now),
-            rescorePosts(env.DB),
-          ])
-        );
-        return;
-      }
-      const [{ publishDuePosts }, { syncPending }, { publishDueEvents }] = await Promise.all([
-        import('./server/scheduler'),
-        import('./server/event-crm'),
-        import('./server/event-jobs'),
+      const schedule: CronSchedule =
+        controller.cron === cronSchedules.daily.cron ? 'daily' : 'every-5-minutes';
+      const [{ runMonitored }, { jobsFor, monitorFor }, { recordCronRuns }] = await Promise.all([
+        import('./server/cron-monitor'),
+        import('./server/cron-jobs'),
+        import('./server/system-store'),
       ]);
-      ctx.waitUntil(
-        Promise.all([
-          publishDuePosts(env.DB, now),
-          syncPending(env.DB),
-          publishDueEvents(env.DB, now),
-        ])
+      const runs = await runMonitored(
+        monitorFor(schedule),
+        await jobsFor(schedule, env, now),
+        Sentry
+      );
+      // The jobs' own failures are already in Sentry; this only loses the page's copy.
+      await recordCronRuns(env.DB, runs).catch((error: unknown) =>
+        Sentry.captureException(error, { tags: { job: 'record-runs' } })
       );
     },
   } satisfies ExportedHandler<Cloudflare.Env>

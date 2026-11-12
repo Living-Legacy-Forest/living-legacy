@@ -8,6 +8,7 @@ import {
   type LucideIcon,
   PencilLineIcon,
   SendIcon,
+  TriangleAlertIcon,
 } from '@/components/icons';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import {
@@ -44,8 +45,26 @@ const plural = (n: number, one: string, many: string) =>
 /** Turns what needs doing into rows, most pressing first. Empty parts are left out. */
 function buildTasks(attention: Attention, timeZone: string): Task[] {
   const tasks: Task[] = [];
-  const { reviews, scheduledThisWeek, contentIssues, missingPages, upcomingEvents } = attention;
+  const { reviews, scheduledThisWeek, contentIssues, missingPages, upcomingEvents, system } =
+    attention;
 
+  // First: while something is down, posts and bookings below may not be what they seem.
+  if (system && (system.jobs > 0 || system.health > 0)) {
+    tasks.push({
+      key: 'system',
+      icon: TriangleAlertIcon,
+      title: 'System needs a look',
+      description: [
+        system.health > 0 &&
+          `${plural(system.health, 'health check is', 'health checks are')} failing.`,
+        system.jobs > 0 &&
+          `${plural(system.jobs, 'scheduled job has', 'scheduled jobs have')} failed or stopped.`,
+      ]
+        .filter(Boolean)
+        .join(' '),
+      link: { to: '/system' },
+    });
+  }
   if (reviews && reviews.total > 0) {
     tasks.push({
       key: 'reviews',

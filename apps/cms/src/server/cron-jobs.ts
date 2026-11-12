@@ -1,4 +1,4 @@
-import type { CronJobKey, CronSchedule } from '@/lib/cron-jobs';
+import { type CronJobKey, type CronSchedule, cronJobs } from '@/lib/cron-jobs';
 
 type Jobs = Partial<Record<CronJobKey, () => Promise<unknown>>>;
 
@@ -9,6 +9,28 @@ type Jobs = Partial<Record<CronJobKey, () => Promise<unknown>>>;
  */
 export function heartbeatFor(schedule: CronSchedule, env: Cloudflare.Env) {
   return schedule === 'daily' ? env.HEARTBEAT_URL_DAILY : env.HEARTBEAT_URL_EVERY_5_MINUTES;
+}
+
+/**
+ * The jobs with a heartbeat of their own, from HEARTBEAT_URLS_BY_JOB: a JSON
+ * object of job key to Better Stack heartbeat address (a Worker secret). An
+ * unset, unreadable or partly wrong value pings only what it can.
+ */
+export function jobHeartbeats(env: Cloudflare.Env): Partial<Record<CronJobKey, string>> {
+  try {
+    const parsed: unknown = JSON.parse(env.HEARTBEAT_URLS_BY_JOB ?? '{}');
+    if (!parsed || typeof parsed !== 'object') return {};
+    return Object.fromEntries(
+      Object.entries(parsed).filter(
+        ([key, url]) =>
+          cronJobs.some((j) => j.key === key) &&
+          typeof url === 'string' &&
+          url.startsWith('https://')
+      )
+    ) as Partial<Record<CronJobKey, string>>;
+  } catch {
+    return {};
+  }
 }
 
 /**

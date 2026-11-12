@@ -10,6 +10,8 @@ export interface ErrorReporter {
  */
 export interface Heartbeat {
   url: string | undefined;
+  /** A job's own heartbeat, for the jobs that have one: an alert then names the job. */
+  jobs?: Partial<Record<string, string>>;
   fetcher?: typeof fetch;
 }
 
@@ -52,18 +54,36 @@ export async function runMonitored(
     })
   );
 
-  if (heartbeat?.url) {
+  if (heartbeat) {
     const failed = runs.some((r) => r.error !== null);
-    try {
-      const res = await (heartbeat.fetcher ?? fetch)(
-        failed ? `${heartbeat.url}/fail` : heartbeat.url,
-        { method: 'POST', signal: AbortSignal.timeout(HEARTBEAT_TIMEOUT_MS) }
-      );
-      await res.body?.cancel();
-    } catch (error) {
-      // A missed ping is the uptime service's to notice; the jobs still ran.
-      reporter.captureException(error, { tags: { job: 'heartbeat' } });
-    }
+    // The schedule's heartbeat, then each job's own, all at once.
+    await Promise.all([
+      ping(heartbeat.url, failed, 'heartbeat', heartbeat, reporter),
+      ...runs.map((r) =>
+        ping(heartbeat.jobs?.[r.job], r.error !== null, `heartbeat:${r.job}`, heartbeat, reporter)
+      ),
+    ]);
   }
   return runs;
+}
+
+/** Pings one heartbeat address, or its /fail address. Never rejects. */
+async function ping(
+  url: string | undefined,
+  failed: boolean,
+  job: string,
+  heartbeat: Heartbeat,
+  reporter: ErrorReporter
+): Promise<void> {
+  if (!url) return;
+  try {
+    const res = await (heartbeat.fetcher ?? fetch)(failed ? `${url}/fail` : url, {
+      method: 'POST',
+      signal: AbortSignal.timeout(HEARTBEAT_TIMEOUT_MS),
+    });
+    await res.body?.cancel();
+  } catch (error) {
+    // A missed ping is the uptime service's to notice; the jobs still ran.
+    reporter.captureException(error, { tags: { job } });
+  }
 }

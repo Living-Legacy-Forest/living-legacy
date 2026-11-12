@@ -15,6 +15,8 @@ declare namespace Cloudflare {
     // (server/cron-jobs.ts). Unset locally, where nothing is pinged.
     HEARTBEAT_URL_EVERY_5_MINUTES?: string;
     HEARTBEAT_URL_DAILY?: string;
+    // Optional heartbeats of single jobs: JSON of job key to address (server/cron-jobs.ts).
+    HEARTBEAT_URLS_BY_JOB?: string;
   }
 }
 

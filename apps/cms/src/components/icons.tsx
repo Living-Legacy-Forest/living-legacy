@@ -299,6 +299,7 @@ export const GlobeIcon = animated(AnimatedGlobe02Icon);
 export const CheckIcon = DrawnCheckIcon;
 /** The tick inside a checkbox: static, since it sits in every list row. */
 export const CheckboxTickIcon = make(H.Tick02Icon);
+export const ScanQrIcon = make(H.QrCodeScanIcon);
 export const ChevronUpIcon = make(H.ArrowUp01Icon);
 export const ChevronDownIcon = make(H.ArrowDown01Icon);
 export const ChevronLeftIcon = make(H.ArrowLeft01Icon);

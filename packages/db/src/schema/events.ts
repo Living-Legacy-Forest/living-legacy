@@ -16,7 +16,11 @@ export const events = sqliteTable(
     /** Links the dates of a repeating event; each date is its own event. */
     seriesId: text('series_id'),
     title: text('title').notNull(),
-    /** Its page will be /events/{slug}/ once the website has event pages. */
+    /**
+     * Its page will be /events/{slug}/ once the website has event pages. The dates
+     * of a repeating event share one, so it is unique per event, not per row
+     * (checked on save, as an index cannot say "unique outside its series").
+     */
     slug: text('slug').notNull(),
     locationId: text('location_id').references(() => locations.id, { onDelete: 'set null' }),
     /** Where to go; the form suggests the location's address. */
@@ -39,6 +43,8 @@ export const events = sqliteTable(
     capacity: integer('capacity'),
     maxPartySize: integer('max_party_size').notNull().default(6),
     /** Website bookings close here, or at the start. */
+    /** Online bookings open then; null means as soon as it is published. */
+    bookingsOpenAt: integer('bookings_open_at', { mode: 'timestamp_ms' }),
     bookingsCloseAt: integer('bookings_close_at', { mode: 'timestamp_ms' }),
     status: text('status', { enum: ['draft', 'published', 'cancelled'] })
       .notNull()
@@ -51,7 +57,7 @@ export const events = sqliteTable(
     ...timestamps(),
   },
   (t) => [
-    uniqueIndex('events_slug').on(t.slug),
+    index('events_slug').on(t.slug),
     index('events_starts_at').on(t.startsAt),
     index('events_series').on(t.seriesId),
   ]

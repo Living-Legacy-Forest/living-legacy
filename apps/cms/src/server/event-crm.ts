@@ -68,6 +68,7 @@ async function pendingBookings(db: Db) {
     event: {
       title: e.title,
       startsAt: e.startsAt.getTime(),
+      endsAt: e.endsAt.getTime(),
       venue: e.venue || address || '',
       locationName: locationName ?? '',
       status: e.status,
@@ -87,6 +88,8 @@ export async function syncPending(d1: D1Database): Promise<void> {
   // A contact holds one booking; older unsynced ones for the same address are
   // superseded, so they are marked synced along with the one that is sent.
   const sent = latestPerEmail(pending).slice(0, BATCH);
+  // The ticket links in the emails point back at this CMS.
+  const origin = new URL(env.BETTER_AUTH_URL).origin;
   const byEmail = new Map(sent.map((b) => [b.email.toLowerCase(), b]));
   const now = new Date();
 
@@ -96,7 +99,7 @@ export async function syncPending(d1: D1Database): Promise<void> {
       inputs: sent.map((b) => ({
         idProperty: 'email',
         id: b.email.toLowerCase(),
-        properties: hubspotBookingProperties(b),
+        properties: hubspotBookingProperties(b, origin),
       })),
     });
     if (!res.ok) throw new Error(`HubSpot ${res.status} ${await res.text()}`);

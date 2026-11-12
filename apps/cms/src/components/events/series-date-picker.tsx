@@ -1,5 +1,6 @@
 // Moves between the dates of a repeating event, each with its own form and guest list.
 import { Label } from '@/components/ui/label';
+import { cn } from '@/lib/utils';
 import { formatDateTime, zoneName } from '@/lib/format';
 import type { EventRow } from '@/server/events';
 import { SeriesCalendar } from './series-calendar';
@@ -19,21 +20,33 @@ export function SeriesDatePicker({
   event,
   dates,
   onPick,
+  allDates = false,
+  compact = false,
 }: {
-  event: EventRow;
+  /** The date being viewed; null when all of them are (only with allDates). */
+  event: EventRow | null;
   /** Soonest first. */
   dates: EventRow[];
-  onPick: (id: string) => void;
+  /** A date's id, or null for all dates. */
+  onPick: (id: string | null) => void;
+  /** Offer "All dates", as the Dashboard tab does. */
+  allDates?: boolean;
+  /** A small button with no visible label, for the row beside the tabs. */
+  compact?: boolean;
 }) {
   return (
-    <div className="space-y-1.5">
-      <Label htmlFor="ev-viewing">Viewing date</Label>
+    <div className="min-w-0 space-y-1.5">
+      <Label htmlFor="ev-viewing" className={cn(compact && 'sr-only')}>
+        Viewing date
+      </Label>
       <SeriesCalendar
         id="ev-viewing"
         dates={dates}
-        selectedId={event.id}
-        onPick={(id) => id && onPick(id)}
-        label={`${startsIn(event)} · ${dateStatus(event)}`}
+        selectedId={event?.id ?? null}
+        onPick={onPick}
+        label={event ? `${startsIn(event)} · ${dateStatus(event)}` : 'All dates'}
+        allDates={allDates}
+        compact={compact}
       />
     </div>
   );

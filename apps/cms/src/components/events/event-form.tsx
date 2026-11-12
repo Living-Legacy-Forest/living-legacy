@@ -130,7 +130,9 @@ function initialValues(event: EventRow | null, siteZone: string): Values {
       heroMediaId: null,
       galleryMediaIds: [],
       capacity: null,
-      maxPartySize: 6,
+      // What the open days allowed per order on Eventbrite.
+      maxPartySize: 10,
+      bookingsOpenAt: null,
       bookingsCloseAt: null,
       status: 'draft',
       publishAt: null,
@@ -150,11 +152,35 @@ function initialValues(event: EventRow | null, siteZone: string): Values {
     galleryMediaIds: event.galleryMediaIds,
     capacity: event.capacity,
     maxPartySize: event.maxPartySize,
+    bookingsOpenAt: event.bookingsOpenAt,
     bookingsCloseAt: event.bookingsCloseAt,
     // A cancelled event is shown read-only, so this is never saved.
     status: event.status === 'published' ? 'published' : 'draft',
     publishAt: event.publishAt,
   };
+}
+
+/** One part of a saved event's form, under its own heading unless only `label` is given. */
+function EditSection({
+  title,
+  label = title,
+  children,
+}: {
+  title?: string;
+  label?: string;
+  children: React.ReactNode;
+}) {
+  return (
+    <section
+      aria-label={label}
+      className="space-y-5 [--form-gap:1.25rem] not-first:border-t not-first:pt-8 max-md:space-y-7 max-md:not-first:border-0 max-md:not-first:pt-0"
+    >
+      {title && (
+        <h2 className="text-base font-semibold max-md:px-4 max-md:text-[1.0625rem]">{title}</h2>
+      )}
+      {children}
+    </section>
+  );
 }
 
 export function EventForm({
@@ -193,6 +219,7 @@ export function EventForm({
         timeZone: next as Values['timeZone'],
         startsAt: move(v.startsAt),
         endsAt: move(v.endsAt),
+        bookingsOpenAt: move(v.bookingsOpenAt),
         bookingsCloseAt: move(v.bookingsCloseAt),
       };
     });
@@ -288,9 +315,9 @@ export function EventForm({
       else steps.goTo(step + 1);
       return;
     }
-    // Saving from another step: the times are on their own one.
+    // The whole form is on show when editing, so point at the times.
     if (!timesReady()) {
-      steps.show(1);
+      document.getElementById('ev-date')?.scrollIntoView({ block: 'center' });
       return;
     }
     // A date in a series asks whether the change is for it alone.
@@ -315,7 +342,11 @@ export function EventForm({
         <FormCell
           label="Web address"
           htmlFor="ev-slug"
-          hint="Used for its page once the website shows events."
+          hint={
+            event?.seriesId || repeat.repeat !== 'none'
+              ? 'One address for all its dates, used for its page once the website shows events.'
+              : 'Used for its page once the website shows events.'
+          }
         >
           <Input
             id="ev-slug"
@@ -333,43 +364,41 @@ export function EventForm({
       </FormSection>
 
       <FormSection title="Where">
-        <div className="grid gap-5 max-md:contents sm:grid-cols-2">
-          <FormCell label="Location" htmlFor="ev-location">
-            <Select
-              items={locationItems}
-              value={values.locationId ?? NO_LOCATION}
-              onValueChange={(value) => {
-                const picked = locations.find((l) => l.id === value);
-                patch({
-                  locationId: picked ? picked.id : null,
-                  // Fill the venue from the location, unless one was typed.
-                  ...(picked && !values.venue ? { venue: picked.address } : {}),
-                });
-                if (picked && !zoneChosen) rezone(stateTimeZone(picked.state));
-              }}
-            >
-              <SelectTrigger id="ev-location" className="w-full">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                {locationItems.map((item) => (
-                  <SelectItem key={item.value} value={item.value}>
-                    {item.label}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </FormCell>
-          <FormCell label="Venue" htmlFor="ev-venue">
-            <Input
-              id="ev-venue"
-              maxLength={300}
-              value={values.venue}
-              onChange={(e) => patch({ venue: e.target.value })}
-              placeholder={location?.address || 'Where to go'}
-            />
-          </FormCell>
-        </div>
+        <FormCell label="Location" htmlFor="ev-location">
+          <Select
+            items={locationItems}
+            value={values.locationId ?? NO_LOCATION}
+            onValueChange={(value) => {
+              const picked = locations.find((l) => l.id === value);
+              patch({
+                locationId: picked ? picked.id : null,
+                // Fill the venue from the location, unless one was typed.
+                ...(picked && !values.venue ? { venue: picked.address } : {}),
+              });
+              if (picked && !zoneChosen) rezone(stateTimeZone(picked.state));
+            }}
+          >
+            <SelectTrigger id="ev-location" className="w-full sm:w-64">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              {locationItems.map((item) => (
+                <SelectItem key={item.value} value={item.value}>
+                  {item.label}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </FormCell>
+        <FormCell label="Venue" htmlFor="ev-venue">
+          <Input
+            id="ev-venue"
+            maxLength={300}
+            value={values.venue}
+            onChange={(e) => patch({ venue: e.target.value })}
+            placeholder={location?.address || 'Where to go'}
+          />
+        </FormCell>
       </FormSection>
 
       <FormSection>
@@ -469,19 +498,34 @@ export function EventForm({
       )}
 
       <FormSection>
-        <FormCell
-          label="Bookings close (optional)"
-          htmlFor="ev-closes"
-          hint="Online bookings close when it starts, unless set."
-        >
-          <DateTimePicker
-            id="ev-closes"
-            zone={zone}
-            value={values.bookingsCloseAt}
-            placeholder="When it starts"
-            onChange={(bookingsCloseAt) => patch({ bookingsCloseAt })}
-          />
-        </FormCell>
+        <div className="grid grid-cols-2 gap-3 max-md:contents sm:gap-5">
+          <FormCell
+            label="Bookings open (optional)"
+            htmlFor="ev-opens"
+            hint="Online bookings open when it is published, unless set."
+          >
+            <DateTimePicker
+              id="ev-opens"
+              zone={zone}
+              value={values.bookingsOpenAt}
+              placeholder="When published"
+              onChange={(bookingsOpenAt) => patch({ bookingsOpenAt })}
+            />
+          </FormCell>
+          <FormCell
+            label="Bookings close (optional)"
+            htmlFor="ev-closes"
+            hint="Online bookings close when it starts, unless set."
+          >
+            <DateTimePicker
+              id="ev-closes"
+              zone={zone}
+              value={values.bookingsCloseAt}
+              placeholder="When it starts"
+              onChange={(bookingsCloseAt) => patch({ bookingsCloseAt })}
+            />
+          </FormCell>
+        </div>
       </FormSection>
     </>
   );
@@ -599,8 +643,8 @@ export function EventForm({
     </Button>
   );
 
-  // Both go through the same steps. A saved event can also jump between them and
-  // save from any of them, so a small change does not mean walking through it all.
+  // A new event is made in steps; a saved one shows every section at once, so a
+  // small change is one scroll and Save, with no steps to walk through.
   return (
     <form
       ref={steps.form}
@@ -608,30 +652,39 @@ export function EventForm({
       onSubmit={submit}
       className={cn('scroll-mt-12 space-y-5', TOUCH_FIELDS)}
     >
-      <FormSteps labels={STEPS} current={step} onPick={event ? steps.goTo : undefined} />
-      <FormStep
-        step={step}
-        forward={steps.forward}
-        className="space-y-5 [--form-gap:1.25rem] max-md:space-y-7"
-      >
-        {step === 0 && details}
-        {step === 1 && when}
-        {step === 2 && (
-          <>
-            {places}
-            {!event && (
-              <NewEventSummary
-                title={values.title}
-                where={values.venue || location?.name || ''}
-                times={times}
-                dates={times ? allTimes(times).length : 1}
-                zone={zone}
-                sessions={sessions.length > 0}
-              />
+      {event ? (
+        <div className="space-y-10 max-md:space-y-8">
+          {/* No heading of its own: the Details tab above already names it. */}
+          <EditSection label={STEPS[0]}>{details}</EditSection>
+          <EditSection title={STEPS[1]}>{when}</EditSection>
+          <EditSection title={STEPS[2]}>{places}</EditSection>
+        </div>
+      ) : (
+        <>
+          <FormSteps labels={STEPS} current={step} />
+          <FormStep
+            step={step}
+            forward={steps.forward}
+            className="space-y-5 [--form-gap:1.25rem] max-md:space-y-7"
+          >
+            {step === 0 && details}
+            {step === 1 && when}
+            {step === 2 && (
+              <>
+                {places}
+                <NewEventSummary
+                  title={values.title}
+                  where={values.venue || location?.name || ''}
+                  times={times}
+                  dates={times ? allTimes(times).length : 1}
+                  zone={zone}
+                  sessions={sessions.length > 0}
+                />
+              </>
             )}
-          </>
-        )}
-      </FormStep>
+          </FormStep>
+        </>
+      )}
 
       {event && (
         <ScopeDialog
@@ -650,21 +703,11 @@ export function EventForm({
         ? actions(
             <>
               {previewButton}
-              {!steps.isLast && (
-                <Button type="button" variant="outline" onClick={() => steps.goTo(step + 1)}>
-                  Next
-                </Button>
-              )}
               {saveButton('Save')}
             </>,
             <div className="flex gap-1">
-              {back}
-              {steps.isLast && (
-                <>
-                  <CancelEvent event={event} />
-                  <DeleteEvent event={event} onRemoved={() => onSaved(null)} />
-                </>
-              )}
+              <CancelEvent event={event} />
+              <DeleteEvent event={event} onRemoved={() => onSaved(null)} />
             </div>
           )
         : actions(
@@ -720,6 +763,7 @@ function CancelledEvent({
             galleryMediaIds: event.galleryMediaIds,
             capacity: event.capacity,
             maxPartySize: event.maxPartySize,
+            bookingsOpenAt: event.bookingsOpenAt,
             bookingsCloseAt: event.bookingsCloseAt,
             booked: event.booked,
             moreDates: [],

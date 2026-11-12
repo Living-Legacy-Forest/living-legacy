@@ -1,0 +1,1 @@
+ALTER TABLE `events` ADD `bookings_open_at` integer;

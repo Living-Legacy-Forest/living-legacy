@@ -6,7 +6,6 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { Spinner } from '@/components/ui/spinner';
 import { formatDate, formatInteger, formatLongDate, formatTimeRange } from '@/lib/format';
 import { notify } from '@/lib/notify';
-import { SeriesCalendar } from '../series-calendar';
 import { type EventDashboard as Dashboard, getEventDashboard } from '@/server/event-stats';
 
 const EventCharts = lazy(() => import('./event-charts').then((m) => ({ default: m.EventCharts })));
@@ -22,18 +21,6 @@ function dateStatus(date: EventDate, now: number) {
   if (date.endsAt < now) return 'Finished';
   if (date.startsAt <= now) return 'On now';
   return 'Published';
-}
-
-/** "Thu 12 Nov, 10:00 am" in the event's own time zone. */
-function shortDate(date: EventDate) {
-  return new Date(date.startsAt).toLocaleString('en-AU', {
-    timeZone: date.timeZone,
-    weekday: 'short',
-    day: 'numeric',
-    month: 'short',
-    hour: 'numeric',
-    minute: '2-digit',
-  });
 }
 
 function buildStats({ capacity, totals, date, now }: Dashboard): Stat[] {
@@ -116,15 +103,23 @@ function buildStats({ capacity, totals, date, now }: Dashboard): Stat[] {
   ];
 }
 
-/** The Dashboard tab of an event's panel: loads the event, all dates or the one picked. */
+/**
+ * The Dashboard tab of an event's panel: one date, or all of them. The panel's
+ * Viewing date picker chooses which, so it stays put across the tabs.
+ */
 export function EventDashboardPanel({
   eventId,
+  date,
+  onDateChange,
   onOpenGuests,
 }: {
   eventId: string;
+  /** A date's id, or undefined for all of them. */
+  date: string | undefined;
+  /** A chart picked a date (an id) or went back to all of them. */
+  onDateChange: (date: string | undefined) => void;
   onOpenGuests: () => void;
 }) {
-  const [date, setDate] = useState<string | undefined>();
   const [data, setData] = useState<Dashboard | null>(null);
 
   useEffect(() => {
@@ -145,7 +140,7 @@ export function EventDashboardPanel({
       </div>
     );
   }
-  return <EventDashboard data={data} onDateChange={setDate} onOpenGuests={onOpenGuests} />;
+  return <EventDashboard data={data} onDateChange={onDateChange} onOpenGuests={onOpenGuests} />;
 }
 
 /** One event: every date together, or one picked out. Lays out by the panel's width. */
@@ -164,36 +159,25 @@ function EventDashboard({
 
   return (
     <div className="@container space-y-4">
-      {dates.length > 1 ? (
-        // The picked date's day, time and status are on the picker already; only
-        // "All dates" needs the span spelled out beside it.
-        <div className="flex flex-wrap items-start gap-x-3 gap-y-2">
-          <SeriesCalendar
-            dates={dates}
-            selectedId={date?.id ?? null}
-            onPick={(id) => onDateChange(id ?? undefined)}
-            label={date ? `${shortDate(date)} · ${dateStatus(date, now)}` : 'All dates'}
-            allDates
-            className="w-full @md:w-64"
-          />
-          {!date && firstDate && lastDate && (
-            <p className="text-muted-foreground py-1.5 text-sm">
+      {/* The date picker sits above the tabs; this only adds what it does not say. */}
+      {dates.length > 1
+        ? !date &&
+          firstDate &&
+          lastDate && (
+            <p className="text-muted-foreground text-sm">
               {plural(dates.length, 'date')}, {formatDate(firstDate.startsAt, data.timeZone)} to{' '}
               {formatDate(lastDate.startsAt, data.timeZone)}
             </p>
+          )
+        : date && (
+            <p className="text-muted-foreground text-sm">
+              <Badge variant="outline" className="mr-2 align-middle">
+                {dateStatus(date, now)}
+              </Badge>
+              {formatLongDate(date.startsAt, date.timeZone)},{' '}
+              {formatTimeRange(date.startsAt, date.endsAt, date.timeZone)}
+            </p>
           )}
-        </div>
-      ) : (
-        date && (
-          <p className="text-muted-foreground text-sm">
-            <Badge variant="outline" className="mr-2 align-middle">
-              {dateStatus(date, now)}
-            </Badge>
-            {formatLongDate(date.startsAt, date.timeZone)},{' '}
-            {formatTimeRange(date.startsAt, date.endsAt, date.timeZone)}
-          </p>
-        )
-      )}
 
       <div className="grid grid-cols-2 gap-3 @4xl:grid-cols-4">
         {buildStats(data).map((stat) => (

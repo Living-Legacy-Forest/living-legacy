@@ -29,6 +29,9 @@ function bookingState(event: EventPreviewDraft, now: number) {
   const closesAt = event.bookingsCloseAt ?? event.startsAt;
   if (event.status === 'cancelled') return { open: false, label: 'Cancelled', left };
   if (closesAt !== null && closesAt <= now) return { open: false, label: 'Bookings closed', left };
+  if (event.bookingsOpenAt && event.bookingsOpenAt > now) {
+    return { open: false, label: 'Bookings not open yet', left };
+  }
   if (left === 0) return { open: false, label: 'Fully booked', left };
   return { open: true, label: 'Book a place', left };
 }
@@ -203,6 +206,11 @@ export function EventArticle({
             </p>
             {bookingDetails}
             <div className="max-lg:hidden">{bookButton}</div>
+            {event.status !== 'cancelled' && event.bookingsOpenAt && event.bookingsOpenAt > now && (
+              <p className="text-muted-foreground text-xs">
+                Bookings open {formatDateTime(event.bookingsOpenAt, zone)}
+              </p>
+            )}
             {event.status !== 'cancelled' && (event.bookingsCloseAt ?? event.startsAt) !== null && (
               <p className="text-muted-foreground text-xs">
                 {booking.open ? 'Bookings close' : 'Bookings closed'}{' '}

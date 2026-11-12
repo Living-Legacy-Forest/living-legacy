@@ -26,6 +26,7 @@ import { PageActions } from '@/components/shell/page-actions';
 import { SegmentedControl } from '@/components/segmented-control';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
+import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import {
   Empty,
   EmptyContent,
@@ -195,8 +196,9 @@ export function EventsPage({
           <EmptyContent>{newButton}</EmptyContent>
         </Empty>
       ) : (
-        // The form is long, so the list stays narrow and the pane takes the rest.
-        <ListPageLayout className="lg:grid-cols-[minmax(22rem,30rem)_minmax(0,1fr)]">
+        // Rows carry a date, its times and the place, so the list gets room for them;
+        // the pane takes the rest.
+        <ListPageLayout className="lg:grid-cols-[minmax(24rem,38rem)_minmax(0,1fr)]">
           <ListColumn
             label="Events"
             header={
@@ -268,6 +270,7 @@ export function EventsPage({
             ) : (
               <PaneFrame
                 title={pane.kind === 'edit' ? (editing(pane)?.title ?? 'Event') : 'New event'}
+                width="xl"
               >
                 {form(
                   pane,
@@ -372,6 +375,9 @@ function EventPanel({
   actions: FormActions;
 }) {
   const [view, setView] = useState<PanelView>(initialView);
+  // The Dashboard tab can also show every date together; the others show one.
+  const [allDates, setAllDates] = useState(false);
+  const showingAll = view === 'dashboard' && allDates && dates.length > 1;
   const details = (
     <EventForm
       key={event?.id ?? 'new'}
@@ -384,28 +390,48 @@ function EventPanel({
   if (!event) return details;
   return (
     <div className="space-y-5">
-      {/* The dashboard picks its dates itself, so a second picker above it would repeat it. */}
-      {dates.length > 1 && view !== 'dashboard' && (
-        <SeriesDatePicker event={event} dates={dates} onPick={onPickDate} />
-      )}
-      <SegmentedControl
-        label="Show"
-        value={view}
-        onValueChange={setView}
-        options={[
-          { value: 'details', label: 'Details' },
-          { value: 'guests', label: 'Guests' },
-          { value: 'dashboard', label: 'Dashboard' },
-        ]}
-      />
+      {/* One row: the tabs, and the date (or a single date's status) beside them, so
+          neither moves when switching tabs. On phones the date sits above the tabs. */}
+      <div className="flex flex-wrap items-center gap-x-4 gap-y-3 border-b pb-px">
+        <Tabs value={view} onValueChange={(next) => setView(next as PanelView)}>
+          <TabsList variant="line" aria-label="Show" className="-mb-px">
+            <TabsTrigger value="details">Details</TabsTrigger>
+            <TabsTrigger value="guests">Guests</TabsTrigger>
+            <TabsTrigger value="dashboard">Dashboard</TabsTrigger>
+          </TabsList>
+        </Tabs>
+        <div className="flex min-w-0 justify-end max-sm:order-first max-sm:w-full max-sm:*:w-full sm:ml-auto">
+          {dates.length > 1 ? (
+            <SeriesDatePicker
+              compact
+              event={showingAll ? null : event}
+              dates={dates}
+              allDates={view === 'dashboard'}
+              onPick={(id) => {
+                setAllDates(id === null);
+                if (id) onPickDate(id);
+              }}
+            />
+          ) : (
+            <Badge variant="outline">{dateStatus(event)}</Badge>
+          )}
+        </div>
+      </div>
       <div key={view} className="animate-in fade-in duration-200 motion-reduce:animate-none">
         {view === 'details' ? (
           details
         ) : view === 'guests' ? (
           <EventGuests key={event.id} event={event} />
         ) : (
-          // The whole event, whichever of its dates is open; it picks dates itself.
-          <EventDashboardPanel eventId={event.id} onOpenGuests={() => setView('guests')} />
+          <EventDashboardPanel
+            eventId={event.id}
+            date={showingAll ? undefined : event.id}
+            onDateChange={(id) => {
+              setAllDates(id === undefined);
+              if (id) onPickDate(id);
+            }}
+            onOpenGuests={() => setView('guests')}
+          />
         )}
       </div>
     </div>

@@ -16,6 +16,7 @@ export * from './media-sweep';
 export * from './events';
 export * from './phone';
 export * from './event-crm';
+export * from './tickets';
 export * from './zoned';
 export * from './recurrence';
 export * from './rich-text-outline';

@@ -6,6 +6,8 @@ import {
   latestPerEmail,
 } from './event-crm';
 
+const ORIGIN = 'https://cms.example.test';
+
 const booking = (over: Partial<CrmBooking> = {}): CrmBooking => ({
   id: 'b1',
   email: 'jo@example.com',
@@ -20,6 +22,7 @@ const booking = (over: Partial<CrmBooking> = {}): CrmBooking => ({
   event: {
     title: 'Open day, Mornington',
     startsAt: Date.UTC(2026, 10, 13, 23, 0),
+    endsAt: Date.UTC(2026, 10, 14, 1, 0),
     venue: '125 Tyabb-Tooradin Rd, Somerville VIC 3912',
     locationName: 'Living Legacy Mornington',
     status: 'published',
@@ -30,45 +33,53 @@ const booking = (over: Partial<CrmBooking> = {}): CrmBooking => ({
 
 describe('hubspotBookingProperties', () => {
   it('maps a booking to contact properties', () => {
-    expect(hubspotBookingProperties(booking())).toEqual({
+    expect(hubspotBookingProperties(booking(), ORIGIN)).toEqual({
       firstname: 'Jo',
       lastname: 'Tester',
       phone: '0400 000 000',
       ll_event_name: 'Open day, Mornington',
       ll_event_start: String(Date.UTC(2026, 10, 13, 23, 0)),
+      ll_event_end: String(Date.UTC(2026, 10, 14, 1, 0)),
       ll_event_time_zone: 'Australia/Melbourne',
       ll_event_venue: '125 Tyabb-Tooradin Rd, Somerville VIC 3912',
       ll_event_location: 'Living Legacy Mornington',
       ll_event_party_size: '2',
       ll_event_reference: 'LL-ABC234',
       ll_event_status: 'booked',
+      ll_event_ticket_qr_url: 'https://cms.example.test/api/tickets/LL-ABC234/qr',
+      ll_event_calendar_url: 'https://cms.example.test/api/tickets/LL-ABC234/calendar',
+      ll_event_google_calendar_url: expect.stringContaining(
+        'https://calendar.google.com/calendar/render?action=TEMPLATE'
+      ),
     });
   });
 
   it('leaves out empty names and phones, so HubSpot keeps what it has', () => {
-    const props = hubspotBookingProperties(booking({ lastName: '', phone: null }));
+    const props = hubspotBookingProperties(booking({ lastName: '', phone: null }), ORIGIN);
     expect(props).not.toHaveProperty('lastname');
     expect(props).not.toHaveProperty('phone');
   });
 
   it('says when the booking or the whole event was cancelled', () => {
-    expect(hubspotBookingProperties(booking({ status: 'cancelled' })).ll_event_status).toBe(
+    expect(hubspotBookingProperties(booking({ status: 'cancelled' }), ORIGIN).ll_event_status).toBe(
       'cancelled'
     );
     const event = { ...booking().event, status: 'cancelled' as const };
-    expect(hubspotBookingProperties(booking({ event })).ll_event_status).toBe('event_cancelled');
+    expect(hubspotBookingProperties(booking({ event }), ORIGIN).ll_event_status).toBe(
+      'event_cancelled'
+    );
   });
 
   it('keeps a guest who cancelled as cancelled when the event is cancelled later', () => {
     const event = { ...booking().event, status: 'cancelled' as const };
-    expect(hubspotBookingProperties(booking({ status: 'cancelled', event })).ll_event_status).toBe(
-      'cancelled'
-    );
+    expect(
+      hubspotBookingProperties(booking({ status: 'cancelled', event }), ORIGIN).ll_event_status
+    ).toBe('cancelled');
   });
 
   it('only uses property names it defines', () => {
     const defined = new Set<string>(HUBSPOT_EVENT_PROPERTIES.map((p) => p.name));
-    for (const key of Object.keys(hubspotBookingProperties(booking()))) {
+    for (const key of Object.keys(hubspotBookingProperties(booking(), ORIGIN))) {
       if (key.startsWith('ll_')) expect(defined.has(key)).toBe(true);
     }
   });

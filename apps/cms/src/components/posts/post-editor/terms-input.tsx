@@ -68,7 +68,7 @@ export function TermsInput({
           }
         }}
         onBlur={add}
-        className="text-ui md:text-ui touch:h-11 h-8"
+        className="text-ui md:text-ui touch:h-11 h-9"
       />
     </div>
   );

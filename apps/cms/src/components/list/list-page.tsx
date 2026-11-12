@@ -194,7 +194,8 @@ export function PaneFrame({
 }: {
   title: React.ReactNode;
   actions?: React.ReactNode;
-  width?: 'md' | 'lg';
+  /** md for short forms, lg for most, xl for long forms with fields side by side. */
+  width?: 'md' | 'lg' | 'xl';
   children: React.ReactNode;
 }) {
   return (
@@ -206,7 +207,14 @@ export function PaneFrame({
       {/* Relative, so anything positioned inside (screen-reader text in charts) scrolls with the
           pane instead of stretching the page. */}
       <div className="no-scrollbar relative min-h-0 flex-1 overflow-y-auto px-4 py-6">
-        <div className={cn('mx-auto', width === 'lg' ? 'max-w-lg' : 'max-w-md')}>{children}</div>
+        <div
+          className={cn(
+            'mx-auto',
+            width === 'xl' ? 'max-w-2xl' : width === 'lg' ? 'max-w-lg' : 'max-w-md'
+          )}
+        >
+          {children}
+        </div>
       </div>
     </>
   );

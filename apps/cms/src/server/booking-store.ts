@@ -47,3 +47,32 @@ export async function insertBooking(
     }
   }
 }
+
+export type BookingDetails = Pick<
+  NewBooking,
+  'firstName' | 'lastName' | 'email' | 'phone' | 'partySize' | 'note'
+>;
+
+/**
+ * Changes a confirmed booking's details, in one statement that also checks the
+ * event still has room for the new party size (counting everyone but this
+ * booking). Marks it unsynced so HubSpot gets the change. Returns false when
+ * there was no room, or the booking is no longer confirmed.
+ */
+export async function updateBookingDetails(
+  db: Db,
+  id: string,
+  eventId: string,
+  b: BookingDetails,
+  capacity: number | null
+): Promise<boolean> {
+  const result = await db.run(sql`
+    UPDATE event_bookings
+    SET first_name = ${b.firstName}, last_name = ${b.lastName}, email = ${b.email},
+      phone = ${b.phone}, party_size = ${b.partySize}, note = ${b.note}, crm_synced_at = NULL
+    WHERE id = ${id} AND status = 'confirmed' AND (${capacity} IS NULL OR (
+      SELECT coalesce(sum(party_size), 0) FROM event_bookings
+      WHERE event_id = ${eventId} AND status = 'confirmed' AND id != ${id}
+    ) + ${b.partySize} <= ${capacity})`);
+  return result.meta.changes === 1;
+}

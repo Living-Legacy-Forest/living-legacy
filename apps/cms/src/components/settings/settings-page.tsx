@@ -998,7 +998,7 @@ function TargetInput({
       value={value}
       aria-label={label}
       onChange={(e) => onChange(Math.max(0, Math.floor(Number(e.target.value) || 0)))}
-      className="touch:h-11 h-8 w-20 tabular-nums"
+      className="touch:h-11 h-9 w-20 tabular-nums"
     />
   );
 }

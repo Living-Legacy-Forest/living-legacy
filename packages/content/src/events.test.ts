@@ -20,6 +20,7 @@ const event = (over: Partial<BookableEvent> = {}): BookableEvent => ({
   status: 'published',
   startsAt: now + 48 * HOUR,
   endsAt: now + 50 * HOUR,
+  bookingsOpenAt: null,
   bookingsCloseAt: null,
   capacity: 10,
   maxPartySize: 6,
@@ -62,6 +63,15 @@ describe('bookingProblem', () => {
     expect(bookingProblem(event(), 1, 0, now + 49 * HOUR, 'website')).toBe(
       'Bookings for this event have closed.'
     );
+  });
+
+  it('opens website bookings at the open time, but lets staff add guests before it', () => {
+    const e = event({ bookingsOpenAt: now + HOUR });
+    expect(bookingProblem(e, 1, 0, now, 'website')).toBe(
+      'Bookings for this event are not open yet.'
+    );
+    expect(bookingProblem(e, 1, 0, now + HOUR, 'website')).toBeNull();
+    expect(bookingProblem(e, 1, 0, now, 'staff')).toBeNull();
   });
 
   it('lets staff add walk-ins until the event ends', () => {
@@ -137,6 +147,33 @@ describe('stateTimeZone', () => {
     expect(stateTimeZone('ACT')).toBe('Australia/Sydney');
     expect(stateTimeZone('NSW')).toBe('Australia/Sydney');
     expect(stateTimeZone('VIC')).toBe('Australia/Melbourne');
+  });
+});
+
+describe('event booking window', () => {
+  const input = {
+    title: 'An event',
+    locationId: null,
+    timeZone: 'Australia/Perth',
+    startsAt: 10_000,
+    endsAt: 20_000,
+    heroMediaId: null,
+    capacity: null,
+    maxPartySize: 10,
+    bookingsCloseAt: null,
+    status: 'draft',
+  };
+
+  it('opens as soon as it is published unless set', () => {
+    expect(eventInputSchema.parse(input).bookingsOpenAt).toBeNull();
+  });
+
+  it('must open before bookings close, or before it starts', () => {
+    const ok = (patch: object) => eventInputSchema.safeParse({ ...input, ...patch }).success;
+    expect(ok({ bookingsOpenAt: 5_000 })).toBe(true);
+    expect(ok({ bookingsOpenAt: 10_000 })).toBe(false);
+    expect(ok({ bookingsOpenAt: 5_000, bookingsCloseAt: 6_000 })).toBe(true);
+    expect(ok({ bookingsOpenAt: 6_000, bookingsCloseAt: 6_000 })).toBe(false);
   });
 });
 

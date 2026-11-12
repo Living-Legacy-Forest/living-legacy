@@ -1,9 +1,13 @@
 import { can, legalSlugSchema } from '@ll/content';
-import { createFileRoute, notFound } from '@tanstack/react-router';
+import { createFileRoute, notFound, redirect } from '@tanstack/react-router';
 import { LegalPageEditor } from '@/components/legal/legal-page-editor';
 import { getLegalPageEditorData } from '@/server/legal-pages';
 
 export const Route = createFileRoute('/_app/legal/$slug')({
+  // Without edit access the editor's data is refused; go home instead of an error page.
+  beforeLoad: ({ context }) => {
+    if (!can(context.user.role, 'content:write')) throw redirect({ to: '/' });
+  },
   loader: ({ params }) => {
     const slug = legalSlugSchema.safeParse(params.slug);
     if (!slug.success) throw notFound();

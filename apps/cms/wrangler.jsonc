@@ -8,7 +8,14 @@
   "triggers": { "crons": ["*/5 * * * *", "0 17 * * *"] },
   "compatibility_date": "2026-10-20",
   "compatibility_flags": ["nodejs_compat"],
-  "observability": { "enabled": true },
+  // Workers Logs, kept in Cloudflare and also sent to Better Stack (source
+  // "Living Legacy CMS", US region) through the account's OpenTelemetry
+  // destination of this name, which must exist before a deploy. Email
+  // addresses are masked before anything is logged (src/lib/redact-console.ts).
+  "observability": {
+    "enabled": true,
+    "logs": { "enabled": true, "destinations": ["betterstack-cms-logs"], "persist": true }
+  },
   "routes": [{ "pattern": "cms.livinglegacy.com.au", "custom_domain": true }],
   "d1_databases": [
     {

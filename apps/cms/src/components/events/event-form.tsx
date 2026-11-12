@@ -370,10 +370,12 @@ export function EventForm({
             value={values.locationId ?? NO_LOCATION}
             onValueChange={(value) => {
               const picked = locations.find((l) => l.id === value);
+              // The venue follows the location while it is empty or still the
+              // last location's address; one typed by hand is kept.
+              const followsLocation = !values.venue || values.venue === location?.address;
               patch({
                 locationId: picked ? picked.id : null,
-                // Fill the venue from the location, unless one was typed.
-                ...(picked && !values.venue ? { venue: picked.address } : {}),
+                ...(followsLocation ? { venue: picked?.address ?? '' } : {}),
               });
               if (picked && !zoneChosen) rezone(stateTimeZone(picked.state));
             }}

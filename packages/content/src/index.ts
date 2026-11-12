@@ -18,6 +18,7 @@ export * from './phone';
 export * from './event-crm';
 export * from './tickets';
 export * from './search-replace';
+export * from './redact';
 export * from './zoned';
 export * from './recurrence';
 export * from './rich-text-outline';

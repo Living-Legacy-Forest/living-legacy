@@ -19,6 +19,7 @@ import {
   UserCog,
   UserIcon,
   Users,
+  SearchReplaceIcon,
 } from '@/components/icons';
 
 export type NavItem = {
@@ -43,6 +44,7 @@ export type NavItem = {
     | '/locations'
     | '/media-coverage'
     | '/redirects'
+    | '/search-replace'
     | '/settings'
     | '/team'
     | '/testimonials'
@@ -111,6 +113,12 @@ export const navGroups: NavGroup[] = [
     items: [
       { title: 'Activity', icon: ActivityIcon, to: '/activity', permission: 'posts:publish' },
       { title: 'Redirects', icon: ArrowRightLeft, to: '/redirects', permission: 'redirects:write' },
+      {
+        title: 'Search & replace',
+        icon: SearchReplaceIcon,
+        to: '/search-replace',
+        permission: 'content:replace',
+      },
       { title: 'Users', icon: UserCog, to: '/users', permission: 'users:manage' },
       {
         title: 'Integrations',

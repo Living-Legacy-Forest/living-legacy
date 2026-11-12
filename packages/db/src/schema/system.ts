@@ -125,3 +125,13 @@ export const apiKeys = sqliteTable(
   },
   (t) => [index('api_keys_created_at').on(t.createdAt)]
 );
+
+/**
+ * One counter for the website's page cache: database triggers (migration
+ * 0033) add one whenever anything the website shows changes, so a cached page
+ * built at an older version is never served again. Single row, id 1.
+ */
+export const contentVersion = sqliteTable('content_version', {
+  id: integer('id').primaryKey(),
+  version: integer('version').notNull().default(0),
+});

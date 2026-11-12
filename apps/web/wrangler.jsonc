@@ -4,6 +4,8 @@
   "main": "@astrojs/cloudflare/entrypoints/server",
   "compatibility_date": "2026-05-25",
   "compatibility_flags": ["nodejs_compat"],
+  // Workers Logs, as the CMS has: errors and slow requests show in the dashboard.
+  "observability": { "enabled": true },
   // The CMS's database, read for redirects (src/lib/redirects.ts). Migrations
   // live in packages/db and are applied from apps/cms.
   "d1_databases": [

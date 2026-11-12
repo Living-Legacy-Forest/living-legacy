@@ -277,3 +277,22 @@ export const announcements = sqliteTable(
   },
   (t) => [index('announcements_starts_at').on(t.startsAt)]
 );
+
+/**
+ * Who has a post open in the editor, for the "also editing" notice. Each open
+ * editor checks in every 20 seconds; a row older than a minute or two means
+ * they have gone. Nothing is locked.
+ */
+export const postPresence = sqliteTable(
+  'post_presence',
+  {
+    postId: text('post_id')
+      .notNull()
+      .references(() => posts.id, { onDelete: 'cascade' }),
+    userId: text('user_id')
+      .notNull()
+      .references(() => user.id, { onDelete: 'cascade' }),
+    seenAt: integer('seen_at', { mode: 'timestamp_ms' }).notNull(),
+  },
+  (t) => [primaryKey({ columns: [t.postId, t.userId] }), index('post_presence_seen').on(t.seenAt)]
+);

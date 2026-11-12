@@ -1,6 +1,7 @@
 import { createFileRoute } from '@tanstack/react-router';
 import { Dashboard } from '@/components/dashboard/dashboard';
 import { DashboardSkeleton } from '@/components/dashboard/dashboard-skeleton';
+import { RevealWords } from '@/components/dashboard/reveal-words';
 import { getDashboardData } from '@/server/dashboard';
 
 export const Route = createFileRoute('/_app/')({
@@ -18,7 +19,7 @@ function DashboardPage() {
   return (
     <div className="space-y-6">
       <h1 data-slot="page-title" className="text-2xl">
-        Welcome, {firstName}
+        <RevealWords text={`Welcome, ${firstName}`} />
       </h1>
       <Dashboard data={data} />
     </div>

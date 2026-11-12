@@ -1,4 +1,4 @@
-import { Suspense, lazy } from 'react';
+import { type ReactNode, Suspense, lazy } from 'react';
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
 import { cn } from '@/lib/utils';
@@ -21,26 +21,19 @@ export function Dashboard({ data }: { data: DashboardData }) {
     <div data-slot="dashboard" className="grid grid-cols-2 gap-4 max-md:gap-3 lg:grid-cols-4">
       <DashboardStats data={data} />
       <NeedsAttention attention={data.attention} />
-      <Suspense
-        fallback={
-          <ChartPlaceholder title="Locations" className="col-span-2" chartClassName="h-72" footer />
-        }
-      >
-        <LocationsCard locations={data.locations} />
-      </Suspense>
-      {data.scores && (
-        <Suspense
-          fallback={
-            <ChartPlaceholder
-              title="Content score"
-              className="col-span-2 lg:col-span-4"
-              chartClassName="h-40"
-              footer
-            />
-          }
-        >
-          <ScoreCard scores={data.scores} />
+      <LazySlot className="col-span-2">
+        <Suspense fallback={<ChartPlaceholder title="Locations" chartClassName="h-72" footer />}>
+          <LocationsCard locations={data.locations} />
         </Suspense>
+      </LazySlot>
+      {data.scores && (
+        <LazySlot className="col-span-2 lg:col-span-4">
+          <Suspense
+            fallback={<ChartPlaceholder title="Content score" chartClassName="h-40" footer />}
+          >
+            <ScoreCard scores={data.scores} />
+          </Suspense>
+        </LazySlot>
       )}
       <RecentPosts drafts={data.recentDrafts} published={data.recentlyPublished} />
       <AppVersion />
@@ -48,20 +41,30 @@ export function Dashboard({ data }: { data: DashboardData }) {
   );
 }
 
+/**
+ * The grid cell around a card whose code loads late. It stays put while the placeholder
+ * gives way to the card, so the page's reveal plays once rather than again on the swap.
+ */
+function LazySlot({ className, children }: { className: string; children: ReactNode }) {
+  return (
+    <div data-slot="dashboard-lazy" className={cn('flex flex-col *:flex-1', className)}>
+      {children}
+    </div>
+  );
+}
+
 /** Holds a chart card's space while its code loads, so nothing jumps. */
 function ChartPlaceholder({
   title,
-  className,
   chartClassName,
   footer = false,
 }: {
   title: string;
-  className: string;
   chartClassName: string;
   footer?: boolean;
 }) {
   return (
-    <Card className={className} aria-busy>
+    <Card aria-busy>
       <CardHeader>
         <CardTitle>{title}</CardTitle>
       </CardHeader>

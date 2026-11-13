@@ -294,7 +294,10 @@ export function CommandMenu({ user }: { user: SessionUser }) {
                     value={`category-${category.id}`}
                     onSelect={() =>
                       go(() =>
-                        navigate({ to: '/posts', search: { status: 'all', category: category.id } })
+                        navigate({
+                          to: '/posts',
+                          search: { status: 'all', categories: [category.id] },
+                        })
                       )
                     }
                   >

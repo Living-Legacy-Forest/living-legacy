@@ -26,6 +26,20 @@ export type WhatsNewEntry = {
 
 export const whatsNew: WhatsNewEntry[] = [
   {
+    id: '2026-11-13-2',
+    title: 'Filters and a grid view on every list',
+    items: [
+      {
+        title: 'Filter by more than one thing',
+        body: 'Posts, events, team, FAQs, redirects, testimonials, media coverage, announcements, locations, categories and tags each have a Filter button beside the search. Tick as many options as you like, such as two categories and one author, and the list shows what matches. Clear all puts everything back.',
+      },
+      {
+        title: 'Switch between a list and a grid',
+        body: 'The pair of buttons beside Filter shows each item as a row or as a card with its picture. Each page remembers the view you left it in.',
+      },
+    ],
+  },
+  {
     id: '2026-11-13',
     title: 'Notifications you can sort through',
     items: [

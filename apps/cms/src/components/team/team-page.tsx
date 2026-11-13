@@ -22,6 +22,9 @@ import {
   useListPane,
 } from '@/components/list/list-page';
 import { ListRow, moveMenuItems, publishMenuItem } from '@/components/list/list-row';
+import { CardMeta, ListCard, ListCards } from '@/components/list/list-card';
+import { ListFilter, publishStatusOptions } from '@/components/list/list-filter';
+import { ViewSwitch, useListView } from '@/components/list/view-switch';
 import {
   ConfirmBulkDelete,
   SearchInput,
@@ -94,6 +97,9 @@ type Target = { kind: 'edit'; id: string } | { kind: 'new' } | { kind: 'bulk' };
 export function TeamPage({ data, canWrite }: { data: TeamListData; canWrite: boolean }) {
   const view = useListPane<Target>();
   const [query, setQuery] = useState('');
+  const [statuses, setStatuses] = useState<string[]>([]);
+  const [layout, setLayout] = useListView('team');
+  const grid = layout === 'grid';
   const [toDelete, setToDelete] = useState<string[] | null>(null);
   const selection = useSelection(data.map((m) => m.id));
   const { run, pending } = useAction();
@@ -103,7 +109,13 @@ export function TeamPage({ data, canWrite }: { data: TeamListData; canWrite: boo
     target?.kind === 'edit' ? (data.find((m) => m.id === target.id) ?? null) : null;
   // A member removed elsewhere closes the pane.
   const pane = view.pane?.kind === 'edit' && !memberFor(view.pane) ? null : view.pane;
-  const visible = data.filter((m) => matchesSearch(query, [m.name, m.role, m.bio]));
+  const visible = data.filter(
+    (m) =>
+      (statuses.length === 0 || statuses.includes(m.status)) &&
+      matchesSearch(query, [m.name, m.role, m.bio])
+  );
+  // Reordering a narrowed list would be confusing, so it waits for a clear search and filter.
+  const narrowed = Boolean(query) || statuses.length > 0;
 
   async function remove(ids: string[]) {
     const result = await run(() => deleteTeamMembers({ data: { ids } }), {
@@ -114,6 +126,23 @@ export function TeamPage({ data, canWrite }: { data: TeamListData; canWrite: boo
     if (view.pane?.kind === 'edit' && ids.includes(view.pane.id)) view.closePane();
     selection.clear();
   }
+
+  const memberMenu = (member: TeamMember) => {
+    const index = data.indexOf(member);
+    return [
+      ...moveMenuItems(!narrowed && index > 0, !narrowed && index < data.length - 1, (direction) =>
+        run(() => moveTeamMember({ data: { id: member.id, direction } }), {
+          error: 'Could not move the team member',
+        })
+      ),
+      publishMenuItem(member.status === 'published', (status) =>
+        run(() => setTeamMemberStatus({ data: { id: member.id, status } }), {
+          success: statusNotice(status),
+          error: 'Could not change it',
+        })
+      ),
+    ];
+  };
 
   const deleteButton = (member: TeamMember, onRemoved: () => void) => (
     <DeleteMember
@@ -200,13 +229,37 @@ export function TeamPage({ data, canWrite }: { data: TeamListData; canWrite: boo
             onChange={setQuery}
           />
         )}
+        {data.length > 0 && (
+          <ListFilter
+            groups={[{ key: 'statuses', label: 'Status', options: publishStatusOptions }]}
+            values={{ statuses }}
+            onChange={(_, next) => {
+              setStatuses(next);
+              selection.clear();
+            }}
+            onClear={() => setStatuses([])}
+          />
+        )}
+        {data.length > 0 && (
+          <ViewSwitch
+            value={layout}
+            onChange={(next) => {
+              setLayout(next);
+              selection.clear();
+            }}
+          />
+        )}
         {canWrite && <div className="flex gap-3 max-md:hidden">{addButtons}</div>}
         {canWrite && (
           <PageActions
-            edit={{
-              editing: selection.selecting,
-              onToggle: selection.selecting ? selection.clear : selection.startEditing,
-            }}
+            edit={
+              grid
+                ? undefined
+                : {
+                    editing: selection.selecting,
+                    onToggle: selection.selecting ? selection.clear : selection.startEditing,
+                  }
+            }
             add={{ label: 'Add member', onClick: () => view.open({ kind: 'new' }) }}
             more={[{ label: 'Bulk update', onClick: () => view.open({ kind: 'bulk' }) }]}
           />
@@ -246,7 +299,41 @@ export function TeamPage({ data, canWrite }: { data: TeamListData; canWrite: boo
             }
           >
             {visible.length === 0 ? (
-              <NoMatches onClear={() => setQuery('')}>Nobody matches that search.</NoMatches>
+              <NoMatches
+                onClear={() => {
+                  setQuery('');
+                  setStatuses([]);
+                }}
+              >
+                Nobody matches that search.
+              </NoMatches>
+            ) : grid ? (
+              <ListCards>
+                {visible.map((member) => (
+                  <ListCard
+                    key={member.id}
+                    title={member.name}
+                    image={memberImage(member)}
+                    icon={<span className="text-lg font-medium">{initialsOf(member.name)}</span>}
+                    imagePosition="top"
+                    current={pane?.kind === 'edit' && pane.id === member.id}
+                    onOpen={() => canWrite && view.open({ kind: 'edit', id: member.id })}
+                    menu={canWrite ? memberMenu(member) : undefined}
+                    remove={
+                      canWrite
+                        ? { label: 'Delete', onAction: () => setToDelete([member.id]) }
+                        : undefined
+                    }
+                  >
+                    {member.status === 'draft' && (
+                      <Badge variant="outline" className="w-fit">
+                        Draft
+                      </Badge>
+                    )}
+                    {member.role && <CardMeta>{member.role}</CardMeta>}
+                  </ListCard>
+                ))}
+              </ListCards>
             ) : (
               <ListRows>
                 {visible.map((member) => {
@@ -270,39 +357,13 @@ export function TeamPage({ data, canWrite }: { data: TeamListData; canWrite: boo
                           ? { label: 'Delete', onAction: () => setToDelete([member.id]) }
                           : undefined
                       }
-                      menu={
-                        canWrite
-                          ? [
-                              ...moveMenuItems(
-                                !query && index > 0,
-                                !query && index < data.length - 1,
-                                (direction) =>
-                                  run(
-                                    () => moveTeamMember({ data: { id: member.id, direction } }),
-                                    {
-                                      error: 'Could not move the team member',
-                                    }
-                                  )
-                              ),
-                              publishMenuItem(member.status === 'published', (status) =>
-                                run(
-                                  () => setTeamMemberStatus({ data: { id: member.id, status } }),
-                                  {
-                                    success: statusNotice(status),
-                                    error: 'Could not change it',
-                                  }
-                                )
-                              ),
-                            ]
-                          : undefined
-                      }
+                      menu={canWrite ? memberMenu(member) : undefined}
                       actions={
                         canWrite && (
                           <MoveButtons
                             member={member}
-                            // Reordering a filtered list would be confusing, so it waits for a clear search.
-                            canMoveUp={!query && index > 0}
-                            canMoveDown={!query && index < data.length - 1}
+                            canMoveUp={!narrowed && index > 0}
+                            canMoveDown={!narrowed && index < data.length - 1}
                           />
                         )
                       }
@@ -387,16 +448,17 @@ export function TeamPage({ data, canWrite }: { data: TeamListData; canWrite: boo
   );
 }
 
+function memberImage(member: TeamMember) {
+  if (member.photoMediaId) return `/api/media/${member.photoMediaId}?w=640`;
+  return member.avatarSeed ? avatarUrl(member.avatarSeed) : null;
+}
+
 function MemberSummary({ member }: { member: TeamMember }) {
   return (
     <span className="flex min-w-0 items-center gap-2.5">
-      {member.photoMediaId || member.avatarSeed ? (
+      {memberImage(member) ? (
         <img
-          src={
-            member.photoMediaId
-              ? `/api/media/${member.photoMediaId}?w=640`
-              : avatarUrl(member.avatarSeed!)
-          }
+          src={memberImage(member)!}
           alt=""
           loading="lazy"
           className="size-8 shrink-0 rounded-full border object-cover"

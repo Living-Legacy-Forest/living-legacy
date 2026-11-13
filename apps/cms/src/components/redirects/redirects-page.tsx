@@ -15,7 +15,7 @@ import {
   PaneFrame,
   useListPane,
 } from '@/components/list/list-page';
-import { ListRow } from '@/components/list/list-row';
+import { ListRow, type RowMenuItem } from '@/components/list/list-row';
 import { copyLink, openInNewTab, siteUrl } from '@/lib/site';
 import {
   ConfirmBulkDelete,
@@ -35,6 +35,9 @@ import {
   UploadIcon,
 } from '@/components/icons';
 import { useEffect, useState } from 'react';
+import { CardMeta, ListCard, ListCards } from '@/components/list/list-card';
+import { ListFilter, passes } from '@/components/list/list-filter';
+import { ViewSwitch, useListView } from '@/components/list/view-switch';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -99,23 +102,42 @@ function usage(r: Redirect) {
   return r.lastHitAt ? `${times}, last on ${dateFormat.format(r.lastHitAt)}` : times;
 }
 
-type Filter = 'all' | '301' | '302' | '307' | '308' | '410' | 'off' | 'unused';
-
-const filterItems: { value: Filter; label: string }[] = [
-  { value: 'all', label: 'All types' },
-  { value: '301', label: '301 - Permanent' },
-  { value: '302', label: '302 - Temporary' },
-  { value: '308', label: '308 - Permanent' },
-  { value: '307', label: '307 - Temporary' },
-  { value: '410', label: '410 - Removed' },
-  { value: 'off', label: 'Turned off' },
-  { value: 'unused', label: 'Never used' },
+const filterGroups = [
+  {
+    key: 'types',
+    label: 'Type',
+    options: [
+      { value: '301', label: '301 - Permanent' },
+      { value: '302', label: '302 - Temporary' },
+      { value: '308', label: '308 - Permanent' },
+      { value: '307', label: '307 - Temporary' },
+      { value: '410', label: '410 - Removed' },
+    ],
+  },
+  {
+    key: 'states',
+    label: 'State',
+    options: [
+      { value: 'on', label: 'Turned on' },
+      { value: 'off', label: 'Turned off' },
+    ],
+  },
+  {
+    key: 'usage',
+    label: 'Use',
+    options: [
+      { value: 'used', label: 'Used' },
+      { value: 'unused', label: 'Never used' },
+    ],
+  },
 ];
 
-function matchesFilter(r: Redirect, filter: Filter) {
-  if (filter === 'off') return !r.enabled;
-  if (filter === 'unused') return r.hits === 0;
-  return filter === 'all' || String(r.statusCode) === filter;
+function matchesFilters(r: Redirect, picked: Record<string, string[]>) {
+  return (
+    passes(picked.types, String(r.statusCode)) &&
+    passes(picked.states, r.enabled ? 'on' : 'off') &&
+    passes(picked.usage, r.hits > 0 ? 'used' : 'unused')
+  );
 }
 
 const NOUN: [string, string] = ['redirect', 'redirects'];
@@ -194,7 +216,10 @@ export function RedirectsPage({
     // Only on arrival with ?from=, not on every render that has it.
   }, [initialFrom]);
   const [query, setQuery] = useState('');
-  const [filter, setFilter] = useState<Filter>('all');
+  // Ticked values per filter group; an empty group does not narrow the list.
+  const [picked, setPicked] = useState<Record<string, string[]>>({});
+  const [layout, setLayout] = useListView('redirects');
+  const grid = layout === 'grid';
   const [toDelete, setToDelete] = useState<string[] | null>(null);
   const selection = useSelection(data.map((r) => r.id));
   const { run, pending } = useAction();
@@ -205,8 +230,29 @@ export function RedirectsPage({
   // A redirect removed elsewhere closes the pane.
   const pane = view.pane?.kind === 'edit' && !redirectFor(view.pane) ? null : view.pane;
   const visible = data.filter(
-    (r) => matchesFilter(r, filter) && matchesSearch(query, [r.fromPath, r.toPath, r.note])
+    (r) => matchesFilters(r, picked) && matchesSearch(query, [r.fromPath, r.toPath, r.note])
   );
+  const clearFilters = () => {
+    setPicked({});
+    selection.clear();
+  };
+
+  const rowMenu = (r: Redirect): RowMenuItem[] => [
+    ...(redirectMenu(r) ?? []),
+    {
+      label: r.enabled ? 'Turn off' : 'Turn on',
+      icon: r.enabled ? <ToggleOffIcon aria-hidden /> : <ToggleOnIcon aria-hidden />,
+      destructive: r.enabled,
+      shortcut: { key: 'o' },
+      onSelect: () =>
+        void run(() => setRedirectEnabled({ data: { id: r.id, enabled: !r.enabled } }), {
+          success: r.enabled
+            ? { title: 'Redirect turned off', description: `${r.fromPath} no longer redirects.` }
+            : { title: 'Redirect turned on', description: `${r.fromPath} redirects again.` },
+          error: 'Could not change it',
+        }),
+    },
+  ];
 
   async function remove(ids: string[]) {
     const result = await run(() => deleteRedirects({ data: { ids } }), {
@@ -300,34 +346,34 @@ export function RedirectsPage({
               value={query}
               onChange={setQuery}
             />
-            <Select
-              items={filterItems}
-              value={filter}
-              onValueChange={(value) => value && setFilter(value as Filter)}
-            >
-              <SelectTrigger
-                aria-label="Filter redirects"
-                size="sm"
-                className="bg-muted/60 text-ui w-40 border-0 shadow-none"
-              >
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                {filterItems.map((item) => (
-                  <SelectItem key={item.value} value={item.value} className="text-ui">
-                    {item.label}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+            <ListFilter
+              groups={filterGroups}
+              values={picked}
+              onChange={(key, next) => {
+                setPicked((prev) => ({ ...prev, [key]: next }));
+                selection.clear();
+              }}
+              onClear={clearFilters}
+            />
+            <ViewSwitch
+              value={layout}
+              onChange={(next) => {
+                setLayout(next);
+                selection.clear();
+              }}
+            />
           </>
         )}
         <div className="flex gap-3 max-md:hidden">{addButtons}</div>
         <PageActions
-          edit={{
-            editing: selection.selecting,
-            onToggle: selection.selecting ? selection.clear : selection.startEditing,
-          }}
+          edit={
+            grid
+              ? undefined
+              : {
+                  editing: selection.selecting,
+                  onToggle: selection.selecting ? selection.clear : selection.startEditing,
+                }
+          }
           add={{ label: 'Add redirect', onClick: () => view.open({ kind: 'new' }) }}
           more={[{ label: 'Bulk update', onClick: () => view.open({ kind: 'bulk' }) }]}
         />
@@ -366,11 +412,26 @@ export function RedirectsPage({
                 clearLabel="Clear search and filter"
                 onClear={() => {
                   setQuery('');
-                  setFilter('all');
+                  clearFilters();
                 }}
               >
                 No redirects match.
               </NoMatches>
+            ) : grid ? (
+              <ListCards>
+                {visible.map((r) => (
+                  <ListCard
+                    key={r.id}
+                    title={r.fromPath}
+                    current={pane?.kind === 'edit' && pane.id === r.id}
+                    menu={rowMenu(r)}
+                    remove={{ label: 'Delete', onAction: () => setToDelete([r.id]) }}
+                    onOpen={() => view.open({ kind: 'edit', id: r.id })}
+                  >
+                    <RedirectCardBody redirect={r} />
+                  </ListCard>
+                ))}
+              </ListCards>
             ) : (
               <ListRows>
                 {visible.map((r) => (
@@ -385,35 +446,7 @@ export function RedirectsPage({
                       onToggle: () => selection.toggle(r.id),
                     }}
                     swipe={{ label: 'Delete', onAction: () => setToDelete([r.id]) }}
-                    menu={[
-                      ...(redirectMenu(r) ?? []),
-                      {
-                        label: r.enabled ? 'Turn off' : 'Turn on',
-                        icon: r.enabled ? (
-                          <ToggleOffIcon aria-hidden />
-                        ) : (
-                          <ToggleOnIcon aria-hidden />
-                        ),
-                        destructive: r.enabled,
-                        shortcut: { key: 'o' },
-                        onSelect: () =>
-                          void run(
-                            () => setRedirectEnabled({ data: { id: r.id, enabled: !r.enabled } }),
-                            {
-                              success: r.enabled
-                                ? {
-                                    title: 'Redirect turned off',
-                                    description: `${r.fromPath} no longer redirects.`,
-                                  }
-                                : {
-                                    title: 'Redirect turned on',
-                                    description: `${r.fromPath} redirects again.`,
-                                  },
-                              error: 'Could not change it',
-                            }
-                          ),
-                      },
-                    ]}
+                    menu={rowMenu(r)}
                     onOpen={() => view.open({ kind: 'edit', id: r.id })}
                   >
                     <RedirectSummary redirect={r} />
@@ -509,6 +542,34 @@ export function RedirectsPage({
             ))}
       </ListDialog>
     </div>
+  );
+}
+
+/** Under a card's title: type or Off, where it goes, and how often it has been used. */
+function RedirectCardBody({ redirect }: { redirect: Redirect }) {
+  return (
+    <>
+      <span className="flex items-center gap-2">
+        {redirect.enabled ? (
+          <Badge variant={redirect.statusCode === 301 ? 'secondary' : 'outline'}>
+            {redirect.statusCode}
+          </Badge>
+        ) : (
+          <Badge variant="outline">Off</Badge>
+        )}
+      </span>
+      <span className="text-muted-foreground flex min-w-0 items-center gap-1.5 text-xs">
+        {redirect.statusCode === 410 ? (
+          'Removed'
+        ) : (
+          <>
+            <ArrowRightIcon aria-hidden className="size-3 shrink-0" />
+            <span className="min-w-0 truncate font-mono">{redirect.toPath}</span>
+          </>
+        )}
+      </span>
+      <CardMeta>{usage(redirect)}</CardMeta>
+    </>
   );
 }
 

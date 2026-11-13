@@ -1,4 +1,5 @@
 import { useId } from 'react';
+import { cn } from '@/lib/utils';
 import { Area, AreaChart } from 'recharts';
 import {
   type ChartConfig,
@@ -14,12 +15,15 @@ export function TrendChart({
   series,
   label = 'Views',
   showTotal = false,
+  className,
 }: {
   series: number[];
   /** What the numbers count, in the tooltip and under the total. */
   label?: string;
   /** The 30-day total beside the chart; the compact row leaves it to the tooltip. */
   showTotal?: boolean;
+  /** Sizes the chart itself; it is 28 wide and 8 high unless told otherwise. */
+  className?: string;
 }) {
   const fillId = useId();
   const config = { views: { label, color: colour } } satisfies ChartConfig;
@@ -27,7 +31,7 @@ export function TrendChart({
   const total = series.reduce((sum, n) => sum + n, 0);
   return (
     <span className="flex shrink-0 items-center gap-2" title={`${label}, last 30 days`}>
-      <ChartContainer config={config} className="aspect-auto h-8 w-28">
+      <ChartContainer config={config} className={cn('aspect-auto h-8 w-28', className)}>
         <AreaChart data={data} margin={{ top: 2, right: 0, bottom: 0, left: 0 }}>
           <defs>
             <linearGradient id={fillId} x1="0" y1="0" x2="0" y2="1">

@@ -1,6 +1,9 @@
 import { type MediaCoverageKind, mediaCoverageKindLabels, slugify, youtubeId } from '@ll/content';
 import { useNavigate } from '@tanstack/react-router';
 import { useState } from 'react';
+import { CardMeta, ListCard, ListCards } from '@/components/list/list-card';
+import { ListFilter, optionsOf, passes, publishStatusOptions } from '@/components/list/list-filter';
+import { ViewSwitch, useListView } from '@/components/list/view-switch';
 import {
   DialogActions,
   ListColumn,
@@ -16,6 +19,7 @@ import {
 } from '@/components/list/list-page';
 import {
   ListRow,
+  type RowMenuItem,
   editMenuItems,
   featureMenuItem,
   publishMenuItem,
@@ -128,13 +132,53 @@ export function MediaCoveragePage({
   const revealing = useRevealOnce();
   const view = useListPane<Target>();
   const [query, setQuery] = useState('');
+  // Ticked values per filter group; an empty group does not narrow the list.
+  const [picked, setPicked] = useState<Record<string, string[]>>({});
+  const [layout, setLayout] = useListView('media_coverage');
+  const grid = layout === 'grid';
   const [toDelete, setToDelete] = useState<string[] | null>(null);
   const selection = useSelection(data.map((m) => m.id));
-  const visible = data.filter((m) =>
-    matchesSearch(query, [m.title, m.source, m.category, m.excerpt])
+  const visible = data.filter(
+    (m) =>
+      passes(picked.statuses, m.status) &&
+      passes(picked.kinds, m.kind) &&
+      passes(picked.sources, m.source) &&
+      passes(picked.topics, m.category) &&
+      passes(picked.featured, m.featured ? 'yes' : 'no') &&
+      matchesSearch(query, [m.title, m.source, m.category, m.excerpt])
   );
+  const clearFilters = () => {
+    setPicked({});
+    selection.clear();
+  };
   // Offered as suggestions, so the page's topic filter stays tidy.
   const categories = [...new Set(data.map((m) => m.category).filter(Boolean))] as string[];
+
+  const coverageMenu = (m: MediaCoverageItem): RowMenuItem[] => [
+    ...editMenuItems(canWrite && isDesktop(), () => view.open({ kind: 'edit', id: m.id })),
+    {
+      label: m.kind === 'article' ? 'Open article' : 'Open video',
+      icon: <ExternalLink aria-hidden />,
+      onSelect: () => openInNewTab(m.externalUrl),
+      shortcut: { key: 'v' },
+    },
+    ...(canWrite
+      ? [
+          featureMenuItem(m.featured, (featured) =>
+            run(() => setMediaCoverageFlags({ data: { id: m.id, featured } }), {
+              success: featuredNotice(featured),
+              error: 'Could not change it',
+            })
+          ),
+          publishMenuItem(m.status === 'published', (status) =>
+            run(() => setMediaCoverageFlags({ data: { id: m.id, status } }), {
+              success: statusNotice(status),
+              error: 'Could not change it',
+            })
+          ),
+        ]
+      : []),
+  ];
 
   const itemFor = (target: Target | null) =>
     target?.kind === 'edit' ? (data.find((m) => m.id === target.id) ?? null) : null;
@@ -208,6 +252,39 @@ export function MediaCoveragePage({
             onChange={setQuery}
           />
         )}
+        {data.length > 0 && (
+          <ListFilter
+            groups={[
+              { key: 'statuses', label: 'Status', options: publishStatusOptions },
+              { key: 'kinds', label: 'Type', options: kindItems },
+              { key: 'sources', label: 'Outlet', options: optionsOf(data.map((m) => m.source)) },
+              { key: 'topics', label: 'Topic', options: optionsOf(data.map((m) => m.category)) },
+              {
+                key: 'featured',
+                label: 'Featured',
+                options: [
+                  { value: 'yes', label: 'Featured' },
+                  { value: 'no', label: 'Not featured' },
+                ],
+              },
+            ]}
+            values={picked}
+            onChange={(key, next) => {
+              setPicked((prev) => ({ ...prev, [key]: next }));
+              selection.clear();
+            }}
+            onClear={clearFilters}
+          />
+        )}
+        {data.length > 0 && (
+          <ViewSwitch
+            value={layout}
+            onChange={(next) => {
+              setLayout(next);
+              selection.clear();
+            }}
+          />
+        )}
         <div className="flex gap-3 max-md:hidden">
           <Button
             size="sm"
@@ -222,7 +299,7 @@ export function MediaCoveragePage({
         </div>
         <PageActions
           edit={
-            canWrite
+            canWrite && !grid
               ? {
                   editing: selection.selecting,
                   onToggle: selection.selecting ? selection.clear : selection.startEditing,
@@ -272,7 +349,49 @@ export function MediaCoveragePage({
             }
           >
             {visible.length === 0 ? (
-              <NoMatches onClear={() => setQuery('')}>Nothing matches that search.</NoMatches>
+              <NoMatches
+                onClear={() => {
+                  setQuery('');
+                  clearFilters();
+                }}
+              >
+                Nothing matches that search.
+              </NoMatches>
+            ) : grid ? (
+              <ListCards>
+                {visible.map((m) => (
+                  <ListCard
+                    key={m.id}
+                    title={m.title}
+                    image={m.imageMediaId ? `/api/media/${m.imageMediaId}?w=640` : null}
+                    icon={<NewspaperIcon aria-hidden />}
+                    current={
+                      pane === null ? m.id === selectedId : pane.kind === 'edit' && pane.id === m.id
+                    }
+                    previews={isDesktop()}
+                    menu={coverageMenu(m)}
+                    remove={
+                      canWrite
+                        ? { label: 'Delete', onAction: () => setToDelete([m.id]) }
+                        : undefined
+                    }
+                    onOpen={() =>
+                      isDesktop() ? select(m.id) : canWrite && view.open({ kind: 'edit', id: m.id })
+                    }
+                  >
+                    {(m.featured || m.status === 'draft') && (
+                      <span className="flex gap-1.5">
+                        {m.featured && <Badge variant="outline">Featured</Badge>}
+                        {m.status === 'draft' && <Badge variant="outline">Draft</Badge>}
+                      </span>
+                    )}
+                    <CardMeta>
+                      {m.source} · {mediaCoverageKindLabels[m.kind]}
+                      {m.category && ` · ${m.category}`}
+                    </CardMeta>
+                  </ListCard>
+                ))}
+              </ListCards>
             ) : (
               <ListRows>
                 {visible.map((m) => (
@@ -304,33 +423,7 @@ export function MediaCoveragePage({
                     }
                     onDoubleClick={() => canWrite && view.open({ kind: 'edit', id: m.id })}
                     previews={isDesktop()}
-                    menu={[
-                      ...editMenuItems(canWrite && isDesktop(), () =>
-                        view.open({ kind: 'edit', id: m.id })
-                      ),
-                      {
-                        label: m.kind === 'article' ? 'Open article' : 'Open video',
-                        icon: <ExternalLink aria-hidden />,
-                        onSelect: () => openInNewTab(m.externalUrl),
-                        shortcut: { key: 'v' },
-                      },
-                      ...(canWrite
-                        ? [
-                            featureMenuItem(m.featured, (featured) =>
-                              run(() => setMediaCoverageFlags({ data: { id: m.id, featured } }), {
-                                success: featuredNotice(featured),
-                                error: 'Could not change it',
-                              })
-                            ),
-                            publishMenuItem(m.status === 'published', (status) =>
-                              run(() => setMediaCoverageFlags({ data: { id: m.id, status } }), {
-                                success: statusNotice(status),
-                                error: 'Could not change it',
-                              })
-                            ),
-                          ]
-                        : []),
-                    ]}
+                    menu={coverageMenu(m)}
                   >
                     <CoverageSummary item={m} />
                   </ListRow>

@@ -3,13 +3,14 @@ import { Outlet, createFileRoute, redirect } from '@tanstack/react-router';
 import { useEffect } from 'react';
 import { AppShell } from '@/components/shell/app-shell';
 import { getCachedUser } from '@/lib/session';
+import { readListViews } from '@/lib/list-view';
 import { readSidebarState } from '@/lib/sidebar-state';
 
 export const Route = createFileRoute('/_app')({
   beforeLoad: async () => {
     const user = await getCachedUser();
     if (!user) throw redirect({ to: '/login' });
-    return { user, sidebar: readSidebarState() };
+    return { user, sidebar: readSidebarState(), listViews: readListViews() };
   },
   component: AppLayout,
 });

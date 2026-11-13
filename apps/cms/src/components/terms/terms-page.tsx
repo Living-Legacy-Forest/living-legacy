@@ -1,4 +1,7 @@
 import { useState } from 'react';
+import { CardMeta, ListCard, ListCards } from '@/components/list/list-card';
+import { ListFilter, passes } from '@/components/list/list-filter';
+import { ViewSwitch, useListView } from '@/components/list/view-switch';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -89,13 +92,20 @@ export function TermsPage({
   const { title, noun, icon: Icon, emptyBody } = copy[type];
   const view = useListPane<Target>();
   const [query, setQuery] = useState('');
+  const [usage, setUsage] = useState<string[]>([]);
+  const [layout, setLayout] = useListView(`terms_${type}`);
+  const grid = layout === 'grid';
   const [toDelete, setToDelete] = useState<string[] | null>(null);
   const selection = useSelection(data.map((t) => t.id));
   const { run, pending } = useAction();
   const revealing = useRevealOnce();
 
   const sorted = [...data].sort((a, b) => a.name.localeCompare(b.name));
-  const visible = sorted.filter((t) => matchesSearch(query, [t.name, t.slug, t.description]));
+  const visible = sorted.filter(
+    (t) =>
+      passes(usage, t.postCount > 0 ? 'used' : 'unused') &&
+      matchesSearch(query, [t.name, t.slug, t.description])
+  );
 
   const editing = (target: Target | null) =>
     target?.kind === 'edit' ? (data.find((t) => t.id === target.id) ?? null) : null;
@@ -151,6 +161,35 @@ export function TermsPage({
             onChange={setQuery}
           />
         )}
+        {data.length > 0 && (
+          <ListFilter
+            groups={[
+              {
+                key: 'usage',
+                label: 'Use',
+                options: [
+                  { value: 'used', label: 'On posts' },
+                  { value: 'unused', label: 'Not on any post' },
+                ],
+              },
+            ]}
+            values={{ usage }}
+            onChange={(_, next) => {
+              setUsage(next);
+              selection.clear();
+            }}
+            onClear={() => setUsage([])}
+          />
+        )}
+        {data.length > 0 && (
+          <ViewSwitch
+            value={layout}
+            onChange={(next) => {
+              setLayout(next);
+              selection.clear();
+            }}
+          />
+        )}
         {canWrite && (
           <Button size="sm" className="max-md:hidden" onClick={() => view.open({ kind: 'new' })}>
             <PlusIcon aria-hidden data-icon="inline-start" />
@@ -159,10 +198,14 @@ export function TermsPage({
         )}
         {canWrite && (
           <PageActions
-            edit={{
-              editing: selection.selecting,
-              onToggle: selection.selecting ? selection.clear : selection.startEditing,
-            }}
+            edit={
+              grid
+                ? undefined
+                : {
+                    editing: selection.selecting,
+                    onToggle: selection.selecting ? selection.clear : selection.startEditing,
+                  }
+            }
             add={{ label: `New ${noun[0]}`, onClick: () => view.open({ kind: 'new' }) }}
           />
         )}
@@ -202,7 +245,40 @@ export function TermsPage({
             }
           >
             {visible.length === 0 ? (
-              <NoMatches onClear={() => setQuery('')}>No {noun[1]} match that search.</NoMatches>
+              <NoMatches
+                onClear={() => {
+                  setQuery('');
+                  setUsage([]);
+                }}
+              >
+                No {noun[1]} match that search.
+              </NoMatches>
+            ) : grid ? (
+              <ListCards>
+                {visible.map((t) => (
+                  <ListCard
+                    key={t.id}
+                    title={t.name}
+                    current={pane?.kind === 'edit' && pane.id === t.id}
+                    remove={
+                      canWrite
+                        ? { label: 'Delete', onAction: () => setToDelete([t.id]) }
+                        : undefined
+                    }
+                    onOpen={() => canWrite && view.open({ kind: 'edit', id: t.id })}
+                  >
+                    <Badge variant="outline" className="w-fit tabular-nums">
+                      {t.postCount} {t.postCount === 1 ? 'post' : 'posts'}
+                    </Badge>
+                    <CardMeta>
+                      <span className="font-mono">/{t.slug}</span>
+                    </CardMeta>
+                    {t.description && (
+                      <p className="text-muted-foreground line-clamp-2 text-xs">{t.description}</p>
+                    )}
+                  </ListCard>
+                ))}
+              </ListCards>
             ) : (
               <ListRows>
                 {visible.map((t) => (

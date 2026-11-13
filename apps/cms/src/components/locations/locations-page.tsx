@@ -8,6 +8,9 @@ import {
 } from '@ll/content';
 import { useNavigate } from '@tanstack/react-router';
 import { useState } from 'react';
+import { CardMeta, ListCard, ListCards } from '@/components/list/list-card';
+import { ListFilter, passes, publishStatusOptions } from '@/components/list/list-filter';
+import { ViewSwitch, useListView } from '@/components/list/view-switch';
 import {
   DialogActions,
   ListColumn,
@@ -21,7 +24,12 @@ import {
   isDesktop,
   useListPane,
 } from '@/components/list/list-page';
-import { ListRow, editMenuItems, publishMenuItem } from '@/components/list/list-row';
+import {
+  ListRow,
+  type RowMenuItem,
+  editMenuItems,
+  publishMenuItem,
+} from '@/components/list/list-row';
 import {
   ConfirmBulkDelete,
   SearchInput,
@@ -129,11 +137,50 @@ export function LocationsPage({
   const revealing = useRevealOnce();
   const view = useListPane<Target>();
   const [query, setQuery] = useState('');
+  // Ticked values per filter group; an empty group does not narrow the list.
+  const [picked, setPicked] = useState<Record<string, string[]>>({});
+  const [layout, setLayout] = useListView('locations');
+  const grid = layout === 'grid';
   const [toDelete, setToDelete] = useState<string[] | null>(null);
   const selection = useSelection(data.map((l) => l.id));
-  const visible = data.filter((l) =>
-    matchesSearch(query, [l.name, l.region, australianStateLabels[l.state], l.address])
+  const visible = data.filter(
+    (l) =>
+      passes(picked.statuses, l.status) &&
+      passes(picked.states, l.state) &&
+      passes(picked.stages, l.stage) &&
+      matchesSearch(query, [l.name, l.region, australianStateLabels[l.state], l.address])
   );
+  const clearFilters = () => {
+    setPicked({});
+    selection.clear();
+  };
+
+  const locationMenu = (l: LocationItem): RowMenuItem[] => [
+    ...editMenuItems(canWrite && isDesktop(), () => view.open({ kind: 'edit', id: l.id })),
+    ...(l.latitude !== null && l.longitude !== null
+      ? [
+          {
+            label: 'Open in Maps',
+            icon: <MapPinIcon aria-hidden />,
+            onSelect: () =>
+              openInNewTab(
+                `https://www.google.com/maps/search/?api=1&query=${l.latitude},${l.longitude}`
+              ),
+            shortcut: { key: 'm' },
+          },
+        ]
+      : []),
+    ...(canWrite
+      ? [
+          publishMenuItem(l.status === 'published', (status) =>
+            run(() => setLocationStatus({ data: { id: l.id, status } }), {
+              success: statusNotice(status),
+              error: 'Could not change it',
+            })
+          ),
+        ]
+      : []),
+  ];
 
   const itemFor = (target: Target | null) =>
     target?.kind === 'edit' ? (data.find((l) => l.id === target.id) ?? null) : null;
@@ -215,13 +262,50 @@ export function LocationsPage({
             />
           </div>
         )}
+        {data.length > 0 && (
+          <ListFilter
+            groups={[
+              { key: 'statuses', label: 'Status', options: publishStatusOptions },
+              // Only the states and stages some location is in.
+              {
+                key: 'states',
+                label: 'State',
+                options: stateItems.filter((s) => data.some((l) => l.state === s.value)),
+              },
+              {
+                key: 'stages',
+                label: 'Stage',
+                options: stageItems.filter((s) => data.some((l) => l.stage === s.value)),
+              },
+            ]}
+            values={picked}
+            onChange={(key, next) => {
+              setPicked((prev) => ({ ...prev, [key]: next }));
+              selection.clear();
+            }}
+            onClear={clearFilters}
+          />
+        )}
+        {data.length > 0 && (
+          <ViewSwitch
+            value={layout}
+            onChange={(next) => {
+              setLayout(next);
+              selection.clear();
+            }}
+          />
+        )}
         {canWrite && <div className="max-md:hidden">{addButton}</div>}
         {canWrite && (
           <PageActions
-            edit={{
-              editing: selection.selecting,
-              onToggle: selection.selecting ? selection.clear : selection.startEditing,
-            }}
+            edit={
+              grid
+                ? undefined
+                : {
+                    editing: selection.selecting,
+                    onToggle: selection.selecting ? selection.clear : selection.startEditing,
+                  }
+            }
             add={{ label: 'Add location', onClick: () => view.open({ kind: 'new' }) }}
           />
         )}
@@ -256,7 +340,48 @@ export function LocationsPage({
             }
           >
             {visible.length === 0 ? (
-              <NoMatches onClear={() => setQuery('')}>Nothing matches that search.</NoMatches>
+              <NoMatches
+                onClear={() => {
+                  setQuery('');
+                  clearFilters();
+                }}
+              >
+                Nothing matches that search.
+              </NoMatches>
+            ) : grid ? (
+              <ListCards>
+                {visible.map((l) => (
+                  <ListCard
+                    key={l.id}
+                    title={l.name}
+                    image={l.heroMediaId ? `/api/media/${l.heroMediaId}?w=640` : null}
+                    icon={<MapPinIcon aria-hidden />}
+                    current={
+                      pane === null ? l.id === selectedId : pane.kind === 'edit' && pane.id === l.id
+                    }
+                    previews={isDesktop()}
+                    menu={locationMenu(l)}
+                    remove={
+                      canWrite
+                        ? { label: 'Delete', onAction: () => setToDelete([l.id]) }
+                        : undefined
+                    }
+                    onOpen={() =>
+                      isDesktop() ? select(l.id) : canWrite && view.open({ kind: 'edit', id: l.id })
+                    }
+                  >
+                    {l.status === 'draft' && (
+                      <Badge variant="outline" className="w-fit">
+                        Draft
+                      </Badge>
+                    )}
+                    <CardMeta>
+                      {australianStateLabels[l.state]} · {locationStageLabels[l.stage]}
+                    </CardMeta>
+                    {l.region && <CardMeta>{l.region}</CardMeta>}
+                  </ListCard>
+                ))}
+              </ListCards>
             ) : (
               <ListRows inset="media">
                 {visible.map((l) => (
@@ -281,34 +406,7 @@ export function LocationsPage({
                         : undefined
                     }
                     previews={isDesktop()}
-                    menu={[
-                      ...editMenuItems(canWrite && isDesktop(), () =>
-                        view.open({ kind: 'edit', id: l.id })
-                      ),
-                      ...(l.latitude !== null && l.longitude !== null
-                        ? [
-                            {
-                              label: 'Open in Maps',
-                              icon: <MapPinIcon aria-hidden />,
-                              onSelect: () =>
-                                openInNewTab(
-                                  `https://www.google.com/maps/search/?api=1&query=${l.latitude},${l.longitude}`
-                                ),
-                              shortcut: { key: 'm' },
-                            },
-                          ]
-                        : []),
-                      ...(canWrite
-                        ? [
-                            publishMenuItem(l.status === 'published', (status) =>
-                              run(() => setLocationStatus({ data: { id: l.id, status } }), {
-                                success: statusNotice(status),
-                                error: 'Could not change it',
-                              })
-                            ),
-                          ]
-                        : []),
-                    ]}
+                    menu={locationMenu(l)}
                     // Large screens preview on a click and edit on a double click; smaller
                     // ones have no preview, so a tap edits.
                     onOpen={() =>

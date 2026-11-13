@@ -1,5 +1,8 @@
 import { useNavigate } from '@tanstack/react-router';
 import { useState } from 'react';
+import { CardMeta, ListCard, ListCards } from '@/components/list/list-card';
+import { ListFilter, optionsOf, passes, publishStatusOptions } from '@/components/list/list-filter';
+import { ViewSwitch, useListView } from '@/components/list/view-switch';
 import { BulkCsvForm } from '@/components/bulk/bulk-csv-form';
 import {
   DialogActions,
@@ -126,11 +129,39 @@ export function TestimonialsPage({
   const revealing = useRevealOnce();
   const view = useListPane<Target>();
   const [query, setQuery] = useState('');
+  // Ticked values per filter group; an empty group does not narrow the list.
+  const [picked, setPicked] = useState<Record<string, string[]>>({});
+  const [layout, setLayout] = useListView('testimonials');
+  const grid = layout === 'grid';
   const [toDelete, setToDelete] = useState<string[] | null>(null);
   const selection = useSelection(data.map((t) => t.id));
-  const visible = data.filter((t) =>
-    matchesSearch(query, [t.name, t.quote, t.relationship, t.location])
+  const visible = data.filter(
+    (t) =>
+      passes(picked.statuses, t.status) &&
+      passes(picked.featured, t.featured ? 'yes' : 'no') &&
+      passes(picked.locations, t.location) &&
+      matchesSearch(query, [t.name, t.quote, t.relationship, t.location])
   );
+  const clearFilters = () => {
+    setPicked({});
+    selection.clear();
+  };
+
+  const testimonialMenu = (t: Testimonial) => [
+    ...editMenuItems(isDesktop(), () => view.open({ kind: 'edit', id: t.id })),
+    featureMenuItem(t.featured, (featured) =>
+      run(() => setTestimonialFlags({ data: { id: t.id, featured } }), {
+        success: featuredNotice(featured),
+        error: 'Could not change it',
+      })
+    ),
+    publishMenuItem(t.status === 'published', (status) =>
+      run(() => setTestimonialFlags({ data: { id: t.id, status } }), {
+        success: statusNotice(status),
+        error: 'Could not change it',
+      })
+    ),
+  ];
 
   const testimonialFor = (target: Target | null) =>
     target?.kind === 'edit' ? (data.find((t) => t.id === target.id) ?? null) : null;
@@ -234,13 +265,52 @@ export function TestimonialsPage({
             onChange={setQuery}
           />
         )}
+        {data.length > 0 && (
+          <ListFilter
+            groups={[
+              { key: 'statuses', label: 'Status', options: publishStatusOptions },
+              {
+                key: 'featured',
+                label: 'Featured',
+                options: [
+                  { value: 'yes', label: 'Featured' },
+                  { value: 'no', label: 'Not featured' },
+                ],
+              },
+              {
+                key: 'locations',
+                label: 'Location',
+                options: optionsOf(data.map((t) => t.location)),
+              },
+            ]}
+            values={picked}
+            onChange={(key, next) => {
+              setPicked((prev) => ({ ...prev, [key]: next }));
+              selection.clear();
+            }}
+            onClear={clearFilters}
+          />
+        )}
+        {data.length > 0 && (
+          <ViewSwitch
+            value={layout}
+            onChange={(next) => {
+              setLayout(next);
+              selection.clear();
+            }}
+          />
+        )}
         {canWrite && <div className="flex gap-3 max-md:hidden">{addButtons}</div>}
         {canWrite && (
           <PageActions
-            edit={{
-              editing: selection.selecting,
-              onToggle: selection.selecting ? selection.clear : selection.startEditing,
-            }}
+            edit={
+              grid
+                ? undefined
+                : {
+                    editing: selection.selecting,
+                    onToggle: selection.selecting ? selection.clear : selection.startEditing,
+                  }
+            }
             add={{ label: 'Add testimonial', onClick: () => view.open({ kind: 'new' }) }}
             more={[{ label: 'Bulk update', onClick: () => view.open({ kind: 'bulk' }) }]}
           />
@@ -278,7 +348,48 @@ export function TestimonialsPage({
             }
           >
             {visible.length === 0 ? (
-              <NoMatches onClear={() => setQuery('')}>No testimonials match that search.</NoMatches>
+              <NoMatches
+                onClear={() => {
+                  setQuery('');
+                  clearFilters();
+                }}
+              >
+                No testimonials match that search.
+              </NoMatches>
+            ) : grid ? (
+              <ListCards>
+                {visible.map((t) => (
+                  <ListCard
+                    key={t.id}
+                    title={t.name}
+                    image={t.photoMediaId ? `/api/media/${t.photoMediaId}?w=640` : null}
+                    icon={<MessageSquareQuoteIcon aria-hidden />}
+                    imagePosition="top"
+                    current={
+                      pane === null ? t.id === selectedId : pane.kind === 'edit' && pane.id === t.id
+                    }
+                    previews={isDesktop()}
+                    menu={canWrite ? testimonialMenu(t) : undefined}
+                    remove={
+                      canWrite
+                        ? { label: 'Delete', onAction: () => setToDelete([t.id]) }
+                        : undefined
+                    }
+                    onOpen={() =>
+                      isDesktop() ? select(t.id) : canWrite && view.open({ kind: 'edit', id: t.id })
+                    }
+                  >
+                    {(t.featured || t.status === 'draft') && (
+                      <span className="flex gap-1.5">
+                        {t.featured && <Badge variant="outline">Featured</Badge>}
+                        {t.status === 'draft' && <Badge variant="outline">Draft</Badge>}
+                      </span>
+                    )}
+                    <p className="text-muted-foreground line-clamp-3 text-xs">{t.quote}</p>
+                    {attribution(t) && <CardMeta>{attribution(t)}</CardMeta>}
+                  </ListCard>
+                ))}
+              </ListCards>
             ) : (
               <ListRows>
                 {visible.map((t) => (
@@ -304,27 +415,7 @@ export function TestimonialsPage({
                         : undefined
                     }
                     previews={isDesktop()}
-                    menu={
-                      canWrite
-                        ? [
-                            ...editMenuItems(isDesktop(), () =>
-                              view.open({ kind: 'edit', id: t.id })
-                            ),
-                            featureMenuItem(t.featured, (featured) =>
-                              run(() => setTestimonialFlags({ data: { id: t.id, featured } }), {
-                                success: featuredNotice(featured),
-                                error: 'Could not change it',
-                              })
-                            ),
-                            publishMenuItem(t.status === 'published', (status) =>
-                              run(() => setTestimonialFlags({ data: { id: t.id, status } }), {
-                                success: statusNotice(status),
-                                error: 'Could not change it',
-                              })
-                            ),
-                          ]
-                        : undefined
-                    }
+                    menu={canWrite ? testimonialMenu(t) : undefined}
                     // Large screens preview on a click and edit on a double click; smaller
                     // ones have no preview, so a tap edits.
                     onOpen={() =>

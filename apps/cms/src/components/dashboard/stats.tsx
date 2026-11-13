@@ -35,8 +35,15 @@ function buildStats(
           kind: 'area',
           weeks: blogViews.weeks,
           counted: 'blog page views',
+          // The readers behind the views, as the second line.
+          compare: { weeks: blogViews.readerWeeks, counted: 'blog readers' },
           endsAt,
-          months: { keys: trendMonths, counts: blogViews.months, value: total(blogViews.months) },
+          months: {
+            keys: trendMonths,
+            counts: blogViews.months,
+            compare: blogViews.readerMonths,
+            value: total(blogViews.months),
+          },
         },
         link: { to: '/posts' },
       }

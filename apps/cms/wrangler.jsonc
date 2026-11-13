@@ -12,9 +12,23 @@
   // "Living Legacy CMS", US region) through the account's OpenTelemetry
   // destination of this name, which must exist before a deploy. Email
   // addresses are masked before anything is logged (src/lib/redact-console.ts).
+  // Traces are kept in Cloudflare only; they have no destination.
   "observability": {
     "enabled": true,
-    "logs": { "enabled": true, "destinations": ["betterstack-cms-logs"], "persist": true }
+    "head_sampling_rate": 1,
+    "redact_query_string": false,
+    "logs": {
+      "enabled": true,
+      "head_sampling_rate": 1,
+      "invocation_logs": true,
+      "destinations": ["betterstack-cms-logs"],
+      "persist": true
+    },
+    "traces": {
+      "enabled": true,
+      "head_sampling_rate": 1,
+      "persist": true
+    }
   },
   "routes": [{ "pattern": "cms.livinglegacy.com.au", "custom_domain": true }],
   "d1_databases": [

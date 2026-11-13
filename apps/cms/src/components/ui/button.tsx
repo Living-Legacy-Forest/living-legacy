@@ -169,7 +169,7 @@ function Button({
         ref={labelRef}
         data-slot="button-label"
         className={cn(
-          'inline-flex min-w-0 flex-1 items-center [gap:inherit] [justify-content:inherit]',
+          'inline-flex min-w-0 flex-1 items-center [justify-content:inherit] [gap:inherit]',
           loading && 'invisible'
         )}
       >

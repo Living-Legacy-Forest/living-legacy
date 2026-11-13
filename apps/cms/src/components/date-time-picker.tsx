@@ -61,7 +61,9 @@ export function DateTimePicker({
   };
 
   return (
-    <div className="flex items-center gap-1">
+    // The clear button sits over the field's right edge; it can't be inside the trigger, as a
+    // button can't hold another button.
+    <div className="relative flex items-center">
       <Popover
         open={open}
         onOpenChange={(next) => {
@@ -78,7 +80,7 @@ export function DateTimePicker({
               className={cn(
                 'min-w-0 flex-1 justify-start font-normal',
                 'touch:min-h-11',
-                value === null && 'text-muted-foreground'
+                value === null ? 'text-muted-foreground' : 'pr-9'
               )}
             />
           }
@@ -137,6 +139,7 @@ export function DateTimePicker({
           variant="ghost"
           size="icon-sm"
           aria-label="Clear"
+          className="text-muted-foreground absolute top-1/2 right-1 -translate-y-1/2"
           onClick={() => onChange(null)}
         >
           <XIcon aria-hidden />

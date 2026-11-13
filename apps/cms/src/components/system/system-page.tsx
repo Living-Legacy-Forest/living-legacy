@@ -1,3 +1,4 @@
+import { Suspense, lazy } from 'react';
 import { CircleCheckIcon, ExternalLinkIcon } from '@/components/icons';
 import { buttonVariants } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -18,7 +19,8 @@ import {
 } from '@/components/ui/item';
 import { buildInfo } from '@/lib/build-info';
 import type { JobHealth } from '@/lib/cron-jobs';
-import { formatDateTime, formatInteger, formatRelative } from '@/lib/format';
+import { formatDateTime, formatDuration, formatInteger, formatRelative } from '@/lib/format';
+import { Skeleton } from '@/components/ui/skeleton';
 import { useTimeZone } from '@/lib/use-time-zone';
 import { cn } from '@/lib/utils';
 import type { SystemStatus } from '@/server/system';
@@ -33,6 +35,9 @@ const LINKS = [
   { label: 'Uptime', href: 'https://uptime.betterstack.com/' },
   { label: 'Errors', href: 'https://living-legacy.sentry.io/issues/' },
 ];
+
+const JobCharts = lazy(() => import('./system-charts').then((m) => ({ default: m.JobCharts })));
+const UsageCard = lazy(() => import('./system-charts').then((m) => ({ default: m.UsageCard })));
 
 const JOB_LABEL: Record<JobHealth, string> = {
   ok: 'Working',
@@ -55,6 +60,15 @@ function took(ms: number) {
   return `took ${formatInteger(seconds)} ${seconds === 1 ? 'second' : 'seconds'}`;
 }
 
+type JobStats = SystemStatus['schedules'][number]['jobs'][number]['stats'];
+
+function statsLine(stats: JobStats) {
+  if (!stats) return null;
+  const failed = stats.failed === 0 ? 'none failed' : `${formatInteger(stats.failed)} failed`;
+  const runs = `${formatInteger(stats.runs)} ${stats.runs === 1 ? 'run' : 'runs'} in 14 days, ${failed}.`;
+  return `${runs} Usually ${formatDuration(stats.averageMs)}, slowest ${formatDuration(stats.slowestMs)}.`;
+}
+
 function versionLine(timeZone: string) {
   if (buildInfo.isDev) return 'Local development.';
   const commit = buildInfo.commit ? `, commit ${buildInfo.commit}` : '';
@@ -67,7 +81,7 @@ function versionLine(timeZone: string) {
  */
 export function SystemPage({ data }: { data: SystemStatus }) {
   const timeZone = useTimeZone();
-  const { schedules, failures, health } = data;
+  const { schedules, failures, health, history, usage } = data;
   const { overall, red, yellow } = summariseTones([
     ...health.map((check) => checkTone[check.status]),
     ...schedules.flatMap((s) => s.jobs.map((job) => jobTone[job.health])),
@@ -146,6 +160,14 @@ export function SystemPage({ data }: { data: SystemStatus }) {
         </CardContent>
       </Card>
 
+      <Suspense fallback={<Skeleton className="h-96 w-full rounded-xl" />}>
+        <UsageCard usage={usage} />
+      </Suspense>
+
+      <Suspense fallback={<Skeleton className="h-72 w-full rounded-xl" />}>
+        <JobCharts history={history} />
+      </Suspense>
+
       {schedules.map((schedule) => (
         <Card key={schedule.key}>
           <CardHeader>
@@ -164,6 +186,11 @@ export function SystemPage({ data }: { data: SystemStatus }) {
                           ? `Last ran ${formatRelative(job.lastRun.startedAt)}, ${took(job.lastRun.durationMs)}`
                           : 'Has not run since this page was added.'}
                       </ItemDescription>
+                      {job.stats && (
+                        <ItemDescription className="tabular-nums">
+                          {statsLine(job.stats)}
+                        </ItemDescription>
+                      )}
                       {job.lastRun?.error && (
                         <p className="text-destructive text-sm wrap-break-word">
                           {job.lastRun.error}

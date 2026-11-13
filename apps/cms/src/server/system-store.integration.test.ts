@@ -2,7 +2,7 @@ import { cronRuns } from '@ll/db/schema';
 import { env } from 'cloudflare:workers';
 import { beforeEach, describe, expect, it } from 'vitest';
 import { days, minutes, testDb } from '../../test/fixtures';
-import { loadJobHealth, pruneCronRuns, recordCronRuns } from './system-store';
+import { loadJobHealth, loadUsage, pruneCronRuns, recordCronRuns } from './system-store';
 
 const now = new Date('2027-01-20T09:00:00Z');
 const ago = (ms: number) => new Date(now.getTime() - ms);
@@ -74,6 +74,53 @@ describe('loadJobHealth', () => {
       ['Publish scheduled posts', 'newest'],
       ['Send bookings to HubSpot', 'older'],
     ]);
+  });
+});
+
+describe('loadJobHealth history', () => {
+  it('sums each job’s last 14 days and groups runs by the hour', async () => {
+    await recordCronRuns(env.DB, [
+      run('publish-posts', ago(days(15)), 'too old'),
+      { ...run('publish-posts', ago(minutes(70))), durationMs: 100 },
+      { ...run('publish-posts', ago(minutes(5)), 'x'), durationMs: 300 },
+      { ...run('sync-bookings', ago(minutes(5))), durationMs: 50 },
+    ]);
+
+    const health = await loadJobHealth(testDb(), now.getTime());
+
+    expect(jobIn(health, 'publish-posts').stats).toEqual({
+      runs: 2,
+      failed: 1,
+      averageMs: 200,
+      slowestMs: 300,
+    });
+    expect(jobIn(health, 'sweep-media').stats).toBeNull();
+    // 07:50 and 08:55 UTC: two hours.
+    expect(health.history).toEqual([
+      {
+        hourStart: Date.parse('2027-01-20T07:00:00Z'),
+        runs: 1,
+        failed: 0,
+        totalMs: 100,
+        slowestMs: 100,
+      },
+      {
+        hourStart: Date.parse('2027-01-20T08:00:00Z'),
+        runs: 2,
+        failed: 1,
+        totalMs: 350,
+        slowestMs: 300,
+      },
+    ]);
+  });
+});
+
+describe('loadUsage', () => {
+  it('counts rows and adds up the media library by kind', async () => {
+    const usage = await loadUsage(testDb());
+    expect(usage.records.map((r) => r.label)).toContain('Posts');
+    expect(usage.records.every((r) => r.rows >= 0)).toBe(true);
+    expect(Array.isArray(usage.files)).toBe(true);
   });
 });
 

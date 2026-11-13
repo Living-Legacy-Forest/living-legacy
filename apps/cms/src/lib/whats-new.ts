@@ -26,6 +26,17 @@ export type WhatsNewEntry = {
 
 export const whatsNew: WhatsNewEntry[] = [
   {
+    id: '2026-11-14-3',
+    title: 'Media storage on the dashboard',
+    items: [
+      {
+        title: 'See what the media library takes up',
+        body: 'The Media files card now shows how much storage the library uses, split into images, videos, PDFs and other files, against the 10 GB of storage included each month. It warns when the library gets close. The file count and the number needing alt text are still there. Pick 7, 30 or 90 days to see how much was added in that time. The System page shows the same meter, with one for the database beside it, and estimates how long the allowance will last at the current pace.',
+        link: { label: 'Open System', to: '/system' },
+      },
+    ],
+  },
+  {
     id: '2026-11-14-2',
     title: 'Dashboard cards use 7, 30 or 90 days',
     items: [

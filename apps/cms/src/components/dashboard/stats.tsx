@@ -1,5 +1,6 @@
 import { MUTED, type Stat, StatCard } from '@/components/stat-card/stat-card';
 import { formatBytes, formatDate, formatInteger } from '@/lib/format';
+import { libraryMeter } from '@/lib/storage-meter';
 import { useTimeZone } from '@/lib/use-time-zone';
 import type { DashboardData } from '@/server/dashboard';
 
@@ -83,12 +84,8 @@ function buildStats(
         media.missingAlt > 0
           ? `${formatInteger(media.missingAlt)} ${media.missingAlt === 1 ? 'needs' : 'need'} alt text`
           : `${formatBytes(media.bytes)} stored`,
-      trend: {
-        kind: 'line',
-        counted: 'files uploaded',
-        total: { value: media.files, label: 'files in the library' },
-        days: { keys: trendDays, counts: media.uploadedDaily },
-      },
+      meter: libraryMeter(media.kinds, media.allowanceBytes),
+      growth: media.growth,
       link: { to: '/media' },
     },
     {

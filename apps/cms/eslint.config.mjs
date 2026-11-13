@@ -15,8 +15,8 @@ const sharedRules = {
 };
 
 export default [
-  // Generated files, plus the editorcn editor and extensions and the mapcn map,
-  // which are vendored as-is from their registry (still type-checked). components/ui and the
+  // Generated files, plus the editorcn editor and extensions, the mapcn map and the uiarc
+  // components, which are vendored from their registry (still type-checked). components/ui and the
   // editor template are edited here, so they stay linted.
   {
     ignores: [
@@ -27,6 +27,7 @@ export default [
       'src/components/editor/**',
       'src/components/extensions/**',
       'src/components/ui/map.tsx',
+      'src/components/arc/**',
     ],
   },
   {

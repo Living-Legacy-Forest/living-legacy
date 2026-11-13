@@ -1,6 +1,12 @@
+import { media } from '@ll/db/schema';
 import { createServerFn } from '@tanstack/react-start';
+import { gte } from 'drizzle-orm';
 import { getDb } from '@/lib/db';
 import { requirePermission } from '@/lib/session';
+import { dayKeys } from '@/lib/dashboard-trend';
+import { growthOf } from '@/lib/media-growth';
+import { readSiteSettings } from '@/lib/site-settings';
+import { MEDIA_ALLOWANCE_BYTES } from '@/lib/storage-meter';
 import { checkTone, jobTone, summariseTones } from '@/lib/system-status';
 import { DATABASE_LIMIT_BYTES, healthOptions, runHealthChecks } from './system-health';
 import { loadJobHealth, loadUsage } from './system-store';
@@ -10,7 +16,8 @@ export const getSystemStatus = createServerFn({ method: 'GET' })
   .middleware([requirePermission('settings:write')])
   .handler(async () => {
     const options = healthOptions(true);
-    const [jobs, health, usage, size] = await Promise.all([
+    const { timeZone } = await readSiteSettings();
+    const [jobs, health, usage, size, uploads] = await Promise.all([
       loadJobHealth(getDb(), Date.now()),
       runHealthChecks(options),
       loadUsage(getDb()),
@@ -20,11 +27,22 @@ export const getSystemStatus = createServerFn({ method: 'GET' })
         .run()
         .then((result) => result.meta.size_after)
         .catch(() => null),
+      // Each upload's day and size over the longest span the page offers.
+      getDb()
+        .select({ at: media.createdAt, bytes: media.size })
+        .from(media)
+        .where(gte(media.createdAt, new Date(Date.now() - 91 * 86_400_000))),
     ]);
     return {
       ...jobs,
       health,
-      usage: { ...usage, databaseBytes: size, databaseLimitBytes: DATABASE_LIMIT_BYTES },
+      usage: {
+        ...usage,
+        databaseBytes: size,
+        databaseLimitBytes: DATABASE_LIMIT_BYTES,
+        mediaAllowanceBytes: MEDIA_ALLOWANCE_BYTES,
+        growth: growthOf(uploads, dayKeys(90, timeZone), timeZone),
+      },
     };
   });
 

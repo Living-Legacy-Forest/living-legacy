@@ -1,5 +1,6 @@
 import type { LinkProps } from '@tanstack/react-router';
 import { formatInteger } from '@/lib/format';
+import type { Growth } from '@/lib/media-growth';
 
 export type Trend = {
   /** Each card draws its trend differently, so a row doesn't read as four copies. */
@@ -36,6 +37,18 @@ export type Trend = {
 export const RANGES = [7, 30, 90] as const;
 export type Range = (typeof RANGES)[number];
 
+/** A usage meter in place of a chart: what takes the space, against an allowance. */
+export type Meter = {
+  label: string;
+  /** In `unit`s, in display order. */
+  segments: { id: string; label: string; value: number }[];
+  limit: number;
+  unit: string;
+  decimals?: number;
+  freeLabel?: string;
+  overLabel?: string;
+};
+
 export type Part = { key: string; label: string; value: number; color: string };
 
 export type Stat = {
@@ -45,6 +58,10 @@ export type Stat = {
   display?: string;
   hint: string;
   trend?: Trend;
+  /** Instead of a trend: what the figure is made of, measured against an allowance. */
+  meter?: Meter;
+  /** With a meter: what was added per day, so the card can say what the span brought in. */
+  growth?: Growth;
   /** Parts of the value, drawn as a donut. */
   parts?: Part[];
   /** Where the figure leads: the list behind the number. */

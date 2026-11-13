@@ -1,24 +1,26 @@
 import { Link } from '@tanstack/react-router';
 import { Suspense, lazy, useState } from 'react';
+import { RangeSelect } from '@/components/range-select';
 import { Card, CardTitle } from '@/components/ui/card';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select';
-import { formatInteger } from '@/lib/format';
+import { formatBytes, formatInteger } from '@/lib/format';
+import { addedIn } from '@/lib/media-growth';
 import { cn } from '@/lib/utils';
 import { CountUp } from './count-up';
-import { RANGES, type Range, type Stat, change, sum } from './shared';
+import { type Range, type Stat, change, sum } from './shared';
 
 export { MUTED, type Part, type Stat, type Trend } from './shared';
 
 const TrendChart = lazy(() => import('./stat-charts').then((m) => ({ default: m.TrendChart })));
 const PartsChart = lazy(() => import('./stat-charts').then((m) => ({ default: m.PartsChart })));
+const UsageMeter = lazy(() =>
+  import('@/components/arc/usage-meter/usage-meter').then((m) => ({ default: m.UsageMeter }))
+);
 
-const RANGE_OPTIONS = RANGES.map((days) => ({ value: String(days), label: `${days} days` }));
+/** "6 files, 42 MB added in 30 days", or that nothing was. */
+function uploaded({ files, bytes }: { files: number; bytes: number }, days: number) {
+  if (files === 0) return `Nothing added in ${days} days`;
+  return `${formatInteger(files)} ${files === 1 ? 'file' : 'files'}, ${formatBytes(bytes)} added in ${days} days`;
+}
 
 /**
  * The title, what the figure counts, the figure and how it changed, then the chart at the
@@ -26,7 +28,7 @@ const RANGE_OPTIONS = RANGES.map((days) => ({ value: String(days), label: `${day
  * at the top and its charts at the bottom.
  */
 export function StatCard({ stat }: { stat: Stat }) {
-  const { label, value, display, hint, trend, parts, link } = stat;
+  const { label, value, display, hint, trend, parts, meter, growth, link } = stat;
   const [range, setRange] = useState<Range>(30);
   // Cards with daily counts offer 7, 30 or 90 days; the rest show their twelve weeks.
   const days = trend?.days;
@@ -48,28 +50,7 @@ export function StatCard({ stat }: { stat: Stat }) {
         <CardTitle data-reveal="1" className="text-sm font-medium">
           {label}
         </CardTitle>
-        {days && (
-          <Select
-            items={RANGE_OPTIONS}
-            value={String(range)}
-            onValueChange={(next) => next && setRange(Number(next) as Range)}
-          >
-            <SelectTrigger
-              aria-label={`${label}: period shown`}
-              size="sm"
-              className="text-muted-foreground -my-1 -mr-2 h-7 gap-1 border-transparent bg-transparent text-xs shadow-none dark:bg-transparent"
-            >
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent align="end">
-              {RANGE_OPTIONS.map((item) => (
-                <SelectItem key={item.value} value={item.value}>
-                  {item.label}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        )}
+        {(days || growth) && <RangeSelect label={label} value={range} onChange={setRange} />}
       </div>
       <div className="mt-3 space-y-1 px-(--card-spacing)">
         <p data-reveal="2" className="text-muted-foreground text-xs text-pretty">
@@ -104,19 +85,30 @@ export function StatCard({ stat }: { stat: Stat }) {
             <span className="sr-only"> ({trend.counted})</span>
           </p>
         )}
+        {growth && (
+          <p data-reveal="5" className="text-muted-foreground text-xs tabular-nums">
+            {uploaded(addedIn(growth, range), range)}
+          </p>
+        )}
       </div>
-      {(trend || parts) && (
+      {(trend || parts || meter) && (
         // Holds the chart's height while the chart library loads.
         <Suspense
           fallback={
             <div className="mt-auto px-(--card-spacing) pt-4">
-              <div className={trend ? 'h-32' : 'h-24'} />
+              <div className={trend ? 'h-32' : meter ? 'h-36' : 'h-24'} />
             </div>
           }
         >
           <div data-reveal="4" className="mt-auto px-(--card-spacing) pt-4">
             {trend && <TrendChart trend={trend} range={range} />}
             {parts && <PartsChart parts={parts} />}
+            {meter && (
+              // Tighter than the meter's own spacing, to keep the card about as tall as the rest.
+              <div className="[--meter-gap:0.25rem] [--meter-item-pad:0.125rem] [--meter-legend-min:3.5rem] [--meter-text-base:0.625rem] [--meter-text-sm:0.5625rem] [--meter-text-xs:0.5625rem] [--meter-top:20px] [--meter-total-size:0.875rem] [--meter-track:8px]">
+                <UsageMeter {...meter} />
+              </div>
+            )}
           </div>
         </Suspense>
       )}

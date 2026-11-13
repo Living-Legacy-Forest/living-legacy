@@ -3,11 +3,8 @@
 
 export const trendMetrics = {
   // Distinct browsers. Its total counts each one once, not once for every day they came back.
-  visitors: { label: 'Unique visitors', total: 'Total unique visitors', analytics: true },
-  visits: { label: 'Visits', total: 'Total visits', analytics: true },
-  pageviews: { label: 'Page views', total: 'Total page views', analytics: true },
-  booked: { label: 'People booked', total: 'Total people booked', analytics: false },
-  published: { label: 'Posts published', total: 'Total posts published', analytics: false },
+  visitors: { label: 'Unique visitors', total: 'Total unique visitors' },
+  pageviews: { label: 'Page views', total: 'Total page views' },
 } as const;
 
 export type TrendMetric = keyof typeof trendMetrics;

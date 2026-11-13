@@ -105,7 +105,13 @@ export async function loadDistinctVisitors(
 
 const WEEK_SECONDS = 7 * 86_400;
 const blogCache = new Map<string, { at: number; views: BlogViews }>();
-export type BlogViews = { weeks: number[]; months: number[] };
+export type BlogViews = {
+  weeks: number[];
+  months: number[];
+  /** Distinct browsers per week and month: the readers behind the views. */
+  readerWeeks: number[];
+  readerMonths: number[];
+};
 
 /**
  * Views of the website's blog pages (the articles, the blog's home and its category, tag and
@@ -133,14 +139,15 @@ export async function loadBlogViews(
       body: JSON.stringify({ query: { kind: 'HogQLQuery', query, values } }),
     });
     if (!response.ok) throw new Error('Could not load blog views.');
-    return ((await response.json()) as { results: [string | number, number][] }).results;
+    return ((await response.json()) as { results: [string | number, number, number][] }).results;
   };
   const onBlog = `(properties.$pathname = '/blog' OR startsWith(properties.$pathname, '/blog/'))`;
 
   try {
     const [weekRows, monthRows] = await Promise.all([
       run(
-        `SELECT intDiv(dateDiff('second', timestamp, now()), ${WEEK_SECONDS}) AS week, count() AS views
+        `SELECT intDiv(dateDiff('second', timestamp, now()), ${WEEK_SECONDS}) AS week, count() AS views,
+            count(DISTINCT distinct_id) AS readers
           FROM events
           WHERE event = '$pageview' AND ${onBlog}
             AND timestamp >= now() - INTERVAL ${weekCount * 7} DAY
@@ -148,7 +155,8 @@ export async function loadBlogViews(
         {}
       ),
       run(
-        `SELECT toString(toStartOfMonth(toDate(toTimeZone(timestamp, {zone})))) AS month, count() AS views
+        `SELECT toString(toStartOfMonth(toDate(toTimeZone(timestamp, {zone})))) AS month, count() AS views,
+            count(DISTINCT distinct_id) AS readers
           FROM events
           WHERE event = '$pageview' AND ${onBlog}
             AND toDate(toTimeZone(timestamp, {zone})) >= toDate({since})
@@ -157,14 +165,26 @@ export async function loadBlogViews(
       ),
     ]);
     const weeks = Array.from({ length: weekCount }, () => 0);
-    for (const [week, views] of weekRows) {
+    const readerWeeks = Array.from({ length: weekCount }, () => 0);
+    for (const [week, views, readers] of weekRows) {
       const ago = Number(week);
-      if (ago >= 0 && ago < weekCount) weeks[weekCount - 1 - ago] = Number(views);
+      if (ago >= 0 && ago < weekCount) {
+        weeks[weekCount - 1 - ago] = Number(views);
+        readerWeeks[weekCount - 1 - ago] = Number(readers);
+      }
     }
     const byMonth = new Map(
-      monthRows.map(([month, views]) => [String(month).slice(0, 7), Number(views)])
+      monthRows.map(([month, views, readers]) => [
+        String(month).slice(0, 7),
+        { views: Number(views), readers: Number(readers) },
+      ])
     );
-    const views = { weeks, months: monthKeys.map((key) => byMonth.get(key) ?? 0) };
+    const views = {
+      weeks,
+      readerWeeks,
+      months: monthKeys.map((key) => byMonth.get(key)?.views ?? 0),
+      readerMonths: monthKeys.map((key) => byMonth.get(key)?.readers ?? 0),
+    };
     blogCache.set(cacheKey, { at: Date.now(), views });
     return views;
   } catch {

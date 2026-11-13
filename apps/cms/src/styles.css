@@ -1154,10 +1154,11 @@
 }
 
 /* The stat cards' line chart is small, so its value axis gets a narrower column than the
-   library's 48px, and the lines run further across the card. The chart's own classes are
-   hashed, so it is found by its slider. */
+   library's 48px, and the lines run further across the card. Wide enough for "1.5K", which
+   the labels use past a thousand. The chart's own classes are hashed, so it is found by its
+   slider. */
 .stat-chart > div:has(> [role='slider']) {
-  grid-template-columns: minmax(0, 1fr) 26px;
+  grid-template-columns: minmax(0, 1fr) 38px;
 }
 
 /* Empty states: the icon settles in, then the title, description and action follow.

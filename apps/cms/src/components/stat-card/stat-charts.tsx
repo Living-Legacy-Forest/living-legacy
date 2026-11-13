@@ -68,6 +68,7 @@ const barCursor = { fill: 'color-mix(in oklch, var(--muted-foreground) 10%, tran
 const tint = (share: number) => `color-mix(in oklch, var(--color-count) ${share}%, transparent)`;
 /** The trend's 128px (h-32) less the 26px date row. */
 const PLOT_HEIGHT = 102;
+const compact = new Intl.NumberFormat('en-AU', { notation: 'compact', maximumFractionDigits: 1 });
 const sentence = (text: string) => text.charAt(0).toUpperCase() + text.slice(1);
 
 /** The last twelve weeks or months as a line chart, or as bars. Hover or scrub for each week's figure. */
@@ -106,8 +107,9 @@ export function TrendChart({ trend, period }: { trend: Trend; period: Period }) 
         height={PLOT_HEIGHT}
         categoryLabel={period === 'months' ? 'Month' : 'Week'}
         formatValue={(value) => formatInteger(value)}
-        // Counts are whole, so a small range keeps only its whole-number lines labelled.
-        formatTick={(value) => (Number.isInteger(value) ? formatInteger(value) : '')}
+        // Counts are whole, so a small range keeps only its whole-number lines labelled. Big ones
+        // are short ("1.5K"), as the axis column is narrow.
+        formatTick={(value) => (Number.isInteger(value) ? compact.format(value) : '')}
         data={data.map((d, i) => ({
           key: String(i),
           label: d.week,

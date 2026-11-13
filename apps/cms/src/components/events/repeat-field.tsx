@@ -10,7 +10,7 @@ import {
   toZoned,
 } from '@ll/content';
 import { useState } from 'react';
-import { Input } from '@/components/ui/input';
+import { NumberField } from '@/components/ui/number-field';
 import { Label } from '@/components/ui/label';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Calendar } from '@/components/ui/calendar';
@@ -152,19 +152,13 @@ export function RepeatField({
               </Select>
               {value.ends === 'count' ? (
                 <div className="flex flex-1 items-center gap-2">
-                  <Input
+                  <NumberField
                     aria-label="Number of dates"
-                    type="number"
-                    inputMode="numeric"
                     min={2}
                     max={MAX_OCCURRENCES}
                     value={value.count}
-                    onChange={(e) =>
-                      patch({
-                        count: Math.min(MAX_OCCURRENCES, Math.max(2, Number(e.target.value) || 2)),
-                      })
-                    }
-                    className="w-20"
+                    onValueChange={(count) => patch({ count })}
+                    className="w-32"
                   />
                   <span className="text-muted-foreground text-sm">dates</span>
                 </div>

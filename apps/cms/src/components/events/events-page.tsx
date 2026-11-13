@@ -399,9 +399,9 @@ function EventPanel({
     <div className="space-y-5">
       {/* One row: the tabs, and the date (or a single date's status) beside them, so
           neither moves when switching tabs. On phones the date sits above the tabs. */}
-      <div className="flex flex-wrap items-center gap-x-4 gap-y-3 border-b pb-px">
+      <div className="flex flex-wrap items-center gap-x-4 gap-y-3">
         <Tabs value={view} onValueChange={(next) => setView(next as PanelView)}>
-          <TabsList variant="line" aria-label="Show" className="-mb-px">
+          <TabsList aria-label="Show">
             <TabsTrigger value="details">Details</TabsTrigger>
             <TabsTrigger value="guests">Guests</TabsTrigger>
             <TabsTrigger value="dashboard">Dashboard</TabsTrigger>

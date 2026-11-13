@@ -6,7 +6,7 @@ import { toZoned } from '@ll/content';
 import { type ReactNode, useState } from 'react';
 import { CalendarClockIcon } from '@/components/icons';
 import { Button } from '@/components/ui/button';
-import { Calendar } from '@/components/ui/calendar';
+import { DayCalendar } from '@/components/ui/day-calendar';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
 import { displayTime } from '@/lib/format';
@@ -76,34 +76,23 @@ export function SeriesCalendar({
           <span className="truncate">{label}</span>
         </PopoverTrigger>
         <PopoverContent align="start" className="w-[min(20rem,calc(100vw-2rem))] p-0">
-          <Calendar
-            mode="single"
-            weekStartsOn={1}
-            className="w-full px-3"
-            // A gap between days, so neighbouring dates sit apart rather than as one block.
-            classNames={{
-              root: 'w-full',
-              weekdays: 'flex gap-1.5',
-              week: 'mt-1.5 flex w-full gap-1.5',
+          <DayCalendar
+            className="px-3"
+            value={viewing}
+            defaultMonth={dayOf(dates.find((d) => d.startsAt >= Date.now()) ?? dates[0]!)}
+            minDate={dayOf(dates[0]!)}
+            maxDate={dayOf(dates[dates.length - 1]!)}
+            disabledDates={(day) => !byDay.has(dayKey(day))}
+            // Days with a session get a soft fill; a cancelled one is struck through.
+            dayClassName={(day) => {
+              const sessions = byDay.get(dayKey(day));
+              if (!sessions) return undefined;
+              const cancelled = sessions.some((d) => d.status === 'cancelled');
+              return `font-medium not-aria-selected:before:bg-muted${cancelled ? ' line-through' : ''}`;
             }}
-            selected={viewing}
-            defaultMonth={
-              viewing ?? dayOf(dates.find((d) => d.startsAt >= Date.now()) ?? dates[0]!)
-            }
-            startMonth={dayOf(dates[0]!)}
-            endMonth={dayOf(dates[dates.length - 1]!)}
-            disabled={(day) => !byDay.has(dayKey(day))}
-            modifiers={{
-              hasDate: dates.map(dayOf),
-              cancelled: dates.filter((d) => d.status === 'cancelled').map(dayOf),
-            }}
-            modifiersClassNames={{
-              hasDate: '[&>button]:bg-muted [&>button]:font-medium',
-              cancelled: '[&>button]:line-through',
-            }}
-            onSelect={(day) => {
+            onChange={(day) => {
               // Clicking the day already shown keeps the session being viewed.
-              const first = day && byDay.get(dayKey(day))?.[0];
+              const first = byDay.get(dayKey(day))?.[0];
               if (first && (!viewing || dayKey(day) !== dayKey(viewing))) onPick(first.id);
               setOpen(false);
             }}

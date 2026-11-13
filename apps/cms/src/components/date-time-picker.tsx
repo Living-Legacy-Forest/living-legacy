@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { CalendarClockIcon, XIcon } from '@/components/icons';
 import { Button } from '@/components/ui/button';
-import { Calendar } from '@/components/ui/calendar';
+import { DayCalendar } from '@/components/ui/day-calendar';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
@@ -61,7 +61,9 @@ export function DateTimePicker({
   };
 
   return (
-    <div className="flex items-center gap-1">
+    // The clear button sits over the field's right edge; it can't be inside the trigger, as a
+    // button can't hold another button.
+    <div className="relative flex items-center">
       <Popover
         open={open}
         onOpenChange={(next) => {
@@ -78,7 +80,7 @@ export function DateTimePicker({
               className={cn(
                 'min-w-0 flex-1 justify-start font-normal',
                 'touch:min-h-11',
-                value === null && 'text-muted-foreground'
+                value === null ? 'text-muted-foreground' : 'pr-9'
               )}
             />
           }
@@ -89,16 +91,11 @@ export function DateTimePicker({
           </span>
         </PopoverTrigger>
         <PopoverContent align="start" className="w-[min(20rem,calc(100vw-2rem))] p-0">
-          <Calendar
-            mode="single"
-            selected={day}
-            defaultMonth={day}
-            onSelect={(next) => next && onChange(at(next, time))}
-            disabled={
-              minWall ? { before: new Date(minWall.year, minWall.month, minWall.day) } : undefined
-            }
-            className="w-full px-3"
-            classNames={{ root: 'w-full' }}
+          <DayCalendar
+            value={day}
+            onChange={(next) => onChange(at(next, time))}
+            minDate={minWall ? new Date(minWall.year, minWall.month, minWall.day) : undefined}
+            className="px-3"
           />
           <div className="flex items-center gap-2 border-t p-3">
             <Label htmlFor={`${id}-time`} className="text-muted-foreground text-xs">
@@ -142,6 +139,7 @@ export function DateTimePicker({
           variant="ghost"
           size="icon-sm"
           aria-label="Clear"
+          className="text-muted-foreground absolute top-1/2 right-1 -translate-y-1/2"
           onClick={() => onChange(null)}
         >
           <XIcon aria-hidden />

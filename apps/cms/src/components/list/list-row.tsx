@@ -337,9 +337,11 @@ export function ListRow({
   return (
     <li
       ref={drag.rowRef}
+      data-slot="list-row"
       className={cn(
+        // Hover is the list's gliding highlight (ListRows), which this row sits above.
         'group relative overflow-hidden rounded-md',
-        current ? 'bg-accent' : 'hover:bg-muted/60',
+        current && 'bg-accent',
         // Phones: a cell in the grouped list. It highlights while pressed, not on hover.
         'max-md:rounded-none max-md:bg-transparent max-md:hover:bg-transparent max-md:has-[[data-row-main]:active]:bg-(--ios-fill)'
       )}

@@ -10,10 +10,11 @@ import {
   toZoned,
 } from '@ll/content';
 import { useState } from 'react';
-import { Input } from '@/components/ui/input';
+import { NumberField } from '@/components/ui/number-field';
 import { Label } from '@/components/ui/label';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Calendar } from '@/components/ui/calendar';
+import { DayCalendar } from '@/components/ui/day-calendar';
 import { Button } from '@/components/ui/button';
 import {
   Select,
@@ -151,19 +152,13 @@ export function RepeatField({
               </Select>
               {value.ends === 'count' ? (
                 <div className="flex flex-1 items-center gap-2">
-                  <Input
+                  <NumberField
                     aria-label="Number of dates"
-                    type="number"
-                    inputMode="numeric"
                     min={2}
                     max={MAX_OCCURRENCES}
                     value={value.count}
-                    onChange={(e) =>
-                      patch({
-                        count: Math.min(MAX_OCCURRENCES, Math.max(2, Number(e.target.value) || 2)),
-                      })
-                    }
-                    className="w-20"
+                    onValueChange={(count) => patch({ count })}
+                    className="w-32"
                   />
                   <span className="text-muted-foreground text-sm">dates</span>
                 </div>
@@ -181,19 +176,15 @@ export function RepeatField({
                     {value.until ? dayLabel(value.until) : 'Pick a date'}
                   </PopoverTrigger>
                   <PopoverContent align="start" className="w-[20rem] p-0">
-                    <Calendar
-                      weekStartsOn={1}
-                      className="w-full px-3"
-                      classNames={{ root: 'w-full' }}
-                      mode="single"
-                      selected={
+                    <DayCalendar
+                      className="px-3"
+                      value={
                         value.until
                           ? new Date(value.until.year, value.until.month, value.until.day)
                           : undefined
                       }
-                      disabled={{ before: new Date(firstDay.year, firstDay.month, firstDay.day) }}
-                      onSelect={(d) => {
-                        if (!d) return;
+                      minDate={new Date(firstDay.year, firstDay.month, firstDay.day)}
+                      onChange={(d) => {
                         patch({
                           until: { year: d.getFullYear(), month: d.getMonth(), day: d.getDate() },
                         });

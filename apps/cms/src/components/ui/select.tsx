@@ -4,6 +4,7 @@ import * as React from 'react';
 import { Select as SelectPrimitive } from '@base-ui/react/select';
 import { cn } from '@/lib/utils';
 import { ChevronDownIcon, CheckIcon, ChevronUpIcon } from '@/components/icons';
+import { GlideHighlight } from '@/components/ui/glide-highlight';
 
 const Select = SelectPrimitive.Root;
 
@@ -17,9 +18,41 @@ function SelectGroup({ className, ...props }: SelectPrimitive.Group.Props) {
   );
 }
 
+/**
+ * A newly chosen value rises into place instead of swapping. It watches the text, so it runs
+ * whatever changed the value, and not on first paint.
+ */
+function useValueRise() {
+  const ref = React.useRef<HTMLSpanElement>(null);
+  React.useEffect(() => {
+    const node = ref.current;
+    if (!node) return;
+    let shown = node.textContent;
+    const observer = new MutationObserver(() => {
+      if (node.textContent === shown) return;
+      shown = node.textContent;
+      const reduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+      node.animate(
+        reduced
+          ? [{ opacity: 0 }, { opacity: 1 }]
+          : [
+              { opacity: 0, transform: 'translateY(0.35em)' },
+              { opacity: 1, transform: 'none' },
+            ],
+        { duration: reduced ? 100 : 200, easing: 'cubic-bezier(0.16, 1, 0.3, 1)' }
+      );
+    });
+    observer.observe(node, { childList: true, characterData: true, subtree: true });
+    return () => observer.disconnect();
+  }, []);
+  return ref;
+}
+
 function SelectValue({ className, ...props }: SelectPrimitive.Value.Props) {
+  const ref = useValueRise();
   return (
     <SelectPrimitive.Value
+      ref={ref}
       data-slot="select-value"
       className={cn('flex flex-1 text-left', className)}
       {...props}
@@ -40,14 +73,17 @@ function SelectTrigger({
       data-slot="select-trigger"
       data-size={size}
       className={cn(
-        "border-input focus-visible:border-ring aria-invalid:border-destructive aria-invalid:ring-destructive/20 data-placeholder:text-muted-foreground dark:bg-input/30 dark:hover:bg-input/50 dark:aria-invalid:border-destructive/50 dark:aria-invalid:ring-destructive/25 text-ui flex w-fit items-center justify-between gap-1.5 rounded-lg border bg-transparent py-2 pr-2 pl-2.5 whitespace-nowrap transition-colors outline-none select-none disabled:cursor-not-allowed disabled:opacity-50 data-[size=default]:h-9 data-[size=sm]:h-7 data-[size=sm]:rounded-[min(var(--radius-md),10px)] *:data-[slot=select-value]:line-clamp-1 *:data-[slot=select-value]:flex *:data-[slot=select-value]:items-center *:data-[slot=select-value]:gap-1.5 [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-4",
+        "group/select-trigger border-input focus-visible:border-ring aria-invalid:border-destructive aria-invalid:ring-destructive/20 data-placeholder:text-muted-foreground dark:bg-input/30 dark:hover:bg-input/50 dark:aria-invalid:border-destructive/50 dark:aria-invalid:ring-destructive/25 text-ui flex w-fit items-center justify-between gap-1.5 rounded-lg border bg-transparent py-2 pr-2 pl-2.5 whitespace-nowrap transition-colors outline-none select-none disabled:cursor-not-allowed disabled:opacity-50 data-[size=default]:h-9 data-[size=sm]:h-7 data-[size=sm]:rounded-[min(var(--radius-md),10px)] *:data-[slot=select-value]:line-clamp-1 *:data-[slot=select-value]:flex *:data-[slot=select-value]:items-center *:data-[slot=select-value]:gap-1.5 [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-4",
         className
       )}
       {...props}
     >
       {children}
       <SelectPrimitive.Icon
-        render={<ChevronDownIcon className="text-muted-foreground pointer-events-none size-4" />}
+        render={
+          // Flips while the list is open.
+          <ChevronDownIcon className="text-muted-foreground pointer-events-none size-4 transition-transform duration-200 ease-[cubic-bezier(0.22,1,0.36,1)] group-data-popup-open/select-trigger:rotate-180 motion-reduce:transition-none" />
+        }
       />
     </SelectPrimitive.Trigger>
   );
@@ -81,11 +117,17 @@ function SelectContent({
           data-slot="select-content"
           data-align-trigger={alignItemWithTrigger}
           className={cn(
-            'bg-popover text-popover-foreground ring-foreground/6 data-[side=bottom]:slide-in-from-top-2 data-[side=inline-end]:slide-in-from-left-2 data-[side=inline-start]:slide-in-from-right-2 data-[side=left]:slide-in-from-right-2 data-[side=right]:slide-in-from-left-2 data-[side=top]:slide-in-from-bottom-2 data-open:animate-in data-open:fade-in-0 data-open:zoom-in-95 data-closed:animate-out data-closed:fade-out-0 data-closed:zoom-out-95 relative isolate z-50 max-h-(--available-height) w-(--anchor-width) min-w-36 origin-(--transform-origin) overflow-x-hidden overflow-y-auto rounded-lg shadow-md ring-1 duration-100 data-[align-trigger=true]:animate-none',
+            'bg-popover text-popover-foreground ring-foreground/6 relative isolate z-50 max-h-(--available-height) w-(--anchor-width) min-w-36 origin-(--transform-origin) overflow-x-hidden overflow-y-auto rounded-lg shadow-md ring-1',
+            // Grows from the trigger, as dropdown menus do. Laid over the trigger (aligned to the
+            // chosen item) there is no side, so it only fades and scales.
+            'transition-[opacity,scale,translate] duration-150 ease-[cubic-bezier(0.16,1,0.3,1)] motion-reduce:transition-opacity',
+            'data-starting-style:scale-97 data-starting-style:opacity-0 data-[side=bottom]:data-starting-style:-translate-y-1 data-[side=left]:data-starting-style:translate-x-1 data-[side=right]:data-starting-style:-translate-x-1 data-[side=top]:data-starting-style:translate-y-1',
+            'data-ending-style:scale-98 data-ending-style:opacity-0 data-ending-style:duration-100 data-ending-style:ease-[cubic-bezier(0.22,1,0.36,1)]',
             className
           )}
           {...props}
         >
+          <GlideHighlight />
           <SelectScrollUpButton />
           <SelectPrimitive.List>{children}</SelectPrimitive.List>
           <SelectScrollDownButton />
@@ -110,7 +152,7 @@ function SelectItem({ className, children, ...props }: SelectPrimitive.Item.Prop
     <SelectPrimitive.Item
       data-slot="select-item"
       className={cn(
-        "focus:bg-accent focus:text-accent-foreground not-data-[variant=destructive]:focus:**:text-accent-foreground text-ui relative flex w-full cursor-default items-center gap-1.5 rounded-md py-1 pr-8 pl-1.5 outline-hidden select-none data-disabled:pointer-events-none data-disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-4 *:[span]:last:flex *:[span]:last:items-center *:[span]:last:gap-2",
+        "focus:text-accent-foreground not-data-[variant=destructive]:focus:**:text-accent-foreground text-ui relative flex w-full cursor-default items-center gap-1.5 rounded-md py-1 pr-8 pl-1.5 outline-hidden select-none data-disabled:pointer-events-none data-disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-4 *:[span]:last:flex *:[span]:last:items-center *:[span]:last:gap-2",
         className
       )}
       {...props}
@@ -120,7 +162,8 @@ function SelectItem({ className, children, ...props }: SelectPrimitive.Item.Prop
       </SelectPrimitive.ItemText>
       <SelectPrimitive.ItemIndicator
         render={
-          <span className="pointer-events-none absolute right-2 flex size-4 items-center justify-center" />
+          // The tick pops in on the chosen option.
+          <span className="animate-in fade-in-0 zoom-in-75 pointer-events-none absolute right-2 flex size-4 items-center justify-center duration-200 motion-reduce:animate-none" />
         }
       >
         <CheckIcon className="pointer-events-none" />

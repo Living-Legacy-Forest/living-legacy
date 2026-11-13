@@ -26,6 +26,16 @@ export type WhatsNewEntry = {
 
 export const whatsNew: WhatsNewEntry[] = [
   {
+    id: '2026-11-13',
+    title: 'Notifications you can sort through',
+    items: [
+      {
+        title: 'Read, unread and dismiss',
+        body: 'The bell, top right, now counts what you have not read yet. Opening something marks it read. Each notification has buttons to mark it read or unread, or dismiss it. Switch to Unread to see only what is left, use Mark all read to catch up, and Clear read to tidy the list.',
+      },
+    ],
+  },
+  {
     id: '2026-11-12-3',
     title: 'Report a problem',
     items: [

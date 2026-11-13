@@ -25,6 +25,7 @@ import { ArrowRight, ChevronDownIcon } from '@/components/icons';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { NumberField } from '@/components/ui/number-field';
 import { BrandRulesEditor } from '@/components/settings/brand-rules-editor';
 import { SettingsRow, SettingsSection } from '@/components/settings/settings-section';
 import { MediaPicker, useMediaItem } from '@/components/media/image-field';
@@ -997,16 +998,13 @@ function TargetInput({
   onChange: (value: number) => void;
 }) {
   return (
-    <Input
+    <NumberField
       id={id}
-      type="number"
-      inputMode="numeric"
       min={0}
-      step={1}
       value={value}
       aria-label={label}
-      onChange={(e) => onChange(Math.max(0, Math.floor(Number(e.target.value) || 0)))}
-      className="touch:h-11 h-9 w-20 tabular-nums"
+      onValueChange={onChange}
+      className="w-32"
     />
   );
 }

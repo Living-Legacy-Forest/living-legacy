@@ -33,6 +33,7 @@ import {
 } from '@/components/ui/empty';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { cn } from '@/lib/utils';
+import { GlideHighlight } from '@/components/ui/glide-highlight';
 
 /**
  * Phones: the sheet's top bar, where DialogActions moves the form's submit
@@ -137,6 +138,13 @@ export function ListRows({
         className
       )}
     >
+      {/* Desktop hover glides from row to row; phones keep their pressed-cell look. */}
+      <GlideHighlight
+        follow="hover"
+        as="li"
+        selector="[data-slot=list-row]"
+        className="bg-muted/60 max-md:hidden"
+      />
       {children}
     </ul>
   );

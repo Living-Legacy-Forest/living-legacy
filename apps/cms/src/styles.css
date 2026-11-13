@@ -468,6 +468,10 @@
   [data-slot='drawer-content'] :is([data-slot='form-group'], [data-slot='form-block-body']) {
     background: var(--ios-cell-raised);
   }
+  /* An open date range picker grows out of its row, so the group lets it spill over. */
+  [data-slot='form-group']:has([data-slot='date-range-picker'][data-open]) {
+    overflow: visible;
+  }
   /* A block whose content draws its own box (the rich-text editor) fills the
      group edge to edge; anything else (the map pin picker) gets a row's padding. */
   [data-slot='form-block-body'] > .border {
@@ -1436,5 +1440,17 @@ h3,
     line-height: 1.12;
     font-weight: 700;
     letter-spacing: -0.022em;
+  }
+}
+
+/* Until a pill track's gliding fill has measured (the server render, the first paint), the
+   chosen item wears its own, so the choice never shows unmarked. */
+[data-slot='pill-track']:not([data-glide]) > :is([aria-pressed='true'], [aria-current='page']) {
+  background: var(--muted);
+}
+@media (width < 48rem) {
+  /* Phones show the segmented control as iOS does. */
+  [data-slot='pill-track'][role='group']:not([data-glide]) > [aria-pressed='true'] {
+    background: var(--ios-segment-on);
   }
 }

@@ -37,6 +37,7 @@ import {
 } from '@/components/ui/alert-dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { NumberField } from '@/components/ui/number-field';
 import {
   Select,
   SelectContent,
@@ -559,17 +560,12 @@ export function EventForm({
             htmlFor="ev-party"
             hint="For online bookings. Staff can add more."
           >
-            <Input
+            <NumberField
               id="ev-party"
-              type="number"
-              inputMode="numeric"
               min={1}
               max={50}
-              required
               value={values.maxPartySize}
-              onChange={(e) =>
-                patch({ maxPartySize: Math.min(50, Math.max(1, Number(e.target.value) || 1)) })
-              }
+              onValueChange={(maxPartySize) => patch({ maxPartySize })}
             />
           </FormCell>
         </div>

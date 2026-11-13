@@ -1,12 +1,10 @@
 import { type CalendarDate, toZoned } from '@ll/content';
 import { useState } from 'react';
-import { type DateRange } from 'react-day-picker';
-import { CalendarClockIcon, PlusIcon, XIcon } from '@/components/icons';
+import { PlusIcon, XIcon } from '@/components/icons';
 import { Button } from '@/components/ui/button';
-import { Calendar } from '@/components/ui/calendar';
+import { DateRangePicker, type DateRange } from '@/components/ui/date-range-picker';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { displayTime, fromZoned, parseTime } from '@/lib/format';
 
 export type EventTimes = { startsAt: number; endsAt: number };
@@ -93,7 +91,6 @@ export function EventDatesField({
   const [endText, setEndText] = useState(
     end ? displayTime(`${end.hour}:${end.minute}`) : '12:00 pm'
   );
-  const [open, setOpen] = useState(false);
 
   function report(next: { from: CalendarDate; to: CalendarDate } | null, s: string, e: string) {
     const startTime = parseTime(s);
@@ -107,9 +104,8 @@ export function EventDatesField({
     });
   }
 
-  function pickRange(picked: DateRange | undefined) {
-    if (!picked?.from) return;
-    const next = { from: asCalendar(picked.from), to: asCalendar(picked.to ?? picked.from) };
+  function pickRange(picked: DateRange) {
+    const next = { from: asCalendar(picked.start), to: asCalendar(picked.end) };
     setRange(next);
     report(next, startText, endText);
   }
@@ -136,39 +132,13 @@ export function EventDatesField({
       <div className="grid grid-cols-2 gap-3 sm:grid-cols-[1fr_7.5rem_7.5rem]">
         <div className="col-span-2 space-y-1.5 sm:col-span-1">
           <Label htmlFor={id}>Date</Label>
-          <Popover open={open} onOpenChange={setOpen}>
-            <PopoverTrigger
-              render={
-                <Button
-                  id={id}
-                  type="button"
-                  variant="outline"
-                  className="touch:min-h-11 w-full justify-start px-2.5 font-normal"
-                />
-              }
-            >
-              <CalendarClockIcon aria-hidden data-icon="inline-start" />
-              <span className="truncate">
-                {range ? dayLabel(range.from, range.to) : 'Pick a date'}
-              </span>
-            </PopoverTrigger>
-            <PopoverContent align="start" className="w-[min(20rem,calc(100vw-2rem))] p-0">
-              {/* The calendar fills the popover, so the hint below wraps under it. */}
-              <Calendar
-                className="w-full px-3"
-                classNames={{ root: 'w-full' }}
-                mode="range"
-                weekStartsOn={1}
-                selected={range ? { from: asDate(range.from), to: asDate(range.to) } : undefined}
-                defaultMonth={range ? asDate(range.from) : undefined}
-                onSelect={pickRange}
-                min={0}
-              />
-              <p className="text-muted-foreground border-t px-3 py-2 text-xs">
-                Pick one day, or a second day for an event over two or more days.
-              </p>
-            </PopoverContent>
-          </Popover>
+          <DateRangePicker
+            id={id}
+            label="Date"
+            placeholder="Pick a date"
+            value={range ? { start: asDate(range.from), end: asDate(range.to) } : null}
+            onChange={pickRange}
+          />
         </div>
         <div className="space-y-1.5">
           <Label htmlFor={`${id}-start`}>Starts</Label>

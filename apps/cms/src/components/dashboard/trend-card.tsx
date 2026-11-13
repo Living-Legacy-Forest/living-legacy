@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { LineChart, type LineChartSeries } from '@/components/arc/line-chart/line-chart';
 import { SegmentedControl } from '@/components/segmented-control';
-import { Card, CardContent, CardHeader } from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import {
   Select,
   SelectContent,
@@ -63,16 +63,17 @@ function readStored(metrics: TrendMetric[]): { metric: TrendMetric; days: TrendR
 }
 
 /**
- * One number over the last 7, 30 or 90 days against the same span before it. Visits and page
- * views are offered only when the website's analytics are connected.
+ * The website's unique visitors or page views over the last 7, 30 or 90 days, against the same
+ * span before. It needs the website's analytics to be connected, and says so when they are not.
  */
 export function TrendCard({ analytics }: { analytics: boolean }) {
-  const metrics = trendMetricKeys.filter((key) => analytics || !trendMetrics[key].analytics);
+  const metrics = trendMetricKeys;
   const [{ metric, days }, setChoice] = useState(() => readStored(metrics));
   const [trend, setTrend] = useState<DashboardTrend | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
+    if (!analytics) return;
     localStorage.setItem(STORED, JSON.stringify({ metric, days }));
     let live = true;
     setLoading(true);
@@ -83,7 +84,7 @@ export function TrendCard({ analytics }: { analytics: boolean }) {
     return () => {
       live = false;
     };
-  }, [metric, days]);
+  }, [analytics, metric, days]);
 
   const { label, total: totalLabel } = trendMetrics[metric];
   // Unique visitors come counted over the whole period; the rest add up their days.
@@ -101,6 +102,22 @@ export function TrendCard({ analytics }: { analytics: boolean }) {
       axisLabel: (trend.days.length - 1 - i) % every === 0 ? shortDate(key) : undefined,
       values: { current: trend.current[i] ?? 0, previous: trend.previous[i] ?? 0 },
     })) ?? [];
+
+  if (!analytics) {
+    return (
+      <Card>
+        <CardHeader>
+          <CardTitle>Website traffic</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <p className="text-muted-foreground text-sm text-pretty">
+            Unique visitors and page views appear here once the website's analytics are connected to
+            the CMS.
+          </p>
+        </CardContent>
+      </Card>
+    );
+  }
 
   return (
     <Card>

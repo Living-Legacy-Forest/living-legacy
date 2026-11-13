@@ -34,8 +34,8 @@ export const whatsNew: WhatsNewEntry[] = [
         body: 'The Posts, Events and Media files cards on the dashboard now have a menu in the corner. Choose 12 months to see each month instead of each week, and the change underneath follows it. The charts are line charts you can hover over or drag along to read any point.',
       },
       {
-        title: 'Unique visitors on the trend chart',
-        body: 'When website analytics are connected, the trend chart can show unique visitors, each counted once for the whole period. Needs attention now sits beside Locations.',
+        title: 'The trend chart is now about website traffic',
+        body: 'It shows unique visitors, each counted once for the whole period, or page views, over the last 7, 30 or 90 days. It no longer shows posts published or people booked, which the cards above cover. Needs attention now sits beside Locations.',
       },
     ],
   },

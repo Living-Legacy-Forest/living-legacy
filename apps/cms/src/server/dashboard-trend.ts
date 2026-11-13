@@ -1,20 +1,12 @@
 import { createServerFn } from '@tanstack/react-start';
 import { z } from 'zod';
-import {
-  type TrendMetric,
-  bucketByDay,
-  dayKeys,
-  trendMetricKeys,
-  trendMetrics,
-} from '@/lib/dashboard-trend';
+import { type TrendMetric, bucketByDay, dayKeys, trendMetricKeys } from '@/lib/dashboard-trend';
 import { authMiddleware } from '@/lib/session';
 import { readSiteSettings } from '@/lib/site-settings';
-import { loadContent, loadDistinctVisitors, loadVisits } from './dashboard-trend-store';
-
-const DAY_MS = 86_400_000;
+import { loadDistinctVisitors, loadVisits } from './dashboard-trend-store';
 
 /**
- * One metric per day over the last `days` days and the `days` before them, in the site's time
+ * One website metric per day over the last `days` days and the `days` before them, in the site's time
  * zone. Today counts so far, so the last point is a day in progress.
  */
 export const getDashboardTrend = createServerFn({ method: 'GET' })
@@ -29,14 +21,7 @@ export const getDashboardTrend = createServerFn({ method: 'GET' })
     const { metric, days } = data;
     const { timeZone } = await readSiteSettings();
     const keys = dayKeys(days * 2, timeZone);
-    const readings = trendMetrics[metric].analytics
-      ? (await loadVisits(days * 2, timeZone))[metric as 'visitors' | 'visits' | 'pageviews']
-      : // A day's margin either side of the zone's midnight; days outside the keys are dropped.
-        await loadContent(
-          metric as 'booked' | 'published',
-          Date.now() - (days * 2 + 1) * DAY_MS,
-          timeZone
-        );
+    const readings = (await loadVisits(days * 2, timeZone))[metric];
     const totals = bucketByDay(keys, readings);
     // A visitor who came on three days is one visitor, so these are counted over the whole
     // period rather than added up from the days.

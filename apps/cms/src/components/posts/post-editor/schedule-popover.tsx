@@ -1,7 +1,7 @@
 import { CalendarClockIcon, ChevronDownIcon } from '@/components/icons';
 import { useState } from 'react';
 import { Button } from '@/components/ui/button';
-import { Calendar } from '@/components/ui/calendar';
+import { DayCalendar } from '@/components/ui/day-calendar';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
@@ -161,13 +161,11 @@ export function SchedulePopover({
             </Button>
           ))}
         </div>
-        <Calendar
-          mode="single"
-          selected={day}
-          onSelect={setDay}
-          disabled={{ before: dayOf(toZoned(Date.now(), zone)) }}
-          className="w-full px-3"
-          classNames={{ root: 'w-full' }}
+        <DayCalendar
+          value={day}
+          onChange={setDay}
+          minDate={dayOf(toZoned(Date.now(), zone))}
+          className="px-3"
         />
         <div className="space-y-3 border-t p-3">
           <div className="flex items-center gap-2">

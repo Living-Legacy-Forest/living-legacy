@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { CalendarClockIcon, XIcon } from '@/components/icons';
 import { Button } from '@/components/ui/button';
-import { Calendar } from '@/components/ui/calendar';
+import { DayCalendar } from '@/components/ui/day-calendar';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
@@ -89,16 +89,11 @@ export function DateTimePicker({
           </span>
         </PopoverTrigger>
         <PopoverContent align="start" className="w-[min(20rem,calc(100vw-2rem))] p-0">
-          <Calendar
-            mode="single"
-            selected={day}
-            defaultMonth={day}
-            onSelect={(next) => next && onChange(at(next, time))}
-            disabled={
-              minWall ? { before: new Date(minWall.year, minWall.month, minWall.day) } : undefined
-            }
-            className="w-full px-3"
-            classNames={{ root: 'w-full' }}
+          <DayCalendar
+            value={day}
+            onChange={(next) => onChange(at(next, time))}
+            minDate={minWall ? new Date(minWall.year, minWall.month, minWall.day) : undefined}
+            className="px-3"
           />
           <div className="flex items-center gap-2 border-t p-3">
             <Label htmlFor={`${id}-time`} className="text-muted-foreground text-xs">

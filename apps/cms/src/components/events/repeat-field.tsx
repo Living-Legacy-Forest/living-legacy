@@ -14,6 +14,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Calendar } from '@/components/ui/calendar';
+import { DayCalendar } from '@/components/ui/day-calendar';
 import { Button } from '@/components/ui/button';
 import {
   Select,
@@ -181,19 +182,15 @@ export function RepeatField({
                     {value.until ? dayLabel(value.until) : 'Pick a date'}
                   </PopoverTrigger>
                   <PopoverContent align="start" className="w-[20rem] p-0">
-                    <Calendar
-                      weekStartsOn={1}
-                      className="w-full px-3"
-                      classNames={{ root: 'w-full' }}
-                      mode="single"
-                      selected={
+                    <DayCalendar
+                      className="px-3"
+                      value={
                         value.until
                           ? new Date(value.until.year, value.until.month, value.until.day)
                           : undefined
                       }
-                      disabled={{ before: new Date(firstDay.year, firstDay.month, firstDay.day) }}
-                      onSelect={(d) => {
-                        if (!d) return;
+                      minDate={new Date(firstDay.year, firstDay.month, firstDay.day)}
+                      onChange={(d) => {
                         patch({
                           until: { year: d.getFullYear(), month: d.getMonth(), day: d.getDate() },
                         });

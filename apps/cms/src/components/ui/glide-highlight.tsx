@@ -1,19 +1,28 @@
 import * as React from 'react';
+import { cn } from '@/lib/utils';
 
 const glideEase = 'cubic-bezier(0.22, 1, 0.36, 1)';
 
 /**
  * One highlight for a list of options (menu, select) instead of a fill on each item: it glides
  * from item to item under the pointer and jumps straight there for the keyboard. It follows Base
- * UI's data-highlighted, so it works however the item became active. Render it as the first
- * child of a positioned popup; it mounts with the popup and reads it as its parent.
+ * UI's data-highlighted by default, so it works however the item became active. Render it as
+ * the first child of the list; it mounts with the list and reads it as its parent.
  */
-function GlideHighlight() {
+function GlideHighlight({
+  selector = '[data-highlighted]',
+  className,
+}: {
+  /** Matches the active item. cmdk marks it with data-selected="true". */
+  selector?: string;
+  className?: string;
+}) {
   const ref = React.useRef<HTMLSpanElement>(null);
   React.useEffect(() => {
     const mark = ref.current;
     const popup = mark?.parentElement;
     if (!mark || !popup) return;
+    if (getComputedStyle(popup).position === 'static') popup.style.position = 'relative';
     let pointer = false;
     let shown = false;
     let clearTimer = 0;
@@ -22,7 +31,7 @@ function GlideHighlight() {
 
     const place = (resized = false) => {
       // Submenus are portalled, so anything highlighted in here belongs to this popup.
-      const item = popup.querySelector<HTMLElement>('[data-highlighted]');
+      const item = popup.querySelector<HTMLElement>(selector);
       window.clearTimeout(clearTimer);
       if (!item) {
         // A short grace keeps the highlight gliding across separators and gaps.
@@ -55,7 +64,10 @@ function GlideHighlight() {
       shown = true;
     };
 
-    const observer = new MutationObserver(() => place());
+    // A filtered list (cmdk) reorders its items: re-measure in place rather than glide.
+    const observer = new MutationObserver((records) =>
+      place(records.some((record) => record.type === 'childList'))
+    );
     // A select sizes itself to its trigger after it appears; re-measure in place when it does.
     const resize = new ResizeObserver(() => {
       if (shown) place(true);
@@ -63,8 +75,9 @@ function GlideHighlight() {
     resize.observe(popup);
     observer.observe(popup, {
       subtree: true,
+      childList: true,
       attributes: true,
-      attributeFilter: ['data-highlighted'],
+      attributeFilter: ['data-highlighted', 'data-selected'],
     });
     popup.addEventListener('pointermove', onPointer, true);
     popup.addEventListener('keydown', onKey, true);
@@ -76,13 +89,16 @@ function GlideHighlight() {
       popup.removeEventListener('pointermove', onPointer, true);
       popup.removeEventListener('keydown', onKey, true);
     };
-  }, []);
+  }, [selector]);
   return (
     <span
       ref={ref}
       aria-hidden
       data-slot="glide-highlight"
-      className="bg-accent data-[tone=danger]:bg-destructive/10 dark:data-[tone=danger]:bg-destructive/20 pointer-events-none absolute top-0 left-0 rounded-md opacity-0"
+      className={cn(
+        'bg-accent data-[tone=danger]:bg-destructive/10 dark:data-[tone=danger]:bg-destructive/20 pointer-events-none absolute top-0 left-0 rounded-md opacity-0',
+        className
+      )}
     />
   );
 }

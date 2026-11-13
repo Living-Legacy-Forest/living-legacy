@@ -26,6 +26,16 @@ export type WhatsNewEntry = {
 
 export const whatsNew: WhatsNewEntry[] = [
   {
+    id: '2026-11-14-2',
+    title: 'Dashboard cards use 7, 30 or 90 days',
+    items: [
+      {
+        title: 'Pick the span for each card',
+        body: 'The Blog views, Events and Media files cards now have a menu for 7, 30 or 90 days, instead of weeks and months. The big number and the change underneath cover the span you pick, so "+120 vs previous 30 days" compares the same stretch of time as the figure above it.',
+      },
+    ],
+  },
+  {
     id: '2026-11-14',
     title: 'Blog views on the dashboard',
     items: [

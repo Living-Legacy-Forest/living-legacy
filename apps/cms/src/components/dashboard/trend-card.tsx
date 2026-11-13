@@ -12,7 +12,10 @@ import {
 import {
   type TrendMetric,
   type TrendRange,
+  axisEvery,
+  longDate,
   percentChange,
+  shortDate,
   trendMetricKeys,
   trendMetrics,
   trendRanges,
@@ -30,21 +33,6 @@ const SERIES: LineChartSeries[] = [
 
 const RANGE_OPTIONS = trendRanges.map((days) => ({ value: String(days), label: `${days} days` }));
 const STORED = 'dashboard-trend';
-
-// Day keys are calendar dates, so format them as UTC to keep the date as written.
-const dateOf = (key: string) => new Date(`${key}T00:00:00Z`);
-const shortDate = (key: string) =>
-  dateOf(key).toLocaleDateString('en-AU', { timeZone: 'UTC', day: 'numeric', month: 'short' });
-const longDate = (key: string) =>
-  dateOf(key).toLocaleDateString('en-AU', {
-    timeZone: 'UTC',
-    weekday: 'short',
-    day: 'numeric',
-    month: 'short',
-  });
-
-/** Every few days on the axis; the chart thins them further to fit. */
-const axisEvery = (days: number) => (days <= 7 ? 1 : days <= 30 ? 7 : 14);
 
 const sum = (values: number[]) => values.reduce((n, v) => n + v, 0);
 

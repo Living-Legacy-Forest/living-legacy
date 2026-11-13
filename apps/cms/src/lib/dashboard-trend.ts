@@ -49,3 +49,20 @@ export function percentChange(current: number, previous: number) {
   if (previous === 0) return null;
   return ((current - previous) / previous) * 100;
 }
+
+// Day keys are calendar dates, so format them as UTC to keep the date as written.
+const dateOf = (key: string) => new Date(`${key}T00:00:00Z`);
+/** "3 Nov". */
+export const shortDate = (key: string) =>
+  dateOf(key).toLocaleDateString('en-AU', { timeZone: 'UTC', day: 'numeric', month: 'short' });
+/** "Tue, 3 Nov". */
+export const longDate = (key: string) =>
+  dateOf(key).toLocaleDateString('en-AU', {
+    timeZone: 'UTC',
+    weekday: 'short',
+    day: 'numeric',
+    month: 'short',
+  });
+
+/** Every few days on the axis; the chart thins them further to fit. */
+export const axisEvery = (days: number) => (days <= 7 ? 1 : days <= 30 ? 7 : 14);

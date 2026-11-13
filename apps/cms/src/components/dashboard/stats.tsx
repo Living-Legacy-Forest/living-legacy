@@ -17,32 +17,29 @@ const plural = (n: number, one: string, many: string) =>
   `${formatInteger(n)} ${n === 1 ? one : many}`;
 
 function buildStats(
-  { posts, events, media, locations, trendEndsAt: endsAt, trendMonths, blogViews }: DashboardData,
+  { posts, events, media, locations, trendDays, blogViews }: DashboardData,
   timeZone: string
 ): Stat[] {
   const open = locations.filter((l) => l.stage !== 'coming_soon').length;
-  const total = (counts: number[]) => counts.reduce((n, v) => n + v, 0);
-  // With analytics, the Posts card is about readers: views of the blog's pages. Without them
-  // it counts the posts themselves, as before.
+  // With analytics, the Posts card is about readers: views of the blog's pages, with the
+  // readers behind them. Without them it counts the posts themselves, as before.
   const posting: Stat = blogViews
     ? {
         label: 'Blog views',
-        value: total(blogViews.weeks),
+        value: 0,
         hint: `Across ${plural(posts.published, 'published post', 'published posts')}${
           posts.drafts > 0 ? `, plus ${plural(posts.drafts, 'draft', 'drafts')} in progress` : ''
         }`,
         trend: {
           kind: 'area',
-          weeks: blogViews.weeks,
           counted: 'blog page views',
-          // The readers behind the views, as the second line.
-          compare: { weeks: blogViews.readerWeeks, counted: 'blog readers' },
-          endsAt,
-          months: {
-            keys: trendMonths,
-            counts: blogViews.months,
-            compare: blogViews.readerMonths,
-            value: total(blogViews.months),
+          compare: { counted: 'blog readers' },
+          // The figure is the views in the span chosen.
+          days: {
+            keys: trendDays,
+            counts: blogViews.days,
+            compare: blogViews.readers,
+            headline: true,
           },
         },
         link: { to: '/posts' },
@@ -57,15 +54,9 @@ function buildStats(
             : 'Published, with no drafts in progress',
         trend: {
           kind: 'area',
-          weeks: posts.publishedWeekly,
           counted: 'posts published',
-          compare: { weeks: posts.startedWeekly, counted: 'posts started' },
-          endsAt,
-          months: {
-            keys: trendMonths,
-            counts: posts.publishedMonthly,
-            compare: posts.startedMonthly,
-          },
+          compare: { counted: 'posts started' },
+          days: { keys: trendDays, counts: posts.publishedDaily, compare: posts.startedDaily },
         },
         link: { to: '/posts' },
       };
@@ -79,10 +70,8 @@ function buildStats(
         : 'Nothing coming up',
       trend: {
         kind: 'bar',
-        weeks: events.bookedWeekly,
         counted: 'people booked',
-        endsAt,
-        months: { keys: trendMonths, counts: events.bookedMonthly },
+        days: { keys: trendDays, counts: events.bookedDaily },
       },
       // The overview is for people who run events.
       link: events.canManage ? { to: '/events/overview' } : undefined,
@@ -96,11 +85,9 @@ function buildStats(
           : `${formatBytes(media.bytes)} stored`,
       trend: {
         kind: 'line',
-        weeks: media.uploadedWeekly,
         counted: 'files uploaded',
         total: { value: media.files, label: 'files in the library' },
-        endsAt,
-        months: { keys: trendMonths, counts: media.uploadedMonthly },
+        days: { keys: trendDays, counts: media.uploadedDaily },
       },
       link: { to: '/media' },
     },

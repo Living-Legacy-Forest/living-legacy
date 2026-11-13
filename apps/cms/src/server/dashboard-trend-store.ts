@@ -1,6 +1,7 @@
 // The trend card's readings, from the website's analytics. Server only.
 
 import { env } from 'cloudflare:workers';
+import { bucketByDay } from '@/lib/dashboard-trend';
 
 const TTL_MS = 10 * 60 * 1000;
 
@@ -103,87 +104,58 @@ export async function loadDistinctVisitors(
   return totals;
 }
 
-const WEEK_SECONDS = 7 * 86_400;
 const blogCache = new Map<string, { at: number; views: BlogViews }>();
 export type BlogViews = {
-  weeks: number[];
-  months: number[];
-  /** Distinct browsers per week and month: the readers behind the views. */
-  readerWeeks: number[];
-  readerMonths: number[];
+  /** Views per day, one per day given, oldest first. */
+  days: number[];
+  /** Distinct browsers per day: the readers behind the views. */
+  readers: number[];
 };
 
 /**
  * Views of the website's blog pages (the articles, the blog's home and its category, tag and
- * author pages): per week for `weekCount` weeks back from now, where the last week is the
- * seven days up to now, and per calendar month in `zone` for `monthKeys` ("2026-11").
- * `null` when analytics are not connected or cannot be reached, so the dashboard carries on.
+ * author pages), and the readers behind them, on each of `dayList` (calendar dates in `zone`,
+ * oldest first). `null` when analytics are not connected or cannot be reached, so the
+ * dashboard carries on.
  */
-export async function loadBlogViews(
-  zone: string,
-  weekCount: number,
-  monthKeys: string[]
-): Promise<BlogViews | null> {
+export async function loadBlogViews(zone: string, dayList: string[]): Promise<BlogViews | null> {
   const keys = analyticsKeys();
   if (!keys) return null;
-  const cacheKey = `${zone}|${weekCount}|${monthKeys[0]}`;
+  const cacheKey = `${zone}|${dayList[0]}|${dayList.length}`;
   const hit = blogCache.get(cacheKey);
   if (hit && Date.now() - hit.at < TTL_MS) return hit.views;
 
-  const run = async (query: string, values: Record<string, unknown>) => {
+  try {
     const response = await fetch(`${keys.host}/api/projects/${keys.project}/query/`, {
       method: 'POST',
       headers: { Authorization: `Bearer ${keys.key}`, 'Content-Type': 'application/json' },
       // The dashboard waits for this, so give up quickly rather than hold the page.
       signal: AbortSignal.timeout(4000),
-      body: JSON.stringify({ query: { kind: 'HogQLQuery', query, values } }),
+      body: JSON.stringify({
+        query: {
+          kind: 'HogQLQuery',
+          query: `SELECT toString(toDate(toTimeZone(timestamp, {zone}))) AS day,
+              count() AS views, count(DISTINCT distinct_id) AS readers
+            FROM events
+            WHERE event = '$pageview'
+              AND (properties.$pathname = '/blog' OR startsWith(properties.$pathname, '/blog/'))
+              AND timestamp >= now() - INTERVAL ${dayList.length + 1} DAY
+            GROUP BY day`,
+          values: { zone },
+        },
+      }),
     });
-    if (!response.ok) throw new Error('Could not load blog views.');
-    return ((await response.json()) as { results: [string | number, number, number][] }).results;
-  };
-  const onBlog = `(properties.$pathname = '/blog' OR startsWith(properties.$pathname, '/blog/'))`;
-
-  try {
-    const [weekRows, monthRows] = await Promise.all([
-      run(
-        `SELECT intDiv(dateDiff('second', timestamp, now()), ${WEEK_SECONDS}) AS week, count() AS views,
-            count(DISTINCT distinct_id) AS readers
-          FROM events
-          WHERE event = '$pageview' AND ${onBlog}
-            AND timestamp >= now() - INTERVAL ${weekCount * 7} DAY
-          GROUP BY week`,
-        {}
-      ),
-      run(
-        `SELECT toString(toStartOfMonth(toDate(toTimeZone(timestamp, {zone})))) AS month, count() AS views,
-            count(DISTINCT distinct_id) AS readers
-          FROM events
-          WHERE event = '$pageview' AND ${onBlog}
-            AND toDate(toTimeZone(timestamp, {zone})) >= toDate({since})
-          GROUP BY month`,
-        { zone, since: `${monthKeys[0]}-01` }
-      ),
-    ]);
-    const weeks = Array.from({ length: weekCount }, () => 0);
-    const readerWeeks = Array.from({ length: weekCount }, () => 0);
-    for (const [week, views, readers] of weekRows) {
-      const ago = Number(week);
-      if (ago >= 0 && ago < weekCount) {
-        weeks[weekCount - 1 - ago] = Number(views);
-        readerWeeks[weekCount - 1 - ago] = Number(readers);
-      }
-    }
-    const byMonth = new Map(
-      monthRows.map(([month, views, readers]) => [
-        String(month).slice(0, 7),
-        { views: Number(views), readers: Number(readers) },
-      ])
-    );
+    if (!response.ok) return null;
+    const { results } = (await response.json()) as { results: [string, number, number][] };
     const views = {
-      weeks,
-      readerWeeks,
-      months: monthKeys.map((key) => byMonth.get(key)?.views ?? 0),
-      readerMonths: monthKeys.map((key) => byMonth.get(key)?.readers ?? 0),
+      days: bucketByDay(
+        dayList,
+        results.map(([day, n]) => ({ day, value: Number(n) }))
+      ),
+      readers: bucketByDay(
+        dayList,
+        results.map(([day, , n]) => ({ day, value: Number(n) }))
+      ),
     };
     blogCache.set(cacheKey, { at: Date.now(), views });
     return views;

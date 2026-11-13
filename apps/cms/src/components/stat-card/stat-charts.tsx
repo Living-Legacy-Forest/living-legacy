@@ -9,33 +9,20 @@ import {
 import { chartReveal } from '@/lib/chart-motion';
 import { formatInteger } from '@/lib/format';
 import { useTimeZone } from '@/lib/use-time-zone';
-import { monthName, monthShort } from '@/lib/month-trend';
-import { type Part, type Period, type Trend, dayMonth, sum, weekName, weekStart } from './shared';
+import { axisEvery, longDate, shortDate } from '@/lib/dashboard-trend';
+import { type Part, type Range, type Trend, dayMonth, sum, weekName, weekStart } from './shared';
 
 // The chart library is loaded with these, after the card's figures are on screen.
 
 /**
- * One point per week or month: its name for the tooltip, a short label for the date axis, and
- * its count, or the running total at the end of it when `total` is given.
+ * One point per day (the last `range`) or per week: its name for the tooltip, a short label for
+ * the date axis, and its count, or the running total at the end of it when `total` is given.
  */
-function trendData(trend: Trend, period: Period, timeZone: string) {
-  const { total, endsAt } = trend;
-  const months = period === 'months' ? trend.months : undefined;
-  const counts = months?.counts ?? trend.weeks;
-  const compare = months ? months.compare : trend.compare?.weeks;
+function trendData(trend: Trend, range: Range, timeZone: string) {
+  const { total, endsAt, days } = trend;
+  const counts = days?.counts ?? trend.weeks ?? [];
+  const compare = days ? days.compare : trend.compare?.weeks;
   const last = counts.length - 1;
-  const name = (i: number) =>
-    months
-      ? i === last
-        ? 'This month'
-        : monthName(months.keys[i]!)
-      : weekName(i, counts.length, endsAt, timeZone);
-  const axis = (i: number) =>
-    months
-      ? monthShort(months.keys[i]!)
-      : endsAt === undefined
-        ? undefined
-        : dayMonth(weekStart(i, counts.length, endsAt), timeZone);
   const values = [...counts];
   if (total) {
     // Walk back from today: each period ends at the total less what came after it.
@@ -45,19 +32,35 @@ function trendData(trend: Trend, period: Period, timeZone: string) {
       running -= counts[i] ?? 0;
     }
   }
-  return values.map((count, i) => ({
-    week: name(i),
-    axis: axis(i),
-    count,
-    ...(compare && { compare: compare[i] ?? 0 }),
-  }));
+  const every = axisEvery(range);
+  const name = (i: number) =>
+    days ? longDate(days.keys[i]!) : weekName(i, counts.length, endsAt, timeZone);
+  const axis = (i: number) =>
+    days
+      ? (last - i) % every === 0
+        ? shortDate(days.keys[i]!)
+        : undefined
+      : endsAt === undefined
+        ? undefined
+        : dayMonth(weekStart(i, counts.length, endsAt), timeZone);
+  // The days shown are the latest `range` of them; the rest only feed the comparison.
+  const from = days ? Math.max(0, counts.length - range) : 0;
+  return values.slice(from).map((count, at) => {
+    const i = from + at;
+    return {
+      name: name(i),
+      axis: axis(i),
+      count,
+      ...(compare && { compare: compare[i] ?? 0 }),
+    };
+  });
 }
 
-// The bars' hidden x-axis names each week, so the tooltip reads "Week of 3 Nov".
-// The y-axis leaves a little air above the highest week.
+// The bars' hidden x-axis names each day or week for the tooltip.
+// The y-axis leaves a little air above the highest bar.
 const axes = (
   <>
-    <XAxis dataKey="week" hide />
+    <XAxis dataKey="name" hide />
     <YAxis hide domain={[0, (max: number) => Math.max(max, 1) * 1.15]} />
   </>
 );
@@ -71,14 +74,16 @@ const PLOT_HEIGHT = 102;
 const compact = new Intl.NumberFormat('en-AU', { notation: 'compact', maximumFractionDigits: 1 });
 const sentence = (text: string) => text.charAt(0).toUpperCase() + text.slice(1);
 
-/** The last twelve weeks or months as a line chart, or as bars. Hover or scrub for each week's figure. */
-export function TrendChart({ trend, period }: { trend: Trend; period: Period }) {
+/** The span as a line chart, or as bars. Hover or scrub for each day's or week's figure. */
+export function TrendChart({ trend, range }: { trend: Trend; range: Range }) {
   const timeZone = useTimeZone();
-  const data = trendData(trend, period, timeZone);
+  const data = trendData(trend, range, timeZone);
   const label = sentence(trend.total?.label ?? trend.counted);
 
   if (trend.kind === 'bar')
-    return <PeriodBars trend={trend} data={data} label={label} period={period} />;
+    return (
+      <PeriodBars trend={trend} data={data} label={label} unit={trend.days ? 'days' : 'weeks'} />
+    );
 
   // As on the dashboard's trend card: this period leads with a tinted area, the comparison
   // follows as a dashed line, over gridlines and a value axis. No legend, to keep the card
@@ -105,14 +110,14 @@ export function TrendChart({ trend, period }: { trend: Trend; period: Period }) 
         series={series}
         legend={false}
         height={PLOT_HEIGHT}
-        categoryLabel={period === 'months' ? 'Month' : 'Week'}
+        categoryLabel={trend.days ? 'Day' : 'Week'}
         formatValue={(value) => formatInteger(value)}
         // Counts are whole, so a small range keeps only its whole-number lines labelled. Big ones
         // are short ("1.5K"), as the axis column is narrow.
         formatTick={(value) => (Number.isInteger(value) ? compact.format(value) : '')}
         data={data.map((d, i) => ({
           key: String(i),
-          label: d.week,
+          label: d.name,
           // Every point can be labelled; the chart keeps as many as fit, always the latest.
           axisLabel: d.axis,
           values: { count: d.count, ...(d.compare !== undefined && { compare: d.compare }) },
@@ -122,20 +127,20 @@ export function TrendChart({ trend, period }: { trend: Trend; period: Period }) 
   );
 }
 
-/** Counts as bars: this week or month in full, the ones before sit back. */
+/** Counts as bars: the latest in full, the ones before sit back. */
 function PeriodBars({
   trend,
   data,
   label,
-  period,
+  unit,
 }: {
   trend: Trend;
   data: ReturnType<typeof trendData>;
   label: string;
-  period: Period;
+  unit: 'days' | 'weeks';
 }) {
   const config = { count: { label, color: 'var(--primary)' } } satisfies ChartConfig;
-  const description = `${formatInteger(sum(data.map((d) => d.count)))} ${trend.counted} in the last ${data.length} ${period}.`;
+  const description = `${formatInteger(sum(data.map((d) => d.count)))} ${trend.counted} in the last ${data.length} ${unit}.`;
   return (
     <div className="flex h-32 flex-col">
       <ChartContainer config={config} className="aspect-auto min-h-0 w-full flex-1">
@@ -146,7 +151,7 @@ function PeriodBars({
             {/* Empty weeks barely show. */}
             {data.map((d, i) => (
               <Cell
-                key={d.week}
+                key={d.name}
                 fill={
                   i === data.length - 1 ? 'var(--color-count)' : d.count > 0 ? tint(55) : tint(15)
                 }

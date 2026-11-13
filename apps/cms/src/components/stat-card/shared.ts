@@ -24,6 +24,8 @@ export type Trend = {
     keys: string[];
     counts: number[];
     compare?: number[];
+    /** The figure to show in this view, when it is not the card's usual one. */
+    value?: number;
   };
 };
 

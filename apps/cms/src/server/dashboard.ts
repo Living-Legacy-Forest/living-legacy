@@ -24,7 +24,7 @@ import { monthOf } from './month-sql';
 import { loadContentChecks } from './content-checks';
 import { loadMissingPages } from './not-found';
 import { loadScoreSummary } from './post-score';
-import { hasAnalytics } from './dashboard-trend-store';
+import { hasAnalytics, loadBlogViews } from './dashboard-trend-store';
 import { healthOptions, runHealthChecks } from './system-health';
 import { loadJobHealth } from './system-store';
 
@@ -65,6 +65,8 @@ export const getDashboardData = createServerFn({ method: 'GET' })
     const offset = zoneOffsetMs(now, timeZone);
     const months = monthKeys(now, offset, TREND_MONTHS);
     const monthsStart = new Date(monthStartMs(months[0]!, offset));
+    // PostHog is a second service, so it runs beside the database and never fails the page.
+    const blogViews = loadBlogViews(timeZone, TREND_WEEKS, months);
     const monthly = (table: typeof posts | typeof media, at: SQLiteColumn, where?: SQL) => {
       const month = monthOf(at, offset);
       return db
@@ -225,8 +227,10 @@ export const getDashboardData = createServerFn({ method: 'GET' })
       trendEndsAt: now,
       /** The calendar months the Months view covers, oldest first, as "2026-11". */
       trendMonths: months,
-      /** Whether the trend card can offer visits and page views. */
+      /** Whether the trend card can show the website's traffic. */
       analytics: hasAnalytics(),
+      /** Views of the blog's pages by week and month; null without analytics. */
+      blogViews: await blogViews,
       recentDrafts: drafts.map(toSummary),
       recentlyPublished: published.map(toSummary),
       attention: await attention,

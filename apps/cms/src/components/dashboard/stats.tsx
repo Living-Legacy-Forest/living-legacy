@@ -17,33 +17,53 @@ const plural = (n: number, one: string, many: string) =>
   `${formatInteger(n)} ${n === 1 ? one : many}`;
 
 function buildStats(
-  { posts, events, media, locations, trendEndsAt: endsAt, trendMonths }: DashboardData,
+  { posts, events, media, locations, trendEndsAt: endsAt, trendMonths, blogViews }: DashboardData,
   timeZone: string
 ): Stat[] {
   const open = locations.filter((l) => l.stage !== 'coming_soon').length;
-  return [
-    {
-      // Published and drafts in one: what is live, and what is on its way.
-      label: 'Posts',
-      value: posts.published,
-      hint:
-        posts.drafts > 0
-          ? `Published, plus ${plural(posts.drafts, 'draft', 'drafts')} in progress`
-          : 'Published, with no drafts in progress',
-      trend: {
-        kind: 'area',
-        weeks: posts.publishedWeekly,
-        counted: 'posts published',
-        compare: { weeks: posts.startedWeekly, counted: 'posts started' },
-        endsAt,
-        months: {
-          keys: trendMonths,
-          counts: posts.publishedMonthly,
-          compare: posts.startedMonthly,
+  const total = (counts: number[]) => counts.reduce((n, v) => n + v, 0);
+  // With analytics, the Posts card is about readers: views of the blog's pages. Without them
+  // it counts the posts themselves, as before.
+  const posting: Stat = blogViews
+    ? {
+        label: 'Blog views',
+        value: total(blogViews.weeks),
+        hint: `Across ${plural(posts.published, 'published post', 'published posts')}${
+          posts.drafts > 0 ? `, plus ${plural(posts.drafts, 'draft', 'drafts')} in progress` : ''
+        }`,
+        trend: {
+          kind: 'area',
+          weeks: blogViews.weeks,
+          counted: 'blog page views',
+          endsAt,
+          months: { keys: trendMonths, counts: blogViews.months, value: total(blogViews.months) },
         },
-      },
-      link: { to: '/posts' },
-    },
+        link: { to: '/posts' },
+      }
+    : {
+        // Published and drafts in one: what is live, and what is on its way.
+        label: 'Posts',
+        value: posts.published,
+        hint:
+          posts.drafts > 0
+            ? `Published, plus ${plural(posts.drafts, 'draft', 'drafts')} in progress`
+            : 'Published, with no drafts in progress',
+        trend: {
+          kind: 'area',
+          weeks: posts.publishedWeekly,
+          counted: 'posts published',
+          compare: { weeks: posts.startedWeekly, counted: 'posts started' },
+          endsAt,
+          months: {
+            keys: trendMonths,
+            counts: posts.publishedMonthly,
+            compare: posts.startedMonthly,
+          },
+        },
+        link: { to: '/posts' },
+      };
+  return [
+    posting,
     {
       label: 'Events',
       value: events.upcoming,

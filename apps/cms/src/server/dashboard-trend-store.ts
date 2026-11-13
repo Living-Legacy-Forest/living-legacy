@@ -102,3 +102,72 @@ export async function loadDistinctVisitors(
   distinctCache.set(cacheKey, { at: Date.now(), totals });
   return totals;
 }
+
+const WEEK_SECONDS = 7 * 86_400;
+const blogCache = new Map<string, { at: number; views: BlogViews }>();
+export type BlogViews = { weeks: number[]; months: number[] };
+
+/**
+ * Views of the website's blog pages (the articles, the blog's home and its category, tag and
+ * author pages): per week for `weekCount` weeks back from now, where the last week is the
+ * seven days up to now, and per calendar month in `zone` for `monthKeys` ("2026-11").
+ * `null` when analytics are not connected or cannot be reached, so the dashboard carries on.
+ */
+export async function loadBlogViews(
+  zone: string,
+  weekCount: number,
+  monthKeys: string[]
+): Promise<BlogViews | null> {
+  const keys = analyticsKeys();
+  if (!keys) return null;
+  const cacheKey = `${zone}|${weekCount}|${monthKeys[0]}`;
+  const hit = blogCache.get(cacheKey);
+  if (hit && Date.now() - hit.at < TTL_MS) return hit.views;
+
+  const run = async (query: string, values: Record<string, unknown>) => {
+    const response = await fetch(`${keys.host}/api/projects/${keys.project}/query/`, {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${keys.key}`, 'Content-Type': 'application/json' },
+      // The dashboard waits for this, so give up quickly rather than hold the page.
+      signal: AbortSignal.timeout(4000),
+      body: JSON.stringify({ query: { kind: 'HogQLQuery', query, values } }),
+    });
+    if (!response.ok) throw new Error('Could not load blog views.');
+    return ((await response.json()) as { results: [string | number, number][] }).results;
+  };
+  const onBlog = `(properties.$pathname = '/blog' OR startsWith(properties.$pathname, '/blog/'))`;
+
+  try {
+    const [weekRows, monthRows] = await Promise.all([
+      run(
+        `SELECT intDiv(dateDiff('second', timestamp, now()), ${WEEK_SECONDS}) AS week, count() AS views
+          FROM events
+          WHERE event = '$pageview' AND ${onBlog}
+            AND timestamp >= now() - INTERVAL ${weekCount * 7} DAY
+          GROUP BY week`,
+        {}
+      ),
+      run(
+        `SELECT toString(toStartOfMonth(toDate(toTimeZone(timestamp, {zone})))) AS month, count() AS views
+          FROM events
+          WHERE event = '$pageview' AND ${onBlog}
+            AND toDate(toTimeZone(timestamp, {zone})) >= toDate({since})
+          GROUP BY month`,
+        { zone, since: `${monthKeys[0]}-01` }
+      ),
+    ]);
+    const weeks = Array.from({ length: weekCount }, () => 0);
+    for (const [week, views] of weekRows) {
+      const ago = Number(week);
+      if (ago >= 0 && ago < weekCount) weeks[weekCount - 1 - ago] = Number(views);
+    }
+    const byMonth = new Map(
+      monthRows.map(([month, views]) => [String(month).slice(0, 7), Number(views)])
+    );
+    const views = { weeks, months: monthKeys.map((key) => byMonth.get(key) ?? 0) };
+    blogCache.set(cacheKey, { at: Date.now(), views });
+    return views;
+  } catch {
+    return null;
+  }
+}

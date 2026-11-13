@@ -7,22 +7,26 @@ import {
   ChartTooltipContent,
 } from '@/components/ui/chart';
 
-const config = { views: { label: 'Views', color: 'var(--chart-1)' } } satisfies ChartConfig;
+const colour = 'var(--chart-1)';
 
-/** Last 30 days of page views for one post, oldest first. */
-export function PostViewsChart({
+/** The last 30 days of one number (views, bookings), oldest first, as a small area chart. */
+export function TrendChart({
   series,
+  label = 'Views',
   showTotal = false,
 }: {
   series: number[];
+  /** What the numbers count, in the tooltip and under the total. */
+  label?: string;
   /** The 30-day total beside the chart; the compact row leaves it to the tooltip. */
   showTotal?: boolean;
 }) {
   const fillId = useId();
+  const config = { views: { label, color: colour } } satisfies ChartConfig;
   const data = series.map((views, i) => ({ day: series.length - 1 - i, views }));
   const total = series.reduce((sum, n) => sum + n, 0);
   return (
-    <span className="flex shrink-0 items-center gap-2" title="Page views, last 30 days">
+    <span className="flex shrink-0 items-center gap-2" title={`${label}, last 30 days`}>
       <ChartContainer config={config} className="aspect-auto h-8 w-28">
         <AreaChart data={data} margin={{ top: 2, right: 0, bottom: 0, left: 0 }}>
           <defs>
@@ -54,9 +58,9 @@ export function PostViewsChart({
         </AreaChart>
       </ChartContainer>
       {showTotal && (
-        <span className="text-muted-foreground w-12 text-right text-xs tabular-nums">
+        <span className="text-muted-foreground hidden w-12 text-right text-xs tabular-nums lg:block">
           {total.toLocaleString('en-AU')}
-          <span className="block text-[0.6875rem]">views</span>
+          <span className="block text-[0.6875rem] lowercase">{label}</span>
         </span>
       )}
     </span>

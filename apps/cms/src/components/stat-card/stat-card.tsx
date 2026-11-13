@@ -34,11 +34,14 @@ export function StatCard({ stat }: { stat: Stat }) {
   // Only cards with monthly counts offer the choice.
   const period = trend?.months ? chosen : 'weeks';
   const span = period === 'months' ? 3 : 4;
+  // A card whose figure is a total over the span shows the total for the span chosen.
+  const shown =
+    period === 'months' && trend?.months?.value !== undefined ? trend.months.value : value;
   const delta = trend && change(period === 'months' ? trend.months!.counts : trend.weeks, span);
 
   const figure = (
     <span className="text-3xl font-medium tracking-tight text-balance tabular-nums">
-      {display ?? <CountUp value={value} />}
+      {display ?? <CountUp value={shown} />}
     </span>
   );
   const figureClass = 'flex items-center justify-between gap-2';
@@ -80,7 +83,7 @@ export function StatCard({ stat }: { stat: Stat }) {
           <Link
             {...link}
             data-reveal="3"
-            aria-label={`${label}: ${display ?? formatInteger(value)}. Open the list.`}
+            aria-label={`${label}: ${display ?? formatInteger(shown)}. Open the list.`}
             className={cn(
               figureClass,
               'focus-visible:ring-ring/50 touch:min-h-11 -mx-1.5 rounded-md px-1.5 outline-none focus-visible:ring-[3px]'

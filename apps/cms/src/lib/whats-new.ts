@@ -26,6 +26,16 @@ export type WhatsNewEntry = {
 
 export const whatsNew: WhatsNewEntry[] = [
   {
+    id: '2026-11-14',
+    title: 'Blog views on the dashboard',
+    items: [
+      {
+        title: 'See how often the blog is read',
+        body: 'The Posts card on the dashboard now shows views of the blog, from the website, over the last 12 weeks or 12 months. Use the menu in its corner to switch. It still links to the posts list, and goes back to counting posts if the website analytics cannot be reached.',
+      },
+    ],
+  },
+  {
     id: '2026-11-13-6',
     title: 'Dashboard cards show weeks or months',
     items: [

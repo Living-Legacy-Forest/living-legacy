@@ -31,7 +31,7 @@ export const whatsNew: WhatsNewEntry[] = [
     items: [
       {
         title: 'See what the media library takes up',
-        body: 'The Media files card now shows how much storage the library uses, split into images, videos, PDFs and other files, against the 10 GB of storage included each month. It warns when the library gets close. The file count and the number needing alt text are still there. Pick 7, 30 or 90 days to see how much was added in that time. The System page shows the same meter, with one for the database beside it, and estimates how long the allowance will last at the current pace.',
+        body: 'The Media files card now shows how much of the 10 GB of storage included each month the library uses, as a bar split into images, videos, PDFs and other files (point at it to see each), and how much was added in the last 7, 30 or 90 days. The System page lists the breakdown, has a meter for the database beside it, and estimates how long the allowance will last at the current pace.',
         link: { label: 'Open System', to: '/system' },
       },
     ],
@@ -52,7 +52,7 @@ export const whatsNew: WhatsNewEntry[] = [
     items: [
       {
         title: 'See how often the blog is read',
-        body: 'The Posts card on the dashboard now shows views of the blog, from the website, over the last 12 weeks or 12 months. Use the menu in its corner to switch. It still links to the posts list, and goes back to counting posts if the website analytics cannot be reached.',
+        body: 'The Posts card on the dashboard now shows views of the blog, from the website, over the last 12 weeks or 12 months. Use the menu in its corner to switch. It still links to the posts list, and says so on the card if the website analytics are not connected or cannot be reached.',
       },
     ],
   },

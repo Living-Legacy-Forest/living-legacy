@@ -116,7 +116,7 @@ export type BlogViews = {
  * Views of the website's blog pages (the articles, the blog's home and its category, tag and
  * author pages), and the readers behind them, on each of `dayList` (calendar dates in `zone`,
  * oldest first). `null` when analytics are not connected or cannot be reached, so the
- * dashboard carries on.
+ * dashboard carries on; a failure is logged.
  */
 export async function loadBlogViews(zone: string, dayList: string[]): Promise<BlogViews | null> {
   const keys = analyticsKeys();
@@ -129,8 +129,8 @@ export async function loadBlogViews(zone: string, dayList: string[]): Promise<Bl
     const response = await fetch(`${keys.host}/api/projects/${keys.project}/query/`, {
       method: 'POST',
       headers: { Authorization: `Bearer ${keys.key}`, 'Content-Type': 'application/json' },
-      // The dashboard waits for this, so give up quickly rather than hold the page.
-      signal: AbortSignal.timeout(4000),
+      // Read after the page has loaded, so it can take a while over six months of pageviews.
+      signal: AbortSignal.timeout(25_000),
       body: JSON.stringify({
         query: {
           kind: 'HogQLQuery',
@@ -145,7 +145,14 @@ export async function loadBlogViews(zone: string, dayList: string[]): Promise<Bl
         },
       }),
     });
-    if (!response.ok) return null;
+    if (!response.ok) {
+      console.error(
+        'Blog views query failed',
+        response.status,
+        (await response.text()).slice(0, 300)
+      );
+      return null;
+    }
     const { results } = (await response.json()) as { results: [string, number, number][] };
     const views = {
       days: bucketByDay(
@@ -159,7 +166,8 @@ export async function loadBlogViews(zone: string, dayList: string[]): Promise<Bl
     };
     blogCache.set(cacheKey, { at: Date.now(), views });
     return views;
-  } catch {
+  } catch (error) {
+    console.error('Blog views query failed', error);
     return null;
   }
 }

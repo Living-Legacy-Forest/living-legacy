@@ -1,11 +1,11 @@
 import { Link } from '@tanstack/react-router';
 import { Suspense, lazy, useState } from 'react';
 import { RangeSelect } from '@/components/range-select';
+import { RollingNumber } from '@/components/rolling-number';
 import { Card, CardTitle } from '@/components/ui/card';
 import { formatBytes, formatInteger } from '@/lib/format';
 import { addedIn } from '@/lib/media-growth';
 import { cn } from '@/lib/utils';
-import { CountUp } from './count-up';
 import { type Range, type Stat, change, sum } from './shared';
 
 export { MUTED, type Part, type Stat, type Trend } from './shared';
@@ -39,7 +39,7 @@ export function StatCard({ stat }: { stat: Stat }) {
 
   const figure = (
     <span className="text-3xl font-medium tracking-tight text-balance tabular-nums">
-      {display ?? <CountUp value={shown} />}
+      {display ?? <RollingNumber value={shown} />}
     </span>
   );
   const figureClass = 'flex items-center justify-between gap-2';
@@ -81,7 +81,7 @@ export function StatCard({ stat }: { stat: Stat }) {
               delta.diff > 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-destructive'
             )}
           >
-            {delta.text} vs previous {span} {days ? 'days' : 'weeks'}
+            <RollingNumber value={delta.diff} signed /> vs previous {span} {days ? 'days' : 'weeks'}
             <span className="sr-only"> ({trend.counted})</span>
           </p>
         )}
@@ -96,7 +96,7 @@ export function StatCard({ stat }: { stat: Stat }) {
         <Suspense
           fallback={
             <div className="mt-auto px-(--card-spacing) pt-4">
-              <div className={trend ? 'h-32' : meter ? 'h-36' : 'h-24'} />
+              <div className={trend ? 'h-32' : meter ? 'h-36' : 'h-28'} />
             </div>
           }
         >
@@ -104,8 +104,9 @@ export function StatCard({ stat }: { stat: Stat }) {
             {trend && <TrendChart trend={trend} range={range} />}
             {parts && <PartsChart parts={parts} />}
             {meter && (
-              // Tighter than the meter's own spacing, to keep the card about as tall as the rest.
-              <div className="[--meter-gap:0.25rem] [--meter-item-pad:0.125rem] [--meter-legend-min:3.5rem] [--meter-text-base:0.625rem] [--meter-text-sm:0.5625rem] [--meter-text-xs:0.5625rem] [--meter-top:20px] [--meter-total-size:0.875rem] [--meter-track:8px]">
+              // Compact, and without the legend (hovering the bar names each kind): the full
+              // breakdown is on the System page.
+              <div className="[--meter-gap:0.25rem] [--meter-item-pad:0.125rem] [--meter-legend-display:none] [--meter-legend-min:3.5rem] [--meter-text-base:0.625rem] [--meter-text-sm:0.5625rem] [--meter-text-xs:0.5625rem] [--meter-top:20px] [--meter-total-size:0.875rem] [--meter-track:8px]">
                 <UsageMeter {...meter} />
               </div>
             )}

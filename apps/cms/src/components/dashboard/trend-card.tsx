@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { LineChart, type LineChartSeries } from '@/components/arc/line-chart/line-chart';
 import { SegmentedControl } from '@/components/segmented-control';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent, CardHeader } from '@/components/ui/card';
 import {
   Select,
   SelectContent,
@@ -20,6 +20,7 @@ import {
   trendMetrics,
   trendRanges,
 } from '@/lib/dashboard-trend';
+import { RollingNumber } from '@/components/rolling-number';
 import { formatInteger } from '@/lib/format';
 import { notify } from '@/lib/notify';
 import { cn } from '@/lib/utils';
@@ -58,16 +59,23 @@ export function TrendCard({ analytics }: { analytics: boolean }) {
   const metrics = trendMetricKeys;
   const [{ metric, days }, setChoice] = useState(() => readStored(metrics));
   const [trend, setTrend] = useState<DashboardTrend | null>(null);
-  const [loading, setLoading] = useState(true);
+  // Without analytics there is nothing to wait for.
+  const [loading, setLoading] = useState(analytics);
+  const [failed, setFailed] = useState(false);
 
   useEffect(() => {
     if (!analytics) return;
     localStorage.setItem(STORED, JSON.stringify({ metric, days }));
     let live = true;
     setLoading(true);
+    setFailed(false);
     getDashboardTrend({ data: { metric, days } })
       .then((next) => live && setTrend(next))
-      .catch((error: unknown) => live && notify.error('Could not load the chart', error))
+      .catch((error: unknown) => {
+        if (!live) return;
+        setFailed(true);
+        notify.error('Could not load the chart', error);
+      })
       .finally(() => live && setLoading(false));
     return () => {
       live = false;
@@ -90,22 +98,6 @@ export function TrendCard({ analytics }: { analytics: boolean }) {
       axisLabel: (trend.days.length - 1 - i) % every === 0 ? shortDate(key) : undefined,
       values: { current: trend.current[i] ?? 0, previous: trend.previous[i] ?? 0 },
     })) ?? [];
-
-  if (!analytics) {
-    return (
-      <Card>
-        <CardHeader>
-          <CardTitle>Website traffic</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <p className="text-muted-foreground text-sm text-pretty">
-            Unique visitors and page views appear here once the website's analytics are connected to
-            the CMS.
-          </p>
-        </CardContent>
-      </Card>
-    );
-  }
 
   return (
     <Card>
@@ -141,7 +133,7 @@ export function TrendCard({ analytics }: { analytics: boolean }) {
         <div className="space-y-1">
           <p className="text-muted-foreground text-sm">{totalLabel}</p>
           <p className="text-3xl font-medium tracking-tight tabular-nums">
-            {total === null ? '–' : formatInteger(total)}
+            {total === null ? '–' : <RollingNumber value={total} />}
           </p>
           <Change change={change} days={days} known={trend !== null} />
         </div>
@@ -154,7 +146,13 @@ export function TrendCard({ analytics }: { analytics: boolean }) {
           formatValue={(value) => formatInteger(value)}
           // Counts are whole, so a small range keeps only its whole-number lines labelled.
           formatTick={(value) => (Number.isInteger(value) ? formatInteger(value) : '')}
-          emptyLabel="Loading"
+          emptyLabel={
+            !analytics
+              ? "Website analytics aren't connected to the CMS yet"
+              : failed
+                ? 'Could not load website traffic'
+                : 'Loading'
+          }
           categoryLabel="Day"
         />
       </CardContent>
@@ -173,7 +171,6 @@ function Change({ change, days, known }: { change: number | null; days: number; 
     );
   }
   const up = change >= 0;
-  const text = `${up ? '+' : '−'}${Math.abs(change).toLocaleString('en-AU', { maximumFractionDigits: 1 })}%`;
   return (
     <p
       className={cn(
@@ -181,7 +178,7 @@ function Change({ change, days, known }: { change: number | null; days: number; 
         up ? 'text-emerald-600 dark:text-emerald-400' : 'text-destructive'
       )}
     >
-      {text} {against}
+      <RollingNumber value={change} decimals={1} signed />% {against}
     </p>
   );
 }

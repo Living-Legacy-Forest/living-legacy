@@ -788,7 +788,7 @@
 
 /* The dashboard arrives in reading order: the greeting word by word, then each
    card rising into place, then inside each card its title, hint, figure (which
-   counts up, components/stat-card/count-up.tsx) and chart, and list rows one by one.
+   rolls up, components/rolling-number.tsx) and chart, and list rows one by one.
    CSS rather than JavaScript, so it plays from the server's first paint and keeps
    time while the map and chart code are still loading.
 

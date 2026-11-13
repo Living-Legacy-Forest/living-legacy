@@ -21,7 +21,7 @@ import {
   EmptyTitle,
 } from '@/components/ui/empty';
 import { Item, ItemActions, ItemContent, ItemGroup, ItemTitle } from '@/components/ui/item';
-import { CountUp } from '@/components/stat-card/count-up';
+import { RollingNumber } from '@/components/rolling-number';
 import { chartReveal } from '@/lib/chart-motion';
 import { cn } from '@/lib/utils';
 import type { ScoreSummary } from '@/server/post-score';
@@ -68,7 +68,7 @@ export function ScoreCard({ scores }: { scores: ScoreSummary }) {
               <Heading id="score-card-published">Published posts</Heading>
               <p data-reveal="3" className="flex items-baseline gap-2">
                 <span className="text-3xl font-semibold tabular-nums">
-                  {scores.average === null ? 'None' : <CountUp value={scores.average} />}
+                  {scores.average === null ? 'None' : <RollingNumber value={scores.average} />}
                 </span>
                 <span className="text-muted-foreground text-sm">
                   {scores.average === null

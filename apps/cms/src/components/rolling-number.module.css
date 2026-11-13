@@ -1,0 +1,37 @@
+/* A rolling number: each digit is a clipped wheel that feathers at its edges, and new columns
+   open from zero width. The wheels are the usage meter's (components/arc/usage-meter). */
+.ticker {
+  position: relative;
+  display: inline-flex;
+  align-items: flex-start;
+  white-space: nowrap;
+  font-variant-numeric: tabular-nums;
+  user-select: none;
+}
+.column {
+  --feather: 0.16em;
+  position: relative;
+  display: inline-block;
+  overflow: hidden;
+  margin-block: calc(var(--feather) * -1);
+  padding-block: var(--feather);
+  mask-image: linear-gradient(
+    to bottom,
+    transparent,
+    #000 calc(var(--feather) * 1.5),
+    #000 calc(100% - var(--feather) * 1.5),
+    transparent
+  );
+}
+.sizer {
+  visibility: hidden;
+}
+.glyph {
+  position: absolute;
+  inset: var(--feather) 0;
+  text-align: center;
+}
+.symbol {
+  display: inline-block;
+  overflow-x: clip;
+}

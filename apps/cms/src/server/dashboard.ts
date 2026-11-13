@@ -11,7 +11,7 @@ import { authMiddleware } from '@/lib/session';
 import { loadContentChecks } from './content-checks';
 import { loadMissingPages } from './not-found';
 import { loadScoreSummary } from './post-score';
-import { hasAnalytics, loadBlogViews } from './dashboard-trend-store';
+import { hasAnalytics } from './dashboard-trend-store';
 import { healthOptions, runHealthChecks } from './system-health';
 import { fileKind, loadJobHealth } from './system-store';
 
@@ -40,8 +40,6 @@ export const getDashboardData = createServerFn({ method: 'GET' })
     // The cards' counts per calendar day in the site's zone, ending today.
     const { timeZone } = await readSiteSettings();
     const dayList = dayKeys(TREND_DAYS, timeZone, now);
-    // PostHog is a second service, so it runs beside the database and never fails the page.
-    const blogViews = loadBlogViews(timeZone, dayList);
     const notTrashed = isNull(posts.deletedAt);
     const isPublished = and(eq(posts.status, 'published'), notTrashed);
     // A day's margin before the first day; rows outside the days are dropped.
@@ -62,8 +60,6 @@ export const getDashboardData = createServerFn({ method: 'GET' })
       drafts,
       published,
       upcomingEvents,
-      publishedRows,
-      startedRows,
       mediaKinds,
       mediaUploads,
       bookedRows,
@@ -121,15 +117,6 @@ export const getDashboardData = createServerFn({ method: 'GET' })
         .from(events)
         .where(and(eq(events.status, 'published'), gte(events.startsAt, new Date(now))))
         .orderBy(asc(events.startsAt)),
-      // When each post went live and was started, and each booking happened.
-      db
-        .select({ at: posts.publishedAt, value: sql<number>`1` })
-        .from(posts)
-        .where(and(isPublished, gte(posts.publishedAt, since))),
-      db
-        .select({ at: posts.createdAt, value: sql<number>`1` })
-        .from(posts)
-        .where(and(notTrashed, gte(posts.createdAt, since))),
       // The library's bytes by kind, for the media card's meter.
       db
         .select({ kind: fileKind, files: count(), bytes: sum(media.size) })
@@ -164,20 +151,18 @@ export const getDashboardData = createServerFn({ method: 'GET' })
       posts: {
         published: Number(counts?.published ?? 0),
         drafts: Number(counts?.drafts ?? 0),
-        publishedDaily: perDay(publishedRows),
-        startedDaily: perDay(startedRows),
       },
       media: {
         files: mediaTotals[0]?.files ?? 0,
         bytes: Number(mediaTotals[0]?.bytes ?? 0),
         missingAlt: Number(mediaTotals[0]?.missingAlt ?? 0),
         allowanceBytes: MEDIA_ALLOWANCE_BYTES,
-        growth: growthOf(mediaUploads, dayList.slice(-90), timeZone),
         kinds: mediaKinds.map((r) => ({
           kind: r.kind,
           files: r.files,
           bytes: Number(r.bytes ?? 0),
         })),
+        growth: growthOf(mediaUploads, dayList.slice(-90), timeZone),
       },
       events: {
         upcoming: upcomingEvents.length,
@@ -193,8 +178,6 @@ export const getDashboardData = createServerFn({ method: 'GET' })
       trendDays: dayList,
       /** Whether the trend card can show the website's traffic. */
       analytics: hasAnalytics(),
-      /** Views of the blog's pages per day, and the readers behind them; null without analytics. */
-      blogViews: await blogViews,
       recentDrafts: drafts.map(toSummary),
       recentlyPublished: published.map(toSummary),
       attention: await attention,

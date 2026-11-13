@@ -1,20 +1,9 @@
 // Drag-and-drop for image uploads. `useImageDrop` makes any element a drop
-// target; `ImageDropZone` is the visible one, shadcn's Empty with a dashed
-// border, which also opens the file chooser when clicked.
+// target; `ImageDropZone` is the visible one, the shared DropTarget, which
+// also opens the file chooser when clicked and takes a pasted image.
 import { useRef, useState } from 'react';
-import { UploadIcon } from '@/components/icons';
-import { Button } from '@/components/ui/button';
-import {
-  Empty,
-  EmptyContent,
-  EmptyDescription,
-  EmptyHeader,
-  EmptyMedia,
-  EmptyTitle,
-} from '@/components/ui/empty';
-import { Spinner } from '@/components/ui/spinner';
+import { DropTarget } from '@/components/ui/file-dropzone';
 import { IMAGE_ACCEPT } from '@/lib/upload-media';
-import { cn } from '@/lib/utils';
 
 const ACCEPTED = new Set(IMAGE_ACCEPT.split(','));
 const imagesIn = (list: FileList | null) =>
@@ -90,8 +79,8 @@ export function ImageDropZone({
   onFiles,
   busy = false,
   multiple = false,
-  title = 'Drop an image here',
-  description = 'JPG, PNG, WebP, AVIF or GIF.',
+  title = multiple ? 'Add images' : 'Add an image',
+  description = 'Drop here or choose. JPG, PNG, WebP, AVIF or GIF.',
   className,
   children,
 }: {
@@ -103,43 +92,24 @@ export function ImageDropZone({
   /** A line under the title; null leaves it out. */
   description?: string | null;
   className?: string;
-  /** More actions beside the file chooser, e.g. picking from Media. */
+  /** More actions under the prompt, e.g. picking from Media. */
   children?: React.ReactNode;
 }) {
-  const { over, dropProps } = useImageDrop(onFiles, busy);
-  const chooser = useFileChooser(onFiles, multiple);
-
   return (
-    <Empty
-      {...dropProps}
-      className={cn(
-        'gap-3 rounded-md border border-dashed p-4 transition-colors md:p-6',
-        over ? 'border-ring bg-accent/50' : 'hover:bg-muted/40',
-        className
-      )}
+    <DropTarget
+      id={id}
+      accept={IMAGE_ACCEPT}
+      multiple={multiple}
+      busy={busy}
+      busyLabel="Uploading"
+      label={title}
+      description={description}
+      dropLabel={multiple ? 'Drop to upload them' : 'Drop to upload it'}
+      refusal="Only JPG, PNG, WebP, AVIF or GIF images can be used."
+      onFiles={onFiles}
+      className={className}
     >
-      {chooser.element}
-      <EmptyHeader className="gap-1">
-        <EmptyMedia variant="icon" className="mb-1">
-          {busy ? <Spinner /> : <UploadIcon aria-hidden />}
-        </EmptyMedia>
-        <EmptyTitle className="text-sm">{busy ? 'Uploading…' : title}</EmptyTitle>
-        {description && <EmptyDescription className="text-xs">{description}</EmptyDescription>}
-      </EmptyHeader>
-      <EmptyContent className="flex-row flex-wrap justify-center gap-2">
-        <Button
-          id={id}
-          type="button"
-          size="sm"
-          variant="outline"
-          className="touch:min-h-11"
-          disabled={busy}
-          onClick={chooser.open}
-        >
-          {multiple ? 'Upload images' : 'Upload'}
-        </Button>
-        {children}
-      </EmptyContent>
-    </Empty>
+      {children}
+    </DropTarget>
   );
 }

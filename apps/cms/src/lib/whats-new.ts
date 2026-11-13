@@ -26,6 +26,32 @@ export type WhatsNewEntry = {
 
 export const whatsNew: WhatsNewEntry[] = [
   {
+    id: '2026-11-13-4',
+    title: 'Uploads show each file as it goes',
+    items: [
+      {
+        title: 'See every image upload on its own',
+        body: 'Upload on the Media page now lists each image with its own progress bar and a tick when it is in. If one fails, it says why and offers Retry, while the rest carry on. Dropping images anywhere on the page opens the same list.',
+        link: { label: 'Open Media', to: '/media' },
+      },
+      {
+        title: 'Paste a picture straight in',
+        body: 'Copy an image or screenshot, point at any upload box (Media, a featured image, a gallery) and paste. Word imports and CSV imports take a dropped or pasted file the same way.',
+      },
+    ],
+  },
+  {
+    id: '2026-11-13-3',
+    title: 'Light or dark from your account menu',
+    items: [
+      {
+        title: 'Change the theme in one click',
+        body: 'Open the menu behind your photo, top right, and pick light, dark or match my device. On a phone it is at the bottom of More. The choice is yours alone, the same one as Appearance on your profile.',
+        link: { label: 'Open your profile', to: '/profile', hash: 'appearance' },
+      },
+    ],
+  },
+  {
     id: '2026-11-13-2',
     title: 'Filters and a grid view on every list',
     items: [

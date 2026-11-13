@@ -1,5 +1,5 @@
 import { useNavigate, useRouter, useRouterState } from '@tanstack/react-router';
-import { useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import {
   ConfirmBulkDelete,
   RowCheckbox,
@@ -24,6 +24,7 @@ import { type RowMenuItem, RowMenu } from '@/components/list/list-row';
 import { PageActions } from '@/components/shell/page-actions';
 import { ImageCropDialog } from '@/components/media/image-crop-dialog';
 import { MediaUsageList } from '@/components/media/media-usage';
+import { MediaUploadDialog } from '@/components/media/upload-dialog';
 import { Button } from '@/components/ui/button';
 import {
   Empty,
@@ -55,7 +56,6 @@ import { Textarea } from '@/components/ui/textarea';
 import { useLoadMore } from '@/hooks/use-load-more';
 import { MEDIA_MAX_SHOWN, MEDIA_PAGE_SIZE } from '@/lib/media-paging';
 import { useIsMobile } from '@/hooks/use-mobile';
-import { readableError } from '@/lib/errors';
 import { notify, removedNotice } from '@/lib/notify';
 import { splitFilename } from '@/lib/filename';
 import { formatBytes } from '@/lib/format';
@@ -89,10 +89,12 @@ export function MediaPage({
   // Ticked files, or the one a context menu deletes; null when nothing is waiting.
   const [toDelete, setToDelete] = useState<string[] | null>(null);
   const [dragOver, setDragOver] = useState(false);
-  const fileInput = useRef<HTMLInputElement>(null);
+  const [uploading, setUploading] = useState(false);
+  // Files dropped on the page, waiting for the upload dialog to take them.
+  const [dropped, setDropped] = useState<File[]>([]);
+  const takeDropped = useCallback(() => setDropped([]), []);
   const selection = useSelection(items.map((m) => m.id));
   const { run, pending } = useAction();
-  const router = useRouter();
   const editing =
     items.find((m) => m.id === editingId) ??
     (data.included?.id === editingId ? data.included : null);
@@ -125,42 +127,6 @@ export function MediaPage({
   const sentinel = useLoadMore<HTMLDivElement>(showMore, hasMore && !loading);
   const libraryEmpty = data.total === 0 && !search.q;
 
-  async function upload(files: FileList | File[]) {
-    const list = Array.from(files).filter((f) => f.type.startsWith('image/'));
-    if (list.length === 0) return;
-    // One toast follows the whole batch: which file is going up, then the outcome.
-    const toastId = `media-upload-${Date.now()}`;
-    const total = list.length;
-    await run(
-      async () => {
-        for (const [i, file] of list.entries()) {
-          notify.loading({
-            id: toastId,
-            title: total === 1 ? 'Uploading image' : `Uploading ${i + 1} of ${total}`,
-            description: file.name,
-          });
-          try {
-            await uploadMedia(file);
-            // Show it in the grid now, while the rest are still uploading.
-            void router.invalidate();
-          } catch (error) {
-            const before = i === 0 ? '' : ` The ${i === 1 ? 'one' : i} before it uploaded.`;
-            throw new Error(`${file.name}: ${readableError(error)}${before}`);
-          }
-        }
-        return total;
-      },
-      {
-        toastId,
-        success: (n) => ({
-          title: n === 1 ? 'Image uploaded' : `${n} images uploaded`,
-          description: 'Resized for the web and ready to use in posts and pages.',
-        }),
-        error: 'Could not upload',
-      }
-    );
-  }
-
   async function remove(ids: string[]) {
     const result = await run(() => deleteMedia({ data: { ids } }), {
       success: (r) => removedNotice(r.removed, NOUN),
@@ -178,15 +144,21 @@ export function MediaPage({
       data-slot="stack-page"
       data-revealing={revealing || undefined}
       className="flex flex-1 flex-col gap-4"
+      // A drop on the upload dialog's own target is handled there (it bubbles through the portal).
       onDragOver={(e) => {
+        if (e.defaultPrevented || uploading) return;
         e.preventDefault();
         setDragOver(true);
       }}
       onDragLeave={() => setDragOver(false)}
       onDrop={(e) => {
+        if (e.defaultPrevented || uploading) return;
         e.preventDefault();
         setDragOver(false);
-        void upload(e.dataTransfer.files);
+        const files = Array.from(e.dataTransfer.files);
+        if (files.length === 0) return;
+        setDropped(files);
+        setUploading(true);
       }}
     >
       <div className="flex flex-wrap items-center gap-3">
@@ -201,24 +173,8 @@ export function MediaPage({
             onChange={setQuery}
           />
         )}
-        <input
-          ref={fileInput}
-          type="file"
-          accept={IMAGE_ACCEPT}
-          multiple
-          className="hidden"
-          onChange={(e) => {
-            if (e.target.files) void upload(e.target.files);
-            e.target.value = '';
-          }}
-        />
-        <Button
-          size="sm"
-          className="max-md:hidden"
-          disabled={pending}
-          onClick={() => fileInput.current?.click()}
-        >
-          {pending ? <Spinner /> : <UploadIcon aria-hidden data-icon="inline-start" />}
+        <Button size="sm" className="max-md:hidden" onClick={() => setUploading(true)}>
+          <UploadIcon aria-hidden data-icon="inline-start" />
           Upload
         </Button>
         <PageActions
@@ -232,7 +188,7 @@ export function MediaPage({
           }
           add={{
             label: 'Upload images',
-            onClick: () => !pending && fileInput.current?.click(),
+            onClick: () => setUploading(true),
           }}
         />
       </div>
@@ -249,7 +205,7 @@ export function MediaPage({
             </EmptyDescription>
           </EmptyHeader>
           <EmptyContent>
-            <Button size="sm" onClick={() => fileInput.current?.click()}>
+            <Button size="sm" onClick={() => setUploading(true)}>
               <UploadIcon aria-hidden data-icon="inline-start" />
               Upload images
             </Button>
@@ -310,6 +266,13 @@ export function MediaPage({
           )}
         </div>
       )}
+
+      <MediaUploadDialog
+        open={uploading}
+        onOpenChange={setUploading}
+        dropped={dropped}
+        onTaken={takeDropped}
+      />
 
       <ConfirmBulkDelete
         open={toDelete !== null}

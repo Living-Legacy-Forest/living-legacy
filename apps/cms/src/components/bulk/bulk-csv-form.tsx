@@ -1,7 +1,8 @@
 import { readCsvRecords } from '@ll/content';
 import { useState } from 'react';
-import { DownloadIcon, UploadIcon } from '@/components/icons';
+import { DownloadIcon } from '@/components/icons';
 import { Button } from '@/components/ui/button';
+import { DropTarget } from '@/components/ui/file-dropzone';
 import { Spinner } from '@/components/ui/spinner';
 import { type BulkResult, type BulkSkip, downloadCsv } from '@/lib/bulk-import';
 import { useAction } from '@/lib/use-action';
@@ -161,22 +162,16 @@ export function BulkCsvForm<T>({
 
       <section className="space-y-2">
         <h3 className="text-sm font-medium">2. Upload the filled-in file</h3>
-        <div className="flex items-center gap-3">
-          <Button type="button" variant="outline" size="sm" render={<label />} nativeButton={false}>
-            <UploadIcon aria-hidden data-icon="inline-start" />
-            Choose CSV file
-            <input
-              type="file"
-              accept=".csv,text/csv"
-              className="sr-only"
-              onChange={(e) => {
-                void load(e.target.files?.[0]);
-                e.target.value = '';
-              }}
-            />
-          </Button>
-          {file && <span className="text-muted-foreground truncate text-xs">{file.name}</span>}
-        </div>
+        <DropTarget
+          accept=".csv,text/csv"
+          label={file ? file.name : 'Add the CSV file'}
+          description={
+            file ? 'Drop or choose another to replace it.' : 'Drop it here or choose it.'
+          }
+          dropLabel={file ? 'Drop to replace it' : 'Drop to check it'}
+          refusal="Only .csv files can be imported. Save the sheet as CSV first."
+          onFiles={(files) => void load(files[0])}
+        />
         {missing.length > 0 && (
           <p className="text-destructive text-xs">
             The file has no {missing.join(', ')} column. Start from one of the templates above.

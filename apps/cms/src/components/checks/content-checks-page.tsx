@@ -2,7 +2,6 @@ import { Link, type LinkProps } from '@tanstack/react-router';
 import { useState } from 'react';
 import {
   CalendarClockIcon,
-  ChevronRightIcon,
   CircleAlertIcon,
   CircleCheckIcon,
   LinkIcon,
@@ -10,7 +9,6 @@ import {
   type LucideIcon,
   SearchIcon,
 } from '@/components/icons';
-import { Badge } from '@/components/ui/badge';
 import { Button, buttonVariants } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Spinner } from '@/components/ui/spinner';
@@ -68,6 +66,7 @@ export function ContentChecksPage({
   canEditMedia: boolean;
 }) {
   const failing = CHECKS.filter((check) => data[check.key].total > 0);
+  const passing = CHECKS.filter((check) => data[check.key].total === 0);
   const gaps = failing.reduce((sum, check) => sum + data[check.key].total, 0);
 
   const revealing = useRevealOnce();
@@ -85,77 +84,45 @@ export function ContentChecksPage({
         <p className="text-muted-foreground text-sm">
           {gaps === 0
             ? 'Published content has what visitors, search engines and screen readers need.'
-            : `${formatInteger(gaps)} ${gaps === 1 ? 'gap' : 'gaps'} in published content. Each one has a button that takes you to the fix.`}
+            : `${formatInteger(gaps)} ${gaps === 1 ? 'gap' : 'gaps'} in published content, each with a button that takes you to the fix.`}
         </p>
       </div>
 
-      <Summary data={data} />
-
       {failing.map((check) => (
-        <Section key={check.key} check={check} total={data[check.key].total}>
+        <CheckSection key={check.key} check={check} total={data[check.key].total}>
           <Items checkKey={check.key} data={data} canEditMedia={canEditMedia} />
           <More shown={data[check.key].rows.length} total={data[check.key].total} />
-        </Section>
+        </CheckSection>
       ))}
+
+      {passing.length > 0 && <PassingList checks={passing} />}
     </div>
   );
 }
 
-/** One line per check: a tick when it passes, the count and a jump link when it does not. */
-function Summary({ data }: { data: ContentChecks }) {
+/** How many a failing check has to fix. */
+function ToFix({ total }: { total: number }) {
   return (
-    <ul className="divide-y rounded-lg border max-md:divide-(--ios-separator) max-md:overflow-hidden max-md:rounded-[10px] max-md:border-0 max-md:bg-(--ios-cell)">
-      {CHECKS.map((check) => {
-        const total = data[check.key].total;
-        const body = (
-          <>
-            <check.icon aria-hidden className="text-muted-foreground size-4 shrink-0" />
-            <span className="min-w-0 flex-1">
-              <span className="text-ui block font-medium">{check.title}</span>
-              <span className="text-muted-foreground block text-xs">
-                {total === 0 ? check.passing : check.why}
-              </span>
-            </span>
-            {total === 0 ? (
-              <span className="flex shrink-0 items-center gap-1 text-xs text-emerald-700 dark:text-emerald-400">
-                <CircleCheckIcon aria-hidden className="size-3.5" />
-                Passing
-              </span>
-            ) : (
-              <Badge
-                variant="outline"
-                className="shrink-0 gap-1 border-amber-300 text-amber-800 tabular-nums dark:border-amber-700 dark:text-amber-300"
-              >
-                <CircleAlertIcon aria-hidden className="size-3" />
-                {formatInteger(total)} to fix
-              </Badge>
-            )}
-          </>
-        );
-        return (
-          <li key={check.key}>
-            {total === 0 ? (
-              <div className="touch:min-h-11 flex items-center gap-3 px-4 py-3">{body}</div>
-            ) : (
-              <a
-                href={`#check-${check.key}`}
-                className="touch:min-h-11 hover:bg-muted/60 flex items-center gap-3 px-4 py-3 transition-colors"
-              >
-                {body}
-                <ChevronRightIcon
-                  aria-hidden
-                  className="text-muted-foreground/60 size-4 shrink-0"
-                />
-              </a>
-            )}
-          </li>
-        );
-      })}
-    </ul>
+    <span className="flex shrink-0 items-center gap-1 text-xs font-medium text-amber-700 tabular-nums dark:text-amber-400">
+      <CircleAlertIcon aria-hidden className="size-3.5" />
+      {formatInteger(total)} to fix
+    </span>
   );
 }
 
-function Section({
+function CheckIcon({ icon: Icon }: { icon: LucideIcon }) {
+  return (
+    <span className="bg-muted text-muted-foreground grid size-8 shrink-0 place-items-center rounded-md max-md:hidden">
+      <Icon aria-hidden className="size-4" />
+    </span>
+  );
+}
+
+/**
+ * A failing check: what it looks at and why it matters, then each thing to fix. Phones show the
+ * header as iOS's small heading over a grouped list.
+ */
+function CheckSection({
   check,
   total,
   children,
@@ -164,22 +131,60 @@ function Section({
   total: number;
   children: React.ReactNode;
 }) {
+  const headingId = `check-${check.key}`;
   return (
-    // Phones: the header becomes iOS's small heading over a grouped list.
     <section
-      id={`check-${check.key}`}
-      className="scroll-mt-6 rounded-lg border max-md:rounded-none max-md:border-0"
+      aria-labelledby={headingId}
+      className="rounded-lg border max-md:rounded-none max-md:border-0"
     >
-      <header className="flex items-baseline justify-between gap-4 border-b px-4 py-3 max-md:border-0 max-md:px-4 max-md:pt-0 max-md:pb-1.5">
-        <h2 className="text-ui font-medium max-md:text-[0.8125rem] max-md:font-normal max-md:text-(--ios-secondary) max-md:uppercase">
-          {check.title}
-        </h2>
-        <span className="text-muted-foreground text-xs tabular-nums">
-          {formatInteger(total)} to fix
-        </span>
+      <header className="flex items-start gap-3 px-4 py-3 max-md:px-4 max-md:pt-0 max-md:pb-2">
+        <CheckIcon icon={check.icon} />
+        <div className="min-w-0 flex-1">
+          <div className="flex items-baseline justify-between gap-3">
+            <h2
+              id={headingId}
+              className="text-ui font-medium max-md:text-[0.8125rem] max-md:font-normal max-md:text-(--ios-secondary)"
+            >
+              {check.title}
+            </h2>
+            <ToFix total={total} />
+          </div>
+          <p className="text-muted-foreground mt-0.5 text-xs max-md:text-(--ios-secondary)">
+            {check.why}
+          </p>
+        </div>
       </header>
-      <ul className="divide-y max-md:divide-(--ios-separator) max-md:overflow-hidden max-md:rounded-[10px] max-md:bg-(--ios-cell)">
+      <ul className="divide-y border-t max-md:divide-(--ios-separator) max-md:overflow-hidden max-md:rounded-[10px] max-md:border-0 max-md:bg-(--ios-cell)">
         {children}
+      </ul>
+    </section>
+  );
+}
+
+/** The checks with nothing to fix, together at the end, so the page shows all that is looked at. */
+function PassingList({ checks }: { checks: (typeof CHECKS)[number][] }) {
+  return (
+    <section aria-labelledby="checks-passing" className="space-y-2">
+      <h2
+        id="checks-passing"
+        className="text-muted-foreground px-1 text-xs font-medium max-md:px-4 max-md:text-[0.8125rem] max-md:font-normal max-md:text-(--ios-secondary)"
+      >
+        Passing
+      </h2>
+      <ul className="divide-y rounded-lg border max-md:divide-(--ios-separator) max-md:overflow-hidden max-md:rounded-[10px] max-md:border-0 max-md:bg-(--ios-cell)">
+        {checks.map((check) => (
+          <li key={check.key} className="touch:min-h-11 flex items-center gap-3 px-4 py-3">
+            <CheckIcon icon={check.icon} />
+            <span className="min-w-0 flex-1">
+              <span className="text-ui block font-medium">{check.title}</span>
+              <span className="text-muted-foreground block text-xs">{check.passing}</span>
+            </span>
+            <CircleCheckIcon
+              aria-hidden
+              className="size-4 shrink-0 text-emerald-700 dark:text-emerald-400"
+            />
+          </li>
+        ))}
       </ul>
     </section>
   );
@@ -187,7 +192,7 @@ function Section({
 
 function Row({ children }: { children: React.ReactNode }) {
   return (
-    <li className="touch:min-h-11 flex flex-wrap items-center gap-x-3 gap-y-2 px-4 py-2.5">
+    <li className="touch:min-h-11 flex min-h-13 flex-wrap items-center gap-x-3 gap-y-2 px-4 py-2 md:pl-15">
       {children}
     </li>
   );
@@ -216,7 +221,7 @@ function Items({
     case 'noDescription':
       return data.noDescription.rows.map((p) => (
         <Row key={p.id}>
-          <span className="text-ui min-w-0 flex-1 truncate">{p.title || 'Untitled'}</span>
+          <span className="text-ui line-clamp-2 min-w-0 flex-1">{p.title || 'Untitled'}</span>
           <FixLink
             label="Add a description"
             to="/posts/$postId"
@@ -228,7 +233,7 @@ function Items({
     case 'noImage':
       return data.noImage.rows.map((p) => (
         <Row key={p.id}>
-          <span className="text-ui min-w-0 flex-1 truncate">{p.title || 'Untitled'}</span>
+          <span className="text-ui line-clamp-2 min-w-0 flex-1">{p.title || 'Untitled'}</span>
           <FixLink
             label="Add an image"
             to="/posts/$postId"
@@ -245,7 +250,7 @@ function Items({
       return data.events.rows.map((e) => (
         <Row key={e.id}>
           <span className="min-w-0 flex-1">
-            <span className="text-ui block truncate">{e.title || 'Untitled'}</span>
+            <span className="text-ui line-clamp-2">{e.title || 'Untitled'}</span>
             <span className="text-muted-foreground block text-xs">
               {[
                 formatDate(e.startsAt, timeZone),
@@ -272,8 +277,9 @@ function AltTextRow({ id, filename, canEdit }: { id: string; filename: string; c
       <img
         src={`/api/media/${id}?w=96`}
         alt=""
+        title={filename}
         loading="lazy"
-        className="bg-muted size-10 shrink-0 rounded-md border object-cover"
+        className="bg-muted size-9 shrink-0 rounded-md border object-cover"
       />
       {canEdit ? (
         <form
@@ -289,7 +295,7 @@ function AltTextRow({ id, filename, canEdit }: { id: string; filename: string; c
         >
           <Input
             aria-label={`Alt text for ${filename}`}
-            placeholder={`Describe ${filename}`}
+            placeholder="Describe the image"
             value={alt}
             maxLength={300}
             onChange={(e) => setAlt(e.target.value)}
@@ -314,8 +320,8 @@ function AltTextRow({ id, filename, canEdit }: { id: string; filename: string; c
 
 function More({ shown, total }: { shown: number; total: number }) {
   return total > shown ? (
-    <li className="text-muted-foreground px-4 py-2 text-xs">
-      And {formatInteger(total - shown)} more. Fix these first and the rest will show.
+    <li className="text-muted-foreground px-4 py-2.5 text-xs md:pl-15">
+      And {formatInteger(total - shown)} more. They show here as these are fixed.
     </li>
   ) : null;
 }

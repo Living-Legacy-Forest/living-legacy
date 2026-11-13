@@ -23,26 +23,38 @@ const SELECTED = ':scope > [aria-pressed="true"], :scope > [aria-current="page"]
  * straight there on a resize or first placement. Until it has measured (the server render, the
  * first paint) the chosen item wears its own fill; see `[data-slot='pill-track']` in styles.css.
  */
-export function PillGlide({ value, className }: { value: unknown; className?: string }) {
+export function PillGlide({
+  value,
+  selector = SELECTED,
+  className,
+}: {
+  value: unknown;
+  /** The chosen item, when it is not a pressed toggle or the current page (a menu radio, say). */
+  selector?: string;
+  className?: string;
+}) {
   const ref = React.useRef<HTMLSpanElement>(null);
   const placed = React.useRef(false);
 
-  const place = React.useCallback((glide: boolean) => {
-    const mark = ref.current;
-    const track = mark?.parentElement;
-    if (!mark || !track) return;
-    const item = track.querySelector<HTMLElement>(SELECTED);
-    if (!item) {
-      mark.style.opacity = '0';
-      return;
-    }
-    mark.style.transition = glide ? '' : 'none';
-    mark.style.translate = `${item.offsetLeft}px ${item.offsetTop}px`;
-    mark.style.width = `${item.offsetWidth}px`;
-    mark.style.height = `${item.offsetHeight}px`;
-    mark.style.opacity = '1';
-    track.dataset.glide = '';
-  }, []);
+  const place = React.useCallback(
+    (glide: boolean) => {
+      const mark = ref.current;
+      const track = mark?.parentElement;
+      if (!mark || !track) return;
+      const item = track.querySelector<HTMLElement>(selector);
+      if (!item) {
+        mark.style.opacity = '0';
+        return;
+      }
+      mark.style.transition = glide ? '' : 'none';
+      mark.style.translate = `${item.offsetLeft}px ${item.offsetTop}px`;
+      mark.style.width = `${item.offsetWidth}px`;
+      mark.style.height = `${item.offsetHeight}px`;
+      mark.style.opacity = '1';
+      track.dataset.glide = '';
+    },
+    [selector]
+  );
 
   React.useLayoutEffect(() => {
     place(placed.current);

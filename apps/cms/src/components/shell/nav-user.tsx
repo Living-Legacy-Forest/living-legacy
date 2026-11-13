@@ -1,13 +1,18 @@
-import { Link, useRouter } from '@tanstack/react-router';
+import { Menu as MenuPrimitive } from '@base-ui/react/menu';
+import { Link } from '@tanstack/react-router';
 import {
   ChevronRightIcon,
   ExternalLinkIcon,
   KeyboardIcon,
   LogOutIcon,
   MessageCircleQuestionIcon,
+  MonitorIcon,
+  MoonIcon,
+  SunIcon,
+  SunMoonIcon,
   UserIcon,
 } from '@/components/icons';
-import { useState } from 'react';
+import { type ComponentType, useState } from 'react';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import {
   Dialog,
@@ -22,16 +27,21 @@ import {
   DropdownMenuGroup,
   DropdownMenuItem,
   DropdownMenuLabel,
+  DropdownMenuRadioGroup,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { Drawer, DrawerBody, DrawerContent } from '@/components/ui/drawer';
 import { Kbd, KbdGroup } from '@/components/ui/kbd';
+import { PillGlide, pillItemClass, pillTrackClass } from '@/components/ui/pill-track';
+import { Spinner } from '@/components/ui/spinner';
 import { useIsMobile } from '@/hooks/use-mobile';
-import { authClient } from '@/lib/auth-client';
 import { footerLinks } from '@/lib/nav';
-import { type SessionUser, forgetCachedUser } from '@/lib/session';
+import type { SessionUser } from '@/lib/session';
+import { useSignOut } from '@/lib/use-sign-out';
+import { useThemeChoice } from '@/lib/use-theme-choice';
 import { cn } from '@/lib/utils';
+import type { Theme } from '@/server/settings';
 import { SheetHeader, sheetGroupClass, sheetRowClass } from './sheet-parts';
 import { avatarSrc } from '@/lib/avatar';
 import { canReportProblem, openProblemReport } from '@/lib/report-problem';
@@ -47,11 +57,36 @@ const shortcuts: { keys: string[]; label: string }[] = [
   { keys: ['Right-click'], label: 'See every action for a row, with its key' },
 ];
 
+const themes: {
+  value: Theme;
+  label: string;
+
+  icon: ComponentType<{ className?: string }>;
+}[] = [
+  { value: 'light', label: 'Light', icon: SunIcon },
+  { value: 'dark', label: 'Dark', icon: MoonIcon },
+  { value: 'system', label: 'Match my device', icon: MonitorIcon },
+];
+
+/** The sign-out label: the new words rise into place, so "Signing out" reads as progress. */
+export function SignOutLabel({ signingOut }: { signingOut: boolean }) {
+  const text = signingOut ? 'Signing out' : 'Sign out';
+  return (
+    <span
+      key={text}
+      className="animate-in fade-in-0 slide-in-from-bottom-1 duration-200 ease-[cubic-bezier(0.16,1,0.3,1)] motion-reduce:animate-none"
+    >
+      {text}
+    </span>
+  );
+}
+
 export function NavUser({ user }: { user: SessionUser }) {
-  const router = useRouter();
   const isPhone = useIsMobile();
   const [showShortcuts, setShowShortcuts] = useState(false);
   const [sheetOpen, setSheetOpen] = useState(false);
+  const { signingOut, signOut } = useSignOut();
+  const theme = useThemeChoice();
   // Sentry runs in production only, so the item shows there; read once it has loaded.
   const [canReport] = useState(() => typeof window !== 'undefined' && canReportProblem());
   const initials = user.name
@@ -60,12 +95,6 @@ export function NavUser({ user }: { user: SessionUser }) {
     .join('')
     .slice(0, 2)
     .toUpperCase();
-
-  async function signOut() {
-    await authClient.signOut();
-    forgetCachedUser();
-    await router.navigate({ to: '/login' });
-  }
 
   const avatar = (
     <>
@@ -211,9 +240,44 @@ export function NavUser({ user }: { user: SessionUser }) {
             )}
           </DropdownMenuGroup>
           <DropdownMenuSeparator />
-          <DropdownMenuItem onClick={signOut}>
-            <LogOutIcon aria-hidden />
-            Sign out
+          {/* One stop per choice: up and down pass through them, and choosing keeps the menu open. */}
+          <div className="text-ui flex items-center gap-1.5 py-0.5 pl-1.5">
+            <SunMoonIcon aria-hidden className="text-muted-foreground size-4 shrink-0" />
+            <span className="flex-1" aria-hidden>
+              Theme
+            </span>
+            <DropdownMenuRadioGroup
+              aria-label="Theme"
+              value={theme.effective}
+              onValueChange={(next) => void theme.choose(next as Theme)}
+              className={pillTrackClass}
+            >
+              <PillGlide value={theme.effective} selector=':scope > [aria-checked="true"]' />
+              {themes.map(({ value, label, icon: Icon }) => (
+                <MenuPrimitive.RadioItem
+                  key={value}
+                  value={value}
+                  aria-label={label}
+                  title={label}
+                  className={cn(
+                    pillItemClass,
+                    'aria-checked:text-foreground data-highlighted:text-foreground size-7 cursor-default px-0'
+                  )}
+                >
+                  <Icon aria-hidden className="size-4" />
+                </MenuPrimitive.RadioItem>
+              ))}
+            </DropdownMenuRadioGroup>
+          </div>
+          <DropdownMenuSeparator />
+          <DropdownMenuItem
+            variant="destructive"
+            closeOnClick={false}
+            aria-busy={signingOut || undefined}
+            onClick={signOut}
+          >
+            {signingOut ? <Spinner aria-hidden /> : <LogOutIcon aria-hidden />}
+            <SignOutLabel signingOut={signingOut} />
           </DropdownMenuItem>
         </DropdownMenuContent>
       </DropdownMenu>

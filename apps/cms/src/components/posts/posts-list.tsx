@@ -9,6 +9,7 @@ import {
   ExternalLinkIcon,
   EyeOffIcon,
   FileTextIcon,
+  ImageIcon,
   LinkIcon,
   type LucideIcon,
   MoreHorizontalIcon,
@@ -37,6 +38,9 @@ import { Button } from '@/components/ui/button';
 import { ListRows, isDesktop } from '@/components/list/list-page';
 import { ListRow, type RowMenuItem } from '@/components/list/list-row';
 import { SearchInput, useSelection } from '@/components/list/list-tools';
+import { PostViewsChart } from './post-views-chart';
+import { dummyViews } from './dummy-views';
+import { PillGlide, pillItemClass, pillTrackClass } from '@/components/ui/pill-track';
 import { PageActions } from '@/components/shell/page-actions';
 import {
   Empty,
@@ -120,6 +124,12 @@ export function PostsList({
   const [confirmDelete, setConfirmDelete] = useState<string[] | null>(null);
   const [query, setQuery] = useState(search.q ?? '');
   const inTrash = search.status === 'trash';
+  // The preview pane can be closed to give the list the full width; the choice is remembered.
+  const [previewOpen, setPreviewOpen] = useState(data.previewOpen);
+  const setPreview = (open: boolean) => {
+    setPreviewOpen(open);
+    document.cookie = `posts_preview=${open ? 'open' : 'closed'}; path=/; max-age=31536000; samesite=lax`;
+  };
   const canPurge = can(user.role, 'content:purge');
   const canWrite = can(user.role, 'posts:write');
   const canPublish = can(user.role, 'posts:publish');
@@ -331,6 +341,17 @@ export function PostsList({
             ))}
           </SelectContent>
         </Select>
+        {!previewOpen && (
+          <Button
+            variant="ghost"
+            size="icon-sm"
+            aria-label="Show preview"
+            className="max-lg:hidden"
+            onClick={() => setPreview(true)}
+          >
+            <PanelRightIcon aria-hidden />
+          </Button>
+        )}
         {canWrite && (
           <Button
             size="sm"
@@ -361,9 +382,20 @@ export function PostsList({
 
       <div
         data-slot="list-panes"
-        className="grid min-h-0 flex-1 grid-cols-1 overflow-hidden rounded-lg border max-md:flex-none max-md:overflow-visible max-md:rounded-none max-md:border-0 lg:grid-cols-[minmax(20rem,2fr)_minmax(0,3fr)]"
+        className={cn(
+          // Plain fr tracks so the columns glide between open and closed.
+          'grid min-h-0 flex-1 grid-cols-1 overflow-hidden rounded-lg border max-md:flex-none max-md:overflow-visible max-md:rounded-none max-md:border-0',
+          'motion-reduce:transition-none lg:transition-[grid-template-columns] lg:duration-300 lg:ease-[cubic-bezier(0.32,0.72,0,1)]',
+          previewOpen ? 'lg:grid-cols-[2fr_3fr]' : 'lg:grid-cols-[1fr_0fr]'
+        )}
       >
-        <section aria-label="Post list" className="flex min-h-0 flex-col lg:border-r">
+        <section
+          aria-label="Post list"
+          className={cn(
+            'flex min-h-0 min-w-80 flex-col transition-[border-color] duration-300 lg:border-r',
+            !previewOpen && 'border-transparent'
+          )}
+        >
           <div className="flex h-11 shrink-0 items-center gap-1 border-b px-2 max-md:mb-2 max-md:border-0 max-md:px-0">
             {checkedIds.length > 0 ? (
               <>
@@ -412,7 +444,12 @@ export function PostsList({
                 )}
               </>
             ) : (
-              <nav aria-label="Post status" className="no-scrollbar flex gap-0.5 overflow-x-auto">
+              <nav
+                aria-label="Post status"
+                data-slot="pill-track"
+                className={cn(pillTrackClass, 'no-scrollbar overflow-x-auto')}
+              >
+                <PillGlide value={search.status} />
                 {tabs
                   // Empty tabs only crowd the row (and pushed Trash out of sight); All and the
                   // current tab always stay.
@@ -435,10 +472,7 @@ export function PostsList({
                           selected: undefined,
                         })}
                         aria-current={active ? 'page' : undefined}
-                        className={cn(
-                          'text-muted-foreground hover:text-foreground text-ui flex h-7 shrink-0 items-center gap-1.5 rounded-md px-2.5 whitespace-nowrap transition-colors',
-                          active && 'bg-muted text-foreground font-medium'
-                        )}
+                        className={pillItemClass}
                       >
                         {tab.label}
                         <span className="text-muted-foreground text-xs tabular-nums">
@@ -492,7 +526,14 @@ export function PostsList({
                         : undefined
                   }
                   menu={rowMenu(row)}
-                  onSelect={() => select(row.id)}
+                  previewOpen={previewOpen}
+                  views={
+                    row.status === 'published' && !row.deletedAt ? dummyViews(row.slug) : undefined
+                  }
+                  onSelect={() => {
+                    select(row.id);
+                    setPreview(true);
+                  }}
                 />
               ))}
             </ListRows>
@@ -541,21 +582,30 @@ export function PostsList({
           )}
         </section>
 
-        <PreviewPane
-          row={selectedRow}
-          inTrash={inTrash}
-          canPurge={canPurge}
-          canPublish={canPublish}
-          canRequestReview={canWrite && !canPublish}
-          userId={user.id}
-          reviewers={data.reviewers}
-          editLabel={canWrite ? 'Edit' : 'Open'}
-          pending={pending}
-          onTrash={(id) => trash([id])}
-          onRestore={(id) => restore([id])}
-          onDelete={(id) => setConfirmDelete([id])}
-          onRequestReview={submitReview}
-        />
+        <div
+          inert={!previewOpen}
+          className={cn(
+            'hidden min-h-0 min-w-0 flex-col overflow-hidden transition-[opacity,translate] duration-300 ease-[cubic-bezier(0.32,0.72,0,1)] motion-reduce:transition-none lg:flex',
+            !previewOpen && 'translate-x-4 opacity-0'
+          )}
+        >
+          <PreviewPane
+            onClose={() => setPreview(false)}
+            row={selectedRow}
+            inTrash={inTrash}
+            canPurge={canPurge}
+            canPublish={canPublish}
+            canRequestReview={canWrite && !canPublish}
+            userId={user.id}
+            reviewers={data.reviewers}
+            editLabel={canWrite ? 'Edit' : 'Open'}
+            pending={pending}
+            onTrash={(id) => trash([id])}
+            onRestore={(id) => restore([id])}
+            onDelete={(id) => setConfirmDelete([id])}
+            onRequestReview={submitReview}
+          />
+        </div>
       </div>
 
       <AlertDialog
@@ -605,6 +655,8 @@ function PostListItem({
   select,
   swipe,
   menu,
+  previewOpen,
+  views,
   onSelect,
 }: {
   row: PostListRow;
@@ -614,6 +666,9 @@ function PostListItem({
   select?: React.ComponentProps<typeof ListRow>['select'];
   swipe?: React.ComponentProps<typeof ListRow>['swipe'];
   menu: RowMenuItem[];
+  previewOpen: boolean;
+  /** Last 30 days of page views, when PostHog is connected. */
+  views?: number[];
   onSelect: () => void;
 }) {
   const navigate = useNavigate();
@@ -623,6 +678,15 @@ function PostListItem({
     : row.status === 'published'
       ? row.publishedAt
       : (row.scheduledAt ?? row.updatedAt);
+  // With the preview closed the row has the room for the columns the pane would have shown.
+  const wide = !previewOpen;
+  const dateLabel = inTrash
+    ? 'Trashed'
+    : row.status === 'published'
+      ? 'Published'
+      : row.scheduledAt
+        ? 'Scheduled'
+        : 'Edited';
   const meta = [row.categories.map((c) => c.name).join(', '), row.author].filter(Boolean);
   // Only live posts: a draft is expected to be unfinished.
   const gaps =
@@ -642,7 +706,7 @@ function PostListItem({
       select={select}
       swipe={swipe}
       menu={menu}
-      previews={!inTrash && isDesktop()}
+      previews={!inTrash && previewOpen && isDesktop()}
       // Below lg there is no preview pane: a tap opens the editor instead.
       onOpen={() => (isDesktop() ? onSelect() : open())}
       onDoubleClick={open}
@@ -652,31 +716,104 @@ function PostListItem({
         onPointerEnter: () => void loadPostPreview(row.id),
       }}
     >
-      <span className="flex items-baseline gap-3">
-        <span className="text-ui min-w-0 flex-1 truncate font-medium">
-          {row.title || 'Untitled'}
+      <span className="flex items-center gap-4">
+        <span className="bg-muted relative size-14 shrink-0 overflow-hidden rounded-md">
+          {row.featuredMediaId ? (
+            <img
+              src={`/api/media/${row.featuredMediaId}?w=320`}
+              alt=""
+              loading="lazy"
+              className="size-full object-cover"
+            />
+          ) : (
+            <span className="text-muted-foreground/60 flex size-full items-center justify-center">
+              <ImageIcon aria-hidden className="size-5" />
+            </span>
+          )}
         </span>
-        <span className="text-muted-foreground shrink-0 text-xs tabular-nums">
-          {date ? formatDate(date, timeZone) : ''}
+        <span className="min-w-0 flex-1">
+          <span className="text-ui block truncate font-medium">{row.title || 'Untitled'}</span>
+          <span className="text-muted-foreground mt-0.5 flex min-w-0 items-center gap-1 text-xs">
+            <PostStatusBadge
+              status={row.status}
+              hasDraft={row.hasDraft}
+              trashed={inTrash}
+              inReview={row.reviewRequestedAt !== null}
+              scheduledAt={row.scheduledAt}
+            />
+            {meta.length > 0 && (
+              <span className={cn('min-w-0 truncate', wide && 'lg:hidden')}>
+                {['', ...meta].join(' · ')}
+              </span>
+            )}
+            {date && (
+              <span className={cn('shrink-0 tabular-nums', wide && 'lg:hidden')}>
+                {' · '}
+                {formatDate(date, timeZone)}
+              </span>
+            )}
+          </span>
+          {gaps.length > 0 && (
+            <span className="mt-0.5 flex items-center gap-1 text-xs text-amber-700 dark:text-amber-400">
+              <CircleAlertIcon aria-hidden className="size-3 shrink-0" />
+              <span className="truncate">No {gaps.join(' or ')}</span>
+            </span>
+          )}
         </span>
+        {views && (
+          <span className={cn('flex shrink-0', wide && 'max-xl:hidden')}>
+            <PostViewsChart series={views} showTotal={wide} />
+          </span>
+        )}
+        {wide && (
+          <span className="animate-in fade-in slide-in-from-right-2 hidden shrink-0 items-center gap-6 text-xs duration-300 lg:flex">
+            <RowCell
+              className="w-40"
+              primary={row.categories.map((c) => c.name).join(', ')}
+              secondary={row.tags.map((t) => t.name).join(', ')}
+            />
+            <RowCell className="hidden w-28 xl:block" primary={row.author ?? ''} />
+            <RowCell
+              className="w-28"
+              primary={date ? formatDate(date, timeZone) : ''}
+              secondary={dateLabel}
+            />
+            <RowCell
+              className="hidden w-24 text-right 2xl:block"
+              primary={formatRelative(row.updatedAt)}
+              secondary="Last edit"
+            />
+          </span>
+        )}
       </span>
-      <span className="text-muted-foreground mt-0.5 flex min-w-0 items-center gap-1 text-xs">
-        <PostStatusBadge
-          status={row.status}
-          hasDraft={row.hasDraft}
-          trashed={inTrash}
-          inReview={row.reviewRequestedAt !== null}
-          scheduledAt={row.scheduledAt}
-        />
-        {meta.length > 0 && <span className="min-w-0 truncate">{['', ...meta].join(' · ')}</span>}
-      </span>
-      {gaps.length > 0 && (
-        <span className="mt-0.5 flex items-center gap-1 text-xs text-amber-700 dark:text-amber-400">
-          <CircleAlertIcon aria-hidden className="size-3 shrink-0" />
-          <span className="truncate">No {gaps.join(' or ')}</span>
-        </span>
-      )}
     </ListRow>
+  );
+}
+
+/** A two-line column in a wide row: the value, then a quieter caption. A dash when empty. */
+function RowCell({
+  primary,
+  secondary,
+  className,
+}: {
+  primary: string;
+  secondary?: string;
+  className?: string;
+}) {
+  return (
+    <span className={cn('min-w-0', className)}>
+      <span
+        className={cn(
+          'block truncate tabular-nums',
+          primary ? 'text-foreground/80' : 'text-muted-foreground/50'
+        )}
+      >
+        {primary || '-'}
+      </span>
+      {secondary && (
+        <span className="text-muted-foreground mt-0.5 block truncate">{secondary}</span>
+      )}
+    </span>
   );
 }
 
@@ -694,7 +831,9 @@ function PreviewPane({
   onRestore,
   onDelete,
   onRequestReview,
+  onClose,
 }: {
+  onClose: () => void;
   row: PostListRow | null;
   inTrash: boolean;
   canPurge: boolean;
@@ -713,7 +852,7 @@ function PreviewPane({
 
   if (!row) {
     return (
-      <section aria-label="Preview" className="hidden lg:flex">
+      <section aria-label="Preview" className="flex flex-1">
         <Empty>
           <EmptyHeader>
             <EmptyMedia variant="icon">
@@ -735,7 +874,7 @@ function PreviewPane({
     !row.reviewRequestedAt;
 
   return (
-    <section aria-label="Preview" className="hidden min-h-0 flex-col lg:flex">
+    <section aria-label="Preview" className="flex min-h-0 flex-1 flex-col">
       <div className="flex h-11 shrink-0 items-center gap-2 border-b px-3">
         <span className="text-muted-foreground mr-auto truncate text-xs">
           {inTrash
@@ -819,6 +958,9 @@ function PreviewPane({
             </DropdownMenuContent>
           </DropdownMenu>
         )}
+        <Button variant="ghost" size="icon-sm" aria-label="Close preview" onClick={onClose}>
+          <PanelRightIcon aria-hidden />
+        </Button>
       </div>
       <div className="min-h-0 flex-1 overflow-y-auto">
         {error ? (
@@ -838,7 +980,13 @@ function PreviewPane({
             <div className="bg-muted/60 h-40 animate-pulse rounded" />
           </div>
         ) : (
-          <PostArticle post={post} size="pane" />
+          // Keyed by post so choosing another one replays the entrance.
+          <div
+            key={post.id}
+            className="animate-in fade-in slide-in-from-bottom-2 duration-300 ease-[cubic-bezier(0.32,0.72,0,1)] motion-reduce:animate-none"
+          >
+            <PostArticle post={post} size="pane" />
+          </div>
         )}
       </div>
     </section>

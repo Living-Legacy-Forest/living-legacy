@@ -9,6 +9,9 @@ interface __BaseEnv_CloudflareEnv {
 	BETTER_AUTH_URL: string;
 	RESEND_API_KEY: string;
 	EMAIL_FROM: string;
+	POSTHOG_PERSONAL_API_KEY?: string;
+	POSTHOG_PROJECT_ID?: string;
+	POSTHOG_API_HOST?: string;
 }
 declare namespace Cloudflare {
 	interface GlobalProps {

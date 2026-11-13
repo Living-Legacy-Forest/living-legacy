@@ -21,6 +21,7 @@ import {
   user,
 } from '@ll/db/schema';
 import { createServerFn } from '@tanstack/react-start';
+import { getRequest } from '@tanstack/react-start/server';
 import { and, asc, count, desc, eq, inArray, isNotNull, isNull, like, ne, sql } from 'drizzle-orm';
 import { z } from 'zod';
 import { getDb } from '@/lib/db';
@@ -132,6 +133,7 @@ export const listPosts = createServerFn({ method: 'GET' })
           reviewRequestedAt: posts.reviewRequestedAt,
           reviewerId: posts.reviewerId,
           createdBy: posts.createdBy,
+          featuredMediaId: posts.featuredMediaId,
           author: teamMembers.name,
           // The same gaps Content checks lists, so the list can flag them too.
           noDescription: sql<boolean>`coalesce(trim(${posts.seoDescription}), '') = '' and coalesce(trim(${posts.excerpt}), '') = ''`,
@@ -191,6 +193,9 @@ export const listPosts = createServerFn({ method: 'GET' })
       },
       total,
       pageCount: Math.max(1, Math.ceil(total / POSTS_PAGE_SIZE)),
+      // A cookie, not local storage, so the server renders the pane the way it was left. The list
+      // is expanded until someone opens the preview.
+      previewOpen: /(?:^|;\s*)posts_preview=open/.test(getRequest().headers.get('cookie') ?? ''),
       categories,
       reviewers,
     };

@@ -326,6 +326,8 @@ export const SearchXIcon = make(H.SearchRemoveIcon);
 export const SearchReplaceIcon = make(H.SearchReplaceIcon);
 export const XIcon = animated(AnimatedCancel01Icon);
 export const ArrowRightIcon = make(H.ArrowRight01Icon);
+/** A straight arrow, where ArrowRightIcon is a chevron. */
+export const ArrowForwardIcon = make(H.ArrowRight02Icon);
 export const ArchiveIcon = animated(AnimatedDeliveryBox01Icon);
 export const LayoutDashboardIcon = animated(AnimatedLayoutDashboardIcon);
 export const PanelLeftIcon = animated(AnimatedSidebarLeftIcon);

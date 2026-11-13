@@ -17,6 +17,7 @@ import {
 } from '@/components/ui/sheet';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
+import { GlideHighlight } from '@/components/ui/glide-highlight';
 import { PanelLeftIcon } from '@/components/icons';
 
 const SIDEBAR_COOKIE_NAME = 'sidebar_state';
@@ -273,6 +274,12 @@ function Sidebar({
           data-slot="sidebar-inner"
           className="bg-sidebar group-data-[variant=floating]:ring-sidebar-border group-data-[hover-expanded=true]:ring-sidebar-border flex size-full flex-col transition-[border-radius,box-shadow] group-data-[hover-expanded=true]:rounded-lg group-data-[hover-expanded=true]:ring-1 group-data-[variant=floating]:rounded-lg group-data-[variant=floating]:shadow-sm group-data-[variant=floating]:ring-1"
         >
+          {/* One hover fill for every menu in the sidebar, gliding between them. */}
+          <GlideHighlight
+            follow="hover"
+            selector="[data-slot=sidebar-menu-button]:not(:disabled,[aria-disabled=true]),[data-slot=sidebar-menu-sub-button]:not([aria-disabled=true])"
+            className="bg-sidebar-accent"
+          />
           {children}
         </div>
       </div>
@@ -495,7 +502,7 @@ const sidebarMenuButtonVariants = cva(
   {
     variants: {
       variant: {
-        default: 'hover:bg-sidebar-accent hover:text-sidebar-accent-foreground',
+        default: 'hover:text-sidebar-accent-foreground',
         outline:
           'bg-background shadow-[0_0_0_1px_var(--sidebar-border)] hover:bg-sidebar-accent hover:text-sidebar-accent-foreground hover:shadow-[0_0_0_1px_var(--sidebar-accent)]',
       },
@@ -684,7 +691,7 @@ function SidebarMenuSubButton({
     props: mergeProps<'a'>(
       {
         className: cn(
-          'flex h-7 min-w-0 -translate-x-px items-center gap-2 overflow-hidden rounded-md px-2 text-sidebar-foreground ring-sidebar-ring outline-hidden group-data-[collapsible=icon]:hidden hover:bg-sidebar-accent hover:text-sidebar-accent-foreground focus-visible:ring-2 active:bg-sidebar-accent active:text-sidebar-accent-foreground disabled:pointer-events-none disabled:opacity-50 aria-disabled:pointer-events-none aria-disabled:opacity-50 data-[size=md]:text-sm data-[size=sm]:text-xs data-active:bg-sidebar-accent data-active:text-sidebar-accent-foreground [&>span:last-child]:truncate [&>svg]:size-4 [&>svg]:shrink-0 [&>svg]:text-sidebar-accent-foreground',
+          'flex h-7 min-w-0 -translate-x-px items-center gap-2 overflow-hidden rounded-md px-2 text-sidebar-foreground ring-sidebar-ring outline-hidden group-data-[collapsible=icon]:hidden hover:text-sidebar-accent-foreground focus-visible:ring-2 active:bg-sidebar-accent active:text-sidebar-accent-foreground disabled:pointer-events-none disabled:opacity-50 aria-disabled:pointer-events-none aria-disabled:opacity-50 data-[size=md]:text-sm data-[size=sm]:text-xs data-active:bg-sidebar-accent data-active:text-sidebar-accent-foreground [&>span:last-child]:truncate [&>svg]:size-4 [&>svg]:shrink-0 [&>svg]:text-sidebar-accent-foreground',
           className
         ),
       },

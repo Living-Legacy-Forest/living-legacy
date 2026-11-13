@@ -4,6 +4,8 @@ import { createServerFn } from '@tanstack/react-start';
 import { and, asc, count, desc, eq, gte, isNotNull, isNull, lt, sql, sum } from 'drizzle-orm';
 import { bucketByDay, dayKey, dayKeys } from '@/lib/dashboard-trend';
 import { getDb } from '@/lib/db';
+import { growthOf } from '@/lib/media-growth';
+import { MEDIA_ALLOWANCE_BYTES } from '@/lib/storage-meter';
 import { readSiteSettings } from '@/lib/site-settings';
 import { authMiddleware } from '@/lib/session';
 import { loadContentChecks } from './content-checks';
@@ -11,7 +13,7 @@ import { loadMissingPages } from './not-found';
 import { loadScoreSummary } from './post-score';
 import { hasAnalytics, loadBlogViews } from './dashboard-trend-store';
 import { healthOptions, runHealthChecks } from './system-health';
-import { loadJobHealth } from './system-store';
+import { fileKind, loadJobHealth } from './system-store';
 
 const DAY_MS = 86_400_000;
 /** How many days the stat cards' charts hold: the longest span they offer, and the one before it. */
@@ -62,7 +64,8 @@ export const getDashboardData = createServerFn({ method: 'GET' })
       upcomingEvents,
       publishedRows,
       startedRows,
-      uploadedRows,
+      mediaKinds,
+      mediaUploads,
       bookedRows,
     ] = await db.batch([
       db
@@ -118,7 +121,7 @@ export const getDashboardData = createServerFn({ method: 'GET' })
         .from(events)
         .where(and(eq(events.status, 'published'), gte(events.startsAt, new Date(now))))
         .orderBy(asc(events.startsAt)),
-      // When each post went live and was started, and each upload and booking happened.
+      // When each post went live and was started, and each booking happened.
       db
         .select({ at: posts.publishedAt, value: sql<number>`1` })
         .from(posts)
@@ -127,8 +130,14 @@ export const getDashboardData = createServerFn({ method: 'GET' })
         .select({ at: posts.createdAt, value: sql<number>`1` })
         .from(posts)
         .where(and(notTrashed, gte(posts.createdAt, since))),
+      // The library's bytes by kind, for the media card's meter.
       db
-        .select({ at: media.createdAt, value: sql<number>`1` })
+        .select({ kind: fileKind, files: count(), bytes: sum(media.size) })
+        .from(media)
+        .groupBy(fileKind),
+      // Each upload's day and size, for what the span brought into the library.
+      db
+        .select({ at: media.createdAt, bytes: media.size })
         .from(media)
         .where(gte(media.createdAt, since)),
       // People booked, by when they booked (cancellations left out).
@@ -162,7 +171,13 @@ export const getDashboardData = createServerFn({ method: 'GET' })
         files: mediaTotals[0]?.files ?? 0,
         bytes: Number(mediaTotals[0]?.bytes ?? 0),
         missingAlt: Number(mediaTotals[0]?.missingAlt ?? 0),
-        uploadedDaily: perDay(uploadedRows),
+        allowanceBytes: MEDIA_ALLOWANCE_BYTES,
+        growth: growthOf(mediaUploads, dayList.slice(-90), timeZone),
+        kinds: mediaKinds.map((r) => ({
+          kind: r.kind,
+          files: r.files,
+          bytes: Number(r.bytes ?? 0),
+        })),
       },
       events: {
         upcoming: upcomingEvents.length,

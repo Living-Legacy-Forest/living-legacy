@@ -139,7 +139,7 @@ export async function loadJobHealth(db: ReturnType<typeof createDb>, now: number
   };
 }
 
-const fileKind = sql<FileKind>`case
+export const fileKind = sql<FileKind>`case
   when ${media.mime} like 'image/%' then 'image'
   when ${media.mime} like 'video/%' then 'video'
   when ${media.mime} = 'application/pdf' then 'pdf'

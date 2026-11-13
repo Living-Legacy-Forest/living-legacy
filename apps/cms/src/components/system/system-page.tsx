@@ -93,9 +93,9 @@ export function SystemPage({ data }: { data: SystemStatus }) {
     <div
       data-slot="stack-page"
       data-revealing={revealing || undefined}
-      className="mx-auto w-full max-w-3xl space-y-6"
+      className="grid w-full gap-6 lg:grid-cols-2"
     >
-      <div className="flex flex-wrap items-start justify-between gap-4">
+      <div className="flex flex-wrap items-start justify-between gap-4 lg:col-span-2">
         <div className="space-y-1">
           <h1 data-slot="page-title" className="text-xl font-semibold tracking-tight">
             <RevealWords text="System" />
@@ -164,7 +164,7 @@ export function SystemPage({ data }: { data: SystemStatus }) {
         <UsageCard usage={usage} />
       </Suspense>
 
-      <Suspense fallback={<Skeleton className="h-72 w-full rounded-xl" />}>
+      <Suspense fallback={<Skeleton className="h-72 w-full rounded-xl lg:col-span-2" />}>
         <JobCharts history={history} />
       </Suspense>
 
@@ -208,7 +208,7 @@ export function SystemPage({ data }: { data: SystemStatus }) {
         </Card>
       ))}
 
-      <Card>
+      <Card className="lg:col-span-2">
         <CardHeader>
           <CardTitle>Recent failures</CardTitle>
           <CardDescription>The last 14 days, newest first.</CardDescription>

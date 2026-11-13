@@ -1,6 +1,17 @@
+import { useState } from 'react';
 import { Bar, BarChart, CartesianGrid, LabelList, XAxis, YAxis } from 'recharts';
 import { LineChart, type LineChartSeries } from '@/components/arc/line-chart/line-chart';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { UsageMeter } from '@/components/arc/usage-meter/usage-meter';
+import { RangeSelect } from '@/components/range-select';
+import type { Range } from '@/components/stat-card/shared';
+import {
+  Card,
+  CardAction,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from '@/components/ui/card';
 import {
   type ChartConfig,
   ChartContainer,
@@ -11,9 +22,10 @@ import {
 } from '@/components/ui/chart';
 import { chartReveal } from '@/lib/chart-motion';
 import { formatBytes, formatDuration, formatInteger } from '@/lib/format';
+import { addedIn, describeMonths, monthsUntilFull } from '@/lib/media-growth';
+import { databaseMeter, libraryMeter } from '@/lib/storage-meter';
 import { useTimeZone } from '@/lib/use-time-zone';
 import type { SystemStatus } from '@/server/system';
-import type { FileKind } from '@/server/system-store';
 
 // Loaded on its own, so the chart library doesn't hold up the checks above.
 
@@ -33,13 +45,6 @@ const timeSeries: LineChartSeries[] = [
   { key: 'slowestMs', label: 'Slowest', color: 'var(--muted-foreground)', dashed: true },
 ];
 const recordsConfig = { rows: { label: 'Rows', color: 'var(--primary)' } } satisfies ChartConfig;
-
-const KIND: Record<FileKind, { label: string; color: string }> = {
-  image: { label: 'Images', color: 'var(--chart-1)' },
-  video: { label: 'Videos', color: 'var(--chart-2)' },
-  pdf: { label: 'PDFs', color: 'var(--chart-3)' },
-  other: { label: 'Other files', color: 'var(--chart-5)' },
-};
 
 const dayKey = (timestamp: number, timeZone: string) =>
   new Date(timestamp).toLocaleDateString('en-CA', { timeZone });
@@ -111,7 +116,7 @@ export function JobCharts({ history }: { history: Hour[] }) {
   const share = runs ? (100 * (runs - failed)) / runs : 100;
 
   return (
-    <div className="grid gap-6 sm:grid-cols-2">
+    <div className="grid gap-6 sm:grid-cols-2 lg:col-span-2">
       <Card>
         <CardHeader>
           <CardTitle>Job runs</CardTitle>
@@ -185,72 +190,51 @@ export function JobCharts({ history }: { history: Hour[] }) {
 
 /** How full the database is, what the media library holds, and the biggest tables. */
 export function UsageCard({ usage }: { usage: Usage }) {
-  const { databaseBytes, databaseLimitBytes, files, records } = usage;
-  const share = databaseBytes === null ? null : databaseBytes / databaseLimitBytes;
-  const fileBytes = files.reduce((n, f) => n + f.bytes, 0);
-  const fileCount = files.reduce((n, f) => n + f.files, 0);
-  const sortedFiles = [...files].sort((a, b) => b.bytes - a.bytes);
+  const { databaseBytes, databaseLimitBytes, mediaAllowanceBytes, files, records, growth } = usage;
   const sortedRecords = [...records].sort((a, b) => b.rows - a.rows);
+  const [range, setRange] = useState<Range>(30);
+  const added = addedIn(growth, range);
+  const usedBytes = files.reduce((n, f) => n + f.bytes, 0);
+  const months = monthsUntilFull(mediaAllowanceBytes, usedBytes, added.bytes, range);
 
   return (
     <Card>
       <CardHeader>
         <CardTitle>Storage</CardTitle>
         <CardDescription>What the database and the media library hold right now.</CardDescription>
+        <CardAction>
+          <RangeSelect label="Storage growth" value={range} onChange={setRange} />
+        </CardAction>
       </CardHeader>
       <CardContent className="space-y-6">
-        <section className="space-y-2">
-          <div className="flex items-baseline justify-between gap-4 text-sm">
-            <h3 className="font-medium">Database</h3>
-            <span className="text-muted-foreground tabular-nums">
-              {databaseBytes === null
-                ? 'Size unknown'
-                : `${formatBytes(databaseBytes)} of ${formatBytes(databaseLimitBytes)}`}
-            </span>
-          </div>
-          <Meter
-            label="Database used"
-            share={share ?? 0}
-            segments={[{ key: 'used', share: share ?? 0, color: 'var(--primary)' }]}
-          />
-        </section>
-
-        <section className="space-y-2">
-          <div className="flex items-baseline justify-between gap-4 text-sm">
-            <h3 className="font-medium">Media library</h3>
-            <span className="text-muted-foreground tabular-nums">
-              {`${formatInteger(fileCount)} ${fileCount === 1 ? 'file' : 'files'}, ${formatBytes(fileBytes)}`}
-            </span>
-          </div>
-          {fileBytes > 0 && (
-            <>
-              <Meter
-                label="Media library by kind"
-                share={1}
-                segments={sortedFiles.map((f) => ({
-                  key: f.kind,
-                  share: f.bytes / fileBytes,
-                  color: KIND[f.kind].color,
-                }))}
-              />
-              <ul className="text-muted-foreground flex flex-wrap gap-x-4 gap-y-1 text-xs">
-                {sortedFiles.map((f) => (
-                  <li key={f.kind} className="flex items-center gap-1.5">
-                    <span
-                      aria-hidden
-                      className="size-2 rounded-[2px]"
-                      style={{ background: KIND[f.kind].color }}
-                    />
-                    {KIND[f.kind].label}: {formatInteger(f.files)}, {formatBytes(f.bytes)}
-                  </li>
-                ))}
-              </ul>
-            </>
-          )}
-          <p className="text-muted-foreground text-xs">
-            Originals only; the smaller copies made for each image are not counted.
-          </p>
-        </section>
+        <div className="grid gap-x-8 gap-y-6 md:grid-cols-2">
+          <section>
+            {databaseBytes === null ? (
+              <p className="text-muted-foreground text-sm">Database size unknown.</p>
+            ) : (
+              <UsageMeter {...databaseMeter(databaseBytes, databaseLimitBytes)} />
+            )}
+          </section>
+          <section className="space-y-2">
+            <UsageMeter {...libraryMeter(files, mediaAllowanceBytes)} />
+            <p className="text-sm tabular-nums">
+              {added.files === 0
+                ? `Nothing added in the last ${range} days.`
+                : `${formatInteger(added.files)} ${added.files === 1 ? 'file' : 'files'}, ${formatBytes(added.bytes)} added in the last ${range} days.`}
+              {months !== null && (
+                <span className="text-muted-foreground">
+                  {months === 0
+                    ? ' The allowance is already used up.'
+                    : ` At this pace the allowance lasts ${describeMonths(months)}.`}
+                </span>
+              )}
+            </p>
+            <p className="text-muted-foreground text-xs">
+              Originals only; the smaller copies made for each image are not counted. The allowance
+              is the 10 GB of storage included each month.
+            </p>
+          </section>
+        </div>
 
         <section className="space-y-2">
           <h3 className="text-sm font-medium">Rows by table</h3>
@@ -297,39 +281,5 @@ export function UsageCard({ usage }: { usage: Usage }) {
         </section>
       </CardContent>
     </Card>
-  );
-}
-
-/** A bar split into coloured shares of a whole. */
-function Meter({
-  label,
-  share,
-  segments,
-}: {
-  label: string;
-  share: number;
-  segments: { key: string; share: number; color: string }[];
-}) {
-  return (
-    <div
-      role="meter"
-      aria-label={label}
-      aria-valuemin={0}
-      aria-valuemax={100}
-      aria-valuenow={Math.round(share * 100)}
-      className="bg-muted flex h-2 w-full overflow-hidden rounded-full"
-    >
-      {segments.map((s) => (
-        <span
-          key={s.key}
-          className="h-full"
-          // A sliver, not nothing, so a database that is barely used still shows.
-          style={{
-            width: `${Math.max(s.share * 100, s.share > 0 ? 0.75 : 0)}%`,
-            background: s.color,
-          }}
-        />
-      ))}
-    </div>
   );
 }

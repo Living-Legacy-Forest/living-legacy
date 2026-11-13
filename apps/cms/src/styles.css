@@ -100,6 +100,9 @@
   --radius-md: calc(var(--radius) * 0.8);
   --radius-lg: var(--radius);
   --radius-xl: calc(var(--radius) * 1.4);
+  --radius-2xl: calc(var(--radius) * 1.8);
+  --radius-3xl: calc(var(--radius) * 2.2);
+  --radius-4xl: calc(var(--radius) * 2.6);
 }
 
 :root {
@@ -121,7 +124,8 @@
   --border: oklch(0.948 0 0);
   --input: oklch(0.94 0 0);
   --ring: oklch(0.708 0 0);
-  --radius: 0.375rem;
+  /* Every corner follows this: sm, md, lg and up are multiples of it. */
+  --radius: 0.5rem;
 
   /* The sidebar is the app surface; content sits on it as a white panel. */
   --sidebar: oklch(0.975 0 0);
@@ -783,8 +787,8 @@
 }
 
 /* The dashboard arrives in reading order: the greeting word by word, then each
-   card rising into place, then inside each card its title, chart, figure (which
-   counts up, components/stat-card/count-up.tsx) and hint, and list rows one by one.
+   card rising into place, then inside each card its title, hint, figure (which
+   counts up, components/stat-card/count-up.tsx) and chart, and list rows one by one.
    CSS rather than JavaScript, so it plays from the server's first paint and keeps
    time while the map and chart code are still loading.
 
@@ -849,7 +853,7 @@
 [data-slot='dashboard'] [data-slot='card-footer'] {
   --at: 320ms;
 }
-/* The change against last month slides in once its figure has nearly counted up. */
+/* The change against the weeks before slides in once its figure has nearly counted up. */
 [data-slot='dashboard'] [data-reveal='5'] {
   --at: 800ms;
   animation-name: dashboard-nudge;
@@ -1147,6 +1151,13 @@
   [data-slot='dialog-content'] [data-slot='dialog-footer'] {
     animation: none;
   }
+}
+
+/* The stat cards' line chart is small, so its value axis gets a narrower column than the
+   library's 48px, and the lines run further across the card. The chart's own classes are
+   hashed, so it is found by its slider. */
+.stat-chart > div:has(> [role='slider']) {
+  grid-template-columns: minmax(0, 1fr) 26px;
 }
 
 /* Empty states: the icon settles in, then the title, description and action follow.
@@ -1506,5 +1517,214 @@ h3,
   /* Phones show the segmented control as iOS does. */
   [data-slot='pill-track'][role='group']:not([data-glide]) > [aria-pressed='true'] {
     background: var(--ios-segment-on);
+  }
+}
+
+/* File dropzone (components/ui/file-dropzone.tsx): the drawn edge, the three sheets and the
+   light that follows a dragged file. Layout lives in the component's classes. */
+[data-slot='file-dropzone'] {
+  --dz-ease: cubic-bezier(0.22, 1, 0.36, 1);
+  transition:
+    background-color 200ms ease,
+    border-radius 350ms var(--dz-ease);
+}
+[data-slot='file-dropzone'] [data-part='edge'] {
+  position: absolute;
+  top: 0.5px;
+  left: 0.5px;
+  width: calc(100% - 1px);
+  height: calc(100% - 1px);
+  overflow: visible;
+  pointer-events: none;
+}
+[data-slot='file-dropzone'] [data-part='edge'] rect {
+  fill: none;
+  stroke: color-mix(in oklab, var(--foreground) 20%, transparent);
+  stroke-width: 1;
+  stroke-dasharray: 3.5 3.5;
+  transition:
+    stroke 150ms ease,
+    stroke-dasharray 240ms ease,
+    stroke-dashoffset 240ms ease;
+}
+[data-slot='file-dropzone'] :is([data-part='wash'], [data-part='glow']) {
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 240ms ease;
+}
+/* Only a ring of the glow shows: the brighter stretch of edge nearest the file. */
+[data-slot='file-dropzone'] [data-part='glow'] {
+  padding: 1.5px;
+  mask:
+    linear-gradient(#000 0 0) content-box exclude,
+    linear-gradient(#000 0 0);
+}
+/* Three sheets of paper, the target's one picture. The margin above is room for them to lift. */
+[data-slot='file-dropzone'] [data-part='sheets'] {
+  position: relative;
+  display: block;
+  align-self: center;
+  width: 2.25rem;
+  height: 2.75rem;
+  margin: 0.625rem 0 0.875rem;
+}
+[data-slot='file-dropzone'] [data-part='sheet'] {
+  --r: 0deg;
+  --x: 0px;
+  --y: 0px;
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: end center;
+  padding-bottom: 5px;
+  border: 1px solid var(--border);
+  border-radius: 7px;
+  background: var(--background);
+  color: var(--muted-foreground);
+  box-shadow:
+    0 1px 2px oklch(0% 0 0 / 0.05),
+    0 3px 8px oklch(0% 0 0 / 0.04);
+  transform: translate(var(--x), var(--y)) rotate(var(--r));
+  transform-origin: 50% 100%;
+  transition:
+    transform 350ms var(--dz-ease),
+    color 200ms ease,
+    border-color 200ms ease;
+}
+.dark [data-slot='file-dropzone'] [data-part='sheet'] {
+  border-color: oklch(1 0 0 / 12%);
+  background: var(--card);
+}
+[data-slot='file-dropzone'] [data-part='sheet']::before,
+[data-slot='file-dropzone'] [data-part='sheet']::after {
+  position: absolute;
+  top: 8px;
+  left: 7px;
+  width: 16px;
+  height: 2px;
+  border-radius: 2px;
+  background: currentColor;
+  content: '';
+  opacity: 0.3;
+}
+[data-slot='file-dropzone'] [data-part='sheet']::after {
+  top: 13px;
+  width: 11px;
+}
+[data-slot='file-dropzone'] [data-part='sheet'] > svg {
+  transition: translate 350ms var(--dz-ease);
+}
+[data-slot='file-dropzone'] [data-sheet='back'] {
+  --r: -10deg;
+  --x: -9px;
+  --y: 2px;
+}
+[data-slot='file-dropzone'] [data-sheet='side'] {
+  --r: 10deg;
+  --x: 9px;
+  --y: 2px;
+}
+@media (hover: hover) and (pointer: fine) {
+  [data-slot='file-dropzone']:has([data-part='trigger']:hover:not(:disabled)) {
+    background: color-mix(in oklab, var(--muted) 45%, transparent);
+  }
+  [data-slot='file-dropzone']:has([data-part='trigger']:hover:not(:disabled))
+    [data-part='edge']
+    rect {
+    stroke: var(--muted-foreground);
+  }
+  [data-slot='file-dropzone']:has([data-part='trigger']:hover:not(:disabled)) [data-sheet='back'] {
+    --r: -15deg;
+    --x: -13px;
+  }
+  [data-slot='file-dropzone']:has([data-part='trigger']:hover:not(:disabled)) [data-sheet='side'] {
+    --r: 15deg;
+    --x: 13px;
+  }
+  [data-slot='file-dropzone']:has([data-part='trigger']:hover:not(:disabled)) [data-sheet='front'] {
+    --y: -2px;
+  }
+}
+/* Colour is the only press response: the target never scales. */
+[data-slot='file-dropzone']:has([data-part='trigger']:active:not(:disabled)) {
+  background: color-mix(in oklab, var(--muted) 45%, transparent);
+}
+/* A file over the target closes the dashes into a solid edge, and the target breathes. */
+[data-slot='file-dropzone'][data-dragging] {
+  background: color-mix(in oklab, var(--primary) 3%, transparent);
+  animation: dropzone-breathe 2.2s ease-in-out infinite;
+}
+@keyframes dropzone-breathe {
+  0%,
+  100% {
+    scale: 1;
+  }
+  50% {
+    scale: 1.012;
+  }
+}
+[data-slot='file-dropzone'][data-dragging] :is([data-part='wash'], [data-part='glow']) {
+  opacity: 1;
+}
+[data-slot='file-dropzone'][data-dragging] [data-part='edge'] rect {
+  stroke: color-mix(in oklab, var(--primary) 45%, var(--border));
+  stroke-dasharray: 7 0;
+  stroke-dashoffset: 1.75;
+}
+[data-slot='file-dropzone'][data-dragging] [data-part='sheet'] {
+  color: var(--foreground);
+  border-color: color-mix(in oklab, var(--foreground) 20%, transparent);
+}
+[data-slot='file-dropzone'][data-dragging] [data-part='sheet'] > svg {
+  translate: 0 -3px;
+}
+[data-slot='file-dropzone'][data-dragging] [data-sheet='back'] {
+  --r: -22deg;
+  --x: -20px;
+  --y: -2px;
+}
+[data-slot='file-dropzone'][data-dragging] [data-sheet='side'] {
+  --r: 22deg;
+  --x: 20px;
+  --y: -2px;
+}
+[data-slot='file-dropzone'][data-dragging] [data-sheet='front'] {
+  --y: -8px;
+}
+/* Narrow lists: Retry keeps only its icon, then the type icon steps aside for the name. */
+[data-part='file-list'] {
+  container: dropzone-list / inline-size;
+}
+@container dropzone-list (max-width: 440px) {
+  [data-part='retry'] {
+    width: 1.875rem;
+    justify-content: center;
+    padding: 0;
+  }
+  [data-part='retry-label'] {
+    display: none;
+  }
+}
+@container dropzone-list (max-width: 300px) {
+  [data-part='file-list'] [data-part='row'] {
+    grid-template-columns: minmax(0, 1fr) auto;
+    padding-left: 0.875rem;
+  }
+  [data-part='file-list'] [data-part='file-thumb'] {
+    display: none;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  [data-slot='file-dropzone'],
+  [data-slot='file-dropzone'] :is([data-part='sheet'], [data-part='wash'], [data-part='glow']),
+  [data-slot='file-dropzone'] [data-part='sheet'] > svg,
+  [data-slot='file-dropzone'] [data-part='edge'] rect {
+    transition: none;
+  }
+  [data-slot='file-dropzone'][data-dragging] {
+    animation: none;
   }
 }

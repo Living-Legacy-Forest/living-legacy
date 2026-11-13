@@ -1,11 +1,17 @@
 import { Link } from '@tanstack/react-router';
-import { Suspense, lazy } from 'react';
-import { ChevronRightIcon, TrendingDownIcon, TrendingUpIcon } from '@/components/icons';
+import { Suspense, lazy, useState } from 'react';
 import { Card, CardTitle } from '@/components/ui/card';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
 import { formatInteger } from '@/lib/format';
 import { cn } from '@/lib/utils';
 import { CountUp } from './count-up';
-import { type Stat, change } from './shared';
+import { type Period, type Stat, change } from './shared';
 
 export { MUTED, type Part, type Stat, type Trend } from './shared';
 
@@ -13,62 +19,63 @@ const TrendChart = lazy(() => import('./stat-charts').then((m) => ({ default: m.
 const PartsChart = lazy(() => import('./stat-charts').then((m) => ({ default: m.PartsChart })));
 
 /**
- * A label, a chart, then the figure. The figure sits at the foot of the card,
- * so a row of cards lines its numbers up whether or not each has a chart.
+ * The title, what the figure counts, the figure and how it changed, then the chart at the
+ * foot. The same order as the dashboard's trend card; a row of cards lines up its numbers
+ * at the top and its charts at the bottom.
  */
+const PERIODS = [
+  { value: 'weeks', label: '12 weeks' },
+  { value: 'months', label: '12 months' },
+] satisfies { value: Period; label: string }[];
+
 export function StatCard({ stat }: { stat: Stat }) {
   const { label, value, display, hint, trend, parts, link } = stat;
-  const delta = trend && change(trend.weeks);
-  const Arrow = delta && delta.diff > 0 ? TrendingUpIcon : TrendingDownIcon;
+  const [chosen, setPeriod] = useState<Period>('weeks');
+  // Only cards with monthly counts offer the choice.
+  const period = trend?.months ? chosen : 'weeks';
+  const span = period === 'months' ? 3 : 4;
+  const delta = trend && change(period === 'months' ? trend.months!.counts : trend.weeks, span);
 
   const figure = (
-    <>
-      <span className="flex min-w-0 items-baseline gap-2">
-        <span className="text-3xl font-semibold tracking-tight text-balance tabular-nums">
-          {display ?? <CountUp value={value} />}
-        </span>
-        {delta && (
-          <span
-            data-reveal="5"
-            className="text-muted-foreground inline-flex items-center gap-1 text-xs tabular-nums"
-            title={`${delta.text} ${trend.counted} in the last 4 weeks, against the 4 before`}
-          >
-            <Arrow aria-hidden className="size-3.5" />
-            <span className="text-foreground">{delta.text}</span>
-            <span className="sr-only">
-              {trend.counted} in the last 4 weeks, against the 4 before
-            </span>
-          </span>
-        )}
-      </span>
-      {link && (
-        <ChevronRightIcon
-          aria-hidden
-          className="text-muted-foreground size-5 shrink-0 transition-transform duration-150 ease-out group-hover/figure:translate-x-0.5 motion-reduce:transition-none"
-        />
-      )}
-    </>
+    <span className="text-3xl font-medium tracking-tight text-balance tabular-nums">
+      {display ?? <CountUp value={value} />}
+    </span>
   );
   const figureClass = 'flex items-center justify-between gap-2';
 
   return (
     <Card className="gap-0">
-      <CardTitle
-        data-reveal="1"
-        className="text-muted-foreground px-(--card-spacing) text-xs font-normal"
-      >
-        {label}
-      </CardTitle>
-      {(trend || parts) && (
-        // Holds the chart's height while the chart library loads.
-        <Suspense fallback={<div className="mt-3 h-24" />}>
-          <div data-reveal="2" className="px-(--card-spacing)">
-            {trend && <TrendChart {...trend} />}
-            {parts && <PartsChart parts={parts} />}
-          </div>
-        </Suspense>
-      )}
-      <div className="mt-auto px-(--card-spacing) pt-4">
+      <div className="flex items-center justify-between gap-2 px-(--card-spacing)">
+        <CardTitle data-reveal="1" className="text-sm font-medium">
+          {label}
+        </CardTitle>
+        {trend?.months && (
+          <Select
+            items={PERIODS}
+            value={period}
+            onValueChange={(next) => next && setPeriod(next as Period)}
+          >
+            <SelectTrigger
+              aria-label={`${label}: period shown`}
+              size="sm"
+              className="text-muted-foreground -my-1 -mr-2 h-7 gap-1 border-transparent bg-transparent text-xs shadow-none dark:bg-transparent"
+            >
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent align="end">
+              {PERIODS.map((item) => (
+                <SelectItem key={item.value} value={item.value}>
+                  {item.label}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        )}
+      </div>
+      <div className="mt-3 space-y-1 px-(--card-spacing)">
+        <p data-reveal="2" className="text-muted-foreground text-xs text-pretty">
+          {hint}
+        </p>
         {link ? (
           <Link
             {...link}
@@ -76,7 +83,7 @@ export function StatCard({ stat }: { stat: Stat }) {
             aria-label={`${label}: ${display ?? formatInteger(value)}. Open the list.`}
             className={cn(
               figureClass,
-              'group/figure focus-visible:ring-ring/50 touch:min-h-11 -mx-1.5 rounded-md px-1.5 outline-none focus-visible:ring-[3px]'
+              'focus-visible:ring-ring/50 touch:min-h-11 -mx-1.5 rounded-md px-1.5 outline-none focus-visible:ring-[3px]'
             )}
           >
             {figure}
@@ -86,10 +93,34 @@ export function StatCard({ stat }: { stat: Stat }) {
             {figure}
           </div>
         )}
-        <p data-reveal="4" className="text-muted-foreground mt-1 text-xs text-pretty">
-          {hint}
-        </p>
+        {delta && (
+          <p
+            data-reveal="5"
+            className={cn(
+              'text-xs tabular-nums',
+              delta.diff > 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-destructive'
+            )}
+          >
+            {delta.text} vs previous {span} {period}
+            <span className="sr-only"> ({trend.counted})</span>
+          </p>
+        )}
       </div>
+      {(trend || parts) && (
+        // Holds the chart's height while the chart library loads.
+        <Suspense
+          fallback={
+            <div className="mt-auto px-(--card-spacing) pt-4">
+              <div className={trend ? 'h-32' : 'h-24'} />
+            </div>
+          }
+        >
+          <div data-reveal="4" className="mt-auto px-(--card-spacing) pt-4">
+            {trend && <TrendChart trend={trend} period={period} />}
+            {parts && <PartsChart parts={parts} />}
+          </div>
+        </Suspense>
+      )}
     </Card>
   );
 }

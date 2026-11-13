@@ -17,6 +17,16 @@ export function formatBytes(bytes: number) {
   return `${new Intl.NumberFormat(LOCALE, { maximumFractionDigits: 1 }).format(value)} ${units[unit]}`;
 }
 
+/** A run time: milliseconds under a second, then seconds, then minutes. */
+export function formatDuration(ms: number) {
+  if (ms < 1000) return `${formatInteger(Math.round(ms))} ms`;
+  const seconds = ms / 1000;
+  if (seconds < 60) {
+    return `${new Intl.NumberFormat(LOCALE, { maximumFractionDigits: 1 }).format(seconds)} s`;
+  }
+  return `${new Intl.NumberFormat(LOCALE, { maximumFractionDigits: 1 }).format(seconds / 60)} min`;
+}
+
 // Made on first use: building it loads locale data, which at module load would
 // slow every Worker start, including ones that never format a date.
 let relative: Intl.RelativeTimeFormat | undefined;

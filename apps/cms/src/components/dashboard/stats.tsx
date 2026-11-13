@@ -17,7 +17,7 @@ const plural = (n: number, one: string, many: string) =>
   `${formatInteger(n)} ${n === 1 ? one : many}`;
 
 function buildStats(
-  { posts, events, media, locations, trendEndsAt: endsAt }: DashboardData,
+  { posts, events, media, locations, trendEndsAt: endsAt, trendMonths }: DashboardData,
   timeZone: string
 ): Stat[] {
   const open = locations.filter((l) => l.stage !== 'coming_soon').length;
@@ -36,6 +36,11 @@ function buildStats(
         counted: 'posts published',
         compare: { weeks: posts.startedWeekly, counted: 'posts started' },
         endsAt,
+        months: {
+          keys: trendMonths,
+          counts: posts.publishedMonthly,
+          compare: posts.startedMonthly,
+        },
       },
       link: { to: '/posts' },
     },
@@ -45,7 +50,13 @@ function buildStats(
       hint: events.next
         ? `Next: ${events.next.title}, ${formatDate(events.next.startsAt, timeZone)}`
         : 'Nothing coming up',
-      trend: { kind: 'bar', weeks: events.bookedWeekly, counted: 'people booked', endsAt },
+      trend: {
+        kind: 'bar',
+        weeks: events.bookedWeekly,
+        counted: 'people booked',
+        endsAt,
+        months: { keys: trendMonths, counts: events.bookedMonthly },
+      },
       // The overview is for people who run events.
       link: events.canManage ? { to: '/events/overview' } : undefined,
     },
@@ -62,6 +73,7 @@ function buildStats(
         counted: 'files uploaded',
         total: { value: media.files, label: 'files in the library' },
         endsAt,
+        months: { keys: trendMonths, counts: media.uploadedMonthly },
       },
       link: { to: '/media' },
     },

@@ -1,4 +1,4 @@
-import { Link, useLocation, useRouter } from '@tanstack/react-router';
+import { Link, useLocation } from '@tanstack/react-router';
 import { useState } from 'react';
 import {
   ChevronRightIcon,
@@ -19,9 +19,13 @@ import {
   navGroups,
   phoneTabs,
 } from '@/lib/nav';
-import { authClient } from '@/lib/auth-client';
-import { type SessionUser, forgetCachedUser } from '@/lib/session';
+import type { SessionUser } from '@/lib/session';
 import { cn } from '@/lib/utils';
+import { useSignOut } from '@/lib/use-sign-out';
+import { useThemeChoice } from '@/lib/use-theme-choice';
+import { SegmentedControl } from '@/components/segmented-control';
+import { Spinner } from '@/components/ui/spinner';
+import { SignOutLabel } from './nav-user';
 import { SheetHeader, sheetGroupClass, sheetRowClass } from './sheet-parts';
 import { avatarSrc } from '@/lib/avatar';
 
@@ -124,14 +128,9 @@ function MoreSheet({
   tabs: string[];
 }) {
   const { pathname } = useLocation();
-  const router = useRouter();
 
-  async function signOut() {
-    onOpenChange(false);
-    await authClient.signOut();
-    forgetCachedUser();
-    await router.navigate({ to: '/login' });
-  }
+  const { signingOut, signOut } = useSignOut();
+  const theme = useThemeChoice();
 
   // Everything the sidebar offers that is not already a tab, in the sidebar's
   // order. A section with its own pages (Posts) gets a group of its own.
@@ -201,14 +200,36 @@ function MoreSheet({
               </ul>
             </section>
           ))}
+          <div
+            className={cn(
+              sheetGroupClass,
+              'flex min-h-11 items-center gap-3 divide-y-0 px-4 py-1.5'
+            )}
+          >
+            <span aria-hidden className="shrink-0 text-[1.0625rem]">
+              Theme
+            </span>
+            <SegmentedControl
+              label="Theme"
+              value={theme.effective}
+              onValueChange={(next) => void theme.choose(next)}
+              options={[
+                { value: 'light', label: 'Light' },
+                { value: 'dark', label: 'Dark' },
+                { value: 'system', label: 'Device' },
+              ]}
+            />
+          </div>
           <ul className={sheetGroupClass}>
             <li>
               <button
                 type="button"
                 onClick={signOut}
+                aria-busy={signingOut || undefined}
                 className={cn(sheetRowClass, 'text-destructive justify-center')}
               >
-                Sign out
+                {signingOut && <Spinner aria-hidden />}
+                <SignOutLabel signingOut={signingOut} />
               </button>
             </li>
           </ul>

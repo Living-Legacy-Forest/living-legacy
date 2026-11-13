@@ -1,5 +1,3 @@
-import { getRouteApi, useRouter } from '@tanstack/react-router';
-import { useState } from 'react';
 import { SettingsRow, SettingsSection } from '@/components/settings/settings-section';
 import {
   Select,
@@ -8,13 +6,8 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { authClient } from '@/lib/auth-client';
-import { forgetCachedUser } from '@/lib/session';
-import { notify } from '@/lib/notify';
-import { setTheme } from '@/lib/use-theme-sync';
+import { useThemeChoice } from '@/lib/use-theme-choice';
 import type { Theme } from '@/server/settings';
-
-const rootRoute = getRouteApi('__root__');
 
 const THEME_LABELS: Record<Theme, string> = {
   system: 'Match my device',
@@ -27,9 +20,7 @@ const THEME_LABELS: Record<Theme, string> = {
  * Language & appearance. Saved as soon as it is picked.
  */
 export function AppearanceSection() {
-  const router = useRouter();
-  const { siteTheme, personalTheme } = rootRoute.useLoaderData();
-  const [value, setValue] = useState<Theme | 'site'>(personalTheme ?? 'site');
+  const { value, siteTheme, choose } = useThemeChoice();
 
   const items = [
     { value: 'site', label: `Site setting (${THEME_LABELS[siteTheme].toLowerCase()})` },
@@ -38,21 +29,6 @@ export function AppearanceSection() {
       label: THEME_LABELS[theme],
     })),
   ];
-
-  async function choose(next: Theme | 'site') {
-    const previous = value;
-    setValue(next);
-    setTheme(next === 'site' ? siteTheme : next);
-    const { error } = await authClient.updateUser({ theme: next === 'site' ? null : next });
-    if (error) {
-      setValue(previous);
-      setTheme(previous === 'site' ? siteTheme : previous);
-      notify.error('Could not change the theme', error.message ?? 'Please try again.');
-      return;
-    }
-    forgetCachedUser();
-    await router.invalidate();
-  }
 
   return (
     <SettingsSection

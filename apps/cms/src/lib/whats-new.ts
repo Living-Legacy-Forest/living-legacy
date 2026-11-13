@@ -26,6 +26,61 @@ export type WhatsNewEntry = {
 
 export const whatsNew: WhatsNewEntry[] = [
   {
+    id: '2026-11-13-6',
+    title: 'Dashboard cards show weeks or months',
+    items: [
+      {
+        title: 'Switch the cards between 12 weeks and 12 months',
+        body: 'The Posts, Events and Media files cards on the dashboard now have a menu in the corner. Choose 12 months to see each month instead of each week, and the change underneath follows it. The charts are line charts you can hover over or drag along to read any point.',
+      },
+      {
+        title: 'Unique visitors on the trend chart',
+        body: 'When website analytics are connected, the trend chart can show unique visitors, each counted once for the whole period. Needs attention now sits beside Locations.',
+      },
+    ],
+  },
+  {
+    id: '2026-11-13-5',
+    title: 'A trend chart on the dashboard',
+    items: [
+      {
+        title: 'See how things are going over time',
+        body: 'The dashboard now has a chart of people booked or posts published over the last 7, 30 or 90 days, with the same span before it as a dashed line and the change between them. When website analytics are connected it can show visits and page views too. Pick what it shows from the menu at the top of the chart.',
+      },
+      {
+        title: 'More detail on the System page',
+        body: 'Admins can now see how full the database is, what the media library holds, how many times each job ran in the last two weeks and how long they took.',
+        link: { label: 'Open System', to: '/system' },
+      },
+    ],
+  },
+  {
+    id: '2026-11-13-4',
+    title: 'Uploads show each file as it goes',
+    items: [
+      {
+        title: 'See every image upload on its own',
+        body: 'Upload on the Media page now lists each image with its own progress bar and a tick when it is in. If one fails, it says why and offers Retry, while the rest carry on. Dropping images anywhere on the page opens the same list.',
+        link: { label: 'Open Media', to: '/media' },
+      },
+      {
+        title: 'Paste a picture straight in',
+        body: 'Copy an image or screenshot, point at any upload box (Media, a featured image, a gallery) and paste. Word imports and CSV imports take a dropped or pasted file the same way.',
+      },
+    ],
+  },
+  {
+    id: '2026-11-13-3',
+    title: 'Light or dark from your account menu',
+    items: [
+      {
+        title: 'Change the theme in one click',
+        body: 'Open the menu behind your photo, top right, and pick light, dark or match my device. On a phone it is at the bottom of More. The choice is yours alone, the same one as Appearance on your profile.',
+        link: { label: 'Open your profile', to: '/profile', hash: 'appearance' },
+      },
+    ],
+  },
+  {
     id: '2026-11-13-2',
     title: 'Filters and a grid view on every list',
     items: [

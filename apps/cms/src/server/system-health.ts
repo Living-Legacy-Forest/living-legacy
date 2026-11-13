@@ -11,7 +11,7 @@ type Verdict = { status: HealthStatus; detail: string };
 export type HealthCheck = Verdict & { key: string; title: string };
 
 /** D1's limit per database on the Workers Paid plan. */
-const DATABASE_LIMIT_BYTES = 10 * 1024 ** 3;
+export const DATABASE_LIMIT_BYTES = 10 * 1024 ** 3;
 const DATABASE_WARN_SHARE = 0.8;
 const DATABASE_PROBLEM_SHARE = 0.95;
 const DATABASE_SLOW_MS = 1_000;

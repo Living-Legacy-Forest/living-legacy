@@ -25,12 +25,42 @@ export function mediaSrc(item: Pick<MediaItem, 'url' | 'version'>, width: number
   return `${item.url}?w=${width}&v=${item.version}`;
 }
 
+/** Sends the form, reporting how much of it has gone, as 0 to 1. */
+function send(
+  form: FormData,
+  onSent?: (fraction: number) => void,
+  signal?: AbortSignal
+): Promise<{ ok: boolean; body: (MediaItem & { error?: string }) | null }> {
+  return new Promise((resolve, reject) => {
+    const xhr = new XMLHttpRequest();
+    xhr.open('POST', '/api/media');
+    xhr.responseType = 'json';
+    if (onSent)
+      xhr.upload.onprogress = (event) => {
+        if (event.lengthComputable) onSent(event.loaded / event.total);
+      };
+    xhr.onload = () => resolve({ ok: xhr.status >= 200 && xhr.status < 300, body: xhr.response });
+    xhr.onerror = () => reject(new Error('The connection dropped. Check it and try again.'));
+    xhr.onabort = () => reject(new DOMException('Upload cancelled.', 'AbortError'));
+    signal?.addEventListener('abort', () => xhr.abort(), { once: true });
+    xhr.send(form);
+  });
+}
+
 /**
  * Uploads one image to the Media library and returns it. Images larger than
  * the website ever shows are scaled down first (see prepare-image.ts). With
  * `replace`, the file goes behind that existing image instead, keeping its id.
+ * `onProgress` hears 0 to 100: preparing the image is the first third, sending
+ * it the rest.
  */
-export async function uploadMedia(original: File, replace?: string): Promise<MediaItem> {
+export async function uploadMedia(
+  original: File,
+  replace?: string,
+  options: { onProgress?: (percent: number) => void; signal?: AbortSignal } = {}
+): Promise<MediaItem> {
+  const { onProgress, signal } = options;
+  onProgress?.(5);
   const file = await prepareImage(original);
   const form = new FormData();
   form.set('file', file);
@@ -39,12 +69,18 @@ export async function uploadMedia(original: File, replace?: string): Promise<Med
     form.set('width', String(size.width));
     form.set('height', String(size.height));
   }
+  onProgress?.(15);
   // Best effort: without them the website loads the full-size image instead.
   const sizes = await makeSizes(file, mediaVariantWidths).catch(() => []);
   for (const s of sizes) form.set(`size-${s.width}`, s.file);
   if (replace) form.set('replace', replace);
-  const res = await fetch('/api/media', { method: 'POST', body: form });
-  const body = (await res.json().catch(() => null)) as (MediaItem & { error?: string }) | null;
-  if (!res.ok || !body?.id) throw new Error(body?.error ?? 'Upload failed.');
+  signal?.throwIfAborted();
+  onProgress?.(33);
+  const { ok, body } = await send(
+    form,
+    onProgress && ((sent) => onProgress(33 + sent * 62)),
+    signal
+  );
+  if (!ok || !body?.id) throw new Error(body?.error ?? 'Upload failed.');
   return body;
 }

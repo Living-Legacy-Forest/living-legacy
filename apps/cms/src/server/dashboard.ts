@@ -17,10 +17,14 @@ import {
 } from 'drizzle-orm';
 import type { SQLiteColumn } from 'drizzle-orm/sqlite-core';
 import { getDb } from '@/lib/db';
+import { TREND_MONTHS, monthKeys, monthStartMs, toMonths, zoneOffsetMs } from '@/lib/month-trend';
+import { readSiteSettings } from '@/lib/site-settings';
 import { authMiddleware } from '@/lib/session';
+import { monthOf } from './month-sql';
 import { loadContentChecks } from './content-checks';
 import { loadMissingPages } from './not-found';
 import { loadScoreSummary } from './post-score';
+import { hasAnalytics } from './dashboard-trend-store';
 import { healthOptions, runHealthChecks } from './system-health';
 import { loadJobHealth } from './system-store';
 
@@ -56,6 +60,19 @@ export const getDashboardData = createServerFn({ method: 'GET' })
     const { role } = context.user;
     const scores =
       can(role, 'posts:publish') || can(role, 'seo:write') ? loadScoreSummary(db) : null;
+    // Calendar months in the site's zone, for the cards' Months view.
+    const { timeZone } = await readSiteSettings();
+    const offset = zoneOffsetMs(now, timeZone);
+    const months = monthKeys(now, offset, TREND_MONTHS);
+    const monthsStart = new Date(monthStartMs(months[0]!, offset));
+    const monthly = (table: typeof posts | typeof media, at: SQLiteColumn, where?: SQL) => {
+      const month = monthOf(at, offset);
+      return db
+        .select({ month, n: count() })
+        .from(table)
+        .where(and(gte(at, monthsStart), where))
+        .groupBy(month);
+    };
     const notTrashed = isNull(posts.deletedAt);
     const isPublished = and(eq(posts.status, 'published'), notTrashed);
     const trendStart = new Date(now - TREND_WEEKS * WEEK_MS);
@@ -83,6 +100,10 @@ export const getDashboardData = createServerFn({ method: 'GET' })
       uploadedWeekly,
       upcomingEvents,
       bookedWeekly,
+      publishedMonthly,
+      startedMonthly,
+      uploadedMonthly,
+      bookedMonthly,
     ] = await db.batch([
       db
         .select({
@@ -145,6 +166,19 @@ export const getDashboardData = createServerFn({ method: 'GET' })
         .from(eventBookings)
         .where(and(gte(eventBookings.createdAt, trendStart), eq(eventBookings.status, 'confirmed')))
         .groupBy(bookedWeek),
+      monthly(posts, posts.publishedAt, isPublished),
+      monthly(posts, posts.createdAt, notTrashed),
+      monthly(media, media.createdAt),
+      db
+        .select({
+          month: monthOf(eventBookings.createdAt, offset),
+          n: sql<number>`coalesce(sum(${eventBookings.partySize}), 0)`,
+        })
+        .from(eventBookings)
+        .where(
+          and(gte(eventBookings.createdAt, monthsStart), eq(eventBookings.status, 'confirmed'))
+        )
+        .groupBy(monthOf(eventBookings.createdAt, offset)),
     ]);
 
     const counts = postCounts[0];
@@ -166,12 +200,15 @@ export const getDashboardData = createServerFn({ method: 'GET' })
         drafts: Number(counts?.drafts ?? 0),
         publishedWeekly: toWeeks(publishedWeekly),
         startedWeekly: toWeeks(startedWeekly),
+        publishedMonthly: toMonths(publishedMonthly, months),
+        startedMonthly: toMonths(startedMonthly, months),
       },
       media: {
         files: mediaTotals[0]?.files ?? 0,
         bytes: Number(mediaTotals[0]?.bytes ?? 0),
         missingAlt: Number(mediaTotals[0]?.missingAlt ?? 0),
         uploadedWeekly: toWeeks(uploadedWeekly),
+        uploadedMonthly: toMonths(uploadedMonthly, months),
       },
       events: {
         upcoming: upcomingEvents.length,
@@ -179,12 +216,17 @@ export const getDashboardData = createServerFn({ method: 'GET' })
           ? { title: upcomingEvents[0].title, startsAt: upcomingEvents[0].startsAt.getTime() }
           : null,
         bookedWeekly: toWeeks(bookedWeekly),
+        bookedMonthly: toMonths(bookedMonthly, months),
         /** Whether the card may lead to the events overview. */
         canManage: can(role, 'events:manage'),
       },
       locations: locationRows,
       /** When the trend weeks end: the last one is the seven days up to this. */
       trendEndsAt: now,
+      /** The calendar months the Months view covers, oldest first, as "2026-11". */
+      trendMonths: months,
+      /** Whether the trend card can offer visits and page views. */
+      analytics: hasAnalytics(),
       recentDrafts: drafts.map(toSummary),
       recentlyPublished: published.map(toSummary),
       attention: await attention,

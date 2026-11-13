@@ -2,18 +2,30 @@ import { createServerFn } from '@tanstack/react-start';
 import { getDb } from '@/lib/db';
 import { requirePermission } from '@/lib/session';
 import { checkTone, jobTone, summariseTones } from '@/lib/system-status';
-import { healthOptions, runHealthChecks } from './system-health';
-import { loadJobHealth } from './system-store';
+import { DATABASE_LIMIT_BYTES, healthOptions, runHealthChecks } from './system-health';
+import { loadJobHealth, loadUsage } from './system-store';
 
 /** The System page: service health and the scheduled jobs. Admins only. */
 export const getSystemStatus = createServerFn({ method: 'GET' })
   .middleware([requirePermission('settings:write')])
   .handler(async () => {
-    const [jobs, health] = await Promise.all([
+    const options = healthOptions(true);
+    const [jobs, health, usage, size] = await Promise.all([
       loadJobHealth(getDb(), Date.now()),
-      runHealthChecks(healthOptions(true)),
+      runHealthChecks(options),
+      loadUsage(getDb()),
+      // D1 reports the database's size with any query's result.
+      options.d1
+        .prepare('select 1')
+        .run()
+        .then((result) => result.meta.size_after)
+        .catch(() => null),
     ]);
-    return { ...jobs, health };
+    return {
+      ...jobs,
+      health,
+      usage: { ...usage, databaseBytes: size, databaseLimitBytes: DATABASE_LIMIT_BYTES },
+    };
   });
 
 export type SystemStatus = Awaited<ReturnType<typeof getSystemStatus>>;

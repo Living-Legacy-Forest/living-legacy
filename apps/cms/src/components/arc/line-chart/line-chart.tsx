@@ -808,7 +808,9 @@ export function LineChart({
                 animate={{ opacity: 1 }}
                 exit={{ opacity: 0, transition: fadeFast }}
               >
-                {empty ? emptyLabel : 'Choose a series to show'}
+                <span className={styles.messageText}>
+                  {empty ? emptyLabel : 'Choose a series to show'}
+                </span>
               </motion.p>
             )}
             {loading && empty && (

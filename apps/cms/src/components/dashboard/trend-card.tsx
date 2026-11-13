@@ -109,7 +109,7 @@ export function TrendCard({ analytics }: { analytics: boolean }) {
         >
           <SelectTrigger
             aria-label="What the chart shows"
-            className="-ml-2.5 border-transparent bg-transparent font-medium shadow-none dark:bg-transparent"
+            className="touch:min-h-11 -ml-2.5 border-transparent bg-transparent font-medium shadow-none dark:bg-transparent"
           >
             <SelectValue />
           </SelectTrigger>

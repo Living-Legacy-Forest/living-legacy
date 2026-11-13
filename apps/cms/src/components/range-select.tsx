@@ -29,7 +29,7 @@ export function RangeSelect({
       <SelectTrigger
         aria-label={`${label}: period shown`}
         size="sm"
-        className="text-muted-foreground -my-1 -mr-2 h-7 gap-1 border-transparent bg-transparent text-xs shadow-none dark:bg-transparent"
+        className="text-muted-foreground touch:min-h-11 -my-1 -mr-2 h-7 gap-1 border-transparent bg-transparent text-xs shadow-none dark:bg-transparent"
       >
         <SelectValue />
       </SelectTrigger>

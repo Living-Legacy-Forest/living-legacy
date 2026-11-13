@@ -56,12 +56,14 @@ export async function jobsFor(
       { pruneMissingPages },
       { rescorePosts },
       { pruneCronRuns },
+      { pruneAnalyticsCache },
     ] = await Promise.all([
       import('./media-sweep'),
       import('./event-jobs'),
       import('./not-found'),
       import('./post-score'),
       import('./system-store'),
+      import('./analytics-cache'),
     ]);
     return {
       'sweep-media': async () => {
@@ -74,14 +76,17 @@ export async function jobsFor(
       'prune-missing-pages': () => pruneMissingPages(env.DB, now),
       'rescore-posts': () => rescorePosts(env.DB),
       'prune-job-history': () => pruneCronRuns(env.DB, now),
+      'prune-analytics': () => pruneAnalyticsCache(env.DB, now.getTime()),
     };
   }
 
-  const [{ publishDuePosts }, { syncPending }, { publishDueEvents }] = await Promise.all([
-    import('./scheduler'),
-    import('./event-crm'),
-    import('./event-jobs'),
-  ]);
+  const [{ publishDuePosts }, { syncPending }, { publishDueEvents }, { refreshAnalytics }] =
+    await Promise.all([
+      import('./scheduler'),
+      import('./event-crm'),
+      import('./event-jobs'),
+      import('./dashboard-trend-store'),
+    ]);
   return {
     'publish-posts': async () => {
       const { failed } = await publishDuePosts(env.DB, now);
@@ -93,5 +98,9 @@ export async function jobsFor(
     },
     'publish-events': () => publishDueEvents(env.DB, now),
     'sync-bookings': () => syncPending(env.DB),
+    'refresh-analytics': async () => {
+      const { readSiteSettings } = await import('@/lib/site-settings');
+      return refreshAnalytics(env.DB, (await readSiteSettings()).timeZone, now.getTime());
+    },
   };
 }

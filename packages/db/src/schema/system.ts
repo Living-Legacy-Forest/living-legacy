@@ -154,3 +154,11 @@ export const contentVersion = sqliteTable('content_version', {
   id: integer('id').primaryKey(),
   version: integer('version').notNull().default(0),
 });
+
+// The last good answer to each website-analytics query, so the dashboard does not wait on
+// PostHog. A job refreshes them every few minutes (apps/cms/src/server/analytics-cache.ts).
+export const analyticsCache = sqliteTable('analytics_cache', {
+  key: text('key').primaryKey(),
+  value: text('value').notNull(),
+  fetchedAt: integer('fetched_at').notNull(),
+});

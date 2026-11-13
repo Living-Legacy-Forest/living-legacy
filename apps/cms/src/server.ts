@@ -40,11 +40,12 @@ function noFraming(response: Response) {
 }
 
 // Custom Worker entry: TanStack Start serves requests. The cron triggers in
-// wrangler.jsonc: every five minutes, publish scheduled posts and events and
-// sync event bookings to HubSpot (once connected; HubSpot sends the guest
-// emails); daily, clear out unused stored files, delete bookings a year after
-// their event, forget missing pages nobody has asked for in 90 days, rescore every post,
-// and clear job history older than two weeks. The full list is src/lib/cron-jobs.ts.
+// wrangler.jsonc: every five minutes, publish scheduled posts and events, sync event bookings
+// to HubSpot (once connected; HubSpot sends the guest emails) and renew the stored
+// website-traffic answers the dashboard reads; daily, clear out unused stored files, delete
+// bookings a year after their event, forget missing pages nobody has asked for in 90 days,
+// rescore every post, clear job history older than two weeks and traffic answers unrenewed for
+// two days. The full list is src/lib/cron-jobs.ts.
 //
 // withSentry reports errors from both, and traces requests, cron runs and D1.
 export default Sentry.withSentry(

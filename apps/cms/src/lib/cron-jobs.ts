@@ -30,11 +30,13 @@ export const cronJobs = [
   { key: 'publish-posts', schedule: 'every-5-minutes', title: 'Publish scheduled posts' },
   { key: 'publish-events', schedule: 'every-5-minutes', title: 'Publish scheduled events' },
   { key: 'sync-bookings', schedule: 'every-5-minutes', title: 'Send bookings to HubSpot' },
+  { key: 'refresh-analytics', schedule: 'every-5-minutes', title: 'Refresh website traffic' },
   { key: 'sweep-media', schedule: 'daily', title: 'Delete unused files' },
   { key: 'purge-old-bookings', schedule: 'daily', title: 'Delete bookings a year after the event' },
   { key: 'prune-missing-pages', schedule: 'daily', title: 'Forget old missing pages' },
   { key: 'rescore-posts', schedule: 'daily', title: 'Rescore posts' },
   { key: 'prune-job-history', schedule: 'daily', title: 'Clear old job history' },
+  { key: 'prune-analytics', schedule: 'daily', title: 'Clear old traffic answers' },
 ] as const satisfies readonly { key: string; schedule: CronSchedule; title: string }[];
 
 export type CronJobKey = (typeof cronJobs)[number]['key'];

@@ -9,7 +9,7 @@ import {
 } from '@/lib/dashboard-trend';
 import { authMiddleware } from '@/lib/session';
 import { readSiteSettings } from '@/lib/site-settings';
-import { loadContent, loadVisits } from './dashboard-trend-store';
+import { loadContent, loadDistinctVisitors, loadVisits } from './dashboard-trend-store';
 
 const DAY_MS = 86_400_000;
 
@@ -30,7 +30,7 @@ export const getDashboardTrend = createServerFn({ method: 'GET' })
     const { timeZone } = await readSiteSettings();
     const keys = dayKeys(days * 2, timeZone);
     const readings = trendMetrics[metric].analytics
-      ? (await loadVisits(days * 2, timeZone))[metric as 'visits' | 'pageviews']
+      ? (await loadVisits(days * 2, timeZone))[metric as 'visitors' | 'visits' | 'pageviews']
       : // A day's margin either side of the zone's midnight; days outside the keys are dropped.
         await loadContent(
           metric as 'booked' | 'published',
@@ -38,10 +38,15 @@ export const getDashboardTrend = createServerFn({ method: 'GET' })
           timeZone
         );
     const totals = bucketByDay(keys, readings);
+    // A visitor who came on three days is one visitor, so these are counted over the whole
+    // period rather than added up from the days.
+    const distinct =
+      metric === 'visitors' ? await loadDistinctVisitors(timeZone, keys[days]!, keys[0]!) : null;
     return {
       days: keys.slice(days),
       current: totals.slice(days),
       previous: totals.slice(0, days),
+      distinct,
     };
   });
 

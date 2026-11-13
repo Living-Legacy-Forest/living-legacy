@@ -1,6 +1,5 @@
 import { useEffect, useState } from 'react';
 import { LineChart, type LineChartSeries } from '@/components/arc/line-chart/line-chart';
-import { TrendingDownIcon, TrendingUpIcon } from '@/components/icons';
 import { SegmentedControl } from '@/components/segmented-control';
 import { Card, CardContent, CardHeader } from '@/components/ui/card';
 import {
@@ -87,8 +86,12 @@ export function TrendCard({ analytics }: { analytics: boolean }) {
   }, [metric, days]);
 
   const { label, total: totalLabel } = trendMetrics[metric];
-  const total = trend ? sum(trend.current) : null;
-  const change = trend ? percentChange(sum(trend.current), sum(trend.previous)) : null;
+  // Unique visitors come counted over the whole period; the rest add up their days.
+  const totals = trend
+    ? (trend.distinct ?? { current: sum(trend.current), previous: sum(trend.previous) })
+    : null;
+  const total = totals?.current ?? null;
+  const change = totals ? percentChange(totals.current, totals.previous) : null;
   const every = axisEvery(days);
   const data =
     trend?.days.map((key, i) => ({
@@ -165,23 +168,15 @@ function Change({ change, days, known }: { change: number | null; days: number; 
     );
   }
   const up = change >= 0;
-  const Arrow = up ? TrendingUpIcon : TrendingDownIcon;
   const text = `${up ? '+' : '−'}${Math.abs(change).toLocaleString('en-AU', { maximumFractionDigits: 1 })}%`;
   return (
-    <p className="flex items-center gap-1 text-sm">
-      <Arrow
-        aria-hidden
-        className={cn('size-4', up ? 'text-emerald-600 dark:text-emerald-400' : 'text-destructive')}
-      />
-      <span
-        className={cn(
-          'font-medium tabular-nums',
-          up ? 'text-emerald-600 dark:text-emerald-400' : 'text-destructive'
-        )}
-      >
-        {text}
-      </span>
-      <span className="text-muted-foreground">{against}</span>
+    <p
+      className={cn(
+        'text-sm tabular-nums',
+        up ? 'text-emerald-600 dark:text-emerald-400' : 'text-destructive'
+      )}
+    >
+      {text} {against}
     </p>
   );
 }

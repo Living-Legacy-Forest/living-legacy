@@ -18,7 +18,17 @@ export type Trend = {
    * the tooltip says "3 weeks ago" and there is no axis.
    */
   endsAt?: number;
+  /** The same counts by calendar month, oldest first: offers a Months view beside the weeks. */
+  months?: {
+    /** "2026-11", one per count. */
+    keys: string[];
+    counts: number[];
+    compare?: number[];
+  };
 };
+
+/** The span a trend chart covers: the last twelve weeks or twelve months. */
+export type Period = 'weeks' | 'months';
 
 export type Part = { key: string; label: string; value: number; color: string };
 
@@ -39,9 +49,9 @@ export const MUTED = 'color-mix(in oklch, var(--muted-foreground) 35%, transpare
 
 export const sum = (values: number[]) => values.reduce((total, n) => total + n, 0);
 
-/** The last four weeks against the four before, as "+2"; null when nothing changed. */
-export function change(weeks: number[]) {
-  const diff = sum(weeks.slice(-4)) - sum(weeks.slice(-8, -4));
+/** The last `span` periods against the `span` before, as "+2"; null when nothing changed. */
+export function change(counts: number[], span = 4) {
+  const diff = sum(counts.slice(-span)) - sum(counts.slice(-2 * span, -span));
   if (diff === 0) return null;
   return { diff, text: `${diff > 0 ? '+' : '\u2212'}${formatInteger(Math.abs(diff))}` };
 }

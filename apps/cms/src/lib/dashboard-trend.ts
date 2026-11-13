@@ -2,6 +2,8 @@
 // timestamp lands on a day. Plain data and functions, shared by the server and the card.
 
 export const trendMetrics = {
+  // Distinct browsers. Its total counts each one once, not once for every day they came back.
+  visitors: { label: 'Unique visitors', total: 'Total unique visitors', analytics: true },
   visits: { label: 'Visits', total: 'Total visits', analytics: true },
   pageviews: { label: 'Page views', total: 'Total page views', analytics: true },
   booked: { label: 'People booked', total: 'Total people booked', analytics: false },

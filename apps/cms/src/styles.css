@@ -787,8 +787,8 @@
 }
 
 /* The dashboard arrives in reading order: the greeting word by word, then each
-   card rising into place, then inside each card its title, chart, figure (which
-   counts up, components/stat-card/count-up.tsx) and hint, and list rows one by one.
+   card rising into place, then inside each card its title, hint, figure (which
+   counts up, components/stat-card/count-up.tsx) and chart, and list rows one by one.
    CSS rather than JavaScript, so it plays from the server's first paint and keeps
    time while the map and chart code are still loading.
 
@@ -853,7 +853,7 @@
 [data-slot='dashboard'] [data-slot='card-footer'] {
   --at: 320ms;
 }
-/* The change against last month slides in once its figure has nearly counted up. */
+/* The change against the weeks before slides in once its figure has nearly counted up. */
 [data-slot='dashboard'] [data-reveal='5'] {
   --at: 800ms;
   animation-name: dashboard-nudge;
@@ -1151,6 +1151,13 @@
   [data-slot='dialog-content'] [data-slot='dialog-footer'] {
     animation: none;
   }
+}
+
+/* The stat cards' line chart is small, so its value axis gets a narrower column than the
+   library's 48px, and the lines run further across the card. The chart's own classes are
+   hashed, so it is found by its slider. */
+.stat-chart > div:has(> [role='slider']) {
+  grid-template-columns: minmax(0, 1fr) 26px;
 }
 
 /* Empty states: the icon settles in, then the title, description and action follow.

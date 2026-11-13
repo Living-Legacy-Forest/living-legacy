@@ -8,6 +8,3 @@ export const chartReveal = {
   animationDuration: 800,
   animationEasing: 'cubic-bezier(0.33,1,0.68,1)',
 } as const;
-
-/** How long to hold a second series back, so it reads as following the first. */
-export const chartStagger = 120;

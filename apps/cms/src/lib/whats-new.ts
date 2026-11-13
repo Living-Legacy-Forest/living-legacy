@@ -26,6 +26,20 @@ export type WhatsNewEntry = {
 
 export const whatsNew: WhatsNewEntry[] = [
   {
+    id: '2026-11-13-6',
+    title: 'Dashboard cards show weeks or months',
+    items: [
+      {
+        title: 'Switch the cards between 12 weeks and 12 months',
+        body: 'The Posts, Events and Media files cards on the dashboard now have a menu in the corner. Choose 12 months to see each month instead of each week, and the change underneath follows it. The charts are line charts you can hover over or drag along to read any point.',
+      },
+      {
+        title: 'Unique visitors on the trend chart',
+        body: 'When website analytics are connected, the trend chart can show unique visitors, each counted once for the whole period. Needs attention now sits beside Locations.',
+      },
+    ],
+  },
+  {
     id: '2026-11-13-5',
     title: 'A trend chart on the dashboard',
     items: [

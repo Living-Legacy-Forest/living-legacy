@@ -38,8 +38,9 @@ import { Button } from '@/components/ui/button';
 import { ListRows, isDesktop } from '@/components/list/list-page';
 import { ListRow, type RowMenuItem } from '@/components/list/list-row';
 import { SearchInput, useSelection } from '@/components/list/list-tools';
-import { PostViewsChart } from './post-views-chart';
-import { dummyViews } from './dummy-views';
+import { RowCell } from '@/components/list/row-cell';
+import { TrendChart } from '@/components/list/trend-chart';
+import { dummyTrend } from '@/components/list/dummy-trend';
 import { PillGlide, pillItemClass, pillTrackClass } from '@/components/ui/pill-track';
 import { PageActions } from '@/components/shell/page-actions';
 import {
@@ -341,17 +342,17 @@ export function PostsList({
             ))}
           </SelectContent>
         </Select>
-        {!previewOpen && (
-          <Button
-            variant="ghost"
-            size="icon-sm"
-            aria-label="Show preview"
-            className="max-lg:hidden"
-            onClick={() => setPreview(true)}
-          >
-            <PanelRightIcon aria-hidden />
-          </Button>
-        )}
+        <Button
+          variant="ghost"
+          size="icon-sm"
+          aria-label={previewOpen ? 'Expand list' : 'Show preview'}
+          aria-pressed={!previewOpen}
+          title={previewOpen ? 'Expand list' : 'Show preview'}
+          className="max-lg:hidden"
+          onClick={() => setPreview(!previewOpen)}
+        >
+          <PanelRightIcon aria-hidden />
+        </Button>
         {canWrite && (
           <Button
             size="sm"
@@ -527,10 +528,10 @@ export function PostsList({
                   }
                   menu={rowMenu(row)}
                   previewOpen={previewOpen}
-                  views={
-                    row.status === 'published' && !row.deletedAt ? dummyViews(row.slug) : undefined
-                  }
+                  views={row.deletedAt ? undefined : dummyTrend(row.slug)}
                   onSelect={() => {
+                    // Choosing the post already showing closes the preview again.
+                    if (previewOpen && row.id === selectedId) return setPreview(false);
                     select(row.id);
                     setPreview(true);
                   }}
@@ -761,8 +762,8 @@ function PostListItem({
           )}
         </span>
         {views && (
-          <span className={cn('flex shrink-0', wide && 'max-xl:hidden')}>
-            <PostViewsChart series={views} showTotal={wide} />
+          <span className={cn('flex shrink-0 max-sm:hidden', wide && 'lg:max-xl:hidden')}>
+            <TrendChart series={views} showTotal={wide} />
           </span>
         )}
         {wide && (
@@ -787,33 +788,6 @@ function PostListItem({
         )}
       </span>
     </ListRow>
-  );
-}
-
-/** A two-line column in a wide row: the value, then a quieter caption. A dash when empty. */
-function RowCell({
-  primary,
-  secondary,
-  className,
-}: {
-  primary: string;
-  secondary?: string;
-  className?: string;
-}) {
-  return (
-    <span className={cn('min-w-0', className)}>
-      <span
-        className={cn(
-          'block truncate tabular-nums',
-          primary ? 'text-foreground/80' : 'text-muted-foreground/50'
-        )}
-      >
-        {primary || '-'}
-      </span>
-      {secondary && (
-        <span className="text-muted-foreground mt-0.5 block truncate">{secondary}</span>
-      )}
-    </span>
   );
 }
 

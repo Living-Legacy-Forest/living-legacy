@@ -100,13 +100,15 @@ export function ListColumn({
   label,
   header,
   children,
+  className,
 }: {
   label: string;
   header: React.ReactNode;
   children: React.ReactNode;
+  className?: string;
 }) {
   return (
-    <section aria-label={label} className="flex min-h-0 flex-col lg:border-r">
+    <section aria-label={label} className={cn('flex min-h-0 flex-col lg:border-r', className)}>
       {header}
       {children}
     </section>
@@ -174,9 +176,24 @@ export function NoMatches({
 }
 
 /** The right column, large screens only. */
-export function PaneColumn({ label, children }: { label: string; children: React.ReactNode }) {
+export function PaneColumn({
+  label,
+  children,
+  className,
+  inert,
+}: {
+  label: string;
+  children: React.ReactNode;
+  className?: string;
+  /** A pane that is closed but still on the page, sliding away. */
+  inert?: boolean;
+}) {
   return (
-    <section aria-label={label} className="hidden min-h-0 flex-col lg:flex">
+    <section
+      aria-label={label}
+      inert={inert}
+      className={cn('hidden min-h-0 flex-col lg:flex', className)}
+    >
       {children}
     </section>
   );

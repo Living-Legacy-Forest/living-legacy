@@ -1,6 +1,6 @@
 import { groupEventDates } from '@ll/content';
-import { useEffect, useState } from 'react';
-import { CalendarClockIcon, PlusIcon } from '@/components/icons';
+import { useEffect, useRef, useState } from 'react';
+import { CalendarClockIcon, PanelRightIcon, PlusIcon } from '@/components/icons';
 import {
   DialogActions,
   ListColumn,
@@ -8,6 +8,7 @@ import {
   ListPageLayout,
   ListRows,
   NoMatches,
+  isDesktop,
   PaneActions,
   PaneColumn,
   PaneEmpty,
@@ -15,6 +16,11 @@ import {
   useListPane,
 } from '@/components/list/list-page';
 import { ListRow } from '@/components/list/list-row';
+import { RowCell } from '@/components/list/row-cell';
+import { TrendChart } from '@/components/list/trend-chart';
+import { dummyTrend } from '@/components/list/dummy-trend';
+import { cn } from '@/lib/utils';
+import { formatDate, formatTimeRange } from '@/lib/format';
 import {
   ConfirmBulkDelete,
   SearchInput,
@@ -150,6 +156,21 @@ export function EventsPage({
     );
   };
   const paneEvent = pane ? editing(pane) : null;
+  // Closed, the list takes the whole width and its rows show more. The pane keeps what it last
+  // showed while it slides shut.
+  // The toolbar button can also open the pane with nothing chosen yet.
+  const [emptyPaneOpen, setEmptyPaneOpen] = useState(false);
+  useEffect(() => {
+    if (pane) setEmptyPaneOpen(false);
+  }, [pane]);
+  const paneOpen = pane !== null || emptyPaneOpen;
+  const togglePane = () => {
+    view.closePane();
+    setEmptyPaneOpen(!paneOpen);
+  };
+  const lastPane = useRef<Target | null>(null);
+  if (pane) lastPane.current = pane;
+  const shown = pane ?? lastPane.current;
 
   const newButton = (
     <Button size="sm" className="touch:min-h-11" onClick={() => view.open({ kind: 'new' })}>
@@ -179,6 +200,19 @@ export function EventsPage({
             />
           </div>
         )}
+        {data.events.length > 0 && (
+          <Button
+            variant="ghost"
+            size="icon-sm"
+            aria-label={paneOpen ? 'Expand list' : 'Show details pane'}
+            aria-pressed={!paneOpen}
+            title={paneOpen ? 'Expand list' : 'Show details pane'}
+            className="max-lg:hidden"
+            onClick={togglePane}
+          >
+            <PanelRightIcon aria-hidden />
+          </Button>
+        )}
         <div className="max-md:hidden">{newButton}</div>
         <PageActions
           edit={{
@@ -205,8 +239,18 @@ export function EventsPage({
       ) : (
         // Rows carry a date, its times and the place, so the list gets room for them;
         // the pane takes the rest.
-        <ListPageLayout className="lg:grid-cols-[minmax(24rem,38rem)_minmax(0,1fr)]">
+        // Plain fr tracks so the columns glide between open and closed.
+        <ListPageLayout
+          className={cn(
+            'motion-reduce:transition-none lg:transition-[grid-template-columns] lg:duration-300 lg:ease-[cubic-bezier(0.32,0.72,0,1)]',
+            paneOpen ? 'lg:grid-cols-[2fr_3fr]' : 'lg:grid-cols-[1fr_0fr]'
+          )}
+        >
           <ListColumn
+            className={cn(
+              'min-w-96 transition-[border-color] duration-300',
+              !paneOpen && 'border-transparent'
+            )}
             label="Events"
             header={
               <div className="space-y-2">
@@ -259,28 +303,42 @@ export function EventsPage({
                       onToggle: () => selection.toggle(row.key),
                     }}
                     swipe={{ label: 'Delete', onAction: () => setToDelete(idsOf([row])) }}
-                    onOpen={() => view.open({ kind: 'edit', id: row.lead.id })}
+                    onOpen={() =>
+                      // Choosing the event already open closes the pane again.
+                      isDesktop() &&
+                      paneEvent !== null &&
+                      (paneEvent.seriesId ?? paneEvent.id) === row.key
+                        ? view.closePane()
+                        : view.open({ kind: 'edit', id: row.lead.id })
+                    }
                   >
-                    <EventSummary row={row} />
+                    <EventSummary row={row} wide={!paneOpen} />
                   </ListRow>
                 ))}
               </ListRows>
             )}
           </ListColumn>
 
-          <PaneColumn label="Edit event">
-            {pane === null ? (
+          <PaneColumn
+            label="Edit event"
+            inert={!paneOpen}
+            className={cn(
+              'min-w-0 overflow-hidden transition-[opacity,translate] duration-300 ease-[cubic-bezier(0.32,0.72,0,1)] motion-reduce:transition-none',
+              !paneOpen && 'translate-x-4 opacity-0'
+            )}
+          >
+            {shown === null ? (
               <PaneEmpty
                 title="No event selected"
                 description="Choose one from the list, or create a new event."
               />
             ) : (
               <PaneFrame
-                title={pane.kind === 'edit' ? (editing(pane)?.title ?? 'Event') : 'New event'}
+                title={shown.kind === 'edit' ? (editing(shown)?.title ?? 'Event') : 'New event'}
                 width="xl"
               >
                 {form(
-                  pane,
+                  shown,
                   (id) => view.setPane(id ? { kind: 'edit', id } : null),
                   (submit, start) => (
                     <PaneActions start={start} onCancel={view.closePane}>
@@ -334,31 +392,74 @@ function rowStatus(dates: EventRow[]) {
   return dates.some((d) => d.status === 'draft') ? 'Draft' : 'Cancelled';
 }
 
-function EventSummary({ row }: { row: ReturnType<typeof groupEventDates<EventRow>>[number] }) {
+function EventSummary({
+  row,
+  wide,
+}: {
+  row: ReturnType<typeof groupEventDates<EventRow>>[number];
+  /** The pane is closed, so there is room for the columns it would have covered. */
+  wide: boolean;
+}) {
   const { lead, dates, upcoming } = row;
   const when =
     dates.length > 1
       ? `${dates.length} dates · ${upcoming ? 'Next' : 'Last'} ${startsIn(lead)}`
       : `${lead.seriesId ? 'Repeats · ' : ''}${startsIn(lead)}`;
+  const booked = dates.reduce((n, d) => n + d.booked, 0);
+  const capacity = dates.reduce((n, d) => n + (d.capacity ?? 0), 0);
   return (
-    <>
-      <span className="flex items-center gap-2">
-        <span className="text-ui min-w-0 flex-1 truncate font-medium">{lead.title}</span>
-        <Badge variant="outline" className="shrink-0 tabular-nums">
-          {rowStatus(dates)}
-        </Badge>
-      </span>
-      <span className="text-muted-foreground mt-0.5 block truncate text-xs">
-        {when}
-        {/* On its own line on phones, where it would otherwise be cut off. */}
-        {lead.locationName && (
-          <span className="block truncate lg:inline">
-            <span className="hidden lg:inline"> · </span>
-            {lead.locationName}
+    <span className="flex items-center gap-4">
+      <span className="bg-muted relative size-14 shrink-0 overflow-hidden rounded-md">
+        {lead.heroMediaId ? (
+          <img
+            src={`/api/media/${lead.heroMediaId}?w=320`}
+            alt=""
+            loading="lazy"
+            className="size-full object-cover"
+          />
+        ) : (
+          <span className="text-muted-foreground/60 flex size-full items-center justify-center">
+            <CalendarClockIcon aria-hidden className="size-5" />
           </span>
         )}
       </span>
-    </>
+      <span className="min-w-0 flex-1">
+        <span className="flex items-center gap-2">
+          <span className="text-ui min-w-0 flex-1 truncate font-medium">{lead.title}</span>
+          <Badge variant="outline" className="shrink-0 tabular-nums">
+            {rowStatus(dates)}
+          </Badge>
+        </span>
+        <span className="text-muted-foreground mt-0.5 block truncate text-xs">
+          {when}
+          {/* On its own line on phones, where it would otherwise be cut off. */}
+          {lead.locationName && (
+            <span className={cn('block truncate lg:inline', wide && 'lg:hidden')}>
+              <span className="hidden lg:inline"> · </span>
+              {lead.locationName}
+            </span>
+          )}
+        </span>
+      </span>
+      <span className={cn('flex shrink-0 max-sm:hidden', wide && 'lg:max-xl:hidden')}>
+        <TrendChart series={dummyTrend(lead.id)} label="Bookings" showTotal={wide} />
+      </span>
+      {wide && (
+        <span className="animate-in fade-in slide-in-from-right-2 hidden shrink-0 items-center gap-6 text-xs duration-300 lg:flex">
+          <RowCell className="w-40" primary={lead.locationName ?? ''} secondary={lead.venue} />
+          <RowCell
+            className="w-36"
+            primary={formatDate(lead.startsAt, lead.timeZone)}
+            secondary={formatTimeRange(lead.startsAt, lead.endsAt, lead.timeZone)}
+          />
+          <RowCell
+            className="hidden w-28 xl:block"
+            primary={capacity > 0 ? `${booked} of ${capacity}` : `${booked} booked`}
+            secondary={dates.length > 1 ? `${dates.length} dates` : 'Booked'}
+          />
+        </span>
+      )}
+    </span>
   );
 }
 

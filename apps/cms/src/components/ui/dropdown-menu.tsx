@@ -4,6 +4,7 @@ import * as React from 'react';
 import { Menu as MenuPrimitive } from '@base-ui/react/menu';
 import { cn } from '@/lib/utils';
 import { ChevronRightIcon, CheckIcon } from '@/components/icons';
+import { GlideHighlight } from '@/components/ui/glide-highlight';
 
 function DropdownMenu({ ...props }: MenuPrimitive.Root.Props) {
   return <MenuPrimitive.Root data-slot="dropdown-menu" {...props} />;
@@ -15,78 +16,6 @@ function DropdownMenuPortal({ ...props }: MenuPrimitive.Portal.Props) {
 
 function DropdownMenuTrigger({ ...props }: MenuPrimitive.Trigger.Props) {
   return <MenuPrimitive.Trigger data-slot="dropdown-menu-trigger" {...props} />;
-}
-
-const glideEase = 'cubic-bezier(0.22, 1, 0.36, 1)';
-
-/**
- * One highlight per menu instead of a fill on each item: it glides from item to item under the
- * pointer and jumps straight there for the keyboard. It follows Base UI's data-highlighted, so
- * it works however the item became active. It mounts with the popup, which it reads as its parent.
- */
-function MenuHighlight() {
-  const ref = React.useRef<HTMLSpanElement>(null);
-  React.useEffect(() => {
-    const mark = ref.current;
-    const popup = mark?.parentElement;
-    if (!mark || !popup) return;
-    let pointer = false;
-    let shown = false;
-    let clearTimer = 0;
-    const onPointer = () => (pointer = true);
-    const onKey = () => (pointer = false);
-
-    const place = () => {
-      // Submenus are portalled, so anything highlighted in here belongs to this menu.
-      const item = popup.querySelector<HTMLElement>('[data-highlighted]');
-      window.clearTimeout(clearTimer);
-      if (!item) {
-        // A short grace keeps the highlight gliding across separators and gaps.
-        clearTimer = window.setTimeout(
-          () => {
-            mark.style.opacity = '0';
-            shown = false;
-          },
-          pointer ? 70 : 0
-        );
-        return;
-      }
-      const reduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-      const glide = shown && pointer && !reduced;
-      mark.style.transition = glide
-        ? `translate 200ms ${glideEase}, height 200ms ${glideEase}, opacity 100ms`
-        : 'opacity 100ms';
-      mark.style.translate = `0 ${item.offsetTop}px`;
-      mark.style.height = `${item.offsetHeight}px`;
-      mark.style.opacity = '1';
-      mark.dataset.tone = item.dataset.variant === 'destructive' ? 'danger' : '';
-      shown = true;
-    };
-
-    const observer = new MutationObserver(place);
-    observer.observe(popup, {
-      subtree: true,
-      attributes: true,
-      attributeFilter: ['data-highlighted'],
-    });
-    popup.addEventListener('pointermove', onPointer, true);
-    popup.addEventListener('keydown', onKey, true);
-    place();
-    return () => {
-      observer.disconnect();
-      window.clearTimeout(clearTimer);
-      popup.removeEventListener('pointermove', onPointer, true);
-      popup.removeEventListener('keydown', onKey, true);
-    };
-  }, []);
-  return (
-    <span
-      ref={ref}
-      aria-hidden
-      data-slot="dropdown-menu-highlight"
-      className="bg-accent data-[tone=danger]:bg-destructive/10 dark:data-[tone=danger]:bg-destructive/20 pointer-events-none absolute inset-x-1 top-0 rounded-md opacity-0"
-    />
-  );
 }
 
 function DropdownMenuContent({
@@ -121,7 +50,7 @@ function DropdownMenuContent({
           )}
           {...props}
         >
-          <MenuHighlight />
+          <GlideHighlight />
           {children}
         </MenuPrimitive.Popup>
       </MenuPrimitive.Positioner>

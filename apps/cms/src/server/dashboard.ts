@@ -21,6 +21,7 @@ import { authMiddleware } from '@/lib/session';
 import { loadContentChecks } from './content-checks';
 import { loadMissingPages } from './not-found';
 import { loadScoreSummary } from './post-score';
+import { hasAnalytics } from './dashboard-trend-store';
 import { healthOptions, runHealthChecks } from './system-health';
 import { loadJobHealth } from './system-store';
 
@@ -185,6 +186,8 @@ export const getDashboardData = createServerFn({ method: 'GET' })
       locations: locationRows,
       /** When the trend weeks end: the last one is the seven days up to this. */
       trendEndsAt: now,
+      /** Whether the trend card can offer visits and page views. */
+      analytics: hasAnalytics(),
       recentDrafts: drafts.map(toSummary),
       recentlyPublished: published.map(toSummary),
       attention: await attention,

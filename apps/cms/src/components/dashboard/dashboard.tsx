@@ -13,6 +13,7 @@ const LocationsCard = lazy(() =>
   import('./locations-card').then((m) => ({ default: m.LocationsCard }))
 );
 // The chart library likewise loads with the card that needs it.
+const TrendCard = lazy(() => import('./trend-card').then((m) => ({ default: m.TrendCard })));
 const ScoreCard = lazy(() => import('./score-card').then((m) => ({ default: m.ScoreCard })));
 
 /** What needs doing comes first; counts and recent work sit around it for context. */
@@ -21,6 +22,11 @@ export function Dashboard({ data }: { data: DashboardData }) {
     <div data-slot="dashboard" className="grid grid-cols-2 gap-4 max-md:gap-3 lg:grid-cols-4">
       <DashboardStats data={data} />
       <NeedsAttention attention={data.attention} />
+      <LazySlot className="col-span-2 lg:col-span-4">
+        <Suspense fallback={<ChartPlaceholder title="Trend" chartClassName="h-80" />}>
+          <TrendCard analytics={data.analytics} />
+        </Suspense>
+      </LazySlot>
       <LazySlot className="col-span-2">
         <Suspense fallback={<ChartPlaceholder title="Locations" chartClassName="h-72" footer />}>
           <LocationsCard locations={data.locations} />

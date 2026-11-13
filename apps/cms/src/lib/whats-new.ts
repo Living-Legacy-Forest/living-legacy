@@ -26,6 +26,21 @@ export type WhatsNewEntry = {
 
 export const whatsNew: WhatsNewEntry[] = [
   {
+    id: '2026-11-13-5',
+    title: 'A trend chart on the dashboard',
+    items: [
+      {
+        title: 'See how things are going over time',
+        body: 'The dashboard now has a chart of people booked or posts published over the last 7, 30 or 90 days, with the same span before it as a dashed line and the change between them. When website analytics are connected it can show visits and page views too. Pick what it shows from the menu at the top of the chart.',
+      },
+      {
+        title: 'More detail on the System page',
+        body: 'Admins can now see how full the database is, what the media library holds, how many times each job ran in the last two weeks and how long they took.',
+        link: { label: 'Open System', to: '/system' },
+      },
+    ],
+  },
+  {
     id: '2026-11-13-4',
     title: 'Uploads show each file as it goes',
     items: [

@@ -266,6 +266,15 @@
   font-size: var(--text-sm);
   pointer-events: none;
 }
+/* The words sit on the card, so a gridline behind them does not strike through. */
+.messageText {
+  max-width: 90%;
+  padding: 2px 10px;
+  border-radius: 6px;
+  background: var(--chart-surface, var(--color-card));
+  text-align: center;
+  text-wrap: balance;
+}
 /* First load with nothing to keep on screen: a calm band that breathes where the lines will be. */
 .skeleton {
   position: absolute;

@@ -1,5 +1,5 @@
 import { Link } from '@tanstack/react-router';
-import { Suspense, lazy, useState } from 'react';
+import { Suspense, lazy, useState, useSyncExternalStore } from 'react';
 import { RangeSelect } from '@/components/range-select';
 import { RollingNumber } from '@/components/rolling-number';
 import { Card, CardTitle } from '@/components/ui/card';
@@ -16,6 +16,16 @@ const UsageMeter = lazy(() =>
   import('@/components/arc/usage-meter/usage-meter').then((m) => ({ default: m.UsageMeter }))
 );
 
+const noop = () => () => {};
+/** False on the server and during hydration, then true: the lazy charts' styles load with
+ * their code, so the server leaves them out rather than send markup that shows unstyled. */
+const useOnClient = () =>
+  useSyncExternalStore(
+    noop,
+    () => true,
+    () => false
+  );
+
 /** "6 files, 42 MB added in 30 days", or that nothing was. */
 function uploaded({ files, bytes }: { files: number; bytes: number }, days: number) {
   if (files === 0) return `Nothing added in ${days} days`;
@@ -30,6 +40,7 @@ function uploaded({ files, bytes }: { files: number; bytes: number }, days: numb
 export function StatCard({ stat }: { stat: Stat }) {
   const { label, value, display, hint, trend, parts, meter, growth, link } = stat;
   const [range, setRange] = useState<Range>(30);
+  const onClient = useOnClient();
   // Cards with daily counts offer 7, 30 or 90 days; the rest show their twelve weeks.
   const days = trend?.days;
   const span = days ? range : 4;
@@ -100,17 +111,23 @@ export function StatCard({ stat }: { stat: Stat }) {
             </div>
           }
         >
-          <div data-reveal="4" className="mt-auto px-(--card-spacing) pt-4">
-            {trend && <TrendChart trend={trend} range={range} />}
-            {parts && <PartsChart parts={parts} />}
-            {meter && (
-              // Compact, and without the legend (hovering the bar names each kind): the full
-              // breakdown is on the System page.
-              <div className="[--meter-gap:0.25rem] [--meter-item-pad:0.125rem] [--meter-legend-display:none] [--meter-legend-min:3.5rem] [--meter-text-base:0.625rem] [--meter-text-sm:0.5625rem] [--meter-text-xs:0.5625rem] [--meter-top:20px] [--meter-total-size:0.875rem] [--meter-track:8px]">
-                <UsageMeter {...meter} />
-              </div>
-            )}
-          </div>
+          {!onClient ? (
+            <div className="mt-auto px-(--card-spacing) pt-4">
+              <div className={trend ? 'h-32' : meter ? 'h-36' : 'h-28'} />
+            </div>
+          ) : (
+            <div data-reveal="4" className="mt-auto px-(--card-spacing) pt-4">
+              {trend && <TrendChart trend={trend} range={range} />}
+              {parts && <PartsChart parts={parts} />}
+              {meter && (
+                // Compact, and without the legend (hovering the bar names each kind): the full
+                // breakdown is on the System page.
+                <div className="[--meter-gap:0.25rem] [--meter-item-pad:0.125rem] [--meter-legend-display:none] [--meter-legend-min:3.5rem] [--meter-text-base:0.625rem] [--meter-text-sm:0.5625rem] [--meter-text-xs:0.5625rem] [--meter-top:20px] [--meter-total-size:0.875rem] [--meter-track:8px]">
+                  <UsageMeter {...meter} />
+                </div>
+              )}
+            </div>
+          )}
         </Suspense>
       )}
     </Card>

@@ -46,7 +46,13 @@ export function ScoreCard({ scores }: { scores: ScoreSummary }) {
       <CardHeader>
         <CardTitle>Content score</CardTitle>
         <CardAction>
-          <Button size="sm" variant="ghost" render={<Link to="/checks" />} nativeButton={false}>
+          <Button
+            size="sm"
+            variant="ghost"
+            className="touch:min-h-11"
+            render={<Link to="/checks" />}
+            nativeButton={false}
+          >
             Content checks
           </Button>
         </CardAction>

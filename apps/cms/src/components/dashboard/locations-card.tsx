@@ -31,7 +31,13 @@ export function LocationsCard({ locations }: { locations: DashboardData['locatio
       <CardHeader>
         <CardTitle>Locations</CardTitle>
         <CardAction>
-          <Button size="sm" variant="ghost" render={<Link to="/locations" />} nativeButton={false}>
+          <Button
+            size="sm"
+            variant="ghost"
+            className="touch:min-h-11"
+            render={<Link to="/locations" />}
+            nativeButton={false}
+          >
             View all
           </Button>
         </CardAction>

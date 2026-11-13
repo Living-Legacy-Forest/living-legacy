@@ -11,33 +11,29 @@ import {
 import { formatInteger } from '@/lib/format';
 import { cn } from '@/lib/utils';
 import { CountUp } from './count-up';
-import { type Period, type Stat, change } from './shared';
+import { RANGES, type Range, type Stat, change, sum } from './shared';
 
 export { MUTED, type Part, type Stat, type Trend } from './shared';
 
 const TrendChart = lazy(() => import('./stat-charts').then((m) => ({ default: m.TrendChart })));
 const PartsChart = lazy(() => import('./stat-charts').then((m) => ({ default: m.PartsChart })));
 
+const RANGE_OPTIONS = RANGES.map((days) => ({ value: String(days), label: `${days} days` }));
+
 /**
  * The title, what the figure counts, the figure and how it changed, then the chart at the
  * foot. The same order as the dashboard's trend card; a row of cards lines up its numbers
  * at the top and its charts at the bottom.
  */
-const PERIODS = [
-  { value: 'weeks', label: '12 weeks' },
-  { value: 'months', label: '12 months' },
-] satisfies { value: Period; label: string }[];
-
 export function StatCard({ stat }: { stat: Stat }) {
   const { label, value, display, hint, trend, parts, link } = stat;
-  const [chosen, setPeriod] = useState<Period>('weeks');
-  // Only cards with monthly counts offer the choice.
-  const period = trend?.months ? chosen : 'weeks';
-  const span = period === 'months' ? 3 : 4;
+  const [range, setRange] = useState<Range>(30);
+  // Cards with daily counts offer 7, 30 or 90 days; the rest show their twelve weeks.
+  const days = trend?.days;
+  const span = days ? range : 4;
   // A card whose figure is a total over the span shows the total for the span chosen.
-  const shown =
-    period === 'months' && trend?.months?.value !== undefined ? trend.months.value : value;
-  const delta = trend && change(period === 'months' ? trend.months!.counts : trend.weeks, span);
+  const shown = days?.headline ? sum(days.counts.slice(-range)) : value;
+  const delta = trend && change(days?.counts ?? trend.weeks ?? [], span);
 
   const figure = (
     <span className="text-3xl font-medium tracking-tight text-balance tabular-nums">
@@ -52,11 +48,11 @@ export function StatCard({ stat }: { stat: Stat }) {
         <CardTitle data-reveal="1" className="text-sm font-medium">
           {label}
         </CardTitle>
-        {trend?.months && (
+        {days && (
           <Select
-            items={PERIODS}
-            value={period}
-            onValueChange={(next) => next && setPeriod(next as Period)}
+            items={RANGE_OPTIONS}
+            value={String(range)}
+            onValueChange={(next) => next && setRange(Number(next) as Range)}
           >
             <SelectTrigger
               aria-label={`${label}: period shown`}
@@ -66,7 +62,7 @@ export function StatCard({ stat }: { stat: Stat }) {
               <SelectValue />
             </SelectTrigger>
             <SelectContent align="end">
-              {PERIODS.map((item) => (
+              {RANGE_OPTIONS.map((item) => (
                 <SelectItem key={item.value} value={item.value}>
                   {item.label}
                 </SelectItem>
@@ -104,7 +100,7 @@ export function StatCard({ stat }: { stat: Stat }) {
               delta.diff > 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-destructive'
             )}
           >
-            {delta.text} vs previous {span} {period}
+            {delta.text} vs previous {span} {days ? 'days' : 'weeks'}
             <span className="sr-only"> ({trend.counted})</span>
           </p>
         )}
@@ -119,7 +115,7 @@ export function StatCard({ stat }: { stat: Stat }) {
           }
         >
           <div data-reveal="4" className="mt-auto px-(--card-spacing) pt-4">
-            {trend && <TrendChart trend={trend} period={period} />}
+            {trend && <TrendChart trend={trend} range={range} />}
             {parts && <PartsChart parts={parts} />}
           </div>
         </Suspense>

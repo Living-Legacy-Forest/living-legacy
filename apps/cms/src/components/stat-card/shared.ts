@@ -4,33 +4,37 @@ import { formatInteger } from '@/lib/format';
 export type Trend = {
   /** Each card draws its trend differently, so a row doesn't read as four copies. */
   kind: 'area' | 'bar' | 'line';
-  /** Counts per week, oldest first. */
-  weeks: number[];
+  /** Counts per week, oldest first: the events pages. */
+  weeks?: number[];
   /** What was counted, for the tooltip and screen readers ("posts published"). */
   counted: string;
-  /** Draw the running total, ending at this, instead of each week's count. */
+  /** Draw the running total, ending at this, instead of each day's or week's count. */
   total?: { value: number; label: string };
-  /** A second, quieter wave behind the first (area charts only), such as posts started. */
-  compare?: { weeks: number[]; counted: string };
+  /** A second, quieter wave behind the first (line charts only), such as readers. */
+  compare?: { counted: string; weeks?: number[] };
   /**
    * When the last week ends (now, on the server), to date the weeks: the axis
    * reads "19 Aug … This week" and each tooltip "Week of 3 Nov". Without it
    * the tooltip says "3 weeks ago" and there is no axis.
    */
   endsAt?: number;
-  /** The same counts by calendar month, oldest first: offers a Months view beside the weeks. */
-  months?: {
-    /** "2026-11", one per count. */
+  /**
+   * Counts per day, oldest first, ending today: the dashboard's cards, which offer 7, 30 or
+   * 90 days (twice the longest, so each span has the one before it to compare with).
+   */
+  days?: {
+    /** "2026-11-14", one per count. */
     keys: string[];
     counts: number[];
     compare?: number[];
-    /** The figure to show in this view, when it is not the card's usual one. */
-    value?: number;
+    /** The span's total is the card's figure, rather than the one in `Stat.value`. */
+    headline?: boolean;
   };
 };
 
-/** The span a trend chart covers: the last twelve weeks or twelve months. */
-export type Period = 'weeks' | 'months';
+/** The spans a card with daily counts can show, in days. */
+export const RANGES = [7, 30, 90] as const;
+export type Range = (typeof RANGES)[number];
 
 export type Part = { key: string; label: string; value: number; color: string };
 

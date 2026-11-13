@@ -174,10 +174,10 @@ export function PartsChart({ parts }: { parts: Part[] }) {
 
   return (
     // Shorter than the trend charts; the card's figure still sits at its foot.
-    <div className="flex h-24 items-center gap-3 md:gap-4">
+    <div className="flex h-28 items-center gap-3 md:gap-4">
       {shown.length > 0 && (
         // Smaller in a phone's half-width card, so the legend keeps its room.
-        <ChartContainer config={config} className="aspect-square h-14 shrink-0 md:h-20">
+        <ChartContainer config={config} className="aspect-square h-16 shrink-0 md:h-24">
           <PieChart margin={{ top: 0, right: 0, bottom: 0, left: 0 }}>
             <ChartTooltip
               cursor={false}

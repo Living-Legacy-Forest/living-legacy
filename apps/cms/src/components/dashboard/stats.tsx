@@ -1,8 +1,11 @@
+import { useEffect, useState } from 'react';
 import { MUTED, type Stat, StatCard } from '@/components/stat-card/stat-card';
 import { formatBytes, formatDate, formatInteger } from '@/lib/format';
 import { libraryMeter } from '@/lib/storage-meter';
 import { useTimeZone } from '@/lib/use-time-zone';
+import { getBlogViews } from '@/server/blog-views';
 import type { DashboardData } from '@/server/dashboard';
+import type { BlogViews } from '@/server/dashboard-trend-store';
 
 /** "2 open to visitors, 1 coming soon": the stages that matter for visitors, as a short line. */
 function locationHint(locations: DashboardData['locations']) {
@@ -17,50 +20,64 @@ function locationHint(locations: DashboardData['locations']) {
 const plural = (n: number, one: string, many: string) =>
   `${formatInteger(n)} ${n === 1 ? one : many}`;
 
+/**
+ * The blog's views once PostHog has answered. `'loading'` while it has not; `'off'` when
+ * analytics are not connected; `'failed'` when it could not be reached.
+ */
+type Blog = BlogViews | 'loading' | 'off' | 'failed';
+
+function useBlogViews(analytics: boolean): Blog {
+  const [blog, setBlog] = useState<Blog>(analytics ? 'loading' : 'off');
+  useEffect(() => {
+    if (!analytics) return;
+    let live = true;
+    getBlogViews()
+      .then((views) => live && setBlog(views ?? 'failed'))
+      .catch(() => live && setBlog('failed'));
+    return () => {
+      live = false;
+    };
+  }, [analytics]);
+  return blog;
+}
+
 function buildStats(
-  { posts, events, media, locations, trendDays, blogViews }: DashboardData,
-  timeZone: string
+  { posts, events, media, locations, trendDays }: DashboardData,
+  timeZone: string,
+  blog: Blog
 ): Stat[] {
   const open = locations.filter((l) => l.stage !== 'coming_soon').length;
-  // With analytics, the Posts card is about readers: views of the blog's pages, with the
-  // readers behind them. Without them it counts the posts themselves, as before.
-  const posting: Stat = blogViews
-    ? {
-        label: 'Blog views',
-        value: 0,
-        hint: `Across ${plural(posts.published, 'published post', 'published posts')}${
+  // The card keeps its shape whatever PostHog is doing: flat at zero while it answers, and a
+  // line saying why when it has nothing to show.
+  const views = typeof blog === 'object' ? blog : null;
+  const posting: Stat = {
+    label: 'Blog views',
+    value: 0,
+    // A dash, not a zero, when there is no count to wait for.
+    display: blog === 'off' || blog === 'failed' ? '–' : undefined,
+    hint: views
+      ? `Across ${plural(posts.published, 'published post', 'published posts')}${
           posts.drafts > 0 ? `, plus ${plural(posts.drafts, 'draft', 'drafts')} in progress` : ''
-        }`,
-        trend: {
-          kind: 'area',
-          counted: 'blog page views',
-          compare: { counted: 'blog readers' },
-          // The figure is the views in the span chosen.
-          days: {
-            keys: trendDays,
-            counts: blogViews.days,
-            compare: blogViews.readers,
-            headline: true,
-          },
-        },
-        link: { to: '/posts' },
-      }
-    : {
-        // Published and drafts in one: what is live, and what is on its way.
-        label: 'Posts',
-        value: posts.published,
-        hint:
-          posts.drafts > 0
-            ? `Published, plus ${plural(posts.drafts, 'draft', 'drafts')} in progress`
-            : 'Published, with no drafts in progress',
-        trend: {
-          kind: 'area',
-          counted: 'posts published',
-          compare: { counted: 'posts started' },
-          days: { keys: trendDays, counts: posts.publishedDaily, compare: posts.startedDaily },
-        },
-        link: { to: '/posts' },
-      };
+        }`
+      : blog === 'off'
+        ? 'Website analytics are not connected'
+        : blog === 'failed'
+          ? 'Could not load the views. Try again soon'
+          : 'Counting views…',
+    trend: {
+      kind: 'area',
+      counted: 'blog page views',
+      compare: { counted: 'blog readers' },
+      // The figure is the views in the span chosen.
+      days: {
+        keys: trendDays,
+        counts: views?.days ?? trendDays.map(() => 0),
+        compare: views?.readers ?? trendDays.map(() => 0),
+        headline: true,
+      },
+    },
+    link: { to: '/posts' },
+  };
   return [
     posting,
     {
@@ -103,9 +120,10 @@ function buildStats(
 
 export function DashboardStats({ data }: { data: DashboardData }) {
   const timeZone = useTimeZone();
+  const blog = useBlogViews(data.analytics);
   return (
     <>
-      {buildStats(data, timeZone).map((stat) => (
+      {buildStats(data, timeZone, blog).map((stat) => (
         <StatCard key={stat.label} stat={stat} />
       ))}
     </>

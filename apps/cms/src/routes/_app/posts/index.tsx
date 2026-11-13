@@ -6,7 +6,8 @@ import { listPosts, postStatusTabs } from '@/server/posts';
 const searchSchema = z.object({
   status: z.enum(postStatusTabs).catch('all').default('all'),
   q: z.string().optional().catch(undefined),
-  category: z.string().optional().catch(undefined),
+  categories: z.array(z.string()).optional().catch(undefined),
+  authors: z.array(z.string()).optional().catch(undefined),
   page: z.number().int().min(1).optional().catch(undefined),
   /** Post shown in the preview pane. */
   selected: z.string().optional().catch(undefined),

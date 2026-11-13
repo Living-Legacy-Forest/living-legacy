@@ -6,6 +6,9 @@ import {
   announcementStatus,
 } from '@ll/content';
 import { useState } from 'react';
+import { CardMeta, ListCard, ListCards } from '@/components/list/list-card';
+import { ListFilter, passes } from '@/components/list/list-filter';
+import { ViewSwitch, useListView } from '@/components/list/view-switch';
 import { DateTimePicker } from '@/components/date-time-picker';
 import { FormCell, FormSection, FormSwitchCell } from '@/components/form-cells';
 import { PageActions } from '@/components/shell/page-actions';
@@ -22,7 +25,7 @@ import {
   PaneFrame,
   useListPane,
 } from '@/components/list/list-page';
-import { ListRow } from '@/components/list/list-row';
+import { ListRow, type RowMenuItem } from '@/components/list/list-row';
 import {
   ConfirmBulkDelete,
   SearchInput,
@@ -101,8 +104,16 @@ export function AnnouncementsPage({
 }) {
   const view = useListPane<Target>();
   const [query, setQuery] = useState('');
+  // Ticked values per filter group; an empty group does not narrow the list.
+  const [picked, setPicked] = useState<Record<string, string[]>>({});
+  const [layout, setLayout] = useListView('announcements');
+  const grid = layout === 'grid';
   const [toDelete, setToDelete] = useState<string[] | null>(null);
   const selection = useSelection(data.map((a) => a.id));
+  const clearFilters = () => {
+    setPicked({});
+    selection.clear();
+  };
   const { run, pending } = useAction();
   const revealing = useRevealOnce();
 
@@ -113,9 +124,27 @@ export function AnnouncementsPage({
     (a, b) =>
       statusOrder[status(a)] - statusOrder[status(b)] || (a.startsAt ?? 0) - (b.startsAt ?? 0)
   );
-  const visible = sorted.filter((a) =>
-    matchesSearch(query, [a.title, a.message, a.messageTablet, a.messageDesktop])
+  const visible = sorted.filter(
+    (a) =>
+      passes(picked.statuses, status(a)) &&
+      passes(picked.backgrounds, a.background) &&
+      matchesSearch(query, [a.title, a.message, a.messageTablet, a.messageDesktop])
   );
+
+  const announcementMenu = (a: Announcement): RowMenuItem[] | undefined => {
+    const rowStatus = status(a);
+    return canWrite && (rowStatus === 'off' || rowStatus === 'ended')
+      ? [
+          {
+            label: 'Publish',
+            icon: <SendIcon aria-hidden />,
+            disabled: pending,
+            onSelect: () => quickPublish(a, rowStatus),
+            shortcut: { key: 'p' },
+          },
+        ]
+      : undefined;
+  };
 
   const editing = (target: Target | null) =>
     target?.kind === 'edit' ? (data.find((a) => a.id === target.id) ?? null) : null;
@@ -184,13 +213,50 @@ export function AnnouncementsPage({
             onChange={setQuery}
           />
         )}
+        {data.length > 0 && (
+          <ListFilter
+            groups={[
+              {
+                key: 'statuses',
+                label: 'Status',
+                options: (Object.keys(statusOrder) as AnnouncementStatus[])
+                  .sort((a, b) => statusOrder[a] - statusOrder[b])
+                  .map((value) => ({ value, label: statusLabels[value] })),
+              },
+              {
+                key: 'backgrounds',
+                label: 'Colour',
+                options: backgrounds.map(({ value, label }) => ({ value, label })),
+              },
+            ]}
+            values={picked}
+            onChange={(key, next) => {
+              setPicked((prev) => ({ ...prev, [key]: next }));
+              selection.clear();
+            }}
+            onClear={clearFilters}
+          />
+        )}
+        {data.length > 0 && (
+          <ViewSwitch
+            value={layout}
+            onChange={(next) => {
+              setLayout(next);
+              selection.clear();
+            }}
+          />
+        )}
         {canWrite && <div className="max-md:hidden">{newButton}</div>}
         {canWrite && (
           <PageActions
-            edit={{
-              editing: selection.selecting,
-              onToggle: selection.selecting ? selection.clear : selection.startEditing,
-            }}
+            edit={
+              grid
+                ? undefined
+                : {
+                    editing: selection.selecting,
+                    onToggle: selection.selecting ? selection.clear : selection.startEditing,
+                  }
+            }
             add={{ label: 'New announcement', onClick: () => view.open({ kind: 'new' }) }}
           />
         )}
@@ -225,9 +291,37 @@ export function AnnouncementsPage({
             }
           >
             {visible.length === 0 ? (
-              <NoMatches onClear={() => setQuery('')}>
+              <NoMatches
+                onClear={() => {
+                  setQuery('');
+                  clearFilters();
+                }}
+              >
                 No announcements match that search.
               </NoMatches>
+            ) : grid ? (
+              <ListCards>
+                {visible.map((a) => (
+                  <ListCard
+                    key={a.id}
+                    title={a.title}
+                    current={pane?.kind === 'edit' && pane.id === a.id}
+                    menu={announcementMenu(a)}
+                    remove={
+                      canWrite
+                        ? { label: 'Delete', onAction: () => setToDelete([a.id]) }
+                        : undefined
+                    }
+                    onOpen={() => canWrite && view.open({ kind: 'edit', id: a.id })}
+                  >
+                    <AnnouncementCardBody
+                      announcement={a}
+                      status={status(a)}
+                      clashesWith={clashes.get(a.id) ?? []}
+                    />
+                  </ListCard>
+                ))}
+              </ListCards>
             ) : (
               <ListRows>
                 {visible.map((a) => {
@@ -266,19 +360,7 @@ export function AnnouncementsPage({
                           </Button>
                         )
                       }
-                      menu={
-                        canWrite && (rowStatus === 'off' || rowStatus === 'ended')
-                          ? [
-                              {
-                                label: 'Publish',
-                                icon: <SendIcon aria-hidden />,
-                                disabled: pending,
-                                onSelect: () => quickPublish(a, rowStatus),
-                                shortcut: { key: 'p' },
-                              },
-                            ]
-                          : undefined
-                      }
+                      menu={announcementMenu(a)}
                       onOpen={() => canWrite && view.open({ kind: 'edit', id: a.id })}
                     >
                       <AnnouncementSummary
@@ -369,6 +451,43 @@ function StatusBadge({ status }: { status: AnnouncementStatus }) {
     >
       {statusLabels[status]}
     </Badge>
+  );
+}
+
+/** Under a card's title: status, the banner's colour and message, and when it shows. */
+function AnnouncementCardBody({
+  announcement: a,
+  status,
+  clashesWith,
+}: {
+  announcement: Announcement;
+  status: AnnouncementStatus;
+  clashesWith: Announcement[];
+}) {
+  const colour = backgrounds.find((b) => b.value === a.background)!;
+  const timeZone = useTimeZone();
+  return (
+    <>
+      <span className="flex items-center gap-2">
+        <StatusBadge status={status} />
+        {clashesWith.length > 0 && (
+          <TriangleAlertIcon
+            aria-label={`Overlaps with ${clashesWith.map((c) => c.title).join(', ')}`}
+            className="size-3.5 shrink-0 text-amber-600"
+          />
+        )}
+      </span>
+      {/* The message on the banner's own colour, as the website shows it. */}
+      <p
+        className="line-clamp-2 rounded-md px-2.5 py-1.5 text-xs"
+        style={{ background: colour.bg, color: colour.fg }}
+      >
+        {a.message}
+      </p>
+      <CardMeta>
+        <span className="tabular-nums">{windowLabel(a, timeZone)}</span>
+      </CardMeta>
+    </>
   );
 }
 

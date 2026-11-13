@@ -977,6 +977,54 @@
   --section: 4;
 }
 
+/* Switching a list page between list and grid: the new view's items settle in, a few at a
+   time. useListView sets data-list-switch on the root only while this plays, so filters and
+   new pages of results never replay it. */
+[data-list-switch='grid'] [data-slot='list-cards'] > * {
+  animation: list-switch-card 380ms cubic-bezier(0.23, 1, 0.32, 1) backwards;
+  animation-delay: calc(var(--item, 0) * 35ms);
+}
+[data-list-switch='list'] [data-slot='list-rows'] > * {
+  animation: list-switch-row 300ms cubic-bezier(0.23, 1, 0.32, 1) backwards;
+  animation-delay: calc(var(--item, 0) * 25ms);
+}
+:is([data-slot='list-cards'], [data-slot='list-rows']) > :nth-child(2) {
+  --item: 1;
+}
+:is([data-slot='list-cards'], [data-slot='list-rows']) > :nth-child(3) {
+  --item: 2;
+}
+:is([data-slot='list-cards'], [data-slot='list-rows']) > :nth-child(4) {
+  --item: 3;
+}
+:is([data-slot='list-cards'], [data-slot='list-rows']) > :nth-child(5) {
+  --item: 4;
+}
+:is([data-slot='list-cards'], [data-slot='list-rows']) > :nth-child(6) {
+  --item: 5;
+}
+:is([data-slot='list-cards'], [data-slot='list-rows']) > :nth-child(7) {
+  --item: 6;
+}
+/* Past the first screenful the rest arrive together, so a long list is not kept waiting. */
+:is([data-slot='list-cards'], [data-slot='list-rows']) > :nth-child(n + 8) {
+  --item: 7;
+}
+
+@keyframes list-switch-card {
+  from {
+    opacity: 0;
+    transform: translateY(8px) scale(0.97);
+  }
+}
+
+@keyframes list-switch-row {
+  from {
+    opacity: 0;
+    transform: translateY(4px);
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
   /* The panes still fade in so nothing pops; what is inside is simply there. */
   [data-slot='list-page'][data-revealing] [data-slot='list-panes'],
@@ -990,6 +1038,12 @@
   [data-slot='post-editor'][data-revealing] > aside > * {
     /* Beats the per-step rules above. */
     animation: none !important;
+  }
+  /* A switch of view is a quick crossfade, all at once. */
+  [data-list-switch='grid'] [data-slot='list-cards'] > *,
+  [data-list-switch='list'] [data-slot='list-rows'] > * {
+    animation: dashboard-fade 200ms ease-out backwards;
+    animation-delay: 0ms;
   }
 }
 

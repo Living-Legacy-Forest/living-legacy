@@ -71,7 +71,7 @@ function matchesShortcut(event: React.KeyboardEvent, { key, alt }: RowShortcut) 
 }
 
 /** Open, Select, the page's items, then the red group: the menu and the shortcuts share it. */
-function rowActions({
+export function rowActions({
   onOpen,
   previews,
   onSelect,

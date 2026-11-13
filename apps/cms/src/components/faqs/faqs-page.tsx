@@ -1,5 +1,8 @@
 import { MAX_FAQ_TAGS, slugify, splitTags } from '@ll/content';
 import { useState } from 'react';
+import { ListCard, ListCards } from '@/components/list/list-card';
+import { ListFilter, passes, publishStatusOptions } from '@/components/list/list-filter';
+import { ViewSwitch, useListView } from '@/components/list/view-switch';
 import { BulkCsvForm } from '@/components/bulk/bulk-csv-form';
 import {
   DialogActions,
@@ -117,8 +120,7 @@ const targetKey = (t: Target) =>
 
 const NOUN: [string, string] = ['FAQ', 'FAQs'];
 
-/** Tag filter values besides a tag itself. */
-const ALL_TAGS = 'all';
+/** The Tag filter's value for FAQs without a tag. */
 const NO_TAG = 'untagged';
 
 /** A CSV row's values as FAQ fields, or what is wrong with them. */
@@ -144,7 +146,10 @@ function faqFromCsv(values: Record<string, string>) {
 export function FaqsPage({ data, canWrite }: { data: FaqData; canWrite: boolean }) {
   const view = useListPane<Target>();
   const [query, setQuery] = useState('');
-  const [tagFilter, setTagFilter] = useState(ALL_TAGS);
+  // Ticked values per filter group; an empty group does not narrow the list.
+  const [picked, setPicked] = useState<Record<string, string[]>>({});
+  const [layout, setLayout] = useListView('faqs');
+  const grid = layout === 'grid';
   const [toDelete, setToDelete] = useState<string[] | null>(null);
   const selection = useSelection(data.faqs.map((f) => f.id));
   const { run, pending } = useAction();
@@ -163,22 +168,26 @@ export function FaqsPage({ data, canWrite }: { data: FaqData; canWrite: boolean 
   ];
   const knownTags = [...new Set(data.faqs.flatMap((f) => f.tags))].sort();
   const matchesTag = (f: Faq) =>
-    tagFilter === ALL_TAGS ||
-    (tagFilter === NO_TAG ? f.tags.length === 0 : f.tags.includes(tagFilter));
-  const searching = query.trim() !== '' || tagFilter !== ALL_TAGS;
+    !picked.tags?.length ||
+    picked.tags.some((tag) => (tag === NO_TAG ? f.tags.length === 0 : f.tags.includes(tag)));
+  const filtering = Object.values(picked).some((ticked) => ticked.length > 0);
+  const searching = query.trim() !== '' || filtering;
   const visibleSections = sections
+    .filter((s) => passes(picked.groups, s.group?.id ?? UNGROUPED))
     .map((s) => ({
       ...s,
       faqs: s.faqs.filter(
-        (f) => matchesTag(f) && matchesSearch(query, [f.question, f.answer, ...f.tags])
+        (f) =>
+          matchesTag(f) &&
+          passes(picked.statuses, f.status) &&
+          matchesSearch(query, [f.question, f.answer, ...f.tags])
       ),
     }))
     .filter((s) => !searching || s.faqs.length > 0);
-  const tagItems = [
-    { value: ALL_TAGS, label: 'All tags' },
-    ...knownTags.map((tag) => ({ value: tag, label: tag })),
-    { value: NO_TAG, label: 'No tag' },
-  ];
+  const clearFilters = () => {
+    setPicked({});
+    selection.clear();
+  };
   const visibleIds = visibleSections.flatMap((s) => s.faqs.map((f) => f.id));
   const groupName = new Map(data.groups.map((g) => [g.id, g.name]));
 
@@ -258,27 +267,45 @@ export function FaqsPage({ data, canWrite }: { data: FaqData; canWrite: boolean 
             onChange={setQuery}
           />
         )}
-        {knownTags.length > 0 && (
-          <Select
-            items={tagItems}
-            value={tagFilter}
-            onValueChange={(value) => value && setTagFilter(value)}
-          >
-            <SelectTrigger
-              aria-label="Filter by tag"
-              size="sm"
-              className="bg-muted/60 text-ui w-40 border-0 shadow-none"
-            >
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              {tagItems.map((item) => (
-                <SelectItem key={item.value} value={item.value} className="text-ui">
-                  {item.label}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+        {data.faqs.length > 0 && (
+          <ListFilter
+            groups={[
+              { key: 'statuses', label: 'Status', options: publishStatusOptions },
+              {
+                key: 'groups',
+                label: 'Group',
+                options: [
+                  ...data.groups.map((g) => ({ value: g.id, label: g.name })),
+                  ...(ungrouped.length > 0 ? [{ value: UNGROUPED, label: 'Ungrouped' }] : []),
+                ],
+              },
+              {
+                key: 'tags',
+                label: 'Tag',
+                options: knownTags.length
+                  ? [
+                      ...knownTags.map((tag) => ({ value: tag, label: tag })),
+                      { value: NO_TAG, label: 'No tag' },
+                    ]
+                  : [],
+              },
+            ]}
+            values={picked}
+            onChange={(key, next) => {
+              setPicked((prev) => ({ ...prev, [key]: next }));
+              selection.clear();
+            }}
+            onClear={clearFilters}
+          />
+        )}
+        {data.faqs.length > 0 && (
+          <ViewSwitch
+            value={layout}
+            onChange={(next) => {
+              setLayout(next);
+              selection.clear();
+            }}
+          />
         )}
         {canWrite && (
           <div className="flex gap-3 max-md:hidden">
@@ -298,10 +325,14 @@ export function FaqsPage({ data, canWrite }: { data: FaqData; canWrite: boolean 
         )}
         {canWrite && (
           <PageActions
-            edit={{
-              editing: selection.selecting,
-              onToggle: selection.selecting ? selection.clear : selection.startEditing,
-            }}
+            edit={
+              grid
+                ? undefined
+                : {
+                    editing: selection.selecting,
+                    onToggle: selection.selecting ? selection.clear : selection.startEditing,
+                  }
+            }
             add={{
               label: 'Add',
               items: [
@@ -358,7 +389,7 @@ export function FaqsPage({ data, canWrite }: { data: FaqData; canWrite: boolean 
                 clearLabel="Clear search and filter"
                 onClear={() => {
                   setQuery('');
-                  setTagFilter(ALL_TAGS);
+                  clearFilters();
                 }}
               >
                 No FAQs match.
@@ -374,6 +405,7 @@ export function FaqsPage({ data, canWrite }: { data: FaqData; canWrite: boolean 
                     canWrite={canWrite}
                     selection={selection}
                     searching={searching}
+                    grid={grid}
                     onSelect={(faq) => canWrite && view.open({ kind: 'faq', id: faq.id })}
                     onDelete={(faq) => setToDelete([faq.id])}
                     onAdd={() => view.open({ kind: 'new', groupId: section.group?.id })}
@@ -475,6 +507,7 @@ function FaqSection({
   canWrite,
   selection,
   searching,
+  grid,
   onSelect,
   onDelete,
   onAdd,
@@ -487,12 +520,32 @@ function FaqSection({
   selection: Selection;
   /** While searching the list is partial, so reordering waits. */
   searching: boolean;
+  grid: boolean;
   onSelect: (faq: Faq) => void;
   onDelete: (faq: Faq) => void;
   onAdd: () => void;
   onEditGroup: (id: string) => void;
 }) {
   const { run } = useAction();
+  const faqMenu = (faq: Faq, index: number) =>
+    canWrite
+      ? [
+          ...moveMenuItems(
+            !searching && index > 0,
+            !searching && index < faqs.length - 1,
+            (direction) =>
+              run(() => moveFaq({ data: { id: faq.id, direction } }), {
+                error: 'Could not move the FAQ',
+              })
+          ),
+          publishMenuItem(faq.status === 'published', (status) =>
+            run(() => setFaqStatus({ data: { id: faq.id, status } }), {
+              success: statusNotice(status),
+              error: 'Could not change it',
+            })
+          ),
+        ]
+      : undefined;
 
   return (
     <section>
@@ -554,6 +607,35 @@ function FaqSection({
       </div>
       {faqs.length === 0 ? (
         <p className="text-muted-foreground px-3 py-2 text-xs">No FAQs in this group yet.</p>
+      ) : grid ? (
+        <ListCards className="flex-none overflow-visible p-1.5 max-md:p-0">
+          {faqs.map((faq, index) => (
+            <ListCard
+              key={faq.id}
+              title={faq.question}
+              current={faq.id === selectedId}
+              menu={faqMenu(faq, index)}
+              remove={canWrite ? { label: 'Delete', onAction: () => onDelete(faq) } : undefined}
+              onOpen={() => onSelect(faq)}
+            >
+              {faq.status === 'draft' && (
+                <Badge variant="outline" className="w-fit">
+                  Draft
+                </Badge>
+              )}
+              <p className="text-muted-foreground line-clamp-3 text-xs">{faq.answer}</p>
+              {faq.tags.length > 0 && (
+                <span className="flex flex-wrap gap-1">
+                  {faq.tags.map((tag) => (
+                    <Badge key={tag} variant="outline" className="font-mono text-[11px]">
+                      {tag}
+                    </Badge>
+                  ))}
+                </span>
+              )}
+            </ListCard>
+          ))}
+        </ListCards>
       ) : (
         <ListRows className="flex-none overflow-visible p-0">
           {faqs.map((faq, index) => (
@@ -571,26 +653,7 @@ function FaqSection({
                   : undefined
               }
               swipe={canWrite ? { label: 'Delete', onAction: () => onDelete(faq) } : undefined}
-              menu={
-                canWrite
-                  ? [
-                      ...moveMenuItems(
-                        !searching && index > 0,
-                        !searching && index < faqs.length - 1,
-                        (direction) =>
-                          run(() => moveFaq({ data: { id: faq.id, direction } }), {
-                            error: 'Could not move the FAQ',
-                          })
-                      ),
-                      publishMenuItem(faq.status === 'published', (status) =>
-                        run(() => setFaqStatus({ data: { id: faq.id, status } }), {
-                          success: statusNotice(status),
-                          error: 'Could not change it',
-                        })
-                      ),
-                    ]
-                  : undefined
-              }
+              menu={faqMenu(faq, index)}
               actions={
                 canWrite && (
                   <MoveButtons

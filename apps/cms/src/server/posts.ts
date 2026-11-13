@@ -74,7 +74,8 @@ export type PostStatusTab = (typeof postStatusTabs)[number];
 const listSchema = z.object({
   status: z.enum(postStatusTabs).catch('all'),
   q: z.string().trim().max(100).optional(),
-  category: z.string().optional(),
+  categories: z.array(z.string()).max(50).optional(),
+  authors: z.array(z.string()).max(50).optional(),
   page: z.number().int().min(1).catch(1),
 });
 
@@ -96,72 +97,79 @@ export const listPosts = createServerFn({ method: 'GET' })
     const filters = and(
       byTab[data.status],
       data.q ? like(posts.title, `%${data.q.replace(/[%_]/g, '\\$&')}%`) : undefined,
-      data.category
+      data.authors?.length ? inArray(posts.authorId, data.authors) : undefined,
+      data.categories?.length
         ? inArray(
             posts.id,
             db
               .select({ id: postTerms.postId })
               .from(postTerms)
-              .where(eq(postTerms.termId, data.category))
+              .where(inArray(postTerms.termId, data.categories))
           )
         : undefined
     );
 
-    const [tabCounts, [{ total } = { total: 0 }], rows, categories, reviewers] = await db.batch([
-      db
-        .select({
-          all: sql<number>`coalesce(sum(${posts.deletedAt} is null), 0)`,
-          published: sql<number>`coalesce(sum(${posts.deletedAt} is null and ${posts.status} = 'published'), 0)`,
-          scheduled: sql<number>`coalesce(sum(${posts.deletedAt} is null and ${posts.status} = 'draft' and ${posts.scheduledAt} is not null), 0)`,
-          draft: sql<number>`coalesce(sum(${posts.deletedAt} is null and ${posts.status} = 'draft' and ${posts.scheduledAt} is null), 0)`,
-          review: sql<number>`coalesce(sum(${posts.deletedAt} is null and ${posts.reviewRequestedAt} is not null), 0)`,
-          trash: sql<number>`coalesce(sum(${posts.deletedAt} is not null), 0)`,
-        })
-        .from(posts),
-      db.select({ total: count() }).from(posts).where(filters),
-      db
-        .select({
-          id: posts.id,
-          title: posts.title,
-          slug: posts.slug,
-          status: posts.status,
-          hasDraft: sql<boolean>`${posts.draft} is not null`,
-          publishedAt: posts.publishedAt,
-          updatedAt: posts.updatedAt,
-          deletedAt: posts.deletedAt,
-          scheduledAt: posts.scheduledAt,
-          reviewRequestedAt: posts.reviewRequestedAt,
-          reviewerId: posts.reviewerId,
-          createdBy: posts.createdBy,
-          featuredMediaId: posts.featuredMediaId,
-          author: teamMembers.name,
-          // The same gaps Content checks lists, so the list can flag them too.
-          noDescription: sql<boolean>`coalesce(trim(${posts.seoDescription}), '') = '' and coalesce(trim(${posts.excerpt}), '') = ''`,
-          noShareImage: sql<boolean>`${posts.ogMediaId} is null and ${posts.featuredMediaId} is null`,
-        })
-        .from(posts)
-        .leftJoin(teamMembers, eq(teamMembers.id, posts.authorId))
-        .where(filters)
-        .orderBy(
-          data.status === 'trash'
-            ? desc(posts.deletedAt)
-            : data.status === 'scheduled'
-              ? asc(posts.scheduledAt)
-              : sql`coalesce(${posts.publishedAt}, ${posts.updatedAt}) desc`
-        )
-        .limit(POSTS_PAGE_SIZE)
-        .offset((data.page - 1) * POSTS_PAGE_SIZE),
-      db
-        .select({ id: terms.id, name: terms.name })
-        .from(terms)
-        .where(eq(terms.type, 'category'))
-        .orderBy(asc(terms.name)),
-      db
-        .select({ id: user.id, name: user.name })
-        .from(user)
-        .where(inArray(user.role, publishRoles()))
-        .orderBy(asc(user.name)),
-    ]);
+    const [tabCounts, [{ total } = { total: 0 }], rows, categories, reviewers, authors] =
+      await db.batch([
+        db
+          .select({
+            all: sql<number>`coalesce(sum(${posts.deletedAt} is null), 0)`,
+            published: sql<number>`coalesce(sum(${posts.deletedAt} is null and ${posts.status} = 'published'), 0)`,
+            scheduled: sql<number>`coalesce(sum(${posts.deletedAt} is null and ${posts.status} = 'draft' and ${posts.scheduledAt} is not null), 0)`,
+            draft: sql<number>`coalesce(sum(${posts.deletedAt} is null and ${posts.status} = 'draft' and ${posts.scheduledAt} is null), 0)`,
+            review: sql<number>`coalesce(sum(${posts.deletedAt} is null and ${posts.reviewRequestedAt} is not null), 0)`,
+            trash: sql<number>`coalesce(sum(${posts.deletedAt} is not null), 0)`,
+          })
+          .from(posts),
+        db.select({ total: count() }).from(posts).where(filters),
+        db
+          .select({
+            id: posts.id,
+            title: posts.title,
+            slug: posts.slug,
+            status: posts.status,
+            hasDraft: sql<boolean>`${posts.draft} is not null`,
+            publishedAt: posts.publishedAt,
+            updatedAt: posts.updatedAt,
+            deletedAt: posts.deletedAt,
+            scheduledAt: posts.scheduledAt,
+            reviewRequestedAt: posts.reviewRequestedAt,
+            reviewerId: posts.reviewerId,
+            createdBy: posts.createdBy,
+            featuredMediaId: posts.featuredMediaId,
+            author: teamMembers.name,
+            // The same gaps Content checks lists, so the list can flag them too.
+            noDescription: sql<boolean>`coalesce(trim(${posts.seoDescription}), '') = '' and coalesce(trim(${posts.excerpt}), '') = ''`,
+            noShareImage: sql<boolean>`${posts.ogMediaId} is null and ${posts.featuredMediaId} is null`,
+          })
+          .from(posts)
+          .leftJoin(teamMembers, eq(teamMembers.id, posts.authorId))
+          .where(filters)
+          .orderBy(
+            data.status === 'trash'
+              ? desc(posts.deletedAt)
+              : data.status === 'scheduled'
+                ? asc(posts.scheduledAt)
+                : sql`coalesce(${posts.publishedAt}, ${posts.updatedAt}) desc`
+          )
+          .limit(POSTS_PAGE_SIZE)
+          .offset((data.page - 1) * POSTS_PAGE_SIZE),
+        db
+          .select({ id: terms.id, name: terms.name })
+          .from(terms)
+          .where(eq(terms.type, 'category'))
+          .orderBy(asc(terms.name)),
+        db
+          .select({ id: user.id, name: user.name })
+          .from(user)
+          .where(inArray(user.role, publishRoles()))
+          .orderBy(asc(user.name)),
+        db
+          .select({ id: teamMembers.id, name: teamMembers.name })
+          .from(teamMembers)
+          .where(isNull(teamMembers.deletedAt))
+          .orderBy(asc(teamMembers.sortOrder), asc(teamMembers.name)),
+      ]);
 
     const assigned = await loadTermsFor(
       db,
@@ -198,6 +206,7 @@ export const listPosts = createServerFn({ method: 'GET' })
       previewOpen: /(?:^|;\s*)posts_preview=open/.test(getRequest().headers.get('cookie') ?? ''),
       categories,
       reviewers,
+      authors,
     };
   });
 

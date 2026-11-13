@@ -38,6 +38,9 @@ import { Button } from '@/components/ui/button';
 import { ListRows, isDesktop } from '@/components/list/list-page';
 import { ListRow, type RowMenuItem } from '@/components/list/list-row';
 import { SearchInput, useSelection } from '@/components/list/list-tools';
+import { ListFilter } from '@/components/list/list-filter';
+import { CardMeta, ListCard, ListCards } from '@/components/list/list-card';
+import { ViewSwitch, useListView } from '@/components/list/view-switch';
 import { RowCell } from '@/components/list/row-cell';
 import { TrendChart } from '@/components/list/trend-chart';
 import { dummyTrend } from '@/components/list/dummy-trend';
@@ -58,13 +61,6 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select';
 import { formatDate, formatRelative } from '@/lib/format';
 import type { SessionUser } from '@/lib/session';
 import { copyLink, openInNewTab, siteUrl } from '@/lib/site';
@@ -93,7 +89,8 @@ import { clearPostPreviews, loadPostPreview, usePostPreview } from './use-post-p
 export type PostListSearch = {
   status: PostStatusTab;
   q?: string;
-  category?: string;
+  categories?: string[];
+  authors?: string[];
   page?: number;
   selected?: string;
 };
@@ -126,9 +123,13 @@ export function PostsList({
   const [query, setQuery] = useState(search.q ?? '');
   const inTrash = search.status === 'trash';
   // The preview pane can be closed to give the list the full width; the choice is remembered.
-  const [previewOpen, setPreviewOpen] = useState(data.previewOpen);
+  const [previewPref, setPreviewPref] = useState(data.previewOpen);
+  // Grid or list, remembered the same way. Cards have no preview pane beside them.
+  const [view, setView] = useListView('posts');
+  const grid = view === 'grid';
+  const previewOpen = previewPref && !grid;
   const setPreview = (open: boolean) => {
-    setPreviewOpen(open);
+    setPreviewPref(open);
     document.cookie = `posts_preview=${open ? 'open' : 'closed'}; path=/; max-age=31536000; samesite=lax`;
   };
   const canPurge = can(user.role, 'content:purge');
@@ -215,6 +216,15 @@ export function PostsList({
     if (copy) await navigate({ to: '/posts/$postId', params: { postId: copy.id } });
   };
   /** The row's context menu. Publishing needs the editor, which checks the post first. */
+  const removeAction = (row: PostListRow) =>
+    inTrash
+      ? canPurge
+        ? { label: 'Delete', onAction: () => setConfirmDelete([row.id]) }
+        : undefined
+      : canPublish
+        ? { label: 'Trash', onAction: () => trash([row.id]) }
+        : undefined;
+
   const rowMenu = (row: PostListRow): RowMenuItem[] => {
     if (inTrash) {
       return canPublish
@@ -287,10 +297,6 @@ export function PostsList({
     return Boolean(result);
   };
 
-  const categoryItems = [
-    { value: 'all', label: 'All categories' },
-    ...data.categories.map((c) => ({ value: c.id, label: c.name })),
-  ];
   const page = search.page ?? 1;
   const from = data.total === 0 ? 0 : (page - 1) * POSTS_PAGE_SIZE + 1;
   const to = Math.min(page * POSTS_PAGE_SIZE, data.total);
@@ -313,46 +319,56 @@ export function PostsList({
           value={query}
           onChange={setQuery}
         />
-        <Select
-          items={categoryItems}
-          value={search.category ?? 'all'}
-          onValueChange={(value) =>
+        <ListFilter
+          groups={[
+            {
+              key: 'categories',
+              label: 'Category',
+              options: data.categories.map((c) => ({ value: c.id, label: c.name })),
+            },
+            {
+              key: 'authors',
+              label: 'Author',
+              options: data.authors.map((a) => ({ value: a.id, label: a.name })),
+            },
+          ]}
+          values={{ categories: search.categories ?? [], authors: search.authors ?? [] }}
+          onChange={(key, next) =>
             navigate({
               search: (prev) => ({
                 ...prev,
-                category: value === 'all' || !value ? undefined : String(value),
+                [key]: next.length ? next : undefined,
                 page: undefined,
                 selected: undefined,
               }),
             })
           }
-        >
-          <SelectTrigger
-            aria-label="Filter by category"
-            size="sm"
-            className="bg-muted/60 text-ui w-40 border-0 shadow-none"
+          onClear={() =>
+            navigate({
+              search: (prev) => ({
+                ...prev,
+                categories: undefined,
+                authors: undefined,
+                page: undefined,
+                selected: undefined,
+              }),
+            })
+          }
+        />
+        <ViewSwitch value={view} onChange={setView} />
+        {!grid && (
+          <Button
+            variant="ghost"
+            size="icon-sm"
+            aria-label={previewOpen ? 'Expand list' : 'Show preview'}
+            aria-pressed={!previewOpen}
+            title={previewOpen ? 'Expand list' : 'Show preview'}
+            className="max-lg:hidden"
+            onClick={() => setPreview(!previewOpen)}
           >
-            <SelectValue />
-          </SelectTrigger>
-          <SelectContent>
-            {categoryItems.map((item) => (
-              <SelectItem key={item.value} value={item.value} className="text-ui">
-                {item.label}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-        <Button
-          variant="ghost"
-          size="icon-sm"
-          aria-label={previewOpen ? 'Expand list' : 'Show preview'}
-          aria-pressed={!previewOpen}
-          title={previewOpen ? 'Expand list' : 'Show preview'}
-          className="max-lg:hidden"
-          onClick={() => setPreview(!previewOpen)}
-        >
-          <PanelRightIcon aria-hidden />
-        </Button>
+            <PanelRightIcon aria-hidden />
+          </Button>
+        )}
         {canWrite && (
           <Button
             size="sm"
@@ -366,7 +382,7 @@ export function PostsList({
         )}
         <PageActions
           edit={
-            canPublish
+            canPublish && !grid
               ? {
                   editing: selection.selecting,
                   onToggle: selection.selecting ? selection.clear : selection.startEditing,
@@ -484,7 +500,7 @@ export function PostsList({
                   })}
               </nav>
             )}
-            {canPublish && checkedIds.length === 0 && (
+            {canPublish && !grid && checkedIds.length === 0 && (
               <Button
                 variant="ghost"
                 size="sm"
@@ -499,6 +515,20 @@ export function PostsList({
 
           {data.rows.length === 0 ? (
             <EmptyState search={search} />
+          ) : grid ? (
+            <ListCards>
+              {data.rows.map((row) => (
+                <PostCard
+                  key={row.id}
+                  row={row}
+                  inTrash={inTrash}
+                  // A card's Open already goes to the editor.
+                  menu={rowMenu(row).filter((item) => item.label !== 'Edit')}
+                  remove={removeAction(row)}
+                  views={row.deletedAt ? undefined : dummyTrend(row.slug)}
+                />
+              ))}
+            </ListCards>
           ) : (
             <ListRows>
               {data.rows.map((row) => (
@@ -517,15 +547,7 @@ export function PostsList({
                         }
                       : undefined
                   }
-                  swipe={
-                    inTrash
-                      ? canPurge
-                        ? { label: 'Delete', onAction: () => setConfirmDelete([row.id]) }
-                        : undefined
-                      : canPublish
-                        ? { label: 'Trash', onAction: () => trash([row.id]) }
-                        : undefined
-                  }
+                  swipe={removeAction(row)}
                   menu={rowMenu(row)}
                   previewOpen={previewOpen}
                   views={row.deletedAt ? undefined : dummyTrend(row.slug)}
@@ -647,6 +669,63 @@ function onRowKeyDown(event: KeyboardEvent<HTMLButtonElement>) {
   const button = next?.querySelector<HTMLButtonElement>('button[data-row]');
   button?.focus();
   button?.click();
+}
+
+/** One post as a card in the grid view: image, title, status, and where it was last. */
+function PostCard({
+  row,
+  inTrash,
+  menu,
+  remove,
+  views,
+}: {
+  row: PostListRow;
+  inTrash: boolean;
+  menu: RowMenuItem[];
+  remove?: { label: string; onAction: () => void };
+  views?: number[];
+}) {
+  const timeZone = useTimeZone();
+  const navigate = useNavigate();
+  const date = inTrash
+    ? row.deletedAt
+    : row.status === 'published'
+      ? row.publishedAt
+      : (row.scheduledAt ?? row.updatedAt);
+  const meta = [row.categories.map((c) => c.name).join(', '), row.author].filter(Boolean);
+  return (
+    <ListCard
+      title={row.title || 'Untitled'}
+      image={row.featuredMediaId ? `/api/media/${row.featuredMediaId}?w=640` : null}
+      icon={<ImageIcon aria-hidden />}
+      // Trashed posts cannot be edited, so their cards only offer the menu.
+      onOpen={() => !inTrash && void navigate({ to: '/posts/$postId', params: { postId: row.id } })}
+      link={
+        inTrash
+          ? ({ className, children }) => <span className={className}>{children}</span>
+          : ({ className, children }) => (
+              <Link to="/posts/$postId" params={{ postId: row.id }} className={className}>
+                {children}
+              </Link>
+            )
+      }
+      menu={menu}
+      remove={remove}
+    >
+      <span className="text-muted-foreground flex min-w-0 items-center gap-1 text-xs">
+        <PostStatusBadge
+          status={row.status}
+          hasDraft={row.hasDraft}
+          trashed={inTrash}
+          inReview={row.reviewRequestedAt !== null}
+          scheduledAt={row.scheduledAt}
+        />
+        {date && <span className="shrink-0 tabular-nums"> · {formatDate(date, timeZone)}</span>}
+      </span>
+      {meta.length > 0 && <CardMeta>{meta.join(' · ')}</CardMeta>}
+      {views && <TrendChart series={views} className="mt-1 h-10 w-full" />}
+    </ListCard>
+  );
 }
 
 function PostListItem({
@@ -1001,7 +1080,7 @@ const emptyStates = {
 } satisfies Record<PostStatusTab, { icon: LucideIcon; title: string; description: string }>;
 
 function EmptyState({ search }: { search: PostListSearch }) {
-  const filtered = Boolean(search.q || search.category);
+  const filtered = Boolean(search.q || search.categories?.length || search.authors?.length);
   const {
     icon: Icon,
     title,

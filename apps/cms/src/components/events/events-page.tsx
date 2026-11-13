@@ -16,6 +16,9 @@ import {
   useListPane,
 } from '@/components/list/list-page';
 import { ListRow } from '@/components/list/list-row';
+import { ListFilter } from '@/components/list/list-filter';
+import { CardMeta, ListCard, ListCards } from '@/components/list/list-card';
+import { ViewSwitch, useListView } from '@/components/list/view-switch';
 import { RowCell } from '@/components/list/row-cell';
 import { TrendChart } from '@/components/list/trend-chart';
 import { dummyTrend } from '@/components/list/dummy-trend';
@@ -99,6 +102,8 @@ export function EventsPage({
   }, [initialOpen]);
   const [query, setQuery] = useState('');
   const [filter, setFilter] = useState<Filter>('upcoming');
+  // Ticked values per group; empty means that group does not narrow the list.
+  const [picked, setPicked] = useState<Record<string, string[]>>({ places: [], statuses: [] });
   const [toDelete, setToDelete] = useState<string[] | null>(null);
   const { run, pending } = useAction();
   const revealing = useRevealOnce();
@@ -109,6 +114,8 @@ export function EventsPage({
   const visible = groupEventDates(
     data.events
       .filter((e) => inFilter(e, filter, now))
+      .filter((e) => !picked.places?.length || picked.places.includes(e.locationId ?? ''))
+      .filter((e) => !picked.statuses?.length || picked.statuses.includes(e.status))
       .filter((e) => matchesSearch(query, [e.title, e.locationName, e.venue])),
     now
   ).sort((a, b) =>
@@ -159,6 +166,8 @@ export function EventsPage({
   // Closed, the list takes the whole width and its rows show more. The pane keeps what it last
   // showed while it slides shut.
   // The toolbar button can also open the pane with nothing chosen yet.
+  const [layout, setLayout] = useListView('events');
+  const grid = layout === 'grid';
   const [emptyPaneOpen, setEmptyPaneOpen] = useState(false);
   useEffect(() => {
     if (pane) setEmptyPaneOpen(false);
@@ -201,6 +210,36 @@ export function EventsPage({
           </div>
         )}
         {data.events.length > 0 && (
+          <ListFilter
+            groups={[
+              {
+                key: 'places',
+                label: 'Place',
+                options: data.locations.map((l) => ({ value: l.id, label: l.name })),
+              },
+              {
+                key: 'statuses',
+                label: 'Status',
+                options: [
+                  { value: 'published', label: 'Published' },
+                  { value: 'draft', label: 'Draft' },
+                  { value: 'cancelled', label: 'Cancelled' },
+                ],
+              },
+            ]}
+            values={picked}
+            onChange={(key, next) => {
+              setPicked((prev) => ({ ...prev, [key]: next }));
+              selection.clear();
+            }}
+            onClear={() => {
+              setPicked({ places: [], statuses: [] });
+              selection.clear();
+            }}
+          />
+        )}
+        {data.events.length > 0 && <ViewSwitch value={layout} onChange={setLayout} />}
+        {data.events.length > 0 && (
           <Button
             variant="ghost"
             size="icon-sm"
@@ -242,7 +281,10 @@ export function EventsPage({
         // Plain fr tracks so the columns glide between open and closed.
         <ListPageLayout
           className={cn(
-            'motion-reduce:transition-none lg:transition-[grid-template-columns] lg:duration-300 lg:ease-[cubic-bezier(0.32,0.72,0,1)]',
+            // Cards reflow into fewer columns as the list narrows, so gliding the width would
+            // reshuffle them every frame. In grid view the columns snap; the pane still slides.
+            !grid &&
+              'motion-reduce:transition-none lg:transition-[grid-template-columns] lg:duration-300 lg:ease-[cubic-bezier(0.32,0.72,0,1)]',
             paneOpen ? 'lg:grid-cols-[2fr_3fr]' : 'lg:grid-cols-[1fr_0fr]'
           )}
         >
@@ -289,6 +331,24 @@ export function EventsPage({
                       : 'No upcoming events.'}
                 </p>
               )
+            ) : grid ? (
+              <ListCards>
+                {visible.map((row) => (
+                  <EventCard
+                    key={row.key}
+                    row={row}
+                    current={paneEvent !== null && (paneEvent.seriesId ?? paneEvent.id) === row.key}
+                    onOpen={() =>
+                      isDesktop() &&
+                      paneEvent !== null &&
+                      (paneEvent.seriesId ?? paneEvent.id) === row.key
+                        ? view.closePane()
+                        : view.open({ kind: 'edit', id: row.lead.id })
+                    }
+                    onDelete={() => setToDelete(idsOf([row]))}
+                  />
+                ))}
+              </ListCards>
             ) : (
               <ListRows>
                 {visible.map((row) => (
@@ -390,6 +450,51 @@ function rowStatus(dates: EventRow[]) {
   if (published.length > 0) return `${published.reduce((n, d) => n + d.booked, 0)} booked`;
   if (dates.some((d) => d.status === 'draft' && d.publishAt)) return 'Scheduled';
   return dates.some((d) => d.status === 'draft') ? 'Draft' : 'Cancelled';
+}
+
+/** One event as a card in the grid view: hero image, title, status, when and where. */
+function EventCard({
+  row,
+  current,
+  onOpen,
+  onDelete,
+}: {
+  row: ReturnType<typeof groupEventDates<EventRow>>[number];
+  current: boolean;
+  onOpen: () => void;
+  onDelete: () => void;
+}) {
+  const { lead, dates, upcoming } = row;
+  const when =
+    dates.length > 1
+      ? `${dates.length} dates · ${upcoming ? 'Next' : 'Last'} ${startsIn(lead)}`
+      : `${lead.seriesId ? 'Repeats · ' : ''}${startsIn(lead)}`;
+  const booked = dates.reduce((n, d) => n + d.booked, 0);
+  const capacity = dates.reduce((n, d) => n + (d.capacity ?? 0), 0);
+  return (
+    <ListCard
+      title={lead.title}
+      image={lead.heroMediaId ? `/api/media/${lead.heroMediaId}?w=640` : null}
+      icon={<CalendarClockIcon aria-hidden />}
+      current={current}
+      onOpen={onOpen}
+      remove={{ label: 'Delete', onAction: onDelete }}
+    >
+      <span className="flex min-w-0 items-center gap-2 text-xs">
+        <Badge variant="outline" className="shrink-0 tabular-nums">
+          {rowStatus(dates)}
+        </Badge>
+        <span className="text-muted-foreground truncate">{when}</span>
+      </span>
+      {lead.locationName && <CardMeta>{lead.locationName}</CardMeta>}
+      <CardMeta>
+        <span className="tabular-nums">
+          {capacity > 0 ? `${booked} of ${capacity} booked` : `${booked} booked`}
+        </span>
+      </CardMeta>
+      <TrendChart series={dummyTrend(lead.id)} label="Bookings" className="mt-1 h-10 w-full" />
+    </ListCard>
+  );
 }
 
 function EventSummary({

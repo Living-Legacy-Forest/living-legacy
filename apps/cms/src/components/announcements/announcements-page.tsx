@@ -5,6 +5,7 @@ import {
   announcementBackgrounds,
   announcementClashes,
   announcementColours,
+  announcementContrast,
   announcementStatus,
 } from '@ll/content';
 import { useState } from 'react';
@@ -803,8 +804,9 @@ function AnnouncementForm({
 }
 
 /**
- * Pick any colour for the bar. The website's four palette colours sit in the panel as saved
- * swatches. The text colour is chosen for the colour picked, and the readout compares the two.
+ * The bar's colour and, beside it, the text colour the website will use on it. The picker offers
+ * any colour; the website's four palette colours sit in its panel as saved swatches. The text is
+ * chosen for the colour picked, so it is shown here rather than asked for.
  */
 function BackgroundPicker({
   value,
@@ -818,20 +820,55 @@ function BackgroundPicker({
     palette.map((p) => ({ id: p.value, color: announcementColours(p.value).bg }))
   );
   return (
-    <ColorPicker
-      label="Bar colour"
-      alpha={false}
-      // A field-height trigger as wide as its panel, so it opens straight down.
-      size="field"
-      className="w-(--picker-width)"
-      value={bg}
-      onValueChange={(hex) => onChange(backgroundFromHex(hex))}
-      // The readout compares the bar with the text that sits on it.
-      background={fg}
-      contrastLabel="with the bar's text"
-      swatches={swatches}
-      onSwatchesChange={setSwatches}
-      maxSwatches={8}
-    />
+    <div className="space-y-2">
+      <div className="grid items-start gap-3 md:grid-cols-2">
+        <ColorPicker
+          label="Bar colour"
+          alpha={false}
+          // A field-height trigger; its panel is wider and opens straight down from it.
+          size="field"
+          className="w-full"
+          value={bg}
+          onValueChange={(hex) => onChange(backgroundFromHex(hex))}
+          // The readout compares the bar with the text that sits on it.
+          background={fg}
+          contrastLabel="with the bar's text"
+          swatches={swatches}
+          onSwatchesChange={setSwatches}
+          maxSwatches={8}
+        />
+        <TextColourField background={value} />
+      </div>
+      <p className="text-muted-foreground text-xs">
+        The text on the bar switches between dark and light so it stays readable.
+      </p>
+    </div>
+  );
+}
+
+/** The text colour chosen for the bar, as a field the height of the picker's: shown, not edited. */
+function TextColourField({ background }: { background: AnnouncementBackground }) {
+  const { bg, fg } = announcementColours(background);
+  const ratio = announcementContrast(background);
+  const grade = ratio >= 7 ? 'AAA' : ratio >= 4.5 ? 'AA' : ratio >= 3 ? 'AA large' : 'Low';
+  return (
+    <div
+      role="group"
+      title={`Contrast ${ratio.toFixed(1)} to 1`}
+      aria-label={`Text colour, chosen automatically: ${fg}, contrast ${ratio.toFixed(1)} to 1, ${grade}`}
+      className="border-input bg-muted/30 flex h-9 items-center gap-2 rounded-[10px] border p-[3px] pr-2.5"
+    >
+      {/* The letters in the text colour on the bar's colour: what the bar will look like. */}
+      <span
+        aria-hidden
+        className="ring-foreground/10 flex size-7 shrink-0 items-center justify-center rounded-[7px] text-xs font-semibold ring-1"
+        style={{ background: bg, color: fg }}
+      >
+        Aa
+      </span>
+      <span className="text-muted-foreground text-xs whitespace-nowrap">Text</span>
+      <span className="text-sm font-medium whitespace-nowrap uppercase tabular-nums">{fg}</span>
+      <span className="text-muted-foreground ml-auto text-xs whitespace-nowrap">{grade}</span>
+    </div>
   );
 }

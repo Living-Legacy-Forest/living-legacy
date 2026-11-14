@@ -499,6 +499,8 @@ export function ColorPicker({
     return `inset(0px ${round((size.W.get() - size.w.get()) * (1 - q), 2)}px ${round((size.H.get() - size.h.get()) * (1 - q), 2)}px 0px round ${round(radius + (openRadius - radius) * q, 2)}px)`;
   });
   const contentOpacity = useTransform(progress, [0.35, 0.9], [0, 1]);
+  // How open the panel is, held to 0-1 (the spring overshoots), for the shadow.
+  const shadow = useTransform(progress, (v) => clamp(v));
   const contentY = useTransform(progress, [0, 1], [-10, 0]);
 
   useLayoutEffect(() => {
@@ -727,7 +729,11 @@ export function ColorPicker({
       </button>
 
       {shown && (
-        <div className={styles.float} data-open={open || undefined}>
+        <motion.div
+          className={styles.float}
+          data-open={open || undefined}
+          style={{ '--picker-q': shadow } as unknown as CSSProperties}
+        >
           <motion.div
             ref={panelRef}
             id={`${uid}-panel`}
@@ -990,7 +996,7 @@ export function ColorPicker({
               </div>
             </motion.div>
           </motion.div>
-        </div>
+        </motion.div>
       )}
     </div>
   );

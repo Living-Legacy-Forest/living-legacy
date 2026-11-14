@@ -26,6 +26,17 @@ export type WhatsNewEntry = {
 
 export const whatsNew: WhatsNewEntry[] = [
   {
+    id: '2026-11-14-6',
+    title: 'A clearer Settings page',
+    items: [
+      {
+        title: 'Settings in two columns, with tabs to jump around',
+        body: 'Each part of Settings now has its title and what it is for on the left and the settings beside it, and a row of tabs along the top takes you to any part. It is still one page with one Save. The theme is now picked from three small pictures: light, dark or system.',
+        link: { label: 'Open Settings', to: '/settings' },
+      },
+    ],
+  },
+  {
     id: '2026-11-14-5',
     title: 'Pick any colour for an announcement',
     items: [

@@ -97,11 +97,13 @@
   z-index: 20;
   top: -1px;
   left: -1px;
-  filter: drop-shadow(0 18px 36px oklch(0% 0 0 / 0.12)) drop-shadow(0 2px 6px oklch(0% 0 0 / 0.06));
+  /* --picker-q is how open the panel is, 0 to 1, so the shadow arrives and leaves with it instead of hanging on after it closes. */
+  filter: drop-shadow(0 18px 36px oklch(0% 0 0 / calc(0.12 * var(--picker-q, 1))))
+    drop-shadow(0 2px 6px oklch(0% 0 0 / calc(0.06 * var(--picker-q, 1))));
   pointer-events: none;
 }
 :global(.dark) .float {
-  filter: drop-shadow(0 20px 44px oklch(0% 0 0 / 0.5));
+  filter: drop-shadow(0 20px 44px oklch(0% 0 0 / calc(0.5 * var(--picker-q, 1))));
 }
 .float[data-open] {
   pointer-events: auto;
@@ -507,7 +509,8 @@
 }
 /* The header repeats the trigger, so opening does not change what is under the pointer. */
 .root[data-size='field'] .head {
-  height: 36px;
+  /* 34px: the panel's own 1px border brings the header to the trigger's 36px, so the row does not shift when it opens. */
+  height: 34px;
   gap: 8px;
   padding: 3px 6px 3px 3px;
 }

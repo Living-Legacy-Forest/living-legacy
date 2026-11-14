@@ -10,8 +10,11 @@ import type { HealthStatus } from '@/lib/system-status';
 type Verdict = { status: HealthStatus; detail: string };
 export type HealthCheck = Verdict & { key: string; title: string };
 
-/** D1's limit per database on the Workers Paid plan. */
-export const DATABASE_LIMIT_BYTES = 10 * 1024 ** 3;
+/**
+ * The D1 storage the Workers Paid plan includes (Cloudflare's dashboard shows it as "/ 5 GB").
+ * More is billed, up to 10 GB for one database, so this is the allowance rather than a hard cap.
+ */
+export const DATABASE_LIMIT_BYTES = 5 * 1024 ** 3;
 const DATABASE_WARN_SHARE = 0.8;
 const DATABASE_PROBLEM_SHARE = 0.95;
 const DATABASE_SLOW_MS = 1_000;
@@ -42,7 +45,7 @@ export function judgeDatabase(probe: { ms: number; bytes: number } | Failed): Ve
         : full || probe.ms > DATABASE_SLOW_MS
           ? 'warning'
           : 'ok',
-    detail: `Answered in ${formatInteger(probe.ms)} ms. ${formatBytes(probe.bytes)} used of ${formatBytes(DATABASE_LIMIT_BYTES)}${full ? ', close to the limit' : ''}.`,
+    detail: `Answered in ${formatInteger(probe.ms)} ms. ${formatBytes(probe.bytes)} used of ${formatBytes(DATABASE_LIMIT_BYTES)}${full ? ', close to the included storage' : ''}.`,
   };
 }
 

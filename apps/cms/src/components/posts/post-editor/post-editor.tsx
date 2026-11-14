@@ -36,6 +36,10 @@ import { EditorToolbar } from './editor-toolbar';
 import type { PostAccess } from './post-access';
 import { PresenceNotice, usePostPresence } from './post-presence';
 import { PropertiesPanel } from './properties-panel';
+import {
+  ResizablePanel,
+  ResizablePanels,
+} from '@/components/arc/resizable-panels/resizable-panels';
 import { type PostEditorState, usePostEditor } from './use-post-editor';
 
 // Browser only: the editor has nothing to server-render, and keeping
@@ -74,52 +78,80 @@ export function PostEditor({
     <div
       data-slot="post-editor"
       data-revealing={reveal || undefined}
-      className={cn(
-        'grid flex-1 gap-6 lg:gap-0 lg:transition-[grid-template-columns] lg:duration-200 lg:ease-[cubic-bezier(0.25,1,0.5,1)] motion-reduce:lg:transition-none',
-        showProperties ? 'lg:grid-cols-[minmax(0,1fr)_17rem]' : 'lg:grid-cols-[minmax(0,1fr)_0rem]'
-      )}
+      className="flex flex-1 flex-col"
     >
-      <div
+      <ResizablePanels
+        label="Editor and properties"
         className={cn(
-          'bg-background flex min-w-0 flex-col overflow-hidden rounded-lg border lg:h-[calc(100svh-7.5rem)] lg:transition-[margin-right] lg:duration-200 motion-reduce:lg:transition-none',
-          showProperties && 'lg:mr-6'
+          'flex-1',
+          // Below lg the panel sits under the editor, as before: the group stacks and its
+          // divider goes. From lg, hiding the panel also hides the divider.
+          'max-lg:block! max-lg:[&>*+*]:mt-6 max-lg:[&>[role=separator]]:hidden',
+          !showProperties && '[&>[role=separator]]:hidden'
         )}
       >
-        <PresenceNotice presence={presence} dirty={editor.dirty} onReload={() => void onReload()} />
-        <EditorToolbar
-          editor={editor}
-          showProperties={showProperties}
-          onToggleProperties={() => setShowProperties((v) => !v)}
-        />
-        <div className="min-h-[24rem] flex-1 md:min-h-[32rem] lg:min-h-0">
-          <ClientOnly fallback={<DocumentEditorSkeleton />}>
-            <Suspense fallback={<DocumentEditorSkeleton />}>
-              <DocumentEditor
-                key={editor.bodyKey}
-                title={values.title}
-                onTitleChange={editor.setTitle}
-                body={values.body}
-                onBodyChange={(body) => update({ body })}
-                readOnly={editor.contentLocked}
-              />
-            </Suspense>
-          </ClientOnly>
-        </div>
-      </div>
+        <ResizablePanel
+          id="post-editor-main"
+          label="Editor"
+          defaultSize={76}
+          minSize={420}
+          className="max-lg:max-w-none!"
+        >
+          <div
+            data-slot="post-editor-main"
+            className={cn(
+              'bg-background flex min-w-0 flex-col overflow-hidden rounded-lg border lg:h-[calc(100svh-7.5rem)]',
+              showProperties && 'lg:mr-6'
+            )}
+          >
+            <PresenceNotice
+              presence={presence}
+              dirty={editor.dirty}
+              onReload={() => void onReload()}
+            />
+            <EditorToolbar
+              editor={editor}
+              showProperties={showProperties}
+              onToggleProperties={() => setShowProperties((v) => !v)}
+            />
+            <div className="min-h-[24rem] flex-1 md:min-h-[32rem] lg:min-h-0">
+              <ClientOnly fallback={<DocumentEditorSkeleton />}>
+                <Suspense fallback={<DocumentEditorSkeleton />}>
+                  <DocumentEditor
+                    key={editor.bodyKey}
+                    title={values.title}
+                    onTitleChange={editor.setTitle}
+                    body={values.body}
+                    onBodyChange={(body) => update({ body })}
+                    readOnly={editor.contentLocked}
+                  />
+                </Suspense>
+              </ClientOnly>
+            </div>
+          </div>
+        </ResizablePanel>
 
-      <aside
-        id="post-properties"
-        className={cn(
-          // From lg it matches the editor's height and scrolls on its own, so a long
-          // panel never drags the editor with it. No visible bar, like the app sidebar.
-          'text-ui lg:no-scrollbar min-w-0 space-y-6 lg:sticky lg:top-6 lg:h-[calc(100svh-7.5rem)] lg:self-start lg:overflow-x-hidden lg:overflow-y-auto lg:overscroll-contain lg:pb-6 lg:transition-[padding] lg:duration-150 motion-reduce:lg:transition-none',
-          // Hidden only on lg and up: below that the panel sits under the editor
-          // and has no toggle.
-          showProperties ? 'lg:border-l lg:pl-6' : 'lg:hidden'
-        )}
-      >
-        <PropertiesPanel editor={editor} focus={focus} />
-      </aside>
+        <ResizablePanel
+          id="post-properties-pane"
+          label="Properties"
+          defaultSize={24}
+          minSize={240}
+          maxSize={560}
+          // Hidden only on lg and up: below that the panel sits under the editor and has no toggle.
+          className={cn('max-lg:max-w-none!', !showProperties && 'lg:hidden!')}
+        >
+          <aside
+            id="post-properties"
+            className={cn(
+              // From lg it matches the editor's height and scrolls on its own, so a long
+              // panel never drags the editor with it. No visible bar, like the app sidebar.
+              'text-ui lg:no-scrollbar min-w-0 space-y-6 lg:h-[calc(100svh-7.5rem)] lg:overflow-x-hidden lg:overflow-y-auto lg:overscroll-contain lg:pb-6 lg:pl-6'
+            )}
+          >
+            <PropertiesPanel editor={editor} focus={focus} />
+          </aside>
+        </ResizablePanel>
+      </ResizablePanels>
 
       <AlertDialog open={editor.blocker.status === 'blocked'}>
         <AlertDialogContent>

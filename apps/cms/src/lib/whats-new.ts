@@ -26,6 +26,16 @@ export type WhatsNewEntry = {
 
 export const whatsNew: WhatsNewEntry[] = [
   {
+    id: '2026-11-14-4',
+    title: 'Resize the post panel',
+    items: [
+      {
+        title: 'Make the properties panel wider or narrower',
+        body: 'When you edit a post on a large screen, drag the line between the writing area and the panel on the right to give either one more room. Double-click the line to put it back, or focus it and use the arrow keys. The button above the editor still hides the panel.',
+      },
+    ],
+  },
+  {
     id: '2026-11-14-3',
     title: 'Media storage on the dashboard',
     items: [

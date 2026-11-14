@@ -959,26 +959,26 @@
   --row: 6;
 }
 
-[data-slot='post-editor'][data-revealing] > :first-child {
+[data-slot='post-editor'][data-revealing] [data-slot='post-editor-main'] {
   animation: dashboard-rise 500ms cubic-bezier(0.23, 1, 0.32, 1) 120ms backwards;
 }
-[data-slot='post-editor'][data-revealing] > :first-child > header {
+[data-slot='post-editor'][data-revealing] [data-slot='post-editor-main'] > header {
   animation: dashboard-text 450ms cubic-bezier(0.23, 1, 0.32, 1) 260ms backwards;
 }
-[data-slot='post-editor'][data-revealing] > aside > * {
+[data-slot='post-editor'][data-revealing] #post-properties > * {
   animation: dashboard-text 450ms cubic-bezier(0.23, 1, 0.32, 1) backwards;
   animation-delay: calc(240ms + var(--section, 0) * 70ms);
 }
-[data-slot='post-editor'][data-revealing] > aside > :nth-child(2) {
+[data-slot='post-editor'][data-revealing] #post-properties > :nth-child(2) {
   --section: 1;
 }
-[data-slot='post-editor'][data-revealing] > aside > :nth-child(3) {
+[data-slot='post-editor'][data-revealing] #post-properties > :nth-child(3) {
   --section: 2;
 }
-[data-slot='post-editor'][data-revealing] > aside > :nth-child(4) {
+[data-slot='post-editor'][data-revealing] #post-properties > :nth-child(4) {
   --section: 3;
 }
-[data-slot='post-editor'][data-revealing] > aside > :nth-child(n + 5) {
+[data-slot='post-editor'][data-revealing] #post-properties > :nth-child(n + 5) {
   --section: 4;
 }
 
@@ -1033,14 +1033,14 @@
 @media (prefers-reduced-motion: reduce) {
   /* The panes still fade in so nothing pops; what is inside is simply there. */
   [data-slot='list-page'][data-revealing] [data-slot='list-panes'],
-  [data-slot='post-editor'][data-revealing] > :first-child {
+  [data-slot='post-editor'][data-revealing] [data-slot='post-editor-main'] {
     animation: dashboard-fade 300ms ease-out backwards;
   }
   [data-slot='list-page'][data-revealing] [data-slot='list-toolbar'] > :not(h1),
   [data-slot='list-page'][data-revealing] [data-slot='list-panes'] > section > :first-child,
   [data-slot='list-page'][data-revealing] [data-slot='list-rows'] > *,
-  [data-slot='post-editor'][data-revealing] > :first-child > header,
-  [data-slot='post-editor'][data-revealing] > aside > * {
+  [data-slot='post-editor'][data-revealing] [data-slot='post-editor-main'] > header,
+  [data-slot='post-editor'][data-revealing] #post-properties > * {
     /* Beats the per-step rules above. */
     animation: none !important;
   }

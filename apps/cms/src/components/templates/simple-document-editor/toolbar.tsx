@@ -5,7 +5,6 @@ import type { Editor } from '@tiptap/react';
 import {
   AlignLeft,
   Ban,
-  Baseline,
   ChevronDown,
   Code2,
   ImageIcon,
@@ -159,11 +158,14 @@ const ColorMenu = ({
         />
       }
     >
-      <Baseline className="size-4" />
-      <span
-        className="-mt-0.5 h-1 w-4 rounded-full"
-        style={{ background: highlight ?? text ?? 'currentColor' }}
-      />
+      {/* A column of its own: the button's layout can put a bare bar beside the letter. */}
+      <span aria-hidden className="flex flex-col items-center gap-0.5">
+        <span className="text-[0.9375rem] leading-none font-semibold">A</span>
+        <span
+          className="h-[3px] w-4 rounded-full"
+          style={{ background: highlight ?? text ?? 'currentColor' }}
+        />
+      </span>
     </PopoverTrigger>
     <PopoverContent align="start" className="w-auto space-y-3 p-3">
       <div>

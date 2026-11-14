@@ -16,17 +16,17 @@ describe('judgeDatabase', () => {
   it('is ok when it answers quickly and has room', () => {
     expect(judgeDatabase({ ms: 12, bytes: 42 * MB })).toEqual({
       status: 'ok',
-      detail: 'Answered in 12 ms. 42 MB used of 10 GB.',
+      detail: 'Answered in 12 ms. 42 MB used of 5 GB.',
     });
   });
 
   it('is a warning when slow or 80% full, and a problem at 95%', () => {
     expect(judgeDatabase({ ms: 1500, bytes: 42 * MB }).status).toBe('warning');
-    expect(judgeDatabase({ ms: 12, bytes: 8.1 * GB })).toEqual({
+    expect(judgeDatabase({ ms: 12, bytes: 4.1 * GB })).toEqual({
       status: 'warning',
-      detail: 'Answered in 12 ms. 8.1 GB used of 10 GB, close to the limit.',
+      detail: 'Answered in 12 ms. 4.1 GB used of 5 GB, close to the included storage.',
     });
-    expect(judgeDatabase({ ms: 12, bytes: 9.6 * GB }).status).toBe('problem');
+    expect(judgeDatabase({ ms: 12, bytes: 4.8 * GB }).status).toBe('problem');
   });
 
   it('is a problem when it does not answer', () => {

@@ -37,7 +37,7 @@ export function libraryMeter(
   };
 }
 
-/** The database against its size limit. */
+/** The database against the storage its plan includes (more is billed, not refused). */
 export function databaseMeter(usedBytes: number, limitBytes: number): Meter {
   const { size, unit, decimals } = unitFor(usedBytes);
   return {
@@ -46,7 +46,7 @@ export function databaseMeter(usedBytes: number, limitBytes: number): Meter {
     decimals,
     limit: limitBytes / size,
     freeLabel: 'Left',
-    overLabel: 'Over the limit',
+    overLabel: 'Over allowance',
     segments: [{ id: 'database', label: 'Database', value: usedBytes / size }],
   };
 }

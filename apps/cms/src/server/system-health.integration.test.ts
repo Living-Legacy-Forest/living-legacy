@@ -64,7 +64,7 @@ describe('runHealthChecks', () => {
       'email',
     ]);
     expect(checks.every((c) => c.status === 'ok')).toBe(true);
-    expect(byKey(checks).database?.detail).toMatch(/^Answered in \d+ ms\. .+ used of 10 GB\.$/);
+    expect(byKey(checks).database?.detail).toMatch(/^Answered in \d+ ms\. .+ used of 5 GB\.$/);
   });
 
   it('leaves out the website and storage when asked not to reach out', async () => {

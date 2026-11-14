@@ -1,6 +1,11 @@
 import { type Permission, type Role, can } from '@ll/content';
 import {
   ActivityIcon,
+  AudienceIcon,
+  BrowserIcon,
+  ChartAreaIcon,
+  InboxIcon,
+  RouteIcon,
   ArrowRightLeft,
   CalendarClockIcon,
   IntegrationsIcon,
@@ -36,6 +41,12 @@ export type NavItem = {
     | '/posts/tags'
     | '/profile'
     | '/activity'
+    | '/analytics'
+    | '/analytics/audience'
+    | '/analytics/enquiries'
+    | '/analytics/pages'
+    | '/analytics/traffic'
+    | '/analytics/visitors'
     | '/integrations'
     | '/checks'
     | '/announcements'
@@ -51,8 +62,7 @@ export type NavItem = {
     | '/system'
     | '/team'
     | '/testimonials'
-    | '/users'
-    | '/visitors';
+    | '/users';
   /** Shown when the person has any of these. */
   permission?: Permission | Permission[];
   items?: NavItem[];
@@ -113,10 +123,35 @@ export const navGroups: NavGroup[] = [
     ],
   },
   {
+    label: 'Analytics',
+    items: [
+      { title: 'Overview', icon: ChartAreaIcon, to: '/analytics', permission: 'posts:publish' },
+      { title: 'Pages', icon: BrowserIcon, to: '/analytics/pages', permission: 'posts:publish' },
+      { title: 'Traffic', icon: RouteIcon, to: '/analytics/traffic', permission: 'posts:publish' },
+      {
+        title: 'Audience',
+        icon: AudienceIcon,
+        to: '/analytics/audience',
+        permission: 'posts:publish',
+      },
+      {
+        title: 'Visitors',
+        icon: GlobeIcon,
+        to: '/analytics/visitors',
+        permission: 'posts:publish',
+      },
+      {
+        title: 'Enquiries',
+        icon: InboxIcon,
+        to: '/analytics/enquiries',
+        permission: 'posts:publish',
+      },
+    ],
+  },
+  {
     label: 'Admin',
     items: [
       { title: 'Activity', icon: ActivityIcon, to: '/activity', permission: 'posts:publish' },
-      { title: 'Visitors', icon: GlobeIcon, to: '/visitors', permission: 'posts:publish' },
       { title: 'Redirects', icon: ArrowRightLeft, to: '/redirects', permission: 'redirects:write' },
       {
         title: 'Search & replace',

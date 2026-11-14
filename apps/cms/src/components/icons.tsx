@@ -386,3 +386,9 @@ export const FolderPlusIcon = animated(AnimatedFolderAddIcon);
 export const MailIcon = animated(AnimatedMail01Icon);
 export const MapPinIcon = animated(AnimatedLocation01Icon);
 export const NewspaperIcon = animated(AnimatedNewspaperIcon);
+
+// Analytics. No animated drawings for these, so they stay still.
+export const BrowserIcon = make(H.BrowserIcon);
+export const RouteIcon = make(H.Route01Icon);
+export const AudienceIcon = make(H.UserGroupIcon);
+export const InboxIcon = make(H.InboxIcon);

@@ -13,8 +13,15 @@ import { Route as AppRouteImport } from './routes/_app'
 import { Route as LoginRouteImport } from './routes/login'
 import { Route as McpRouteImport } from './routes/mcp'
 import { Route as AppIndexRouteImport } from './routes/_app/index'
+import { Route as AppAnalyticsRouteRouteImport } from './routes/_app/analytics/route'
 import { Route as ApiBuildRouteImport } from './routes/api/build'
 import { Route as AppActivityIndexRouteImport } from './routes/_app/activity/index'
+import { Route as AppAnalyticsIndexRouteImport } from './routes/_app/analytics/index'
+import { Route as AppAnalyticsAudienceRouteImport } from './routes/_app/analytics/audience'
+import { Route as AppAnalyticsEnquiriesRouteImport } from './routes/_app/analytics/enquiries'
+import { Route as AppAnalyticsPagesRouteImport } from './routes/_app/analytics/pages'
+import { Route as AppAnalyticsTrafficRouteImport } from './routes/_app/analytics/traffic'
+import { Route as AppAnalyticsVisitorsRouteImport } from './routes/_app/analytics/visitors'
 import { Route as AppAnnouncementsIndexRouteImport } from './routes/_app/announcements/index'
 import { Route as AppApiKeysIndexRouteImport } from './routes/_app/api-keys/index'
 import { Route as AppChecksIndexRouteImport } from './routes/_app/checks/index'
@@ -75,6 +82,11 @@ const AppIndexRoute = AppIndexRouteImport.update({
   path: '/',
   getParentRoute: () => AppRoute,
 } as any)
+const AppAnalyticsRouteRoute = AppAnalyticsRouteRouteImport.update({
+  id: '/analytics',
+  path: '/analytics',
+  getParentRoute: () => AppRoute,
+} as any)
 const ApiBuildRoute = ApiBuildRouteImport.update({
   id: '/api/build',
   path: '/api/build',
@@ -84,6 +96,36 @@ const AppActivityIndexRoute = AppActivityIndexRouteImport.update({
   id: '/activity/',
   path: '/activity/',
   getParentRoute: () => AppRoute,
+} as any)
+const AppAnalyticsIndexRoute = AppAnalyticsIndexRouteImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => AppAnalyticsRouteRoute,
+} as any)
+const AppAnalyticsAudienceRoute = AppAnalyticsAudienceRouteImport.update({
+  id: '/audience',
+  path: '/audience',
+  getParentRoute: () => AppAnalyticsRouteRoute,
+} as any)
+const AppAnalyticsEnquiriesRoute = AppAnalyticsEnquiriesRouteImport.update({
+  id: '/enquiries',
+  path: '/enquiries',
+  getParentRoute: () => AppAnalyticsRouteRoute,
+} as any)
+const AppAnalyticsPagesRoute = AppAnalyticsPagesRouteImport.update({
+  id: '/pages',
+  path: '/pages',
+  getParentRoute: () => AppAnalyticsRouteRoute,
+} as any)
+const AppAnalyticsTrafficRoute = AppAnalyticsTrafficRouteImport.update({
+  id: '/traffic',
+  path: '/traffic',
+  getParentRoute: () => AppAnalyticsRouteRoute,
+} as any)
+const AppAnalyticsVisitorsRoute = AppAnalyticsVisitorsRouteImport.update({
+  id: '/visitors',
+  path: '/visitors',
+  getParentRoute: () => AppAnalyticsRouteRoute,
 } as any)
 const AppAnnouncementsIndexRoute = AppAnnouncementsIndexRouteImport.update({
   id: '/announcements/',
@@ -291,7 +333,13 @@ export interface FileRoutesByFullPath {
   '/': typeof AppIndexRoute
   '/login': typeof LoginRoute
   '/mcp': typeof McpRoute
+  '/analytics': typeof AppAnalyticsRouteRouteWithChildren
   '/api/build': typeof ApiBuildRoute
+  '/analytics/audience': typeof AppAnalyticsAudienceRoute
+  '/analytics/enquiries': typeof AppAnalyticsEnquiriesRoute
+  '/analytics/pages': typeof AppAnalyticsPagesRoute
+  '/analytics/traffic': typeof AppAnalyticsTrafficRoute
+  '/analytics/visitors': typeof AppAnalyticsVisitorsRoute
   '/events/overview': typeof AppEventsOverviewRoute
   '/legal/$slug': typeof AppLegalSlugRoute
   '/posts/$postId': typeof AppPostsPostIdRoute
@@ -304,6 +352,7 @@ export interface FileRoutesByFullPath {
   '/preview/legal/$slug': typeof PreviewLegalSlugRoute
   '/preview/posts/$postId': typeof PreviewPostsPostIdRoute
   '/activity/': typeof AppActivityIndexRoute
+  '/analytics/': typeof AppAnalyticsIndexRoute
   '/announcements/': typeof AppAnnouncementsIndexRoute
   '/api-keys/': typeof AppApiKeysIndexRoute
   '/checks/': typeof AppChecksIndexRoute
@@ -339,6 +388,11 @@ export interface FileRoutesByTo {
   '/mcp': typeof McpRoute
   '/api/build': typeof ApiBuildRoute
   '/': typeof AppIndexRoute
+  '/analytics/audience': typeof AppAnalyticsAudienceRoute
+  '/analytics/enquiries': typeof AppAnalyticsEnquiriesRoute
+  '/analytics/pages': typeof AppAnalyticsPagesRoute
+  '/analytics/traffic': typeof AppAnalyticsTrafficRoute
+  '/analytics/visitors': typeof AppAnalyticsVisitorsRoute
   '/events/overview': typeof AppEventsOverviewRoute
   '/legal/$slug': typeof AppLegalSlugRoute
   '/posts/$postId': typeof AppPostsPostIdRoute
@@ -351,6 +405,7 @@ export interface FileRoutesByTo {
   '/preview/legal/$slug': typeof PreviewLegalSlugRoute
   '/preview/posts/$postId': typeof PreviewPostsPostIdRoute
   '/activity': typeof AppActivityIndexRoute
+  '/analytics': typeof AppAnalyticsIndexRoute
   '/announcements': typeof AppAnnouncementsIndexRoute
   '/api-keys': typeof AppApiKeysIndexRoute
   '/checks': typeof AppChecksIndexRoute
@@ -386,8 +441,14 @@ export interface FileRoutesById {
   '/_app': typeof AppRouteWithChildren
   '/login': typeof LoginRoute
   '/mcp': typeof McpRoute
+  '/_app/analytics': typeof AppAnalyticsRouteRouteWithChildren
   '/api/build': typeof ApiBuildRoute
   '/_app/': typeof AppIndexRoute
+  '/_app/analytics/audience': typeof AppAnalyticsAudienceRoute
+  '/_app/analytics/enquiries': typeof AppAnalyticsEnquiriesRoute
+  '/_app/analytics/pages': typeof AppAnalyticsPagesRoute
+  '/_app/analytics/traffic': typeof AppAnalyticsTrafficRoute
+  '/_app/analytics/visitors': typeof AppAnalyticsVisitorsRoute
   '/_app/events/overview': typeof AppEventsOverviewRoute
   '/_app/legal/$slug': typeof AppLegalSlugRoute
   '/_app/posts/$postId': typeof AppPostsPostIdRoute
@@ -400,6 +461,7 @@ export interface FileRoutesById {
   '/preview/legal/$slug': typeof PreviewLegalSlugRoute
   '/preview/posts/$postId': typeof PreviewPostsPostIdRoute
   '/_app/activity/': typeof AppActivityIndexRoute
+  '/_app/analytics/': typeof AppAnalyticsIndexRoute
   '/_app/announcements/': typeof AppAnnouncementsIndexRoute
   '/_app/api-keys/': typeof AppApiKeysIndexRoute
   '/_app/checks/': typeof AppChecksIndexRoute
@@ -436,7 +498,13 @@ export interface FileRouteTypes {
     | '/'
     | '/login'
     | '/mcp'
+    | '/analytics'
     | '/api/build'
+    | '/analytics/audience'
+    | '/analytics/enquiries'
+    | '/analytics/pages'
+    | '/analytics/traffic'
+    | '/analytics/visitors'
     | '/events/overview'
     | '/legal/$slug'
     | '/posts/$postId'
@@ -449,6 +517,7 @@ export interface FileRouteTypes {
     | '/preview/legal/$slug'
     | '/preview/posts/$postId'
     | '/activity/'
+    | '/analytics/'
     | '/announcements/'
     | '/api-keys/'
     | '/checks/'
@@ -484,6 +553,11 @@ export interface FileRouteTypes {
     | '/mcp'
     | '/api/build'
     | '/'
+    | '/analytics/audience'
+    | '/analytics/enquiries'
+    | '/analytics/pages'
+    | '/analytics/traffic'
+    | '/analytics/visitors'
     | '/events/overview'
     | '/legal/$slug'
     | '/posts/$postId'
@@ -496,6 +570,7 @@ export interface FileRouteTypes {
     | '/preview/legal/$slug'
     | '/preview/posts/$postId'
     | '/activity'
+    | '/analytics'
     | '/announcements'
     | '/api-keys'
     | '/checks'
@@ -530,8 +605,14 @@ export interface FileRouteTypes {
     | '/_app'
     | '/login'
     | '/mcp'
+    | '/_app/analytics'
     | '/api/build'
     | '/_app/'
+    | '/_app/analytics/audience'
+    | '/_app/analytics/enquiries'
+    | '/_app/analytics/pages'
+    | '/_app/analytics/traffic'
+    | '/_app/analytics/visitors'
     | '/_app/events/overview'
     | '/_app/legal/$slug'
     | '/_app/posts/$postId'
@@ -544,6 +625,7 @@ export interface FileRouteTypes {
     | '/preview/legal/$slug'
     | '/preview/posts/$postId'
     | '/_app/activity/'
+    | '/_app/analytics/'
     | '/_app/announcements/'
     | '/_app/api-keys/'
     | '/_app/checks/'
@@ -625,6 +707,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppIndexRouteImport
       parentRoute: typeof AppRoute
     }
+    '/_app/analytics': {
+      id: '/_app/analytics'
+      path: '/analytics'
+      fullPath: '/analytics'
+      preLoaderRoute: typeof AppAnalyticsRouteRouteImport
+      parentRoute: typeof AppRoute
+    }
     '/api/build': {
       id: '/api/build'
       path: '/api/build'
@@ -638,6 +727,48 @@ declare module '@tanstack/react-router' {
       fullPath: '/activity/'
       preLoaderRoute: typeof AppActivityIndexRouteImport
       parentRoute: typeof AppRoute
+    }
+    '/_app/analytics/': {
+      id: '/_app/analytics/'
+      path: '/'
+      fullPath: '/analytics/'
+      preLoaderRoute: typeof AppAnalyticsIndexRouteImport
+      parentRoute: typeof AppAnalyticsRouteRoute
+    }
+    '/_app/analytics/audience': {
+      id: '/_app/analytics/audience'
+      path: '/audience'
+      fullPath: '/analytics/audience'
+      preLoaderRoute: typeof AppAnalyticsAudienceRouteImport
+      parentRoute: typeof AppAnalyticsRouteRoute
+    }
+    '/_app/analytics/enquiries': {
+      id: '/_app/analytics/enquiries'
+      path: '/enquiries'
+      fullPath: '/analytics/enquiries'
+      preLoaderRoute: typeof AppAnalyticsEnquiriesRouteImport
+      parentRoute: typeof AppAnalyticsRouteRoute
+    }
+    '/_app/analytics/pages': {
+      id: '/_app/analytics/pages'
+      path: '/pages'
+      fullPath: '/analytics/pages'
+      preLoaderRoute: typeof AppAnalyticsPagesRouteImport
+      parentRoute: typeof AppAnalyticsRouteRoute
+    }
+    '/_app/analytics/traffic': {
+      id: '/_app/analytics/traffic'
+      path: '/traffic'
+      fullPath: '/analytics/traffic'
+      preLoaderRoute: typeof AppAnalyticsTrafficRouteImport
+      parentRoute: typeof AppAnalyticsRouteRoute
+    }
+    '/_app/analytics/visitors': {
+      id: '/_app/analytics/visitors'
+      path: '/visitors'
+      fullPath: '/analytics/visitors'
+      preLoaderRoute: typeof AppAnalyticsVisitorsRouteImport
+      parentRoute: typeof AppAnalyticsRouteRoute
     }
     '/_app/announcements/': {
       id: '/_app/announcements/'
@@ -922,7 +1053,29 @@ declare module '@tanstack/react-router' {
   }
 }
 
+interface AppAnalyticsRouteRouteChildren {
+  AppAnalyticsAudienceRoute: typeof AppAnalyticsAudienceRoute
+  AppAnalyticsEnquiriesRoute: typeof AppAnalyticsEnquiriesRoute
+  AppAnalyticsPagesRoute: typeof AppAnalyticsPagesRoute
+  AppAnalyticsTrafficRoute: typeof AppAnalyticsTrafficRoute
+  AppAnalyticsVisitorsRoute: typeof AppAnalyticsVisitorsRoute
+  AppAnalyticsIndexRoute: typeof AppAnalyticsIndexRoute
+}
+
+const AppAnalyticsRouteRouteChildren: AppAnalyticsRouteRouteChildren = {
+  AppAnalyticsAudienceRoute: AppAnalyticsAudienceRoute,
+  AppAnalyticsEnquiriesRoute: AppAnalyticsEnquiriesRoute,
+  AppAnalyticsPagesRoute: AppAnalyticsPagesRoute,
+  AppAnalyticsTrafficRoute: AppAnalyticsTrafficRoute,
+  AppAnalyticsVisitorsRoute: AppAnalyticsVisitorsRoute,
+  AppAnalyticsIndexRoute: AppAnalyticsIndexRoute,
+}
+
+const AppAnalyticsRouteRouteWithChildren =
+  AppAnalyticsRouteRoute._addFileChildren(AppAnalyticsRouteRouteChildren)
+
 interface AppRouteChildren {
+  AppAnalyticsRouteRoute: typeof AppAnalyticsRouteRouteWithChildren
   AppIndexRoute: typeof AppIndexRoute
   AppEventsOverviewRoute: typeof AppEventsOverviewRoute
   AppLegalSlugRoute: typeof AppLegalSlugRoute
@@ -955,6 +1108,7 @@ interface AppRouteChildren {
 }
 
 const AppRouteChildren: AppRouteChildren = {
+  AppAnalyticsRouteRoute: AppAnalyticsRouteRouteWithChildren,
   AppIndexRoute: AppIndexRoute,
   AppEventsOverviewRoute: AppEventsOverviewRoute,
   AppLegalSlugRoute: AppLegalSlugRoute,

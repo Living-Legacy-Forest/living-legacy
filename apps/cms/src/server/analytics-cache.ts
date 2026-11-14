@@ -41,10 +41,12 @@ export async function readThrough<T>(
   d1: D1Database,
   key: string,
   fetcher: () => Promise<T>,
-  now = Date.now()
+  now = Date.now(),
+  /** How old a stored answer may be. Answers the job does not renew want a shorter one. */
+  maxAgeMs = USABLE_MS
 ): Promise<T> {
   const stored = await read(d1, key);
-  if (stored && now - stored.at < USABLE_MS) return JSON.parse(stored.value) as T;
+  if (stored && now - stored.at < maxAgeMs) return JSON.parse(stored.value) as T;
   try {
     const value = await fetcher();
     await write(d1, key, value, now);

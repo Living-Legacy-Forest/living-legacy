@@ -10,7 +10,7 @@ type Secrets = {
   POSTHOG_API_HOST?: string;
 };
 
-function analyticsKeys() {
+export function analyticsKeys() {
   const {
     POSTHOG_PERSONAL_API_KEY: key,
     POSTHOG_PROJECT_ID: project,
@@ -33,7 +33,7 @@ export type BlogViews = {
 };
 
 /** Runs one HogQL query. PostHog can be slow over months of pageviews, so it has a long timeout. */
-async function hogql<Row>(
+export async function hogql<Row>(
   keys: NonNullable<ReturnType<typeof analyticsKeys>>,
   query: string,
   values: Record<string, string>,

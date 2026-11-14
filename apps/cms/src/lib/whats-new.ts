@@ -9,7 +9,14 @@ export type WhatsNewItem = {
   /** Where to try it. */
   link?: {
     label: string;
-    to: '/settings' | '/media' | '/profile' | '/events/overview' | '/search-replace' | '/system';
+    to:
+      | '/settings'
+      | '/media'
+      | '/profile'
+      | '/events/overview'
+      | '/search-replace'
+      | '/system'
+      | '/visitors';
     hash?: string;
   };
 };
@@ -25,6 +32,17 @@ export type WhatsNewEntry = {
 };
 
 export const whatsNew: WhatsNewEntry[] = [
+  {
+    id: '2026-11-14-7',
+    title: 'See who visits the website',
+    items: [
+      {
+        title: 'A Visitors page',
+        body: 'Visitors, under Admin, lists recent visits to the website, newest first: where each visitor was, the device and browser they used, where they came from (a search engine, social media, another site or directly), the first and last page they read, and how many pages they viewed. Pick 7, 30 or 90 days. No IP addresses are shown.',
+        link: { label: 'Open Visitors', to: '/visitors' },
+      },
+    ],
+  },
   {
     id: '2026-11-14-6',
     title: 'A clearer Settings page',

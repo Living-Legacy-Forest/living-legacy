@@ -162,7 +162,7 @@ export function ProfilePage({
     <div
       data-slot="stack-page"
       data-revealing={revealing || undefined}
-      className="mx-auto w-full max-w-2xl"
+      className="mx-auto w-full max-w-4xl"
     >
       <div className="mb-8 space-y-1">
         <h1 data-slot="page-title" className="text-xl font-semibold tracking-tight">
@@ -395,7 +395,7 @@ function ChangeEmail({ currentEmail }: { currentEmail: string }) {
         </div>
       </SettingsRow>
       {editing && (
-        <form noValidate onSubmit={send} className="flex flex-wrap gap-2 px-4 py-3">
+        <form noValidate onSubmit={send} className="flex flex-wrap gap-2 max-md:px-4 max-md:py-3">
           <Input
             id="profile-email"
             type="email"
@@ -415,7 +415,7 @@ function ChangeEmail({ currentEmail }: { currentEmail: string }) {
         </form>
       )}
       {sentTo && (
-        <p className="text-muted-foreground px-4 py-3 text-xs">
+        <p className="text-muted-foreground text-xs max-md:px-4 max-md:py-3">
           We sent a confirmation link to <span className="text-foreground">{sentTo}</span>. Your
           sign-in email changes once you click it.
         </p>

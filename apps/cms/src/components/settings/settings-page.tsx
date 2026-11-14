@@ -28,6 +28,7 @@ import { Input } from '@/components/ui/input';
 import { NumberField } from '@/components/ui/number-field';
 import { BrandRulesEditor } from '@/components/settings/brand-rules-editor';
 import { SettingsRow, SettingsSection } from '@/components/settings/settings-section';
+import { ThemeTiles } from '@/components/settings/theme-tiles';
 import { MediaPicker, useMediaItem } from '@/components/media/image-field';
 import {
   Select,
@@ -173,33 +174,6 @@ function timeZoneItems(): { value: TimeZone; label: string }[] {
   }));
 }
 
-const themeItems: { value: Theme; label: ReactNode }[] = (Object.keys(themeLabels) as Theme[]).map(
-  (value) => ({
-    value,
-    label: (
-      <span className="flex items-center gap-1.5">
-        <ThemeSwatch theme={value} />
-        <span className="text-[10px] font-semibold tracking-tight">Aa</span>
-        {themeLabels[value]}
-      </span>
-    ),
-  })
-);
-
-function ThemeSwatch({ theme }: { theme: Theme }) {
-  return (
-    <span
-      aria-hidden
-      className={cn(
-        'ring-border inline-block size-2.5 shrink-0 rounded-full ring-1',
-        theme === 'light' && 'bg-white',
-        theme === 'dark' && 'bg-neutral-900',
-        theme === 'system' && 'bg-[linear-gradient(135deg,white_50%,#171717_50%)]'
-      )}
-    />
-  );
-}
-
 /** Checks the browser cannot do with input types alone, mirrored on the server. */
 function problem(v: SiteSettings): { field: string; message: string } | null {
   if (v.abn && !isValidAbn(v.abn)) {
@@ -299,7 +273,7 @@ export function SettingsPage({
     <div
       data-slot="stack-page"
       data-revealing={revealing || undefined}
-      className="mx-auto w-full max-w-4xl"
+      className="mx-auto w-full max-w-5xl"
     >
       <div className="mb-8 space-y-1">
         <h1 data-slot="page-title" className="text-xl font-semibold tracking-tight">
@@ -310,7 +284,7 @@ export function SettingsPage({
         </p>
       </div>
 
-      <div className="lg:grid lg:grid-cols-[11rem_minmax(0,1fr)] lg:gap-10">
+      <div>
         <SectionNav
           ids={sections
             .map((x) => x.id)
@@ -524,7 +498,7 @@ export function SettingsPage({
                 aria-invalid={values.seoDescription.length > SEO_DESCRIPTION_LIMIT}
               />
             </SettingsRow>
-            <div className="space-y-1.5 px-4 py-3.5">
+            <div className="space-y-1.5 max-md:px-4 max-md:py-3.5">
               <p className="text-muted-foreground text-xs">Search result preview</p>
               <div className="rounded-md border px-4 py-3">
                 <p className="text-muted-foreground truncate text-xs">{SITE_HOST} › our-story</p>
@@ -647,6 +621,7 @@ export function SettingsPage({
           <SettingsSection
             id="brand-language"
             title="Brand language"
+            framed
             description="Words the content score flags in posts, and what to write instead. Never use counts as critical; Check is usually wrong but sometimes fine. The AI wording check uses this list too."
           >
             <BrandRulesEditor
@@ -762,6 +737,7 @@ export function SettingsPage({
               <SettingsRow
                 id="settings-theme"
                 title="Theme"
+                stacked
                 description={
                   // Their own choice wins over this one, so without this the
                   // setting would seem to do nothing for them.
@@ -782,22 +758,12 @@ export function SettingsPage({
                   ) : undefined
                 }
               >
-                <Select
-                  items={themeItems}
+                <ThemeTiles
+                  id="settings-theme"
                   value={values.theme}
-                  onValueChange={(value) => value && patch({ theme: value as Theme })}
-                >
-                  <SelectTrigger id="settings-theme" className="w-48">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {themeItems.map((item) => (
-                      <SelectItem key={item.value} value={item.value}>
-                        {item.label}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+                  labels={{ light: 'Light', dark: 'Dark', system: 'System' }}
+                  onChange={(theme) => patch({ theme })}
+                />
               </SettingsRow>
               <SettingsRow
                 id="settings-colour"
@@ -940,7 +906,7 @@ function SectionNav({ ids }: { ids: string[] }) {
       const atBottom =
         window.innerHeight + window.scrollY >= document.documentElement.scrollHeight - 4;
       const passed = shown.filter(
-        ({ id }) => (document.getElementById(id)?.getBoundingClientRect().top ?? Infinity) <= 120
+        ({ id }) => (document.getElementById(id)?.getBoundingClientRect().top ?? Infinity) <= 140
       );
       const current = atBottom ? shown[shown.length - 1] : (passed.at(-1) ?? shown[0]);
       if (current) setActive(current.id);
@@ -956,11 +922,28 @@ function SectionNav({ ids }: { ids: string[] }) {
     };
   }, []);
 
+  // Keeps the current tab in view when the row is wider than the page.
+  const list = useRef<HTMLUListElement>(null);
+  useEffect(() => {
+    const ul = list.current;
+    const link = ul?.querySelector<HTMLElement>('[aria-current="true"]');
+    if (!ul || !link) return;
+    const left = link.offsetLeft - ul.offsetLeft;
+    if (left < ul.scrollLeft || left + link.offsetWidth > ul.scrollLeft + ul.clientWidth) {
+      ul.scrollTo({ left: left - 16, behavior: 'smooth' });
+    }
+  }, [active]);
+
   return (
-    <nav aria-label="Settings sections" className="hidden lg:block">
-      <ul className="sticky top-20 space-y-0.5">
+    // A row of tabs under the header, as on a settings screen; it stays one page and one Save,
+    // so the tabs jump to sections and follow the one in view. From md; phones scroll.
+    <nav
+      aria-label="Settings sections"
+      className="bg-background sticky top-16 z-20 mb-8 hidden border-b md:block"
+    >
+      <ul ref={list} className="no-scrollbar -mb-px flex gap-6 overflow-x-auto">
         {shown.map((section) => (
-          <li key={section.id}>
+          <li key={section.id} className="shrink-0">
             <a
               href={`#${section.id}`}
               aria-current={active === section.id ? 'true' : undefined}
@@ -973,8 +956,8 @@ function SectionNav({ ids }: { ids: string[] }) {
                 });
               }}
               className={cn(
-                'text-muted-foreground hover:text-foreground text-ui block rounded-md px-2.5 py-1.5 transition-colors',
-                active === section.id && 'bg-muted text-foreground font-medium'
+                'text-muted-foreground hover:text-foreground text-ui block border-b-2 border-transparent py-2.5 whitespace-nowrap transition-colors',
+                active === section.id && 'border-foreground text-foreground font-medium'
               )}
             >
               {section.title}
@@ -1176,6 +1159,7 @@ function LegalPagesSection({ pages }: { pages: LegalPageSummary[] }) {
     <SettingsSection
       id="legal"
       title="Legal"
+      framed
       description="Changes go live when an admin publishes them. Every published version is kept."
     >
       {pages.map((page) => (

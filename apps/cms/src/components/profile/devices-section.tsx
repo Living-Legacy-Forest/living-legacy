@@ -80,6 +80,7 @@ export function DevicesSection() {
     <SettingsSection
       id="devices"
       title="Devices"
+      framed
       description="Where you are signed in. Sign out anything you do not recognise."
     >
       {devices === null ? (

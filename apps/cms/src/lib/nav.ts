@@ -7,6 +7,7 @@ import {
   CircleHelp,
   ExternalLink,
   FileText,
+  GlobeIcon,
   MediaIcon,
   LayoutDashboard,
   ListTodo,
@@ -50,7 +51,8 @@ export type NavItem = {
     | '/system'
     | '/team'
     | '/testimonials'
-    | '/users';
+    | '/users'
+    | '/visitors';
   /** Shown when the person has any of these. */
   permission?: Permission | Permission[];
   items?: NavItem[];
@@ -114,6 +116,7 @@ export const navGroups: NavGroup[] = [
     label: 'Admin',
     items: [
       { title: 'Activity', icon: ActivityIcon, to: '/activity', permission: 'posts:publish' },
+      { title: 'Visitors', icon: GlobeIcon, to: '/visitors', permission: 'posts:publish' },
       { title: 'Redirects', icon: ArrowRightLeft, to: '/redirects', permission: 'redirects:write' },
       {
         title: 'Search & replace',

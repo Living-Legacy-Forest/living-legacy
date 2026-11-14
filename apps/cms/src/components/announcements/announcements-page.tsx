@@ -2,10 +2,13 @@ import {
   ANNOUNCEMENT_MOBILE_LENGTH,
   type AnnouncementBackground,
   type AnnouncementStatus,
+  announcementBackgrounds,
   announcementClashes,
+  announcementColours,
   announcementStatus,
 } from '@ll/content';
 import { useState } from 'react';
+import { type ColorSwatch, ColorPicker } from '@/components/arc/color-picker/color-picker';
 import { CardMeta, ListCard, ListCards } from '@/components/list/list-card';
 import { ListFilter, passes } from '@/components/list/list-filter';
 import { ViewSwitch, useListView } from '@/components/list/view-switch';
@@ -64,13 +67,27 @@ import {
 
 const NOUN: [string, string] = ['announcement', 'announcements'];
 
-/** The website's palette (apps/web global.css), with readable text on each. */
-const backgrounds: { value: AnnouncementBackground; label: string; bg: string; fg: string }[] = [
-  { value: 'moss', label: 'Moss (deep green)', bg: '#2c4633', fg: '#f6f2e9' },
-  { value: 'ink', label: 'Ink (near black)', bg: '#17231c', fg: '#f6f2e9' },
-  { value: 'sun', label: 'Sun (warm gold)', bg: '#d8c493', fg: '#17231c' },
-  { value: 'paper', label: 'Paper (soft cream)', bg: '#ece5d6', fg: '#17231c' },
+/** The website's palette (apps/web global.css), offered as one-tap swatches in the picker. */
+const palette: { value: (typeof announcementBackgrounds)[number]; label: string }[] = [
+  { value: 'moss', label: 'Moss (deep green)' },
+  { value: 'ink', label: 'Ink (near black)' },
+  { value: 'sun', label: 'Sun (warm gold)' },
+  { value: 'paper', label: 'Paper (soft cream)' },
 ];
+
+/** What the list filters by: a palette name, or "custom" for any colour picked freely. */
+const colourKind = (background: string) =>
+  (announcementBackgrounds as readonly string[]).includes(background) ? background : 'custom';
+
+/** Picker colours are hex, with two more digits when not opaque; the bar is always opaque. */
+const opaqueHex = (hex: string) => hex.slice(0, 7).toLowerCase();
+
+/** A palette colour keeps its name, so the website shows it with its own styling. */
+function backgroundFromHex(hex: string): AnnouncementBackground {
+  const value = opaqueHex(hex);
+  const match = announcementBackgrounds.find((name) => announcementColours(name).bg === value);
+  return match ?? (value as AnnouncementBackground);
+}
 
 const statusLabels: Record<AnnouncementStatus, string> = {
   live: 'Live',
@@ -127,7 +144,7 @@ export function AnnouncementsPage({
   const visible = sorted.filter(
     (a) =>
       passes(picked.statuses, status(a)) &&
-      passes(picked.backgrounds, a.background) &&
+      passes(picked.backgrounds, colourKind(a.background)) &&
       matchesSearch(query, [a.title, a.message, a.messageTablet, a.messageDesktop])
   );
 
@@ -226,7 +243,7 @@ export function AnnouncementsPage({
               {
                 key: 'backgrounds',
                 label: 'Colour',
-                options: backgrounds.map(({ value, label }) => ({ value, label })),
+                options: [...palette, { value: 'custom', label: 'Custom colour' }],
               },
             ]}
             values={picked}
@@ -464,7 +481,7 @@ function AnnouncementCardBody({
   status: AnnouncementStatus;
   clashesWith: Announcement[];
 }) {
-  const colour = backgrounds.find((b) => b.value === a.background)!;
+  const colour = announcementColours(a.background);
   const timeZone = useTimeZone();
   return (
     <>
@@ -500,7 +517,7 @@ function AnnouncementSummary({
   status: AnnouncementStatus;
   clashesWith: Announcement[];
 }) {
-  const colour = backgrounds.find((b) => b.value === a.background)!;
+  const colour = announcementColours(a.background);
   const timeZone = useTimeZone();
 
   return (
@@ -551,7 +568,7 @@ function AnnouncementForm({
     messageDesktop: source?.messageDesktop ?? '',
     ctaLabel: source?.ctaLabel ?? '',
     ctaUrl: source?.ctaUrl ?? '',
-    background: source?.background ?? ('moss' as AnnouncementBackground),
+    background: (source?.background ?? 'moss') as AnnouncementBackground,
     startsAt: announcement?.startsAt ?? null,
     endsAt: announcement?.endsAt ?? null,
     hidePaths: (source?.hidePaths ?? []).join('\n'),
@@ -704,34 +721,10 @@ function AnnouncementForm({
       <fieldset className={cn(FIELDSET, 'space-y-2')}>
         <legend className={LEGEND}>Background colour</legend>
         <FormSection>
-          <div className="grid grid-cols-2 gap-2">
-            {backgrounds.map((b) => (
-              <label
-                key={b.value}
-                className={cn(
-                  'flex cursor-pointer items-center gap-2 rounded-lg border px-3 py-2 text-sm transition-colors',
-                  values.background === b.value
-                    ? 'border-ring ring-ring/30 ring-2'
-                    : 'hover:bg-muted/60'
-                )}
-              >
-                <input
-                  type="radio"
-                  name="a-background"
-                  value={b.value}
-                  checked={values.background === b.value}
-                  onChange={() => patch({ background: b.value })}
-                  className="sr-only"
-                />
-                <span
-                  aria-hidden
-                  className="ring-border size-4 shrink-0 rounded-full ring-1"
-                  style={{ background: b.bg }}
-                />
-                {b.label}
-              </label>
-            ))}
-          </div>
+          <BackgroundPicker
+            value={values.background}
+            onChange={(background) => patch({ background })}
+          />
         </FormSection>
       </fieldset>
 
@@ -806,5 +799,39 @@ function AnnouncementForm({
         </Button>
       )}
     </form>
+  );
+}
+
+/**
+ * Pick any colour for the bar. The website's four palette colours sit in the panel as saved
+ * swatches. The text colour is chosen for the colour picked, and the readout compares the two.
+ */
+function BackgroundPicker({
+  value,
+  onChange,
+}: {
+  value: AnnouncementBackground;
+  onChange: (value: AnnouncementBackground) => void;
+}) {
+  const { bg, fg } = announcementColours(value);
+  const [swatches, setSwatches] = useState<ColorSwatch[]>(() =>
+    palette.map((p) => ({ id: p.value, color: announcementColours(p.value).bg }))
+  );
+  return (
+    <ColorPicker
+      label="Bar colour"
+      alpha={false}
+      // A field-height trigger as wide as its panel, so it opens straight down.
+      size="field"
+      className="w-(--picker-width)"
+      value={bg}
+      onValueChange={(hex) => onChange(backgroundFromHex(hex))}
+      // The readout compares the bar with the text that sits on it.
+      background={fg}
+      contrastLabel="with the bar's text"
+      swatches={swatches}
+      onSwatchesChange={setSwatches}
+      maxSwatches={8}
+    />
   );
 }

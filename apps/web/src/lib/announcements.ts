@@ -8,6 +8,7 @@ import {
   type AnnouncementBackground,
   type AnnouncementWindow,
   currentAnnouncement,
+  isAnnouncementBackground,
 } from '@ll/content';
 import { env } from 'cloudflare:workers';
 
@@ -37,7 +38,7 @@ type Row = {
   message_desktop: string | null;
   cta_label: string | null;
   cta_url: string | null;
-  background: AnnouncementBackground;
+  background: string;
   starts_at: number | null;
   ends_at: number | null;
   hide_paths: string;
@@ -67,7 +68,8 @@ async function loadAnnouncements(): Promise<Announcement[]> {
       messageDesktop: r.message_desktop ?? '',
       ctaLabel: r.cta_label ?? '',
       ctaUrl: r.cta_url ?? '',
-      background: r.background,
+      // A value the CMS would not save falls back to the first palette colour.
+      background: isAnnouncementBackground(r.background) ? r.background : 'moss',
       startsAt: r.starts_at,
       endsAt: r.ends_at,
       hidePaths: JSON.parse(r.hide_paths) as string[],

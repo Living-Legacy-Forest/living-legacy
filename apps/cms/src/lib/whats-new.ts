@@ -26,6 +26,16 @@ export type WhatsNewEntry = {
 
 export const whatsNew: WhatsNewEntry[] = [
   {
+    id: '2026-11-14-5',
+    title: 'Pick any colour for an announcement',
+    items: [
+      {
+        title: 'A colour picker for the announcement bar',
+        body: 'Announcements are no longer limited to four colours. Open an announcement, then Background colour, and drag to pick a colour, type a hex code, or tap one of the four website colours saved in the panel. The text on the bar switches between dark and light to stay readable, and the panel shows how readable it is.',
+      },
+    ],
+  },
+  {
     id: '2026-11-14-4',
     title: 'Resize the post panel',
     items: [

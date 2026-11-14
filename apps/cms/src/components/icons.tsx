@@ -356,6 +356,7 @@ export const SystemIcon = animated(AnimatedServerIcon);
 export const LogOutIcon = animated(AnimatedLogout01Icon);
 export const BellIcon = animated(AnimatedNotificationIcon);
 export const CheckCheckIcon = make(H.TickDouble02Icon);
+export const PipetteIcon = make(H.PipetteIcon);
 export const MailOpenIcon = make(H.MailOpen01Icon);
 export const LegalDocumentIcon = make(H.LegalDocument01Icon);
 export const CircleCheckIcon = animated(AnimatedCheckmarkCircle01Icon);

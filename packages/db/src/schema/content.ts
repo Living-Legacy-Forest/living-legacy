@@ -264,9 +264,8 @@ export const announcements = sqliteTable(
     messageDesktop: text('message_desktop'),
     ctaLabel: text('cta_label'),
     ctaUrl: text('cta_url'),
-    background: text('background', { enum: ['moss', 'ink', 'sun', 'paper'] })
-      .notNull()
-      .default('moss'),
+    /** A palette name (moss, ink, sun, paper) or a hex colour; see @ll/content announcements. */
+    background: text('background').notNull().default('moss'),
     /** Blank start shows it as soon as it is enabled; blank end never expires. */
     startsAt: integer('starts_at', { mode: 'timestamp_ms' }),
     endsAt: integer('ends_at', { mode: 'timestamp_ms' }),

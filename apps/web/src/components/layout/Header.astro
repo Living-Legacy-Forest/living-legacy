@@ -4,21 +4,34 @@ import DesktopNav from '@/components/layout/DesktopNav';
 import MobileNav from '@/components/layout/MobileNav';
 import logoMark from '@/assets/brand/logo-mark.webp';
 import logoWordmark from '@/assets/brand/logo-wordmark.png';
+import { announcementColours } from '@ll/content';
 import { activeAnnouncement } from '@/lib/announcements';
 
 const announcement = await activeAnnouncement(Astro.url.pathname);
 
+// The four palette colours keep their site classes; a picked colour is a hex the CMS has
+// checked, with whichever of ink or paper reads better on it.
 const backgroundClass = {
   moss: 'bg-moss-deep text-paper',
   ink: 'bg-ink text-paper',
   sun: 'bg-sun text-ink',
   paper: 'bg-paper-deep text-ink',
 } as const;
+const palette = announcement && announcement.background in backgroundClass;
+const picked = announcement && !palette ? announcementColours(announcement.background) : null;
 ---
 
 {
   announcement && (
-    <div class={`${backgroundClass[announcement.background]}`} data-site-chrome>
+    <div
+      class={
+        palette
+          ? backgroundClass[announcement.background as keyof typeof backgroundClass]
+          : undefined
+      }
+      style={picked ? `background-color: ${picked.bg}; color: ${picked.fg}` : undefined}
+      data-site-chrome
+    >
       <p class="mx-auto flex max-w-6xl flex-wrap items-center justify-center gap-x-3 gap-y-1 px-6 py-2.5 text-center sm:px-10">
         <span class="sm:hidden">{announcement.message}</span>
         <span class="hidden sm:inline lg:hidden">

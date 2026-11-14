@@ -54,6 +54,7 @@ export function pageContextFor(pathname: string): PageContext {
 export function track(event: string, params: EventParams = {}): Promise<void> {
   if (typeof window === 'undefined') return Promise.resolve();
   const clean = Object.fromEntries(Object.entries(params).filter(([, v]) => v !== undefined));
+  sendToPostHog(event, clean);
   return new Promise((resolve) => {
     const timer = setTimeout(resolve, 1000);
     const finish = () => {
@@ -76,6 +77,21 @@ export function track(event: string, params: EventParams = {}): Promise<void> {
       finish();
     }
   });
+}
+
+/**
+ * The same event to PostHog, which the CMS's Analytics pages read: enquiries by form and
+ * location come from here. Sent straight away rather than batched, as an enquiry is often the
+ * last thing before the visitor moves on. PostHog's module is already loaded by the page when
+ * it is configured, so this waits for nothing.
+ */
+function sendToPostHog(event: string, params: EventParams) {
+  if (!import.meta.env.PUBLIC_POSTHOG_KEY) return;
+  import('@/lib/analytics/posthog-client')
+    .then(({ default: posthog }) => posthog.capture(event, params, { send_instantly: true }))
+    .catch(() => {
+      // Blocked or offline: Google Analytics still has it.
+    });
 }
 
 /** A successful enquiry, sent only after the form service accepted it. */

@@ -16,7 +16,9 @@ export type WhatsNewItem = {
       | '/events/overview'
       | '/search-replace'
       | '/system'
-      | '/visitors';
+      | '/analytics'
+      | '/analytics/visitors'
+      | '/analytics/enquiries';
     hash?: string;
   };
 };
@@ -33,13 +35,34 @@ export type WhatsNewEntry = {
 
 export const whatsNew: WhatsNewEntry[] = [
   {
+    id: '2026-11-15',
+    title: 'Analytics for the website',
+    items: [
+      {
+        title: 'An Analytics section',
+        body: 'A new Analytics group in the sidebar shows how the website is doing over 7, 30 or 90 days. Overview has visitors, page views, bounce rate and visit length against the period before. Pages lists every page with its views and time on page, Traffic shows where visits come from, and Audience shows countries, cities, devices and browsers.',
+        link: { label: 'Open Analytics', to: '/analytics' },
+      },
+      {
+        title: 'Enquiries, counted here',
+        body: 'Enquiries shows the forms sent through the website: which form, which location it was about, and the page each visit started on. It counts from today, so it fills up over the coming days.',
+        link: { label: 'Open Enquiries', to: '/analytics/enquiries' },
+      },
+      {
+        title: 'Visitors has moved',
+        body: 'Visitors is now under Analytics. Old links still open it.',
+        link: { label: 'Open Visitors', to: '/analytics/visitors' },
+      },
+    ],
+  },
+  {
     id: '2026-11-14-7',
     title: 'See who visits the website',
     items: [
       {
         title: 'A Visitors page',
-        body: 'Visitors, under Admin, lists recent visits to the website, newest first: where each visitor was, the device and browser they used, where they came from (a search engine, social media, another site or directly), the first and last page they read, and how many pages they viewed. Pick 7, 30 or 90 days. No IP addresses are shown.',
-        link: { label: 'Open Visitors', to: '/visitors' },
+        body: 'Visitors, under Analytics, lists recent visits to the website, newest first: where each visitor was, the device and browser they used, where they came from (a search engine, social media, another site or directly), the first and last page they read, and how many pages they viewed. Pick 7, 30 or 90 days. No IP addresses are shown.',
+        link: { label: 'Open Visitors', to: '/analytics/visitors' },
       },
     ],
   },

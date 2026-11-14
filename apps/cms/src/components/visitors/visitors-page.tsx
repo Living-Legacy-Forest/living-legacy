@@ -53,7 +53,7 @@ const pageName = (page: { path: string; title: string }) =>
 const deviceIcons = { desktop: LaptopIcon, mobile: SmartphoneIcon, tablet: TabletIcon };
 
 export function VisitorsPage({ data }: { data: VisitorsData }) {
-  const navigate = useNavigate({ from: '/visitors/' });
+  const navigate = useNavigate({ from: '/analytics/visitors' });
   const revealing = useRevealOnce();
   const days: VisitorRange = data.connected ? data.days : 30;
 
@@ -308,7 +308,7 @@ function Pager({ data }: { data: Extract<VisitorsData, { connected: true }> }) {
                 <PaginationPrevious {...endProps} />
               ) : (
                 <PagePrevious
-                  to="/visitors"
+                  to="/analytics/visitors"
                   activeOptions={EXACT}
                   search={toPage(page - 1)}
                   className="touch:min-h-11"
@@ -321,7 +321,7 @@ function Pager({ data }: { data: Extract<VisitorsData, { connected: true }> }) {
                   <PaginationEllipsis />
                 ) : (
                   <PageNumber
-                    to="/visitors"
+                    to="/analytics/visitors"
                     activeOptions={EXACT}
                     search={toPage(n)}
                     isActive={n === page}
@@ -338,7 +338,7 @@ function Pager({ data }: { data: Extract<VisitorsData, { connected: true }> }) {
                 <PaginationNext {...endProps} />
               ) : (
                 <PageNext
-                  to="/visitors"
+                  to="/analytics/visitors"
                   activeOptions={EXACT}
                   search={toPage(page + 1)}
                   className="touch:min-h-11"

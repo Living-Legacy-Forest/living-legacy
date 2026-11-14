@@ -2,8 +2,11 @@ import { describe, expect, it } from 'vitest';
 import {
   type AnnouncementWindow,
   announcementClashes,
+  announcementColours,
+  announcementContrast,
   announcementStatus,
   currentAnnouncement,
+  isAnnouncementBackground,
 } from './announcements';
 
 const day = 86_400_000;
@@ -61,5 +64,36 @@ describe('announcementClashes', () => {
     expect(clashes.get('nov')?.map((c) => c.id)).toEqual(['mid']);
     expect(clashes.get('dec')?.map((c) => c.id)).toEqual([]);
     expect(clashes.has('old')).toBe(false);
+  });
+});
+
+describe('announcement backgrounds', () => {
+  it('accepts the palette names and six-digit hex colours only', () => {
+    for (const ok of ['moss', 'ink', 'sun', 'paper', '#2c4633', '#ABCDEF']) {
+      expect(isAnnouncementBackground(ok)).toBe(true);
+    }
+    for (const bad of ['red', '#fff', '#12345678', '2c4633', '#gggggg', 'url(x)', '']) {
+      expect(isAnnouncementBackground(bad)).toBe(false);
+    }
+  });
+
+  it('keeps the palette exactly as the website shows it', () => {
+    expect(announcementColours('moss')).toEqual({ bg: '#2c4633', fg: '#f6f2e9' });
+    expect(announcementColours('sun')).toEqual({ bg: '#d8c493', fg: '#17231c' });
+  });
+
+  it('picks the more readable text for a picked colour', () => {
+    expect(announcementColours('#0B1F3A').fg).toBe('#f6f2e9');
+    expect(announcementColours('#F5E6A8')).toEqual({ bg: '#f5e6a8', fg: '#17231c' });
+  });
+
+  it('falls back to moss for anything unrecognised', () => {
+    expect(announcementColours('nonsense')).toEqual(announcementColours('moss'));
+  });
+
+  it('reports the contrast between the text and the bar', () => {
+    expect(announcementContrast('#000000')).toBeGreaterThan(15);
+    // Mid grey is the worst case: neither text colour reaches AA.
+    expect(announcementContrast('#808080')).toBeLessThan(7);
   });
 });

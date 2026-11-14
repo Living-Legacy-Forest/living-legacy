@@ -1,4 +1,4 @@
-import { announcementBackgrounds } from '@ll/content';
+import { type AnnouncementBackground, isAnnouncementBackground } from '@ll/content';
 import { announcements } from '@ll/db/schema';
 import { createServerFn } from '@tanstack/react-start';
 import { desc, eq, inArray } from 'drizzle-orm';
@@ -49,7 +49,10 @@ const announcementSchema = z
         (v) => !v || /^(\/\S*|https?:\/\/\S+)$/.test(v),
         'The button link must be a path like /offers or a full URL.'
       ),
-    background: z.enum(announcementBackgrounds),
+    background: z
+      .string()
+      .refine(isAnnouncementBackground, 'Pick a background colour.')
+      .transform((value) => value as AnnouncementBackground),
     startsAt: z.number().nullable(),
     endsAt: z.number().nullable(),
     hidePaths: z

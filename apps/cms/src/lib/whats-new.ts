@@ -20,7 +20,8 @@ export type WhatsNewItem = {
       | '/analytics/visitors'
       | '/analytics/enquiries'
       | '/analytics/traffic'
-      | '/analytics/audience';
+      | '/analytics/audience'
+      | '/activity';
     hash?: string;
   };
 };
@@ -36,6 +37,22 @@ export type WhatsNewEntry = {
 };
 
 export const whatsNew: WhatsNewEntry[] = [
+  {
+    id: '2026-11-15-5',
+    title: 'A calendar of activity',
+    items: [
+      {
+        title: 'A year of changes at a glance',
+        body: 'Activity, under Admin, now opens with a calendar of the past year: a square a day, darker the busier it was. Pick a person to see their year, or click a day to list only its changes.',
+        link: { label: 'Open Activity', to: '/activity' },
+      },
+      {
+        title: 'Your own activity on your profile',
+        body: 'Your profile shows the same calendar for the changes you have made.',
+        link: { label: 'Open your profile', to: '/profile' },
+      },
+    ],
+  },
   {
     id: '2026-11-15-4',
     title: 'A new sidebar',

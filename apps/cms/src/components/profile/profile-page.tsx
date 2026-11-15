@@ -25,6 +25,8 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { clearMyPicture, setMyAvatar } from '@/server/profile';
+import { ActivityCalendar } from '@/components/activity/activity-calendar';
+import type { ActivityDay } from '@/server/activity-log';
 import { AppearanceSection } from './appearance-section';
 import { DevicesSection } from './devices-section';
 import { useRevealOnce } from '@/lib/use-reveal-once';
@@ -41,9 +43,12 @@ async function uploadAvatar(file: File) {
 
 export function ProfilePage({
   user,
+  activity,
   justConfirmedEmail,
 }: {
   user: SessionUser;
+  /** Your changes per day over the past year. */
+  activity: ActivityDay[];
   justConfirmedEmail: boolean;
 }) {
   const router = useRouter();
@@ -340,6 +345,17 @@ export function ProfilePage({
           )}
         </form>
 
+        <SettingsSection
+          id="activity"
+          title="Your activity"
+          description="What you have changed in the CMS over the past year, a square a day."
+          framed
+        >
+          {/* The heatmap pins its weekday labels over the grid in the colour it sits on. */}
+          <div className="p-4 [--heatmap-surface:var(--background)] max-md:[--heatmap-surface:var(--ios-cell)]">
+            <ActivityCalendar days={activity} label="Your changes over the past year" />
+          </div>
+        </SettingsSection>
         <ChangeEmail currentEmail={user.email} />
         <AppearanceSection />
         <DevicesSection />

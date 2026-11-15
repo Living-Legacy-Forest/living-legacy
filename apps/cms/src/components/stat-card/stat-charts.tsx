@@ -1,4 +1,5 @@
-import { Bar, BarChart, Cell, Pie, PieChart, XAxis, YAxis } from 'recharts';
+import { Bar, BarChart, Cell, XAxis, YAxis } from 'recharts';
+import { DonutChart } from '@/components/arc/donut-chart/donut-chart';
 import { LineChart, type LineChartSeries } from '@/components/arc/line-chart/line-chart';
 import {
   type ChartConfig,
@@ -165,38 +166,27 @@ function PeriodBars({
   );
 }
 
-/** A small donut of the parts, with a legend beside it. */
+/**
+ * A small donut of the parts, with a legend beside it: the same chart as the Analytics pages,
+ * scaled to a card. Its own legend and centre readout are too big for this, so the card keeps
+ * its compact list and the ring shows the total, or a part while it is hovered.
+ */
 export function PartsChart({ parts }: { parts: Part[] }) {
-  const shown = parts.filter((p) => p.value > 0);
-  const config = Object.fromEntries(
-    parts.map((p) => [p.key, { label: p.label, color: p.color }])
-  ) satisfies ChartConfig;
-
   return (
     // Shorter than the trend charts; the card's figure still sits at its foot.
     <div className="flex h-28 items-center gap-3 md:gap-4">
-      {shown.length > 0 && (
-        // Smaller in a phone's half-width card, so the legend keeps its room.
-        <ChartContainer config={config} className="aspect-square h-16 shrink-0 md:h-24">
-          <PieChart margin={{ top: 0, right: 0, bottom: 0, left: 0 }}>
-            <ChartTooltip
-              cursor={false}
-              content={<ChartTooltipContent hideLabel nameKey="key" />}
-            />
-            <Pie
-              data={shown.map((p) => ({ ...p, fill: `var(--color-${p.key})` }))}
-              dataKey="value"
-              nameKey="key"
-              // Shares of the box, so the ring scales with it.
-              innerRadius="68%"
-              outerRadius="96%"
-              paddingAngle={shown.length > 1 ? 4 : 0}
-              cornerRadius={3}
-              stroke="none"
-              {...chartReveal}
-            />
-          </PieChart>
-        </ChartContainer>
+      {parts.some((p) => p.value > 0) && (
+        <DonutChart
+          className="donut-compact w-16 shrink-0 md:w-24"
+          label={parts.map((p) => p.label).join(', ')}
+          data={parts.map((p) => ({ key: p.key, label: p.label, value: p.value, color: p.color }))}
+          formatValue={formatInteger}
+          legend={false}
+          size={96}
+          thickness={12}
+          groupBelow={0}
+          maxSegments={parts.length}
+        />
       )}
       <ul className="text-muted-foreground grid min-w-0 gap-1 text-xs">
         {parts.map((p) => (

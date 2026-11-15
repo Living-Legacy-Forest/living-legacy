@@ -19,21 +19,24 @@ const ScoreCard = lazy(() => import('./score-card').then((m) => ({ default: m.Sc
 /** Counts and the trend lead; what needs doing sits beside the locations, with recent work after. */
 export function Dashboard({ data }: { data: DashboardData }) {
   return (
-    <div data-slot="dashboard" className="grid grid-cols-2 gap-4 max-md:gap-3 lg:grid-cols-4">
+    <div
+      data-slot="dashboard"
+      className="grid grid-cols-1 gap-4 max-md:gap-3 md:grid-cols-2 lg:grid-cols-4"
+    >
       <DashboardStats data={data} />
-      <LazySlot className="col-span-2 lg:col-span-4">
+      <LazySlot className="md:col-span-2 lg:col-span-4">
         <Suspense fallback={<ChartPlaceholder title="Trend" chartClassName="h-80" />}>
           <TrendCard analytics={data.analytics} />
         </Suspense>
       </LazySlot>
       <NeedsAttention attention={data.attention} />
-      <LazySlot className="col-span-2">
+      <LazySlot className="md:col-span-2">
         <Suspense fallback={<ChartPlaceholder title="Locations" chartClassName="h-72" footer />}>
           <LocationsCard locations={data.locations} />
         </Suspense>
       </LazySlot>
       {data.scores && (
-        <LazySlot className="col-span-2 lg:col-span-4">
+        <LazySlot className="md:col-span-2 lg:col-span-4">
           <Suspense
             fallback={<ChartPlaceholder title="Content score" chartClassName="h-40" footer />}
           >

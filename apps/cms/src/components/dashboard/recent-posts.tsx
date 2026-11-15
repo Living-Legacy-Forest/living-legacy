@@ -27,7 +27,7 @@ export function RecentPosts({
   published: PostSummary[];
 }) {
   return (
-    <Card className="col-span-2 lg:col-span-4">
+    <Card className="md:col-span-2 lg:col-span-4">
       <CardHeader>
         <CardTitle>Recent posts</CardTitle>
       </CardHeader>

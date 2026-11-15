@@ -38,6 +38,17 @@ export type WhatsNewEntry = {
 
 export const whatsNew: WhatsNewEntry[] = [
   {
+    id: '2026-11-15-6',
+    title: 'Easier on a phone',
+    items: [
+      {
+        title: 'Analytics in the tab bar',
+        body: 'On a phone, Analytics now has its own tab along the bottom. Media moved to More, and the dashboard cards stack in one column so each is easier to read.',
+        link: { label: 'Open Analytics', to: '/analytics' },
+      },
+    ],
+  },
+  {
     id: '2026-11-15-5',
     title: 'A calendar of activity',
     items: [

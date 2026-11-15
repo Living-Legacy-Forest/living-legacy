@@ -29,7 +29,13 @@ import {
   matchesSearch,
   useSelection,
 } from '@/components/list/list-tools';
-import { ExternalLink, MapPinIcon, PanelRightIcon, PencilIcon, PlusIcon } from '@/components/icons';
+import {
+  ExternalLink,
+  List as ListIcon,
+  MapPinIcon,
+  PencilIcon,
+  PlusIcon,
+} from '@/components/icons';
 import { LocationsOverviewMap } from '@/components/locations/location-map';
 import { pinOf } from '@/components/locations/editor/location-values';
 import { DeleteLocation } from '@/components/locations/delete-location';
@@ -103,8 +109,9 @@ export function LocationsPage({
   const [layout, setLayout] = useListView('locations');
   const grid = layout === 'grid';
   const [toDelete, setToDelete] = useState<string[] | null>(null);
-  // From lg the map sits beside the list; closing it gives the list the whole width.
-  const [mapOpen, setMapOpen] = useState(true);
+  // From lg the page is the map, and the list opens beside it from the toolbar; smaller
+  // screens have no map, so they keep the list.
+  const [listOpen, setListOpen] = useState(false);
   const selection = useSelection(data.map((l) => l.id));
   const visible = data.filter(
     (l) =>
@@ -223,25 +230,27 @@ export function LocationsPage({
           />
         )}
         {data.length > 0 && (
-          <ViewSwitch
-            value={layout}
-            onChange={(next) => {
-              setLayout(next);
-              selection.clear();
-            }}
-          />
+          <div className={cn(!listOpen && 'lg:hidden')}>
+            <ViewSwitch
+              value={layout}
+              onChange={(next) => {
+                setLayout(next);
+                selection.clear();
+              }}
+            />
+          </div>
         )}
         {data.length > 0 && (
           <Button
             variant="ghost"
             size="icon-sm"
-            aria-label={mapOpen ? 'Hide the map' : 'Show the map'}
-            aria-pressed={mapOpen}
-            title={mapOpen ? 'Hide the map' : 'Show the map'}
+            aria-label={listOpen ? 'Hide the list' : 'Show the list'}
+            aria-pressed={listOpen}
+            title={listOpen ? 'Hide the list' : 'Show the list'}
             className="max-lg:hidden"
-            onClick={() => setMapOpen((open) => !open)}
+            onClick={() => setListOpen((open) => !open)}
           >
-            <PanelRightIcon aria-hidden />
+            <ListIcon aria-hidden />
           </Button>
         )}
         {canWrite && <div className="max-md:hidden">{addButton}</div>}
@@ -278,13 +287,16 @@ export function LocationsPage({
         <ListPageLayout
           className={cn(
             'motion-reduce:transition-none lg:transition-[grid-template-columns] lg:duration-300 lg:ease-[cubic-bezier(0.32,0.72,0,1)]',
-            mapOpen ? 'lg:grid-cols-[1fr_1fr]' : 'lg:grid-cols-[1fr_0fr]'
+            listOpen ? 'lg:grid-cols-[1fr_1fr]' : 'lg:grid-cols-[0fr_1fr]'
           )}
         >
           <ListColumn
+            inert={!listOpen}
             className={cn(
-              'transition-[border-color] duration-300 lg:min-w-80',
-              !mapOpen && 'lg:border-transparent'
+              'lg:min-w-0 lg:overflow-hidden',
+              'transition-[opacity,translate,border-color] duration-300 ease-[cubic-bezier(0.32,0.72,0,1)] motion-reduce:transition-none',
+              // Hidden only from lg: below it the list is the page.
+              !listOpen && 'lg:-translate-x-4 lg:border-transparent lg:opacity-0'
             )}
             label="Locations"
             header={
@@ -374,15 +386,11 @@ export function LocationsPage({
 
           <section
             aria-label="Map"
-            inert={!mapOpen}
-            className={cn(
-              'relative hidden min-h-0 min-w-0 overflow-hidden lg:flex',
-              'transition-[opacity,translate] duration-300 ease-[cubic-bezier(0.32,0.72,0,1)] motion-reduce:transition-none',
-              !mapOpen && 'translate-x-4 opacity-0'
-            )}
+            className="relative hidden min-h-0 min-w-0 overflow-hidden lg:flex"
           >
             <LocationsOverviewMap
-              locations={data.map((l) => ({
+              // What the search and filters leave, so the map and the list agree.
+              locations={visible.map((l) => ({
                 id: l.id,
                 name: l.name,
                 pin: pinOf(l),

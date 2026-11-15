@@ -15,13 +15,6 @@ import {
 import { type ComponentType, useState } from 'react';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogHeader,
-  DialogTitle,
-} from '@/components/ui/dialog';
-import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuGroup,
@@ -32,10 +25,6 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { Drawer, DrawerBody, DrawerContent } from '@/components/ui/drawer';
-import {
-  ShortcutList,
-  type ShortcutListGroup,
-} from '@/components/arc/shortcut-recorder/shortcut-recorder';
 import { PillGlide, pillItemClass, pillTrackClass } from '@/components/ui/pill-track';
 import { Spinner } from '@/components/ui/spinner';
 import { useIsMobile } from '@/hooks/use-mobile';
@@ -45,40 +34,10 @@ import { useSignOut } from '@/lib/use-sign-out';
 import { useThemeChoice } from '@/lib/use-theme-choice';
 import { cn } from '@/lib/utils';
 import type { Theme } from '@/server/settings';
+import { ShortcutsDialog } from './shortcuts-dialog';
 import { SheetHeader, sheetGroupClass, sheetRowClass } from './sheet-parts';
 import { avatarSrc } from '@/lib/avatar';
 import { canReportProblem, openProblemReport } from '@/lib/report-problem';
-
-const shortcutGroups: ShortcutListGroup[] = [
-  {
-    label: 'Anywhere',
-    items: [
-      { label: 'Search or jump to a page', shortcut: 'mod+k' },
-      { label: 'Show or hide the sidebar', shortcut: 'mod+b' },
-    ],
-  },
-  {
-    label: 'Posts',
-    items: [
-      { label: 'Save the post you are editing', shortcut: 'mod+s' },
-      { label: 'Move up the posts list', shortcut: 'up' },
-      { label: 'Move down the posts list', shortcut: 'down' },
-    ],
-  },
-  {
-    label: 'Lists',
-    items: [
-      { label: 'Select the focused row', shortcut: 'x' },
-      {
-        label: 'Delete the focused row, or move a post to the trash',
-        shortcut: 'backspace',
-        keywords: 'remove',
-      },
-      { label: 'Move the focused FAQ or team member up', shortcut: 'alt+up' },
-      { label: 'Move the focused FAQ or team member down', shortcut: 'alt+down' },
-    ],
-  },
-];
 
 const themes: {
   value: Theme;
@@ -305,18 +264,7 @@ export function NavUser({ user }: { user: SessionUser }) {
         </DropdownMenuContent>
       </DropdownMenu>
 
-      <Dialog open={showShortcuts} onOpenChange={setShowShortcuts}>
-        <DialogContent className="sm:max-w-md">
-          <DialogHeader>
-            <DialogTitle>Keyboard shortcuts</DialogTitle>
-            <DialogDescription>
-              Hold a key to see what it does. Right-click a row to see every action for it, with its
-              key.
-            </DialogDescription>
-          </DialogHeader>
-          <ShortcutList groups={shortcutGroups} label="Keyboard shortcuts" />
-        </DialogContent>
-      </Dialog>
+      <ShortcutsDialog open={showShortcuts} onOpenChange={setShowShortcuts} />
     </>
   );
 }

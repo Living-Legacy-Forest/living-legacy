@@ -41,11 +41,11 @@ export type WhatsNewEntry = {
 export const whatsNew: WhatsNewEntry[] = [
   {
     id: '2026-11-16-2',
-    title: 'A better shortcuts list',
+    title: 'Shortcuts you can change',
     items: [
       {
-        title: 'Search the keyboard shortcuts',
-        body: 'The Keyboard shortcuts list, in your account menu, is now grouped and searchable. Hold a key such as Option or Ctrl and it lights up in every row, and rows that do not use it fade back.',
+        title: 'Set your own keys',
+        body: 'In your account menu, Keyboard shortcuts now lets you change the keys for search, the sidebar and saving a post, and search the whole list. Hold a key such as Option or Ctrl and it lights up in every row. Your changes stay in the browser you made them in.',
       },
     ],
   },

@@ -49,7 +49,8 @@ export type Meter = {
   overLabel?: string;
 };
 
-export type Part = { key: string; label: string; value: number; color: string };
+/** One part of a ring. Its colour is the chart palette's, in order, so it is not chosen here. */
+export type Part = { key: string; label: string; value: number };
 
 export type Stat = {
   label: string;

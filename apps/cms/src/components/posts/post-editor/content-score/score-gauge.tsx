@@ -1,40 +1,33 @@
-import { scoreBand } from '@ll/content';
+import { SCORE_BANDS } from '@ll/content';
+import { Gauge, type GaugeThreshold } from '@/components/arc/gauge/gauge';
 import { cn } from '@/lib/utils';
-import { bandStroke, bandTone } from './score-tone';
 
-const ARC = 'M10 50 A40 40 0 0 1 90 50';
+/** The gauge's colour and word change at the same lines as everywhere else a score shows. */
+const BANDS: GaugeThreshold[] = [
+  { from: 0, tone: 'danger', label: 'Needs work' },
+  { from: SCORE_BANDS.good, tone: 'warning', label: 'Good' },
+  { from: SCORE_BANDS.strong, tone: 'success', label: 'Strong' },
+];
 
-/** A half-circle meter. The number and a word always show, so colour is never the only signal. */
-export function ScoreGauge({ score }: { score: number }) {
-  const { band, label } = scoreBand(score);
+/**
+ * A score out of 100 as the gauge: the figure, and a word with the colour, so colour is never the
+ * only signal. It is named for screen readers either way; `captioned` also shows the name and
+ * `detail` under it, where the gauge stands on its own (the panel's heading already says it).
+ */
+export function ScoreGauge({
+  score,
+  label = 'Content score',
+  detail,
+  captioned = false,
+}: {
+  score: number;
+  label?: string;
+  detail?: string;
+  captioned?: boolean;
+}) {
   return (
-    <div
-      className="flex flex-col items-center"
-      role="img"
-      aria-label={`Content score ${score} out of 100: ${label}`}
-    >
-      <svg viewBox="0 0 100 56" className="w-36" aria-hidden>
-        <path d={ARC} fill="none" strokeWidth="8" strokeLinecap="round" className="stroke-muted" />
-        {score > 0 && (
-          <path
-            d={ARC}
-            fill="none"
-            strokeWidth="8"
-            strokeLinecap="round"
-            pathLength={100}
-            strokeDasharray={`${score} 100`}
-            className={cn(
-              'transition-[stroke-dasharray] duration-300 motion-reduce:transition-none',
-              bandStroke[band]
-            )}
-          />
-        )}
-      </svg>
-      <p className="-mt-8 text-2xl font-semibold tabular-nums">
-        {score}
-        <span className="text-muted-foreground text-xs font-normal">/100</span>
-      </p>
-      <p className={cn('text-xs', bandTone[band])}>{label}</p>
+    <div className={cn('w-full', !captioned && '[&_figcaption]:sr-only')}>
+      <Gauge value={score} label={label} detail={detail} thresholds={BANDS} />
     </div>
   );
 }

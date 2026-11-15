@@ -142,7 +142,7 @@ export function ShortcutsDialog({
               />
             ))}
           </div>
-          <div className="max-h-[60svh] overflow-y-auto p-6 md:max-h-[80svh]">
+          <div className="max-h-[60svh] overflow-y-auto p-6 md:max-h-[80svh] md:pt-14">
             <ShortcutList groups={groups} platform={platform} label="Keyboard shortcuts" />
           </div>
         </div>

@@ -1,26 +1,24 @@
 import {
   EVENT_PHOTO_LIMIT,
-  type EventInput,
   type SeriesScope,
-  fromZoned,
-  sameClockOn,
   slugify,
   stateTimeZone,
   timeZones,
-  toZoned,
 } from '@ll/content';
 import { useState } from 'react';
 import { DateTimePicker } from '@/components/date-time-picker';
 import { FormBlock, FormCell, FormSection, FormSwitchCell } from '@/components/form-cells';
 import { FormStep, FormSteps, TOUCH_FIELDS, useFormSteps } from '@/components/form-steps';
 import { RichTextField } from '@/components/rich-text-field';
+import { EventDatesField, type EventTimes, type SessionTime } from './event-dates-field';
 import {
-  EventDatesField,
-  type EventTimes,
-  type SessionTime,
-  sessionTimes,
-} from './event-dates-field';
-import { RepeatField, type RepeatValue, noRepeat, seriesDates } from './repeat-field';
+  type EventValues as Values,
+  expandEventTimes,
+  initialEventValues,
+  rezoneValues,
+  timesProblem,
+} from './editor/event-values';
+import { RepeatField, type RepeatValue, noRepeat } from './repeat-field';
 import { EyeIcon, Trash2Icon } from '@/components/icons';
 import { type EventPreviewDraft, openEventPreview } from './event-preview-store';
 import { ImageGalleryField } from '@/components/media/image-gallery-field';
@@ -63,11 +61,6 @@ import {
 
 /** The form's buttons, laid out for the pane or the dialog; `start` holds cancel and delete. */
 export type FormActions = (submit: React.ReactNode, start: React.ReactNode) => React.ReactNode;
-
-type Values = Omit<EventInput, 'id' | 'startsAt' | 'endsAt' | 'moreDates' | 'scope'> & {
-  startsAt: number | null;
-  endsAt: number | null;
-};
 
 const NO_LOCATION = 'none';
 
@@ -116,51 +109,6 @@ function NewEventSummary({
   );
 }
 
-function initialValues(event: EventRow | null, siteZone: string): Values {
-  if (!event) {
-    return {
-      timeZone: siteZone as Values['timeZone'],
-      title: '',
-      slug: '',
-      locationId: null,
-      venue: '',
-      startsAt: null,
-      endsAt: null,
-      summary: '',
-      description: null,
-      heroMediaId: null,
-      galleryMediaIds: [],
-      capacity: null,
-      // What the open days allowed per order on Eventbrite.
-      maxPartySize: 10,
-      bookingsOpenAt: null,
-      bookingsCloseAt: null,
-      status: 'draft',
-      publishAt: null,
-    };
-  }
-  return {
-    timeZone: event.timeZone as Values['timeZone'],
-    title: event.title,
-    slug: event.slug,
-    locationId: event.locationId,
-    venue: event.venue,
-    startsAt: event.startsAt,
-    endsAt: event.endsAt,
-    summary: event.summary,
-    description: event.description,
-    heroMediaId: event.heroMediaId,
-    galleryMediaIds: event.galleryMediaIds,
-    capacity: event.capacity,
-    maxPartySize: event.maxPartySize,
-    bookingsOpenAt: event.bookingsOpenAt,
-    bookingsCloseAt: event.bookingsCloseAt,
-    // A cancelled event is shown read-only, so this is never saved.
-    status: event.status === 'published' ? 'published' : 'draft',
-    publishAt: event.publishAt,
-  };
-}
-
 /** One part of a saved event's form, under its own heading unless only `label` is given. */
 function EditSection({
   title,
@@ -196,7 +144,7 @@ export function EventForm({
   actions: FormActions;
 }) {
   const siteZone = useTimeZone();
-  const [values, setValues] = useState<Values>(() => initialValues(event, siteZone));
+  const [values, setValues] = useState<Values>(() => initialEventValues(event, siteZone));
   const [sessions, setSessions] = useState<SessionTime[]>([]);
   // Picking a location sets the zone, until someone chooses one themselves.
   const [zoneChosen, setZoneChosen] = useState(Boolean(event));
@@ -211,19 +159,7 @@ export function EventForm({
   const zone = values.timeZone;
   const patch = (next: Partial<Values>) => setValues((v) => ({ ...v, ...next }));
   /** A new zone keeps the clock times (10:00 stays 10:00), not the instants. */
-  const rezone = (next: string) =>
-    setValues((v) => {
-      const move = (ms: number | null) =>
-        ms === null ? null : fromZoned(toZoned(ms, v.timeZone), next);
-      return {
-        ...v,
-        timeZone: next as Values['timeZone'],
-        startsAt: move(v.startsAt),
-        endsAt: move(v.endsAt),
-        bookingsOpenAt: move(v.bookingsOpenAt),
-        bookingsCloseAt: move(v.bookingsCloseAt),
-      };
-    });
+  const rezone = (next: string) => setValues((v) => rezoneValues(v, next));
   const { run, pending } = useAction();
   const location = locations.find((l) => l.id === values.locationId);
   const locationItems = [
@@ -241,19 +177,7 @@ export function EventForm({
       : null;
 
   /** Every event a new one makes: each date of its series, at each of its times. */
-  function allTimes(first: EventTimes): EventTimes[] {
-    const dates =
-      repeat.repeat !== 'none'
-        ? seriesDates(first, repeat, zone).filter((d) => !d.skipped)
-        : [{ ...first }];
-    const extra = sessions
-      .map((x) => sessionTimes(first.startsAt, x, zone))
-      .filter((x): x is EventTimes => x !== null);
-    return dates.flatMap((d) => [
-      { startsAt: d.startsAt, endsAt: d.endsAt },
-      ...extra.map((x) => sameClockOn(d.startsAt, x, zone)),
-    ]);
-  }
+  const allTimes = (first: EventTimes) => expandEventTimes(first, repeat, sessions, zone);
 
   async function save(scope: SeriesScope) {
     if (!times) return;
@@ -284,27 +208,9 @@ export function EventForm({
 
   /** Checks the times (and how a new series ends); says what is wrong, or returns true. */
   function timesReady() {
-    if (!times) {
-      notify.error('Check the event', 'Pick its date and times.');
-      return false;
-    }
-    if (times.endsAt <= times.startsAt) {
-      notify.error('Check the event', 'It must end after it starts.');
-      return false;
-    }
-    if (times && sessions.some((x) => !sessionTimes(times.startsAt, x, zone))) {
-      notify.error(
-        'Check the event',
-        'Each extra time needs a start and a later end, like 2:00 pm to 4:00 pm.'
-      );
-      return false;
-    }
-    const needsEnd = repeat.repeat !== 'none' && repeat.repeat !== 'custom';
-    if (!event && needsEnd && repeat.ends === 'until' && !repeat.until) {
-      notify.error('Check the event', 'Pick when it stops repeating.');
-      return false;
-    }
-    return true;
+    const problem = timesProblem({ times, sessions, zone, repeat, isNew: !event });
+    if (problem) notify.error('Check the event', problem);
+    return problem === null;
   }
 
   /** A new event moves on until its last step, then is created; a saved one saves. */

@@ -34,6 +34,7 @@ export function OverviewPage({
 }) {
   return (
     <AnalyticsPage
+      kind=""
       title="Analytics"
       description="How many people visit the website, how long they stay, and what brings them."
       result={result}

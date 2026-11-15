@@ -1,5 +1,6 @@
 import { useRouterState } from '@tanstack/react-router';
 import { useEffect, useState } from 'react';
+import { AnalyticsSkeleton, analyticsKind } from '@/components/analytics/analytics-skeleton';
 import { DashboardSkeleton } from '@/components/dashboard/dashboard-skeleton';
 import { DocumentEditorSkeleton } from '@/components/posts/post-editor/document-editor-skeleton';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -59,6 +60,8 @@ export function PageSkeleton({ pathname }: { pathname: string }) {
         <MediaSkeleton />
       ) : section === 'settings' ? (
         <SettingsSkeleton />
+      ) : section === 'analytics' ? (
+        <AnalyticsSkeleton kind={analyticsKind(child)} />
       ) : (
         <ListSkeleton />
       )}

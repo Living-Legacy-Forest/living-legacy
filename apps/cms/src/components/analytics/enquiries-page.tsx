@@ -18,6 +18,7 @@ export function EnquiriesPage({
 }) {
   return (
     <AnalyticsPage
+      kind="enquiries"
       title="Enquiries"
       description="Forms sent through the website: which ones, about which location, and where those visits started. Counted from mid-November 2026."
       result={result}

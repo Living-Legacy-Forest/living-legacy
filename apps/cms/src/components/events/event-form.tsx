@@ -19,20 +19,14 @@ import {
   timesProblem,
 } from './editor/event-values';
 import { RepeatField, type RepeatValue, noRepeat } from './repeat-field';
-import { EyeIcon, Trash2Icon } from '@/components/icons';
-import { type EventPreviewDraft, openEventPreview } from './event-preview-store';
-import { ImageGalleryField } from '@/components/media/image-gallery-field';
 import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-  AlertDialogTrigger,
-} from '@/components/ui/alert-dialog';
+  CancelEventDialog,
+  CancelledEventSummary,
+  DeleteEventButton,
+  PreviewButton,
+  ScopeDialog,
+} from './editor/event-actions';
+import { ImageGalleryField } from '@/components/media/image-gallery-field';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { NumberField } from '@/components/ui/number-field';
@@ -47,17 +41,11 @@ import { Spinner } from '@/components/ui/spinner';
 import { Textarea } from '@/components/ui/textarea';
 import { formatDateTime, zoneName } from '@/lib/format';
 import { reportInvalid } from '@/lib/form-validation';
-import { notify, removedNotice } from '@/lib/notify';
+import { notify } from '@/lib/notify';
 import { useAction } from '@/lib/use-action';
 import { useTimeZone } from '@/lib/use-time-zone';
 import { cn } from '@/lib/utils';
-import {
-  type EventRow,
-  type LocationOption,
-  cancelEvent,
-  deleteEvent,
-  saveEvent,
-} from '@/server/events';
+import { type EventRow, type LocationOption, saveEvent } from '@/server/events';
 
 /** The form's buttons, laid out for the pane or the dialog; `start` holds cancel and delete. */
 export type FormActions = (submit: React.ReactNode, start: React.ReactNode) => React.ReactNode;
@@ -611,7 +599,7 @@ export function EventForm({
             </>,
             <div className="flex gap-1">
               <CancelEvent event={event} />
-              <DeleteEvent event={event} onRemoved={() => onSaved(null)} />
+              <DeleteEventButton event={event} onRemoved={() => onSaved(null)} />
             </div>
           )
         : actions(
@@ -635,219 +623,39 @@ function CancelledEvent({
   actions: FormActions;
   onRemoved: () => void;
 }) {
-  const zone = event.timeZone;
   return (
     <div className="space-y-4">
-      <p className="bg-muted text-muted-foreground rounded-lg px-3 py-2.5 text-sm">
-        This event is cancelled. Its bookings are kept for the record.
-      </p>
-      <dl className="grid grid-cols-[auto_1fr] gap-x-4 gap-y-1.5 text-sm">
-        <dt className="text-muted-foreground">When</dt>
-        <dd>{formatDateTime(event.startsAt, zone)}</dd>
-        <dt className="text-muted-foreground">Where</dt>
-        <dd>{event.venue || event.locationName || 'Not set'}</dd>
-        <dt className="text-muted-foreground">Bookings</dt>
-        <dd className="tabular-nums">{event.bookings}</dd>
-      </dl>
+      <CancelledEventSummary
+        event={event}
+        zoneLabel={formatDateTime(event.startsAt, event.timeZone)}
+      />
       {actions(
         <PreviewButton
           draft={() => ({
-            id: event.id,
-            seriesId: event.seriesId,
-            status: event.status,
-            title: event.title,
-            summary: event.summary,
-            description: event.description,
-            locationId: event.locationId,
-            venue: event.venue,
-            timeZone: event.timeZone,
-            startsAt: event.startsAt,
-            endsAt: event.endsAt,
-            heroMediaId: event.heroMediaId,
-            galleryMediaIds: event.galleryMediaIds,
-            capacity: event.capacity,
-            maxPartySize: event.maxPartySize,
-            bookingsOpenAt: event.bookingsOpenAt,
-            bookingsCloseAt: event.bookingsCloseAt,
-            booked: event.booked,
+            ...event,
             moreDates: [],
           })}
         />,
-        <DeleteEvent event={event} onRemoved={onRemoved} />
+        <DeleteEventButton event={event} onRemoved={onRemoved} />
       )}
     </div>
   );
 }
 
-/** Opens the event as a visitor would see it, in a new tab. */
-function PreviewButton({ draft }: { draft: () => EventPreviewDraft }) {
-  return (
-    <Button type="button" variant="outline" onClick={() => openEventPreview(draft())}>
-      <EyeIcon aria-hidden data-icon="inline-start" />
-      <span className="max-sm:sr-only">Preview</span>
-    </Button>
-  );
-}
-
-/** Room for Cancel and both scope buttons on one line. */
-const SCOPE_DIALOG = 'data-[size=default]:sm:max-w-lg';
-
-/** The two buttons a repeating event's dialogs end with, or the one for a single event. */
-function ScopeActions({
-  series,
-  label,
-  safe = false,
-  onChoose,
-}: {
-  series: boolean;
-  label: string;
-  /** Saving loses nothing, so phones' action sheet does not draw it red. */
-  safe?: boolean;
-  onChoose: (scope: SeriesScope) => void;
-}) {
-  const tone = safe ? 'default' : undefined;
-  if (!series)
-    return (
-      <AlertDialogAction data-tone={tone} onClick={() => onChoose('one')}>
-        {label}
-      </AlertDialogAction>
-    );
+function CancelEvent({ event }: { event: EventRow }) {
+  const [open, setOpen] = useState(false);
   return (
     <>
-      <AlertDialogAction data-tone={tone} variant="outline" onClick={() => onChoose('one')}>
-        This date only
-      </AlertDialogAction>
-      <AlertDialogAction data-tone={tone} onClick={() => onChoose('following')}>
-        This and upcoming dates
-      </AlertDialogAction>
-    </>
-  );
-}
-
-/** Asks whether a change to a repeating event is for this date or the upcoming ones too. */
-function ScopeDialog({
-  open,
-  onOpenChange,
-  title,
-  description,
-  onChoose,
-}: {
-  open: boolean;
-  onOpenChange: (open: boolean) => void;
-  title: string;
-  description: string;
-  onChoose: (scope: SeriesScope) => void;
-}) {
-  return (
-    <AlertDialog open={open} onOpenChange={onOpenChange}>
-      <AlertDialogContent className={SCOPE_DIALOG}>
-        <AlertDialogHeader>
-          <AlertDialogTitle>{title}</AlertDialogTitle>
-          <AlertDialogDescription>{description}</AlertDialogDescription>
-        </AlertDialogHeader>
-        <AlertDialogFooter>
-          <AlertDialogCancel>Cancel</AlertDialogCancel>
-          <ScopeActions series safe label="Save" onChoose={onChoose} />
-        </AlertDialogFooter>
-      </AlertDialogContent>
-    </AlertDialog>
-  );
-}
-
-const datesNote = (n: number) => (n > 1 ? ` on ${n} dates` : '');
-
-function CancelEvent({ event }: { event: EventRow }) {
-  const { run, pending } = useAction();
-  const n = event.bookings;
-  const series = Boolean(event.seriesId);
-  return (
-    <AlertDialog>
-      <AlertDialogTrigger
-        render={
-          <Button
-            type="button"
-            variant="ghost"
-            size="sm"
-            disabled={pending}
-            className="text-muted-foreground"
-          />
-        }
+      <Button
+        type="button"
+        variant="ghost"
+        size="sm"
+        className="text-muted-foreground"
+        onClick={() => setOpen(true)}
       >
         Cancel event
-      </AlertDialogTrigger>
-      <AlertDialogContent className={cn(series && SCOPE_DIALOG)}>
-        <AlertDialogHeader>
-          <AlertDialogTitle>Cancel {event.title}?</AlertDialogTitle>
-          <AlertDialogDescription>
-            {n === 0
-              ? 'Nobody has booked this date yet.'
-              : `${n} ${n === 1 ? 'booking stays' : 'bookings stay'} on its guest list, and HubSpot tells the guests once it is connected.`}{' '}
-            {series && 'Cancel this date only, or the upcoming dates too. '}
-            Cancelled dates stay in the list. This cannot be undone.
-          </AlertDialogDescription>
-        </AlertDialogHeader>
-        <AlertDialogFooter>
-          <AlertDialogCancel>Keep it</AlertDialogCancel>
-          <ScopeActions
-            series={series}
-            label="Cancel event"
-            onChoose={(scope) =>
-              run(() => cancelEvent({ data: { id: event.id, scope } }), {
-                success: (r) => ({
-                  title: `Event cancelled${datesNote(r.dates)}`,
-                  description: 'Cancelled dates stay in the list.',
-                }),
-                error: 'Could not cancel the event',
-              })
-            }
-          />
-        </AlertDialogFooter>
-      </AlertDialogContent>
-    </AlertDialog>
-  );
-}
-
-function DeleteEvent({ event, onRemoved }: { event: EventRow; onRemoved: () => void }) {
-  const { run, pending } = useAction();
-  const series = Boolean(event.seriesId);
-  return (
-    <AlertDialog>
-      <AlertDialogTrigger
-        render={
-          <Button
-            type="button"
-            variant="ghost"
-            size="sm"
-            disabled={pending}
-            className="text-muted-foreground hover:text-destructive"
-          />
-        }
-      >
-        <Trash2Icon aria-hidden data-icon="inline-start" />
-        Delete
-      </AlertDialogTrigger>
-      <AlertDialogContent className={cn(series && SCOPE_DIALOG)}>
-        <AlertDialogHeader>
-          <AlertDialogTitle>Delete {event.title}?</AlertDialogTitle>
-          <AlertDialogDescription>
-            {series && 'Delete this date only, or the upcoming dates too. '}
-            Guest lists are deleted with their dates. This cannot be undone.
-          </AlertDialogDescription>
-        </AlertDialogHeader>
-        <AlertDialogFooter>
-          <AlertDialogCancel>Cancel</AlertDialogCancel>
-          <ScopeActions
-            series={series}
-            label="Delete"
-            onChoose={(scope) =>
-              run(() => deleteEvent({ data: { id: event.id, scope } }), {
-                success: (r) => removedNotice(Math.max(1, r.dates), ['event date', 'event dates']),
-                error: 'Could not delete the event',
-              }).then((removed) => removed && onRemoved())
-            }
-          />
-        </AlertDialogFooter>
-      </AlertDialogContent>
-    </AlertDialog>
+      </Button>
+      <CancelEventDialog event={event} open={open} onOpenChange={setOpen} />
+    </>
   );
 }

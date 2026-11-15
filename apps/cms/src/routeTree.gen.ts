@@ -26,6 +26,8 @@ import { Route as AppAnnouncementsIndexRouteImport } from './routes/_app/announc
 import { Route as AppApiKeysIndexRouteImport } from './routes/_app/api-keys/index'
 import { Route as AppChecksIndexRouteImport } from './routes/_app/checks/index'
 import { Route as AppEventsIndexRouteImport } from './routes/_app/events/index'
+import { Route as AppEventsEventIdRouteImport } from './routes/_app/events/$eventId'
+import { Route as AppEventsNewRouteImport } from './routes/_app/events/new'
 import { Route as AppEventsOverviewRouteImport } from './routes/_app/events/overview'
 import { Route as AppFaqsIndexRouteImport } from './routes/_app/faqs/index'
 import { Route as AppIntegrationsIndexRouteImport } from './routes/_app/integrations/index'
@@ -145,6 +147,16 @@ const AppChecksIndexRoute = AppChecksIndexRouteImport.update({
 const AppEventsIndexRoute = AppEventsIndexRouteImport.update({
   id: '/events/',
   path: '/events/',
+  getParentRoute: () => AppRoute,
+} as any)
+const AppEventsEventIdRoute = AppEventsEventIdRouteImport.update({
+  id: '/events/$eventId',
+  path: '/events/$eventId',
+  getParentRoute: () => AppRoute,
+} as any)
+const AppEventsNewRoute = AppEventsNewRouteImport.update({
+  id: '/events/new',
+  path: '/events/new',
   getParentRoute: () => AppRoute,
 } as any)
 const AppEventsOverviewRoute = AppEventsOverviewRouteImport.update({
@@ -340,6 +352,8 @@ export interface FileRoutesByFullPath {
   '/analytics/pages': typeof AppAnalyticsPagesRoute
   '/analytics/traffic': typeof AppAnalyticsTrafficRoute
   '/analytics/visitors': typeof AppAnalyticsVisitorsRoute
+  '/events/$eventId': typeof AppEventsEventIdRoute
+  '/events/new': typeof AppEventsNewRoute
   '/events/overview': typeof AppEventsOverviewRoute
   '/legal/$slug': typeof AppLegalSlugRoute
   '/posts/$postId': typeof AppPostsPostIdRoute
@@ -393,6 +407,8 @@ export interface FileRoutesByTo {
   '/analytics/pages': typeof AppAnalyticsPagesRoute
   '/analytics/traffic': typeof AppAnalyticsTrafficRoute
   '/analytics/visitors': typeof AppAnalyticsVisitorsRoute
+  '/events/$eventId': typeof AppEventsEventIdRoute
+  '/events/new': typeof AppEventsNewRoute
   '/events/overview': typeof AppEventsOverviewRoute
   '/legal/$slug': typeof AppLegalSlugRoute
   '/posts/$postId': typeof AppPostsPostIdRoute
@@ -449,6 +465,8 @@ export interface FileRoutesById {
   '/_app/analytics/pages': typeof AppAnalyticsPagesRoute
   '/_app/analytics/traffic': typeof AppAnalyticsTrafficRoute
   '/_app/analytics/visitors': typeof AppAnalyticsVisitorsRoute
+  '/_app/events/$eventId': typeof AppEventsEventIdRoute
+  '/_app/events/new': typeof AppEventsNewRoute
   '/_app/events/overview': typeof AppEventsOverviewRoute
   '/_app/legal/$slug': typeof AppLegalSlugRoute
   '/_app/posts/$postId': typeof AppPostsPostIdRoute
@@ -505,6 +523,8 @@ export interface FileRouteTypes {
     | '/analytics/pages'
     | '/analytics/traffic'
     | '/analytics/visitors'
+    | '/events/$eventId'
+    | '/events/new'
     | '/events/overview'
     | '/legal/$slug'
     | '/posts/$postId'
@@ -558,6 +578,8 @@ export interface FileRouteTypes {
     | '/analytics/pages'
     | '/analytics/traffic'
     | '/analytics/visitors'
+    | '/events/$eventId'
+    | '/events/new'
     | '/events/overview'
     | '/legal/$slug'
     | '/posts/$postId'
@@ -613,6 +635,8 @@ export interface FileRouteTypes {
     | '/_app/analytics/pages'
     | '/_app/analytics/traffic'
     | '/_app/analytics/visitors'
+    | '/_app/events/$eventId'
+    | '/_app/events/new'
     | '/_app/events/overview'
     | '/_app/legal/$slug'
     | '/_app/posts/$postId'
@@ -796,6 +820,20 @@ declare module '@tanstack/react-router' {
       path: '/events'
       fullPath: '/events/'
       preLoaderRoute: typeof AppEventsIndexRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/_app/events/$eventId': {
+      id: '/_app/events/$eventId'
+      path: '/events/$eventId'
+      fullPath: '/events/$eventId'
+      preLoaderRoute: typeof AppEventsEventIdRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/_app/events/new': {
+      id: '/_app/events/new'
+      path: '/events/new'
+      fullPath: '/events/new'
+      preLoaderRoute: typeof AppEventsNewRouteImport
       parentRoute: typeof AppRoute
     }
     '/_app/events/overview': {
@@ -1077,6 +1115,8 @@ const AppAnalyticsRouteRouteWithChildren =
 interface AppRouteChildren {
   AppAnalyticsRouteRoute: typeof AppAnalyticsRouteRouteWithChildren
   AppIndexRoute: typeof AppIndexRoute
+  AppEventsEventIdRoute: typeof AppEventsEventIdRoute
+  AppEventsNewRoute: typeof AppEventsNewRoute
   AppEventsOverviewRoute: typeof AppEventsOverviewRoute
   AppLegalSlugRoute: typeof AppLegalSlugRoute
   AppPostsPostIdRoute: typeof AppPostsPostIdRoute
@@ -1110,6 +1150,8 @@ interface AppRouteChildren {
 const AppRouteChildren: AppRouteChildren = {
   AppAnalyticsRouteRoute: AppAnalyticsRouteRouteWithChildren,
   AppIndexRoute: AppIndexRoute,
+  AppEventsEventIdRoute: AppEventsEventIdRoute,
+  AppEventsNewRoute: AppEventsNewRoute,
   AppEventsOverviewRoute: AppEventsOverviewRoute,
   AppLegalSlugRoute: AppLegalSlugRoute,
   AppPostsPostIdRoute: AppPostsPostIdRoute,

@@ -49,7 +49,6 @@ export function EventMain({ editor, event }: { editor: EventEditorState; event: 
             onChange={(e) => patch({ title: e.target.value })}
             placeholder="Event name"
             enterKeyHint="done"
-            className="h-11 text-lg font-semibold"
           />
         </FormCell>
         <FormCell label="Summary" htmlFor="ev-summary" hint="Shown in event lists.">

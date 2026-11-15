@@ -83,6 +83,7 @@ export function EventSidePanel({
               })
             }
             placeholder="No limit"
+            className="w-28"
           />
         </FormCell>
         <FormCell
@@ -159,7 +160,7 @@ export function EventSidePanel({
         )}
       </Section>
 
-      <Section title="Location">
+      <Section title="Where">
         <FormCell label="Location" htmlFor="ev-location">
           <Select
             items={locationItems}
@@ -210,7 +211,7 @@ export function EventSidePanel({
         />
       </Section>
 
-      <Section title="Web address">
+      <Section title="On the website">
         <FormCell
           label="Web address"
           htmlFor="ev-slug"

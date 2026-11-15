@@ -51,6 +51,7 @@ import { Route as AppTeamIndexRouteImport } from './routes/_app/team/index'
 import { Route as AppTestimonialsIndexRouteImport } from './routes/_app/testimonials/index'
 import { Route as AppUsersIndexRouteImport } from './routes/_app/users/index'
 import { Route as AppVisitorsIndexRouteImport } from './routes/_app/visitors/index'
+import { Route as AppWhatsNewIndexRouteImport } from './routes/_app/whats-new/index'
 import { Route as ApiAuthSplatRouteImport } from './routes/api/auth/$'
 import { Route as ApiAvatarIndexRouteImport } from './routes/api/avatar/index'
 import { Route as ApiAvatarKeyRouteImport } from './routes/api/avatar/$key'
@@ -276,6 +277,11 @@ const AppVisitorsIndexRoute = AppVisitorsIndexRouteImport.update({
   path: '/visitors/',
   getParentRoute: () => AppRoute,
 } as any)
+const AppWhatsNewIndexRoute = AppWhatsNewIndexRouteImport.update({
+  id: '/whats-new/',
+  path: '/whats-new/',
+  getParentRoute: () => AppRoute,
+} as any)
 const ApiAuthSplatRoute = ApiAuthSplatRouteImport.update({
   id: '/api/auth/$',
   path: '/api/auth/$',
@@ -402,6 +408,7 @@ export interface FileRoutesByFullPath {
   '/testimonials/': typeof AppTestimonialsIndexRoute
   '/users/': typeof AppUsersIndexRoute
   '/visitors/': typeof AppVisitorsIndexRoute
+  '/whats-new/': typeof AppWhatsNewIndexRoute
   '/api/avatar/': typeof ApiAvatarIndexRoute
   '/api/media/': typeof ApiMediaIndexRoute
   '/api/tickets/$reference/calendar': typeof ApiTicketsReferenceCalendarRoute
@@ -459,6 +466,7 @@ export interface FileRoutesByTo {
   '/testimonials': typeof AppTestimonialsIndexRoute
   '/users': typeof AppUsersIndexRoute
   '/visitors': typeof AppVisitorsIndexRoute
+  '/whats-new': typeof AppWhatsNewIndexRoute
   '/api/avatar': typeof ApiAvatarIndexRoute
   '/api/media': typeof ApiMediaIndexRoute
   '/api/tickets/$reference/calendar': typeof ApiTicketsReferenceCalendarRoute
@@ -519,6 +527,7 @@ export interface FileRoutesById {
   '/_app/testimonials/': typeof AppTestimonialsIndexRoute
   '/_app/users/': typeof AppUsersIndexRoute
   '/_app/visitors/': typeof AppVisitorsIndexRoute
+  '/_app/whats-new/': typeof AppWhatsNewIndexRoute
   '/api/avatar/': typeof ApiAvatarIndexRoute
   '/api/media/': typeof ApiMediaIndexRoute
   '/api/tickets/$reference/calendar': typeof ApiTicketsReferenceCalendarRoute
@@ -579,6 +588,7 @@ export interface FileRouteTypes {
     | '/testimonials/'
     | '/users/'
     | '/visitors/'
+    | '/whats-new/'
     | '/api/avatar/'
     | '/api/media/'
     | '/api/tickets/$reference/calendar'
@@ -636,6 +646,7 @@ export interface FileRouteTypes {
     | '/testimonials'
     | '/users'
     | '/visitors'
+    | '/whats-new'
     | '/api/avatar'
     | '/api/media'
     | '/api/tickets/$reference/calendar'
@@ -695,6 +706,7 @@ export interface FileRouteTypes {
     | '/_app/testimonials/'
     | '/_app/users/'
     | '/_app/visitors/'
+    | '/_app/whats-new/'
     | '/api/avatar/'
     | '/api/media/'
     | '/api/tickets/$reference/calendar'
@@ -1021,6 +1033,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppVisitorsIndexRouteImport
       parentRoute: typeof AppRoute
     }
+    '/_app/whats-new/': {
+      id: '/_app/whats-new/'
+      path: '/whats-new'
+      fullPath: '/whats-new/'
+      preLoaderRoute: typeof AppWhatsNewIndexRouteImport
+      parentRoute: typeof AppRoute
+    }
     '/api/auth/$': {
       id: '/api/auth/$'
       path: '/api/auth/$'
@@ -1183,6 +1202,7 @@ interface AppRouteChildren {
   AppTestimonialsIndexRoute: typeof AppTestimonialsIndexRoute
   AppUsersIndexRoute: typeof AppUsersIndexRoute
   AppVisitorsIndexRoute: typeof AppVisitorsIndexRoute
+  AppWhatsNewIndexRoute: typeof AppWhatsNewIndexRoute
   AppPostsCategoriesIndexRoute: typeof AppPostsCategoriesIndexRoute
   AppPostsTagsIndexRoute: typeof AppPostsTagsIndexRoute
 }
@@ -1220,6 +1240,7 @@ const AppRouteChildren: AppRouteChildren = {
   AppTestimonialsIndexRoute: AppTestimonialsIndexRoute,
   AppUsersIndexRoute: AppUsersIndexRoute,
   AppVisitorsIndexRoute: AppVisitorsIndexRoute,
+  AppWhatsNewIndexRoute: AppWhatsNewIndexRoute,
   AppPostsCategoriesIndexRoute: AppPostsCategoriesIndexRoute,
   AppPostsTagsIndexRoute: AppPostsTagsIndexRoute,
 }

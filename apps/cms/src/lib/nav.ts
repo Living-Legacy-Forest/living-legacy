@@ -46,6 +46,7 @@ export type NavItem = {
     | '/posts/categories'
     | '/posts/tags'
     | '/profile'
+    | '/whats-new'
     | '/activity'
     | '/analytics'
     | '/analytics/audience'
@@ -249,7 +250,10 @@ export const footerLinks: { title: string; href: string; icon: LucideIcon }[] = 
 ];
 
 /** Pages reached from elsewhere (the account menu), with a breadcrumb but no sidebar entry. */
-const pageOnlyItems: NavItem[] = [{ title: 'Profile', icon: UserIcon, to: '/profile' }];
+const pageOnlyItems: NavItem[] = [
+  { title: 'Profile', icon: UserIcon, to: '/profile' },
+  { title: "What's new", icon: MegaphoneIcon, to: '/whats-new' },
+];
 
 const allNavItems = [
   ...navGroups.flatMap((g) => g.items.flatMap((i) => [i, ...(i.items ?? [])])),

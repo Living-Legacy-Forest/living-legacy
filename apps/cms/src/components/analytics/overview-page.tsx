@@ -16,6 +16,7 @@ import { cn } from '@/lib/utils';
 import { flagEmoji } from '@/lib/visitors';
 import type { AnalyticsResult, Overview, PeriodTotals } from '@/server/analytics';
 import { AnalyticsPage, rangeSearch } from './analytics-page';
+import { DonutCard } from './donut-card';
 import { RankedCard } from './ranked-card';
 
 const SERIES: LineChartSeries[] = [
@@ -130,14 +131,10 @@ function OverviewBody({ data, days }: { data: Overview; days: AnalyticsRange }) 
           total={current.views}
           more={{ to: '/analytics/pages', search }}
         />
-        <RankedCard
+        <DonutCard
           title="Channels"
-          counted="visits"
-          rows={data.channels.map((c) => ({
-            key: c.key,
-            label: channelLabels[c.key],
-            value: c.value,
-          }))}
+          unit="visits"
+          rows={data.channels.map((c) => ({ ...c, label: channelLabels[c.key] }))}
           more={{ to: '/analytics/traffic', search }}
         />
         <RankedCard

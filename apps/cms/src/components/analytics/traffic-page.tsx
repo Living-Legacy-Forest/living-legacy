@@ -1,6 +1,7 @@
 import { type AnalyticsRange, channelLabels } from '@/lib/analytics';
 import type { AnalyticsResult, Traffic } from '@/server/analytics';
 import { AnalyticsPage } from './analytics-page';
+import { DonutCard } from './donut-card';
 import { RankedCard } from './ranked-card';
 
 export function TrafficPage({
@@ -20,15 +21,10 @@ export function TrafficPage({
     >
       {(data) => (
         <div className="grid gap-4 max-md:gap-3 lg:grid-cols-2">
-          <RankedCard
+          <DonutCard
             title="Channels"
-            counted="visits"
-            total={data.visits}
-            rows={data.channels.map((c) => ({
-              key: c.key,
-              label: channelLabels[c.key],
-              value: c.value,
-            }))}
+            unit="visits"
+            rows={data.channels.map((c) => ({ ...c, label: channelLabels[c.key] }))}
           />
           <RankedCard
             title="Websites that sent visits"

@@ -7,6 +7,7 @@ import { formatInteger } from '@/lib/format';
 import { siteUrl } from '@/lib/site';
 import type { AnalyticsResult, Enquiries } from '@/server/analytics';
 import { AnalyticsPage } from './analytics-page';
+import { DonutCard } from './donut-card';
 import { RankedCard } from './ranked-card';
 
 export function EnquiriesPage({
@@ -75,7 +76,7 @@ function EnquiriesBody({ data, days }: { data: Enquiries; days: AnalyticsRange }
       </Card>
 
       <div className="grid gap-4 max-md:gap-3 lg:grid-cols-2">
-        <RankedCard title="Forms" counted="enquiries" rows={data.forms} />
+        <DonutCard title="Forms" unit="enquiries" rows={data.forms} />
         <RankedCard title="Locations" counted="enquiries" rows={data.locations} />
         <RankedCard
           title="Sent from"

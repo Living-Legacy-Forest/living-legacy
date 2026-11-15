@@ -1,15 +1,9 @@
-import { LaptopIcon, SmartphoneIcon, TabletIcon } from '@/components/icons';
 import type { AnalyticsRange } from '@/lib/analytics';
 import { flagEmoji } from '@/lib/visitors';
 import type { AnalyticsResult, Audience } from '@/server/analytics';
 import { AnalyticsPage } from './analytics-page';
+import { DonutCard } from './donut-card';
 import { RankedCard } from './ranked-card';
-
-const deviceIcons: Record<string, typeof LaptopIcon> = {
-  desktop: LaptopIcon,
-  mobile: SmartphoneIcon,
-  tablet: TabletIcon,
-};
 
 const flag = (code: string | null) => (
   <span aria-hidden className="text-base leading-none">
@@ -48,18 +42,7 @@ export function AudiencePage({
             limit={15}
             rows={data.cities.map((c) => ({ ...c, leading: flag(c.code) }))}
           />
-          <RankedCard
-            title="Devices"
-            counted="visits"
-            total={data.visits}
-            rows={data.devices.map((d) => {
-              const Icon = deviceIcons[d.key];
-              return {
-                ...d,
-                leading: Icon && <Icon aria-hidden className="text-muted-foreground size-4" />,
-              };
-            })}
-          />
+          <DonutCard title="Devices" unit="visits" rows={data.devices} />
           <RankedCard
             title="Browsers"
             counted="visits"

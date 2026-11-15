@@ -18,7 +18,8 @@ export type WhatsNewItem = {
       | '/system'
       | '/analytics'
       | '/analytics/visitors'
-      | '/analytics/enquiries';
+      | '/analytics/enquiries'
+      | '/analytics/traffic';
     hash?: string;
   };
 };
@@ -34,6 +35,17 @@ export type WhatsNewEntry = {
 };
 
 export const whatsNew: WhatsNewEntry[] = [
+  {
+    id: '2026-11-15-2',
+    title: 'Visits over time, by channel and device',
+    items: [
+      {
+        title: 'Streams on Traffic and Audience',
+        body: 'Traffic now shows how visits from search, direct, social, other websites and email change day by day, and Audience does the same for desktop, mobile and tablet. Hover a stream to see that day, or a layer to follow it.',
+        link: { label: 'Open Traffic', to: '/analytics/traffic' },
+      },
+    ],
+  },
   {
     id: '2026-11-15',
     title: 'Analytics for the website',

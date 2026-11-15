@@ -61,11 +61,13 @@ D1, Vitest (unit: plain Node; integration: local D1 via Miniflare).
 ### Task 1: Load one event for its page
 
 **Files:**
+
 - Modify: `apps/cms/src/server/events.ts` (extract the row select from `listEvents`, add
   `loadEventPage` and `getEventPage`)
 - Test: `apps/cms/src/server/event-page.integration.test.ts`
 
 **Interfaces:**
+
 - Produces:
   - `loadEventPage(db: Db, id: string): Promise<EventPageData | null>`
   - `type EventPageData = { event: EventRow; dates: EventRow[]; locations: LocationOption[] }`.
@@ -79,9 +81,9 @@ D1, Vitest (unit: plain Node; integration: local D1 via Miniflare).
   output exactly.
 
 - [ ] **Step 1: Write the failing tests** in `event-page.integration.test.ts`, with
-  `addLocation` / `addEvent` / `book` helpers in the style of
-  `event-stats.integration.test.ts` and `beforeEach` clearing `eventBookings`, `events`
-  and `locations`:
+      `addLocation` / `addEvent` / `book` helpers in the style of
+      `event-stats.integration.test.ts` and `beforeEach` clearing `eventBookings`, `events`
+      and `locations`:
   - `returns the event with its booking counts`: event capacity 50, bookings of 3
     (checked in) and 2, plus a cancelled booking of 4. Expect `event.booked === 5`,
     `event.bookings === 2`, `event.checkedIn === 3`, `event.locationName` is the
@@ -93,26 +95,28 @@ D1, Vitest (unit: plain Node; integration: local D1 via Miniflare).
     live one.
   - `returns null for an unknown id`.
 - [ ] **Step 2: Run** `bun run --filter @ll/cms test:integration -- event-page` and
-  expect FAIL (`loadEventPage` is not exported).
+      expect FAIL (`loadEventPage` is not exported).
 - [ ] **Step 3: Implement.** Move the select and the row mapping out of `listEvents`
-  into `eventRowsQuery(db, where?)` and `toEventRow(row)`, and the locations select into
-  `locationOptions(db)`. `listEvents` calls them and returns exactly what it did. Then
-  `loadEventPage` selects the event by id. If it has a `seriesId`, it selects the dates
-  with that `seriesId` ordered by `startsAt`, and it adds the locations, in one
-  `db.batch` where practical.
+      into `eventRowsQuery(db, where?)` and `toEventRow(row)`, and the locations select into
+      `locationOptions(db)`. `listEvents` calls them and returns exactly what it did. Then
+      `loadEventPage` selects the event by id. If it has a `seriesId`, it selects the dates
+      with that `seriesId` ordered by `startsAt`, and it adds the locations, in one
+      `db.batch` where practical.
 - [ ] **Step 4: Run** the same command and expect PASS. Also run
-  `bun run --filter @ll/cms test:integration -- event-stats` to confirm nothing moved.
+      `bun run --filter @ll/cms test:integration -- event-stats` to confirm nothing moved.
 - [ ] **Step 5: Commit** `feat(cms): load one event, its dates and locations for its own page`.
 
 ### Task 2: Pure event editor rules
 
 **Files:**
+
 - Create: `apps/cms/src/components/events/editor/event-values.ts`
 - Test: `apps/cms/src/components/events/editor/event-values.test.ts`
 - Modify: `apps/cms/src/components/events/event-form.tsx` (import from the new module
   until Task 5 deletes it)
 
 **Interfaces:**
+
 - Produces (all moved from `event-form.tsx` unless new):
   - `type EventValues` (the current `Values`)
   - `initialEventValues(event: EventRow | null, siteZone: string): EventValues` (the
@@ -143,14 +147,15 @@ D1, Vitest (unit: plain Node; integration: local D1 via Miniflare).
     after changing `title`, and true for a new event with one added session.
 - [ ] **Step 2: Run** `bun run --filter @ll/cms test:unit -- event-values` and expect FAIL.
 - [ ] **Step 3: Implement** by moving the code out of `event-form.tsx`. `EventForm`
-  imports and uses the new functions; `timesReady` becomes
-  `const problem = timesProblem(…); if (problem) notify.error('Check the event', problem)`.
+      imports and uses the new functions; `timesReady` becomes
+      `const problem = timesProblem(…); if (problem) notify.error('Check the event', problem)`.
 - [ ] **Step 4: Run** the unit test (PASS) and `bun run type-check` (clean).
 - [ ] **Step 5: Commit** `refactor(cms): event form rules as pure, tested helpers`.
 
 ### Task 3: The event editor page (Details)
 
 **Files:**
+
 - Create: `apps/cms/src/components/events/editor/use-event-editor.ts`
 - Create: `apps/cms/src/components/events/editor/event-actions.tsx` (move `ScopeDialog`,
   `ScopeActions`, `CancelEvent`, `DeleteEvent`, `PreviewButton`, `CancelledEvent` from
@@ -166,6 +171,7 @@ D1, Vitest (unit: plain Node; integration: local D1 via Miniflare).
 - Test: `apps/cms/src/lib/nav.test.ts`
 
 **Interfaces:**
+
 - Consumes: Task 1 `getEventPage`, `getEventLocations`, `EventPageData`; Task 2 helpers.
 - Produces:
   - `useEventEditor({ event, locations, onSaved }: { event: EventRow | null; locations: LocationOption[]; onSaved: (id: string) => void })`
@@ -188,12 +194,12 @@ D1, Vitest (unit: plain Node; integration: local D1 via Miniflare).
   - `findNavItem('/events/01J0ABC')?.title` is `'All events'`.
 - [ ] **Step 2: Run** `bun run --filter @ll/cms test:unit -- nav` and expect FAIL.
 - [ ] **Step 3: Implement `isEditorPath` and `editorBack`**, and have `app-header.tsx`
-  use `editorBack(pathname)` instead of its hard-coded posts object. Run the test: PASS.
+      use `editorBack(pathname)` instead of its hard-coded posts object. Run the test: PASS.
 - [ ] **Step 4: Build the page.** Lay it out as the spec's section 3 (option C), using
-  the post editor's `ResizablePanels`. The main panel has id `event-editor-main` and
-  `defaultSize={70}`. The side panel has id `event-side-panel`, `defaultSize={30}`,
-  `minSize={260}` and `maxSize={560}`, and the toolbar toggle hides it on `lg+`. Below
-  `lg` the panels stack, as the post editor's do.
+      the post editor's `ResizablePanels`. The main panel has id `event-editor-main` and
+      `defaultSize={70}`. The side panel has id `event-side-panel`, `defaultSize={30}`,
+      `minSize={260}` and `maxSize={560}`, and the toolbar toggle hides it on `lg+`. Below
+      `lg` the panels stack, as the post editor's do.
   - **Main column (`event-main.tsx`), in order:**
     - Cover: `ImageField`, `shape="wide"`, bound to `heroMediaId`, label "Cover photo".
     - Title.
@@ -242,31 +248,33 @@ D1, Vitest (unit: plain Node; integration: local D1 via Miniflare).
       When the loader returns null, show an `Empty` with "This event no longer exists" and
       a button back to Events.
 - [ ] **Step 5: Verify:** `bun run type-check && bun run lint`, then `bun run dev:cms`.
-  At `/events/new`, create a single event and confirm the page moves to its address.
-  Edit the title, click Events, and confirm the leave dialog shows.
+      At `/events/new`, create a single event and confirm the page moves to its address.
+      Edit the title, click Events, and confirm the leave dialog shows.
 - [ ] **Step 6: Commit** `feat(cms): events open on their own page, laid out like a post`.
 
 ### Task 4: Guests, Dashboard and a series' dates on the page
 
 **Files:**
+
 - Modify: `apps/cms/src/components/events/editor/event-editor.tsx`
 - Modify: `apps/cms/src/components/events/editor/event-toolbar.tsx`
 - Modify: `apps/cms/src/routes/_app/events/$eventId.tsx`
 
 **Interfaces:**
+
 - Consumes: `EventGuests({ event })`, `EventDashboardPanel({ eventId, date, onDateChange, onOpenGuests })`,
   `SeriesDatePicker({ compact, event, dates, allDates, onPick })`, all unchanged.
 - Produces: `?view=` drives the view. `details` is the default and is dropped from the
   address.
 
 - [ ] **Step 1: Add Details / Guests / Dashboard `Tabs`** to the toolbar for saved
-  events. Switching tabs navigates with `search: { view }`, `replace: true`.
+      events. Switching tabs navigates with `search: { view }`, `replace: true`.
   - Guests and Dashboard render full width in place of the panels.
   - The Bookings card's "Guest list" link and the dashboard's `onOpenGuests` both switch
     to `guests`.
 - [ ] **Step 2: Wire the series date picker.** For `dates.length > 1`, the toolbar shows
-  `SeriesDatePicker`. Picking a date navigates to `/events/$eventId` for that id and keeps
-  `view`. That navigation goes through the unsaved-changes blocker.
+      `SeriesDatePicker`. Picking a date navigates to `/events/$eventId` for that id and keeps
+      `view`. That navigation goes through the unsaved-changes blocker.
   - On Dashboard, "all dates" keeps today's `allDates` behaviour, held in local state.
   - For a single date, show the status badge in the picker's place.
 - [ ] **Step 3: Verify** in `bun run dev:cms` on a repeating event:
@@ -279,6 +287,7 @@ D1, Vitest (unit: plain Node; integration: local D1 via Miniflare).
 ### Task 5: The list opens the page; remove the pane and the old form
 
 **Files:**
+
 - Modify: `apps/cms/src/components/events/events-page.tsx`
 - Modify: `apps/cms/src/routes/_app/events/index.tsx`
 - Create: `apps/cms/src/routes/_app/events/legacy-link.ts`
@@ -290,6 +299,7 @@ D1, Vitest (unit: plain Node; integration: local D1 via Miniflare).
   moved in Tasks 2 and 3)
 
 **Interfaces:**
+
 - Produces: `legacyEventRedirect(search: { open?: string; view?: 'details' | 'guests' | 'dashboard' }): { to: '/events/$eventId'; params: { eventId: string }; search: { view?: … } } | null`
 
 - [ ] **Step 1: Write the failing test.**
@@ -298,10 +308,10 @@ D1, Vitest (unit: plain Node; integration: local D1 via Miniflare).
   - With only `open: 'abc'`, `search` is `{}`.
   - `legacyEventRedirect({})` is null.
 - [ ] **Step 2: Run** `bun run --filter @ll/cms test:unit -- legacy-link` and expect FAIL.
-  Implement it, then run again and expect PASS.
+      Implement it, then run again and expect PASS.
 - [ ] **Step 3: Redirect old links.** The index route's `beforeLoad` throws
-  `redirect(legacyEventRedirect(search))` when the result is not null. `EventsPage` loses
-  its `initialOpen` / `initialView` / `onOpenedInitial` props.
+      `redirect(legacyEventRedirect(search))` when the result is not null. `EventsPage` loses
+      its `initialOpen` / `initialView` / `onOpenedInitial` props.
 - [ ] **Step 4: Point the three linkers at the new route.**
   - Content checks and notifications: `<Link to="/events/$eventId" params={{ eventId }}>`.
   - Search-replace: the link string `/events/${r.id}`.
@@ -323,6 +333,7 @@ D1, Vitest (unit: plain Node; integration: local D1 via Miniflare).
 ### Task 6: What's new, CI and checks on a phone
 
 **Files:**
+
 - Modify: `apps/cms/src/lib/whats-new.ts` (new entry at the top; add `'/events'` to the
   `link.to` union if missing)
 
@@ -336,10 +347,10 @@ D1, Vitest (unit: plain Node; integration: local D1 via Miniflare).
   - Link: `{ label: 'Open Events', to: '/events' }`.
 - [ ] **Step 2: Run** `bun run --filter @ll/cms test:unit -- whats-new`. Expect PASS.
 - [ ] **Step 3: Run CI locally** from the repo root:
-  `bun run type-check && bun run lint && bun run format:check && bun run test && bun run build`.
-  Expect every step to pass.
+      `bun run type-check && bun run lint && bun run format:check && bun run test && bun run build`.
+      Expect every step to pass.
 - [ ] **Step 4: Browser checks.** Do these on desktop, and again at 390px with touch
-  emulation:
+      emulation:
   - Create a single event, then publish it.
   - Create a weekly repeating event with an extra session. Expect the toast to say
     "N sessions created".

@@ -13,6 +13,7 @@ export type WhatsNewItem = {
       | '/settings'
       | '/media'
       | '/profile'
+      | '/events'
       | '/events/overview'
       | '/search-replace'
       | '/system'
@@ -37,6 +38,17 @@ export type WhatsNewEntry = {
 };
 
 export const whatsNew: WhatsNewEntry[] = [
+  {
+    id: '2026-11-15-7',
+    title: 'Events have their own page',
+    items: [
+      {
+        title: 'More room for an event',
+        body: 'Opening an event, or making a new one, now takes you to its own page, like a post: the description in the middle, and bookings, places and dates at the side. Guests and the dashboard are tabs at the top.',
+        link: { label: 'Open Events', to: '/events' },
+      },
+    ],
+  },
   {
     id: '2026-11-15-5',
     title: 'A calendar of activity',

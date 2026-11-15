@@ -72,10 +72,10 @@ export function EventEditor({
   const editor = useEventEditor({
     event,
     locations,
-    onSaved: (id) =>
-      event
-        ? void onReload()
-        : void navigate({ to: '/events/$eventId', params: { eventId: id }, replace: true }),
+    // A saved event stays as it is; only a new one has somewhere to go.
+    onSaved: (id) => {
+      if (!event) void navigate({ to: '/events/$eventId', params: { eventId: id }, replace: true });
+    },
   });
   const [showSide, setShowSide] = useState(true);
   const [cancelling, setCancelling] = useState(false);
@@ -86,9 +86,10 @@ export function EventEditor({
   const cancelled = event?.status === 'cancelled';
   const showingAll = view === 'dashboard' && allDates && dates.length > 1;
 
+  /** Goes to the list; the promise settles once it has, before anything is refreshed. */
   const leave = () => {
     editor.skipBlock();
-    void navigate({ to: '/events' });
+    return navigate({ to: '/events' });
   };
 
   const viewBar = event && (

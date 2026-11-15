@@ -7,6 +7,7 @@ import {
   initialEventValues,
   isEventDirty,
   rezoneValues,
+  savedValues,
   timesProblem,
 } from './event-values';
 
@@ -136,6 +137,21 @@ describe('isEventDirty', () => {
     ).toBe(true);
     expect(
       isEventDirty(blank, blank, { sessions: [], repeat: { ...noRepeat, repeat: 'weekly' } })
+    ).toBe(true);
+  });
+});
+
+describe('savedValues', () => {
+  it('is what was sent: the form with the changes made on top of it', () => {
+    const form = { ...initialEventValues(event, MELBOURNE), title: 'Renamed' };
+
+    const sent = savedValues(form, { status: 'published', publishAt: null });
+
+    expect(sent).toEqual({ ...form, status: 'published', publishAt: null });
+    // Typing after Save is a new change; what was just saved is not.
+    expect(isEventDirty(sent, sent, { sessions: [], repeat: noRepeat })).toBe(false);
+    expect(
+      isEventDirty({ ...sent, title: 'Again' }, sent, { sessions: [], repeat: noRepeat })
     ).toBe(true);
   });
 });

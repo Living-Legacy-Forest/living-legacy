@@ -147,7 +147,7 @@ export function DeleteEventDialog({
   open,
   onOpenChange,
   onRemoved,
-}: DialogProps & { onRemoved: () => void }) {
+}: DialogProps & { onRemoved: () => void | Promise<void> }) {
   const { run } = useAction();
   const series = Boolean(event.seriesId);
   return (
@@ -169,7 +169,9 @@ export function DeleteEventDialog({
               run(() => deleteEvent({ data: { id: event.id, scope } }), {
                 success: (r) => removedNotice(Math.max(1, r.dates), ['event date', 'event dates']),
                 error: 'Could not delete the event',
-              }).then((removed) => removed && onRemoved())
+                // Gone, so leave before the page's own data is reloaded and finds nothing.
+                afterAction: () => onRemoved(),
+              })
             }
           />
         </AlertDialogFooter>
@@ -184,7 +186,7 @@ export function DeleteEventButton({
   onRemoved,
 }: {
   event: EventRow;
-  onRemoved: () => void;
+  onRemoved: () => void | Promise<void>;
 }) {
   const [open, setOpen] = useState(false);
   return (

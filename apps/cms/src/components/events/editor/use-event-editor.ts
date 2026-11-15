@@ -14,6 +14,7 @@ import {
   initialEventValues,
   isEventDirty,
   rezoneValues,
+  savedValues,
   timesProblem,
 } from './event-values';
 
@@ -32,7 +33,8 @@ export function useEventEditor({
   onSaved: (id: string) => void;
 }) {
   const siteZone = useTimeZone();
-  const [saved] = useState(() => initialEventValues(event, siteZone));
+  // What the server has: leaving with anything else loses it. A save replaces it.
+  const [saved, setSaved] = useState(() => initialEventValues(event, siteZone));
   const [values, setValues] = useState<EventValues>(saved);
   const [sessions, setSessions] = useState<SessionTime[]>([]);
   // Picking a location sets the zone, until someone chooses one themselves.
@@ -73,7 +75,8 @@ export function useEventEditor({
   async function save(scope: SeriesScope) {
     if (!times) return;
     const moreDates = event ? [] : allTimes(times).slice(1);
-    const data = { ...values, ...overrides.current, ...times, id: event?.id, moreDates, scope };
+    const extra = overrides.current;
+    const data = { ...values, ...extra, ...times, id: event?.id, moreDates, scope };
     const result = await run(() => saveEvent({ data }), {
       success: (r) => ({
         title: event
@@ -93,10 +96,17 @@ export function useEventEditor({
       error: 'Could not save the event',
     });
     overrides.current = {};
-    if (result) {
+    if (!result) return;
+    if (event) {
+      // The page stays as it is, with its scroll, cursor and panels. Anything typed
+      // while saving is still a change.
+      setValues((v) => ({ ...v, ...extra }));
+      setSaved(savedValues({ ...values, ...times }, extra));
+    } else {
+      // A new event moves to its own page, which loses nothing.
       skipBlock();
-      onSaved(result.id);
     }
+    onSaved(result.id);
   }
 
   /** Checks the form, then saves, or asks which dates to change first. */

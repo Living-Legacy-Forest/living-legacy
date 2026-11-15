@@ -115,6 +115,11 @@ export function timesProblem({
   return null;
 }
 
+/** What was just saved: the form as it was sent, with any changes made on top of it (Publish). */
+export function savedValues(values: EventValues, overrides: Partial<EventValues>): EventValues {
+  return { ...values, ...overrides };
+}
+
 /** Whether leaving the page would lose something: a changed field, an extra time or a repeat. */
 export function isEventDirty(
   values: EventValues,

@@ -49,13 +49,12 @@ export function EventMain({ editor, event }: { editor: EventEditorState; event: 
             onChange={(e) => patch({ title: e.target.value })}
             placeholder="Event name"
             enterKeyHint="done"
-            className="h-11 text-lg font-semibold"
           />
         </FormCell>
         <FormCell label="Summary" htmlFor="ev-summary" hint="Shown in event lists.">
           <Textarea
             id="ev-summary"
-            rows={2}
+            rows={4}
             maxLength={200}
             value={values.summary}
             onChange={(e) => patch({ summary: e.target.value })}
@@ -71,6 +70,7 @@ export function EventMain({ editor, event }: { editor: EventEditorState; event: 
           value={values.description}
           onChange={(description) => patch({ description })}
           placeholder="What happens, what to bring, parking"
+          contentClassName="[&_.ProseMirror]:min-h-80!"
         />
       </FormBlock>
 

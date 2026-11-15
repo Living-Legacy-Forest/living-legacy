@@ -1,5 +1,5 @@
 import { Suspense, lazy, useEffect, useState } from 'react';
-import { MUTED, type Stat, StatCard } from '@/components/stat-card/stat-card';
+import { type Stat, StatCard } from '@/components/stat-card/stat-card';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -45,13 +45,11 @@ function buildStats({ capacity, totals, date, now }: Dashboard): Stat[] {
                 key: 'booked',
                 label: 'Booked',
                 value: Math.min(totals.people, capacity),
-                color: 'var(--primary)',
               },
               {
                 key: 'left',
                 label: 'Places left',
                 value: Math.max(0, capacity - totals.people),
-                color: MUTED,
               },
             ]
           : undefined,
@@ -66,8 +64,8 @@ function buildStats({ capacity, totals, date, now }: Dashboard): Stat[] {
       parts:
         totals.bookings > 0
           ? [
-              { key: 'website', label: 'Website', value: totals.website, color: 'var(--primary)' },
-              { key: 'staff', label: 'Staff', value: totals.staff, color: MUTED },
+              { key: 'website', label: 'Website', value: totals.website },
+              { key: 'staff', label: 'Staff', value: totals.staff },
             ]
           : undefined,
     },
@@ -82,12 +80,11 @@ function buildStats({ capacity, totals, date, now }: Dashboard): Stat[] {
           : 'Shows once a date has begun',
       parts: begun
         ? [
-            { key: 'in', label: 'Checked in', value: totals.checkedIn, color: 'var(--primary)' },
+            { key: 'in', label: 'Checked in', value: totals.checkedIn },
             {
               key: 'out',
               label: 'Not checked in',
               value: Math.max(0, totals.startedPeople - totals.checkedIn),
-              color: MUTED,
             },
           ]
         : undefined,

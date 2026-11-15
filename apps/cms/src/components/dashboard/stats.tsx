@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { MUTED, type Stat, StatCard } from '@/components/stat-card/stat-card';
+import { type Stat, StatCard } from '@/components/stat-card/stat-card';
 import { formatBytes, formatDate, formatInteger } from '@/lib/format';
 import { libraryMeter } from '@/lib/storage-meter';
 import { useTimeZone } from '@/lib/use-time-zone';
@@ -110,8 +110,8 @@ function buildStats(
       value: locations.length,
       hint: locationHint(locations),
       parts: [
-        { key: 'open', label: 'Open', value: open, color: 'var(--primary)' },
-        { key: 'soon', label: 'Coming soon', value: locations.length - open, color: MUTED },
+        { key: 'open', label: 'Open', value: open },
+        { key: 'soon', label: 'Coming soon', value: locations.length - open },
       ],
       link: { to: '/locations' },
     },

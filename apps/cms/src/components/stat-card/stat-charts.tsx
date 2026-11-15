@@ -179,7 +179,7 @@ export function PartsChart({ parts }: { parts: Part[] }) {
         <DonutChart
           className="donut-compact w-16 shrink-0 md:w-28"
           label={parts.map((p) => p.label).join(', ')}
-          data={parts.map((p) => ({ key: p.key, label: p.label, value: p.value, color: p.color }))}
+          data={parts.map((p) => ({ key: p.key, label: p.label, value: p.value }))}
           formatValue={formatInteger}
           legend={false}
           size={112}
@@ -189,9 +189,13 @@ export function PartsChart({ parts }: { parts: Part[] }) {
         />
       )}
       <ul className="text-muted-foreground grid min-w-0 gap-1 text-xs">
-        {parts.map((p) => (
+        {parts.map((p, i) => (
           <li key={p.key} className="flex items-center gap-1.5 leading-tight">
-            <span className="size-2 shrink-0 rounded-xs" style={{ background: p.color }} />
+            {/* The ring's own colour for this part: the chart palette, in order. */}
+            <span
+              className="size-2 shrink-0 rounded-xs"
+              style={{ background: `var(--chart-${(i % 4) + 1})` }}
+            />
             <span className="text-foreground tabular-nums">{formatInteger(p.value)}</span>
             {p.label}
           </li>

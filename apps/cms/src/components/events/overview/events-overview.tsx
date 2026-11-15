@@ -1,6 +1,6 @@
 import { Suspense, lazy } from 'react';
 import { SegmentedControl } from '@/components/segmented-control';
-import { MUTED, type Stat, StatCard } from '@/components/stat-card/stat-card';
+import { type Stat, StatCard } from '@/components/stat-card/stat-card';
 import { Card } from '@/components/ui/card';
 import {
   Select,
@@ -51,8 +51,8 @@ function buildStats({ upcoming, weeklyBookings }: Overview): Stat[] {
       parts:
         places > 0
           ? [
-              { key: 'booked', label: 'Booked', value: bookedLimited, color: 'var(--primary)' },
-              { key: 'open', label: 'Places left', value: places - bookedLimited, color: MUTED },
+              { key: 'booked', label: 'Booked', value: bookedLimited },
+              { key: 'open', label: 'Places left', value: places - bookedLimited },
             ]
           : undefined,
     },

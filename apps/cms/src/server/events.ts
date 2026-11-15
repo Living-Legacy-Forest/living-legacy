@@ -25,74 +25,119 @@ const confirmed = sql`${eventBookings.status} = 'confirmed'`;
 const resync = (db: Db, eventId: string) =>
   db.update(eventBookings).set({ crmSyncedAt: null }).where(eq(eventBookings.eventId, eventId));
 
+/** Every event column the CMS shows, with its booking counts; callers add the where and order. */
+const eventRowsQuery = (db: Db) =>
+  db
+    .select({
+      event: events,
+      locationName: locations.name,
+      booked: sql<number>`coalesce((select sum(${eventBookings.partySize}) from ${eventBookings} where ${eventBookings.eventId} = ${events.id} and ${confirmed}), 0)`,
+      bookings: sql<number>`(select count(*) from ${eventBookings} where ${eventBookings.eventId} = ${events.id} and ${confirmed})`,
+      checkedIn: sql<number>`coalesce((select sum(${eventBookings.partySize}) from ${eventBookings} where ${eventBookings.eventId} = ${events.id} and ${confirmed} and ${eventBookings.checkedInAt} is not null), 0)`,
+    })
+    .from(events)
+    .leftJoin(locations, eq(events.locationId, locations.id));
+
+const locationOptionsQuery = (db: Db) =>
+  db
+    .select({
+      id: locations.id,
+      name: locations.name,
+      address: locations.address,
+      email: locations.email,
+      state: locations.state,
+    })
+    .from(locations)
+    .where(isNull(locations.deletedAt))
+    .orderBy(asc(locations.sortOrder), asc(locations.name));
+
+function toEventRow({
+  event: e,
+  locationName,
+  booked,
+  bookings,
+  checkedIn,
+}: Awaited<ReturnType<typeof eventRowsQuery>>[number]) {
+  return {
+    id: e.id,
+    title: e.title,
+    slug: e.slug,
+    locationId: e.locationId,
+    locationName,
+    venue: e.venue ?? '',
+    startsAt: e.startsAt.getTime(),
+    endsAt: e.endsAt.getTime(),
+    summary: e.summary ?? '',
+    description: (e.description as RichTextDoc | null) ?? null,
+    heroMediaId: e.heroMediaId,
+    galleryMediaIds: e.galleryMediaIds,
+    capacity: e.capacity,
+    maxPartySize: e.maxPartySize,
+    bookingsOpenAt: e.bookingsOpenAt?.getTime() ?? null,
+    bookingsCloseAt: e.bookingsCloseAt?.getTime() ?? null,
+    seriesId: e.seriesId,
+    timeZone: e.timeZone,
+    status: e.status,
+    publishAt: e.publishAt?.getTime() ?? null,
+    booked: Number(booked),
+    bookings: Number(bookings),
+    checkedIn: Number(checkedIn),
+  };
+}
+
+const toLocationOption = (l: Awaited<ReturnType<typeof locationOptionsQuery>>[number]) => ({
+  id: l.id,
+  name: l.name,
+  address: l.address ?? '',
+  email: l.email ?? '',
+  state: l.state,
+});
+
 export const listEvents = createServerFn({ method: 'GET' })
   .middleware([requirePermission('events:manage')])
   .handler(async () => {
     const db = getDb();
     const [rows, places] = await db.batch([
-      db
-        .select({
-          event: events,
-          locationName: locations.name,
-          booked: sql<number>`coalesce((select sum(${eventBookings.partySize}) from ${eventBookings} where ${eventBookings.eventId} = ${events.id} and ${confirmed}), 0)`,
-          bookings: sql<number>`(select count(*) from ${eventBookings} where ${eventBookings.eventId} = ${events.id} and ${confirmed})`,
-          checkedIn: sql<number>`coalesce((select sum(${eventBookings.partySize}) from ${eventBookings} where ${eventBookings.eventId} = ${events.id} and ${confirmed} and ${eventBookings.checkedInAt} is not null), 0)`,
-        })
-        .from(events)
-        .leftJoin(locations, eq(events.locationId, locations.id))
-        .orderBy(desc(events.startsAt)),
-      db
-        .select({
-          id: locations.id,
-          name: locations.name,
-          address: locations.address,
-          email: locations.email,
-          state: locations.state,
-        })
-        .from(locations)
-        .where(isNull(locations.deletedAt))
-        .orderBy(asc(locations.sortOrder), asc(locations.name)),
+      eventRowsQuery(db).orderBy(desc(events.startsAt)),
+      locationOptionsQuery(db),
     ]);
-
-    return {
-      events: rows.map(({ event: e, locationName, booked, bookings, checkedIn }) => ({
-        id: e.id,
-        title: e.title,
-        slug: e.slug,
-        locationId: e.locationId,
-        locationName,
-        venue: e.venue ?? '',
-        startsAt: e.startsAt.getTime(),
-        endsAt: e.endsAt.getTime(),
-        summary: e.summary ?? '',
-        description: (e.description as RichTextDoc | null) ?? null,
-        heroMediaId: e.heroMediaId,
-        galleryMediaIds: e.galleryMediaIds,
-        capacity: e.capacity,
-        maxPartySize: e.maxPartySize,
-        bookingsOpenAt: e.bookingsOpenAt?.getTime() ?? null,
-        bookingsCloseAt: e.bookingsCloseAt?.getTime() ?? null,
-        seriesId: e.seriesId,
-        timeZone: e.timeZone,
-        status: e.status,
-        publishAt: e.publishAt?.getTime() ?? null,
-        booked: Number(booked),
-        bookings: Number(bookings),
-        checkedIn: Number(checkedIn),
-      })),
-      locations: places.map((l) => ({
-        id: l.id,
-        name: l.name,
-        address: l.address ?? '',
-        email: l.email ?? '',
-        state: l.state,
-      })),
-    };
+    return { events: rows.map(toEventRow), locations: places.map(toLocationOption) };
   });
 
 export type EventsData = Awaited<ReturnType<typeof listEvents>>;
 export type EventRow = EventsData['events'][number];
 export type LocationOption = EventsData['locations'][number];
+
+export type EventPageData = { event: EventRow; dates: EventRow[]; locations: LocationOption[] };
+
+/** One event for its own page: its series' dates, soonest first, and the places to pick from. */
+export async function loadEventPage(db: Db, id: string): Promise<EventPageData | null> {
+  const [found, places] = await db.batch([
+    eventRowsQuery(db).where(eq(events.id, id)),
+    locationOptionsQuery(db),
+  ]);
+  const row = found[0];
+  if (!row) return null;
+  const event = toEventRow(row);
+  const dates = event.seriesId
+    ? (
+        await eventRowsQuery(db)
+          .where(eq(events.seriesId, event.seriesId))
+          .orderBy(asc(events.startsAt))
+      ).map(toEventRow)
+    : [];
+  return { event, dates, locations: places.map(toLocationOption) };
+}
+
+export const getEventPage = createServerFn({ method: 'GET' })
+  .middleware([requirePermission('events:manage')])
+  .validator(z.object({ id: z.string().max(64) }))
+  .handler(({ data }) => loadEventPage(getDb(), data.id));
+
+/** The places to pick from, for a new event's page. */
+export const getEventLocations = createServerFn({ method: 'GET' })
+  .middleware([requirePermission('events:manage')])
+  .handler(async () => (await locationOptionsQuery(getDb())).map(toLocationOption));
 
 type EventRecord = typeof events.$inferSelect;
 /** One statement in a D1 batch. */

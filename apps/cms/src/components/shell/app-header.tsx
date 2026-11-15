@@ -4,7 +4,7 @@ import { ChevronLeftIcon } from '@/components/icons';
 import { Separator } from '@/components/ui/separator';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { cn } from '@/lib/utils';
-import { findNavItem, isEditorPath } from '@/lib/nav';
+import { editorBack, findNavItem, isEditorPath } from '@/lib/nav';
 import type { SessionUser } from '@/lib/session';
 import { AppBreadcrumbs } from './app-breadcrumbs';
 import { NavUser } from './nav-user';
@@ -18,11 +18,9 @@ export function AppHeader({ user }: { user: SessionUser }) {
   const { collapsed, scrolled, title } = useLargeTitle(pathname);
 
   // Phones have no sidebar or breadcrumb: a page below a tab gets a back button.
-  const back = isEditorPath(pathname)
-    ? { to: '/posts' as const, label: 'Posts' }
-    : item?.to && item.to !== pathname
-      ? { to: item.to, label: item.title }
-      : null;
+  const back =
+    editorBack(pathname) ??
+    (item?.to && item.to !== pathname ? { to: item.to, label: item.title } : null);
 
   // Desktop: the page scrolls behind the inset frame, so the header pins where
   // the frame starts and paints the gap and corners above it in the sidebar colour.

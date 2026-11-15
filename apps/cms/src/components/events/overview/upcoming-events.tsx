@@ -92,8 +92,9 @@ function UpcomingRow({ event, now }: { event: Upcoming; now: number }) {
   return (
     <li>
       <Link
-        to="/events"
-        search={{ open: event.id, view: 'dashboard' }}
+        to="/events/$eventId"
+        params={{ eventId: event.id }}
+        search={{ view: 'dashboard' }}
         className="hover:bg-muted/50 touch:min-h-11 -mx-2 grid grid-cols-[5.5rem_1fr_auto] items-center gap-x-4 gap-y-1 rounded-md px-2 py-2.5 text-sm max-sm:grid-cols-[1fr_auto]"
       >
         <span className="text-muted-foreground tabular-nums max-sm:col-span-2">

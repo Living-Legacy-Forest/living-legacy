@@ -9,6 +9,11 @@ export type RunOptions<T> = {
   error: string;
   /** A loading toast for the outcome to replace, e.g. one showing progress. */
   toastId?: string | number;
+  /**
+   * Runs after the toast and before the loaders refresh, for a caller that is about
+   * to leave the page: refreshing first would reload a page whose subject is gone.
+   */
+  afterAction?: (result: T) => void | Promise<void>;
 };
 
 /**
@@ -18,8 +23,21 @@ export type RunOptions<T> = {
 export function useAction() {
   const router = useRouter();
   const [pending, setPending] = useState(false);
+  return { run: createRunner({ invalidate: () => router.invalidate(), setPending }), pending };
+}
 
-  async function run<T>(action: () => Promise<T>, { success, error, toastId }: RunOptions<T>) {
+/** `run` apart from React, so the order of its steps can be tested. */
+export function createRunner({
+  invalidate,
+  setPending,
+}: {
+  invalidate: () => Promise<unknown>;
+  setPending: (pending: boolean) => void;
+}) {
+  return async function run<T>(
+    action: () => Promise<T>,
+    { success, error, toastId, afterAction }: RunOptions<T>
+  ) {
     setPending(true);
     try {
       const result = await action();
@@ -27,7 +45,8 @@ export function useAction() {
         const notice = typeof success === 'function' ? success(result) : success;
         if (notice) notify.success({ id: toastId, ...notice });
       }
-      await router.invalidate();
+      await afterAction?.(result);
+      await invalidate();
       return result;
     } catch (caught) {
       notify.error(error, caught, { id: toastId });
@@ -35,7 +54,5 @@ export function useAction() {
     } finally {
       setPending(false);
     }
-  }
-
-  return { run, pending };
+  };
 }

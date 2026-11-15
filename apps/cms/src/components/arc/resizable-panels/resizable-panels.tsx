@@ -40,6 +40,10 @@ export interface ResizablePanelProps {
   /** Dragging well past the minimum, or flicking toward the edge, snaps the pane closed. Its divider then shows a restore tab. */
   collapsible?: boolean;
   defaultCollapsed?: boolean;
+  /** Controlled: true hides the pane, false shows it, with the same glide as dragging it shut. Needs `collapsible`. */
+  collapsed?: boolean;
+  /** Called when the pane is hidden or shown, however it happened (a drag, the divider, or `collapsed`), so a parent's toggle stays in step. */
+  onCollapsedChange?: (collapsed: boolean) => void;
   className?: string;
   children?: ReactNode;
 }
@@ -514,6 +518,25 @@ export function ResizablePanels({
       sizes.map((_, index) => (index === handle ? size : index === handle + 1 ? pair - size : null))
     );
   }
+
+  // A parent that owns the toggle (`collapsed`) moves the pane the way the divider would.
+  const wanted = configs.map((config) => config.collapsed).join();
+  useEffect(() => {
+    configs.forEach((config, index) => {
+      if (!config.collapsible || config.collapsed === undefined) return;
+      if (count < 2 || config.collapsed === collapsed[index]) return;
+      const handle = index === 0 ? 0 : index - 1;
+      const side: Mode = index === 0 ? 'before' : 'after';
+      if (config.collapsed) collapse(handle, side);
+      else restore(handle, side);
+    });
+    // Only when the parent changes its mind, not on every render.
+  }, [wanted]);
+  const settled = collapsed.join();
+  useEffect(() => {
+    configs.forEach((config, index) => config.onCollapsedChange?.(Boolean(collapsed[index])));
+    // Only when a pane is hidden or shown.
+  }, [settled]);
 
   return (
     <div

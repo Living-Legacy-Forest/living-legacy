@@ -92,7 +92,7 @@ function buildTasks(attention: Attention, timeZone: string): Task[] {
       ]
         .filter(Boolean)
         .join(' · '),
-      link: { to: '/events', search: { open: next.id } },
+      link: { to: '/events/$eventId', params: { eventId: next.id } },
     });
   }
   if (missingPages && missingPages.total > 0) {

@@ -1,28 +1,24 @@
-import { createFileRoute, useNavigate } from '@tanstack/react-router';
+import { createFileRoute, redirect } from '@tanstack/react-router';
 import { z } from 'zod';
 import { EventsPage } from '@/components/events/events-page';
+import { legacyEventRedirect } from '@/lib/legacy-event-link';
 import { listEvents } from '@/server/events';
 
 export const Route = createFileRoute('/_app/events/')({
-  // An event date to open on arrival, for links that fix one thing (Content checks).
+  // Old links open an event with ?open=; they now go to its own page.
   validateSearch: z.object({
     open: z.string().max(64).optional().catch(undefined),
     view: z.enum(['details', 'guests', 'dashboard']).optional().catch(undefined),
   }),
+  beforeLoad: ({ search }) => {
+    const to = legacyEventRedirect(search);
+    if (to) throw redirect(to);
+  },
   loader: () => listEvents(),
   head: () => ({ meta: [{ title: 'Events | Living Legacy CMS' }] }),
   component: EventsRoute,
 });
 
 function EventsRoute() {
-  const { open, view } = Route.useSearch();
-  const navigate = useNavigate({ from: '/events/' });
-  return (
-    <EventsPage
-      data={Route.useLoaderData()}
-      initialOpen={open}
-      initialView={view}
-      onOpenedInitial={() => navigate({ search: {}, replace: true })}
-    />
-  );
+  return <EventsPage data={Route.useLoaderData()} />;
 }

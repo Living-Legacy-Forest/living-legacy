@@ -34,6 +34,8 @@ import { Route as AppIntegrationsIndexRouteImport } from './routes/_app/integrat
 import { Route as AppLegalIndexRouteImport } from './routes/_app/legal/index'
 import { Route as AppLegalSlugRouteImport } from './routes/_app/legal/$slug'
 import { Route as AppLocationsIndexRouteImport } from './routes/_app/locations/index'
+import { Route as AppLocationsLocationIdRouteImport } from './routes/_app/locations/$locationId'
+import { Route as AppLocationsNewRouteImport } from './routes/_app/locations/new'
 import { Route as AppMediaCoverageIndexRouteImport } from './routes/_app/media-coverage/index'
 import { Route as AppMediaIndexRouteImport } from './routes/_app/media/index'
 import { Route as AppMissingPagesIndexRouteImport } from './routes/_app/missing-pages/index'
@@ -187,6 +189,16 @@ const AppLegalSlugRoute = AppLegalSlugRouteImport.update({
 const AppLocationsIndexRoute = AppLocationsIndexRouteImport.update({
   id: '/locations/',
   path: '/locations/',
+  getParentRoute: () => AppRoute,
+} as any)
+const AppLocationsLocationIdRoute = AppLocationsLocationIdRouteImport.update({
+  id: '/locations/$locationId',
+  path: '/locations/$locationId',
+  getParentRoute: () => AppRoute,
+} as any)
+const AppLocationsNewRoute = AppLocationsNewRouteImport.update({
+  id: '/locations/new',
+  path: '/locations/new',
   getParentRoute: () => AppRoute,
 } as any)
 const AppMediaCoverageIndexRoute = AppMediaCoverageIndexRouteImport.update({
@@ -356,6 +368,8 @@ export interface FileRoutesByFullPath {
   '/events/new': typeof AppEventsNewRoute
   '/events/overview': typeof AppEventsOverviewRoute
   '/legal/$slug': typeof AppLegalSlugRoute
+  '/locations/$locationId': typeof AppLocationsLocationIdRoute
+  '/locations/new': typeof AppLocationsNewRoute
   '/posts/$postId': typeof AppPostsPostIdRoute
   '/posts/new': typeof AppPostsNewRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
@@ -411,6 +425,8 @@ export interface FileRoutesByTo {
   '/events/new': typeof AppEventsNewRoute
   '/events/overview': typeof AppEventsOverviewRoute
   '/legal/$slug': typeof AppLegalSlugRoute
+  '/locations/$locationId': typeof AppLocationsLocationIdRoute
+  '/locations/new': typeof AppLocationsNewRoute
   '/posts/$postId': typeof AppPostsPostIdRoute
   '/posts/new': typeof AppPostsNewRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
@@ -469,6 +485,8 @@ export interface FileRoutesById {
   '/_app/events/new': typeof AppEventsNewRoute
   '/_app/events/overview': typeof AppEventsOverviewRoute
   '/_app/legal/$slug': typeof AppLegalSlugRoute
+  '/_app/locations/$locationId': typeof AppLocationsLocationIdRoute
+  '/_app/locations/new': typeof AppLocationsNewRoute
   '/_app/posts/$postId': typeof AppPostsPostIdRoute
   '/_app/posts/new': typeof AppPostsNewRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
@@ -527,6 +545,8 @@ export interface FileRouteTypes {
     | '/events/new'
     | '/events/overview'
     | '/legal/$slug'
+    | '/locations/$locationId'
+    | '/locations/new'
     | '/posts/$postId'
     | '/posts/new'
     | '/api/auth/$'
@@ -582,6 +602,8 @@ export interface FileRouteTypes {
     | '/events/new'
     | '/events/overview'
     | '/legal/$slug'
+    | '/locations/$locationId'
+    | '/locations/new'
     | '/posts/$postId'
     | '/posts/new'
     | '/api/auth/$'
@@ -639,6 +661,8 @@ export interface FileRouteTypes {
     | '/_app/events/new'
     | '/_app/events/overview'
     | '/_app/legal/$slug'
+    | '/_app/locations/$locationId'
+    | '/_app/locations/new'
     | '/_app/posts/$postId'
     | '/_app/posts/new'
     | '/api/auth/$'
@@ -876,6 +900,20 @@ declare module '@tanstack/react-router' {
       path: '/locations'
       fullPath: '/locations/'
       preLoaderRoute: typeof AppLocationsIndexRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/_app/locations/$locationId': {
+      id: '/_app/locations/$locationId'
+      path: '/locations/$locationId'
+      fullPath: '/locations/$locationId'
+      preLoaderRoute: typeof AppLocationsLocationIdRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/_app/locations/new': {
+      id: '/_app/locations/new'
+      path: '/locations/new'
+      fullPath: '/locations/new'
+      preLoaderRoute: typeof AppLocationsNewRouteImport
       parentRoute: typeof AppRoute
     }
     '/_app/media-coverage/': {
@@ -1119,6 +1157,8 @@ interface AppRouteChildren {
   AppEventsNewRoute: typeof AppEventsNewRoute
   AppEventsOverviewRoute: typeof AppEventsOverviewRoute
   AppLegalSlugRoute: typeof AppLegalSlugRoute
+  AppLocationsLocationIdRoute: typeof AppLocationsLocationIdRoute
+  AppLocationsNewRoute: typeof AppLocationsNewRoute
   AppPostsPostIdRoute: typeof AppPostsPostIdRoute
   AppPostsNewRoute: typeof AppPostsNewRoute
   AppActivityIndexRoute: typeof AppActivityIndexRoute
@@ -1154,6 +1194,8 @@ const AppRouteChildren: AppRouteChildren = {
   AppEventsNewRoute: AppEventsNewRoute,
   AppEventsOverviewRoute: AppEventsOverviewRoute,
   AppLegalSlugRoute: AppLegalSlugRoute,
+  AppLocationsLocationIdRoute: AppLocationsLocationIdRoute,
+  AppLocationsNewRoute: AppLocationsNewRoute,
   AppPostsPostIdRoute: AppPostsPostIdRoute,
   AppPostsNewRoute: AppPostsNewRoute,
   AppActivityIndexRoute: AppActivityIndexRoute,

@@ -39,23 +39,13 @@ import {
 } from '@/components/list/list-tools';
 import { FormBlock, FormCell, FormSection, FormSwitchCell } from '@/components/form-cells';
 import { FormStep, FormSteps, TOUCH_FIELDS, useFormSteps } from '@/components/form-steps';
-import { ExternalLink, MapPinIcon, PencilIcon, PlusIcon, Trash2Icon } from '@/components/icons';
+import { ExternalLink, MapPinIcon, PencilIcon, PlusIcon } from '@/components/icons';
 import { LocationsOverviewMap, PinPicker, type Pin } from '@/components/locations/location-map';
 import { pinOf } from '@/components/locations/editor/location-values';
+import { DeleteLocation } from '@/components/locations/delete-location';
 import { PageActions } from '@/components/shell/page-actions';
 import { ImageField, useMediaItem } from '@/components/media/image-field';
 import { RichTextField } from '@/components/rich-text-field';
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-  AlertDialogTrigger,
-} from '@/components/ui/alert-dialog';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import {
@@ -652,46 +642,6 @@ function LocationCard({ item }: { item: LocationItem }) {
         </dl>
       )}
     </article>
-  );
-}
-
-function DeleteLocation({
-  item,
-  disabled,
-  onConfirm,
-}: {
-  item: LocationItem;
-  disabled: boolean;
-  onConfirm: () => void;
-}) {
-  return (
-    <AlertDialog>
-      <AlertDialogTrigger
-        render={
-          <Button
-            variant="ghost"
-            size="icon-sm"
-            disabled={disabled}
-            aria-label={`Remove ${item.name}`}
-            className="text-muted-foreground hover:text-destructive touch:size-11"
-          />
-        }
-      >
-        <Trash2Icon aria-hidden className="size-4" />
-      </AlertDialogTrigger>
-      <AlertDialogContent>
-        <AlertDialogHeader>
-          <AlertDialogTitle>Remove this location?</AlertDialogTitle>
-          <AlertDialogDescription>
-            “{item.name}” is removed from the location directory. This cannot be undone.
-          </AlertDialogDescription>
-        </AlertDialogHeader>
-        <AlertDialogFooter>
-          <AlertDialogCancel>Cancel</AlertDialogCancel>
-          <AlertDialogAction onClick={onConfirm}>Remove</AlertDialogAction>
-        </AlertDialogFooter>
-      </AlertDialogContent>
-    </AlertDialog>
   );
 }
 

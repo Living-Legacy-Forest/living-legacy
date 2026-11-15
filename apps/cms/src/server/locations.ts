@@ -152,7 +152,7 @@ export const saveLocation = createServerFn({ method: 'POST' })
           updatedBy: context.user.id,
         })
         .returning({ id: locations.id });
-      return { id: row!.id };
+      return { id: row!.id, slug: values.slug };
     }
 
     const existing = await db.query.locations.findFirst({ where: eq(locations.id, data.id) });
@@ -188,7 +188,7 @@ export const saveLocation = createServerFn({ method: 'POST' })
           ]
         : []),
     ]);
-    return { id: data.id };
+    return { id: data.id, slug: values.slug };
   });
 
 export const deleteLocations = createServerFn({ method: 'POST' })

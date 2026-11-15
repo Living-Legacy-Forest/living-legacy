@@ -41,6 +41,7 @@ import { FormBlock, FormCell, FormSection, FormSwitchCell } from '@/components/f
 import { FormStep, FormSteps, TOUCH_FIELDS, useFormSteps } from '@/components/form-steps';
 import { ExternalLink, MapPinIcon, PencilIcon, PlusIcon, Trash2Icon } from '@/components/icons';
 import { LocationsOverviewMap, PinPicker, type Pin } from '@/components/locations/location-map';
+import { pinOf } from '@/components/locations/editor/location-values';
 import { PageActions } from '@/components/shell/page-actions';
 import { ImageField, useMediaItem } from '@/components/media/image-field';
 import { RichTextField } from '@/components/rich-text-field';
@@ -614,11 +615,6 @@ function LocationSheet({
     </Sheet>
   );
 }
-
-const pinOf = (l: { latitude: number | null; longitude: number | null }): Pin | null =>
-  l.latitude !== null && l.longitude !== null
-    ? { latitude: l.latitude, longitude: l.longitude }
-    : null;
 
 /** The details the directory and the location's page draw on. */
 function LocationCard({ item }: { item: LocationItem }) {

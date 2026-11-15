@@ -91,6 +91,9 @@ const locationSchema = z.object({
   status: z.enum(['draft', 'published']),
 });
 
+/** What the location form sends to `saveLocation`. */
+export type LocationInput = z.input<typeof locationSchema>;
+
 /** Appends -2, -3, ... until no other location uses the slug. */
 async function uniqueSlug(base: string, excludeId?: string) {
   const root = slugify(base) || 'location';

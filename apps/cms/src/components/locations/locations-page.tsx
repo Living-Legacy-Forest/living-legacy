@@ -29,12 +29,13 @@ import {
   matchesSearch,
   useSelection,
 } from '@/components/list/list-tools';
-import { ExternalLink, MapPinIcon, PencilIcon, PlusIcon } from '@/components/icons';
+import { ExternalLink, MapPinIcon, PanelRightIcon, PencilIcon, PlusIcon } from '@/components/icons';
 import { LocationsOverviewMap } from '@/components/locations/location-map';
 import { pinOf } from '@/components/locations/editor/location-values';
 import { DeleteLocation } from '@/components/locations/delete-location';
 import { PageActions } from '@/components/shell/page-actions';
 import { useMediaItem } from '@/components/media/image-field';
+import { cn } from '@/lib/utils';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import {
@@ -102,6 +103,8 @@ export function LocationsPage({
   const [layout, setLayout] = useListView('locations');
   const grid = layout === 'grid';
   const [toDelete, setToDelete] = useState<string[] | null>(null);
+  // From lg the map sits beside the list; closing it gives the list the whole width.
+  const [mapOpen, setMapOpen] = useState(true);
   const selection = useSelection(data.map((l) => l.id));
   const visible = data.filter(
     (l) =>
@@ -228,6 +231,19 @@ export function LocationsPage({
             }}
           />
         )}
+        {data.length > 0 && (
+          <Button
+            variant="ghost"
+            size="icon-sm"
+            aria-label={mapOpen ? 'Hide the map' : 'Show the map'}
+            aria-pressed={mapOpen}
+            title={mapOpen ? 'Hide the map' : 'Show the map'}
+            className="max-lg:hidden"
+            onClick={() => setMapOpen((open) => !open)}
+          >
+            <PanelRightIcon aria-hidden />
+          </Button>
+        )}
         {canWrite && <div className="max-md:hidden">{addButton}</div>}
         {canWrite && (
           <PageActions
@@ -258,8 +274,18 @@ export function LocationsPage({
           {canWrite && <EmptyContent>{addButton}</EmptyContent>}
         </Empty>
       ) : (
-        <ListPageLayout>
+        // Plain fr tracks, so the columns glide between open and closed.
+        <ListPageLayout
+          className={cn(
+            'motion-reduce:transition-none lg:transition-[grid-template-columns] lg:duration-300 lg:ease-[cubic-bezier(0.32,0.72,0,1)]',
+            mapOpen ? 'lg:grid-cols-[1fr_1fr]' : 'lg:grid-cols-[1fr_0fr]'
+          )}
+        >
           <ListColumn
+            className={cn(
+              'transition-[border-color] duration-300 lg:min-w-80',
+              !mapOpen && 'lg:border-transparent'
+            )}
             label="Locations"
             header={
               <SelectionBar
@@ -346,7 +372,15 @@ export function LocationsPage({
             )}
           </ListColumn>
 
-          <section aria-label="Map" className="relative hidden min-h-0 lg:flex">
+          <section
+            aria-label="Map"
+            inert={!mapOpen}
+            className={cn(
+              'relative hidden min-h-0 min-w-0 overflow-hidden lg:flex',
+              'transition-[opacity,translate] duration-300 ease-[cubic-bezier(0.32,0.72,0,1)] motion-reduce:transition-none',
+              !mapOpen && 'translate-x-4 opacity-0'
+            )}
+          >
             <LocationsOverviewMap
               locations={data.map((l) => ({
                 id: l.id,

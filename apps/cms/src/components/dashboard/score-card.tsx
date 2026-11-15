@@ -1,8 +1,8 @@
-import { SCORE_BANDS, scoreBand } from '@ll/content';
+import { scoreBand } from '@ll/content';
 import { Link } from '@tanstack/react-router';
 import { Bar, BarChart, Cell, LabelList, XAxis, YAxis } from 'recharts';
-import { Gauge, type GaugeThreshold } from '@/components/arc/gauge/gauge';
 import { CircleCheckIcon } from '@/components/icons';
+import { ScoreGauge } from '@/components/posts/post-editor/content-score/score-gauge';
 import { bandTone } from '@/components/posts/post-editor/content-score/score-tone';
 import { Button } from '@/components/ui/button';
 import {
@@ -31,13 +31,6 @@ const BANDS = [
   { key: 'mid', label: 'Good', fill: 'var(--color-amber-500)' },
   { key: 'high', label: 'Strong', fill: 'var(--color-emerald-600)' },
 ] as const;
-
-/** The gauge's colour and word change at the same lines as everywhere else a score shows. */
-const GAUGE_BANDS: GaugeThreshold[] = [
-  { from: 0, tone: 'danger', label: 'Needs work' },
-  { from: SCORE_BANDS.good, tone: 'warning', label: 'Good' },
-  { from: SCORE_BANDS.strong, tone: 'success', label: 'Strong' },
-];
 
 const chartConfig = { count: { label: 'Posts' } } satisfies ChartConfig;
 
@@ -86,11 +79,11 @@ export function ScoreCard({ scores }: { scores: ScoreSummary }) {
                     <span className="text-muted-foreground text-sm">scored yet</span>
                   </p>
                 ) : (
-                  <Gauge
-                    value={scores.average}
+                  <ScoreGauge
+                    score={scores.average}
                     label="Average score"
                     detail={`Across ${posts(scores.scored)}`}
-                    thresholds={GAUGE_BANDS}
+                    captioned
                   />
                 )}
               </div>

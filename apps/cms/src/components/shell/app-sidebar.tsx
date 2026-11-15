@@ -8,6 +8,7 @@ import type { SessionUser } from '@/lib/session';
 import type { SidebarState } from '@/lib/sidebar-state';
 import { cn } from '@/lib/utils';
 import { CommandMenu } from './command-menu';
+import { ShortcutsRow, ThemeRow } from './rail-tools';
 import { SidebarRow } from './sidebar-row';
 import { SidebarUpdateCard, useUpdates } from './updates';
 
@@ -161,6 +162,8 @@ export function AppSidebar({
                 }
               />
             </SidebarMenuItem>
+            <ShortcutsRow wide={railWide} />
+            <ThemeRow wide={railWide} />
             {site && (
               <SidebarMenuItem>
                 <SidebarRow

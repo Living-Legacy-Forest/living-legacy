@@ -1,4 +1,3 @@
-import { Menu as MenuPrimitive } from '@base-ui/react/menu';
 import { Link } from '@tanstack/react-router';
 import {
   ChevronRightIcon,
@@ -6,13 +5,9 @@ import {
   KeyboardIcon,
   LogOutIcon,
   MessageCircleQuestionIcon,
-  MonitorIcon,
-  MoonIcon,
-  SunIcon,
-  SunMoonIcon,
   UserIcon,
 } from '@/components/icons';
-import { type ComponentType, useState } from 'react';
+import { useState } from 'react';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import {
   DropdownMenu,
@@ -20,35 +15,20 @@ import {
   DropdownMenuGroup,
   DropdownMenuItem,
   DropdownMenuLabel,
-  DropdownMenuRadioGroup,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { Drawer, DrawerBody, DrawerContent } from '@/components/ui/drawer';
-import { PillGlide, pillItemClass, pillTrackClass } from '@/components/ui/pill-track';
 import { Spinner } from '@/components/ui/spinner';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { footerLinks } from '@/lib/nav';
 import type { SessionUser } from '@/lib/session';
 import { useSignOut } from '@/lib/use-sign-out';
-import { useThemeChoice } from '@/lib/use-theme-choice';
 import { cn } from '@/lib/utils';
-import type { Theme } from '@/server/settings';
 import { ShortcutsDialog } from './shortcuts-dialog';
 import { SheetHeader, sheetGroupClass, sheetRowClass } from './sheet-parts';
 import { avatarSrc } from '@/lib/avatar';
 import { canReportProblem, openProblemReport } from '@/lib/report-problem';
-
-const themes: {
-  value: Theme;
-  label: string;
-
-  icon: ComponentType<{ className?: string }>;
-}[] = [
-  { value: 'light', label: 'Light', icon: SunIcon },
-  { value: 'dark', label: 'Dark', icon: MoonIcon },
-  { value: 'system', label: 'Match my device', icon: MonitorIcon },
-];
 
 /** The sign-out label: the new words rise into place, so "Signing out" reads as progress. */
 export function SignOutLabel({ signingOut }: { signingOut: boolean }) {
@@ -68,7 +48,6 @@ export function NavUser({ user }: { user: SessionUser }) {
   const [showShortcuts, setShowShortcuts] = useState(false);
   const [sheetOpen, setSheetOpen] = useState(false);
   const { signingOut, signOut } = useSignOut();
-  const theme = useThemeChoice();
   // Sentry runs in production only, so the item shows there; read once it has loaded.
   const [canReport] = useState(() => typeof window !== 'undefined' && canReportProblem());
   const initials = user.name
@@ -221,36 +200,6 @@ export function NavUser({ user }: { user: SessionUser }) {
               </DropdownMenuItem>
             )}
           </DropdownMenuGroup>
-          <DropdownMenuSeparator />
-          {/* One stop per choice: up and down pass through them, and choosing keeps the menu open. */}
-          <div className="text-ui flex items-center gap-1.5 py-0.5 pl-1.5">
-            <SunMoonIcon aria-hidden className="text-muted-foreground size-4 shrink-0" />
-            <span className="flex-1" aria-hidden>
-              Theme
-            </span>
-            <DropdownMenuRadioGroup
-              aria-label="Theme"
-              value={theme.effective}
-              onValueChange={(next) => void theme.choose(next as Theme)}
-              className={pillTrackClass}
-            >
-              <PillGlide value={theme.effective} selector=':scope > [aria-checked="true"]' />
-              {themes.map(({ value, label, icon: Icon }) => (
-                <MenuPrimitive.RadioItem
-                  key={value}
-                  value={value}
-                  aria-label={label}
-                  title={label}
-                  className={cn(
-                    pillItemClass,
-                    'aria-checked:text-foreground data-highlighted:text-foreground size-7 cursor-default px-0'
-                  )}
-                >
-                  <Icon aria-hidden className="size-4" />
-                </MenuPrimitive.RadioItem>
-              ))}
-            </DropdownMenuRadioGroup>
-          </div>
           <DropdownMenuSeparator />
           <DropdownMenuItem
             variant="destructive"

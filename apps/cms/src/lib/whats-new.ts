@@ -45,7 +45,7 @@ export const whatsNew: WhatsNewEntry[] = [
     items: [
       {
         title: 'More room for a location',
-        body: 'Adding or editing a location now takes you to its own page, with About and the map pin in the middle and publishing, listing and visiting details at the side. The map and quick view on the list work as before.',
+        body: 'Adding or editing a location now takes you to its own page, with the form on the left, the map on the right, and publishing, listing and visiting details under the form. Hide the map with the button at the top when you do not need it. The map and quick view on the list work as before.',
         link: { label: 'Open Locations', to: '/locations' },
       },
     ],

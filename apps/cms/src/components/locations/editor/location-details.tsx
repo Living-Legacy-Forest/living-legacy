@@ -42,7 +42,7 @@ function Section({ title, children }: { title: string; children: React.ReactNode
 }
 
 /** Everything about a location that is not its story: publishing, listing, place, visiting details. */
-export function LocationSidePanel({ editor }: { editor: LocationEditorState }) {
+export function LocationDetails({ editor }: { editor: LocationEditorState }) {
   const { values, patch } = editor;
   return (
     <div className="space-y-6 [--form-gap:1rem]">

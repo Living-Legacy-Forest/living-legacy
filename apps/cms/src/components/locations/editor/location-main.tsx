@@ -1,14 +1,15 @@
 import { FormBlock, FormCell, FormSection } from '@/components/form-cells';
-import { PinPicker } from '@/components/locations/location-map';
 import { ImageField } from '@/components/media/image-field';
 import { RichTextField } from '@/components/rich-text-field';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
+import { LocationDetails } from './location-details';
 import type { LocationEditorState } from './use-location-editor';
 
 /**
  * The place itself, the way a post's body is the centre of its page: the photo,
- * name and intro, then About, the address and where the pin goes.
+ * name and intro, then About and the address, then every other detail. The map
+ * sits beside it (location-map-panel.tsx).
  */
 export function LocationMain({ editor }: { editor: LocationEditorState }) {
   const { values, patch } = editor;
@@ -78,19 +79,11 @@ export function LocationMain({ editor }: { editor: LocationEditorState }) {
             />
           </FormCell>
         </FormSection>
-        <FormBlock
-          label="Map pin"
-          htmlFor="loc-pin"
-          hint="Find it from the address, then drag the pin or click the map to fine-tune it."
-        >
-          <PinPicker
-            id="loc-pin"
-            pin={values.pin}
-            address={values.address}
-            photoUrl={editor.heroUrl}
-            onChange={(pin) => patch({ pin })}
-          />
-        </FormBlock>
+      </section>
+
+      <section aria-label="Details" className="space-y-5 border-t pt-8 max-md:border-0 max-md:pt-0">
+        <h2 className="text-base font-semibold max-md:px-4 max-md:text-[1.0625rem]">Details</h2>
+        <LocationDetails editor={editor} />
       </section>
     </div>
   );

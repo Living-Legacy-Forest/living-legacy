@@ -24,14 +24,14 @@ import type { LocationEditorState } from './use-location-editor';
 export function LocationToolbar({
   editor,
   item,
-  showSide,
-  onToggleSide,
+  showMap,
+  onToggleMap,
   onDelete,
 }: {
   editor: LocationEditorState;
   item: LocationItem | null;
-  showSide: boolean;
-  onToggleSide: () => void;
+  showMap: boolean;
+  onToggleMap: () => void;
   onDelete: () => void;
 }) {
   const { pending, values } = editor;
@@ -62,10 +62,10 @@ export function LocationToolbar({
           type="button"
           variant="ghost"
           size="icon-sm"
-          aria-label={showSide ? 'Hide the side panel' : 'Show the side panel'}
-          aria-pressed={showSide}
-          onClick={onToggleSide}
-          // Below lg the panel sits under the form, where hiding it helps no one.
+          aria-label={showMap ? 'Hide the map' : 'Show the map'}
+          aria-pressed={showMap}
+          onClick={onToggleMap}
+          // Below lg the map sits under the form, where hiding it helps no one.
           className="max-lg:hidden"
         >
           <PanelRightIcon aria-hidden />

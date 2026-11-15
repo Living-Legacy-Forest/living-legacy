@@ -5,7 +5,8 @@
  *   location-values.ts        the rules behind the form, tested on their own
  *   location-toolbar.tsx      status and the actions above the page
  *   location-main.tsx         photo, name, intro, About, address and map pin
- *   location-side-panel.tsx   publishing, listing, place, visiting, slug, the rest
+ *   location-details.tsx      publishing, listing, place, visiting, slug, the rest
+ *   location-map-panel.tsx    the map pin, beside the form
  */
 import { useNavigate } from '@tanstack/react-router';
 import { useState } from 'react';
@@ -22,7 +23,7 @@ import { cn } from '@/lib/utils';
 import { type LocationItem, deleteLocations } from '@/server/locations';
 import { DeleteLocationDialog } from '../delete-location';
 import { LocationMain } from './location-main';
-import { LocationSidePanel } from './location-side-panel';
+import { LocationMapPanel } from './location-map-panel';
 import { LocationToolbar } from './location-toolbar';
 import { useLocationEditor } from './use-location-editor';
 
@@ -50,7 +51,7 @@ export function LocationEditor({
       }
     },
   });
-  const [showSide, setShowSide] = useState(true);
+  const [showMap, setShowMap] = useState(true);
   const desktop = useIsDesktop();
   const [deleting, setDeleting] = useState(false);
 
@@ -88,7 +89,7 @@ export function LocationEditor({
           <ResizablePanel
             id="location-editor-main"
             label="Location"
-            defaultSize={70}
+            defaultSize={58}
             minSize={420}
             className="max-lg:max-w-none!"
           >
@@ -98,14 +99,14 @@ export function LocationEditor({
                 'bg-background flex min-w-0 flex-col overflow-hidden rounded-lg border lg:h-[calc(100svh-7.5rem)]',
                 // The gap closes with the panel, on the same curve, so the card does not jump.
                 'motion-reduce:transition-none lg:transition-[margin-right] lg:duration-300 lg:ease-[cubic-bezier(0.32,0.72,0,1)]',
-                showSide && 'lg:mr-6'
+                showMap && 'lg:mr-6'
               )}
             >
               <LocationToolbar
                 editor={editor}
                 item={item}
-                showSide={showSide}
-                onToggleSide={() => setShowSide((v) => !v)}
+                showMap={showMap}
+                onToggleMap={() => setShowMap((v) => !v)}
                 onDelete={() => setDeleting(true)}
               />
               <div className="min-h-[24rem] flex-1 overflow-y-auto p-6 max-md:px-0 lg:min-h-0">
@@ -115,23 +116,23 @@ export function LocationEditor({
           </ResizablePanel>
 
           <ResizablePanel
-            id="location-side-panel"
-            label="Details"
-            defaultSize={30}
-            minSize={260}
-            maxSize={560}
+            id="location-map-panel"
+            label="Map"
+            defaultSize={42}
+            minSize={300}
+            maxSize={720}
             // Hiding glides shut and the content fades, the way dragging the divider does. Only
             // from lg: below that the panel sits under the form and has no toggle.
             collapsible
-            collapsed={!showSide && desktop}
-            onCollapsedChange={(hidden) => setShowSide(!hidden)}
+            collapsed={!showMap && desktop}
+            onCollapsedChange={(hidden) => setShowMap(!hidden)}
             className="max-lg:max-w-none!"
           >
             <aside
-              id="location-side"
+              id="location-map"
               className="text-ui lg:no-scrollbar min-w-0 lg:h-[calc(100svh-7.5rem)] lg:overflow-x-hidden lg:overflow-y-auto lg:overscroll-contain lg:pb-6 lg:pl-6"
             >
-              <LocationSidePanel editor={editor} />
+              <LocationMapPanel editor={editor} />
             </aside>
           </ResizablePanel>
         </ResizablePanels>

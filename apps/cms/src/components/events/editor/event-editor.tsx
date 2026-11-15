@@ -10,7 +10,7 @@
  *   event-actions.tsx       preview, and the cancel, delete and scope dialogs
  */
 import { useNavigate } from '@tanstack/react-router';
-import { useState } from 'react';
+import { useState, useSyncExternalStore } from 'react';
 import {
   ResizablePanel,
   ResizablePanels,
@@ -45,6 +45,19 @@ import { EventToolbar } from './event-toolbar';
 import { type EventView, EventViewBar, EventViewsHeader } from './event-views';
 import { useEventEditor } from './use-event-editor';
 
+/** From `lg` the side panel sits beside the form and can be hidden; below it, it stacks under. */
+function useIsDesktop() {
+  return useSyncExternalStore(
+    (notify) => {
+      const query = window.matchMedia('(min-width: 1024px)');
+      query.addEventListener('change', notify);
+      return () => query.removeEventListener('change', notify);
+    },
+    () => window.matchMedia('(min-width: 1024px)').matches,
+    () => true
+  );
+}
+
 /**
  * Create and edit page for an event. Remount it (change its `key`) to reload
  * from the server, for example after saving.
@@ -78,6 +91,7 @@ export function EventEditor({
     },
   });
   const [showSide, setShowSide] = useState(true);
+  const desktop = useIsDesktop();
   const [cancelling, setCancelling] = useState(false);
   const [deleting, setDeleting] = useState(false);
   // The Dashboard can also show every date together; the other views show one.
@@ -169,10 +183,8 @@ export function EventEditor({
             label="Event and details"
             className={cn(
               'flex-1',
-              // Below lg the panel sits under the form and its divider goes. From lg, hiding
-              // the panel also hides the divider.
-              'max-lg:block! max-lg:[&>*+*]:mt-6 max-lg:[&>[role=separator]]:hidden',
-              !showSide && '[&>[role=separator]]:hidden'
+              // Below lg the panel sits under the form and its divider goes.
+              'max-lg:block! max-lg:[&>*+*]:mt-6 max-lg:[&>[role=separator]]:hidden'
             )}
           >
             <ResizablePanel
@@ -186,6 +198,8 @@ export function EventEditor({
                 data-slot="event-editor-main"
                 className={cn(
                   'bg-background flex min-w-0 flex-col overflow-hidden rounded-lg border lg:h-[calc(100svh-7.5rem)]',
+                  // The gap closes with the panel, on the same curve, so the card does not jump.
+                  'motion-reduce:transition-none lg:transition-[margin-right] lg:duration-300 lg:ease-[cubic-bezier(0.32,0.72,0,1)]',
                   showSide && 'lg:mr-6'
                 )}
               >
@@ -211,8 +225,12 @@ export function EventEditor({
               defaultSize={30}
               minSize={260}
               maxSize={560}
-              // Hidden only on lg and up: below that the panel sits under the form and has no toggle.
-              className={cn('max-lg:max-w-none!', !showSide && 'lg:hidden!')}
+              // Hiding glides shut and the content fades, the way dragging the divider does. Only
+              // from lg: below that the panel sits under the form and has no toggle.
+              collapsible
+              collapsed={!showSide && desktop}
+              onCollapsedChange={(hidden) => setShowSide(!hidden)}
+              className="max-lg:max-w-none!"
             >
               <aside
                 id="event-side"

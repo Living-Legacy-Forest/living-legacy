@@ -24,6 +24,7 @@ import { clearPostPreviews } from '../use-post-preview';
 import { docxToBody } from './import-docx';
 import type { PostAccess } from './post-access';
 import type { Option } from './property-pickers';
+import { pressed } from '@/lib/shortcuts';
 
 type Meta = {
   id: string | null;
@@ -450,7 +451,7 @@ export function usePostEditor({
   persistRef.current = persist;
   useEffect(() => {
     const onKey = (event: KeyboardEvent) => {
-      if ((event.metaKey || event.ctrlKey) && event.key.toLowerCase() === 's') {
+      if (pressed(event, 'savePost')) {
         event.preventDefault();
         if (dirtyRef.current) void persistRef.current('save');
       }

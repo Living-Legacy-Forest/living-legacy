@@ -40,6 +40,21 @@ export type WhatsNewEntry = {
 
 export const whatsNew: WhatsNewEntry[] = [
   {
+    id: '2026-11-16-2',
+    title: 'Shortcuts you can change',
+    items: [
+      {
+        title: 'A theme button in the sidebar',
+        body: 'The light and dark switch has moved from your account menu to the bottom of the sidebar: one press flips between them. Match my device is still on your Profile.',
+        link: { label: 'Open Profile', to: '/profile' },
+      },
+      {
+        title: 'Set your own keys',
+        body: 'Keyboard shortcuts now has its own button at the bottom of the sidebar. It lets you change the keys for search, the sidebar and saving a post, and search the whole list. Hold a key such as Option or Ctrl and it lights up in every row. Your changes stay in the browser you made them in.',
+      },
+    ],
+  },
+  {
     id: '2026-11-16',
     title: 'A fresher sign-in page',
     items: [

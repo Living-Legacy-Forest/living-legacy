@@ -39,6 +39,8 @@ import { footerLinks } from '@/lib/nav';
 import type { SessionUser } from '@/lib/session';
 import { type SearchResults, searchContent } from '@/server/search';
 import { PostStatusBadge } from '../posts/post-status-badge';
+import { pressed, useShortcut } from '@/lib/shortcuts';
+import { ShortcutKeys } from '@/components/arc/shortcut-recorder/shortcut-recorder';
 
 type StaticItem = { label: string; icon: LucideIcon; keywords?: string; run: () => void };
 
@@ -74,6 +76,7 @@ function aroundMatch(text: string, query: string, radius = 48) {
 export function CommandMenu({ user, wide = true }: { user: SessionUser; wide?: boolean }) {
   const navigate = useNavigate();
   const { toggleSidebar } = useSidebar();
+  const searchShortcut = useShortcut('commandMenu');
   const [open, setOpen] = useState(false);
   const [query, setQuery] = useState('');
   const [results, setResults] = useState<SearchResults | null>(null);
@@ -81,7 +84,7 @@ export function CommandMenu({ user, wide = true }: { user: SessionUser; wide?: b
 
   useEffect(() => {
     const onKey = (event: KeyboardEvent) => {
-      if ((event.metaKey || event.ctrlKey) && event.key.toLowerCase() === 'k') {
+      if (pressed(event, 'commandMenu')) {
         event.preventDefault();
         setOpen((value) => !value);
       }
@@ -202,7 +205,9 @@ export function CommandMenu({ user, wide = true }: { user: SessionUser; wide?: b
           label="Search"
           wide={wide}
           onClick={() => setOpen(true)}
-          trailing={<Kbd>⌘K</Kbd>}
+          trailing={
+            searchShortcut ? <ShortcutKeys shortcut={searchShortcut} size="sm" /> : undefined
+          }
         />
       </SidebarMenuItem>
 

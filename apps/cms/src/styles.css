@@ -1206,8 +1206,8 @@
    the edge they sit against, group by group, the header's controls drop into the bar,
    and on phones the tabs rise into theirs. The shell stays mounted from page to page,
    so this plays once per load, not on every navigation. Only the desktop sidebar: on
-   phones it is a sheet opened on demand, and opening it should be instant. Sub-menu
-   items are left out for the same reason, as expanding a section mounts them. */
+   phones it is a sheet opened on demand, and opening it should be instant. The pages
+   column remounts its rows when the section changes, so they slide in again then. */
 [data-slot='sidebar-container']
   :where(
     /* Every row is an li; an expandable section's is the collapsible's, not a menu item's. */
@@ -1281,23 +1281,6 @@
   [data-slot='app-header'] > :is(:first-child, :last-child) > :nth-child(n + 4) {
     --shell-item: 3;
   }
-}
-
-/* A section's links drop in one after another as it expands, in step with the panel
-   opening (components/shell/nav-group.tsx). The panel mounts them on each open, so
-   this plays every time; kept quick, as people open these many times a day. */
-[data-slot='collapsible-content'] [data-slot='sidebar-menu-sub-item'] {
-  animation: shell-from-top 200ms cubic-bezier(0.23, 1, 0.32, 1) backwards;
-  animation-delay: calc(var(--sub-item, 0) * 30ms);
-}
-[data-slot='collapsible-content'] [data-slot='sidebar-menu-sub-item']:nth-child(2) {
-  --sub-item: 1;
-}
-[data-slot='collapsible-content'] [data-slot='sidebar-menu-sub-item']:nth-child(3) {
-  --sub-item: 2;
-}
-[data-slot='collapsible-content'] [data-slot='sidebar-menu-sub-item']:nth-child(n + 4) {
-  --sub-item: 3;
 }
 
 [data-slot='tab-bar'] > div > * {

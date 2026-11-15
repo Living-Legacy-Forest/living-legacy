@@ -37,6 +37,16 @@ export type WhatsNewEntry = {
 
 export const whatsNew: WhatsNewEntry[] = [
   {
+    id: '2026-11-15-4',
+    title: 'A new sidebar',
+    items: [
+      {
+        title: 'Sections and their pages, side by side',
+        body: "The sidebar now has two columns: the sections (Dashboard, Content, Places, About, Analytics and Admin) down the left, and the pages of the one you are in beside them. Each column can show names or only icons: use the button at its top, or press ⌘B to show or hide the page names. The CMS remembers your choice. Search and What's new are at the foot of the sections.",
+      },
+    ],
+  },
+  {
     id: '2026-11-15-3',
     title: 'A map of where visitors are',
     items: [

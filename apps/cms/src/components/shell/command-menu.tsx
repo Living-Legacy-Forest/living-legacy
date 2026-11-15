@@ -31,8 +31,9 @@ import {
   EmptyTitle,
 } from '@/components/ui/empty';
 import { Kbd } from '@/components/ui/kbd';
+import { SidebarRow } from './sidebar-row';
 import { Spinner } from '@/components/ui/spinner';
-import { SidebarMenuButton, SidebarMenuItem, useSidebar } from '@/components/ui/sidebar';
+import { SidebarMenuItem, useSidebar } from '@/components/ui/sidebar';
 import { formatRelative } from '@/lib/format';
 import { footerLinks } from '@/lib/nav';
 import type { SessionUser } from '@/lib/session';
@@ -70,7 +71,7 @@ function aroundMatch(text: string, query: string, radius = 48) {
 }
 
 /** Search field in the header that opens a command menu (also on Cmd/Ctrl+K). */
-export function CommandMenu({ user }: { user: SessionUser }) {
+export function CommandMenu({ user, wide = true }: { user: SessionUser; wide?: boolean }) {
   const navigate = useNavigate();
   const { toggleSidebar } = useSidebar();
   const [open, setOpen] = useState(false);
@@ -194,17 +195,15 @@ export function CommandMenu({ user }: { user: SessionUser }) {
 
   return (
     <>
-      {/* Lives at the top of the sidebar, so it never sits beside a page's own search. */}
+      {/* Lives in the sidebar's rail, so it never sits beside a page's own search. */}
       <SidebarMenuItem>
-        <SidebarMenuButton
-          tooltip="Search (⌘K)"
+        <SidebarRow
+          icon={SearchIcon}
+          label="Search"
+          wide={wide}
           onClick={() => setOpen(true)}
-          className="bg-sidebar-accent/60 text-muted-foreground hover:text-sidebar-foreground text-ui h-8"
-        >
-          <SearchIcon aria-hidden />
-          <span className="flex-1 text-left">Search…</span>
-          <Kbd className="group-data-[collapsible=icon]:hidden">⌘K</Kbd>
-        </SidebarMenuButton>
+          trailing={<Kbd>⌘K</Kbd>}
+        />
       </SidebarMenuItem>
 
       <CommandDialog

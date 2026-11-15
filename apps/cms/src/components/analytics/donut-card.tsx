@@ -16,6 +16,7 @@ export function DonutCard({
   unit,
   totalLabel = 'Total',
   more,
+  emptyLabel = 'Nothing in this period',
   className,
 }: {
   title: string;
@@ -25,6 +26,8 @@ export function DonutCard({
   totalLabel?: string;
   /** "View all", to the page with the full breakdown. */
   more?: LinkProps;
+  /** In the ring's centre when there is nothing to show. */
+  emptyLabel?: string;
   className?: string;
 }) {
   return (
@@ -56,7 +59,7 @@ export function DonutCard({
           data={rows.map((r) => ({ key: r.key, label: r.label, value: r.value }))}
           size={184}
           thickness={22}
-          emptyLabel="Nothing in this period"
+          emptyLabel={emptyLabel}
         />
       </CardContent>
     </Card>

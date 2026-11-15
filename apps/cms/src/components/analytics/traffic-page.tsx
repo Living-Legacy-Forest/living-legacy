@@ -26,18 +26,11 @@ export function TrafficPage({
             unit="visits"
             rows={data.channels.map((c) => ({ ...c, label: channelLabels[c.key] }))}
           />
-          <RankedCard
+          <DonutCard
             title="Websites that sent visits"
-            counted="visits"
-            total={data.visits}
-            limit={15}
-            emptyLabel="Every visit came straight to the website."
-            rows={data.referrers.map((r) => ({
-              key: r.key,
-              label: r.label,
-              detail: channelLabels[r.channel],
-              value: r.value,
-            }))}
+            unit="visits"
+            emptyLabel="All came direct"
+            rows={data.referrers}
           />
           <RankedCard
             className="lg:col-span-2"

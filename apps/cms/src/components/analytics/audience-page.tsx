@@ -1,15 +1,15 @@
-import type { AnalyticsRange } from '@/lib/analytics';
+import type { AnalyticsRange, Ranked } from '@/lib/analytics';
 import { flagEmoji } from '@/lib/visitors';
 import type { AnalyticsResult, Audience } from '@/server/analytics';
 import { AnalyticsPage } from './analytics-page';
 import { DonutCard } from './donut-card';
-import { RankedCard } from './ranked-card';
 
-const flag = (code: string | null) => (
-  <span aria-hidden className="text-base leading-none">
-    {flagEmoji(code) || '🌐'}
-  </span>
-);
+/** "🇦🇺 Australia": the flag in the label, so it shows in the legend and the ring's centre. */
+const flagged = <Row extends Ranked & { code: string | null }>(row: Row): Ranked => ({
+  key: row.key,
+  label: `${flagEmoji(row.code) || '🌐'} ${row.label}`,
+  value: row.value,
+});
 
 export function AudiencePage({
   result,
@@ -28,36 +28,11 @@ export function AudiencePage({
     >
       {(data) => (
         <div className="grid gap-4 max-md:gap-3 lg:grid-cols-2">
-          <RankedCard
-            title="Countries"
-            counted="visits"
-            total={data.visits}
-            limit={15}
-            rows={data.countries.map((c) => ({ ...c, leading: flag(c.code) }))}
-          />
-          <RankedCard
-            title="Cities"
-            counted="visits"
-            total={data.visits}
-            limit={15}
-            rows={data.cities.map((c) => ({ ...c, leading: flag(c.code) }))}
-          />
+          <DonutCard title="Countries" unit="visits" rows={data.countries.map(flagged)} />
+          <DonutCard title="Cities" unit="visits" rows={data.cities.map(flagged)} />
           <DonutCard title="Devices" unit="visits" rows={data.devices} />
-          <RankedCard
-            title="Browsers"
-            counted="visits"
-            total={data.visits}
-            limit={10}
-            rows={data.browsers}
-          />
-          <RankedCard
-            className="lg:col-span-2"
-            title="Operating systems"
-            counted="visits"
-            total={data.visits}
-            limit={10}
-            rows={data.systems}
-          />
+          <DonutCard title="Browsers" unit="visits" rows={data.browsers} />
+          <DonutCard title="Operating systems" unit="visits" rows={data.systems} />
         </div>
       )}
     </AnalyticsPage>

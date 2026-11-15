@@ -65,11 +65,13 @@ export function RankedCard({
           </CardAction>
         )}
       </CardHeader>
-      <CardContent>
+      <CardContent className="flex flex-1 flex-col">
         {shown.length === 0 ? (
           <p className="text-muted-foreground py-6 text-center text-sm">{emptyLabel}</p>
         ) : (
-          <ol className="space-y-1">
+          // The rows share the card's height when a card beside it is taller, up to a limit, so a short
+          // list does not leave a gap under it.
+          <ol className="flex flex-1 flex-col gap-1">
             {shown.map((row) => {
               const share = percentOf(row.value, whole);
               const label = row.href ? (
@@ -87,7 +89,7 @@ export function RankedCard({
               return (
                 <li
                   key={row.key}
-                  className="relative flex min-h-9 items-center gap-3 rounded-md px-2.5 py-1.5"
+                  className="relative flex min-h-9 flex-1 items-center gap-3 rounded-md px-2.5 py-1.5 [&:not(:only-child)]:max-h-14"
                 >
                   <span
                     aria-hidden

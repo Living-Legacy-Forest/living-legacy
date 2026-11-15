@@ -114,3 +114,46 @@ export const pagesSearch = analyticsSearch.extend({
   page: z.number().int().min(1).optional().catch(undefined),
   rows: z.number().refine(isPageSize).optional().catch(undefined),
 });
+
+/** One measure split into parts over a run of days, the biggest part first. */
+export type DailySplit = {
+  /** Calendar dates in the site's zone, oldest first. */
+  days: string[];
+  layers: { key: string; label: string; counts: number[] }[];
+};
+
+/**
+ * Adds up `value` for each part on each of `dayList`, biggest part first. Rows for days outside
+ * the list, or with no part, are dropped; parts past `maxLayers` join "Other" so the stream
+ * stays readable.
+ */
+export function splitByDay(
+  rows: { day: string; key: string | null | undefined; label: string; value: number }[],
+  dayList: string[],
+  maxLayers = 6
+): DailySplit {
+  const index = new Map(dayList.map((d, i) => [d, i]));
+  const parts = new Map<string, { label: string; counts: number[]; total: number }>();
+  for (const { day, key, label, value } of rows) {
+    const at = index.get(day);
+    if (at === undefined || !key) continue;
+    const part = parts.get(key) ?? { label, counts: dayList.map(() => 0), total: 0 };
+    part.counts[at]! += value;
+    part.total += value;
+    parts.set(key, part);
+  }
+  const ranked = [...parts.entries()].sort(
+    (a, b) => b[1].total - a[1].total || a[1].label.localeCompare(b[1].label)
+  );
+  const kept = ranked.length > maxLayers ? ranked.slice(0, maxLayers - 1) : ranked;
+  const layers = kept.map(([key, p]) => ({ key, label: p.label, counts: p.counts }));
+  if (ranked.length > kept.length) {
+    const rest = ranked.slice(kept.length);
+    layers.push({
+      key: '__other',
+      label: 'Other',
+      counts: dayList.map((_, i) => rest.reduce((n, [, p]) => n + p.counts[i]!, 0)),
+    });
+  }
+  return { days: dayList, layers };
+}

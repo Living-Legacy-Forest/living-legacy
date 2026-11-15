@@ -41,6 +41,8 @@ export interface LineChartSeries {
   dashed?: boolean;
   /** Fills the area under the line with a faint tint of its color. Defaults to true for the first series. */
   area?: boolean;
+  /** A figure shown after the name in the legend, such as the series' total for the period. */
+  total?: string;
 }
 
 export interface LineChartDatum {
@@ -672,6 +674,7 @@ export function LineChart({
                 aria-hidden="true"
               />
               <span className={styles.toggleLabel}>{line.label}</span>
+              {line.total !== undefined && <span className={styles.toggleTotal}>{line.total}</span>}
             </button>
           ))}
         </div>

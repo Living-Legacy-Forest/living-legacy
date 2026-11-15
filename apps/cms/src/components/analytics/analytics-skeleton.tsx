@@ -46,14 +46,17 @@ export function AnalyticsBodySkeleton({ kind }: { kind: AnalyticsSkeletonKind })
         <Grid className="lg:grid-cols-2">
           <DonutCard />
           <DonutCard />
+          <ChartCard height={260} className="lg:col-span-2" />
           <RankedCard rows={2} className="lg:col-span-2" />
         </Grid>
       )}
       {kind === 'audience' && (
         <Grid className="lg:grid-cols-2">
-          {Array.from({ length: 5 }, (_, i) => (
+          {Array.from({ length: 4 }, (_, i) => (
             <DonutCard key={i} />
           ))}
+          <ChartCard height={260} className="lg:col-span-2" />
+          <DonutCard wide />
         </Grid>
       )}
       {kind === 'visitors' && <TableSkeleton columns={5} rows={10} tableFrom="md" />}
@@ -99,9 +102,9 @@ function Tiles({ count }: { count: number }) {
   );
 }
 
-function ChartCard({ height }: { height: number }) {
+function ChartCard({ height, className }: { height: number; className?: string }) {
   return (
-    <Card>
+    <Card className={className}>
       <CardHeader>
         <Skeleton className="h-4 w-40" />
       </CardHeader>
@@ -136,9 +139,9 @@ function RankedCard({ rows, className }: { rows: number; className?: string }) {
  * A ring beside its legend, or above it when the card is narrow (`stacked`, or any card on a
  * phone), as the donut chart lays itself out.
  */
-function DonutCard({ stacked = false }: { stacked?: boolean }) {
+function DonutCard({ stacked = false, wide = false }: { stacked?: boolean; wide?: boolean }) {
   return (
-    <Card className="gap-4">
+    <Card className={cn('gap-4', wide && 'lg:col-span-2')}>
       <CardHeader>
         <CardTitle />
       </CardHeader>

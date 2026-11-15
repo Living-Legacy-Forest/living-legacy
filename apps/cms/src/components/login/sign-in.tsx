@@ -11,6 +11,7 @@ import {
 import logoMark from '@/assets/brand/logo-mark.webp';
 import { MailCheck } from '@/components/icons';
 import { Button } from '@/components/ui/button';
+import { Card } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Spinner } from '@/components/ui/spinner';
@@ -264,9 +265,14 @@ export function SignIn({
   }
 
   return (
-    <section aria-label="Sign in" className="w-full max-w-sm">
+    <Card
+      aria-label="Sign in"
+      role="region"
+      className="w-full max-w-sm [--card-spacing:--spacing(8)] sm:[--card-spacing:--spacing(10)]"
+    >
       <motion.div className="overflow-hidden" style={{ height }}>
-        <div ref={track}>
+        {/* Inset here, not on the card, so the height glide measures the padded content. */}
+        <div ref={track} className="px-(--card-spacing)">
           <AnimatePresence mode="popLayout" initial={false} custom={custom}>
             {step === 'email' && (
               <motion.div
@@ -448,7 +454,7 @@ export function SignIn({
           </AnimatePresence>
         </div>
       </motion.div>
-    </section>
+    </Card>
   );
 }
 

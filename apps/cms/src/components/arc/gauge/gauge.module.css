@@ -2,8 +2,9 @@
 .figure {
   --accent: var(--primary);
   --accent-strong: var(--foreground);
-  --success: var(--color-emerald-600);
-  --warning: var(--color-amber-500);
+  /* The Analytics charts' colours: the sage green and the gold, with red kept for "needs work". */
+  --success: var(--chart-1);
+  --warning: var(--chart-2);
   --danger: var(--destructive);
   --text-secondary: var(--muted-foreground);
   --text-muted: var(--muted-foreground);
@@ -16,8 +17,13 @@
   --duration-standard: 200ms;
   --ease-standard: cubic-bezier(0.22, 1, 0.36, 1);
 }
-:global(.dark) .figure {
-  --success: var(--color-emerald-400);
+/* The word under the figure is small text: the colour is pulled toward the text colour so it reads
+   on a light page too. The arc keeps the chart colour. */
+.figure.success {
+  --gauge-text: color-mix(in oklab, var(--success) 72%, var(--foreground));
+}
+.figure.warning {
+  --gauge-text: color-mix(in oklab, var(--warning) 62%, var(--foreground));
 }
 
 .figure {

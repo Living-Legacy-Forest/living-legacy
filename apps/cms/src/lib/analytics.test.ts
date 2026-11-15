@@ -5,6 +5,7 @@ import {
   formatPercent,
   formatSeconds,
   pageName,
+  pagesSearch,
   percentOf,
   rangeInput,
   rollUp,
@@ -92,5 +93,20 @@ describe('periods', () => {
   it('leaves an unknown period out of the address', () => {
     expect(analyticsSearch.parse({ days: 7 })).toEqual({ days: 7 });
     expect(analyticsSearch.parse({ days: 12 })).toEqual({ days: undefined });
+  });
+});
+
+describe('the Pages table', () => {
+  it('keeps a page number and a known number of rows, and drops anything else', () => {
+    expect(pagesSearch.parse({ days: 7, page: 3, rows: 50 })).toEqual({
+      days: 7,
+      page: 3,
+      rows: 50,
+    });
+    expect(pagesSearch.parse({ page: 0, rows: 30 })).toEqual({
+      days: undefined,
+      page: undefined,
+      rows: undefined,
+    });
   });
 });

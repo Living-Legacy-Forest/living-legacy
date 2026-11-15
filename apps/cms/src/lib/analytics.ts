@@ -101,3 +101,16 @@ export const formLabels: Record<string, string> = {
   brochure: 'Brochure request',
   partner: 'Partner enquiry',
 };
+
+/** How many pages the Pages table shows at once. */
+export const PAGE_SIZES = [10, 25, 50, 100] as const;
+export type PageSize = (typeof PAGE_SIZES)[number];
+export const DEFAULT_PAGE_SIZE: PageSize = 25;
+export const isPageSize = (n: unknown): n is PageSize =>
+  (PAGE_SIZES as readonly unknown[]).includes(n);
+
+/** The Pages page's search: the period, which page of the table, and how many rows a page. */
+export const pagesSearch = analyticsSearch.extend({
+  page: z.number().int().min(1).optional().catch(undefined),
+  rows: z.number().refine(isPageSize).optional().catch(undefined),
+});

@@ -1,3 +1,4 @@
+import { Flag } from '@/components/flag';
 import { LineChart, type LineChartSeries } from '@/components/arc/line-chart/line-chart';
 import { RollingNumber } from '@/components/rolling-number';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -13,7 +14,6 @@ import { axisEvery, longDate, percentChange, shortDate } from '@/lib/dashboard-t
 import { formatInteger } from '@/lib/format';
 import { siteUrl } from '@/lib/site';
 import { cn } from '@/lib/utils';
-import { flagEmoji } from '@/lib/visitors';
 import type { AnalyticsResult, Overview, PeriodTotals } from '@/server/analytics';
 import { AnalyticsPage, rangeSearch } from './analytics-page';
 import { DonutCard } from './donut-card';
@@ -148,11 +148,7 @@ function OverviewBody({ data, days }: { data: Overview; days: AnalyticsRange }) 
             key: c.key,
             label: c.label,
             value: c.value,
-            leading: (
-              <span aria-hidden className="text-base leading-none">
-                {flagEmoji(c.code) || '🌐'}
-              </span>
-            ),
+            leading: <Flag code={c.code} />,
           }))}
           total={current.visits}
           more={{ to: '/analytics/audience', search }}

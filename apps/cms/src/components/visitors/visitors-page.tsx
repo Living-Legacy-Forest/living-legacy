@@ -2,6 +2,7 @@ import { createLink, useNavigate, useRouter } from '@tanstack/react-router';
 import { usePendingRange } from '@/components/analytics/analytics-page';
 import { AnalyticsBodySkeleton } from '@/components/analytics/analytics-skeleton';
 import { RevealWords } from '@/components/dashboard/reveal-words';
+import { Flag } from '@/components/flag';
 import { GlobeIcon, LaptopIcon, SmartphoneIcon, TabletIcon } from '@/components/icons';
 import { SegmentedControl } from '@/components/segmented-control';
 import { Badge } from '@/components/ui/badge';
@@ -41,7 +42,6 @@ import {
   VISITOR_RANGES,
   type VisitorRange,
   type VisitorSession,
-  flagEmoji,
   sourceLabels,
 } from '@/lib/visitors';
 import type { VisitorsData } from '@/server/visitors';
@@ -242,9 +242,7 @@ function Visitor({ visit }: { visit: VisitorSession }) {
   return (
     <span className="block min-w-0">
       <span className="text-ui flex items-center gap-1.5">
-        <span aria-hidden className="text-base leading-none">
-          {flagEmoji(visit.country) || '🌐'}
-        </span>
+        <Flag code={visit.country} />
         <span className="truncate">{place || 'Unknown location'}</span>
       </span>
       {(kit || DeviceIcon) && (

@@ -15,6 +15,7 @@ export type WhatsNewItem = {
       | '/profile'
       | '/events'
       | '/events/overview'
+      | '/locations'
       | '/search-replace'
       | '/system'
       | '/analytics'
@@ -38,6 +39,17 @@ export type WhatsNewEntry = {
 };
 
 export const whatsNew: WhatsNewEntry[] = [
+  {
+    id: '2026-11-15-8',
+    title: 'Locations have their own page',
+    items: [
+      {
+        title: 'More room for a location',
+        body: 'Adding or editing a location now takes you to its own page, with the form on the left, the map on the right, and publishing, listing and visiting details under the form. Hide the map with the button at the top when you do not need it. The Locations page itself is now the map: click a pin to open its quick view, and use the list button at the top to bring the list back for searching, filters and removing several at once.',
+        link: { label: 'Open Locations', to: '/locations' },
+      },
+    ],
+  },
   {
     id: '2026-11-15-7',
     title: 'Events have their own page',

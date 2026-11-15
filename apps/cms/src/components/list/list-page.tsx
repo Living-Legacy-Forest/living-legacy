@@ -101,14 +101,21 @@ export function ListColumn({
   header,
   children,
   className,
+  inert,
 }: {
   label: string;
   header: React.ReactNode;
   children: React.ReactNode;
   className?: string;
+  /** Out of reach (hidden, not removed), for a page that can fold its list away. */
+  inert?: boolean;
 }) {
   return (
-    <section aria-label={label} className={cn('flex min-h-0 flex-col lg:border-r', className)}>
+    <section
+      aria-label={label}
+      inert={inert}
+      className={cn('flex min-h-0 flex-col lg:border-r', className)}
+    >
       {header}
       {children}
     </section>

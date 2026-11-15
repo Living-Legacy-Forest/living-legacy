@@ -226,16 +226,16 @@ export const phoneTabs: (NavItem & { to: NonNullable<NavItem['to']>; icon: Lucid
   { title: 'Events', icon: CalendarClockIcon, to: '/events', permission: 'events:manage' },
 ];
 
-/** The post and event editors, which have the whole screen on phones (no tab bar). */
+/** The post, event and location editors, which have the whole screen on phones (no tab bar). */
 export const isEditorPath = (pathname: string) =>
-  /^\/(posts|events)\/(?!categories$|tags$|overview$)[^/]+$/.test(pathname);
+  /^\/(posts|events|locations)\/(?!categories$|tags$|overview$)[^/]+$/.test(pathname);
 
 /** Where an editor's back button goes: the list it was opened from. */
 export function editorBack(pathname: string) {
   if (!isEditorPath(pathname)) return null;
-  return pathname.startsWith('/events/')
-    ? ({ to: '/events', label: 'Events' } as const)
-    : ({ to: '/posts', label: 'Posts' } as const);
+  if (pathname.startsWith('/events/')) return { to: '/events', label: 'Events' } as const;
+  if (pathname.startsWith('/locations/')) return { to: '/locations', label: 'Locations' } as const;
+  return { to: '/posts', label: 'Posts' } as const;
 }
 
 /** Whether a tab is the current section: its page or anything under it. */

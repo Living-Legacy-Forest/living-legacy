@@ -8,10 +8,12 @@ import { Unplug as AnimatedUnplug } from '@/components/animate-ui/icons/hugeicon
 import { ActivityIcon as AnimatedActivityIcon } from '@animateicons/react/huge/activity-icon';
 import { Add01Icon as AnimatedAdd01Icon } from '@animateicons/react/huge/add-0-1-icon';
 import { AlertCircleIcon as AnimatedAlertCircleIcon } from '@animateicons/react/huge/alert-circle-icon';
+import { BrowserIcon as AnimatedBrowserIcon } from '@animateicons/react/huge/browser-icon';
 import { Camera01Icon as AnimatedCamera01Icon } from '@animateicons/react/huge/camera-0-1-icon';
 import { Cancel01Icon as AnimatedCancel01Icon } from '@animateicons/react/huge/cancel-0-1-icon';
 import { CancelCircleIcon as AnimatedCancelCircleIcon } from '@animateicons/react/huge/cancel-circle-icon';
 import { CodeIcon as AnimatedCodeIcon } from '@animateicons/react/huge/code-icon';
+import { Compass01Icon as AnimatedCompass01Icon } from '@animateicons/react/huge/compass-0-1-icon';
 import { CopyIcon as AnimatedCopyIcon } from '@animateicons/react/huge/copy-icon';
 import { Delete02Icon as AnimatedDelete02Icon } from '@animateicons/react/huge/delete-0-2-icon';
 import { DownloadIcon as AnimatedDownloadIcon } from '@animateicons/react/huge/download-icon';
@@ -49,6 +51,7 @@ import { TextIndentMoreIcon as AnimatedTextIndentMoreIcon } from '@animateicons/
 import { Upload01Icon as AnimatedUpload01Icon } from '@animateicons/react/huge/upload-0-1-icon';
 import { UserAdd01Icon as AnimatedUserAdd01Icon } from '@animateicons/react/huge/user-add-0-1-icon';
 import { UserGroupIcon as AnimatedUserGroupIcon } from '@animateicons/react/huge/user-group-icon';
+import { UserCircleIcon as AnimatedUserCircleIcon } from '@animateicons/react/huge/user-circle-icon';
 import { UserIcon as AnimatedUserIcon } from '@animateicons/react/huge/user-icon';
 import { UserSettings01Icon as AnimatedUserSettings01Icon } from '@animateicons/react/huge/user-settings-0-1-icon';
 import { Alert02Icon as AnimatedAlert02Icon } from '@animateicons/react/huge/alert-0-2-icon';
@@ -341,7 +344,8 @@ export const PencilIcon = animated(AnimatedEdit02Icon);
 export const RotateCcwIcon = animated(AnimatedUndoIcon);
 export const SearchIcon = animated(AnimatedSearchIcon);
 export const SearchXIcon = make(H.SearchRemoveIcon);
-export const SearchReplaceIcon = make(H.SearchReplaceIcon);
+// No animated search-and-replace drawing: the magnifier, which moves like the others.
+export const SearchReplaceIcon = animated(AnimatedSearchIcon);
 export const XIcon = animated(AnimatedCancel01Icon);
 export const ArrowRightIcon = make(H.ArrowRight01Icon);
 /** A straight arrow, where ArrowRightIcon is a chevron. */
@@ -387,8 +391,8 @@ export const MailIcon = animated(AnimatedMail01Icon);
 export const MapPinIcon = animated(AnimatedLocation01Icon);
 export const NewspaperIcon = animated(AnimatedNewspaperIcon);
 
-// Analytics. No animated drawings for these, so they stay still.
-export const BrowserIcon = make(H.BrowserIcon);
-export const RouteIcon = make(H.Route01Icon);
-export const AudienceIcon = make(H.UserGroupIcon);
-export const InboxIcon = make(H.InboxIcon);
+// Analytics. Audience is a single person in a circle, as Team already has the group.
+export const BrowserIcon = animated(AnimatedBrowserIcon);
+export const RouteIcon = animated(AnimatedCompass01Icon);
+export const AudienceIcon = animated(AnimatedUserCircleIcon);
+export const InboxIcon = MailIcon;

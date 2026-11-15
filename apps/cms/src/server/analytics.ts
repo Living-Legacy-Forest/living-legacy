@@ -13,6 +13,8 @@ import {
   formLabels,
   rangeInput,
   rollUp,
+  splitByDay,
+  type DailySplit,
 } from '@/lib/analytics';
 import { bucketByDay, dayKeys } from '@/lib/dashboard-trend';
 import { getDb } from '@/lib/db';
@@ -201,9 +203,39 @@ async function fetchTraffic(days: AnalyticsRange): Promise<Traffic> {
   };
 }
 
+/** Visits a day by channel: each visit counts on the day it started, in its first page's channel. */
+async function fetchTrafficDaily(days: AnalyticsRange, zone: string): Promise<DailySplit> {
+  const rows = await hogql<[string, string | null, string | null, number]>(
+    keys(),
+    `SELECT toString(toDate(toTimeZone(start, {zone}))) AS day, referrer, medium, count() AS visits
+      FROM ${firstOfEachVisit(
+        days,
+        `min(timestamp) AS start,
+          argMin(properties.$referring_domain, timestamp) AS referrer,
+          argMin(properties.utm_medium, timestamp) AS medium`
+      )}
+      GROUP BY day, referrer, medium`,
+    { zone },
+    'Could not load visits over time'
+  );
+  return splitByDay(
+    rows.map(([day, referrer, medium, n]) => {
+      const { channel } = channelOf(referrer, medium);
+      return { day, key: channel, label: channelLabels[channel], value: num(n) };
+    }),
+    dayKeys(days, zone)
+  );
+}
+
+const loadTrafficDaily = (days: AnalyticsRange, zone: string) =>
+  cached('traffic-daily', days, () => fetchTrafficDaily(days, zone), `|${zone}`);
+
 const loadTraffic = (days: AnalyticsRange) => cached('traffic', days, () => fetchTraffic(days));
 
 // --- Audience --------------------------------------------------------------------------------
+
+/** Traffic with its visits a day by channel, for the page's stream. */
+export type TrafficPage = Traffic & { daily: DailySplit };
 
 export type Audience = {
   visits: number;
@@ -213,6 +245,9 @@ export type Audience = {
   browsers: Ranked[];
   systems: Ranked[];
 };
+
+/** Audience with its visits a day by device, for the page's stream. */
+export type AudiencePage = Audience & { devicesDaily: DailySplit };
 
 const DEVICE_LABELS = { desktop: 'Desktop', mobile: 'Mobile', tablet: 'Tablet' } as const;
 
@@ -282,6 +317,31 @@ async function fetchAudience(days: AnalyticsRange): Promise<Audience> {
     systems: rollUp(visits, (v) => v.os, count).slice(0, 20),
   };
 }
+
+/** Visits a day by device, the same way. */
+async function fetchDevicesDaily(days: AnalyticsRange, zone: string): Promise<DailySplit> {
+  const rows = await hogql<[string, string | null, number]>(
+    keys(),
+    `SELECT toString(toDate(toTimeZone(start, {zone}))) AS day, device, count() AS visits
+      FROM ${firstOfEachVisit(
+        days,
+        `min(timestamp) AS start, argMin(properties.$device_type, timestamp) AS device`
+      )}
+      GROUP BY day, device`,
+    { zone },
+    'Could not load visits over time'
+  );
+  return splitByDay(
+    rows.map(([day, device, n]) => {
+      const kind = deviceKind(device);
+      return { day, key: kind, label: kind ? DEVICE_LABELS[kind] : '', value: num(n) };
+    }),
+    dayKeys(days, zone)
+  );
+}
+
+const loadDevicesDaily = (days: AnalyticsRange, zone: string) =>
+  cached('devices-daily', days, () => fetchDevicesDaily(days, zone), `|${zone}`);
 
 const loadAudience = (days: AnalyticsRange) => cached('audience', days, () => fetchAudience(days));
 
@@ -556,13 +616,29 @@ export const getAnalyticsTraffic = createServerFn({ method: 'GET' })
   .middleware([requirePermission('posts:publish')])
   .validator(rangeInput)
   .handler(({ data: { days } }) =>
-    serve('where visitors came from', days, () => loadTraffic(days))
+    serve('where visitors came from', days, async () => {
+      const { timeZone } = await readSiteSettings();
+      const [traffic, daily] = await Promise.all([
+        loadTraffic(days),
+        loadTrafficDaily(days, timeZone),
+      ]);
+      return { ...traffic, daily };
+    })
   );
 
 export const getAnalyticsAudience = createServerFn({ method: 'GET' })
   .middleware([requirePermission('posts:publish')])
   .validator(rangeInput)
-  .handler(({ data: { days } }) => serve('the website’s audience', days, () => loadAudience(days)));
+  .handler(({ data: { days } }) =>
+    serve('the website’s audience', days, async () => {
+      const { timeZone } = await readSiteSettings();
+      const [audience, daily] = await Promise.all([
+        loadAudience(days),
+        loadDevicesDaily(days, timeZone),
+      ]);
+      return { ...audience, devicesDaily: daily };
+    })
+  );
 
 export const getAnalyticsEnquiries = createServerFn({ method: 'GET' })
   .middleware([requirePermission('posts:publish')])

@@ -1,14 +1,15 @@
 import { type AnalyticsRange, channelLabels } from '@/lib/analytics';
-import type { AnalyticsResult, Traffic } from '@/server/analytics';
+import type { AnalyticsResult, TrafficPage as TrafficData } from '@/server/analytics';
 import { AnalyticsPage } from './analytics-page';
 import { DonutCard } from './donut-card';
 import { RankedCard } from './ranked-card';
+import { StreamCard } from './stream-card';
 
 export function TrafficPage({
   result,
   onRangeChange,
 }: {
-  result: AnalyticsResult<Traffic>;
+  result: AnalyticsResult<TrafficData>;
   onRangeChange: (days: AnalyticsRange) => void;
 }) {
   return (
@@ -32,6 +33,12 @@ export function TrafficPage({
             unit="visits"
             emptyLabel="All came direct"
             rows={data.referrers}
+          />
+          <StreamCard
+            className="lg:col-span-2"
+            title="Visits over time, by channel"
+            unit="visits"
+            split={data.daily}
           />
           <RankedCard
             className="lg:col-span-2"

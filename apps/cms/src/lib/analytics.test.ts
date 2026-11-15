@@ -9,6 +9,7 @@ import {
   percentOf,
   rangeInput,
   rollUp,
+  splitByDay,
 } from './analytics';
 
 describe('channelOf', () => {
@@ -108,5 +109,43 @@ describe('the Pages table', () => {
       page: undefined,
       rows: undefined,
     });
+  });
+});
+
+describe('splitByDay', () => {
+  const days = ['2026-11-13', '2026-11-14', '2026-11-15'];
+  const row = (day: string, key: string | null, value: number) => ({
+    day,
+    key,
+    label: key ?? '',
+    value,
+  });
+
+  it('adds up each part per day, biggest part first, and drops stray rows', () => {
+    const split = splitByDay(
+      [
+        row('2026-11-13', 'a', 1),
+        row('2026-11-13', 'b', 5),
+        row('2026-11-15', 'b', 2),
+        row('2026-11-15', 'a', 1),
+        row('2026-11-14', null, 9),
+        row('2026-10-01', 'a', 9),
+      ],
+      days
+    );
+    expect(split.layers.map((l) => [l.key, l.counts])).toEqual([
+      ['b', [5, 0, 2]],
+      ['a', [1, 0, 1]],
+    ]);
+  });
+
+  it('folds the smallest parts past the limit into Other', () => {
+    const split = splitByDay(
+      ['a', 'b', 'c', 'd'].map((k, i) => row('2026-11-14', k, 10 - i)),
+      days,
+      3
+    );
+    expect(split.layers.map((l) => l.key)).toEqual(['a', 'b', '__other']);
+    expect(split.layers[2]!.counts).toEqual([0, 15, 0]);
   });
 });

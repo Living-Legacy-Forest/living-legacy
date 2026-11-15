@@ -5,7 +5,6 @@ import { DonutCard } from './donut-card';
 import { PlacesCard } from './places-card';
 import { StreamCard } from './stream-card';
 
-// An odd card out in the last row takes the whole row, rather than leave half of it empty.
 export function AudiencePage({
   result,
   onRangeChange,
@@ -23,21 +22,16 @@ export function AudiencePage({
       isEmpty={(data) => data.visits === 0}
     >
       {(data) => (
-        <div className="grid gap-4 max-md:gap-3 lg:grid-cols-2 lg:[&>:last-child:nth-child(odd)]:col-span-2">
-          <PlacesCard className="lg:col-span-2" data={data} />
+        <div className="grid gap-4 max-md:gap-3 lg:grid-cols-3">
+          <PlacesCard className="lg:col-span-3" data={data} />
           <DonutCard title="Devices" unit="visits" rows={data.devices} />
           <DonutCard title="Browsers" unit="visits" rows={data.browsers} />
+          <DonutCard title="Operating systems" unit="visits" rows={data.systems} />
           <StreamCard
-            className="lg:col-span-2"
+            className="lg:col-span-3"
             title="Visits over time, by device"
             unit="visits"
             split={data.devicesDaily}
-          />
-          <DonutCard
-            className="lg:col-span-2"
-            title="Operating systems"
-            unit="visits"
-            rows={data.systems}
           />
         </div>
       )}

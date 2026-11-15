@@ -179,8 +179,10 @@
   --sidebar-ring: oklch(0.556 0 0);
 
   --brand: #8fb08c;
-  /* The light theme's chart green is too dark to read on a dark background. */
+  /* The light theme's chart green is too dark to read on a dark background. The two greens
+     swap, so the fourth colour is not a repeat of the first. */
   --chart-1: #8fb08c;
+  --chart-4: #4a6f4f;
 }
 
 /* The site's CMS colour, set server-side as <html data-colour> (see __root.tsx).

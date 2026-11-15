@@ -362,3 +362,10 @@
     animation: none;
   }
 }
+
+/* A series' total after its name in the legend: the figure, in the page's colour. */
+.toggleTotal {
+  color: var(--foreground);
+  font-variant-numeric: tabular-nums;
+  font-weight: 500;
+}

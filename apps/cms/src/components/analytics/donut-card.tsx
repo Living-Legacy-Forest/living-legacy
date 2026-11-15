@@ -16,7 +16,7 @@ export function DonutCard({
   unit,
   totalLabel = 'Total',
   more,
-  emptyLabel = 'Nothing in this period',
+  emptyLabel = 'No data',
   className,
 }: {
   title: string;

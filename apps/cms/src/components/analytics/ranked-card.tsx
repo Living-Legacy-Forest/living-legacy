@@ -17,6 +17,81 @@ export type RankedRow = {
   detail?: React.ReactNode;
 };
 
+/** The rows alone: each with a bar for its size against the biggest, its count and its share. */
+export function RankedList({
+  rows,
+  total,
+  counted,
+  limit,
+  emptyLabel = 'Nothing in this period.',
+}: {
+  rows: RankedRow[];
+  total?: number;
+  counted: string;
+  limit?: number;
+  emptyLabel?: string;
+}) {
+  const shown = limit ? rows.slice(0, limit) : rows;
+  const whole = total ?? rows.reduce((n, r) => n + r.value, 0);
+  const top = Math.max(1, ...shown.map((r) => r.value));
+
+  return (
+    <>
+      {shown.length === 0 ? (
+        <p className="text-muted-foreground py-6 text-center text-sm">{emptyLabel}</p>
+      ) : (
+        // The rows share the card's height when a card beside it is taller, up to a limit, so a short
+        // list does not leave a gap under it.
+        <ol className="flex flex-1 flex-col gap-1">
+          {shown.map((row) => {
+            const share = percentOf(row.value, whole);
+            const label = row.href ? (
+              <a
+                href={row.href}
+                target="_blank"
+                rel="noreferrer"
+                className="truncate hover:underline"
+              >
+                {row.label}
+              </a>
+            ) : (
+              <span className="truncate">{row.label}</span>
+            );
+            return (
+              <li
+                key={row.key}
+                className="relative flex min-h-9 flex-1 items-center gap-3 rounded-md px-2.5 py-1.5 [&:not(:only-child)]:max-h-14"
+              >
+                <span
+                  aria-hidden
+                  className="bg-primary/10 absolute inset-y-0 left-0 rounded-md"
+                  style={{ width: `${(row.value / top) * 100}%` }}
+                />
+                <span className="relative flex min-w-0 flex-1 flex-col">
+                  <span className="text-ui flex min-w-0 items-center gap-2">
+                    {row.leading}
+                    {label}
+                  </span>
+                  {row.detail && (
+                    <span className="text-muted-foreground truncate text-xs">{row.detail}</span>
+                  )}
+                </span>
+                <span className="relative shrink-0 text-right text-sm tabular-nums">
+                  {formatInteger(row.value)}
+                  <span className="sr-only"> {counted}</span>
+                  <span className="text-muted-foreground ml-2 inline-block w-11 text-xs">
+                    {formatPercent(share)}
+                  </span>
+                </span>
+              </li>
+            );
+          })}
+        </ol>
+      )}
+    </>
+  );
+}
+
 /**
  * A ranked list, biggest first, each row with a bar for its size against the biggest so the
  * order reads at a glance, and its count and share of the whole on the right.
@@ -43,10 +118,6 @@ export function RankedCard({
   emptyLabel?: string;
   className?: string;
 }) {
-  const shown = limit ? rows.slice(0, limit) : rows;
-  const whole = total ?? rows.reduce((n, r) => n + r.value, 0);
-  const top = Math.max(1, ...shown.map((r) => r.value));
-
   return (
     <Card className={cn('gap-4', className)}>
       <CardHeader>
@@ -66,57 +137,13 @@ export function RankedCard({
         )}
       </CardHeader>
       <CardContent className="flex flex-1 flex-col">
-        {shown.length === 0 ? (
-          <p className="text-muted-foreground py-6 text-center text-sm">{emptyLabel}</p>
-        ) : (
-          // The rows share the card's height when a card beside it is taller, up to a limit, so a short
-          // list does not leave a gap under it.
-          <ol className="flex flex-1 flex-col gap-1">
-            {shown.map((row) => {
-              const share = percentOf(row.value, whole);
-              const label = row.href ? (
-                <a
-                  href={row.href}
-                  target="_blank"
-                  rel="noreferrer"
-                  className="truncate hover:underline"
-                >
-                  {row.label}
-                </a>
-              ) : (
-                <span className="truncate">{row.label}</span>
-              );
-              return (
-                <li
-                  key={row.key}
-                  className="relative flex min-h-9 flex-1 items-center gap-3 rounded-md px-2.5 py-1.5 [&:not(:only-child)]:max-h-14"
-                >
-                  <span
-                    aria-hidden
-                    className="bg-primary/10 absolute inset-y-0 left-0 rounded-md"
-                    style={{ width: `${(row.value / top) * 100}%` }}
-                  />
-                  <span className="relative flex min-w-0 flex-1 flex-col">
-                    <span className="text-ui flex min-w-0 items-center gap-2">
-                      {row.leading}
-                      {label}
-                    </span>
-                    {row.detail && (
-                      <span className="text-muted-foreground truncate text-xs">{row.detail}</span>
-                    )}
-                  </span>
-                  <span className="relative shrink-0 text-right text-sm tabular-nums">
-                    {formatInteger(row.value)}
-                    <span className="sr-only"> {counted}</span>
-                    <span className="text-muted-foreground ml-2 inline-block w-11 text-xs">
-                      {formatPercent(share)}
-                    </span>
-                  </span>
-                </li>
-              );
-            })}
-          </ol>
-        )}
+        <RankedList
+          rows={rows}
+          total={total}
+          counted={counted}
+          limit={limit}
+          emptyLabel={emptyLabel}
+        />
       </CardContent>
     </Card>
   );

@@ -52,7 +52,8 @@ export function AnalyticsBodySkeleton({ kind }: { kind: AnalyticsSkeletonKind })
       )}
       {kind === 'audience' && (
         <Grid className="lg:grid-cols-2">
-          {Array.from({ length: 4 }, (_, i) => (
+          <ChartCard height={420} className="lg:col-span-2" />
+          {Array.from({ length: 2 }, (_, i) => (
             <DonutCard key={i} />
           ))}
           <ChartCard height={260} className="lg:col-span-2" />

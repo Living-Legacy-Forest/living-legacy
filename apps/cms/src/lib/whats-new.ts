@@ -19,7 +19,8 @@ export type WhatsNewItem = {
       | '/analytics'
       | '/analytics/visitors'
       | '/analytics/enquiries'
-      | '/analytics/traffic';
+      | '/analytics/traffic'
+      | '/analytics/audience';
     hash?: string;
   };
 };
@@ -35,6 +36,17 @@ export type WhatsNewEntry = {
 };
 
 export const whatsNew: WhatsNewEntry[] = [
+  {
+    id: '2026-11-15-3',
+    title: 'A map of where visitors are',
+    items: [
+      {
+        title: 'Audience now has a map',
+        body: "Audience shows a map with a bubble for each busy city, sized by its visits, beside the countries or cities ranked. Hover a bubble for the city and its visits. No IP addresses are kept: places come from the visitor's network.",
+        link: { label: 'Open Audience', to: '/analytics/audience' },
+      },
+    ],
+  },
   {
     id: '2026-11-15-2',
     title: 'Visits over time, by channel and device',

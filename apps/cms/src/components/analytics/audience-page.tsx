@@ -1,16 +1,9 @@
-import type { AnalyticsRange, Ranked } from '@/lib/analytics';
-import { flagEmoji } from '@/lib/visitors';
+import type { AnalyticsRange } from '@/lib/analytics';
 import type { AnalyticsResult, AudiencePage as AudienceData } from '@/server/analytics';
 import { AnalyticsPage } from './analytics-page';
 import { DonutCard } from './donut-card';
+import { PlacesCard } from './places-card';
 import { StreamCard } from './stream-card';
-
-/** "🇦🇺 Australia": the flag in the label, so it shows in the legend and the ring's centre. */
-const flagged = <Row extends Ranked & { code: string | null }>(row: Row): Ranked => ({
-  key: row.key,
-  label: `${flagEmoji(row.code) || '🌐'} ${row.label}`,
-  value: row.value,
-});
 
 // An odd card out in the last row takes the whole row, rather than leave half of it empty.
 export function AudiencePage({
@@ -31,8 +24,7 @@ export function AudiencePage({
     >
       {(data) => (
         <div className="grid gap-4 max-md:gap-3 lg:grid-cols-2 lg:[&>:last-child:nth-child(odd)]:col-span-2">
-          <DonutCard title="Countries" unit="visits" rows={data.countries.map(flagged)} />
-          <DonutCard title="Cities" unit="visits" rows={data.cities.map(flagged)} />
+          <PlacesCard className="lg:col-span-2" data={data} />
           <DonutCard title="Devices" unit="visits" rows={data.devices} />
           <DonutCard title="Browsers" unit="visits" rows={data.browsers} />
           <StreamCard

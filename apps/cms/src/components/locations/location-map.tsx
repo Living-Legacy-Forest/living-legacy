@@ -216,7 +216,7 @@ export function LocationsOverviewMap({
         <MapControls />
       </MapView>
       {pinned.length < locations.length && (
-        <div className="bg-background/90 text-muted-foreground absolute top-3 left-3 rounded-md border px-2.5 py-1.5 text-xs shadow-sm backdrop-blur">
+        <div className="bg-background/90 text-muted-foreground absolute bottom-3 left-1/2 -translate-x-1/2 rounded-md border px-2.5 py-1.5 text-xs shadow-sm backdrop-blur">
           {pinned.length} of {locations.length} on the map. Add a pin in Edit for the rest.
         </div>
       )}
@@ -234,12 +234,15 @@ export function PinPicker({
   address,
   photoUrl,
   onChange,
+  mapClassName,
 }: {
   id: string;
   pin: Pin | null;
   address: string;
   photoUrl?: string | null;
   onChange: (pin: Pin | null) => void;
+  /** The map's size; 14rem tall unless the caller has more room. */
+  mapClassName?: string;
 }) {
   const theme = useCmsTheme();
   const [finding, setFinding] = useState(false);
@@ -275,7 +278,11 @@ export function PinPicker({
   return (
     <div className="space-y-2">
       {/* Panning the map must not drag the phone sheet closed. */}
-      <div id={id} data-base-ui-swipe-ignore className="h-56 overflow-hidden rounded-lg border">
+      <div
+        id={id}
+        data-base-ui-swipe-ignore
+        className={cn('h-56 overflow-hidden rounded-lg border', mapClassName)}
+      >
         <MapView theme={theme} center={start.center} zoom={start.zoom}>
           <FollowPin pin={pin} />
           <FoldedAttribution />

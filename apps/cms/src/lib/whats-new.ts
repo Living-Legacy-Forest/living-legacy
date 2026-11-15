@@ -15,6 +15,7 @@ export type WhatsNewItem = {
       | '/profile'
       | '/events'
       | '/events/overview'
+      | '/locations'
       | '/search-replace'
       | '/system'
       | '/analytics'
@@ -45,6 +46,17 @@ export const whatsNew: WhatsNewEntry[] = [
       {
         title: 'Sign in, with a little more help',
         body: 'The sign-in page has a new look. After you ask for a link it moves on to a Check your inbox step, where you can send the link again after a minute or switch to a different email. It also suggests a fix if an address looks mistyped, like gmial.com.',
+      },
+    ],
+  },
+  {
+    id: '2026-11-15-8',
+    title: 'Locations have their own page',
+    items: [
+      {
+        title: 'More room for a location',
+        body: 'Adding or editing a location now takes you to its own page, with the form on the left, the map on the right, and publishing, listing and visiting details under the form. Hide the map with the button at the top when you do not need it. The Locations page itself is now the map: click a pin to open its quick view, and use the list button at the top to bring the list back for searching, filters and removing several at once.',
+        link: { label: 'Open Locations', to: '/locations' },
       },
     ],
   },

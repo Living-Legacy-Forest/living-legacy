@@ -91,6 +91,9 @@ const locationSchema = z.object({
   status: z.enum(['draft', 'published']),
 });
 
+/** What the location form sends to `saveLocation`. */
+export type LocationInput = z.input<typeof locationSchema>;
+
 /** Appends -2, -3, ... until no other location uses the slug. */
 async function uniqueSlug(base: string, excludeId?: string) {
   const root = slugify(base) || 'location';
@@ -149,7 +152,7 @@ export const saveLocation = createServerFn({ method: 'POST' })
           updatedBy: context.user.id,
         })
         .returning({ id: locations.id });
-      return { id: row!.id };
+      return { id: row!.id, slug: values.slug };
     }
 
     const existing = await db.query.locations.findFirst({ where: eq(locations.id, data.id) });
@@ -185,7 +188,7 @@ export const saveLocation = createServerFn({ method: 'POST' })
           ]
         : []),
     ]);
-    return { id: data.id };
+    return { id: data.id, slug: values.slug };
   });
 
 export const deleteLocations = createServerFn({ method: 'POST' })

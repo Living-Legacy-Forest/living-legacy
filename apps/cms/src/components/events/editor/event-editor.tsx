@@ -10,22 +10,14 @@
  *   event-actions.tsx       preview, and the cancel, delete and scope dialogs
  */
 import { useNavigate } from '@tanstack/react-router';
-import { useState, useSyncExternalStore } from 'react';
+import { useState } from 'react';
 import {
   ResizablePanel,
   ResizablePanels,
 } from '@/components/arc/resizable-panels/resizable-panels';
 import { TOUCH_FIELDS } from '@/components/form-steps';
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-} from '@/components/ui/alert-dialog';
+import { LeaveDialog } from '@/components/editor-page/leave-dialog';
+import { useIsDesktop } from '@/components/editor-page/use-is-desktop';
 import { formatDateTime } from '@/lib/format';
 import { cn } from '@/lib/utils';
 import type { EventPageData } from '@/server/events';
@@ -44,19 +36,6 @@ import { EventSidePanel } from './event-side-panel';
 import { EventToolbar } from './event-toolbar';
 import { type EventView, EventViewBar, EventViewsHeader } from './event-views';
 import { useEventEditor } from './use-event-editor';
-
-/** From `lg` the side panel sits beside the form and can be hidden; below it, it stacks under. */
-function useIsDesktop() {
-  return useSyncExternalStore(
-    (notify) => {
-      const query = window.matchMedia('(min-width: 1024px)');
-      query.addEventListener('change', notify);
-      return () => query.removeEventListener('change', notify);
-    },
-    () => window.matchMedia('(min-width: 1024px)').matches,
-    () => true
-  );
-}
 
 /**
  * Create and edit page for an event. Remount it (change its `key`) to reload
@@ -270,24 +249,7 @@ export function EventEditor({
         </>
       )}
 
-      <AlertDialog open={editor.blocker.status === 'blocked'}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>Leave without saving?</AlertDialogTitle>
-            <AlertDialogDescription>
-              Your unsaved changes to this event will be lost.
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel onClick={() => editor.blocker.reset?.()}>
-              Keep editing
-            </AlertDialogCancel>
-            <AlertDialogAction variant="destructive" onClick={() => editor.blocker.proceed?.()}>
-              Leave
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
+      <LeaveDialog blocker={editor.blocker} what="event" />
     </>
   );
 }

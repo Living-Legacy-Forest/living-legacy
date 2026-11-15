@@ -74,16 +74,24 @@ describe('phone tabs', () => {
     expect(isEditorPath('/events')).toBe(false);
     expect(isEditorPath('/events/overview')).toBe(false);
   });
+
+  it('treats a location, but not the locations list, as the full-screen editor', () => {
+    expect(isEditorPath('/locations/01J0ABC')).toBe(true);
+    expect(isEditorPath('/locations/new')).toBe(true);
+    expect(isEditorPath('/locations')).toBe(false);
+  });
 });
 
 describe('editorBack', () => {
   it('goes back to the list the editor was opened from', () => {
     expect(editorBack('/events/01J0ABC')).toEqual({ to: '/events', label: 'Events' });
+    expect(editorBack('/locations/01J0ABC')).toEqual({ to: '/locations', label: 'Locations' });
     expect(editorBack('/posts/01J0ABC')).toEqual({ to: '/posts', label: 'Posts' });
     expect(editorBack('/media')).toBeNull();
   });
 
   it('keeps an event page under All events in the sidebar', () => {
     expect(findNavItem('/events/01J0ABC')?.title).toBe('All events');
+    expect(findNavItem('/locations/01J0ABC')?.title).toBe('Locations');
   });
 });

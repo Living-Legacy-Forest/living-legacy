@@ -245,14 +245,25 @@ export function LocationsPage({
           />
         )}
         {data.length > 0 && (
-          <div className={cn(!listOpen && 'lg:hidden')}>
-            <ViewSwitch
-              value={layout}
-              onChange={(next) => {
-                setLayout(next);
-                selection.clear();
-              }}
-            />
+          // Only means something while the list is open. Its width glides to nothing, on
+          // the same curve as the list, so the toolbar does not jump when it goes.
+          <div
+            inert={!listOpen && desktop}
+            className={cn(
+              'grid motion-reduce:transition-none lg:transition-[grid-template-columns,opacity,translate,margin] lg:duration-300 lg:ease-[cubic-bezier(0.32,0.72,0,1)]',
+              !listOpen && 'lg:-ml-3 lg:-translate-x-2 lg:grid-cols-[0fr] lg:opacity-0',
+              listOpen && 'lg:grid-cols-[1fr]'
+            )}
+          >
+            <div className="min-w-0 overflow-hidden">
+              <ViewSwitch
+                value={layout}
+                onChange={(next) => {
+                  setLayout(next);
+                  selection.clear();
+                }}
+              />
+            </div>
           </div>
         )}
         {data.length > 0 && (

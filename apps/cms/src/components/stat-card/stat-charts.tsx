@@ -177,13 +177,13 @@ export function PartsChart({ parts }: { parts: Part[] }) {
     <div className="flex h-28 items-center gap-3 md:gap-4">
       {parts.some((p) => p.value > 0) && (
         <DonutChart
-          className="donut-compact w-16 shrink-0 md:w-24"
+          className="donut-compact w-16 shrink-0 md:w-28"
           label={parts.map((p) => p.label).join(', ')}
           data={parts.map((p) => ({ key: p.key, label: p.label, value: p.value, color: p.color }))}
           formatValue={formatInteger}
           legend={false}
-          size={96}
-          thickness={12}
+          size={112}
+          thickness={14}
           groupBelow={0}
           maxSegments={parts.length}
         />

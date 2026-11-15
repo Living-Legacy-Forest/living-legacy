@@ -1,4 +1,3 @@
-import { Menu as MenuPrimitive } from '@base-ui/react/menu';
 import { Link } from '@tanstack/react-router';
 import {
   ChevronRightIcon,
@@ -6,67 +5,30 @@ import {
   KeyboardIcon,
   LogOutIcon,
   MessageCircleQuestionIcon,
-  MonitorIcon,
-  MoonIcon,
-  SunIcon,
-  SunMoonIcon,
   UserIcon,
 } from '@/components/icons';
-import { type ComponentType, useState } from 'react';
+import { useState } from 'react';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogHeader,
-  DialogTitle,
-} from '@/components/ui/dialog';
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuGroup,
   DropdownMenuItem,
   DropdownMenuLabel,
-  DropdownMenuRadioGroup,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { Drawer, DrawerBody, DrawerContent } from '@/components/ui/drawer';
-import { Kbd, KbdGroup } from '@/components/ui/kbd';
-import { PillGlide, pillItemClass, pillTrackClass } from '@/components/ui/pill-track';
 import { Spinner } from '@/components/ui/spinner';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { footerLinks } from '@/lib/nav';
 import type { SessionUser } from '@/lib/session';
 import { useSignOut } from '@/lib/use-sign-out';
-import { useThemeChoice } from '@/lib/use-theme-choice';
 import { cn } from '@/lib/utils';
-import type { Theme } from '@/server/settings';
+import { ShortcutsDialog } from './shortcuts-dialog';
 import { SheetHeader, sheetGroupClass, sheetRowClass } from './sheet-parts';
 import { avatarSrc } from '@/lib/avatar';
 import { canReportProblem, openProblemReport } from '@/lib/report-problem';
-
-const shortcuts: { keys: string[]; label: string }[] = [
-  { keys: ['⌘', 'K'], label: 'Search or jump to a page' },
-  { keys: ['⌘', 'B'], label: 'Show or hide the sidebar' },
-  { keys: ['⌘', 'S'], label: 'Save the post you are editing' },
-  { keys: ['↑', '↓'], label: 'Move through the posts list' },
-  { keys: ['X'], label: 'Select the focused row in a list' },
-  { keys: ['⌫'], label: 'Delete the focused row, or move a post to the trash' },
-  { keys: ['⌥', '↑'], label: 'Move the focused FAQ or team member up (⌥↓ moves it down)' },
-  { keys: ['Right-click'], label: 'See every action for a row, with its key' },
-];
-
-const themes: {
-  value: Theme;
-  label: string;
-
-  icon: ComponentType<{ className?: string }>;
-}[] = [
-  { value: 'light', label: 'Light', icon: SunIcon },
-  { value: 'dark', label: 'Dark', icon: MoonIcon },
-  { value: 'system', label: 'Match my device', icon: MonitorIcon },
-];
 
 /** The sign-out label: the new words rise into place, so "Signing out" reads as progress. */
 export function SignOutLabel({ signingOut }: { signingOut: boolean }) {
@@ -86,7 +48,6 @@ export function NavUser({ user }: { user: SessionUser }) {
   const [showShortcuts, setShowShortcuts] = useState(false);
   const [sheetOpen, setSheetOpen] = useState(false);
   const { signingOut, signOut } = useSignOut();
-  const theme = useThemeChoice();
   // Sentry runs in production only, so the item shows there; read once it has loaded.
   const [canReport] = useState(() => typeof window !== 'undefined' && canReportProblem());
   const initials = user.name
@@ -240,36 +201,6 @@ export function NavUser({ user }: { user: SessionUser }) {
             )}
           </DropdownMenuGroup>
           <DropdownMenuSeparator />
-          {/* One stop per choice: up and down pass through them, and choosing keeps the menu open. */}
-          <div className="text-ui flex items-center gap-1.5 py-0.5 pl-1.5">
-            <SunMoonIcon aria-hidden className="text-muted-foreground size-4 shrink-0" />
-            <span className="flex-1" aria-hidden>
-              Theme
-            </span>
-            <DropdownMenuRadioGroup
-              aria-label="Theme"
-              value={theme.effective}
-              onValueChange={(next) => void theme.choose(next as Theme)}
-              className={pillTrackClass}
-            >
-              <PillGlide value={theme.effective} selector=':scope > [aria-checked="true"]' />
-              {themes.map(({ value, label, icon: Icon }) => (
-                <MenuPrimitive.RadioItem
-                  key={value}
-                  value={value}
-                  aria-label={label}
-                  title={label}
-                  className={cn(
-                    pillItemClass,
-                    'aria-checked:text-foreground data-highlighted:text-foreground size-7 cursor-default px-0'
-                  )}
-                >
-                  <Icon aria-hidden className="size-4" />
-                </MenuPrimitive.RadioItem>
-              ))}
-            </DropdownMenuRadioGroup>
-          </div>
-          <DropdownMenuSeparator />
           <DropdownMenuItem
             variant="destructive"
             closeOnClick={false}
@@ -282,26 +213,7 @@ export function NavUser({ user }: { user: SessionUser }) {
         </DropdownMenuContent>
       </DropdownMenu>
 
-      <Dialog open={showShortcuts} onOpenChange={setShowShortcuts}>
-        <DialogContent className="sm:max-w-sm">
-          <DialogHeader>
-            <DialogTitle>Keyboard shortcuts</DialogTitle>
-            <DialogDescription>Use Ctrl in place of ⌘ on Windows.</DialogDescription>
-          </DialogHeader>
-          <ul className="text-ui space-y-2.5">
-            {shortcuts.map((shortcut) => (
-              <li key={shortcut.label} className="flex items-center justify-between gap-4">
-                <span>{shortcut.label}</span>
-                <KbdGroup>
-                  {shortcut.keys.map((key) => (
-                    <Kbd key={key}>{key}</Kbd>
-                  ))}
-                </KbdGroup>
-              </li>
-            ))}
-          </ul>
-        </DialogContent>
-      </Dialog>
+      <ShortcutsDialog open={showShortcuts} onOpenChange={setShowShortcuts} />
     </>
   );
 }

@@ -5,6 +5,7 @@ import { RichTextEditor } from '@/components/editor';
 import { postContentExtensions } from '@/components/posts/post-extensions';
 import { Toolbar } from '@/components/templates/simple-document-editor/toolbar';
 import { readState } from '@/components/templates/simple-document-editor/utils';
+import { cn } from '@/lib/utils';
 
 /**
  * A rich text box for forms (an event's description, say): the post editor's
@@ -18,6 +19,7 @@ export function RichTextField({
   value,
   onChange,
   placeholder,
+  contentClassName,
 }: {
   id: string;
   /** The visible label's id; the editor is not a native field, so it is named this way. */
@@ -25,6 +27,8 @@ export function RichTextField({
   value: RichTextDoc | null;
   onChange: (value: RichTextDoc | null) => void;
   placeholder?: string;
+  /** For the writing area, e.g. a taller minimum height: `[&_.ProseMirror]:min-h-80!`. */
+  contentClassName?: string;
 }) {
   const editor = useEditor({
     content: value ?? '',
@@ -53,7 +57,12 @@ export function RichTextField({
         className="rounded-none! border-0! shadow-none!"
       >
         <Toolbar editor={editor} state={state} />
-        <RichTextEditor.Content className="[&_.ProseMirror]:min-h-40! [&_.ProseMirror]:px-3! [&_.ProseMirror]:py-2.5! [&_.ProseMirror]:text-base md:[&_.ProseMirror]:text-sm" />
+        <RichTextEditor.Content
+          className={cn(
+            '[&_.ProseMirror]:min-h-40! [&_.ProseMirror]:px-3! [&_.ProseMirror]:py-2.5! [&_.ProseMirror]:text-base md:[&_.ProseMirror]:text-sm',
+            contentClassName
+          )}
+        />
       </RichTextEditor>
     </div>
   );

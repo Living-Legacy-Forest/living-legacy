@@ -26,12 +26,16 @@ import { Route as AppAnnouncementsIndexRouteImport } from './routes/_app/announc
 import { Route as AppApiKeysIndexRouteImport } from './routes/_app/api-keys/index'
 import { Route as AppChecksIndexRouteImport } from './routes/_app/checks/index'
 import { Route as AppEventsIndexRouteImport } from './routes/_app/events/index'
+import { Route as AppEventsEventIdRouteImport } from './routes/_app/events/$eventId'
+import { Route as AppEventsNewRouteImport } from './routes/_app/events/new'
 import { Route as AppEventsOverviewRouteImport } from './routes/_app/events/overview'
 import { Route as AppFaqsIndexRouteImport } from './routes/_app/faqs/index'
 import { Route as AppIntegrationsIndexRouteImport } from './routes/_app/integrations/index'
 import { Route as AppLegalIndexRouteImport } from './routes/_app/legal/index'
 import { Route as AppLegalSlugRouteImport } from './routes/_app/legal/$slug'
 import { Route as AppLocationsIndexRouteImport } from './routes/_app/locations/index'
+import { Route as AppLocationsLocationIdRouteImport } from './routes/_app/locations/$locationId'
+import { Route as AppLocationsNewRouteImport } from './routes/_app/locations/new'
 import { Route as AppMediaCoverageIndexRouteImport } from './routes/_app/media-coverage/index'
 import { Route as AppMediaIndexRouteImport } from './routes/_app/media/index'
 import { Route as AppMissingPagesIndexRouteImport } from './routes/_app/missing-pages/index'
@@ -147,6 +151,16 @@ const AppEventsIndexRoute = AppEventsIndexRouteImport.update({
   path: '/events/',
   getParentRoute: () => AppRoute,
 } as any)
+const AppEventsEventIdRoute = AppEventsEventIdRouteImport.update({
+  id: '/events/$eventId',
+  path: '/events/$eventId',
+  getParentRoute: () => AppRoute,
+} as any)
+const AppEventsNewRoute = AppEventsNewRouteImport.update({
+  id: '/events/new',
+  path: '/events/new',
+  getParentRoute: () => AppRoute,
+} as any)
 const AppEventsOverviewRoute = AppEventsOverviewRouteImport.update({
   id: '/events/overview',
   path: '/events/overview',
@@ -175,6 +189,16 @@ const AppLegalSlugRoute = AppLegalSlugRouteImport.update({
 const AppLocationsIndexRoute = AppLocationsIndexRouteImport.update({
   id: '/locations/',
   path: '/locations/',
+  getParentRoute: () => AppRoute,
+} as any)
+const AppLocationsLocationIdRoute = AppLocationsLocationIdRouteImport.update({
+  id: '/locations/$locationId',
+  path: '/locations/$locationId',
+  getParentRoute: () => AppRoute,
+} as any)
+const AppLocationsNewRoute = AppLocationsNewRouteImport.update({
+  id: '/locations/new',
+  path: '/locations/new',
   getParentRoute: () => AppRoute,
 } as any)
 const AppMediaCoverageIndexRoute = AppMediaCoverageIndexRouteImport.update({
@@ -340,8 +364,12 @@ export interface FileRoutesByFullPath {
   '/analytics/pages': typeof AppAnalyticsPagesRoute
   '/analytics/traffic': typeof AppAnalyticsTrafficRoute
   '/analytics/visitors': typeof AppAnalyticsVisitorsRoute
+  '/events/$eventId': typeof AppEventsEventIdRoute
+  '/events/new': typeof AppEventsNewRoute
   '/events/overview': typeof AppEventsOverviewRoute
   '/legal/$slug': typeof AppLegalSlugRoute
+  '/locations/$locationId': typeof AppLocationsLocationIdRoute
+  '/locations/new': typeof AppLocationsNewRoute
   '/posts/$postId': typeof AppPostsPostIdRoute
   '/posts/new': typeof AppPostsNewRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
@@ -393,8 +421,12 @@ export interface FileRoutesByTo {
   '/analytics/pages': typeof AppAnalyticsPagesRoute
   '/analytics/traffic': typeof AppAnalyticsTrafficRoute
   '/analytics/visitors': typeof AppAnalyticsVisitorsRoute
+  '/events/$eventId': typeof AppEventsEventIdRoute
+  '/events/new': typeof AppEventsNewRoute
   '/events/overview': typeof AppEventsOverviewRoute
   '/legal/$slug': typeof AppLegalSlugRoute
+  '/locations/$locationId': typeof AppLocationsLocationIdRoute
+  '/locations/new': typeof AppLocationsNewRoute
   '/posts/$postId': typeof AppPostsPostIdRoute
   '/posts/new': typeof AppPostsNewRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
@@ -449,8 +481,12 @@ export interface FileRoutesById {
   '/_app/analytics/pages': typeof AppAnalyticsPagesRoute
   '/_app/analytics/traffic': typeof AppAnalyticsTrafficRoute
   '/_app/analytics/visitors': typeof AppAnalyticsVisitorsRoute
+  '/_app/events/$eventId': typeof AppEventsEventIdRoute
+  '/_app/events/new': typeof AppEventsNewRoute
   '/_app/events/overview': typeof AppEventsOverviewRoute
   '/_app/legal/$slug': typeof AppLegalSlugRoute
+  '/_app/locations/$locationId': typeof AppLocationsLocationIdRoute
+  '/_app/locations/new': typeof AppLocationsNewRoute
   '/_app/posts/$postId': typeof AppPostsPostIdRoute
   '/_app/posts/new': typeof AppPostsNewRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
@@ -505,8 +541,12 @@ export interface FileRouteTypes {
     | '/analytics/pages'
     | '/analytics/traffic'
     | '/analytics/visitors'
+    | '/events/$eventId'
+    | '/events/new'
     | '/events/overview'
     | '/legal/$slug'
+    | '/locations/$locationId'
+    | '/locations/new'
     | '/posts/$postId'
     | '/posts/new'
     | '/api/auth/$'
@@ -558,8 +598,12 @@ export interface FileRouteTypes {
     | '/analytics/pages'
     | '/analytics/traffic'
     | '/analytics/visitors'
+    | '/events/$eventId'
+    | '/events/new'
     | '/events/overview'
     | '/legal/$slug'
+    | '/locations/$locationId'
+    | '/locations/new'
     | '/posts/$postId'
     | '/posts/new'
     | '/api/auth/$'
@@ -613,8 +657,12 @@ export interface FileRouteTypes {
     | '/_app/analytics/pages'
     | '/_app/analytics/traffic'
     | '/_app/analytics/visitors'
+    | '/_app/events/$eventId'
+    | '/_app/events/new'
     | '/_app/events/overview'
     | '/_app/legal/$slug'
+    | '/_app/locations/$locationId'
+    | '/_app/locations/new'
     | '/_app/posts/$postId'
     | '/_app/posts/new'
     | '/api/auth/$'
@@ -798,6 +846,20 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppEventsIndexRouteImport
       parentRoute: typeof AppRoute
     }
+    '/_app/events/$eventId': {
+      id: '/_app/events/$eventId'
+      path: '/events/$eventId'
+      fullPath: '/events/$eventId'
+      preLoaderRoute: typeof AppEventsEventIdRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/_app/events/new': {
+      id: '/_app/events/new'
+      path: '/events/new'
+      fullPath: '/events/new'
+      preLoaderRoute: typeof AppEventsNewRouteImport
+      parentRoute: typeof AppRoute
+    }
     '/_app/events/overview': {
       id: '/_app/events/overview'
       path: '/events/overview'
@@ -838,6 +900,20 @@ declare module '@tanstack/react-router' {
       path: '/locations'
       fullPath: '/locations/'
       preLoaderRoute: typeof AppLocationsIndexRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/_app/locations/$locationId': {
+      id: '/_app/locations/$locationId'
+      path: '/locations/$locationId'
+      fullPath: '/locations/$locationId'
+      preLoaderRoute: typeof AppLocationsLocationIdRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/_app/locations/new': {
+      id: '/_app/locations/new'
+      path: '/locations/new'
+      fullPath: '/locations/new'
+      preLoaderRoute: typeof AppLocationsNewRouteImport
       parentRoute: typeof AppRoute
     }
     '/_app/media-coverage/': {
@@ -1077,8 +1153,12 @@ const AppAnalyticsRouteRouteWithChildren =
 interface AppRouteChildren {
   AppAnalyticsRouteRoute: typeof AppAnalyticsRouteRouteWithChildren
   AppIndexRoute: typeof AppIndexRoute
+  AppEventsEventIdRoute: typeof AppEventsEventIdRoute
+  AppEventsNewRoute: typeof AppEventsNewRoute
   AppEventsOverviewRoute: typeof AppEventsOverviewRoute
   AppLegalSlugRoute: typeof AppLegalSlugRoute
+  AppLocationsLocationIdRoute: typeof AppLocationsLocationIdRoute
+  AppLocationsNewRoute: typeof AppLocationsNewRoute
   AppPostsPostIdRoute: typeof AppPostsPostIdRoute
   AppPostsNewRoute: typeof AppPostsNewRoute
   AppActivityIndexRoute: typeof AppActivityIndexRoute
@@ -1110,8 +1190,12 @@ interface AppRouteChildren {
 const AppRouteChildren: AppRouteChildren = {
   AppAnalyticsRouteRoute: AppAnalyticsRouteRouteWithChildren,
   AppIndexRoute: AppIndexRoute,
+  AppEventsEventIdRoute: AppEventsEventIdRoute,
+  AppEventsNewRoute: AppEventsNewRoute,
   AppEventsOverviewRoute: AppEventsOverviewRoute,
   AppLegalSlugRoute: AppLegalSlugRoute,
+  AppLocationsLocationIdRoute: AppLocationsLocationIdRoute,
+  AppLocationsNewRoute: AppLocationsNewRoute,
   AppPostsPostIdRoute: AppPostsPostIdRoute,
   AppPostsNewRoute: AppPostsNewRoute,
   AppActivityIndexRoute: AppActivityIndexRoute,

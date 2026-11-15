@@ -122,7 +122,7 @@ const SIMPLE: SimpleTarget[] = [
         month: 'short',
         year: 'numeric',
       })}`,
-    link: (r) => `/events?open=${r.id}`,
+    link: (r) => `/events/${r.id}`,
     fields: [
       { key: 'title', label: 'Title' },
       { key: 'venue', label: 'Venue' },

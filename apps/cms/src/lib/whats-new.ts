@@ -13,7 +13,9 @@ export type WhatsNewItem = {
       | '/settings'
       | '/media'
       | '/profile'
+      | '/events'
       | '/events/overview'
+      | '/locations'
       | '/search-replace'
       | '/system'
       | '/analytics'
@@ -37,6 +39,53 @@ export type WhatsNewEntry = {
 };
 
 export const whatsNew: WhatsNewEntry[] = [
+  {
+    id: '2026-11-16-2',
+    title: 'Shortcuts you can change',
+    items: [
+      {
+        title: 'A theme button in the sidebar',
+        body: 'The light and dark switch has moved from your account menu to the bottom of the sidebar: one press flips between them. Match my device is still on your Profile.',
+        link: { label: 'Open Profile', to: '/profile' },
+      },
+      {
+        title: 'Set your own keys',
+        body: 'Keyboard shortcuts now has its own button at the bottom of the sidebar. It lets you change the keys for search, the sidebar and saving a post, and search the whole list. Hold a key such as Option or Ctrl and it lights up in every row. Your changes stay in the browser you made them in.',
+      },
+    ],
+  },
+  {
+    id: '2026-11-16',
+    title: 'A fresher sign-in page',
+    items: [
+      {
+        title: 'Sign in, with a little more help',
+        body: 'The sign-in page has a new look. After you ask for a link it moves on to a Check your inbox step, where you can send the link again after a minute or switch to a different email. It also suggests a fix if an address looks mistyped, like gmial.com.',
+      },
+    ],
+  },
+  {
+    id: '2026-11-15-8',
+    title: 'Locations have their own page',
+    items: [
+      {
+        title: 'More room for a location',
+        body: 'Adding or editing a location now takes you to its own page, with the form on the left, the map on the right, and publishing, listing and visiting details under the form. Hide the map with the button at the top when you do not need it. The Locations page itself is now the map: click a pin to open its quick view, and use the list button at the top to bring the list back for searching, filters and removing several at once.',
+        link: { label: 'Open Locations', to: '/locations' },
+      },
+    ],
+  },
+  {
+    id: '2026-11-15-7',
+    title: 'Events have their own page',
+    items: [
+      {
+        title: 'More room for an event',
+        body: 'Opening an event, or making a new one, now takes you to its own page, like a post: the description in the middle, and bookings, places and dates at the side. Guests and the dashboard are tabs at the top.',
+        link: { label: 'Open Events', to: '/events' },
+      },
+    ],
+  },
   {
     id: '2026-11-15-6',
     title: 'Easier on a phone',

@@ -1,7 +1,6 @@
 import { Suspense, lazy } from 'react';
 import { SegmentedControl } from '@/components/segmented-control';
 import { type Stat, StatCard } from '@/components/stat-card/stat-card';
-import { Card } from '@/components/ui/card';
 import {
   Select,
   SelectContent,
@@ -9,7 +8,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { Skeleton } from '@/components/ui/skeleton';
+import { ChartsPlaceholder } from '@/components/events/events-skeleton';
 import { formatInteger } from '@/lib/format';
 import type { EventsOverview as Overview, OverviewRange } from '@/server/event-stats';
 import { UpcomingEvents } from './upcoming-events';
@@ -143,27 +142,13 @@ export function EventsOverview({
           />
         </div>
         <div className="grid grid-cols-2 gap-4 max-md:gap-3 lg:grid-cols-4">
-          <Suspense fallback={<ResultsPlaceholder />}>
+          <Suspense
+            fallback={<ChartsPlaceholder wide="col-span-2 lg:col-span-4" half="col-span-2" />}
+          >
             <ResultsCharts data={data} />
           </Suspense>
         </div>
       </section>
     </div>
-  );
-}
-
-function ResultsPlaceholder() {
-  return (
-    <>
-      <Card className="col-span-2 h-80 p-4 lg:col-span-4" aria-busy>
-        <Skeleton className="size-full" />
-      </Card>
-      <Card className="col-span-2 h-72 p-4" aria-busy>
-        <Skeleton className="size-full" />
-      </Card>
-      <Card className="col-span-2 h-72 p-4" aria-busy>
-        <Skeleton className="size-full" />
-      </Card>
-    </>
   );
 }

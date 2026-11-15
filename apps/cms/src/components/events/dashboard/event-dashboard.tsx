@@ -2,7 +2,7 @@ import { Suspense, lazy, useEffect, useState } from 'react';
 import { type Stat, StatCard } from '@/components/stat-card/stat-card';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Skeleton } from '@/components/ui/skeleton';
+import { ChartsPlaceholder } from '@/components/events/events-skeleton';
 import { Spinner } from '@/components/ui/spinner';
 import { formatDate, formatInteger, formatLongDate, formatTimeRange } from '@/lib/format';
 import { notify } from '@/lib/notify';
@@ -180,7 +180,9 @@ function EventDashboard({
         {buildStats(data).map((stat) => (
           <StatCard key={stat.label} stat={stat} />
         ))}
-        <Suspense fallback={<ChartsPlaceholder />}>
+        <Suspense
+          fallback={<ChartsPlaceholder wide="col-span-2 @4xl:col-span-4" half="col-span-2" />}
+        >
           <EventCharts data={data} onDateChange={onDateChange} />
         </Suspense>
         <GuestsCard data={data} onOpenGuests={onOpenGuests} />
@@ -249,21 +251,5 @@ function GuestsCard({ data, onOpenGuests }: { data: Dashboard; onOpenGuests: () 
         </dl>
       </CardContent>
     </Card>
-  );
-}
-
-function ChartsPlaceholder() {
-  return (
-    <>
-      <Card className="col-span-2 h-80 p-4 @4xl:col-span-4" aria-busy>
-        <Skeleton className="size-full" />
-      </Card>
-      <Card className="col-span-2 h-64 p-4" aria-busy>
-        <Skeleton className="size-full" />
-      </Card>
-      <Card className="col-span-2 h-64 p-4" aria-busy>
-        <Skeleton className="size-full" />
-      </Card>
-    </>
   );
 }

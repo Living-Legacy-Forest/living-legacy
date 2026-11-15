@@ -1,6 +1,11 @@
 import { useRouterState } from '@tanstack/react-router';
 import { useEffect, useState } from 'react';
 import { AnalyticsSkeleton, analyticsKind } from '@/components/analytics/analytics-skeleton';
+import {
+  EventEditorSkeleton,
+  EventsListSkeleton,
+  EventsOverviewSkeleton,
+} from '@/components/events/events-skeleton';
 import { DashboardSkeleton } from '@/components/dashboard/dashboard-skeleton';
 import { DocumentEditorSkeleton } from '@/components/posts/post-editor/document-editor-skeleton';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -54,6 +59,14 @@ export function PageSkeleton({ pathname }: { pathname: string }) {
         </div>
       ) : section === 'posts' && child ? (
         <EditorSkeleton />
+      ) : section === 'events' ? (
+        !child ? (
+          <EventsListSkeleton />
+        ) : child === 'overview' ? (
+          <EventsOverviewSkeleton />
+        ) : (
+          <EventEditorSkeleton />
+        )
       ) : splitSections.includes(section) ? (
         <SplitSkeleton />
       ) : section === 'media' ? (

@@ -79,6 +79,7 @@ import { Location01Icon as AnimatedLocation01Icon } from '@animateicons/react/hu
 import { NewspaperIcon as AnimatedNewspaperIcon } from '@animateicons/react/huge/newspaper-icon';
 import { Pen01Icon as AnimatedPen01Icon } from '@animateicons/react/huge/pen-0-1-icon';
 import { QuoteIcon as AnimatedQuoteIcon } from '@animateicons/react/huge/quote-icon';
+import { SaveIcon as AnimatedSaveIcon } from '@animateicons/react/huge/save-icon';
 import { SendIcon as AnimatedSendIcon } from '@animateicons/react/huge/send-icon';
 import { TextBoldIcon as AnimatedTextBoldIcon } from '@animateicons/react/huge/text-bold-icon';
 import { TextItalicIcon as AnimatedTextItalicIcon } from '@animateicons/react/huge/text-italic-icon';
@@ -322,6 +323,7 @@ export const GlobeIcon = animated(AnimatedGlobe02Icon);
 export const CheckIcon = DrawnCheckIcon;
 /** The tick inside a checkbox: static, since it sits in every list row. */
 export const CheckboxTickIcon = make(H.Tick02Icon);
+export const SaveIcon = animated(AnimatedSaveIcon);
 export const ScanQrIcon = make(H.QrCodeScanIcon);
 export const ChevronUpIcon = make(H.ArrowUp01Icon);
 export const ChevronDownIcon = make(H.ArrowDown01Icon);

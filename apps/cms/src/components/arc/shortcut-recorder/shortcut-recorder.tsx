@@ -956,13 +956,7 @@ export function ShortcutList({
     <section className={[styles.list, className].filter(Boolean).join(' ')} aria-label={label}>
       {searchable && (
         <div className={styles.searchRow}>
-          <Search
-            className={styles.searchIcon}
-            width={16}
-            height={16}
-            strokeWidth={1.75}
-            aria-hidden="true"
-          />
+          <Search className={`${styles.searchIcon} size-4`} strokeWidth={1.75} aria-hidden="true" />
           <input
             ref={searchRef}
             className={styles.search}

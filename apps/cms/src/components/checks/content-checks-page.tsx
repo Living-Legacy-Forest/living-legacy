@@ -261,7 +261,7 @@ function Items({
                 .join(' · ')}
             </span>
           </span>
-          <FixLink label="Open the event" to="/events" search={{ open: e.id }} />
+          <FixLink label="Open the event" to="/events/$eventId" params={{ eventId: e.id }} />
         </Row>
       ));
   }

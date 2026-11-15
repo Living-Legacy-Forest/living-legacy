@@ -1,20 +1,8 @@
 import { groupEventDates } from '@ll/content';
-import { useEffect, useRef, useState } from 'react';
-import { CalendarClockIcon, PanelRightIcon, PlusIcon } from '@/components/icons';
-import {
-  DialogActions,
-  ListColumn,
-  ListDialog,
-  ListPageLayout,
-  ListRows,
-  NoMatches,
-  isDesktop,
-  PaneActions,
-  PaneColumn,
-  PaneEmpty,
-  PaneFrame,
-  useListPane,
-} from '@/components/list/list-page';
+import { useNavigate } from '@tanstack/react-router';
+import { useState } from 'react';
+import { CalendarClockIcon, PlusIcon } from '@/components/icons';
+import { ListColumn, ListPageLayout, ListRows, NoMatches } from '@/components/list/list-page';
 import { ListRow } from '@/components/list/list-row';
 import { ListFilter } from '@/components/list/list-filter';
 import { CardMeta, ListCard, ListCards } from '@/components/list/list-card';
@@ -35,7 +23,6 @@ import { PageActions } from '@/components/shell/page-actions';
 import { SegmentedControl } from '@/components/segmented-control';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import {
   Empty,
   EmptyContent,
@@ -48,16 +35,10 @@ import { removedNotice } from '@/lib/notify';
 import { RevealWords } from '@/components/dashboard/reveal-words';
 import { useAction } from '@/lib/use-action';
 import { useRevealOnce } from '@/lib/use-reveal-once';
-import { type EventRow, type EventsData, type LocationOption, deleteEvents } from '@/server/events';
-import { EventForm, type FormActions } from './event-form';
-import { EventDashboardPanel } from './dashboard/event-dashboard';
-import { EventGuests } from './event-guests';
-import { SeriesDatePicker, dateStatus, startsIn } from './series-date-picker';
+import { type EventRow, type EventsData, deleteEvents } from '@/server/events';
+import { dateStatus, startsIn } from './series-date-picker';
 
 const NOUN: [string, string] = ['event', 'events'];
-
-/** What the pane shows: a saved event, or a new one. */
-type Target = { kind: 'edit'; id: string } | { kind: 'new' };
 
 type Filter = 'upcoming' | 'drafts' | 'past' | 'all';
 const filters: { value: Filter; label: string }[] = [
@@ -75,31 +56,9 @@ function inFilter(e: EventRow, filter: Filter, now: number) {
   return true;
 }
 
-export type PanelView = 'details' | 'guests' | 'dashboard';
-
-export function EventsPage({
-  data,
-  initialOpen,
-  initialView,
-  onOpenedInitial,
-}: {
-  data: EventsData;
-  /** An event date to open on arrival, from ?open= in the address. */
-  initialOpen?: string;
-  /** Its tab to open on, from ?view=. */
-  initialView?: PanelView;
-  /** Clears ?open= once used, so going back does not open it again. */
-  onOpenedInitial?: () => void;
-}) {
-  const view = useListPane<Target>();
-  // Kept after the address is cleared, so the panel it opens starts on that tab.
-  const [arrival] = useState({ id: initialOpen, view: initialView });
-  useEffect(() => {
-    if (!initialOpen) return;
-    view.open({ kind: 'edit', id: initialOpen });
-    onOpenedInitial?.();
-    // Only on arrival with ?open=, not on every render that has it.
-  }, [initialOpen]);
+/** Every event, one row each; a row opens that event's own page. */
+export function EventsPage({ data }: { data: EventsData }) {
+  const navigate = useNavigate();
   const [query, setQuery] = useState('');
   const [filter, setFilter] = useState<Filter>('upcoming');
   // Ticked values per group; empty means that group does not narrow the list.
@@ -107,6 +66,8 @@ export function EventsPage({
   const [toDelete, setToDelete] = useState<string[] | null>(null);
   const { run, pending } = useAction();
   const revealing = useRevealOnce();
+  const [layout, setLayout] = useListView('events');
+  const grid = layout === 'grid';
 
   const now = Date.now();
   // One row for each event, however many dates it repeats on. Coming up reads
@@ -125,10 +86,9 @@ export function EventsPage({
   const selection = useSelection(visible.map((row) => row.key));
   const idsOf = (rows: typeof visible) => rows.flatMap((row) => row.dates.map((d) => d.id));
 
-  const editing = (target: Target | null) =>
-    target?.kind === 'edit' ? (data.events.find((e) => e.id === target.id) ?? null) : null;
-  // An event removed elsewhere closes the pane.
-  const pane = view.pane?.kind === 'edit' && !editing(view.pane) ? null : view.pane;
+  const openEvent = (id: string) =>
+    void navigate({ to: '/events/$eventId', params: { eventId: id } });
+  const createEvent = () => void navigate({ to: '/events/new' });
 
   async function remove(ids: string[]) {
     const result = await run(async () => (await deleteEvents({ data: { ids } })).dates, {
@@ -136,53 +96,11 @@ export function EventsPage({
       error: 'Could not remove',
     });
     if (result === undefined) return;
-    if (view.pane?.kind === 'edit' && ids.includes(view.pane.id)) view.closePane();
     selection.clear();
   }
 
-  const form = (target: Target, onDone: (id: string | null) => void, actions: FormActions) => {
-    const event = editing(target);
-    return (
-      <EventPanel
-        // The dates of an event share a panel, so its open tab stays when moving between them.
-        key={event ? (event.seriesId ?? event.id) : 'new'}
-        event={event}
-        dates={
-          event?.seriesId
-            ? data.events
-                .filter((e) => e.seriesId === event.seriesId)
-                .sort((a, b) => a.startsAt - b.startsAt)
-            : []
-        }
-        onPickDate={(id) => view.open({ kind: 'edit', id })}
-        initialView={event && event.id === arrival.id ? arrival.view : undefined}
-        locations={data.locations}
-        onSaved={onDone}
-        actions={actions}
-      />
-    );
-  };
-  const paneEvent = pane ? editing(pane) : null;
-  // Closed, the list takes the whole width and its rows show more. The pane keeps what it last
-  // showed while it slides shut.
-  // The toolbar button can also open the pane with nothing chosen yet.
-  const [layout, setLayout] = useListView('events');
-  const grid = layout === 'grid';
-  const [emptyPaneOpen, setEmptyPaneOpen] = useState(false);
-  useEffect(() => {
-    if (pane) setEmptyPaneOpen(false);
-  }, [pane]);
-  const paneOpen = pane !== null || emptyPaneOpen;
-  const togglePane = () => {
-    view.closePane();
-    setEmptyPaneOpen(!paneOpen);
-  };
-  const lastPane = useRef<Target | null>(null);
-  if (pane) lastPane.current = pane;
-  const shown = pane ?? lastPane.current;
-
   const newButton = (
-    <Button size="sm" className="touch:min-h-11" onClick={() => view.open({ kind: 'new' })}>
+    <Button size="sm" className="touch:min-h-11" onClick={createEvent}>
       <PlusIcon aria-hidden data-icon="inline-start" />
       New event
     </Button>
@@ -239,30 +157,17 @@ export function EventsPage({
           />
         )}
         {data.events.length > 0 && <ViewSwitch value={layout} onChange={setLayout} />}
-        {data.events.length > 0 && (
-          <Button
-            variant="ghost"
-            size="icon-sm"
-            aria-label={paneOpen ? 'Expand list' : 'Show details pane'}
-            aria-pressed={!paneOpen}
-            title={paneOpen ? 'Expand list' : 'Show details pane'}
-            className="max-lg:hidden"
-            onClick={togglePane}
-          >
-            <PanelRightIcon aria-hidden />
-          </Button>
-        )}
         <div className="max-md:hidden">{newButton}</div>
         <PageActions
           edit={{
             editing: selection.selecting,
             onToggle: selection.selecting ? selection.clear : selection.startEditing,
           }}
-          add={{ label: 'New event', onClick: () => view.open({ kind: 'new' }) }}
+          add={{ label: 'New event', onClick: createEvent }}
         />
       </div>
 
-      {data.events.length === 0 && pane === null ? (
+      {data.events.length === 0 ? (
         <Empty className="flex-1 rounded-lg border">
           <EmptyHeader>
             <EmptyMedia variant="icon">
@@ -276,23 +181,9 @@ export function EventsPage({
           <EmptyContent>{newButton}</EmptyContent>
         </Empty>
       ) : (
-        // Rows carry a date, its times and the place, so the list gets room for them;
-        // the pane takes the rest.
-        // Plain fr tracks so the columns glide between open and closed.
-        <ListPageLayout
-          className={cn(
-            // Cards reflow into fewer columns as the list narrows, so gliding the width would
-            // reshuffle them every frame. In grid view the columns snap; the pane still slides.
-            !grid &&
-              'motion-reduce:transition-none lg:transition-[grid-template-columns] lg:duration-300 lg:ease-[cubic-bezier(0.32,0.72,0,1)]',
-            paneOpen ? 'lg:grid-cols-[2fr_3fr]' : 'lg:grid-cols-[1fr_0fr]'
-          )}
-        >
+        <ListPageLayout className="lg:grid-cols-1">
           <ListColumn
-            className={cn(
-              'min-w-96 transition-[border-color] duration-300',
-              !paneOpen && 'border-transparent'
-            )}
+            className="lg:border-r-0"
             label="Events"
             header={
               <div className="space-y-2">
@@ -337,14 +228,7 @@ export function EventsPage({
                   <EventCard
                     key={row.key}
                     row={row}
-                    current={paneEvent !== null && (paneEvent.seriesId ?? paneEvent.id) === row.key}
-                    onOpen={() =>
-                      isDesktop() &&
-                      paneEvent !== null &&
-                      (paneEvent.seriesId ?? paneEvent.id) === row.key
-                        ? view.closePane()
-                        : view.open({ kind: 'edit', id: row.lead.id })
-                    }
+                    onOpen={() => openEvent(row.lead.id)}
                     onDelete={() => setToDelete(idsOf([row]))}
                   />
                 ))}
@@ -354,7 +238,7 @@ export function EventsPage({
                 {visible.map((row) => (
                   <ListRow
                     key={row.key}
-                    current={paneEvent !== null && (paneEvent.seriesId ?? paneEvent.id) === row.key}
+                    current={false}
                     align="start"
                     select={{
                       label: `Select ${row.lead.title}`,
@@ -363,52 +247,14 @@ export function EventsPage({
                       onToggle: () => selection.toggle(row.key),
                     }}
                     swipe={{ label: 'Delete', onAction: () => setToDelete(idsOf([row])) }}
-                    onOpen={() =>
-                      // Choosing the event already open closes the pane again.
-                      isDesktop() &&
-                      paneEvent !== null &&
-                      (paneEvent.seriesId ?? paneEvent.id) === row.key
-                        ? view.closePane()
-                        : view.open({ kind: 'edit', id: row.lead.id })
-                    }
+                    onOpen={() => openEvent(row.lead.id)}
                   >
-                    <EventSummary row={row} wide={!paneOpen} />
+                    <EventSummary row={row} wide />
                   </ListRow>
                 ))}
               </ListRows>
             )}
           </ListColumn>
-
-          <PaneColumn
-            label="Edit event"
-            inert={!paneOpen}
-            className={cn(
-              'min-w-0 overflow-hidden transition-[opacity,translate] duration-300 ease-[cubic-bezier(0.32,0.72,0,1)] motion-reduce:transition-none',
-              !paneOpen && 'translate-x-4 opacity-0'
-            )}
-          >
-            {shown === null ? (
-              <PaneEmpty
-                title="No event selected"
-                description="Choose one from the list, or create a new event."
-              />
-            ) : (
-              <PaneFrame
-                title={shown.kind === 'edit' ? (editing(shown)?.title ?? 'Event') : 'New event'}
-                width="xl"
-              >
-                {form(
-                  shown,
-                  (id) => view.setPane(id ? { kind: 'edit', id } : null),
-                  (submit, start) => (
-                    <PaneActions start={start} onCancel={view.closePane}>
-                      {submit}
-                    </PaneActions>
-                  )
-                )}
-              </PaneFrame>
-            )}
-          </PaneColumn>
         </ListPageLayout>
       )}
 
@@ -420,25 +266,6 @@ export function EventsPage({
         description="Their guest lists are deleted too. This cannot be undone."
         onConfirm={() => toDelete && remove(toDelete)}
       />
-
-      <ListDialog
-        open={view.dialog !== null}
-        onClose={view.closeDialog}
-        title={
-          view.dialog?.kind === 'edit' ? (editing(view.dialog)?.title ?? 'Event') : 'New event'
-        }
-        // A saved event's sheet needs the room more than the explanation.
-        description={
-          view.dialog?.kind === 'new' ? 'An open day or information session.' : undefined
-        }
-      >
-        {view.dialog &&
-          form(view.dialog, view.closeDialog, (submit, start) => (
-            <DialogActions compact start={start}>
-              {submit}
-            </DialogActions>
-          ))}
-      </ListDialog>
     </div>
   );
 }
@@ -455,12 +282,10 @@ function rowStatus(dates: EventRow[]) {
 /** One event as a card in the grid view: hero image, title, status, when and where. */
 function EventCard({
   row,
-  current,
   onOpen,
   onDelete,
 }: {
   row: ReturnType<typeof groupEventDates<EventRow>>[number];
-  current: boolean;
   onOpen: () => void;
   onDelete: () => void;
 }) {
@@ -476,7 +301,6 @@ function EventCard({
       title={lead.title}
       image={lead.heroMediaId ? `/api/media/${lead.heroMediaId}?w=640` : null}
       icon={<CalendarClockIcon aria-hidden />}
-      current={current}
       onOpen={onOpen}
       remove={{ label: 'Delete', onAction: onDelete }}
     >
@@ -502,7 +326,7 @@ function EventSummary({
   wide,
 }: {
   row: ReturnType<typeof groupEventDates<EventRow>>[number];
-  /** The pane is closed, so there is room for the columns it would have covered. */
+  /** Room for the columns beyond the title, as on a wide list. */
   wide: boolean;
 }) {
   const { lead, dates, upcoming } = row;
@@ -565,88 +389,5 @@ function EventSummary({
         </span>
       )}
     </span>
-  );
-}
-
-/** A saved event's details, or who is coming; a new event has details only. */
-function EventPanel({
-  event,
-  dates,
-  onPickDate,
-  initialView = 'details',
-  locations,
-  onSaved,
-  actions,
-}: {
-  event: EventRow | null;
-  /** All the dates of its series, soonest first; empty if it does not repeat. */
-  dates: EventRow[];
-  onPickDate: (id: string) => void;
-  initialView?: PanelView;
-  locations: LocationOption[];
-  onSaved: (id: string | null) => void;
-  actions: FormActions;
-}) {
-  const [view, setView] = useState<PanelView>(initialView);
-  // The Dashboard tab can also show every date together; the others show one.
-  const [allDates, setAllDates] = useState(false);
-  const showingAll = view === 'dashboard' && allDates && dates.length > 1;
-  const details = (
-    <EventForm
-      key={event?.id ?? 'new'}
-      event={event}
-      locations={locations}
-      onSaved={onSaved}
-      actions={actions}
-    />
-  );
-  if (!event) return details;
-  return (
-    <div className="space-y-5">
-      {/* One row: the tabs, and the date (or a single date's status) beside them, so
-          neither moves when switching tabs. On phones the date sits above the tabs. */}
-      <div className="flex flex-wrap items-center gap-x-4 gap-y-3">
-        <Tabs value={view} onValueChange={(next) => setView(next as PanelView)}>
-          <TabsList aria-label="Show">
-            <TabsTrigger value="details">Details</TabsTrigger>
-            <TabsTrigger value="guests">Guests</TabsTrigger>
-            <TabsTrigger value="dashboard">Dashboard</TabsTrigger>
-          </TabsList>
-        </Tabs>
-        <div className="flex min-w-0 justify-end max-sm:order-first max-sm:w-full max-sm:*:w-full sm:ml-auto">
-          {dates.length > 1 ? (
-            <SeriesDatePicker
-              compact
-              event={showingAll ? null : event}
-              dates={dates}
-              allDates={view === 'dashboard'}
-              onPick={(id) => {
-                setAllDates(id === null);
-                if (id) onPickDate(id);
-              }}
-            />
-          ) : (
-            <Badge variant="outline">{dateStatus(event)}</Badge>
-          )}
-        </div>
-      </div>
-      <div key={view} className="animate-in fade-in duration-200 motion-reduce:animate-none">
-        {view === 'details' ? (
-          details
-        ) : view === 'guests' ? (
-          <EventGuests key={event.id} event={event} />
-        ) : (
-          <EventDashboardPanel
-            eventId={event.id}
-            date={showingAll ? undefined : event.id}
-            onDateChange={(id) => {
-              setAllDates(id === undefined);
-              if (id) onPickDate(id);
-            }}
-            onOpenGuests={() => setView('guests')}
-          />
-        )}
-      </div>
-    </div>
   );
 }

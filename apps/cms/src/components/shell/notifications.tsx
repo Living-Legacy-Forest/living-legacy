@@ -204,7 +204,7 @@ function NotificationLink({
     return <Link ref={ref} to="/posts/$postId" params={{ postId: item.postId }} {...props} />;
   if (item.kind === 'legal_review')
     return <Link ref={ref} to="/legal/$slug" params={{ slug: item.slug }} {...props} />;
-  return <Link ref={ref} to="/events" search={{ open: item.eventId }} {...props} />;
+  return <Link ref={ref} to="/events/$eventId" params={{ eventId: item.eventId }} {...props} />;
 }
 
 /**

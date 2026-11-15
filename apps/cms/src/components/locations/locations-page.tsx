@@ -5,6 +5,7 @@ import {
   locationStageLabels,
 } from '@ll/content';
 import { useNavigate } from '@tanstack/react-router';
+import { useIsDesktop } from '@/components/editor-page/use-is-desktop';
 import { useState } from 'react';
 import { CardMeta, ListCard, ListCards } from '@/components/list/list-card';
 import { ListFilter, passes, publishStatusOptions } from '@/components/list/list-filter';
@@ -112,6 +113,8 @@ export function LocationsPage({
   // From lg the page is the map, and the list opens beside it from the toolbar; smaller
   // screens have no map, so they keep the list.
   const [listOpen, setListOpen] = useState(false);
+  const bleed = data.length > 0;
+  const desktop = useIsDesktop();
   const selection = useSelection(data.map((l) => l.id));
   const visible = data.filter(
     (l) =>
@@ -188,9 +191,21 @@ export function LocationsPage({
     <div
       data-slot="list-page"
       data-revealing={revealing || undefined}
-      className="flex flex-col gap-4 lg:h-[calc(100svh-7.5rem)]"
+      className={cn(
+        'flex flex-col gap-4 lg:h-[calc(100svh-7.5rem)]',
+        // From lg the map fills the whole page area, past the page's padding, with the
+        // toolbar floating over it and the list sliding in over its left side.
+        bleed && 'lg:relative lg:-m-6 lg:h-[calc(100svh-4.5rem)] lg:gap-0'
+      )}
     >
-      <div data-slot="list-toolbar" className="flex flex-wrap items-center gap-3">
+      <div
+        data-slot="list-toolbar"
+        className={cn(
+          'flex flex-wrap items-center gap-3',
+          bleed &&
+            'lg:bg-background/90 lg:absolute lg:inset-x-3 lg:top-3 lg:z-10 lg:rounded-xl lg:border lg:px-3 lg:py-2 lg:shadow-sm lg:backdrop-blur'
+        )}
+      >
         <h1 data-slot="page-title" className="mr-auto text-xl">
           <RevealWords text="Locations" />
         </h1>
@@ -283,20 +298,15 @@ export function LocationsPage({
           {canWrite && <EmptyContent>{addButton}</EmptyContent>}
         </Empty>
       ) : (
-        // Plain fr tracks, so the columns glide between open and closed.
-        <ListPageLayout
-          className={cn(
-            'motion-reduce:transition-none lg:transition-[grid-template-columns] lg:duration-300 lg:ease-[cubic-bezier(0.32,0.72,0,1)]',
-            listOpen ? 'lg:grid-cols-[1fr_1fr]' : 'lg:grid-cols-[0fr_1fr]'
-          )}
-        >
+        <ListPageLayout className="lg:relative lg:block lg:rounded-none lg:border-0">
           <ListColumn
-            inert={!listOpen}
+            // Out of reach while slid away; on smaller screens the list is the page.
+            inert={!listOpen && desktop}
             className={cn(
-              'lg:min-w-0 lg:overflow-hidden',
-              'transition-[opacity,translate,border-color] duration-300 ease-[cubic-bezier(0.32,0.72,0,1)] motion-reduce:transition-none',
-              // Hidden only from lg: below it the list is the page.
-              !listOpen && 'lg:-translate-x-4 lg:border-transparent lg:opacity-0'
+              // From lg a panel over the left of the map; below it the list is the page.
+              'lg:bg-background lg:absolute lg:top-[4.75rem] lg:bottom-3 lg:left-3 lg:z-10 lg:w-96 lg:max-w-[calc(100%-1.5rem)] lg:overflow-hidden lg:rounded-xl lg:border lg:shadow-lg',
+              'transition-[opacity,translate] duration-300 ease-[cubic-bezier(0.32,0.72,0,1)] motion-reduce:transition-none',
+              !listOpen && 'lg:pointer-events-none lg:-translate-x-4 lg:opacity-0'
             )}
             label="Locations"
             header={
@@ -386,7 +396,7 @@ export function LocationsPage({
 
           <section
             aria-label="Map"
-            className="relative hidden min-h-0 min-w-0 overflow-hidden lg:flex"
+            className="relative hidden min-h-0 min-w-0 overflow-hidden lg:absolute lg:inset-0 lg:flex"
           >
             <LocationsOverviewMap
               // What the search and filters leave, so the map and the list agree.

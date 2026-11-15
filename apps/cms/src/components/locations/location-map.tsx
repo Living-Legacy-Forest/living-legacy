@@ -216,7 +216,7 @@ export function LocationsOverviewMap({
         <MapControls />
       </MapView>
       {pinned.length < locations.length && (
-        <div className="bg-background/90 text-muted-foreground absolute top-3 left-3 rounded-md border px-2.5 py-1.5 text-xs shadow-sm backdrop-blur">
+        <div className="bg-background/90 text-muted-foreground absolute bottom-3 left-1/2 -translate-x-1/2 rounded-md border px-2.5 py-1.5 text-xs shadow-sm backdrop-blur">
           {pinned.length} of {locations.length} on the map. Add a pin in Edit for the rest.
         </div>
       )}

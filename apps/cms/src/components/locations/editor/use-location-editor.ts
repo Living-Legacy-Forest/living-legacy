@@ -6,6 +6,7 @@ import { useAction } from '@/lib/use-action';
 import { type LocationItem, saveLocation } from '@/server/locations';
 import {
   type LocationValues,
+  duplicateValues,
   initialLocationValues,
   isLocationDirty,
   settledSlug,
@@ -22,10 +23,13 @@ export function useLocationEditor({
   item,
   nextOrder,
   onSaved,
+  onDuplicated,
 }: {
   item: LocationItem | null;
   nextOrder: number;
   onSaved: (id: string) => void;
+  /** The copy made by Duplicate, which has a page of its own to go to. */
+  onDuplicated: (id: string) => void;
 }) {
   // What the server has: leaving with anything else loses it. A save replaces it.
   const [saved, setSaved] = useState(() => initialLocationValues(item, nextOrder));
@@ -80,6 +84,20 @@ export function useLocationEditor({
     onSaved(result.id);
   }
 
+  /** Saves a draft copy of the form as it is, at the end of the order, and goes to it. */
+  async function duplicate() {
+    const result = await run(
+      () => saveLocation({ data: toLocationInput(duplicateValues(values, nextOrder)) }),
+      {
+        success: { title: 'Location duplicated', description: 'The copy is a draft.' },
+        error: 'Could not duplicate the location',
+      }
+    );
+    if (!result) return;
+    skipBlock();
+    onDuplicated(result.id);
+  }
+
   const submit = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     if (reportInvalid(e.currentTarget)) void save();
@@ -99,6 +117,9 @@ export function useLocationEditor({
     pending,
     submit,
     publish,
+    /** Saves with it switched off, so the website stops showing it. */
+    unpublish: () => void save({ published: false }),
+    duplicate,
     skipBlock,
     blocker,
     heroUrl,

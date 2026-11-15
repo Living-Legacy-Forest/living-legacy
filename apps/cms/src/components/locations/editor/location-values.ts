@@ -79,6 +79,18 @@ export function toLocationInput(values: LocationValues, id?: string): LocationIn
   };
 }
 
+/** A copy to start from: a draft at the end of the order, its slug made from its new name. */
+export function duplicateValues(values: LocationValues, nextOrder: number): LocationValues {
+  const suffix = ' (copy)';
+  return {
+    ...values,
+    name: values.name.slice(0, 120 - suffix.length) + suffix,
+    slug: '',
+    published: false,
+    sortOrder: String(nextOrder),
+  };
+}
+
 /** Whether leaving the page would lose something. */
 export const isLocationDirty = (values: LocationValues, saved: LocationValues) =>
   JSON.stringify(values) !== JSON.stringify(saved);

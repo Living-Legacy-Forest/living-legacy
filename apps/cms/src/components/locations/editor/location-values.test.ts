@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import type { LocationItem } from '@/server/locations';
 import {
+  duplicateValues,
   initialLocationValues,
   isLocationDirty,
   nextSortOrder,
@@ -123,5 +124,32 @@ describe('isLocationDirty', () => {
     const saved = initialLocationValues(item, 1);
     expect(isLocationDirty(saved, saved)).toBe(false);
     expect(isLocationDirty({ ...saved, name: 'Other' }, saved)).toBe(true);
+  });
+});
+
+describe('duplicateValues', () => {
+  const saved = { ...initialLocationValues(item, 1), published: true };
+
+  it('makes a draft copy that goes at the end, with a name and slug of its own to settle', () => {
+    const copy = duplicateValues(saved, 12);
+
+    expect(copy).toMatchObject({
+      name: 'Wellington Dam (copy)',
+      slug: '',
+      published: false,
+      sortOrder: '12',
+      address: item.address,
+      pin: { latitude: -33.4, longitude: 115.9 },
+      heroMediaId: 'm1',
+    });
+  });
+
+  it('keeps the name inside its 120 character limit', () => {
+    const long = { ...saved, name: 'x'.repeat(120) };
+
+    const copy = duplicateValues(long, 1);
+
+    expect(copy.name).toHaveLength(120);
+    expect(copy.name.endsWith(' (copy)')).toBe(true);
   });
 });

@@ -44,6 +44,8 @@ export function LocationEditor({
   const editor = useLocationEditor({
     item,
     nextOrder,
+    onDuplicated: (id) =>
+      void navigate({ to: '/locations/$locationId', params: { locationId: id } }),
     // A saved location stays as it is; only a new one has somewhere to go.
     onSaved: (id) => {
       if (!item) {

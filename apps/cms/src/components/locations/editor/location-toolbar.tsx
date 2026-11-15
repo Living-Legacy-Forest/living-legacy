@@ -1,6 +1,10 @@
 import { Link } from '@tanstack/react-router';
 import {
   ChevronLeftIcon,
+  CopyIcon,
+  ExternalLinkIcon,
+  EyeOffIcon,
+  MapPinIcon,
   MoreHorizontalIcon,
   PanelRightIcon,
   PlusIcon,
@@ -14,9 +18,11 @@ import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
+  DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { Spinner } from '@/components/ui/spinner';
+import { copyLink, openInNewTab, siteUrl } from '@/lib/site';
 import type { LocationItem } from '@/server/locations';
 import type { LocationEditorState } from './use-location-editor';
 
@@ -36,6 +42,11 @@ export function LocationToolbar({
 }) {
   const { pending, values } = editor;
   const SubmitIcon = item ? SaveIcon : PlusIcon;
+  // Its page on the website exists once it is live and published.
+  const pageUrl =
+    item && item.status === 'published' && item.stage === 'live'
+      ? siteUrl(`/locations/${item.slug}/`)
+      : null;
   return (
     <header className="flex min-h-12 shrink-0 flex-wrap items-center gap-x-3 gap-y-2 border-b px-3 py-1.5">
       {/* Phones have ‹ Locations in the app's own top bar. */}
@@ -77,8 +88,43 @@ export function LocationToolbar({
             >
               <MoreHorizontalIcon aria-hidden />
             </DropdownMenuTrigger>
-            <DropdownMenuContent align="end" className="w-44">
-              <DropdownMenuItem variant="destructive" onClick={onDelete}>
+            <DropdownMenuContent align="end" className="w-48">
+              {pageUrl && (
+                <>
+                  <DropdownMenuItem onClick={() => openInNewTab(pageUrl)}>
+                    <ExternalLinkIcon aria-hidden />
+                    View on website
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => void copyLink(pageUrl)}>
+                    <CopyIcon aria-hidden />
+                    Copy link
+                  </DropdownMenuItem>
+                </>
+              )}
+              {values.pin && (
+                <DropdownMenuItem
+                  onClick={() =>
+                    openInNewTab(
+                      `https://www.google.com/maps/search/?api=1&query=${values.pin!.latitude},${values.pin!.longitude}`
+                    )
+                  }
+                >
+                  <MapPinIcon aria-hidden />
+                  Open in Maps
+                </DropdownMenuItem>
+              )}
+              <DropdownMenuItem disabled={pending} onClick={() => void editor.duplicate()}>
+                <CopyIcon aria-hidden />
+                Duplicate
+              </DropdownMenuItem>
+              {item.status === 'published' && (
+                <DropdownMenuItem disabled={pending} onClick={editor.unpublish}>
+                  <EyeOffIcon aria-hidden />
+                  Unpublish
+                </DropdownMenuItem>
+              )}
+              <DropdownMenuSeparator />
+              <DropdownMenuItem variant="destructive" disabled={pending} onClick={onDelete}>
                 <Trash2Icon aria-hidden />
                 Delete
               </DropdownMenuItem>

@@ -10,6 +10,7 @@ import {
   type LucideIcon,
 } from '@/components/icons';
 import { Button } from '@/components/ui/button';
+import { ActivityCalendar } from './activity-calendar';
 import {
   Empty,
   EmptyContent,
@@ -34,7 +35,7 @@ import {
   PaginationNext,
   PaginationPrevious,
 } from '@/components/ui/pagination';
-import { formatDateTime, formatRelative } from '@/lib/format';
+import { formatDateTime, formatLongDate, formatRelative } from '@/lib/format';
 import { pageNumbers } from '@/lib/page-numbers';
 import { useTimeZone } from '@/lib/use-time-zone';
 import {
@@ -46,7 +47,7 @@ import {
 import { useRevealOnce } from '@/lib/use-reveal-once';
 import { RevealWords } from '@/components/dashboard/reveal-words';
 
-export type ActivitySearch = { page?: number; kind?: ActivityKind; who?: string };
+export type ActivitySearch = { page?: number; kind?: ActivityKind; who?: string; day?: string };
 
 const kinds: Record<ActivityKind, { label: string; icon: LucideIcon }> = {
   post: { label: 'Posts', icon: FileText },
@@ -66,9 +67,9 @@ function iconFor(action: ActivityLogEntry['action']): LucideIcon {
 export function ActivityPage({ data, search }: { data: ActivityLogData; search: ActivitySearch }) {
   const timeZone = useTimeZone();
   const navigate = useNavigate({ from: '/activity/' });
-  const filtered = Boolean(search.kind || search.who);
+  const filtered = Boolean(search.kind || search.who || search.day);
   // A new filter starts again from the first page.
-  const filter = (next: Partial<Pick<ActivitySearch, 'kind' | 'who'>>) =>
+  const filter = (next: Partial<Pick<ActivitySearch, 'kind' | 'who' | 'day'>>) =>
     navigate({ search: (prev) => ({ ...prev, ...next, page: undefined }) });
 
   const kindItems = [
@@ -80,13 +81,14 @@ export function ActivityPage({ data, search }: { data: ActivityLogData; search: 
     ...data.people.map((p) => ({ value: p.id, label: p.name })),
   ];
 
+  const person = search.who ? data.people.find((p) => p.id === search.who)?.name : undefined;
   const revealing = useRevealOnce();
 
   return (
     <div
       data-slot="stack-page"
       data-revealing={revealing || undefined}
-      className="mx-auto w-full max-w-2xl"
+      className="mx-auto w-full max-w-3xl"
     >
       <div className="mb-6 space-y-1">
         <h1 data-slot="page-title" className="text-xl font-semibold tracking-tight">
@@ -94,6 +96,7 @@ export function ActivityPage({ data, search }: { data: ActivityLogData; search: 
         </h1>
         <p className="text-muted-foreground text-sm">
           Changes to posts, events, people, redirects, settings and API keys, most recent first.
+          Pick a day on the calendar to see only its changes.
         </p>
       </div>
 
@@ -145,12 +148,37 @@ export function ActivityPage({ data, search }: { data: ActivityLogData; search: 
             variant="ghost"
             size="sm"
             className="touch:min-h-11 text-muted-foreground"
-            onClick={() => filter({ kind: undefined, who: undefined })}
+            onClick={() => filter({ kind: undefined, who: undefined, day: undefined })}
           >
             Clear
           </Button>
         )}
       </div>
+
+      <div className="bg-card mb-4 rounded-lg border p-4 max-md:rounded-[10px] max-md:border-0 max-md:bg-(--ios-cell) max-md:[--heatmap-surface:var(--ios-cell)]">
+        <ActivityCalendar
+          days={data.days}
+          label={`Changes over the past year${person ? ` by ${person}` : ''}`}
+          period={person ? `the past year by ${person}` : 'the past year'}
+          selectedDate={search.day ?? null}
+          // Picking the day already shown lets it go again.
+          onSelectDate={(day) => filter({ day: day === search.day ? undefined : day })}
+        />
+      </div>
+
+      {search.day && (
+        <p className="text-muted-foreground mb-2 flex items-center gap-2 text-sm">
+          Changes on {formatLongDate(Date.parse(`${search.day}T12:00:00Z`), 'UTC')}
+          <Button
+            variant="link"
+            size="sm"
+            className="touch:min-h-11 h-auto p-0"
+            onClick={() => filter({ day: undefined })}
+          >
+            Show every day
+          </Button>
+        </p>
+      )}
 
       {data.total === 0 ? (
         <Empty className="rounded-lg border max-md:rounded-[10px] max-md:border-0 max-md:bg-(--ios-cell)">

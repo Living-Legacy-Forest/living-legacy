@@ -3,6 +3,9 @@ import {
   ChevronLeftIcon,
   MoreHorizontalIcon,
   PanelRightIcon,
+  PlusIcon,
+  SaveIcon,
+  SendIcon,
   Trash2Icon,
 } from '@/components/icons';
 import { Badge } from '@/components/ui/badge';
@@ -42,15 +45,7 @@ export function EventToolbar({
   children?: React.ReactNode;
 }) {
   const { pending, values } = editor;
-  const busy = (label: string, text: string) =>
-    pending ? (
-      <>
-        <Spinner />
-        {label}
-      </>
-    ) : (
-      text
-    );
+  const SubmitIcon = event ? SaveIcon : PlusIcon;
   return (
     <header className="flex min-h-12 shrink-0 flex-wrap items-center gap-x-3 gap-y-2 border-b px-3 py-1.5">
       {/* Phones have ‹ Events in the app's own top bar. */}
@@ -109,11 +104,22 @@ export function EventToolbar({
             disabled={pending}
             onClick={(e) => editor.publish(e.currentTarget.form!)}
           >
+            <SendIcon aria-hidden data-icon="inline-start" />
             Publish
           </Button>
         )}
         <Button type="submit" size="sm" disabled={pending}>
-          {busy('Saving…', event ? 'Save' : 'Create event')}
+          {pending ? (
+            <>
+              <Spinner data-icon="inline-start" />
+              Saving…
+            </>
+          ) : (
+            <>
+              <SubmitIcon aria-hidden data-icon="inline-start" />
+              {event ? 'Save' : 'Create event'}
+            </>
+          )}
         </Button>
       </div>
     </header>

@@ -1,6 +1,7 @@
-import { scoreBand } from '@ll/content';
+import { SCORE_BANDS, scoreBand } from '@ll/content';
 import { Link } from '@tanstack/react-router';
 import { Bar, BarChart, Cell, LabelList, XAxis, YAxis } from 'recharts';
+import { Gauge, type GaugeThreshold } from '@/components/arc/gauge/gauge';
 import { CircleCheckIcon } from '@/components/icons';
 import { bandTone } from '@/components/posts/post-editor/content-score/score-tone';
 import { Button } from '@/components/ui/button';
@@ -21,7 +22,6 @@ import {
   EmptyTitle,
 } from '@/components/ui/empty';
 import { Item, ItemActions, ItemContent, ItemGroup, ItemTitle } from '@/components/ui/item';
-import { RollingNumber } from '@/components/rolling-number';
 import { chartReveal } from '@/lib/chart-motion';
 import { cn } from '@/lib/utils';
 import type { ScoreSummary } from '@/server/post-score';
@@ -31,6 +31,13 @@ const BANDS = [
   { key: 'mid', label: 'Good', fill: 'var(--color-amber-500)' },
   { key: 'high', label: 'Strong', fill: 'var(--color-emerald-600)' },
 ] as const;
+
+/** The gauge's colour and word change at the same lines as everywhere else a score shows. */
+const GAUGE_BANDS: GaugeThreshold[] = [
+  { from: 0, tone: 'danger', label: 'Needs work' },
+  { from: SCORE_BANDS.good, tone: 'warning', label: 'Good' },
+  { from: SCORE_BANDS.strong, tone: 'success', label: 'Strong' },
+];
 
 const chartConfig = { count: { label: 'Posts' } } satisfies ChartConfig;
 
@@ -72,16 +79,21 @@ export function ScoreCard({ scores }: { scores: ScoreSummary }) {
           <>
             <section aria-labelledby="score-card-published" className="space-y-3">
               <Heading id="score-card-published">Published posts</Heading>
-              <p data-reveal="3" className="flex items-baseline gap-2">
-                <span className="text-3xl font-semibold tabular-nums">
-                  {scores.average === null ? 'None' : <RollingNumber value={scores.average} />}
-                </span>
-                <span className="text-muted-foreground text-sm">
-                  {scores.average === null
-                    ? 'scored yet'
-                    : `average across ${posts(scores.scored)}`}
-                </span>
-              </p>
+              <div data-reveal="3">
+                {scores.average === null ? (
+                  <p className="flex items-baseline gap-2">
+                    <span className="text-3xl font-semibold">None</span>
+                    <span className="text-muted-foreground text-sm">scored yet</span>
+                  </p>
+                ) : (
+                  <Gauge
+                    value={scores.average}
+                    label="Average score"
+                    detail={`Across ${posts(scores.scored)}`}
+                    thresholds={GAUGE_BANDS}
+                  />
+                )}
+              </div>
               <p className="sr-only">
                 {data.map((d) => `${d.label}: ${posts(d.count)}`).join('. ')}.
               </p>

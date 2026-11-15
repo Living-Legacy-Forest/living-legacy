@@ -10,6 +10,12 @@ const searchSchema = z.object({
   kind: z.enum(activityKinds).optional().catch(undefined),
   /** One person, by user id. */
   who: z.string().max(64).optional().catch(undefined),
+  /** One day picked on the calendar, YYYY-MM-DD in the site's time zone. */
+  day: z
+    .string()
+    .regex(/^\d{4}-\d{2}-\d{2}$/)
+    .optional()
+    .catch(undefined),
 });
 
 export const Route = createFileRoute('/_app/activity/')({

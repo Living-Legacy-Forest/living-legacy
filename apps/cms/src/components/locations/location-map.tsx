@@ -90,7 +90,7 @@ function subscribeTheme(onChange: () => void) {
   observer.observe(document.documentElement, { attributes: true, attributeFilter: ['class'] });
   return () => observer.disconnect();
 }
-function useCmsTheme(): 'light' | 'dark' {
+export function useCmsTheme(): 'light' | 'dark' {
   return useSyncExternalStore(
     subscribeTheme,
     () => (document.documentElement.classList.contains('dark') ? 'dark' : 'light'),
@@ -112,7 +112,7 @@ function FollowPin({ pin }: { pin: Pin | null }) {
  * Folds the map credit into its ⓘ button. MapLibre opens it on load, which
  * covers much of a small map; the credit stays one click away.
  */
-function FoldedAttribution() {
+export function FoldedAttribution() {
   const { map, isLoaded } = useMap();
   useEffect(() => {
     if (!map || !isLoaded) return;

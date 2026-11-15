@@ -50,7 +50,7 @@ export function DonutCard({
       </CardHeader>
       {/* The chart puts its legend beside the ring when there is room, measured by a container
           query; the figure cannot query itself, so the card body is that container. */}
-      <CardContent className="@container flex flex-1 flex-col justify-center">
+      <CardContent className="@container flex flex-1 flex-col">
         <DonutChart
           label={title}
           unit={unit}

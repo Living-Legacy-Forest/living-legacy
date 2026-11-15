@@ -247,7 +247,18 @@ export type Audience = {
 };
 
 /** Audience with its visits a day by device, for the page's stream. */
-export type AudiencePage = Audience & { devicesDaily: DailySplit };
+export type AudiencePage = Audience & { devicesDaily: DailySplit; places: Place[] };
+
+/** A city on the map: where its visits were, averaged, from the visitors' networks. */
+export type Place = {
+  key: string;
+  city: string;
+  country: string | null;
+  code: string | null;
+  latitude: number;
+  longitude: number;
+  visits: number;
+};
 
 const DEVICE_LABELS = { desktop: 'Desktop', mobile: 'Mobile', tablet: 'Tablet' } as const;
 
@@ -317,6 +328,45 @@ async function fetchAudience(days: AnalyticsRange): Promise<Audience> {
     systems: rollUp(visits, (v) => v.os, count).slice(0, 20),
   };
 }
+
+/** The busiest cities, each placed at the average of its visits' coordinates. */
+async function fetchPlaces(days: AnalyticsRange): Promise<Place[]> {
+  const rows = await hogql<
+    [string, string | null, string | null, number | null, number | null, number]
+  >(
+    keys(),
+    `SELECT city, country, code, avg(lat), avg(lng), count() AS visits
+      FROM ${firstOfEachVisit(
+        days,
+        `argMin(properties.$geoip_city_name, timestamp) AS city,
+          argMin(properties.$geoip_country_name, timestamp) AS country,
+          argMin(properties.$geoip_country_code, timestamp) AS code,
+          argMin(properties.$geoip_latitude, timestamp) AS lat,
+          argMin(properties.$geoip_longitude, timestamp) AS lng`
+      )}
+      WHERE city IS NOT NULL AND city != '' AND lat IS NOT NULL AND lng IS NOT NULL
+      GROUP BY city, country, code
+      ORDER BY visits DESC LIMIT 120`,
+    {},
+    'Could not load where visitors are'
+  );
+  return rows.flatMap(([city, country, code, lat, lng, n]) => {
+    const latitude = maybeNum(lat);
+    const longitude = maybeNum(lng);
+    if (latitude === null || longitude === null) return [];
+    const place = {
+      city,
+      country: text(country),
+      code: text(code)?.toUpperCase() ?? null,
+      latitude,
+      longitude,
+      visits: num(n),
+    };
+    return [{ ...place, key: `${city}|${place.code ?? ''}` }];
+  });
+}
+
+const loadPlaces = (days: AnalyticsRange) => cached('places', days, () => fetchPlaces(days));
 
 /** Visits a day by device, the same way. */
 async function fetchDevicesDaily(days: AnalyticsRange, zone: string): Promise<DailySplit> {
@@ -632,11 +682,12 @@ export const getAnalyticsAudience = createServerFn({ method: 'GET' })
   .handler(({ data: { days } }) =>
     serve('the website’s audience', days, async () => {
       const { timeZone } = await readSiteSettings();
-      const [audience, daily] = await Promise.all([
+      const [audience, daily, places] = await Promise.all([
         loadAudience(days),
         loadDevicesDaily(days, timeZone),
+        loadPlaces(days),
       ]);
-      return { ...audience, devicesDaily: daily };
+      return { ...audience, devicesDaily: daily, places };
     })
   );
 

@@ -32,7 +32,10 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { Drawer, DrawerBody, DrawerContent } from '@/components/ui/drawer';
-import { Kbd, KbdGroup } from '@/components/ui/kbd';
+import {
+  ShortcutList,
+  type ShortcutListGroup,
+} from '@/components/arc/shortcut-recorder/shortcut-recorder';
 import { PillGlide, pillItemClass, pillTrackClass } from '@/components/ui/pill-track';
 import { Spinner } from '@/components/ui/spinner';
 import { useIsMobile } from '@/hooks/use-mobile';
@@ -46,15 +49,35 @@ import { SheetHeader, sheetGroupClass, sheetRowClass } from './sheet-parts';
 import { avatarSrc } from '@/lib/avatar';
 import { canReportProblem, openProblemReport } from '@/lib/report-problem';
 
-const shortcuts: { keys: string[]; label: string }[] = [
-  { keys: ['⌘', 'K'], label: 'Search or jump to a page' },
-  { keys: ['⌘', 'B'], label: 'Show or hide the sidebar' },
-  { keys: ['⌘', 'S'], label: 'Save the post you are editing' },
-  { keys: ['↑', '↓'], label: 'Move through the posts list' },
-  { keys: ['X'], label: 'Select the focused row in a list' },
-  { keys: ['⌫'], label: 'Delete the focused row, or move a post to the trash' },
-  { keys: ['⌥', '↑'], label: 'Move the focused FAQ or team member up (⌥↓ moves it down)' },
-  { keys: ['Right-click'], label: 'See every action for a row, with its key' },
+const shortcutGroups: ShortcutListGroup[] = [
+  {
+    label: 'Anywhere',
+    items: [
+      { label: 'Search or jump to a page', shortcut: 'mod+k' },
+      { label: 'Show or hide the sidebar', shortcut: 'mod+b' },
+    ],
+  },
+  {
+    label: 'Posts',
+    items: [
+      { label: 'Save the post you are editing', shortcut: 'mod+s' },
+      { label: 'Move up the posts list', shortcut: 'up' },
+      { label: 'Move down the posts list', shortcut: 'down' },
+    ],
+  },
+  {
+    label: 'Lists',
+    items: [
+      { label: 'Select the focused row', shortcut: 'x' },
+      {
+        label: 'Delete the focused row, or move a post to the trash',
+        shortcut: 'backspace',
+        keywords: 'remove',
+      },
+      { label: 'Move the focused FAQ or team member up', shortcut: 'alt+up' },
+      { label: 'Move the focused FAQ or team member down', shortcut: 'alt+down' },
+    ],
+  },
 ];
 
 const themes: {
@@ -283,23 +306,15 @@ export function NavUser({ user }: { user: SessionUser }) {
       </DropdownMenu>
 
       <Dialog open={showShortcuts} onOpenChange={setShowShortcuts}>
-        <DialogContent className="sm:max-w-sm">
+        <DialogContent className="sm:max-w-md">
           <DialogHeader>
             <DialogTitle>Keyboard shortcuts</DialogTitle>
-            <DialogDescription>Use Ctrl in place of ⌘ on Windows.</DialogDescription>
+            <DialogDescription>
+              Hold a key to see what it does. Right-click a row to see every action for it, with its
+              key.
+            </DialogDescription>
           </DialogHeader>
-          <ul className="text-ui space-y-2.5">
-            {shortcuts.map((shortcut) => (
-              <li key={shortcut.label} className="flex items-center justify-between gap-4">
-                <span>{shortcut.label}</span>
-                <KbdGroup>
-                  {shortcut.keys.map((key) => (
-                    <Kbd key={key}>{key}</Kbd>
-                  ))}
-                </KbdGroup>
-              </li>
-            ))}
-          </ul>
+          <ShortcutList groups={shortcutGroups} label="Keyboard shortcuts" />
         </DialogContent>
       </Dialog>
     </>

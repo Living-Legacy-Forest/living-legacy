@@ -40,6 +40,16 @@ export type WhatsNewEntry = {
 
 export const whatsNew: WhatsNewEntry[] = [
   {
+    id: '2026-11-16-2',
+    title: 'A better shortcuts list',
+    items: [
+      {
+        title: 'Search the keyboard shortcuts',
+        body: 'The Keyboard shortcuts list, in your account menu, is now grouped and searchable. Hold a key such as Option or Ctrl and it lights up in every row, and rows that do not use it fade back.',
+      },
+    ],
+  },
+  {
     id: '2026-11-16',
     title: 'A fresher sign-in page',
     items: [

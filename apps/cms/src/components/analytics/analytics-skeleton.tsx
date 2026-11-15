@@ -76,14 +76,14 @@ export function AnalyticsBodySkeleton({ kind }: { kind: AnalyticsSkeletonKind })
   );
 }
 
-function Grid({ className, children }: { className?: string; children: React.ReactNode }) {
+export function Grid({ className, children }: { className?: string; children: React.ReactNode }) {
   return <div className={cn('grid gap-4 max-md:gap-3', className)}>{children}</div>;
 }
 
 const CardTitle = () => <Skeleton className="h-4 w-24" />;
 
 /** The figures across the top: a title, a hint, the number and how it changed. */
-function Tiles({ count }: { count: number }) {
+export function Tiles({ count }: { count: number }) {
   return (
     <Grid className={count === 4 ? 'grid-cols-2 lg:grid-cols-4' : 'grid-cols-2'}>
       {Array.from({ length: count }, (_, i) => (
@@ -102,7 +102,7 @@ function Tiles({ count }: { count: number }) {
   );
 }
 
-function ChartCard({ height, className }: { height: number; className?: string }) {
+export function ChartCard({ height, className }: { height: number; className?: string }) {
   return (
     <Card className={className}>
       <CardHeader>

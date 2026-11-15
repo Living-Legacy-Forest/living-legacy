@@ -12,6 +12,7 @@ const flagged = <Row extends Ranked & { code: string | null }>(row: Row): Ranked
   value: row.value,
 });
 
+// An odd card out in the last row takes the whole row, rather than leave half of it empty.
 export function AudiencePage({
   result,
   onRangeChange,
@@ -29,7 +30,7 @@ export function AudiencePage({
       isEmpty={(data) => data.visits === 0}
     >
       {(data) => (
-        <div className="grid gap-4 max-md:gap-3 lg:grid-cols-2">
+        <div className="grid gap-4 max-md:gap-3 lg:grid-cols-2 lg:[&>:last-child:nth-child(odd)]:col-span-2">
           <DonutCard title="Countries" unit="visits" rows={data.countries.map(flagged)} />
           <DonutCard title="Cities" unit="visits" rows={data.cities.map(flagged)} />
           <DonutCard title="Devices" unit="visits" rows={data.devices} />

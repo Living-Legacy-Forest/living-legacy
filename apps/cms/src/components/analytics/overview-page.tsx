@@ -109,7 +109,10 @@ function OverviewBody({ data, days }: { data: Overview; days: AnalyticsRange }) 
         <CardContent>
           <LineChart
             label="Unique visitors and page views per day"
-            series={SERIES}
+            series={SERIES.map((s) => ({
+              ...s,
+              total: formatInteger(s.key === 'visitors' ? current.visitors : current.views),
+            }))}
             data={chart}
             height={240}
             formatValue={(value) => formatInteger(value)}

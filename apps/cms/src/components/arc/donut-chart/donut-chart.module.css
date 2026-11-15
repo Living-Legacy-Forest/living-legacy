@@ -270,3 +270,14 @@
     transition: none;
   }
 }
+
+/* In a small stat card the centre reads small: just the number, with no label or caption. */
+:global(.donut-compact) {
+  --text-2xl: 1rem;
+  --text-xs: 0.625rem;
+  /* The ring shrinks to the figure's width rather than stretch the column. */
+  grid-template-columns: minmax(0, 1fr);
+}
+:global(.donut-compact) :is(.centerLabel, .centerMeta) {
+  display: none;
+}

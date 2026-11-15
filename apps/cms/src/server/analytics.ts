@@ -600,9 +600,9 @@ export const getAnalyticsOverview = createServerFn({ method: 'GET' })
       ]);
       return {
         ...totals,
-        pages: pages.slice(0, 6),
+        pages: pages.slice(0, 8),
         channels: traffic.channels,
-        countries: audience.countries.slice(0, 6),
+        countries: audience.countries.slice(0, 8),
       } satisfies Overview;
     })
   );

@@ -39,6 +39,16 @@ export type WhatsNewEntry = {
 
 export const whatsNew: WhatsNewEntry[] = [
   {
+    id: '2026-11-16',
+    title: 'A fresher sign-in page',
+    items: [
+      {
+        title: 'Sign in, with a little more help',
+        body: 'The sign-in page has a new look. After you ask for a link it moves on to a Check your inbox step, where you can send the link again after a minute or switch to a different email. It also suggests a fix if an address looks mistyped, like gmial.com.',
+      },
+    ],
+  },
+  {
     id: '2026-11-15-7',
     title: 'Events have their own page',
     items: [

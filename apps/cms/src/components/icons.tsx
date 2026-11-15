@@ -9,6 +9,8 @@ import { ActivityIcon as AnimatedActivityIcon } from '@animateicons/react/huge/a
 import { Add01Icon as AnimatedAdd01Icon } from '@animateicons/react/huge/add-0-1-icon';
 import { AlertCircleIcon as AnimatedAlertCircleIcon } from '@animateicons/react/huge/alert-circle-icon';
 import { BrowserIcon as AnimatedBrowserIcon } from '@animateicons/react/huge/browser-icon';
+import { Layers01Icon as AnimatedLayers01Icon } from '@animateicons/react/huge/layers-0-1-icon';
+import { Shield01Icon as AnimatedShield01Icon } from '@animateicons/react/huge/shield-0-1-icon';
 import { Camera01Icon as AnimatedCamera01Icon } from '@animateicons/react/huge/camera-0-1-icon';
 import { Cancel01Icon as AnimatedCancel01Icon } from '@animateicons/react/huge/cancel-0-1-icon';
 import { CancelCircleIcon as AnimatedCancelCircleIcon } from '@animateicons/react/huge/cancel-circle-icon';
@@ -396,3 +398,7 @@ export const BrowserIcon = animated(AnimatedBrowserIcon);
 export const RouteIcon = animated(AnimatedCompass01Icon);
 export const AudienceIcon = animated(AnimatedUserCircleIcon);
 export const InboxIcon = MailIcon;
+
+// Sidebar sections, in the rail.
+export const ContentIcon = animated(AnimatedLayers01Icon);
+export const AdminIcon = animated(AnimatedShield01Icon);

@@ -1,7 +1,7 @@
-import type { CSSProperties, ReactNode } from 'react';
+import { type CSSProperties, type ReactNode, useState } from 'react';
 import { SidebarInset, SidebarProvider } from '@/components/ui/sidebar';
 import type { SessionUser } from '@/lib/session';
-import type { SidebarState } from '@/lib/sidebar-state';
+import { type SidebarState, rememberSidebarState } from '@/lib/sidebar-state';
 import { AppHeader } from './app-header';
 import { AppSidebar } from './app-sidebar';
 import { PageSkeleton, usePendingPathname } from './page-skeleton';
@@ -18,14 +18,22 @@ export function AppShell({
   children: ReactNode;
 }) {
   const pendingPathname = usePendingPathname();
+  const [layout, setLayout] = useState(sidebar);
+  const changeLayout = (next: SidebarState) => {
+    setLayout(next);
+    rememberSidebarState(next);
+  };
 
   return (
     <UpdatesProvider joinedAt={user.createdAt}>
+      {/* The sidebar is always open: its two columns widen and narrow instead. ⌘B, and the
+          command menu's Toggle sidebar, show or hide the pages' names. */}
       <SidebarProvider
-        defaultOpen={sidebar.open}
-        style={{ '--sidebar-width': '15rem' } as CSSProperties}
+        open
+        onOpenChange={() => changeLayout({ ...layout, pagesWide: !layout.pagesWide })}
+        style={sidebarWidths(layout)}
       >
-        <AppSidebar user={user} sections={sidebar.sections} />
+        <AppSidebar user={user} layout={layout} onLayoutChange={changeLayout} />
         {/* Phones: iOS's grouped background, which lists and cards sit on. */}
         <SidebarInset className="max-md:bg-(--ios-grouped)">
           <AppHeader user={user} />
@@ -41,4 +49,22 @@ export function AppShell({
       </SidebarProvider>
     </UpdatesProvider>
   );
+}
+
+const RAIL_WIDE = '12rem';
+const PAGES_WIDE = '13rem';
+/** An icon-only column: the icon centred, with the row's padding either side. */
+const NARROW = '3.25rem';
+
+/** Each column's width, and the sidebar's as their sum plus the inset frame's padding. */
+function sidebarWidths({ railWide, pagesWide }: SidebarState) {
+  const rail = railWide ? RAIL_WIDE : NARROW;
+  const pages = pagesWide ? PAGES_WIDE : NARROW;
+  return {
+    '--rail-wide': RAIL_WIDE,
+    '--pages-wide': PAGES_WIDE,
+    '--rail-narrow': NARROW,
+    '--pages-narrow': NARROW,
+    '--sidebar-width': `calc(${rail} + ${pages} + 1rem + 1px)`,
+  } as CSSProperties;
 }

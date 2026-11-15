@@ -1,6 +1,12 @@
 import { type Permission, type Role, can } from '@ll/content';
 import {
   ActivityIcon,
+  AdminIcon,
+  ChartPieIcon,
+  ContentIcon,
+  FolderIcon,
+  InfoIcon,
+  TagIcon,
   AudienceIcon,
   BrowserIcon,
   ChartAreaIcon,
@@ -68,24 +74,35 @@ export type NavItem = {
   items?: NavItem[];
 };
 
-export type NavGroup = { label: string; items: NavItem[] };
+export type NavGroup = {
+  /** The heading in the phone's More list; empty for the items above the sections. */
+  label: string;
+  /** The section's name and icon in the sidebar's rail. */
+  title: string;
+  icon: LucideIcon;
+  items: NavItem[];
+};
 
 export const navGroups: NavGroup[] = [
   {
     // No label: top-level items sit above the sections.
     label: '',
+    title: 'Dashboard',
+    icon: LayoutDashboard,
     items: [{ title: 'Dashboard', icon: LayoutDashboard, to: '/' }],
   },
   {
     label: 'Content',
+    title: 'Content',
+    icon: ContentIcon,
     items: [
       {
         title: 'Posts',
         icon: FileText,
         items: [
-          { title: 'All posts', to: '/posts' },
-          { title: 'Categories', to: '/posts/categories' },
-          { title: 'Tags', to: '/posts/tags' },
+          { title: 'All posts', icon: FileText, to: '/posts' },
+          { title: 'Categories', icon: FolderIcon, to: '/posts/categories' },
+          { title: 'Tags', icon: TagIcon, to: '/posts/tags' },
         ],
       },
       { title: 'Media', icon: MediaIcon, to: '/media', permission: 'media:write' },
@@ -101,6 +118,8 @@ export const navGroups: NavGroup[] = [
   },
   {
     label: 'Places',
+    title: 'Places',
+    icon: MapPinIcon,
     items: [
       { title: 'Locations', icon: MapPinIcon, to: '/locations' },
       {
@@ -108,14 +127,26 @@ export const navGroups: NavGroup[] = [
         icon: CalendarClockIcon,
         permission: 'events:manage',
         items: [
-          { title: 'Overview', to: '/events/overview', permission: 'events:manage' },
-          { title: 'All events', to: '/events', permission: 'events:manage' },
+          {
+            title: 'Overview',
+            icon: ChartPieIcon,
+            to: '/events/overview',
+            permission: 'events:manage',
+          },
+          {
+            title: 'All events',
+            icon: CalendarClockIcon,
+            to: '/events',
+            permission: 'events:manage',
+          },
         ],
       },
     ],
   },
   {
     label: 'About',
+    title: 'About',
+    icon: InfoIcon,
     items: [
       { title: 'Team', icon: Users, to: '/team' },
       { title: 'Testimonials', icon: Quote, to: '/testimonials' },
@@ -124,6 +155,8 @@ export const navGroups: NavGroup[] = [
   },
   {
     label: 'Analytics',
+    title: 'Analytics',
+    icon: ChartPieIcon,
     items: [
       { title: 'Overview', icon: ChartAreaIcon, to: '/analytics', permission: 'posts:publish' },
       { title: 'Pages', icon: BrowserIcon, to: '/analytics/pages', permission: 'posts:publish' },
@@ -150,6 +183,8 @@ export const navGroups: NavGroup[] = [
   },
   {
     label: 'Admin',
+    title: 'Admin',
+    icon: AdminIcon,
     items: [
       { title: 'Activity', icon: ActivityIcon, to: '/activity', permission: 'posts:publish' },
       { title: 'Redirects', icon: ArrowRightLeft, to: '/redirects', permission: 'redirects:write' },
@@ -235,4 +270,41 @@ export function findNavItem(pathname: string): NavItem | undefined {
 /** Whether a nav item should show as active for the current path. */
 export function isNavItemActive(item: NavItem, pathname: string) {
   return findNavItem(pathname) === item;
+}
+
+/** A page in the sidebar's second column: a nav item with a page to open and an icon. */
+export type SidebarPage = NavItem & { to: NonNullable<NavItem['to']>; icon: LucideIcon };
+export type SidebarSection = { title: string; icon: LucideIcon; pages: SidebarPage[] };
+
+/**
+ * The sidebar's sections, as `role` sees them: each group, with its pages in one flat list (a
+ * page with sub-pages, such as Posts, gives way to them, named so they read on their own).
+ * Sections with nothing to open are left out.
+ */
+export function sidebarSections(role: Role): SidebarSection[] {
+  const allowed = (item: NavItem) => isNavItemAllowed(item, role);
+  return navGroups
+    .map((group) => ({
+      title: group.title,
+      icon: group.icon,
+      pages: group.items.filter(allowed).flatMap((item): SidebarPage[] => {
+        const subs = item.items?.filter(allowed) ?? [];
+        const list = subs.length
+          ? subs.map((sub) => ({
+              ...sub,
+              // "Overview" alone could be any section's; "Events overview" says whose.
+              title: sub.title === 'Overview' ? `${item.title} overview` : sub.title,
+              icon: sub.icon ?? item.icon!,
+            }))
+          : [{ ...item, icon: item.icon! }];
+        return list.filter((page): page is SidebarPage => !!page.to && !!page.icon);
+      }),
+    }))
+    .filter((section) => section.pages.length > 0);
+}
+
+/** The section the page at `pathname` belongs to; the first section for pages outside them. */
+export function sectionFor(pathname: string, sections: SidebarSection[]) {
+  const item = findNavItem(pathname);
+  return sections.find((s) => s.pages.some((p) => item && p.to === item.to)) ?? sections[0] ?? null;
 }

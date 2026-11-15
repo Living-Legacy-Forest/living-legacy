@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { deviceKind, flagEmoji, trafficSource } from './visitors';
+import { deviceKind, trafficSource } from './visitors';
 
 describe('trafficSource', () => {
   it('calls a visit with no referrer direct', () => {
@@ -25,16 +25,6 @@ describe('trafficSource', () => {
     });
     // A word inside another domain is not a search engine.
     expect(trafficSource('notgoogle.org').source).toBe('referral');
-  });
-});
-
-describe('flagEmoji', () => {
-  it('turns a country code into its flag, and nothing else', () => {
-    expect(flagEmoji('AU')).toBe('🇦🇺');
-    expect(flagEmoji('us')).toBe('🇺🇸');
-    expect(flagEmoji('')).toBe('');
-    expect(flagEmoji(null)).toBe('');
-    expect(flagEmoji('AUS')).toBe('');
   });
 });
 

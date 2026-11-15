@@ -1,9 +1,9 @@
 import { Suspense, lazy, useState } from 'react';
+import { Flag } from '@/components/flag';
 import { SegmentedControl } from '@/components/segmented-control';
 import { Card, CardAction, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
 import { cn } from '@/lib/utils';
-import { flagEmoji } from '@/lib/visitors';
 import type { AudiencePage } from '@/server/analytics';
 import { RankedList, type RankedRow } from './ranked-card';
 
@@ -16,12 +16,6 @@ const VIEWS = [
 ] as const;
 type View = (typeof VIEWS)[number]['value'];
 
-const flag = (code: string | null) => (
-  <span aria-hidden className="text-base leading-none">
-    {flagEmoji(code) || '🌐'}
-  </span>
-);
-
 /**
  * Where visitors are: a map of bubbles, one for each busy city, beside the countries or cities
  * ranked. The map shows the cities whichever list is chosen.
@@ -32,7 +26,7 @@ export function PlacesCard({ data, className }: { data: AudiencePage; className?
     key: r.key,
     label: r.label,
     value: r.value,
-    leading: flag(r.code),
+    leading: <Flag code={r.code} />,
   }));
 
   return (

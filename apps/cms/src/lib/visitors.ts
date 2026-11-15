@@ -57,14 +57,6 @@ export function trafficSource(referringDomain: string | null | undefined): {
   return { referrer: domain, source: 'referral' };
 }
 
-/** A country's flag as an emoji, from its two-letter code; empty for anything else. */
-export function flagEmoji(code: string | null | undefined): string {
-  if (!code || !/^[a-z]{2}$/i.test(code)) return '';
-  return String.fromCodePoint(
-    ...[...code.toUpperCase()].map((c) => 0x1f1e6 + c.charCodeAt(0) - 65)
-  );
-}
-
 /** PostHog's device type ("Desktop", "Mobile", "Tablet") in the page's terms. */
 export function deviceKind(type: string | null | undefined): VisitorSession['device'] {
   const t = (type ?? '').toLowerCase();

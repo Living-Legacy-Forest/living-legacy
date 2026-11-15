@@ -6,9 +6,10 @@
  *   event-toolbar.tsx       status and the actions above the page
  *   event-main.tsx          cover, title, summary, description and sessions
  *   event-side-panel.tsx    bookings, places, publishing, location, photos, address
+ *   event-views.tsx         the Details / Guests / Dashboard tabs and the date picker
  *   event-actions.tsx       preview, and the cancel, delete and scope dialogs
  */
-import { Link, useNavigate } from '@tanstack/react-router';
+import { useNavigate } from '@tanstack/react-router';
 import { useState } from 'react';
 import {
   ResizablePanel,
@@ -25,10 +26,11 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
-import { Button } from '@/components/ui/button';
 import { formatDateTime } from '@/lib/format';
 import { cn } from '@/lib/utils';
 import type { EventPageData } from '@/server/events';
+import { EventDashboardPanel } from '../dashboard/event-dashboard';
+import { EventGuests } from '../event-guests';
 import {
   CancelEventDialog,
   CancelledEventSummary,
@@ -40,6 +42,7 @@ import {
 import { EventMain } from './event-main';
 import { EventSidePanel } from './event-side-panel';
 import { EventToolbar } from './event-toolbar';
+import { type EventView, EventViewBar, EventViewsHeader } from './event-views';
 import { useEventEditor } from './use-event-editor';
 
 /**
@@ -48,16 +51,23 @@ import { useEventEditor } from './use-event-editor';
  */
 export function EventEditor({
   data,
+  view = 'details',
+  onViewChange,
+  onPickDate,
   reveal = false,
   onReload,
 }: {
   /** `event` is null on /events/new. */
   data: Omit<EventPageData, 'event'> & { event: EventPageData['event'] | null };
+  view?: EventView;
+  onViewChange?: (view: EventView) => void;
+  /** Opens another date of the event's series, on the same view. */
+  onPickDate?: (id: string) => void;
   /** Plays the page's arrival animation; the route turns it off once it has played. */
   reveal?: boolean;
   onReload: () => Promise<void>;
 }) {
-  const { event, locations } = data;
+  const { event, dates, locations } = data;
   const navigate = useNavigate();
   const editor = useEventEditor({
     event,
@@ -70,95 +80,149 @@ export function EventEditor({
   const [showSide, setShowSide] = useState(true);
   const [cancelling, setCancelling] = useState(false);
   const [deleting, setDeleting] = useState(false);
+  // The Dashboard can also show every date together; the other views show one.
+  const [allDates, setAllDates] = useState(false);
+
+  const cancelled = event?.status === 'cancelled';
+  const showingAll = view === 'dashboard' && allDates && dates.length > 1;
 
   const leave = () => {
     editor.skipBlock();
     void navigate({ to: '/events' });
   };
 
-  if (event?.status === 'cancelled') {
-    return (
-      <div className="mx-auto w-full max-w-xl space-y-4">
-        <h1 className="sr-only">{event.title}</h1>
-        <CancelledEventSummary
-          event={event}
-          zoneLabel={formatDateTime(event.startsAt, event.timeZone)}
-        />
-        <div className="flex flex-wrap items-center justify-between gap-2">
-          <PreviewButton draft={() => ({ ...event, moreDates: [] })} />
-          <DeleteEventButton event={event} onRemoved={leave} />
-        </div>
-        <Button variant="ghost" size="sm" render={<Link to="/events" />} nativeButton={false}>
-          Back to events
-        </Button>
-      </div>
-    );
-  }
+  const viewBar = event && (
+    <EventViewBar
+      view={view}
+      onViewChange={(next) => onViewChange?.(next)}
+      event={event}
+      dates={dates}
+      showingAll={showingAll}
+      onPickDate={(id) => {
+        setAllDates(id === null);
+        if (id) onPickDate?.(id);
+      }}
+    />
+  );
 
   return (
-    <form
-      noValidate
-      onSubmit={editor.submit}
-      data-slot="event-editor"
-      data-revealing={reveal || undefined}
-      className={cn('flex flex-1 flex-col', TOUCH_FIELDS)}
-    >
+    <>
       <h1 className="sr-only">{event?.title || 'New event'}</h1>
-      <ResizablePanels
-        label="Event and details"
-        className={cn(
-          'flex-1',
-          // Below lg the panel sits under the form and its divider goes. From lg, hiding
-          // the panel also hides the divider.
-          'max-lg:block! max-lg:[&>*+*]:mt-6 max-lg:[&>[role=separator]]:hidden',
-          !showSide && '[&>[role=separator]]:hidden'
-        )}
-      >
-        <ResizablePanel
-          id="event-editor-main"
-          label="Event"
-          defaultSize={70}
-          minSize={420}
-          className="max-lg:max-w-none!"
-        >
+
+      {/* Guests and Dashboard take the whole width; a cancelled event's details are a summary. */}
+      {event && (view !== 'details' || cancelled) && (
+        <div className="bg-background flex min-w-0 flex-1 flex-col rounded-lg border">
+          <EventViewsHeader
+            view={view}
+            onViewChange={(next) => onViewChange?.(next)}
+            event={event}
+            dates={dates}
+            showingAll={showingAll}
+            onPickDate={(id) => {
+              setAllDates(id === null);
+              if (id) onPickDate?.(id);
+            }}
+          />
           <div
-            data-slot="event-editor-main"
+            key={view}
+            className="animate-in fade-in p-6 duration-200 motion-reduce:animate-none max-md:px-4"
+          >
+            {view === 'guests' ? (
+              <EventGuests key={event.id} event={event} />
+            ) : view === 'dashboard' ? (
+              <EventDashboardPanel
+                eventId={event.id}
+                date={showingAll ? undefined : event.id}
+                onDateChange={(id) => {
+                  setAllDates(id === undefined);
+                  if (id) onPickDate?.(id);
+                }}
+                onOpenGuests={() => onViewChange?.('guests')}
+              />
+            ) : (
+              <div className="mx-auto max-w-xl space-y-4">
+                <CancelledEventSummary
+                  event={event}
+                  zoneLabel={formatDateTime(event.startsAt, event.timeZone)}
+                />
+                <div className="flex flex-wrap items-center justify-between gap-2">
+                  <PreviewButton draft={() => ({ ...event, moreDates: [] })} />
+                  <DeleteEventButton event={event} onRemoved={leave} />
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* Kept mounted behind the other views, so unsaved changes survive a look at the guests. */}
+      {!cancelled && (
+        <form
+          noValidate
+          onSubmit={editor.submit}
+          data-slot="event-editor"
+          data-revealing={reveal || undefined}
+          className={cn('flex flex-1 flex-col', TOUCH_FIELDS, view !== 'details' && 'hidden')}
+        >
+          <ResizablePanels
+            label="Event and details"
             className={cn(
-              'bg-background flex min-w-0 flex-col overflow-hidden rounded-lg border lg:h-[calc(100svh-7.5rem)]',
-              showSide && 'lg:mr-6'
+              'flex-1',
+              // Below lg the panel sits under the form and its divider goes. From lg, hiding
+              // the panel also hides the divider.
+              'max-lg:block! max-lg:[&>*+*]:mt-6 max-lg:[&>[role=separator]]:hidden',
+              !showSide && '[&>[role=separator]]:hidden'
             )}
           >
-            <EventToolbar
-              editor={editor}
-              event={event}
-              showSide={showSide}
-              onToggleSide={() => setShowSide((v) => !v)}
-              onCancelEvent={() => setCancelling(true)}
-              onDelete={() => setDeleting(true)}
-            />
-            <div className="min-h-[24rem] flex-1 overflow-y-auto p-6 max-md:px-0 lg:min-h-0">
-              <EventMain editor={editor} event={event} />
-            </div>
-          </div>
-        </ResizablePanel>
+            <ResizablePanel
+              id="event-editor-main"
+              label="Event"
+              defaultSize={70}
+              minSize={420}
+              className="max-lg:max-w-none!"
+            >
+              <div
+                data-slot="event-editor-main"
+                className={cn(
+                  'bg-background flex min-w-0 flex-col overflow-hidden rounded-lg border lg:h-[calc(100svh-7.5rem)]',
+                  showSide && 'lg:mr-6'
+                )}
+              >
+                <EventToolbar
+                  editor={editor}
+                  event={event}
+                  showSide={showSide}
+                  onToggleSide={() => setShowSide((v) => !v)}
+                  onCancelEvent={() => setCancelling(true)}
+                  onDelete={() => setDeleting(true)}
+                >
+                  {viewBar}
+                </EventToolbar>
+                <div className="min-h-[24rem] flex-1 overflow-y-auto p-6 max-md:px-0 lg:min-h-0">
+                  <EventMain editor={editor} event={event} />
+                </div>
+              </div>
+            </ResizablePanel>
 
-        <ResizablePanel
-          id="event-side-panel"
-          label="Details"
-          defaultSize={30}
-          minSize={260}
-          maxSize={560}
-          // Hidden only on lg and up: below that the panel sits under the form and has no toggle.
-          className={cn('max-lg:max-w-none!', !showSide && 'lg:hidden!')}
-        >
-          <aside
-            id="event-side"
-            className="text-ui lg:no-scrollbar min-w-0 lg:h-[calc(100svh-7.5rem)] lg:overflow-x-hidden lg:overflow-y-auto lg:overscroll-contain lg:pb-6 lg:pl-6"
-          >
-            <EventSidePanel editor={editor} event={event} />
-          </aside>
-        </ResizablePanel>
-      </ResizablePanels>
+            <ResizablePanel
+              id="event-side-panel"
+              label="Details"
+              defaultSize={30}
+              minSize={260}
+              maxSize={560}
+              // Hidden only on lg and up: below that the panel sits under the form and has no toggle.
+              className={cn('max-lg:max-w-none!', !showSide && 'lg:hidden!')}
+            >
+              <aside
+                id="event-side"
+                className="text-ui lg:no-scrollbar min-w-0 lg:h-[calc(100svh-7.5rem)] lg:overflow-x-hidden lg:overflow-y-auto lg:overscroll-contain lg:pb-6 lg:pl-6"
+              >
+                <EventSidePanel editor={editor} event={event} />
+              </aside>
+            </ResizablePanel>
+          </ResizablePanels>
+        </form>
+      )}
 
       {event && (
         <>
@@ -205,6 +269,6 @@ export function EventEditor({
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
-    </form>
+    </>
   );
 }

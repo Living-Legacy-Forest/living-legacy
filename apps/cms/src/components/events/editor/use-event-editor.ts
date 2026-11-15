@@ -56,7 +56,10 @@ export function useEventEditor({
   dirtyRef.current = dirty;
   const skipBlockRef = useRef(false);
   const blocker = useBlocker({
-    shouldBlockFn: () => dirtyRef.current && !skipBlockRef.current,
+    // Switching to Guests or Dashboard only changes the address's search, and the form
+    // stays mounted behind them, so nothing is lost; another date or page does lose it.
+    shouldBlockFn: ({ current, next }) =>
+      dirtyRef.current && !skipBlockRef.current && current.pathname !== next.pathname,
     enableBeforeUnload: () => dirtyRef.current && !skipBlockRef.current,
     withResolver: true,
   });

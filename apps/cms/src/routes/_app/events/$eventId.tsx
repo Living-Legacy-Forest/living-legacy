@@ -29,6 +29,8 @@ export const Route = createFileRoute('/_app/events/$eventId')({
 
 function EventPage() {
   const data = Route.useLoaderData();
+  const { view } = Route.useSearch();
+  const navigate = Route.useNavigate();
   const router = useRouter();
   // Held here, not in the editor, which remounts after a save.
   const reveal = useRevealOnce();
@@ -66,6 +68,14 @@ function EventPage() {
     <EventEditor
       key={`${data.event.id}-${version}`}
       data={data}
+      view={view ?? 'details'}
+      // The address names a tab only when it is not the first.
+      onViewChange={(next) =>
+        void navigate({ search: { view: next === 'details' ? undefined : next }, replace: true })
+      }
+      onPickDate={(eventId) =>
+        void navigate({ to: '/events/$eventId', params: { eventId }, search: { view } })
+      }
       reveal={reveal}
       onReload={async () => {
         reloading.current = true;

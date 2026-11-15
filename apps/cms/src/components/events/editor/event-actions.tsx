@@ -19,9 +19,9 @@ import { type EventRow, cancelEvent, deleteEvent } from '@/server/events';
 import { type EventPreviewDraft, openEventPreview } from '../event-preview-store';
 
 /** Opens the event as a visitor would see it, in a new tab. */
-export function PreviewButton({ draft }: { draft: () => EventPreviewDraft }) {
+export function PreviewButton({ draft, size }: { draft: () => EventPreviewDraft; size?: 'sm' }) {
   return (
-    <Button type="button" variant="outline" onClick={() => openEventPreview(draft())}>
+    <Button type="button" variant="outline" size={size} onClick={() => openEventPreview(draft())}>
       <EyeIcon aria-hidden data-icon="inline-start" />
       <span className="max-sm:sr-only">Preview</span>
     </Button>

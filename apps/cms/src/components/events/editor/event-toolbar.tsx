@@ -100,18 +100,19 @@ export function EventToolbar({
             </DropdownMenuContent>
           </DropdownMenu>
         )}
-        <PreviewButton draft={editor.previewDraft} />
+        <PreviewButton size="sm" draft={editor.previewDraft} />
         {values.status === 'draft' && (
           <Button
             type="button"
             variant="outline"
+            size="sm"
             disabled={pending}
             onClick={(e) => editor.publish(e.currentTarget.form!)}
           >
             Publish
           </Button>
         )}
-        <Button type="submit" disabled={pending}>
+        <Button type="submit" size="sm" disabled={pending}>
           {busy('Saving…', event ? 'Save' : 'Create event')}
         </Button>
       </div>

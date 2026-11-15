@@ -72,6 +72,7 @@ export function PagesPage({
 }) {
   return (
     <AnalyticsPage
+      kind="pages"
       title="Pages"
       description="Which pages people read, where their visits start and end, and how long they stay on each."
       result={result}

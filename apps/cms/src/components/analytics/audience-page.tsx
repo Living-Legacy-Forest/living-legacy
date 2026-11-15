@@ -20,6 +20,7 @@ export function AudiencePage({
 }) {
   return (
     <AnalyticsPage
+      kind="audience"
       title="Audience"
       description="Where visitors are, worked out from their network, and the devices and browsers they use. No IP addresses are kept here."
       result={result}

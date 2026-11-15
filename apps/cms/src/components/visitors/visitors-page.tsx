@@ -1,4 +1,6 @@
 import { createLink, useNavigate, useRouter } from '@tanstack/react-router';
+import { usePendingRange } from '@/components/analytics/analytics-page';
+import { AnalyticsBodySkeleton } from '@/components/analytics/analytics-skeleton';
 import { RevealWords } from '@/components/dashboard/reveal-words';
 import { GlobeIcon, LaptopIcon, SmartphoneIcon, TabletIcon } from '@/components/icons';
 import { SegmentedControl } from '@/components/segmented-control';
@@ -56,6 +58,8 @@ export function VisitorsPage({ data }: { data: VisitorsData }) {
   const navigate = useNavigate({ from: '/analytics/visitors' });
   const revealing = useRevealOnce();
   const days: VisitorRange = data.connected ? data.days : 30;
+  // Visitors pages through PostHog, so a new page number loads as a new period does.
+  const pending = usePendingRange(['days', 'page']);
 
   return (
     <div
@@ -75,7 +79,7 @@ export function VisitorsPage({ data }: { data: VisitorsData }) {
         {data.connected && (
           <SegmentedControl
             label="Period"
-            value={String(days)}
+            value={String(pending.days ?? days)}
             options={RANGE_OPTIONS}
             // A new period starts again from the first page.
             onValueChange={(value) =>
@@ -87,7 +91,13 @@ export function VisitorsPage({ data }: { data: VisitorsData }) {
         )}
       </div>
 
-      <VisitorsBody data={data} />
+      {pending.loading ? (
+        <div role="status" aria-label="Loading">
+          <AnalyticsBodySkeleton kind="visitors" />
+        </div>
+      ) : (
+        <VisitorsBody data={data} />
+      )}
     </div>
   );
 }

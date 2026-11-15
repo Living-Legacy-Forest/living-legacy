@@ -13,6 +13,7 @@ export function TrafficPage({
 }) {
   return (
     <AnalyticsPage
+      kind="traffic"
       title="Traffic"
       description="Where visits come from: search engines, social media, other websites, campaign links, or straight to the address."
       result={result}

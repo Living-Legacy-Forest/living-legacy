@@ -221,7 +221,8 @@ export function isNavItemAllowed(item: NavItem, role: Role) {
 export const phoneTabs: (NavItem & { to: NonNullable<NavItem['to']>; icon: LucideIcon })[] = [
   { title: 'Dashboard', icon: LayoutDashboard, to: '/' },
   { title: 'Posts', icon: FileText, to: '/posts' },
-  { title: 'Media', icon: MediaIcon, to: '/media', permission: 'media:write' },
+  // Analytics has the place Media had; Media is one tap away under More.
+  { title: 'Analytics', icon: ChartPieIcon, to: '/analytics', permission: 'posts:publish' },
   // Events over Locations: guest check-in on open days is what a phone is used for.
   { title: 'Events', icon: CalendarClockIcon, to: '/events', permission: 'events:manage' },
 ];

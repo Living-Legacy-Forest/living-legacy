@@ -134,7 +134,7 @@ export function NeedsAttention({ attention }: { attention: Attention }) {
   const tasks = buildTasks(attention, timeZone);
 
   return (
-    <Card className="col-span-2">
+    <Card className="md:col-span-2">
       <CardHeader>
         <CardTitle>Needs attention</CardTitle>
         <CardDescription>What is waiting on you, and where to sort it out.</CardDescription>

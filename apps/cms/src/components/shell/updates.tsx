@@ -155,11 +155,14 @@ export function UpdatesProvider({ joinedAt, children }: { joinedAt: number; chil
               <section key={entry.id} className="space-y-4 px-5 py-5">
                 <header className="space-y-1">
                   <p className="text-muted-foreground text-xs tabular-nums">
-                    {new Date(`${entry.id}T12:00:00`).toLocaleDateString('en-AU', {
-                      day: 'numeric',
-                      month: 'long',
-                      year: 'numeric',
-                    })}
+                    {
+                      // Ids carry a suffix when a day has several entries (2026-11-15-8), so take the date alone.
+                      new Date(`${entry.id.slice(0, 10)}T12:00:00`).toLocaleDateString('en-AU', {
+                        day: 'numeric',
+                        month: 'long',
+                        year: 'numeric',
+                      })
+                    }
                   </p>
                   <h3 className="text-sm leading-snug font-semibold">{entry.title}</h3>
                 </header>

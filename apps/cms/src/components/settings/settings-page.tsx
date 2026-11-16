@@ -1071,7 +1071,7 @@ function SiteIconRow({
         {/* The icon as a browser tab shows it, in a desktop window's tab bar. */}
         <div
           aria-hidden
-          className="min-w-0 flex-1 overflow-hidden rounded-xl bg-[#1f1f22] shadow-md ring-1 ring-black/20"
+          className="min-w-0 flex-1 overflow-hidden rounded-xl bg-[#e4e4e8] shadow-md ring-1 ring-black/10 dark:bg-[#1f1f22] dark:ring-black/20"
         >
           <div className="flex h-11 items-center gap-2.5 px-3">
             <span className="flex shrink-0 gap-1.5">
@@ -1079,18 +1079,20 @@ function SiteIconRow({
               <span className="size-3 rounded-full bg-[#febc2e]" />
               <span className="size-3 rounded-full bg-[#28c840]" />
             </span>
-            <span className="flex size-6 shrink-0 items-center justify-center rounded-md bg-white/10 text-neutral-300">
+            <span className="flex size-6 shrink-0 items-center justify-center rounded-md bg-black/[0.07] text-neutral-600 dark:bg-white/10 dark:text-neutral-300">
               <ChevronDownIcon className="size-3.5" />
             </span>
-            <span className="flex h-8 min-w-0 flex-1 items-center gap-2 rounded-lg bg-white/[0.09] px-2.5 text-xs text-neutral-100">
+            <span className="flex h-8 min-w-0 flex-1 items-center gap-2 rounded-lg bg-white px-2.5 text-xs text-neutral-900 shadow-xs dark:bg-white/[0.09] dark:text-neutral-100 dark:shadow-none">
               <img src={src} alt="" className="size-4 shrink-0 rounded-[3px] object-cover" />
               <span className="truncate">{siteTitle || 'Site title'}</span>
-              <span className="ml-auto pl-2 text-sm leading-none text-neutral-400">×</span>
+              <span className="ml-auto pl-2 text-sm leading-none text-neutral-400 dark:text-neutral-400">
+                ×
+              </span>
             </span>
           </div>
           {/* A hint of the toolbar under the tabs, so it reads as a window. */}
-          <div className="flex h-7 items-center border-t border-white/5 bg-[#2a2a2e] px-3">
-            <span className="h-3 w-2/3 rounded-full bg-white/[0.07]" />
+          <div className="flex h-7 items-center border-t border-black/5 bg-[#f4f4f6] px-3 dark:border-white/5 dark:bg-[#2a2a2e]">
+            <span className="h-3 w-2/3 rounded-full bg-black/[0.07] dark:bg-white/[0.07]" />
           </div>
         </div>
       </div>

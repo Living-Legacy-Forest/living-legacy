@@ -8,6 +8,8 @@ import {
 } from '@/components/events/events-skeleton';
 import { DashboardSkeleton } from '@/components/dashboard/dashboard-skeleton';
 import { DocumentEditorSkeleton } from '@/components/posts/post-editor/document-editor-skeleton';
+import { Tiles } from '@/components/analytics/analytics-skeleton';
+import { Card, CardContent, CardHeader } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
 
 /**
@@ -57,8 +59,16 @@ export function PageSkeleton({ pathname }: { pathname: string }) {
           <Skeleton className="h-8 w-48" />
           <DashboardSkeleton />
         </div>
-      ) : section === 'posts' && child ? (
+      ) : section === 'posts' && (child === 'categories' || child === 'tags') ? (
+        <SplitSkeleton />
+      ) : (section === 'posts' || section === 'locations') && child ? (
         <EditorSkeleton />
+      ) : section === 'legal' && child ? (
+        <LegalEditorSkeleton />
+      ) : section === 'system' ? (
+        <SystemSkeleton />
+      ) : section === 'uptime' ? (
+        <UptimeSkeleton />
       ) : section === 'events' ? (
         !child ? (
           <EventsListSkeleton />
@@ -75,6 +85,8 @@ export function PageSkeleton({ pathname }: { pathname: string }) {
         <SettingsSkeleton />
       ) : section === 'analytics' ? (
         <AnalyticsSkeleton kind={analyticsKind(child)} />
+      ) : section === 'profile' || section === 'search-replace' ? (
+        <ListSkeleton width="max-w-4xl" />
       ) : (
         <ListSkeleton />
       )}
@@ -155,9 +167,9 @@ function MediaSkeleton() {
 }
 
 /** Users: a heading over grouped rows. */
-function ListSkeleton() {
+function ListSkeleton({ width = 'max-w-3xl' }: { width?: string }) {
   return (
-    <div className="mx-auto w-full max-w-3xl space-y-8">
+    <div className={`mx-auto w-full ${width} space-y-8`}>
       <div className="flex items-start justify-between gap-4">
         <div className="space-y-2">
           <Skeleton className="h-7 w-32" />
@@ -187,7 +199,7 @@ function ListSkeleton() {
 
 function SettingsSkeleton() {
   return (
-    <div className="mx-auto w-full max-w-2xl space-y-8">
+    <div className="mx-auto w-full max-w-5xl space-y-8">
       <div className="space-y-2">
         <Skeleton className="h-7 w-32" />
         <Skeleton className="h-4 w-80 max-w-full" />
@@ -252,6 +264,101 @@ function EditorSkeleton() {
         <div className="border-t pt-6">
           <Skeleton className="h-3.5 w-20" />
         </div>
+      </aside>
+    </div>
+  );
+}
+
+/** A card of label-and-status rows, as System and Uptime list their checks and monitors. */
+function RowsCard({ rows, bar = false }: { rows: number; bar?: boolean }) {
+  return (
+    <Card>
+      <CardHeader className="space-y-2">
+        <Skeleton className="h-5 w-28" />
+        <Skeleton className="h-3.5 w-56 max-w-full" />
+      </CardHeader>
+      <CardContent>
+        <div className="divide-y">
+          {Array.from({ length: rows }, (_, i) => (
+            <div key={i} className="space-y-3 py-3">
+              <div className="flex items-center gap-4">
+                <div className="flex-1 space-y-2">
+                  <Skeleton className="h-4" style={{ width: `${60 - ((i * 11) % 25)}%` }} />
+                  <Skeleton className="h-3 w-2/5" />
+                </div>
+                <Skeleton className="h-4 w-16" />
+              </div>
+              {bar && <Skeleton className="h-7 w-full" />}
+            </div>
+          ))}
+        </div>
+      </CardContent>
+    </Card>
+  );
+}
+
+/** System: a heading with its status and links, then cards in two columns, edge to edge. */
+function SystemSkeleton() {
+  return (
+    <div className="grid w-full gap-6 lg:grid-cols-2">
+      <div className="flex flex-wrap items-start justify-between gap-4 lg:col-span-2">
+        <div className="space-y-2">
+          <Skeleton className="h-7 w-28" />
+          <Skeleton className="h-4 w-56" />
+        </div>
+        <div className="flex gap-2">
+          <Skeleton className="h-8 w-24" />
+          <Skeleton className="h-8 w-24" />
+        </div>
+      </div>
+      <RowsCard rows={5} />
+      <RowsCard rows={5} />
+      <RowsCard rows={4} />
+      <RowsCard rows={4} />
+    </div>
+  );
+}
+
+/** Uptime: a heading, four metric cards, then the monitors with their bars and the incidents. */
+function UptimeSkeleton() {
+  return (
+    <div className="grid w-full gap-6">
+      <div className="flex flex-wrap items-start justify-between gap-4">
+        <div className="space-y-2">
+          <Skeleton className="h-7 w-28" />
+          <Skeleton className="h-4 w-48" />
+        </div>
+        <Skeleton className="h-8 w-36" />
+      </div>
+      <Tiles count={4} />
+      <RowsCard rows={4} bar />
+      <RowsCard rows={5} />
+    </div>
+  );
+}
+
+/** The legal page editor: the document in a frame beside its sidebar. */
+function LegalEditorSkeleton() {
+  return (
+    <div className="grid grid-cols-1 gap-6 lg:grid-cols-[minmax(0,1fr)_18rem]">
+      <div className="min-w-0 space-y-3">
+        <div className="flex flex-wrap items-center gap-2">
+          <Skeleton className="mr-auto h-7 w-40" />
+          <Skeleton className="h-8 w-24" />
+          <Skeleton className="h-8 w-20" />
+        </div>
+        <div className="min-h-[32rem] overflow-clip rounded-lg border">
+          <DocumentEditorSkeleton />
+        </div>
+      </div>
+      <aside className="space-y-6">
+        {[0, 1, 2].map((i) => (
+          <div key={i} className="space-y-3">
+            <Skeleton className="h-3.5 w-24" />
+            <Skeleton className="h-8 w-full" />
+            <Skeleton className="h-3 w-3/4" />
+          </div>
+        ))}
       </aside>
     </div>
   );

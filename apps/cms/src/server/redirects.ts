@@ -1,7 +1,7 @@
 import { type RedirectRule, isWildcard, redirectStatusCodes, traceRedirect } from '@ll/content';
-import { redirects } from '@ll/db/schema';
+import { redirectDailyHits, redirects } from '@ll/db/schema';
 import { createServerFn } from '@tanstack/react-start';
-import { desc, eq, inArray } from 'drizzle-orm';
+import { desc, eq, gte, inArray } from 'drizzle-orm';
 import { z } from 'zod';
 import { type BulkResult, firstIssue } from '@/lib/bulk-import';
 import { getDb } from '@/lib/db';
@@ -27,6 +27,8 @@ const toPathSchema = z
     'The destination must be a path like /new-page or a full URL.'
   );
 
+const TREND_DAYS = 30;
+
 export const listRedirects = createServerFn({ method: 'GET' })
   .middleware([requirePermission('redirects:write')])
   .handler(async () => {
@@ -45,8 +47,24 @@ export const listRedirects = createServerFn({ method: 'GET' })
       })
       .from(redirects)
       .orderBy(desc(redirects.createdAt));
+    // Clicks per day over the last 30 days (UTC), oldest first, for each row's chart.
+    const today = Date.now();
+    const days = Array.from({ length: TREND_DAYS }, (_, i) =>
+      new Date(today - (TREND_DAYS - 1 - i) * 86_400_000).toISOString().slice(0, 10)
+    );
+    const daily = await getDb()
+      .select()
+      .from(redirectDailyHits)
+      .where(gte(redirectDailyHits.day, days[0]!));
+    const byRedirect = new Map<string, Map<string, number>>();
+    for (const d of daily) {
+      const m = byRedirect.get(d.redirectId) ?? new Map<string, number>();
+      m.set(d.day, d.hits);
+      byRedirect.set(d.redirectId, m);
+    }
     return rows.map((r) => ({
       ...r,
+      trend: days.map((day) => byRedirect.get(r.id)?.get(day) ?? 0),
       lastHitAt: r.lastHitAt?.getTime() ?? null,
       createdAt: r.createdAt.getTime(),
     }));

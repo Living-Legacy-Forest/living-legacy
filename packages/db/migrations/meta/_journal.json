@@ -253,6 +253,13 @@
       "when": 1794593987465,
       "tag": "0035_analytics-cache",
       "breakpoints": true
+    },
+    {
+      "idx": 36,
+      "version": "6",
+      "when": 1794809082238,
+      "tag": "0036_redirect-daily-hits",
+      "breakpoints": true
     }
   ]
 }

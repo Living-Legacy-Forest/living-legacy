@@ -20,6 +20,8 @@ export type WhatsNewItem = {
       | '/locations'
       | '/search-replace'
       | '/system'
+      | '/redirects'
+      | '/uptime'
       | '/analytics'
       | '/analytics/visitors'
       | '/analytics/enquiries'
@@ -46,6 +48,34 @@ export type WhatsNewEntry = {
 };
 
 export const whatsNew: WhatsNewEntry[] = [
+  {
+    id: '2026-11-16-7',
+    kind: 'new',
+    title: 'Uptime',
+    items: [
+      {
+        title: 'See whether everything is up',
+        body: 'A new Uptime page, for admins, shows each monitor with its state, availability over the last 30 days and average response time, plus the recent incidents and how long each lasted.',
+        link: { label: 'Open Uptime', to: '/uptime' },
+      },
+    ],
+  },
+  {
+    id: '2026-11-16-6',
+    kind: 'improved',
+    title: 'Redirects, with a click chart',
+    items: [
+      {
+        title: 'See how often each redirect is used',
+        body: 'Each redirect in the list now shows a small chart of its clicks over the last 30 days. The chart fills in from today, as clicks are counted from now on; the running total is unchanged.',
+        link: { label: 'Open Redirects', to: '/redirects' },
+      },
+      {
+        title: 'Expand the list',
+        body: 'On a large screen, use the panel button in the toolbar to fold the editor away and give the list the full width, as on Posts.',
+      },
+    ],
+  },
   {
     id: '2026-11-16-5',
     kind: 'improved',

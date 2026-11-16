@@ -49,6 +49,7 @@ import { Route as AppSettingsIndexRouteImport } from './routes/_app/settings/ind
 import { Route as AppSystemIndexRouteImport } from './routes/_app/system/index'
 import { Route as AppTeamIndexRouteImport } from './routes/_app/team/index'
 import { Route as AppTestimonialsIndexRouteImport } from './routes/_app/testimonials/index'
+import { Route as AppUptimeIndexRouteImport } from './routes/_app/uptime/index'
 import { Route as AppUsersIndexRouteImport } from './routes/_app/users/index'
 import { Route as AppVisitorsIndexRouteImport } from './routes/_app/visitors/index'
 import { Route as AppWhatsNewIndexRouteImport } from './routes/_app/whats-new/index'
@@ -267,6 +268,11 @@ const AppTestimonialsIndexRoute = AppTestimonialsIndexRouteImport.update({
   path: '/testimonials/',
   getParentRoute: () => AppRoute,
 } as any)
+const AppUptimeIndexRoute = AppUptimeIndexRouteImport.update({
+  id: '/uptime/',
+  path: '/uptime/',
+  getParentRoute: () => AppRoute,
+} as any)
 const AppUsersIndexRoute = AppUsersIndexRouteImport.update({
   id: '/users/',
   path: '/users/',
@@ -406,6 +412,7 @@ export interface FileRoutesByFullPath {
   '/system/': typeof AppSystemIndexRoute
   '/team/': typeof AppTeamIndexRoute
   '/testimonials/': typeof AppTestimonialsIndexRoute
+  '/uptime/': typeof AppUptimeIndexRoute
   '/users/': typeof AppUsersIndexRoute
   '/visitors/': typeof AppVisitorsIndexRoute
   '/whats-new/': typeof AppWhatsNewIndexRoute
@@ -464,6 +471,7 @@ export interface FileRoutesByTo {
   '/system': typeof AppSystemIndexRoute
   '/team': typeof AppTeamIndexRoute
   '/testimonials': typeof AppTestimonialsIndexRoute
+  '/uptime': typeof AppUptimeIndexRoute
   '/users': typeof AppUsersIndexRoute
   '/visitors': typeof AppVisitorsIndexRoute
   '/whats-new': typeof AppWhatsNewIndexRoute
@@ -525,6 +533,7 @@ export interface FileRoutesById {
   '/_app/system/': typeof AppSystemIndexRoute
   '/_app/team/': typeof AppTeamIndexRoute
   '/_app/testimonials/': typeof AppTestimonialsIndexRoute
+  '/_app/uptime/': typeof AppUptimeIndexRoute
   '/_app/users/': typeof AppUsersIndexRoute
   '/_app/visitors/': typeof AppVisitorsIndexRoute
   '/_app/whats-new/': typeof AppWhatsNewIndexRoute
@@ -586,6 +595,7 @@ export interface FileRouteTypes {
     | '/system/'
     | '/team/'
     | '/testimonials/'
+    | '/uptime/'
     | '/users/'
     | '/visitors/'
     | '/whats-new/'
@@ -644,6 +654,7 @@ export interface FileRouteTypes {
     | '/system'
     | '/team'
     | '/testimonials'
+    | '/uptime'
     | '/users'
     | '/visitors'
     | '/whats-new'
@@ -704,6 +715,7 @@ export interface FileRouteTypes {
     | '/_app/system/'
     | '/_app/team/'
     | '/_app/testimonials/'
+    | '/_app/uptime/'
     | '/_app/users/'
     | '/_app/visitors/'
     | '/_app/whats-new/'
@@ -1019,6 +1031,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppTestimonialsIndexRouteImport
       parentRoute: typeof AppRoute
     }
+    '/_app/uptime/': {
+      id: '/_app/uptime/'
+      path: '/uptime'
+      fullPath: '/uptime/'
+      preLoaderRoute: typeof AppUptimeIndexRouteImport
+      parentRoute: typeof AppRoute
+    }
     '/_app/users/': {
       id: '/_app/users/'
       path: '/users'
@@ -1200,6 +1219,7 @@ interface AppRouteChildren {
   AppSystemIndexRoute: typeof AppSystemIndexRoute
   AppTeamIndexRoute: typeof AppTeamIndexRoute
   AppTestimonialsIndexRoute: typeof AppTestimonialsIndexRoute
+  AppUptimeIndexRoute: typeof AppUptimeIndexRoute
   AppUsersIndexRoute: typeof AppUsersIndexRoute
   AppVisitorsIndexRoute: typeof AppVisitorsIndexRoute
   AppWhatsNewIndexRoute: typeof AppWhatsNewIndexRoute
@@ -1238,6 +1258,7 @@ const AppRouteChildren: AppRouteChildren = {
   AppSystemIndexRoute: AppSystemIndexRoute,
   AppTeamIndexRoute: AppTeamIndexRoute,
   AppTestimonialsIndexRoute: AppTestimonialsIndexRoute,
+  AppUptimeIndexRoute: AppUptimeIndexRoute,
   AppUsersIndexRoute: AppUsersIndexRoute,
   AppVisitorsIndexRoute: AppVisitorsIndexRoute,
   AppWhatsNewIndexRoute: AppWhatsNewIndexRoute,

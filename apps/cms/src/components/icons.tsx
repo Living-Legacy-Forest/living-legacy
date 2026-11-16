@@ -5,6 +5,7 @@ import { HugeiconsIcon } from '@hugeicons/react';
 import { useEffect, useRef, useState } from 'react';
 import { CalendarClock as AnimatedCalendarClock } from '@/components/animate-ui/icons/hugeicons/calendar-clock';
 import { Unplug as AnimatedUnplug } from '@/components/animate-ui/icons/hugeicons/unplug';
+import { HeartCheckIcon as AnimatedHeartCheckIcon } from '@animateicons/react/huge/heart-check-icon';
 import { ActivityIcon as AnimatedActivityIcon } from '@animateicons/react/huge/activity-icon';
 import { Add01Icon as AnimatedAdd01Icon } from '@animateicons/react/huge/add-0-1-icon';
 import { AlertCircleIcon as AnimatedAlertCircleIcon } from '@animateicons/react/huge/alert-circle-icon';
@@ -265,6 +266,7 @@ export const ToggleOffIcon = make(H.ToggleOffIcon);
 /** A breadcrumb separator: static, since it sits in every header. */
 export const BreadcrumbChevronIcon = make(H.ArrowRight01Icon);
 export const FullScreenIcon = make(H.FullScreenIcon);
+export const UptimeIcon = animated(AnimatedHeartCheckIcon);
 export const LocateIcon = make(H.Gps01Icon);
 export const Heading1 = make(H.Heading01Icon);
 export const Heading2 = make(H.Heading02Icon);

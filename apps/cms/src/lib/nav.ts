@@ -33,6 +33,7 @@ import {
   Users,
   SearchReplaceIcon,
   SystemIcon,
+  UptimeIcon,
 } from '@/components/icons';
 
 export type NavItem = {
@@ -67,6 +68,7 @@ export type NavItem = {
     | '/search-replace'
     | '/settings'
     | '/system'
+    | '/uptime'
     | '/team'
     | '/testimonials'
     | '/users';
@@ -203,6 +205,7 @@ export const navGroups: NavGroup[] = [
         permission: 'settings:write',
       },
       { title: 'System', icon: SystemIcon, to: '/system', permission: 'settings:write' },
+      { title: 'Uptime', icon: UptimeIcon, to: '/uptime', permission: 'settings:write' },
       {
         title: 'Settings',
         icon: Settings,

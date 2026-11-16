@@ -32,3 +32,6 @@ BETTER_AUTH_URL=http://localhost:3100
 # POSTHOG_API_HOST defaults to https://us.posthog.com.
 POSTHOG_PERSONAL_API_KEY=
 POSTHOG_PROJECT_ID=
+
+# Better Stack Uptime API token (read-only), for the Uptime page. Without it the page stays empty.
+BETTERSTACK_API_TOKEN=

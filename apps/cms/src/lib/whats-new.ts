@@ -13,6 +13,8 @@ export type WhatsNewItem = {
       | '/settings'
       | '/media'
       | '/profile'
+      | '/announcements'
+      | '/whats-new'
       | '/events'
       | '/events/overview'
       | '/locations'
@@ -28,6 +30,9 @@ export type WhatsNewItem = {
   };
 };
 
+/** What sort of change a note is. Notes without one count as new. */
+export type WhatsNewKind = 'new' | 'improved';
+
 export type WhatsNewEntry = {
   /**
    * The day it shipped, YYYY-MM-DD, with -2, -3 for a second or third note that
@@ -35,12 +40,42 @@ export type WhatsNewEntry = {
    */
   id: string;
   title: string;
+  /** New things you can do, or something that already existed and now works better. */
+  kind?: WhatsNewKind;
   items: WhatsNewItem[];
 };
 
 export const whatsNew: WhatsNewEntry[] = [
   {
+    id: '2026-11-16-4',
+    kind: 'improved',
+    title: 'Preview announcements on a phone',
+    items: [
+      {
+        title: 'See the bar before it goes live',
+        body: 'Open an announcement and choose Preview to see the bar on a phone, as the website shows it. The message counter now says when a message is too long for one line: 40 characters, or 28 with a button.',
+        link: { label: 'Open Announcements', to: '/announcements' },
+      },
+      {
+        title: 'More in the right-click menu',
+        body: 'Right-click (or press and hold) an announcement to duplicate it, copy its message, end it now or switch it off.',
+      },
+    ],
+  },
+  {
+    id: '2026-11-16-3',
+    title: "What's new has its own page",
+    items: [
+      {
+        title: 'Every note in one place',
+        body: "What's new is now a page instead of a pop-up, with the notes grouped by month and anything you have not read marked New. Find it in the sidebar, or on the dashboard under the version.",
+        link: { label: "Open What's new", to: '/whats-new' },
+      },
+    ],
+  },
+  {
     id: '2026-11-16-2',
+    kind: 'improved',
     title: 'Shortcuts you can change',
     items: [
       {
@@ -56,6 +91,7 @@ export const whatsNew: WhatsNewEntry[] = [
   },
   {
     id: '2026-11-16',
+    kind: 'improved',
     title: 'A fresher sign-in page',
     items: [
       {
@@ -66,6 +102,7 @@ export const whatsNew: WhatsNewEntry[] = [
   },
   {
     id: '2026-11-15-8',
+    kind: 'improved',
     title: 'Locations have their own page',
     items: [
       {
@@ -77,6 +114,7 @@ export const whatsNew: WhatsNewEntry[] = [
   },
   {
     id: '2026-11-15-7',
+    kind: 'improved',
     title: 'Events have their own page',
     items: [
       {
@@ -88,6 +126,7 @@ export const whatsNew: WhatsNewEntry[] = [
   },
   {
     id: '2026-11-15-6',
+    kind: 'improved',
     title: 'Easier on a phone',
     items: [
       {
@@ -115,6 +154,7 @@ export const whatsNew: WhatsNewEntry[] = [
   },
   {
     id: '2026-11-15-4',
+    kind: 'improved',
     title: 'A new sidebar',
     items: [
       {
@@ -179,6 +219,7 @@ export const whatsNew: WhatsNewEntry[] = [
   },
   {
     id: '2026-11-14-6',
+    kind: 'improved',
     title: 'A clearer Settings page',
     items: [
       {
@@ -200,6 +241,7 @@ export const whatsNew: WhatsNewEntry[] = [
   },
   {
     id: '2026-11-14-4',
+    kind: 'improved',
     title: 'Resize the post panel',
     items: [
       {
@@ -221,6 +263,7 @@ export const whatsNew: WhatsNewEntry[] = [
   },
   {
     id: '2026-11-14-2',
+    kind: 'improved',
     title: 'Dashboard cards use 7, 30 or 90 days',
     items: [
       {
@@ -241,6 +284,7 @@ export const whatsNew: WhatsNewEntry[] = [
   },
   {
     id: '2026-11-13-6',
+    kind: 'improved',
     title: 'Dashboard cards show weeks or months',
     items: [
       {
@@ -270,6 +314,7 @@ export const whatsNew: WhatsNewEntry[] = [
   },
   {
     id: '2026-11-13-4',
+    kind: 'improved',
     title: 'Uploads show each file as it goes',
     items: [
       {
@@ -285,6 +330,7 @@ export const whatsNew: WhatsNewEntry[] = [
   },
   {
     id: '2026-11-13-3',
+    kind: 'improved',
     title: 'Light or dark from your account menu',
     items: [
       {
@@ -296,6 +342,7 @@ export const whatsNew: WhatsNewEntry[] = [
   },
   {
     id: '2026-11-13-2',
+    kind: 'improved',
     title: 'Filters and a grid view on every list',
     items: [
       {
@@ -409,6 +456,7 @@ export const whatsNew: WhatsNewEntry[] = [
   },
   {
     id: '2026-11-11-5',
+    kind: 'improved',
     title: 'Faster media and your own brand words',
     items: [
       {
@@ -491,6 +539,7 @@ export const whatsNew: WhatsNewEntry[] = [
   },
   {
     id: '2026-11-10-2',
+    kind: 'improved',
     title: 'A tidier profile, your own theme and avatars',
     items: [
       {

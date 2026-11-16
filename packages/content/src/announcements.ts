@@ -65,8 +65,11 @@ export function announcementContrast(background: string): number {
   return contrastOf(bg, fg);
 }
 
-/** Past this length the default message wraps onto two lines on a phone. */
-export const ANNOUNCEMENT_MOBILE_LENGTH = 50;
+/** Past this length the default message wraps onto two lines on a phone (about 40 characters fit). */
+export const ANNOUNCEMENT_MOBILE_LENGTH = 40;
+
+/** The same, when a button sits after the message: it takes room from the line. */
+export const ANNOUNCEMENT_MOBILE_LENGTH_WITH_BUTTON = 28;
 
 export type AnnouncementWindow = {
   id: string;

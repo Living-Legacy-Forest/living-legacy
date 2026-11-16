@@ -48,6 +48,7 @@ export function ListCard({
   previews,
   menu = [],
   remove,
+  largeTitle = false,
   children,
 }: {
   title: string;
@@ -69,13 +70,16 @@ export function ListCard({
   menu?: RowMenuItem[];
   /** The delete action, last in the menu as the row's swipe is. */
   remove?: { label: string; onAction: () => void };
+  /** For cards whose title is the main thing: larger, and wraps to two lines instead of cutting off. */
+  largeTitle?: boolean;
   children?: React.ReactNode;
 }) {
   const { actions, destructive } = rowActions({ onOpen, previews, items: menu, swipe: remove });
   // The title's ::after covers the card, so a click anywhere opens it; the menu sits above.
   const titleClass =
-    "text-ui text-left font-medium after:absolute after:inset-0 after:content-[''] focus-visible:outline-none";
-  const titleText = <span className="block truncate">{title}</span>;
+    "text-left after:absolute after:inset-0 after:content-[''] focus-visible:outline-none " +
+    (largeTitle ? 'text-base leading-snug font-semibold' : 'text-ui font-medium');
+  const titleText = <span className={largeTitle ? 'line-clamp-2' : 'block truncate'}>{title}</span>;
 
   return (
     <li

@@ -81,7 +81,7 @@ export function AppSidebar({
   onLayoutChange: (next: SidebarState) => void;
 }) {
   const { pathname } = useLocation();
-  const { unseen, openDialog } = useUpdates();
+  const { unseen } = useUpdates();
   const sections = sidebarSections(user.role);
   const current = sectionFor(pathname, sections);
   // The pages are flattened copies, so the current one is matched by its address.
@@ -154,7 +154,8 @@ export function AppSidebar({
                 icon={MegaphoneIcon}
                 label="What's new"
                 wide={railWide}
-                onClick={() => openDialog(unseen.length ? 'unseen' : 'all')}
+                active={pathname === '/whats-new'}
+                render={<Link to="/whats-new" />}
                 trailing={
                   unseen.length > 0 && (
                     <span aria-label="New" className="bg-brand size-1.5 shrink-0 rounded-full" />

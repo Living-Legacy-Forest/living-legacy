@@ -1,14 +1,7 @@
 import { Link } from '@tanstack/react-router';
 import { type ReactNode, createContext, useContext, useEffect, useMemo, useState } from 'react';
-import { ArrowRight, MegaphoneIcon, RotateCcwIcon, XIcon } from '@/components/icons';
+import { MegaphoneIcon, RotateCcwIcon, XIcon } from '@/components/icons';
 import { Button } from '@/components/ui/button';
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogHeader,
-  DialogTitle,
-} from '@/components/ui/dialog';
 import { isNewerDeploy } from '@/lib/build-check';
 import { cn } from '@/lib/utils';
 import { type WhatsNewEntry, unseenEntries, whatsNew } from '@/lib/whats-new';
@@ -22,7 +15,6 @@ type Updates = {
   unseen: WhatsNewEntry[];
   /** A newer CMS has been deployed since this tab loaded. */
   newDeploy: boolean;
-  openDialog: (which: 'unseen' | 'all') => void;
   dismiss: () => void;
 };
 
@@ -70,14 +62,6 @@ export function UpdatesProvider({ joinedAt, children }: { joinedAt: number; chil
   // Read after mount: storage does not exist while rendering on the server.
   const [seen, setSeen] = useState<string | null | undefined>(undefined);
   const [newDeploy, setNewDeploy] = useState(false);
-  const [dialogOpen, setDialogOpen] = useState(false);
-  // What the dialog shows, fixed when it opens. Closing marks the notes seen,
-  // which empties `unseen`; reading from it directly would blank the dialog
-  // while it is still animating out.
-  const [dialog, setDialog] = useState<{ entries: WhatsNewEntry[]; markSeen: boolean }>({
-    entries: [],
-    markSeen: false,
-  });
 
   useEffect(() => setSeen(readSeen()), []);
 
@@ -114,10 +98,6 @@ export function UpdatesProvider({ joinedAt, children }: { joinedAt: number; chil
     () => ({
       unseen,
       newDeploy,
-      openDialog: (which) => {
-        setDialog({ entries: which === 'all' ? whatsNew : unseen, markSeen: which === 'unseen' });
-        setDialogOpen(true);
-      },
       dismiss: () => {
         const latest = whatsNew[0]?.id;
         if (!latest) return;
@@ -128,82 +108,12 @@ export function UpdatesProvider({ joinedAt, children }: { joinedAt: number; chil
     [unseen, newDeploy]
   );
 
-  const shown = dialog.entries;
-  // However the dialog closes (button, outside click or following a link),
-  // having opened the new notes counts as seeing them.
-  const closeDialog = () => {
-    if (dialog.markSeen) value.dismiss();
-    setDialogOpen(false);
-  };
-
-  return (
-    <UpdatesContext.Provider value={value}>
-      {children}
-      <Dialog open={dialogOpen} onOpenChange={(open) => !open && closeDialog()}>
-        <DialogContent
-          initialFocus={false}
-          className="max-h-[85svh] gap-0 overflow-y-auto p-0 sm:max-w-md"
-        >
-          <DialogHeader className="border-b px-5 py-4">
-            <DialogTitle>What's new</DialogTitle>
-            <DialogDescription className="sr-only">
-              Changes to the CMS, newest first.
-            </DialogDescription>
-          </DialogHeader>
-          <div className="divide-y">
-            {shown.map((entry) => (
-              <section key={entry.id} className="space-y-4 px-5 py-5">
-                <header className="space-y-1">
-                  <p className="text-muted-foreground text-xs tabular-nums">
-                    {
-                      // Ids carry a suffix when a day has several entries (2026-11-15-8), so take the date alone.
-                      new Date(`${entry.id.slice(0, 10)}T12:00:00`).toLocaleDateString('en-AU', {
-                        day: 'numeric',
-                        month: 'long',
-                        year: 'numeric',
-                      })
-                    }
-                  </p>
-                  <h3 className="text-sm leading-snug font-semibold">{entry.title}</h3>
-                </header>
-                <ul className="space-y-4">
-                  {entry.items.map((item) => (
-                    <li key={item.title} className="grid grid-cols-[0.375rem_1fr] gap-x-3">
-                      {/* Lined up with the first line of the item's title. */}
-                      <span
-                        aria-hidden
-                        className="bg-foreground/30 mt-[0.4375rem] size-1.5 rounded-full"
-                      />
-                      <div className="min-w-0 space-y-1">
-                        <p className="text-ui font-medium">{item.title}</p>
-                        <p className="text-muted-foreground text-ui leading-relaxed">{item.body}</p>
-                        {item.link && (
-                          <Link
-                            to={item.link.to}
-                            hash={item.link.hash}
-                            onClick={closeDialog}
-                            className="text-muted-foreground hover:text-foreground focus-visible:ring-ring/50 touch:min-h-11 inline-flex items-center gap-1 rounded-sm pt-0.5 text-xs transition-colors outline-none focus-visible:ring-2"
-                          >
-                            {item.link.label}
-                            <ArrowRight aria-hidden className="size-3" />
-                          </Link>
-                        )}
-                      </div>
-                    </li>
-                  ))}
-                </ul>
-              </section>
-            ))}
-          </div>
-        </DialogContent>
-      </Dialog>
-    </UpdatesContext.Provider>
-  );
+  return <UpdatesContext.Provider value={value}>{children}</UpdatesContext.Provider>;
 }
 
 /** The sidebar card above View website. Hidden when the sidebar is icons only. */
 function SidebarCard() {
-  const { unseen, newDeploy, openDialog, dismiss } = useUpdates();
+  const { unseen, newDeploy, dismiss } = useUpdates();
   if (!newDeploy && unseen.length === 0) return null;
   const box =
     'text-ui bg-sidebar-accent/60 text-sidebar-foreground mx-2 flex flex-col gap-2 rounded-lg border p-3 group-data-[collapsible=icon]:hidden';
@@ -229,12 +139,7 @@ function SidebarCard() {
         </div>
         <p className="mt-1 pr-5 font-medium">{unseen[0]!.title}</p>
       </div>
-      <Button
-        size="sm"
-        variant="outline"
-        className="self-start"
-        onClick={() => openDialog('unseen')}
-      >
+      <Button size="sm" variant="outline" className="self-start" render={<Link to="/whats-new" />}>
         See what's new
       </Button>
       <Button
@@ -255,7 +160,7 @@ function SidebarCard() {
  * down. Tapping it opens the notes; the cross dismisses them.
  */
 function PhoneStrip() {
-  const { unseen, newDeploy, openDialog, dismiss } = useUpdates();
+  const { unseen, newDeploy, dismiss } = useUpdates();
   if (!newDeploy && unseen.length === 0) return null;
   const strip =
     'bg-muted/70 flex h-11 items-center gap-1 rounded-full border pl-3.5 pr-1 text-[0.875rem] md:hidden';
@@ -278,9 +183,8 @@ function PhoneStrip() {
 
   return (
     <div role="status" className={strip}>
-      <button
-        type="button"
-        onClick={() => openDialog('unseen')}
+      <Link
+        to="/whats-new"
         className="flex h-11 min-w-0 flex-1 items-center gap-2 text-left active:opacity-60"
       >
         <MegaphoneIcon aria-hidden className="text-muted-foreground size-4 shrink-0" />
@@ -288,7 +192,7 @@ function PhoneStrip() {
           <span className="text-muted-foreground">New: </span>
           <span className="font-medium">{unseen[0]!.title}</span>
         </span>
-      </button>
+      </Link>
       <button
         type="button"
         aria-label="Dismiss what's new"

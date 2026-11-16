@@ -1,5 +1,6 @@
 import {
   ANNOUNCEMENT_MOBILE_LENGTH,
+  ANNOUNCEMENT_MOBILE_LENGTH_WITH_BUTTON,
   type AnnouncementBackground,
   type AnnouncementStatus,
   announcementBackgrounds,
@@ -37,7 +38,16 @@ import {
   matchesSearch,
   useSelection,
 } from '@/components/list/list-tools';
-import { CopyIcon, MegaphoneIcon, PlusIcon, SendIcon, TriangleAlertIcon } from '@/components/icons';
+import {
+  CalendarClockIcon,
+  CopyIcon,
+  EyeOffIcon,
+  MegaphoneIcon,
+  PlusIcon,
+  SendIcon,
+  TextQuote,
+  TriangleAlertIcon,
+} from '@/components/icons';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import {
@@ -49,7 +59,9 @@ import {
   EmptyTitle,
 } from '@/components/ui/empty';
 import { Input } from '@/components/ui/input';
+import { Iphone } from '@/components/ui/iphone';
 import { Spinner } from '@/components/ui/spinner';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Textarea } from '@/components/ui/textarea';
 import { formatDateTime, zoneName } from '@/lib/format';
 import { reportInvalid } from '@/lib/form-validation';
@@ -58,6 +70,7 @@ import { RevealWords } from '@/components/dashboard/reveal-words';
 import { useAction } from '@/lib/use-action';
 import { useRevealOnce } from '@/lib/use-reveal-once';
 import { useTimeZone } from '@/lib/use-time-zone';
+import { notify } from '@/lib/notify';
 import { cn } from '@/lib/utils';
 import {
   type Announcement,
@@ -150,18 +163,50 @@ export function AnnouncementsPage({
   );
 
   const announcementMenu = (a: Announcement): RowMenuItem[] | undefined => {
+    if (!canWrite) return undefined;
     const rowStatus = status(a);
-    return canWrite && (rowStatus === 'off' || rowStatus === 'ended')
-      ? [
-          {
-            label: 'Publish',
-            icon: <SendIcon aria-hidden />,
-            disabled: pending,
-            onSelect: () => quickPublish(a, rowStatus),
-            shortcut: { key: 'p' },
-          },
-        ]
-      : undefined;
+    const items: RowMenuItem[] = [];
+    if (rowStatus === 'off' || rowStatus === 'ended') {
+      items.push({
+        label: 'Publish',
+        icon: <SendIcon aria-hidden />,
+        disabled: pending,
+        onSelect: () => quickPublish(a, rowStatus),
+        shortcut: { key: 'p' },
+      });
+    }
+    items.push({
+      label: 'Duplicate',
+      icon: <CopyIcon aria-hidden />,
+      onSelect: () => view.open({ kind: 'new', from: a }),
+      shortcut: { key: 'd' },
+    });
+    items.push({
+      label: 'Copy message',
+      icon: <TextQuote aria-hidden />,
+      onSelect: () => copyMessage(a),
+      shortcut: { key: 'c' },
+    });
+    if (rowStatus === 'live') {
+      items.push({
+        label: 'End now',
+        icon: <CalendarClockIcon aria-hidden />,
+        disabled: pending,
+        onSelect: () => endNow(a),
+        shortcut: { key: 'e' },
+      });
+    }
+    if (rowStatus === 'live' || rowStatus === 'scheduled') {
+      items.push({
+        label: 'Switch off',
+        icon: <EyeOffIcon aria-hidden />,
+        disabled: pending,
+        onSelect: () => switchOff(a),
+        destructive: true,
+        shortcut: { key: 'u' },
+      });
+    }
+    return items;
   };
 
   const editing = (target: Target | null) =>
@@ -177,6 +222,35 @@ export function AnnouncementsPage({
     if (!result) return;
     if (view.pane?.kind === 'edit' && ids.includes(view.pane.id)) view.closePane();
     selection.clear();
+  }
+
+  async function copyMessage(a: Announcement) {
+    try {
+      await navigator.clipboard.writeText(a.message);
+      notify.success({ title: 'Message copied', description: 'It is on your clipboard.' });
+    } catch {
+      notify.error('Could not copy the message', 'Your browser blocked access to the clipboard.');
+    }
+  }
+
+  async function endNow(a: Announcement) {
+    await run(() => saveAnnouncement({ data: { ...a, endsAt: Date.now() } }), {
+      success: {
+        title: 'Announcement ended',
+        description: 'It no longer shows on the website.',
+      },
+      error: 'Could not end the announcement',
+    });
+  }
+
+  async function switchOff(a: Announcement) {
+    await run(() => saveAnnouncement({ data: { ...a, enabled: false } }), {
+      success: {
+        title: 'Announcement switched off',
+        description: 'It is hidden, whatever its dates. Publish it to bring it back.',
+      },
+      error: 'Could not switch off the announcement',
+    });
   }
 
   async function quickPublish(a: Announcement, currentStatus: AnnouncementStatus) {
@@ -323,6 +397,7 @@ export function AnnouncementsPage({
                   <ListCard
                     key={a.id}
                     title={a.title}
+                    largeTitle
                     current={pane?.kind === 'edit' && pane.id === a.id}
                     menu={announcementMenu(a)}
                     remove={
@@ -409,18 +484,6 @@ export function AnnouncementsPage({
                       : 'New announcement'
                 }
               >
-                {pane.kind === 'edit' && (
-                  <div className="mb-4 flex justify-end">
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => view.setPane({ kind: 'new', from: editing(pane)! })}
-                    >
-                      <CopyIcon aria-hidden data-icon="inline-start" />
-                      Duplicate for next time
-                    </Button>
-                  </div>
-                )}
                 {form(
                   pane,
                   (id) => view.setPane(id ? { kind: 'edit', id } : null),
@@ -482,7 +545,6 @@ function AnnouncementCardBody({
   status: AnnouncementStatus;
   clashesWith: Announcement[];
 }) {
-  const colour = announcementColours(a.background);
   const timeZone = useTimeZone();
   return (
     <>
@@ -495,13 +557,6 @@ function AnnouncementCardBody({
           />
         )}
       </span>
-      {/* The message on the banner's own colour, as the website shows it. */}
-      <p
-        className="line-clamp-2 rounded-md px-2.5 py-1.5 text-xs"
-        style={{ background: colour.bg, color: colour.fg }}
-      >
-        {a.message}
-      </p>
       <CardMeta>
         <span className="tabular-nums">{windowLabel(a, timeZone)}</span>
       </CardMeta>
@@ -574,6 +629,11 @@ function AnnouncementForm({
     endsAt: announcement?.endsAt ?? null,
     hidePaths: (source?.hidePaths ?? []).join('\n'),
   });
+  // The site shows the button only with both a label and a link.
+  const hasButton = Boolean(values.ctaLabel.trim() && values.ctaUrl.trim());
+  const mobileLimit = hasButton
+    ? ANNOUNCEMENT_MOBILE_LENGTH_WITH_BUTTON
+    : ANNOUNCEMENT_MOBILE_LENGTH;
   const { run, pending } = useAction();
   const patch = (next: Partial<typeof values>) => setValues((v) => ({ ...v, ...next }));
 
@@ -619,171 +679,188 @@ function AnnouncementForm({
 
   return (
     <form noValidate onSubmit={submit} className="space-y-5 [--form-gap:1.25rem] max-md:space-y-7">
-      <FormSection>
-        <FormCell
-          label="Name"
-          htmlFor="a-title"
-          hint="For the CMS list only. Not shown on the site."
-        >
-          <Input
-            id="a-title"
-            required
-            maxLength={80}
-            value={values.title}
-            onChange={(e) => patch({ title: e.target.value })}
-            placeholder="e.g. Monthly promotion"
-          />
-        </FormCell>
-        <FormSwitchCell
-          id="a-enabled"
-          label="Enabled"
-          description="Off hides it, whatever the dates. Shows within its dates when on."
-          checked={values.enabled}
-          onCheckedChange={(enabled) => patch({ enabled })}
-        />
-      </FormSection>
-
-      <fieldset className={FIELDSET}>
-        <legend className={LEGEND}>Message</legend>
-        <FormSection>
-          <FormCell
-            label="Default (phones)"
-            htmlFor="a-message"
-            aside={
-              <span
-                className={cn(
-                  'text-muted-foreground text-xs tabular-nums',
-                  values.message.length > ANNOUNCEMENT_MOBILE_LENGTH && 'text-amber-600'
-                )}
-              >
-                {values.message.length}/{ANNOUNCEMENT_MOBILE_LENGTH}
-              </span>
-            }
-            hint={`Keep under ${ANNOUNCEMENT_MOBILE_LENGTH} characters to stay on one line on a phone. Used on larger screens too, unless replaced below.`}
-          >
-            <Input
-              id="a-message"
-              required
-              maxLength={160}
-              value={values.message}
-              onChange={(e) => patch({ message: e.target.value })}
-              placeholder="Your announcement message"
-            />
-          </FormCell>
-          <div className="grid gap-3 max-md:contents sm:grid-cols-2">
-            <FormCell label="Tablet (optional)" htmlFor="a-tablet">
-              <Input
-                id="a-tablet"
-                maxLength={160}
-                value={values.messageTablet}
-                onChange={(e) => patch({ messageTablet: e.target.value })}
-                placeholder="Uses the default message"
-              />
-            </FormCell>
-            <FormCell label="Desktop (optional)" htmlFor="a-desktop">
-              <Input
-                id="a-desktop"
-                maxLength={200}
-                value={values.messageDesktop}
-                onChange={(e) => patch({ messageDesktop: e.target.value })}
-                placeholder="Uses the tablet message"
-              />
-            </FormCell>
-          </div>
-        </FormSection>
-      </fieldset>
-
-      <fieldset className={FIELDSET}>
-        <legend className={LEGEND}>Button (optional)</legend>
-        <FormSection>
-          <div className="grid gap-3 max-md:contents sm:grid-cols-[1fr_1.5fr]">
-            <FormCell label="Label" htmlFor="a-cta-label">
-              <Input
-                id="a-cta-label"
-                maxLength={30}
-                value={values.ctaLabel}
-                onChange={(e) => patch({ ctaLabel: e.target.value })}
-                placeholder="Button text"
-              />
-            </FormCell>
-            <FormCell label="Link" htmlFor="a-cta-url">
-              <Input
-                id="a-cta-url"
-                value={values.ctaUrl}
-                onChange={(e) => patch({ ctaUrl: e.target.value })}
-                placeholder="/page or https://…"
-                className="font-mono"
-              />
-            </FormCell>
-          </div>
-        </FormSection>
-      </fieldset>
-
-      <fieldset className={cn(FIELDSET, 'space-y-2')}>
-        <legend className={LEGEND}>Background colour</legend>
-        <FormSection>
-          <BackgroundPicker
-            value={values.background}
-            onChange={(background) => patch({ background })}
-          />
-        </FormSection>
-      </fieldset>
-
-      <fieldset className={FIELDSET}>
-        <legend className={LEGEND}>Schedule ({zone})</legend>
-        <FormSection>
-          <div className="grid gap-3 max-md:contents sm:grid-cols-2">
+      <Tabs defaultValue="edit">
+        <TabsList aria-label="Show">
+          <TabsTrigger value="edit">Edit</TabsTrigger>
+          <TabsTrigger value="preview">Preview</TabsTrigger>
+        </TabsList>
+        {/* Kept mounted, so nothing typed is lost and the preview is never stale. */}
+        <TabsContent value="edit" keepMounted className="space-y-5 max-md:space-y-7">
+          <FormSection>
             <FormCell
-              label="Go live"
-              htmlFor="a-start"
-              hint="Blank shows it as soon as it is enabled."
+              label="Name"
+              htmlFor="a-title"
+              hint="For the CMS list only. Not shown on the site."
             >
-              <DateTimePicker
-                id="a-start"
-                value={values.startsAt}
-                onChange={(startsAt) => patch({ startsAt })}
-                placeholder="As soon as enabled"
+              <Input
+                id="a-title"
+                required
+                maxLength={80}
+                value={values.title}
+                onChange={(e) => patch({ title: e.target.value })}
+                placeholder="e.g. Monthly promotion"
               />
             </FormCell>
-            <FormCell label="Expire" htmlFor="a-end" hint="Blank never expires.">
-              <DateTimePicker
-                id="a-end"
-                value={values.endsAt}
-                onChange={(endsAt) => patch({ endsAt })}
-                placeholder="No expiry"
-                defaultTime="23:59"
-                minDate={values.startsAt}
-              />
-            </FormCell>
-          </div>
-        </FormSection>
-        {overlaps.length > 0 && (
-          <div className="flex gap-2 rounded-md border border-amber-500/40 bg-amber-500/10 px-3 py-2 text-xs max-md:mt-3">
-            <TriangleAlertIcon aria-hidden className="mt-px size-3.5 shrink-0 text-amber-600" />
-            <p>
-              Overlaps with {overlaps.map((o) => o.title).join(', ')}. While both are live, the one
-              that went live most recently is shown.
-            </p>
-          </div>
-        )}
-      </fieldset>
+            <FormSwitchCell
+              id="a-enabled"
+              label="Enabled"
+              description="Off hides it, whatever the dates. Shows within its dates when on."
+              checked={values.enabled}
+              onCheckedChange={(enabled) => patch({ enabled })}
+            />
+          </FormSection>
 
-      <FormSection>
-        <FormCell
-          label="Hide on pages"
-          htmlFor="a-hide"
-          hint="One path per line. End with * to hide a whole section, like /section/*. Leave empty to show everywhere."
-        >
-          <Textarea
-            id="a-hide"
-            rows={2}
-            value={values.hidePaths}
-            onChange={(e) => patch({ hidePaths: e.target.value })}
-            placeholder="/page-path"
-            className="text-ui font-mono"
+          <fieldset className={FIELDSET}>
+            <legend className={LEGEND}>Message</legend>
+            <FormSection>
+              <FormCell
+                label="Default (phones)"
+                htmlFor="a-message"
+                aside={
+                  <span
+                    className={cn(
+                      'text-muted-foreground text-xs tabular-nums',
+                      values.message.length > mobileLimit && 'text-amber-600'
+                    )}
+                  >
+                    {values.message.length}/{mobileLimit}
+                  </span>
+                }
+                hint={`Keep under ${mobileLimit} characters to stay on one line on a phone${hasButton ? '' : `, or ${ANNOUNCEMENT_MOBILE_LENGTH_WITH_BUTTON} if you add a button`}. Used on larger screens too, unless replaced below.`}
+              >
+                <Input
+                  id="a-message"
+                  required
+                  maxLength={160}
+                  value={values.message}
+                  onChange={(e) => patch({ message: e.target.value })}
+                  placeholder="Your announcement message"
+                />
+              </FormCell>
+              <div className="grid gap-3 max-md:contents sm:grid-cols-2">
+                <FormCell label="Tablet (optional)" htmlFor="a-tablet">
+                  <Input
+                    id="a-tablet"
+                    maxLength={160}
+                    value={values.messageTablet}
+                    onChange={(e) => patch({ messageTablet: e.target.value })}
+                    placeholder="Uses the default message"
+                  />
+                </FormCell>
+                <FormCell label="Desktop (optional)" htmlFor="a-desktop">
+                  <Input
+                    id="a-desktop"
+                    maxLength={200}
+                    value={values.messageDesktop}
+                    onChange={(e) => patch({ messageDesktop: e.target.value })}
+                    placeholder="Uses the tablet message"
+                  />
+                </FormCell>
+              </div>
+            </FormSection>
+          </fieldset>
+
+          <fieldset className={FIELDSET}>
+            <legend className={LEGEND}>Button (optional)</legend>
+            <FormSection>
+              <div className="grid gap-3 max-md:contents sm:grid-cols-[1fr_1.5fr]">
+                <FormCell label="Label" htmlFor="a-cta-label">
+                  <Input
+                    id="a-cta-label"
+                    maxLength={30}
+                    value={values.ctaLabel}
+                    onChange={(e) => patch({ ctaLabel: e.target.value })}
+                    placeholder="Button text"
+                  />
+                </FormCell>
+                <FormCell label="Link" htmlFor="a-cta-url">
+                  <Input
+                    id="a-cta-url"
+                    value={values.ctaUrl}
+                    onChange={(e) => patch({ ctaUrl: e.target.value })}
+                    placeholder="/page or https://…"
+                    className="font-mono"
+                  />
+                </FormCell>
+              </div>
+            </FormSection>
+          </fieldset>
+
+          <fieldset className={cn(FIELDSET, 'space-y-2')}>
+            <legend className={LEGEND}>Background colour</legend>
+            <FormSection>
+              <BackgroundPicker
+                value={values.background}
+                onChange={(background) => patch({ background })}
+              />
+            </FormSection>
+          </fieldset>
+
+          <fieldset className={FIELDSET}>
+            <legend className={LEGEND}>Schedule ({zone})</legend>
+            <FormSection>
+              <div className="grid gap-3 max-md:contents sm:grid-cols-2">
+                <FormCell
+                  label="Go live"
+                  htmlFor="a-start"
+                  hint="Blank shows it as soon as it is enabled."
+                >
+                  <DateTimePicker
+                    id="a-start"
+                    value={values.startsAt}
+                    onChange={(startsAt) => patch({ startsAt })}
+                    placeholder="As soon as enabled"
+                  />
+                </FormCell>
+                <FormCell label="Expire" htmlFor="a-end" hint="Blank never expires.">
+                  <DateTimePicker
+                    id="a-end"
+                    value={values.endsAt}
+                    onChange={(endsAt) => patch({ endsAt })}
+                    placeholder="No expiry"
+                    defaultTime="23:59"
+                    minDate={values.startsAt}
+                  />
+                </FormCell>
+              </div>
+            </FormSection>
+            {overlaps.length > 0 && (
+              <div className="flex gap-2 rounded-md border border-amber-500/40 bg-amber-500/10 px-3 py-2 text-xs max-md:mt-3">
+                <TriangleAlertIcon aria-hidden className="mt-px size-3.5 shrink-0 text-amber-600" />
+                <p>
+                  Overlaps with {overlaps.map((o) => o.title).join(', ')}. While both are live, the
+                  one that went live most recently is shown.
+                </p>
+              </div>
+            )}
+          </fieldset>
+
+          <FormSection>
+            <FormCell
+              label="Hide on pages"
+              htmlFor="a-hide"
+              hint="One path per line. End with * to hide a whole section, like /section/*. Leave empty to show everywhere."
+            >
+              <Textarea
+                id="a-hide"
+                rows={2}
+                value={values.hidePaths}
+                onChange={(e) => patch({ hidePaths: e.target.value })}
+                placeholder="/page-path"
+                className="text-ui font-mono"
+              />
+            </FormCell>
+          </FormSection>
+        </TabsContent>
+        <TabsContent value="preview" keepMounted>
+          <PhonePreview
+            message={values.message}
+            ctaLabel={values.ctaLabel}
+            ctaUrl={values.ctaUrl}
+            background={values.background}
           />
-        </FormCell>
-      </FormSection>
+        </TabsContent>
+      </Tabs>
 
       {footer(
         <Button type="submit" disabled={pending}>
@@ -808,6 +885,57 @@ function AnnouncementForm({
  * any colour; the website's four palette colours sit in its panel as saved swatches. The text is
  * chosen for the colour picked, so it is shown here rather than asked for.
  */
+/**
+ * The bar on a phone, as the website shows it, updating as the form changes. The screen scales
+ * with the phone, so sizes are in cqw (a percentage of the screen's width), not px.
+ */
+function PhonePreview({
+  message,
+  ctaLabel,
+  ctaUrl,
+  background,
+}: {
+  message: string;
+  ctaLabel: string;
+  ctaUrl: string;
+  background: AnnouncementBackground;
+}) {
+  const { bg, fg } = announcementColours(background);
+  return (
+    <figure className="space-y-3 py-2">
+      <Iphone className="mx-auto block w-full max-w-64">
+        <div className="size-full bg-white text-neutral-900">
+          {/* Clear of the status bar and the island. */}
+          <div className="h-[19cqw]" />
+          {/* The site's bar: centred, the button after the message, wrapping as it needs. */}
+          <p
+            className="flex flex-wrap items-center justify-center gap-x-[3.1cqw] gap-y-[1cqw] px-[6.2cqw] py-[2.6cqw] text-center text-[4.1cqw] leading-[1.5]"
+            style={{ background: bg, color: fg }}
+          >
+            {message.trim() ? (
+              <span>{message}</span>
+            ) : (
+              <span className="opacity-60">Your announcement message</span>
+            )}
+            {ctaLabel.trim() && ctaUrl.trim() && (
+              <span className="font-medium underline underline-offset-4">{ctaLabel}</span>
+            )}
+          </p>
+          {/* A stand-in for the page under the bar. */}
+          <div className="space-y-[3cqw] p-[4cqw]">
+            <div className="h-[28cqw] rounded-[3cqw] bg-neutral-100" />
+            <div className="h-[3cqw] w-3/4 rounded-full bg-neutral-200" />
+            <div className="h-[3cqw] w-1/2 rounded-full bg-neutral-200" />
+          </div>
+        </div>
+      </Iphone>
+      <figcaption className="text-muted-foreground text-center text-xs">
+        The default message on a phone. The button shows once it has a label and a link.
+      </figcaption>
+    </figure>
+  );
+}
+
 function BackgroundPicker({
   value,
   onChange,

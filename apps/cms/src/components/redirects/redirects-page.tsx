@@ -13,6 +13,7 @@ import {
   PaneColumn,
   PaneEmpty,
   PaneFrame,
+  isDesktop,
   useListPane,
 } from '@/components/list/list-page';
 import { ListRow, type RowMenuItem } from '@/components/list/list-row';
@@ -28,6 +29,7 @@ import {
   ArrowRightIcon,
   ExternalLinkIcon,
   LinkIcon,
+  PanelRightIcon,
   PlusIcon,
   ToggleOffIcon,
   ToggleOnIcon,
@@ -37,6 +39,8 @@ import {
 import { useEffect, useState } from 'react';
 import { CardMeta, ListCard, ListCards } from '@/components/list/list-card';
 import { ListFilter, passes } from '@/components/list/list-filter';
+import { TrendChart } from '@/components/list/trend-chart';
+import { readPaneOpen } from '@/lib/list-view';
 import { ViewSwitch, useListView } from '@/components/list/view-switch';
 import {
   AlertDialog,
@@ -218,7 +222,20 @@ export function RedirectsPage({
   const [query, setQuery] = useState('');
   // Ticked values per filter group; an empty group does not narrow the list.
   const [picked, setPicked] = useState<Record<string, string[]>>({});
+  // The edit pane can fold away to give the list the full width; the choice is remembered.
   const [layout, setLayout] = useListView('redirects');
+  // Cards take the full width, so Grid starts with the editor folded away.
+  const [paneOpen, setPaneOpenState] = useState(
+    () => readPaneOpen('redirects') && layout !== 'grid'
+  );
+  // Choosing a redirect or adding one brings the editor back.
+  useEffect(() => {
+    if (view.pane) setPaneOpenState(true);
+  }, [view.pane]);
+  const setPaneOpen = (open: boolean) => {
+    setPaneOpenState(open);
+    document.cookie = `redirects_pane=${open ? 'open' : 'closed'}; path=/; max-age=31536000; samesite=lax`;
+  };
   const grid = layout === 'grid';
   const [toDelete, setToDelete] = useState<string[] | null>(null);
   const selection = useSelection(data.map((r) => r.id));
@@ -359,10 +376,25 @@ export function RedirectsPage({
               value={layout}
               onChange={(next) => {
                 setLayout(next);
+                // Cards take the full width, as on Posts; the list brings the editor back.
+                setPaneOpenState(next === 'list');
                 selection.clear();
               }}
             />
           </>
+        )}
+        {data.length > 0 && (
+          <Button
+            variant="ghost"
+            size="icon-sm"
+            aria-label={paneOpen ? 'Expand list' : 'Show editor'}
+            aria-pressed={!paneOpen}
+            title={paneOpen ? 'Expand list' : 'Show editor'}
+            className="max-lg:hidden"
+            onClick={() => setPaneOpen(!paneOpen)}
+          >
+            <PanelRightIcon aria-hidden />
+          </Button>
         )}
         <div className="flex gap-3 max-md:hidden">{addButtons}</div>
         <PageActions
@@ -393,8 +425,17 @@ export function RedirectsPage({
           </EmptyContent>
         </Empty>
       ) : (
-        <ListPageLayout>
+        <ListPageLayout
+          className={cn(
+            'motion-reduce:transition-none lg:transition-[grid-template-columns] lg:duration-300 lg:ease-[cubic-bezier(0.32,0.72,0,1)]',
+            paneOpen ? 'lg:grid-cols-[2fr_3fr]' : 'lg:grid-cols-[1fr_0fr]'
+          )}
+        >
           <ListColumn
+            className={cn(
+              'transition-[border-color] duration-300 lg:min-w-80',
+              !paneOpen && 'border-transparent'
+            )}
             label="Redirects"
             header={
               <SelectionBar
@@ -447,16 +488,30 @@ export function RedirectsPage({
                     }}
                     swipe={{ label: 'Delete', onAction: () => setToDelete([r.id]) }}
                     menu={rowMenu(r)}
-                    onOpen={() => view.open({ kind: 'edit', id: r.id })}
+                    onOpen={() => {
+                      // As on Posts: the open row closes the editor, any other row opens it.
+                      if (isDesktop() && paneOpen && pane?.kind === 'edit' && pane.id === r.id) {
+                        return setPaneOpen(false);
+                      }
+                      setPaneOpen(true);
+                      view.open({ kind: 'edit', id: r.id });
+                    }}
                   >
-                    <RedirectSummary redirect={r} />
+                    <RedirectSummary redirect={r} wide={!paneOpen} />
                   </ListRow>
                 ))}
               </ListRows>
             )}
           </ListColumn>
 
-          <PaneColumn label="Edit redirect">
+          <PaneColumn
+            label="Edit redirect"
+            inert={!paneOpen}
+            className={cn(
+              'min-w-0 overflow-hidden transition-[opacity,translate] duration-300 ease-[cubic-bezier(0.32,0.72,0,1)] motion-reduce:transition-none',
+              !paneOpen && 'translate-x-4 opacity-0'
+            )}
+          >
             {pane === null ? (
               <PaneEmpty
                 title="No redirect selected"
@@ -569,15 +624,20 @@ function RedirectCardBody({ redirect }: { redirect: Redirect }) {
         )}
       </span>
       <CardMeta>{usage(redirect)}</CardMeta>
+      <TrendChart series={redirect.trend} label="Clicks" className="mt-1 h-10 w-full" />
     </>
   );
 }
 
-function RedirectSummary({ redirect }: { redirect: Redirect }) {
+/** `wide` is the list at full width: the chart then shows its 30-day total, as Posts does. */
+function RedirectSummary({ redirect, wide }: { redirect: Redirect; wide: boolean }) {
   return (
     <span className={cn('block', !redirect.enabled && 'opacity-60')}>
       <span className="flex items-center gap-2">
         <span className="text-ui min-w-0 flex-1 truncate font-mono">{redirect.fromPath}</span>
+        <span className="flex shrink-0 max-sm:hidden">
+          <TrendChart series={redirect.trend} label="Clicks" showTotal={wide} />
+        </span>
         {redirect.enabled ? (
           <Badge variant={redirect.statusCode === 301 ? 'secondary' : 'outline'}>
             {redirect.statusCode}
@@ -596,7 +656,7 @@ function RedirectSummary({ redirect }: { redirect: Redirect }) {
           </>
         )}
         <span className="shrink-0 tabular-nums">
-          {redirect.hits} {redirect.hits === 1 ? 'hit' : 'hits'}
+          {redirect.hits} {redirect.hits === 1 ? 'click' : 'clicks'}
         </span>
       </span>
     </span>

@@ -26,3 +26,11 @@ export const readListViews = createIsomorphicFn()
 export function rememberListView(page: string, view: ListView) {
   document.cookie = `${page}${SUFFIX}=${view}; path=/; max-age=${ONE_YEAR}; samesite=lax`;
 }
+
+const hasPaneClosed = (header: string, page: string) =>
+  new RegExp(`(?:^|;\\s*)${page}_pane=closed`).test(header);
+
+/** Whether a list page's side pane was left open (the default), read the same on server and client. */
+export const readPaneOpen = createIsomorphicFn()
+  .server((page: string) => !hasPaneClosed(getRequest().headers.get('cookie') ?? '', page))
+  .client((page: string) => !hasPaneClosed(document.cookie, page));

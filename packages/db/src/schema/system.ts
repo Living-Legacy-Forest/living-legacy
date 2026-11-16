@@ -1,4 +1,4 @@
-import { index, integer, sqliteTable, text } from 'drizzle-orm/sqlite-core';
+import { index, integer, primaryKey, sqliteTable, text } from 'drizzle-orm/sqlite-core';
 import { activityActions, apiKeyScopes, entityTypes } from '../enums';
 import { user } from './auth';
 import { id, timestamps } from './columns';
@@ -34,6 +34,21 @@ export const redirects = sqliteTable('redirects', {
   note: text('note'),
   ...timestamps(),
 });
+
+// Clicks per redirect per day (UTC), for the CMS's trend chart. Written by the website next to
+// the running total on `redirects`; rows go with their redirect.
+export const redirectDailyHits = sqliteTable(
+  'redirect_daily_hits',
+  {
+    redirectId: text('redirect_id')
+      .notNull()
+      .references(() => redirects.id, { onDelete: 'cascade' }),
+    /** The UTC calendar day, YYYY-MM-DD. */
+    day: text('day').notNull(),
+    hits: integer('hits').notNull().default(1),
+  },
+  (t) => [primaryKey({ columns: [t.redirectId, t.day] })]
+);
 
 // Paths the website answered "not found", counted so someone can redirect
 // the ones people still follow. Written by the website, read in the CMS

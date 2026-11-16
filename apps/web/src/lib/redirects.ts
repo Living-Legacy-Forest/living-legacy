@@ -74,9 +74,18 @@ export async function findRedirect(url: URL): Promise<RedirectMatch | null> {
 /** Counts a hit and records when it happened. Meant for `waitUntil`. */
 export async function recordHit(id: string): Promise<void> {
   try {
+    const now = Date.now();
     await db
       ?.prepare('UPDATE redirects SET hits = hits + 1, last_hit_at = ? WHERE id = ?')
-      .bind(Date.now(), id)
+      .bind(now, id)
+      .run();
+    // The day's count, for the CMS's trend chart (days are UTC).
+    await db
+      ?.prepare(
+        `INSERT INTO redirect_daily_hits (redirect_id, day, hits) VALUES (?, ?, 1)
+         ON CONFLICT(redirect_id, day) DO UPDATE SET hits = hits + 1`
+      )
+      .bind(id, new Date(now).toISOString().slice(0, 10))
       .run();
   } catch (error) {
     console.error('[redirects] could not record a hit', error);

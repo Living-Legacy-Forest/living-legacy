@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Bar, BarChart, CartesianGrid, XAxis, YAxis } from 'recharts';
+import { BarChart } from '@/components/arc/bar-chart/bar-chart';
 import { DonutChart } from '@/components/arc/donut-chart/donut-chart';
 import { LineChart, type LineChartSeries } from '@/components/arc/line-chart/line-chart';
 import { UsageMeter } from '@/components/arc/usage-meter/usage-meter';
@@ -13,15 +13,6 @@ import {
   CardHeader,
   CardTitle,
 } from '@/components/ui/card';
-import {
-  type ChartConfig,
-  ChartContainer,
-  ChartLegend,
-  ChartLegendContent,
-  ChartTooltip,
-  ChartTooltipContent,
-} from '@/components/ui/chart';
-import { chartReveal } from '@/lib/chart-motion';
 import { formatBytes, formatDuration, formatInteger } from '@/lib/format';
 import { addedIn, describeMonths, monthsUntilFull } from '@/lib/media-growth';
 import { databaseMeter, libraryMeter } from '@/lib/storage-meter';
@@ -36,10 +27,6 @@ const DAYS = 14;
 type Hour = SystemStatus['history'][number];
 type Usage = SystemStatus['usage'];
 
-const runsConfig = {
-  ok: { label: 'Worked', color: 'var(--primary)' },
-  failed: { label: 'Failed', color: 'var(--destructive)' },
-} satisfies ChartConfig;
 // The library's default colour is our pale hover grey, so name them.
 const timeSeries: LineChartSeries[] = [
   { key: 'averageMs', label: 'Average', color: 'var(--primary)', area: true },
@@ -102,10 +89,6 @@ function byDay(history: Hour[], timeZone: string, now = Date.now()) {
   }));
 }
 
-const dayAxis = (
-  <XAxis dataKey="label" tickLine={false} axisLine={false} tickMargin={8} minTickGap={16} />
-);
-
 /** Runs per day, worked and failed, and how long they took on average. */
 export function JobCharts({ history }: { history: Hour[] }) {
   const timeZone = useTimeZone();
@@ -127,31 +110,22 @@ export function JobCharts({ history }: { history: Hour[] }) {
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <ChartContainer config={runsConfig} className="aspect-auto h-44 w-full">
-            <BarChart data={days} margin={{ left: 0, right: 0 }}>
-              <CartesianGrid vertical={false} />
-              {dayAxis}
-              <YAxis hide allowDecimals={false} domain={[0, (max: number) => Math.max(max, 1)]} />
-              <ChartTooltip cursor={false} content={<ChartTooltipContent />} />
-              <Bar dataKey="ok" stackId="runs" fill="var(--color-ok)" {...chartReveal} />
-              <Bar
-                dataKey="failed"
-                stackId="runs"
-                fill="var(--color-failed)"
-                radius={[3, 3, 0, 0]}
-                {...chartReveal}
-              />
-              <ChartLegend content={<ChartLegendContent />} />
-            </BarChart>
-          </ChartContainer>
-          <p className="sr-only">
-            {days
-              .map(
-                (d) =>
-                  `${d.label}: ${formatInteger(d.runs)} runs, ${formatInteger(d.failed)} failed`
-              )
-              .join('. ')}
-          </p>
+          <BarChart
+            label="Job runs"
+            period={`${days[0]!.label} to ${days.at(-1)!.label}`}
+            height={150}
+            averageLabel="Daily average"
+            valueLabel="Runs"
+            categoryLabel="Day"
+            data={days.map((d) => ({
+              key: d.key,
+              // Failures ride in the label, since the bars show one measure.
+              label: d.failed ? `${d.fullLabel}, ${formatInteger(d.failed)} failed` : d.fullLabel,
+              axisLabel: d.label,
+              value: d.runs,
+            }))}
+            formatValue={formatInteger}
+          />
         </CardContent>
       </Card>
 
@@ -167,7 +141,8 @@ export function JobCharts({ history }: { history: Hour[] }) {
         <CardContent>
           <LineChart
             label="Job run time"
-            height={150}
+            // The bar chart's headline sits above its plot; the extra height here lines the two axes up.
+            height={196}
             series={timeSeries}
             // Slowest dwarfs the average, so it starts hidden; the scale refits when it is shown.
             defaultHiddenSeries={['slowestMs']}

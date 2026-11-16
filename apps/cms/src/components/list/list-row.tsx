@@ -4,6 +4,7 @@ import {
   ArrowUpIcon,
   ChevronRightIcon,
   CircleCheckIcon,
+  CopyIcon,
   EyeIcon,
   EyeOffIcon,
   PanelRightIcon,
@@ -20,6 +21,7 @@ import {
   ContextMenuTrigger,
 } from '@/components/ui/context-menu';
 import { Kbd, KbdGroup } from '@/components/ui/kbd';
+import { copyText } from '@/lib/site';
 import { cn } from '@/lib/utils';
 import { ContextMenu as ContextMenuPrimitive } from '@base-ui/react/context-menu';
 import { RowCheckbox } from './list-tools';
@@ -150,6 +152,16 @@ export function featureMenuItem(
     icon: <StarIcon aria-hidden />,
     onSelect: () => setFeatured(!featured),
     shortcut: { key: 'f' },
+  };
+}
+
+/** Copy some of the row's text, such as its question or address. */
+export function copyMenuItem(what: string, text: string, key = 'c'): RowMenuItem {
+  return {
+    label: `Copy ${what.toLowerCase()}`,
+    icon: <CopyIcon aria-hidden />,
+    onSelect: () => void copyText(text, what),
+    shortcut: { key },
   };
 }
 

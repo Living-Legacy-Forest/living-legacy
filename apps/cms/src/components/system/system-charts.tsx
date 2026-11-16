@@ -1,5 +1,6 @@
 import { useState } from 'react';
-import { Bar, BarChart, CartesianGrid, LabelList, XAxis, YAxis } from 'recharts';
+import { Bar, BarChart, CartesianGrid, XAxis, YAxis } from 'recharts';
+import { DonutChart } from '@/components/arc/donut-chart/donut-chart';
 import { LineChart, type LineChartSeries } from '@/components/arc/line-chart/line-chart';
 import { UsageMeter } from '@/components/arc/usage-meter/usage-meter';
 import { RangeSelect } from '@/components/range-select';
@@ -44,7 +45,6 @@ const timeSeries: LineChartSeries[] = [
   { key: 'averageMs', label: 'Average', color: 'var(--primary)', area: true },
   { key: 'slowestMs', label: 'Slowest', color: 'var(--muted-foreground)', dashed: true },
 ];
-const recordsConfig = { rows: { label: 'Rows', color: 'var(--primary)' } } satisfies ChartConfig;
 
 const dayKey = (timestamp: number, timeZone: string) =>
   new Date(timestamp).toLocaleDateString('en-CA', { timeZone });
@@ -238,46 +238,21 @@ export function UsageCard({ usage }: { usage: Usage }) {
 
         <section className="space-y-2">
           <h3 className="text-sm font-medium">Rows by table</h3>
-          <ChartContainer
-            config={recordsConfig}
-            className="aspect-auto w-full"
-            style={{ height: sortedRecords.length * 28 + 8 }}
-          >
-            <BarChart
-              data={sortedRecords}
-              layout="vertical"
-              margin={{ left: 0, right: 48, top: 0, bottom: 0 }}
-              barCategoryGap={6}
-            >
-              <XAxis type="number" hide domain={[0, (max: number) => Math.max(max, 1)]} />
-              <YAxis
-                type="category"
-                dataKey="label"
-                tickLine={false}
-                axisLine={false}
-                width={120}
-              />
-              <ChartTooltip cursor={false} content={<ChartTooltipContent hideLabel />} />
-              <Bar
-                dataKey="rows"
-                fill="var(--color-rows)"
-                radius={3}
-                minPointSize={2}
-                {...chartReveal}
-              >
-                <LabelList
-                  dataKey="rows"
-                  position="right"
-                  className="fill-muted-foreground tabular-nums"
-                  fontSize={12}
-                  formatter={(value: unknown) => formatInteger(Number(value))}
-                />
-              </Bar>
-            </BarChart>
-          </ChartContainer>
-          <p className="sr-only">
-            {sortedRecords.map((r) => `${r.label}: ${formatInteger(r.rows)}`).join('. ')}
-          </p>
+          {/* The chart puts its legend beside the ring when there is room, measured by a container
+              query, so this wrapper is that container. */}
+          <div className="@container">
+            <DonutChart
+              label="Rows by table"
+              unit="rows"
+              totalLabel="Rows"
+              formatValue={formatInteger}
+              data={sortedRecords.map((r) => ({ key: r.label, label: r.label, value: r.rows }))}
+              size={184}
+              thickness={22}
+              maxSegments={7}
+              emptyLabel="No rows"
+            />
+          </div>
         </section>
       </CardContent>
     </Card>

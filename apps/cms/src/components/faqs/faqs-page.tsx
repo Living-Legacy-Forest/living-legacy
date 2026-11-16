@@ -17,7 +17,7 @@ import {
   PaneFrame,
   useListPane,
 } from '@/components/list/list-page';
-import { ListRow, moveMenuItems, publishMenuItem } from '@/components/list/list-row';
+import { ListRow, copyMenuItem, moveMenuItems, publishMenuItem } from '@/components/list/list-row';
 import {
   ConfirmBulkDelete,
   SearchInput,
@@ -530,6 +530,7 @@ function FaqSection({
   const faqMenu = (faq: Faq, index: number) =>
     canWrite
       ? [
+          copyMenuItem('Question', faq.question),
           ...moveMenuItems(
             !searching && index > 0,
             !searching && index < faqs.length - 1,
@@ -613,6 +614,7 @@ function FaqSection({
             <ListCard
               key={faq.id}
               title={faq.question}
+              largeTitle
               current={faq.id === selectedId}
               menu={faqMenu(faq, index)}
               remove={canWrite ? { label: 'Delete', onAction: () => onDelete(faq) } : undefined}

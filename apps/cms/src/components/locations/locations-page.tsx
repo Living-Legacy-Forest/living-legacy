@@ -20,6 +20,7 @@ import {
 import {
   ListRow,
   type RowMenuItem,
+  copyMenuItem,
   editMenuItems,
   publishMenuItem,
 } from '@/components/list/list-row';
@@ -62,7 +63,7 @@ import {
   SheetTitle,
 } from '@/components/ui/sheet';
 import { removedNotice, statusNotice } from '@/lib/notify';
-import { openInNewTab } from '@/lib/site';
+import { openInNewTab, siteUrl } from '@/lib/site';
 import { RevealWords } from '@/components/dashboard/reveal-words';
 import { useAction } from '@/lib/use-action';
 import { useRevealOnce } from '@/lib/use-reveal-once';
@@ -140,6 +141,17 @@ export function LocationsPage({
                 `https://www.google.com/maps/search/?api=1&query=${l.latitude},${l.longitude}`
               ),
             shortcut: { key: 'm' },
+          },
+        ]
+      : []),
+    ...(l.address ? [copyMenuItem('Address', l.address)] : []),
+    ...(l.status === 'published'
+      ? [
+          {
+            label: 'View on website',
+            icon: <ExternalLink aria-hidden />,
+            onSelect: () => openInNewTab(siteUrl(`/locations/${l.slug}/`)),
+            shortcut: { key: 'v' },
           },
         ]
       : []),

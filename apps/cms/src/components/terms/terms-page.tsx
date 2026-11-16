@@ -259,6 +259,7 @@ export function TermsPage({
                   <ListCard
                     key={t.id}
                     title={t.name}
+                    largeTitle
                     current={pane?.kind === 'edit' && pane.id === t.id}
                     remove={
                       canWrite

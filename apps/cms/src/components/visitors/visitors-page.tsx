@@ -65,7 +65,7 @@ const deviceIcons = { desktop: LaptopIcon, mobile: SmartphoneIcon, tablet: Table
 export function VisitorsPage({ data }: { data: VisitorsData }) {
   const navigate = useNavigate({ from: '/analytics/visitors' });
   const revealing = useRevealOnce();
-  const days: VisitorRange = data.connected ? data.days : 30;
+  const days: VisitorRange = data.days;
   // Visitors pages through PostHog, so a new page number loads as a new period does.
   const pending = usePendingRange(['days', 'page', 'rows']);
 

@@ -42,6 +42,8 @@ type Row = [
   device: string | null,
 ];
 
+const MAX_PAGE = 200;
+
 type Visits = { rows: VisitorSession[]; total: number };
 
 async function fetchVisits(
@@ -112,7 +114,7 @@ async function fetchVisits(
 }
 
 export type VisitorsData =
-  | { connected: false }
+  | { connected: false; days: VisitorRange }
   | {
       connected: true;
       days: VisitorRange;
@@ -138,7 +140,7 @@ export const listVisitors = createServerFn({ method: 'GET' })
           ]
         )
         .catch(30),
-      page: z.number().int().min(1).max(200).catch(1),
+      page: z.number().int().min(1).max(MAX_PAGE).catch(1),
       rows: z
         .union(
           VISITOR_PAGE_SIZES.map((n) => z.literal(n)) as [
@@ -151,8 +153,8 @@ export const listVisitors = createServerFn({ method: 'GET' })
     })
   )
   .handler(async ({ data }): Promise<VisitorsData> => {
-    if (!analyticsKeys()) return { connected: false };
     const { days, page, rows: pageSize } = data;
+    if (!analyticsKeys()) return { connected: false, days };
     try {
       const visits = await readThrough(
         env.DB,
@@ -167,7 +169,8 @@ export const listVisitors = createServerFn({ method: 'GET' })
         page,
         pageSize,
         total: visits.total,
-        pageCount: Math.max(1, Math.ceil(visits.total / pageSize)),
+        // No more than the 200 pages the server will read.
+        pageCount: Math.min(MAX_PAGE, Math.max(1, Math.ceil(visits.total / pageSize))),
         rows: visits.rows,
       };
     } catch (error) {

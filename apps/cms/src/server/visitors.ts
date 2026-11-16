@@ -4,8 +4,10 @@ import { env } from 'cloudflare:workers';
 import { z } from 'zod';
 import { requirePermission } from '@/lib/session';
 import {
-  VISITORS_PAGE_SIZE,
+  VISITOR_PAGE_SIZES,
   VISITOR_RANGES,
+  VISITORS_PAGE_SIZE,
+  type VisitorPageSize,
   type VisitorRange,
   type VisitorSession,
   deviceKind,
@@ -25,7 +27,7 @@ const WHERE = (days: VisitorRange) => `event = '$pageview'
 
 type Row = [
   session: string,
-  lastView: string,
+  lastView: number,
   views: number,
   entryPath: string | null,
   entryTitle: string | null,
@@ -42,16 +44,22 @@ type Row = [
 
 type Visits = { rows: VisitorSession[]; total: number };
 
-async function fetchVisits(days: VisitorRange, page: number): Promise<Visits> {
+async function fetchVisits(
+  days: VisitorRange,
+  page: number,
+  size: VisitorPageSize
+): Promise<Visits> {
   const keys = analyticsKeys();
   if (!keys) throw new Error('Website analytics are not connected to the CMS.');
-  const offset = (page - 1) * VISITORS_PAGE_SIZE;
-  // The details are the ones from the visit's first page, as that is where it started.
+  const offset = (page - 1) * size;
+  // The details are the ones from the visit's first page, as that is where it started. A personal
+  // API key cannot use OFFSET, so this reads every visit up to the end of the page and drops the
+  // ones before it.
   const [rows, [count]] = await Promise.all([
     hogql<Row>(
       keys,
       `SELECT $session_id AS session,
-          toString(max(timestamp)) AS last_view,
+          toUnixTimestamp(max(timestamp)) AS last_view,
           count() AS views,
           argMin(properties.$pathname, timestamp),
           argMin(properties.title, timestamp),
@@ -68,7 +76,7 @@ async function fetchVisits(days: VisitorRange, page: number): Promise<Visits> {
         WHERE ${WHERE(days)}
         GROUP BY session
         ORDER BY max(timestamp) DESC
-        LIMIT ${VISITORS_PAGE_SIZE} OFFSET ${offset}`,
+        LIMIT ${offset + size}`,
       {},
       'Could not load website visitors'
     ),
@@ -81,13 +89,13 @@ async function fetchVisits(days: VisitorRange, page: number): Promise<Visits> {
   ]);
   return {
     total: Number(count?.[0] ?? 0),
-    rows: rows.map((r) => {
+    rows: rows.slice(offset).map((r) => {
       const [id, last, views, entryPath, entryTitle, exitPath, exitTitle, referring] = r;
       const [, , , , , , , , country, countryName, city, os, browser, device] = r;
       return {
         id,
-        // ClickHouse writes "2026-11-14 03:57:12.345000" in UTC.
-        lastView: Date.parse(`${last.replace(' ', 'T')}Z`) || Date.parse(last) || 0,
+        // Seconds since 1970: a timestamp as text would come in the PostHog project's own zone.
+        lastView: Number(last) * 1000,
         views: Number(views),
         entry: { path: entryPath ?? '/', title: entryTitle ?? '' },
         exit: { path: exitPath ?? '/', title: exitTitle ?? '' },
@@ -109,6 +117,7 @@ export type VisitorsData =
       connected: true;
       days: VisitorRange;
       page: number;
+      pageSize: VisitorPageSize;
       pageCount: number;
       total: number;
       rows: VisitorSession[];
@@ -130,16 +139,25 @@ export const listVisitors = createServerFn({ method: 'GET' })
         )
         .catch(30),
       page: z.number().int().min(1).max(200).catch(1),
+      rows: z
+        .union(
+          VISITOR_PAGE_SIZES.map((n) => z.literal(n)) as [
+            z.ZodLiteral<25>,
+            z.ZodLiteral<50>,
+            z.ZodLiteral<100>,
+          ]
+        )
+        .catch(VISITORS_PAGE_SIZE),
     })
   )
   .handler(async ({ data }): Promise<VisitorsData> => {
     if (!analyticsKeys()) return { connected: false };
-    const { days, page } = data;
+    const { days, page, rows: pageSize } = data;
     try {
       const visits = await readThrough(
         env.DB,
-        `visitors|${days}|${page}`,
-        () => fetchVisits(days, page),
+        `visitors2|${days}|${page}|${pageSize}`,
+        () => fetchVisits(days, page, pageSize),
         Date.now(),
         MAX_AGE_MS
       );
@@ -147,8 +165,9 @@ export const listVisitors = createServerFn({ method: 'GET' })
         connected: true,
         days,
         page,
+        pageSize,
         total: visits.total,
-        pageCount: Math.max(1, Math.ceil(visits.total / VISITORS_PAGE_SIZE)),
+        pageCount: Math.max(1, Math.ceil(visits.total / pageSize)),
         rows: visits.rows,
       };
     } catch (error) {
@@ -157,6 +176,7 @@ export const listVisitors = createServerFn({ method: 'GET' })
         connected: true,
         days,
         page,
+        pageSize,
         total: 0,
         pageCount: 1,
         rows: [],

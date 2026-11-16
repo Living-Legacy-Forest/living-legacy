@@ -47,6 +47,27 @@ export type WhatsNewEntry = {
 
 export const whatsNew: WhatsNewEntry[] = [
   {
+    id: '2026-11-16-5',
+    kind: 'improved',
+    title: 'Analytics, fuller and clearer',
+    items: [
+      {
+        title: 'Choose how many visits a page shows',
+        body: 'On Visitors, pick 25, 50 or 100 rows under the list. Last-view times were also showing hours out when the analytics project kept time in another zone; they are right now.',
+        link: { label: 'Open Visitors', to: '/analytics/visitors' },
+      },
+      {
+        title: 'Full-width analytics pages',
+        body: 'Every Analytics page now uses the whole width of the screen, so tables show more before a title is cut short.',
+        link: { label: 'Open Analytics', to: '/analytics' },
+      },
+      {
+        title: 'Analytics pages before analytics are connected',
+        body: 'Until website analytics are connected, each Analytics page keeps its layout with nothing in it, as the dashboard does, instead of a single message.',
+      },
+    ],
+  },
+  {
     id: '2026-11-16-4',
     kind: 'improved',
     title: 'Preview announcements on a phone',

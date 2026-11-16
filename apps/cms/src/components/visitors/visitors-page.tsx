@@ -1,11 +1,18 @@
 import { createLink, useNavigate, useRouter } from '@tanstack/react-router';
-import { usePendingRange } from '@/components/analytics/analytics-page';
+import { NotConnectedNote, usePendingRange } from '@/components/analytics/analytics-page';
 import { AnalyticsBodySkeleton } from '@/components/analytics/analytics-skeleton';
 import { RevealWords } from '@/components/dashboard/reveal-words';
 import { Flag } from '@/components/flag';
 import { GlobeIcon, LaptopIcon, SmartphoneIcon, TabletIcon } from '@/components/icons';
 import { SegmentedControl } from '@/components/segmented-control';
 import { Badge } from '@/components/ui/badge';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
 import { Button } from '@/components/ui/button';
 import {
   Empty,
@@ -38,8 +45,9 @@ import { siteUrl } from '@/lib/site';
 import { useRevealOnce } from '@/lib/use-reveal-once';
 import { useTimeZone } from '@/lib/use-time-zone';
 import {
-  VISITORS_PAGE_SIZE,
+  VISITOR_PAGE_SIZES,
   VISITOR_RANGES,
+  VISITORS_PAGE_SIZE,
   type VisitorRange,
   type VisitorSession,
   sourceLabels,
@@ -59,14 +67,10 @@ export function VisitorsPage({ data }: { data: VisitorsData }) {
   const revealing = useRevealOnce();
   const days: VisitorRange = data.connected ? data.days : 30;
   // Visitors pages through PostHog, so a new page number loads as a new period does.
-  const pending = usePendingRange(['days', 'page']);
+  const pending = usePendingRange(['days', 'page', 'rows']);
 
   return (
-    <div
-      data-slot="stack-page"
-      data-revealing={revealing || undefined}
-      className="mx-auto w-full max-w-6xl"
-    >
+    <div data-slot="stack-page" data-revealing={revealing || undefined} className="w-full">
       <div className="mb-6 flex flex-wrap items-end justify-between gap-4">
         <div className="space-y-1">
           <h1 data-slot="page-title" className="text-xl font-semibold tracking-tight">
@@ -76,19 +80,21 @@ export function VisitorsPage({ data }: { data: VisitorsData }) {
             Recent visits to the website, newest first: where people came from and what they read.
           </p>
         </div>
-        {data.connected && (
-          <SegmentedControl
-            label="Period"
-            value={String(pending.days ?? days)}
-            options={RANGE_OPTIONS}
-            // A new period starts again from the first page.
-            onValueChange={(value) =>
-              navigate({
-                search: { days: Number(value) === 30 ? undefined : Number(value), page: undefined },
-              })
-            }
-          />
-        )}
+        <SegmentedControl
+          label="Period"
+          value={String(pending.days ?? days)}
+          options={RANGE_OPTIONS}
+          // A new period starts again from the first page.
+          onValueChange={(value) =>
+            navigate({
+              search: (s) => ({
+                ...s,
+                days: Number(value) === 30 ? undefined : Number(value),
+                page: undefined,
+              }),
+            })
+          }
+        />
       </div>
 
       {pending.loading ? (
@@ -107,11 +113,35 @@ function VisitorsBody({ data }: { data: VisitorsData }) {
   const timeZone = useTimeZone();
 
   if (!data.connected) {
+    // The table stays, empty, as the dashboard keeps its cards.
     return (
-      <Notice
-        title="Website analytics aren't connected"
-        description="Once the website's analytics are connected to the CMS, its visits show here."
-      />
+      <div className="space-y-4 max-md:space-y-3">
+        <NotConnectedNote />
+        <div className="overflow-hidden rounded-lg border max-md:hidden">
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead className="pl-4">Last view</TableHead>
+                <TableHead>Visitor</TableHead>
+                <TableHead>Came from</TableHead>
+                <TableHead>Entry page</TableHead>
+                <TableHead>Exit page</TableHead>
+                <TableHead className="pr-4 text-right">Views</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              <TableRow>
+                <TableCell colSpan={6} className="text-muted-foreground h-24 text-center">
+                  No visits to show
+                </TableCell>
+              </TableRow>
+            </TableBody>
+          </Table>
+        </div>
+        <p className="text-muted-foreground rounded-[10px] bg-(--ios-cell) px-4 py-6 text-center text-sm md:hidden">
+          No visits to show
+        </p>
+      </div>
     );
   }
   if (data.error) {
@@ -162,10 +192,10 @@ function VisitorsBody({ data }: { data: VisitorsData }) {
                 <TableCell>
                   <Source visit={visit} />
                 </TableCell>
-                <TableCell className="max-w-56">
+                <TableCell className="max-w-80">
                   <PageLink page={visit.entry} />
                 </TableCell>
-                <TableCell className="max-w-56">
+                <TableCell className="max-w-80">
                   <PageLink page={visit.exit} />
                 </TableCell>
                 <TableCell className="pr-4 text-right tabular-nums">
@@ -292,12 +322,14 @@ const endProps = {
   className: 'pointer-events-none opacity-50',
 } as const;
 
-type VisitorsSearch = { page?: number; days?: number };
+type VisitorsSearch = { page?: number; days?: number; rows?: number };
+const SIZE_ITEMS = VISITOR_PAGE_SIZES.map((n) => ({ value: String(n), label: String(n) }));
 
 function Pager({ data }: { data: Extract<VisitorsData, { connected: true }> }) {
-  const { page, pageCount, total } = data;
-  const from = (page - 1) * VISITORS_PAGE_SIZE + 1;
-  const to = Math.min(page * VISITORS_PAGE_SIZE, total);
+  const { page, pageCount, total, pageSize } = data;
+  const navigate = useNavigate({ from: '/analytics/visitors' });
+  const from = (page - 1) * pageSize + 1;
+  const to = Math.min(page * pageSize, total);
   const toPage = (n: number) => (prev: VisitorsSearch) => ({
     ...prev,
     page: n > 1 ? n : undefined,
@@ -305,9 +337,40 @@ function Pager({ data }: { data: Extract<VisitorsData, { connected: true }> }) {
 
   return (
     <div className="text-muted-foreground mt-3 flex flex-wrap items-center justify-between gap-2 text-xs">
-      <span className="tabular-nums">
-        {formatInteger(from)}–{formatInteger(to)} of {formatInteger(total)} visits
-      </span>
+      <div className="flex items-center gap-4">
+        <span className="tabular-nums">
+          {formatInteger(from)}–{formatInteger(to)} of {formatInteger(total)} visits
+        </span>
+        <label className="flex items-center gap-2">
+          Rows
+          <Select
+            items={SIZE_ITEMS}
+            value={String(pageSize)}
+            // A new page size starts again from the first page.
+            onValueChange={(value) => {
+              const rows = Number(value);
+              void navigate({
+                search: (s) => ({
+                  ...s,
+                  rows: rows === VISITORS_PAGE_SIZE ? undefined : rows,
+                  page: undefined,
+                }),
+              });
+            }}
+          >
+            <SelectTrigger size="sm" aria-label="Rows a page" className="touch:min-h-11 w-18">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              {SIZE_ITEMS.map((item) => (
+                <SelectItem key={item.value} value={item.value}>
+                  {item.label}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </label>
+      </div>
       {pageCount > 1 && (
         <Pagination aria-label="Visitor pages" className="mx-0 w-auto justify-end">
           <PaginationContent>

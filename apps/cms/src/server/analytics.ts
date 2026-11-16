@@ -607,7 +607,12 @@ async function fetchEnquiries(days: AnalyticsRange, zone: string): Promise<Enqui
 // --- Server functions ------------------------------------------------------------------------
 
 export type AnalyticsResult<T> =
-  | { connected: false }
+  | {
+      connected: false;
+      days: AnalyticsRange;
+      /** Zeroed, so the page can keep its layout until analytics are connected. */
+      data: T;
+    }
   | {
       connected: true;
       days: AnalyticsRange;
@@ -619,9 +624,13 @@ export type AnalyticsResult<T> =
 async function serve<T>(
   what: string,
   days: AnalyticsRange,
-  load: () => Promise<T>
+  load: () => Promise<T>,
+  empty: (days: string[]) => T
 ): Promise<AnalyticsResult<T>> {
-  if (!analyticsKeys()) return { connected: false };
+  if (!analyticsKeys()) {
+    const { timeZone } = await readSiteSettings();
+    return { connected: false, days, data: empty(dayKeys(days, timeZone)) };
+  }
   try {
     return { connected: true, days, data: await load() };
   } catch (error) {
@@ -635,68 +644,129 @@ async function serve<T>(
   }
 }
 
+const noSplit = (days: string[]): DailySplit => ({ days, layers: [] });
+const noTotals: PeriodTotals = { visitors: 0, views: 0, visits: 0, bounces: 0, seconds: null };
+
 export const getAnalyticsOverview = createServerFn({ method: 'GET' })
   .middleware([requirePermission('posts:publish')])
   .validator(rangeInput)
   .handler(({ data: { days } }) =>
-    serve('website traffic', days, async () => {
-      const { timeZone } = await readSiteSettings();
-      // The lists come from the other pages' answers, so opening one of them next is instant.
-      const [totals, pages, traffic, audience] = await Promise.all([
-        cached('overview', days, () => fetchOverview(days, timeZone), `|${timeZone}`),
-        loadPages(days),
-        loadTraffic(days),
-        loadAudience(days),
-      ]);
-      return {
-        ...totals,
-        pages: pages.slice(0, 8),
-        channels: traffic.channels,
-        countries: audience.countries.slice(0, 8),
-      } satisfies Overview;
-    })
+    serve(
+      'website traffic',
+      days,
+      async () => {
+        const { timeZone } = await readSiteSettings();
+        // The lists come from the other pages' answers, so opening one of them next is instant.
+        const [totals, pages, traffic, audience] = await Promise.all([
+          cached('overview', days, () => fetchOverview(days, timeZone), `|${timeZone}`),
+          loadPages(days),
+          loadTraffic(days),
+          loadAudience(days),
+        ]);
+        return {
+          ...totals,
+          pages: pages.slice(0, 8),
+          channels: traffic.channels,
+          countries: audience.countries.slice(0, 8),
+        } satisfies Overview;
+      },
+      (days): Overview => ({
+        current: noTotals,
+        previous: noTotals,
+        daily: { days, visitors: days.map(() => 0), views: days.map(() => 0) },
+        pages: [],
+        channels: [],
+        countries: [],
+      })
+    )
   );
 
 export const getAnalyticsPages = createServerFn({ method: 'GET' })
   .middleware([requirePermission('posts:publish')])
   .validator(rangeInput)
-  .handler(({ data: { days } }) => serve('the website’s pages', days, () => loadPages(days)));
+  .handler(({ data: { days } }) =>
+    serve(
+      'the website’s pages',
+      days,
+      () => loadPages(days),
+      () => []
+    )
+  );
 
 export const getAnalyticsTraffic = createServerFn({ method: 'GET' })
   .middleware([requirePermission('posts:publish')])
   .validator(rangeInput)
   .handler(({ data: { days } }) =>
-    serve('where visitors came from', days, async () => {
-      const { timeZone } = await readSiteSettings();
-      const [traffic, daily] = await Promise.all([
-        loadTraffic(days),
-        loadTrafficDaily(days, timeZone),
-      ]);
-      return { ...traffic, daily };
-    })
+    serve(
+      'where visitors came from',
+      days,
+      async () => {
+        const { timeZone } = await readSiteSettings();
+        const [traffic, daily] = await Promise.all([
+          loadTraffic(days),
+          loadTrafficDaily(days, timeZone),
+        ]);
+        return { ...traffic, daily };
+      },
+      (days): TrafficPage => ({
+        visits: 0,
+        channels: [],
+        referrers: [],
+        campaigns: [],
+        daily: noSplit(days),
+      })
+    )
   );
 
 export const getAnalyticsAudience = createServerFn({ method: 'GET' })
   .middleware([requirePermission('posts:publish')])
   .validator(rangeInput)
   .handler(({ data: { days } }) =>
-    serve('the website’s audience', days, async () => {
-      const { timeZone } = await readSiteSettings();
-      const [audience, daily, places] = await Promise.all([
-        loadAudience(days),
-        loadDevicesDaily(days, timeZone),
-        loadPlaces(days),
-      ]);
-      return { ...audience, devicesDaily: daily, places };
-    })
+    serve(
+      'the website’s audience',
+      days,
+      async () => {
+        const { timeZone } = await readSiteSettings();
+        const [audience, daily, places] = await Promise.all([
+          loadAudience(days),
+          loadDevicesDaily(days, timeZone),
+          loadPlaces(days),
+        ]);
+        return { ...audience, devicesDaily: daily, places };
+      },
+      (days): AudiencePage => ({
+        visits: 0,
+        countries: [],
+        cities: [],
+        devices: [],
+        browsers: [],
+        systems: [],
+        devicesDaily: noSplit(days),
+        places: [],
+      })
+    )
   );
 
 export const getAnalyticsEnquiries = createServerFn({ method: 'GET' })
   .middleware([requirePermission('posts:publish')])
   .validator(rangeInput)
   .handler(({ data: { days } }) =>
-    serve('enquiries', days, async () => {
-      const { timeZone } = await readSiteSettings();
-      return cached('enquiries', days, () => fetchEnquiries(days, timeZone), `|${timeZone}`);
-    })
+    serve(
+      'enquiries',
+      days,
+      async () => {
+        const { timeZone } = await readSiteSettings();
+        return cached('enquiries', days, () => fetchEnquiries(days, timeZone), `|${timeZone}`);
+      },
+      (days): Enquiries => ({
+        total: 0,
+        visits: 0,
+        enquiringVisits: 0,
+        daily: { days, counts: days.map(() => 0) },
+        forms: [],
+        locations: [],
+        pages: [],
+        entries: [],
+      })
+    )
   );

@@ -13,7 +13,7 @@ export const analyticsKind = (child: string | undefined): AnalyticsSkeletonKind 
 /** A whole Analytics page while it loads: the heading, the period and the page's own cards. */
 export function AnalyticsSkeleton({ kind }: { kind: AnalyticsSkeletonKind }) {
   return (
-    <div className="mx-auto w-full max-w-6xl">
+    <div className="w-full">
       <div className="mb-6 flex flex-wrap items-end justify-between gap-4">
         <div className="w-full max-w-xl space-y-2">
           <Skeleton className="h-7 w-32" />
@@ -59,7 +59,7 @@ export function AnalyticsBodySkeleton({ kind }: { kind: AnalyticsSkeletonKind })
           <ChartCard height={260} className="lg:col-span-3" />
         </Grid>
       )}
-      {kind === 'visitors' && <TableSkeleton columns={5} rows={10} tableFrom="md" />}
+      {kind === 'visitors' && <TableSkeleton columns={6} rows={24} tableFrom="md" />}
       {kind === 'enquiries' && (
         <>
           <Tiles count={2} />

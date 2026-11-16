@@ -3,7 +3,10 @@
 
 export const VISITOR_RANGES = [7, 30, 90] as const;
 export type VisitorRange = (typeof VISITOR_RANGES)[number];
-export const VISITORS_PAGE_SIZE = 50;
+/** How many visits a page shows, and how many when the address does not say. */
+export const VISITOR_PAGE_SIZES = [25, 50, 100] as const;
+export type VisitorPageSize = (typeof VISITOR_PAGE_SIZES)[number];
+export const VISITORS_PAGE_SIZE: VisitorPageSize = 50;
 
 export type TrafficSource = 'direct' | 'search' | 'social' | 'internal' | 'referral';
 

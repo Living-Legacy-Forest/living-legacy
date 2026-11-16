@@ -79,7 +79,7 @@ export function AnalyticsPage<T>({
 }) {
   const router = useRouter();
   const revealing = useRevealOnce();
-  const days = result.connected ? result.days : DEFAULT_RANGE;
+  const days = result.days;
   const pending = usePendingRange();
 
   let body: React.ReactNode;
@@ -90,11 +90,12 @@ export function AnalyticsPage<T>({
       </div>
     );
   } else if (!result.connected) {
+    // The page keeps its layout with nothing in it, as the dashboard does.
     body = (
-      <AnalyticsNotice
-        title="Website analytics aren't connected"
-        description="Once the website's analytics are connected to the CMS, its numbers show here."
-      />
+      <div className="space-y-4 max-md:space-y-3">
+        <NotConnectedNote />
+        {children(result.data, days)}
+      </div>
     );
   } else if (!result.data) {
     body = (
@@ -118,11 +119,7 @@ export function AnalyticsPage<T>({
   }
 
   return (
-    <div
-      data-slot="stack-page"
-      data-revealing={revealing || undefined}
-      className="mx-auto w-full max-w-6xl"
-    >
+    <div data-slot="stack-page" data-revealing={revealing || undefined} className="w-full">
       <div className="mb-6 flex flex-wrap items-end justify-between gap-4">
         <div className="space-y-1">
           <h1 data-slot="page-title" className="text-xl font-semibold tracking-tight">
@@ -130,17 +127,25 @@ export function AnalyticsPage<T>({
           </h1>
           <p className="text-muted-foreground text-sm text-pretty">{description}</p>
         </div>
-        {result.connected && (
-          <SegmentedControl
-            label="Period"
-            value={String(pending.days ?? days)}
-            options={RANGE_OPTIONS}
-            onValueChange={(value) => onRangeChange(Number(value) as AnalyticsRange)}
-          />
-        )}
+        <SegmentedControl
+          label="Period"
+          value={String(pending.days ?? days)}
+          options={RANGE_OPTIONS}
+          onValueChange={(value) => onRangeChange(Number(value) as AnalyticsRange)}
+        />
       </div>
       {body}
     </div>
+  );
+}
+
+/** One line above the empty cards, until the website's analytics are connected to the CMS. */
+export function NotConnectedNote() {
+  return (
+    <p role="status" className="text-muted-foreground flex items-center gap-2 text-sm max-md:px-1">
+      <ChartAreaIcon aria-hidden className="size-4 shrink-0" />
+      Website analytics aren't connected to the CMS yet, so there is nothing to show.
+    </p>
   );
 }
 

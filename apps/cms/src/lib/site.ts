@@ -17,3 +17,13 @@ export async function copyLink(url: string) {
     notify.error('Could not copy the link', error);
   }
 }
+
+/** Copies any text, such as a quote or an address, and says so; `what` names it in the toast. */
+export async function copyText(text: string, what: string) {
+  try {
+    await navigator.clipboard.writeText(text);
+    notify.success({ title: `${what} copied`, description: 'It is on your clipboard.' });
+  } catch (error) {
+    notify.error(`Could not copy the ${what.toLowerCase()}`, error);
+  }
+}

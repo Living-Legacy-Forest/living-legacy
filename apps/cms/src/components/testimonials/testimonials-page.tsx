@@ -19,6 +19,7 @@ import {
 } from '@/components/list/list-page';
 import {
   ListRow,
+  copyMenuItem,
   editMenuItems,
   featureMenuItem,
   publishMenuItem,
@@ -149,6 +150,7 @@ export function TestimonialsPage({
 
   const testimonialMenu = (t: Testimonial) => [
     ...editMenuItems(isDesktop(), () => view.open({ kind: 'edit', id: t.id })),
+    copyMenuItem('Quote', t.quote),
     featureMenuItem(t.featured, (featured) =>
       run(() => setTestimonialFlags({ data: { id: t.id, featured } }), {
         success: featuredNotice(featured),

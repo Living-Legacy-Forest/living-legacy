@@ -13,6 +13,7 @@ import {
   PaneColumn,
   PaneEmpty,
   PaneFrame,
+  isDesktop,
   useListPane,
 } from '@/components/list/list-page';
 import { ListRow, type RowMenuItem } from '@/components/list/list-row';
@@ -222,7 +223,11 @@ export function RedirectsPage({
   // Ticked values per filter group; an empty group does not narrow the list.
   const [picked, setPicked] = useState<Record<string, string[]>>({});
   // The edit pane can fold away to give the list the full width; the choice is remembered.
-  const [paneOpen, setPaneOpenState] = useState(() => readPaneOpen('redirects'));
+  const [layout, setLayout] = useListView('redirects');
+  // Cards take the full width, so Grid starts with the editor folded away.
+  const [paneOpen, setPaneOpenState] = useState(
+    () => readPaneOpen('redirects') && layout !== 'grid'
+  );
   // Choosing a redirect or adding one brings the editor back.
   useEffect(() => {
     if (view.pane) setPaneOpenState(true);
@@ -231,7 +236,6 @@ export function RedirectsPage({
     setPaneOpenState(open);
     document.cookie = `redirects_pane=${open ? 'open' : 'closed'}; path=/; max-age=31536000; samesite=lax`;
   };
-  const [layout, setLayout] = useListView('redirects');
   const grid = layout === 'grid';
   const [toDelete, setToDelete] = useState<string[] | null>(null);
   const selection = useSelection(data.map((r) => r.id));
@@ -486,7 +490,7 @@ export function RedirectsPage({
                     menu={rowMenu(r)}
                     onOpen={() => {
                       // As on Posts: the open row closes the editor, any other row opens it.
-                      if (paneOpen && pane?.kind === 'edit' && pane.id === r.id) {
+                      if (isDesktop() && paneOpen && pane?.kind === 'edit' && pane.id === r.id) {
                         return setPaneOpen(false);
                       }
                       setPaneOpen(true);

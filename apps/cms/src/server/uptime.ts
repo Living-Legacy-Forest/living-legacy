@@ -51,6 +51,8 @@ export type UptimeData =
       connected: true;
       monitors: UptimeMonitor[];
       incidents: UptimeIncident[];
+      /** Every incident in the last 30 days; the list holds at most 100 of them. */
+      incidentCount: number;
       /** How many incidents the 30 days before the listed ones held. */
       previousIncidents: number;
       fetchedAt: number;
@@ -76,16 +78,19 @@ function stateOf(status: string): MonitorState {
 }
 
 async function load(token: string, now: number) {
-  const list = await get<
-    Api<
-      Resource<{
-        pronounceable_name: string;
-        url: string;
-        status: string;
-        last_checked_at: string | null;
-      }>[]
-    >
-  >(token, '/monitors?per_page=50');
+  type Monitor = Resource<{
+    pronounceable_name: string;
+    url: string;
+    status: string;
+    last_checked_at: string | null;
+  }>;
+  // Every page of monitors: a down one on a later page must not go unseen.
+  const list: { data: Monitor[] } = { data: [] };
+  for (let page = 1; page <= 20; page++) {
+    const result = await get<Api<Monitor[]>>(token, `/monitors?per_page=50&page=${page}`);
+    list.data.push(...result.data);
+    if (!result.pagination?.next) break;
+  }
   const from = day(now - SPAN_DAYS * DAY_MS);
   const to = day(now);
   const dayAgo = new Date(now - DAY_MS).toISOString();
@@ -101,12 +106,12 @@ async function load(token: string, now: number) {
   }> & { relationships?: { monitor?: { data?: { id: string } | null } } };
   const barFrom = day(now - BAR_DAYS * DAY_MS);
   const found: Incident[] = [];
-  for (let page = 1; page <= 6; page++) {
-    const result = await get<Api<Incident[]> & { pagination?: { next?: string | null } }>(
+  // A failed page throws, so a half-read history is never cached as a quiet one.
+  for (let page = 1; page <= 40; page++) {
+    const result = await get<Api<Incident[]>>(
       token,
       `/incidents?from=${barFrom}&to=${to}&per_page=50&page=${page}`
-    ).catch(() => null);
-    if (!result) break;
+    );
     found.push(...result.data);
     if (!result.pagination?.next) break;
   }
@@ -126,6 +131,10 @@ async function load(token: string, now: number) {
     }
     downByMonitor.set(id, bars);
   }
+
+  // The bars hold 89 whole days and the part of today that has passed (UTC).
+  const elapsedSeconds =
+    (BAR_DAYS - 1) * 86_400 + (now - Date.parse(`${day(now)}T00:00:00Z`)) / 1000;
 
   const monitors = await Promise.all(
     list.data.map(async (m): Promise<UptimeMonitor> => {
@@ -162,7 +171,7 @@ async function load(token: string, now: number) {
       return {
         id: m.id,
         daily,
-        uptime90: Math.max(0, 100 - (down / (BAR_DAYS * 86_400)) * 100),
+        uptime90: Math.max(0, 100 - (down / elapsedSeconds) * 100),
         name: m.attributes.pronounceable_name,
         url: m.attributes.url,
         state: stateOf(m.attributes.status),
@@ -181,17 +190,15 @@ async function load(token: string, now: number) {
 
   // The page lists the last 30 days; the API returns newest first.
   const recent = Date.parse(`${from}T00:00:00Z`);
-  const incidents: UptimeIncident[] = found
-    .filter((i) => Date.parse(i.attributes.started_at) >= recent)
-    .slice(0, 100)
-    .map((i) => ({
-      id: i.id,
-      name: i.attributes.name,
-      cause: i.attributes.cause,
-      startedAt: Date.parse(i.attributes.started_at),
-      resolvedAt: time(i.attributes.resolved_at),
-      url: i.attributes.url ?? null,
-    }));
+  const inPeriod = found.filter((i) => Date.parse(i.attributes.started_at) >= recent);
+  const incidents: UptimeIncident[] = inPeriod.slice(0, 100).map((i) => ({
+    id: i.id,
+    name: i.attributes.name,
+    cause: i.attributes.cause,
+    startedAt: Date.parse(i.attributes.started_at),
+    resolvedAt: time(i.attributes.resolved_at),
+    url: i.attributes.url ?? null,
+  }));
   incidents.sort((a, b) => b.startedAt - a.startedAt);
 
   const before = Date.parse(`${day(now - 2 * SPAN_DAYS * DAY_MS)}T00:00:00Z`);
@@ -200,7 +207,7 @@ async function load(token: string, now: number) {
     return at >= before && at < recent;
   }).length;
 
-  return { monitors, incidents, previousIncidents, fetchedAt: now };
+  return { monitors, incidents, incidentCount: inPeriod.length, previousIncidents, fetchedAt: now };
 }
 
 /** The Uptime page: each monitor's state and 30-day availability, and recent incidents. */
@@ -210,6 +217,6 @@ export const getUptime = createServerFn({ method: 'GET' })
     const token = (env as unknown as { BETTERSTACK_API_TOKEN?: string }).BETTERSTACK_API_TOKEN;
     if (!token) return { connected: false };
     const now = Date.now();
-    const data = await readThrough(env.DB, 'uptime4', () => load(token, now), now, MAX_AGE_MS);
+    const data = await readThrough(env.DB, 'uptime5', () => load(token, now), now, MAX_AGE_MS);
     return { connected: true, ...data };
   });

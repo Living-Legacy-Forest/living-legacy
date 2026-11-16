@@ -51,8 +51,17 @@ const dayFormat = new Intl.DateTimeFormat('en-AU', {
 });
 
 /** One cell per day, as a status page draws it: green up, amber a short outage, red a long one. */
-function DailyBar({ daily, uptime }: { daily: number[]; uptime: number }) {
-  const last = Date.now();
+function DailyBar({
+  daily,
+  uptime,
+  anchor,
+}: {
+  daily: number[];
+  uptime: number;
+  /** When the figures were read; the last cell is that day. */
+  anchor: number;
+}) {
+  const last = anchor;
   return (
     <div className="w-full">
       <div
@@ -87,7 +96,7 @@ function DailyBar({ daily, uptime }: { daily: number[]; uptime: number }) {
 
 const host = (url: string) => url.replace(/^https?:\/\//, '').replace(/\/$/, '');
 
-function MonitorRow({ monitor }: { monitor: UptimeMonitor }) {
+function MonitorRow({ monitor, anchor }: { monitor: UptimeMonitor; anchor: number }) {
   return (
     <li className="touch:min-h-11 flex flex-wrap items-center gap-x-4 gap-y-1 py-3">
       <div className="min-w-0 flex-1 basis-56">
@@ -103,7 +112,7 @@ function MonitorRow({ monitor }: { monitor: UptimeMonitor }) {
         {monitor.responseMs === null ? '–' : `${formatInteger(monitor.responseMs)} ms avg`}
       </p>
       <div className="basis-full pt-1.5">
-        <DailyBar daily={monitor.daily} uptime={monitor.uptime90} />
+        <DailyBar daily={monitor.daily} uptime={monitor.uptime90} anchor={anchor} />
       </div>
     </li>
   );
@@ -112,8 +121,10 @@ function MonitorRow({ monitor }: { monitor: UptimeMonitor }) {
 const INCIDENTS_PER_PAGE = 10;
 
 function IncidentList({ incidents, timeZone }: { incidents: UptimeIncident[]; timeZone: string }) {
-  const [page, setPage] = useState(1);
+  const [wanted, setPage] = useState(1);
   const pageCount = Math.ceil(incidents.length / INCIDENTS_PER_PAGE);
+  // Fresh data can hold fewer incidents than the page asked for.
+  const page = Math.min(wanted, pageCount);
   const from = (page - 1) * INCIDENTS_PER_PAGE;
   const shown = incidents.slice(from, from + INCIDENTS_PER_PAGE);
   return (
@@ -178,6 +189,7 @@ export function UptimePage({ data }: { data: UptimeData }) {
   const timeZone = useTimeZone();
   const revealing = useRevealOnce();
   const monitors = data.connected ? data.monitors : [];
+  const fetchedAt = data.connected ? data.fetchedAt : 0;
   const measured = monitors.filter((m) => m.availability !== null);
   const avgAvailability = measured.length
     ? measured.reduce((sum, m) => sum + (m.availability ?? 0), 0) / measured.length
@@ -194,7 +206,7 @@ export function UptimePage({ data }: { data: UptimeData }) {
     avgAvailability !== null && previousAvailability !== null
       ? avgAvailability - previousAvailability
       : null;
-  const incidentShift = data.connected ? data.incidents.length - data.previousIncidents : null;
+  const incidentShift = data.connected ? data.incidentCount - data.previousIncidents : null;
   const { overall, red, yellow } = summariseTones(monitors.map((m) => TONE[m.state]));
 
   return (
@@ -266,7 +278,7 @@ export function UptimePage({ data }: { data: UptimeData }) {
         />
         <MetricCard
           label="Incidents"
-          value={data.connected ? data.incidents.length : 0}
+          value={data.connected ? data.incidentCount : 0}
           empty={!data.connected}
           context={incidentShift === null ? 'Last 30 days' : 'Compared with the previous 30 days'}
           lowerIsBetter
@@ -301,7 +313,7 @@ export function UptimePage({ data }: { data: UptimeData }) {
           ) : (
             <ul className="divide-y">
               {monitors.map((m) => (
-                <MonitorRow key={m.id} monitor={m} />
+                <MonitorRow key={m.id} monitor={m} anchor={fetchedAt} />
               ))}
             </ul>
           )}

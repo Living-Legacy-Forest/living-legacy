@@ -4,6 +4,7 @@
 @import '@fontsource-variable/geist';
 @import '@fontsource-variable/ibm-plex-sans';
 @import '@fontsource-variable/atkinson-hyperlegible-next';
+@import '@fontsource-variable/montserrat';
 @import 'tailwindcss';
 @import 'tw-animate-css';
 @import 'shadcn/tailwind.css';
@@ -58,6 +59,10 @@
 }
 [data-font='atkinson'] {
   --font-sans: 'Atkinson Hyperlegible Next Variable', ui-sans-serif, system-ui, sans-serif;
+  --font-mono: var(--font-sans);
+}
+[data-font='montserrat'] {
+  --font-sans: 'Montserrat Variable', ui-sans-serif, system-ui, sans-serif;
   --font-mono: var(--font-sans);
 }
 [data-font='system'] {

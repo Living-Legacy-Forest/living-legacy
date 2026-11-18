@@ -8,7 +8,14 @@ export const themes = ['system', 'light', 'dark'] as const;
 export type Theme = (typeof themes)[number];
 
 /** The typefaces the CMS can use (Settings, Language & appearance). The website keeps its own. */
-export const cmsFonts = ['inter', 'geist', 'ibm-plex-sans', 'atkinson', 'system'] as const;
+export const cmsFonts = [
+  'inter',
+  'geist',
+  'ibm-plex-sans',
+  'atkinson',
+  'montserrat',
+  'system',
+] as const;
 export type CmsFont = (typeof cmsFonts)[number];
 
 /** The CMS colour palettes, in light and dark alike. Neutral is the plain greys. */

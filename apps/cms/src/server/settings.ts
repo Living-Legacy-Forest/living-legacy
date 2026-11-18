@@ -17,6 +17,9 @@ import {
   isEmailDomain,
   isValidAbn,
   locales,
+  optionalEmailSchema,
+  optionalPhoneSchema,
+  optionalWebUrlSchema,
   parseEmailDomains,
   sessionDayOptions,
   themes,
@@ -76,10 +79,7 @@ async function personalTheme(): Promise<Theme | null> {
 }
 
 const text = (max: number) => z.string().trim().max(max).default('');
-const link = text(300).refine(
-  (v) => !v || /^https?:\/\/\S+$/.test(v),
-  'Links must start with http:// or https://.'
-);
+const link = optionalWebUrlSchema(300);
 /** Accepts the code alone or the whole <meta> tag the search engine hands out. */
 const verification = text(300).transform((v) => /content="([^"]+)"/.exec(v)?.[1] ?? v);
 
@@ -89,8 +89,8 @@ const settingsSchema = z
   .object({
     siteTitle: z.string().trim().min(1).max(80),
     tagline: text(160),
-    contactEmail: text(120),
-    phone: text(40),
+    contactEmail: optionalEmailSchema(120),
+    phone: optionalPhoneSchema(),
     address: text(300),
     openingHours: text(300),
     legalName: text(120),

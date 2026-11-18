@@ -415,6 +415,7 @@ function ChangeEmail({ currentEmail }: { currentEmail: string }) {
           <Input
             id="profile-email"
             type="email"
+            maxLength={254}
             required
             placeholder="new@address.com"
             value={newEmail}

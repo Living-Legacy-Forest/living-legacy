@@ -1,5 +1,6 @@
 import { z } from 'zod';
 import { isVideoRef } from './video-embed';
+import { WEB_URL_MESSAGE, isWebUrl } from './validation';
 
 export const SLUG_PATTERN = /^[a-z0-9]+(?:-[a-z0-9]+)*$/;
 export const SEO_TITLE_LIMIT = 60;
@@ -157,8 +158,8 @@ export const postInputSchema = z.object({
     .string()
     .trim()
     .max(500)
-    .refine((url) => url === '' || /^https?:\/\/[^\s/]+\.[^\s]+$/.test(url), {
-      message: 'The canonical URL must be a full address starting with https://.',
+    .refine((url) => url === '' || isWebUrl(url), {
+      message: `The canonical URL must be a full web address. ${WEB_URL_MESSAGE}`,
     })
     .default(''),
   socialTitle: z.string().trim().max(120).default(''),

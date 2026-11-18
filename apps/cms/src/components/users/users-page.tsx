@@ -401,6 +401,7 @@ function InviteDialog({
             <Input
               id="invite-email"
               type="email"
+              maxLength={254}
               required
               value={email}
               onChange={(e) => setEmail(e.target.value)}

@@ -83,6 +83,7 @@ export const getDashboardData = createServerFn({ method: 'GET' })
           id: locations.id,
           name: locations.name,
           stage: locations.stage,
+          state: locations.state,
           latitude: locations.latitude,
           longitude: locations.longitude,
           heroMediaId: locations.heroMediaId,

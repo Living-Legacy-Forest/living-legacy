@@ -1,3 +1,4 @@
+import { australianStateLabels, australianStates } from '@ll/content';
 import { useEffect, useState } from 'react';
 import { type Stat, StatCard } from '@/components/stat-card/stat-card';
 import { formatBytes, formatDate, formatInteger } from '@/lib/format';
@@ -46,7 +47,16 @@ function buildStats(
   timeZone: string,
   blog: Blog
 ): Stat[] {
-  const open = locations.filter((l) => l.stage !== 'coming_soon').length;
+  // Locations per state, the biggest first: the ring shows where the forests are, not how ready
+  // they are (the line above the figure already says that).
+  const byState = australianStates
+    .map((state) => ({
+      key: state,
+      label: australianStateLabels[state],
+      value: locations.filter((l) => l.state === state).length,
+    }))
+    .filter((s) => s.value > 0)
+    .sort((a, b) => b.value - a.value);
   // The card keeps its shape whatever PostHog is doing: flat at zero while it answers, and a
   // line saying why when it has nothing to show.
   const views = typeof blog === 'object' ? blog : null;
@@ -110,10 +120,7 @@ function buildStats(
       label: 'Locations',
       value: locations.length,
       hint: locationHint(locations),
-      parts: [
-        { key: 'open', label: 'Open', value: open },
-        { key: 'soon', label: 'Coming soon', value: locations.length - open },
-      ],
+      parts: byState,
       link: { to: '/locations' },
     },
   ];

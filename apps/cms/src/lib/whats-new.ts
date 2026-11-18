@@ -49,6 +49,22 @@ export type WhatsNewEntry = {
 
 export const whatsNew: WhatsNewEntry[] = [
   {
+    id: '2026-11-18',
+    kind: 'new',
+    title: 'Videos in descriptions and posts',
+    items: [
+      {
+        title: 'Embed a YouTube or Vimeo video',
+        body: 'In an event description or a post, open Insert and choose Video, then paste a YouTube or Vimeo link. Visitors watch it on the page. You can add a caption by selecting the video.',
+        link: { label: 'Open Events', to: '/events' },
+      },
+      {
+        title: 'The toolbar stays in view',
+        body: 'In an event description the formatting toolbar now floats at the top as you scroll, so it is always within reach on a long description.',
+      },
+    ],
+  },
+  {
     id: '2026-11-16-7',
     kind: 'new',
     title: 'Uptime',

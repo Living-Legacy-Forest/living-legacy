@@ -50,13 +50,20 @@ export function RichTextField({
     }) ?? (editor ? readState(editor) : null);
 
   return (
-    <div className="focus-within:border-ring overflow-hidden rounded-lg border transition-colors">
+    <div className="focus-within:border-ring rounded-lg border transition-colors">
       <RichTextEditor
         editor={editor}
         variant="subtle"
-        className="rounded-none! border-0! shadow-none!"
+        className="overflow-visible! rounded-none! border-0! shadow-none!"
       >
-        <Toolbar editor={editor} state={state} />
+        <Toolbar
+          editor={editor}
+          state={state}
+          // Floats under the app header while the page scrolls: 3.5rem plus the notch on phones,
+          // and 4rem (it sits 0.5rem down) above. The box has no overflow clipping, or it
+          // would hold the toolbar still.
+          className="top-[calc(3.5rem+env(safe-area-inset-top))] md:top-16"
+        />
         <RichTextEditor.Content
           className={cn(
             '[&_.ProseMirror]:min-h-40! [&_.ProseMirror]:px-3! [&_.ProseMirror]:py-2.5! [&_.ProseMirror]:text-base md:[&_.ProseMirror]:text-sm',

@@ -8,6 +8,7 @@ export * from './abn';
 export * from './announcements';
 export * from './settings';
 export * from './rich-text-html';
+export * from './video-embed';
 export * from './markdown';
 export * from './locations';
 export * from './media-coverage';

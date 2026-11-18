@@ -89,6 +89,15 @@ describe('isAllowedRichText', () => {
     ).toBe(false);
   });
 
+  it('accepts a video embed only with a known provider and a well-formed id', () => {
+    const video = (attrs: Record<string, unknown>) => doc([{ type: 'videoEmbed', attrs }]);
+    expect(isAllowedRichText(video({ provider: 'youtube', id: 'dQw4w9WgXcQ' }))).toBe(true);
+    expect(isAllowedRichText(video({ provider: 'vimeo', id: '76979871' }))).toBe(true);
+    expect(isAllowedRichText(video({ provider: 'youtube', id: 'bad id' }))).toBe(false);
+    expect(isAllowedRichText(video({ provider: 'other', id: 'dQw4w9WgXcQ' }))).toBe(false);
+    expect(isAllowedRichText(doc([{ type: 'videoEmbed' }]))).toBe(false);
+  });
+
   it('accepts tables, sub/superscript and hosted images', () => {
     expect(
       isAllowedRichText(

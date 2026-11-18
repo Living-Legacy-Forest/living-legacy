@@ -67,4 +67,22 @@ describe('renderRichText', () => {
       'Title One two'
     );
   });
+  it('renders a video embed as a player built from its id, never from stored markup', () => {
+    const { html } = renderRichText(
+      doc({
+        type: 'videoEmbed',
+        attrs: { provider: 'youtube', id: 'dQw4w9WgXcQ', title: 'Open day <b>' },
+      })
+    );
+    expect(html).toContain('src="https://www.youtube-nocookie.com/embed/dQw4w9WgXcQ"');
+    expect(html).toContain('<figcaption>Open day &lt;b&gt;</figcaption>');
+    expect(html).toContain('loading="lazy"');
+  });
+
+  it('drops a video embed with an id that is not a real one', () => {
+    const { html } = renderRichText(
+      doc({ type: 'videoEmbed', attrs: { provider: 'youtube', id: '"><script>' } })
+    );
+    expect(html).toBe('');
+  });
 });

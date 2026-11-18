@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { isVideoRef } from './video-embed';
 
 export const SLUG_PATTERN = /^[a-z0-9]+(?:-[a-z0-9]+)*$/;
 export const SEO_TITLE_LIMIT = 60;
@@ -55,6 +56,7 @@ const allowedNodes = new Set([
   'tableHeader',
   'tableCell',
   'image',
+  'videoEmbed',
 ]);
 const allowedMarks = new Set([
   'bold',
@@ -101,6 +103,7 @@ function isAllowedNode(node: unknown, depth: number, budget: { nodes: number }):
   const { type, content, marks, attrs } = node as RichTextNode;
   if (typeof type !== 'string' || !allowedNodes.has(type)) return false;
   if (type === 'image' && !isHostedImage(attrs?.src)) return false;
+  if (type === 'videoEmbed' && !isVideoRef(attrs)) return false;
   if (content !== undefined) {
     if (!Array.isArray(content)) return false;
     for (const child of content) if (!isAllowedNode(child, depth + 1, budget)) return false;

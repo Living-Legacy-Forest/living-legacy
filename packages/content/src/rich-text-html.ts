@@ -3,6 +3,7 @@
 // else renders its children (or nothing), so an unexpected node can never
 // inject markup. Text and attributes are always escaped.
 import { type JsonValue, type RichTextDoc, slugify } from './posts';
+import { VIDEO_PROVIDER_LABEL, isVideoRef, videoEmbedSrc, videoWatchUrl } from './video-embed';
 
 type Node = {
   type: string;
@@ -175,6 +176,18 @@ export function renderRichText(
         return `<figure><img ${sizedImage(src)} alt="${alt}" loading="lazy" decoding="async" />${
           caption ? `<figcaption>${escapeHtml(caption)}</figcaption>` : ''
         }</figure>`;
+      }
+      case 'videoEmbed': {
+        if (!isVideoRef(node.attrs)) return '';
+        const caption = String(node.attrs.title ?? '');
+        const label = `${VIDEO_PROVIDER_LABEL[node.attrs.provider]} video${caption ? `: ${caption}` : ''}`;
+        // The wrapper keeps the 16:9 box on the page before the player loads. The link is for
+        // anyone whose browser blocks frames.
+        return `<figure class="video-embed"><div class="video-embed-frame"><iframe src="${escapeHtml(
+          videoEmbedSrc(node.attrs)
+        )}" title="${escapeHtml(label)}" loading="lazy" allow="accelerometer; encrypted-media; gyroscope; picture-in-picture; fullscreen" referrerpolicy="strict-origin-when-cross-origin" allowfullscreen></iframe></div>${
+          caption ? `<figcaption>${escapeHtml(caption)}</figcaption>` : ''
+        }<noscript><a href="${escapeHtml(videoWatchUrl(node.attrs))}" rel="noopener noreferrer">Watch on ${VIDEO_PROVIDER_LABEL[node.attrs.provider]}</a></noscript></figure>`;
       }
       default:
         return inner();

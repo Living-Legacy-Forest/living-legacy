@@ -56,7 +56,13 @@ export function RichTextField({
         variant="subtle"
         className="overflow-visible! rounded-none! border-0! shadow-none!"
       >
-        <Toolbar editor={editor} state={state} />
+        <Toolbar
+          editor={editor}
+          state={state}
+          // The event form scrolls in a box with p-6, and a sticky element stops short of that
+          // padding, letting text show above it. -top-6 cancels it so the toolbar meets the edge.
+          className="-top-6"
+        />
         <RichTextEditor.Content
           className={cn(
             '[&_.ProseMirror]:min-h-40! [&_.ProseMirror]:px-3! [&_.ProseMirror]:py-2.5! [&_.ProseMirror]:text-base md:[&_.ProseMirror]:text-sm',

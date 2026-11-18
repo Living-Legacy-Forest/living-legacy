@@ -102,14 +102,16 @@ describe('listMediaPage', () => {
       mime: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
     });
 
-    const images = await page({ kind: 'image' });
+    const images = await page({ kinds: ['image'] });
     expect(images.items.map((m) => m.filename)).toEqual(['photo.jpg']);
     expect(images.total).toBe(1);
 
-    const documents = await page({ kind: 'document' });
+    const documents = await page({ kinds: ['document'] });
     expect(documents.items.map((m) => m.filename).sort()).toEqual(['brochure.pdf', 'plan.docx']);
     expect(documents.total).toBe(2);
 
+    // Both kinds is the same as neither.
+    expect((await page({ kinds: ['image', 'document'] })).total).toBe(3);
     expect((await page()).total).toBe(3);
   });
 
@@ -161,7 +163,7 @@ describe('listMediaPage', () => {
     expect(await names({ exts: ['jpg', 'jpeg'] })).toEqual(['Shot.JPEG', 'photo.jpg']);
     expect(await names({ exts: ['pdf', 'docx'] })).toHaveLength(3);
     expect(await names({ exts: ['pdf'], tags: ['print'] })).toEqual(['brochure.pdf']);
-    expect(await names({ exts: ['pdf'], kind: 'image' })).toEqual([]);
+    expect(await names({ exts: ['pdf'], kinds: ['image'] })).toEqual([]);
     expect((await page({ exts: ['pdf'] })).total).toBe(2);
 
     expect(await listMediaExtensions(testDb())).toEqual([

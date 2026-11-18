@@ -4,6 +4,7 @@
 // looked at.
 import { DOCUMENT_ACCEPT, isDocumentMime } from '@ll/content';
 import { Link, useNavigate } from '@tanstack/react-router';
+import { motion, useReducedMotion } from 'motion/react';
 import { useEffect, useRef, useState } from 'react';
 import {
   ArrowRightLeft,
@@ -23,7 +24,7 @@ import { ImageCropDialog } from '@/components/media/image-crop-dialog';
 import { download, extensionLabel, fileFacts } from '@/components/media/media-file';
 import { MediaUsageList } from '@/components/media/media-usage';
 import { MediaVersions } from '@/components/media/media-versions';
-import { PdfPages } from '@/components/media/pdf-pages';
+import { PdfReader } from '@/components/media/pdf-reader';
 import { Button } from '@/components/ui/button';
 import {
   DropdownMenu,
@@ -43,7 +44,8 @@ import { Spinner } from '@/components/ui/spinner';
 import { Textarea } from '@/components/ui/textarea';
 import { splitFilename } from '@/lib/filename';
 import { formatBytes, formatDateTime } from '@/lib/format';
-import { recallMediaSearch } from '@/lib/media-return';
+import { motionTokens } from '@/components/arc/lib/motion-tokens';
+import { recallMediaSearch, setMediaDirection, takeMediaDirection } from '@/lib/media-return';
 import { notify, removedNotice } from '@/lib/notify';
 import { canCrop } from '@/lib/prepare-image';
 import { IMAGE_ACCEPT, mediaSrc, uploadMedia } from '@/lib/upload-media';
@@ -74,6 +76,13 @@ export function MediaDetail({
   const navigate = useNavigate();
   const zone = useTimeZone();
   const isDocument = isDocumentMime(item.mime);
+  const reduced = useReducedMotion() ?? false;
+  // Read once, as this file's page opens: nothing when it was opened from the library.
+  const [enter] = useState(() => {
+    const direction = takeMediaDirection();
+    if (!direction) return false as const;
+    return reduced ? { opacity: 0 } : { opacity: 0, x: direction * 32 };
+  });
   const isPdf = item.mime === 'application/pdf';
   const { base: originalName, ext } = splitFilename(item.filename);
   const [name, setName] = useState(originalName);
@@ -81,7 +90,6 @@ export function MediaDetail({
   const [caption, setCaption] = useState(item.caption);
   const [tags, setTags] = useState(item.tags);
   const [focal, setFocal] = useState<Focal | null>(item.focal);
-  const [reading, setReading] = useState(false);
   // The file being cropped, fetched back from the library.
   const [cropping, setCropping] = useState<File | null>(null);
   const [loadingCrop, setLoadingCrop] = useState(false);
@@ -104,11 +112,17 @@ export function MediaDetail({
     const onKey = (e: KeyboardEvent) => {
       if (e.metaKey || e.ctrlKey || e.altKey || e.shiftKey) return;
       const target = e.target as HTMLElement | null;
-      if (target?.closest('input, textarea, select, [contenteditable], [role="dialog"], button')) {
+      if (
+        target?.closest(
+          'input, textarea, select, [contenteditable], [role="dialog"], button, [data-pdf-reader]'
+        )
+      ) {
         return;
       }
       const id = e.key === 'ArrowLeft' ? previousId : e.key === 'ArrowRight' ? nextId : null;
-      if (id) void navigate({ to: '/media/$mediaId', params: { mediaId: id } });
+      if (!id) return;
+      setMediaDirection(e.key === 'ArrowRight' ? 1 : -1);
+      void navigate({ to: '/media/$mediaId', params: { mediaId: id } });
     };
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
@@ -250,6 +264,7 @@ export function MediaDetail({
       aria-label={label}
       title={`${label} (${label === 'Previous file' ? '←' : '→'})`}
       disabled={!id}
+      onClick={() => setMediaDirection(label === 'Previous file' ? -1 : 1)}
       {...(id
         ? { render: <Link to="/media/$mediaId" params={{ mediaId: id }} />, nativeButton: false }
         : {})}
@@ -260,28 +275,29 @@ export function MediaDetail({
 
   const preview = isDocument ? (
     <div className="grid gap-3">
-      <DocumentThumb
-        item={item}
-        width={640}
-        showName={false}
-        className="h-72 w-full rounded-lg border object-contain"
-      />
-      <div className="flex flex-wrap items-center gap-3">
-        <a
-          href={item.url}
-          target="_blank"
-          rel="noopener noreferrer"
-          className="text-ui text-primary w-fit underline underline-offset-4"
-        >
-          {isPdf ? 'Open the PDF' : 'Download the file'}
-        </a>
-        {isPdf && (
-          <Button type="button" variant="outline" size="sm" onClick={() => setReading((r) => !r)}>
-            {reading ? 'Hide the pages' : 'Read the pages here'}
-          </Button>
-        )}
-      </div>
-      {isPdf && reading && <PdfPages url={item.url} />}
+      {isPdf ? (
+        // Read in place, a page at a time. The thumbnail shows while the document loads.
+        <PdfReader
+          url={item.url}
+          title={item.filename}
+          placeholder={item.hasCover ? mediaSrc(item, 640) : undefined}
+        />
+      ) : (
+        <DocumentThumb
+          item={item}
+          width={640}
+          showName={false}
+          className="h-80 w-full rounded-lg border"
+        />
+      )}
+      <a
+        href={item.url}
+        target="_blank"
+        rel="noopener noreferrer"
+        className="text-ui text-primary w-fit underline underline-offset-4"
+      >
+        {isPdf ? 'Open the PDF in a new tab' : 'Download the file'}
+      </a>
     </div>
   ) : (
     <FocalPicker
@@ -368,7 +384,16 @@ export function MediaDetail({
           </Button>
         </header>
 
-        <div className="grid min-h-0 flex-1 content-start gap-8 overflow-y-auto p-4 lg:grid-cols-[minmax(0,3fr)_minmax(0,2fr)] lg:p-6">
+        <motion.div
+          // Arrives from the side the person moved toward, so Next and Previous read as movement.
+          initial={enter}
+          animate={{ opacity: 1, x: 0 }}
+          transition={{
+            duration: motionTokens.duration.standard,
+            ease: [...motionTokens.ease.enter],
+          }}
+          className="grid min-h-0 flex-1 content-start gap-8 overflow-y-auto p-4 lg:grid-cols-[minmax(0,3fr)_minmax(0,2fr)] lg:p-6"
+        >
           <div className="grid content-start gap-5">
             {preview}
             {!isDocument && (
@@ -523,7 +548,7 @@ export function MediaDetail({
             </section>
             <MediaUsageList id={item.id} />
           </div>
-        </div>
+        </motion.div>
       </form>
 
       <ConfirmBulkDelete

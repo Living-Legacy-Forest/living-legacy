@@ -579,13 +579,21 @@ function MediaRow({
         onClick={onOpen}
         className="focus-visible:ring-ring flex min-w-0 flex-1 items-center gap-3 rounded-md text-left outline-none focus-visible:ring-2"
       >
-        <span className="bg-muted relative grid size-11 shrink-0 place-items-center overflow-hidden rounded-md border">
-          {!isDocument || item.hasCover ? (
+        <span className="bg-muted relative grid size-11 shrink-0 place-items-center overflow-hidden rounded-md border p-0.5">
+          {!isDocument ? (
             <img
               src={mediaSrc(item, 320)}
               alt=""
               loading="lazy"
-              className="size-full object-cover object-top"
+              className="size-full object-cover"
+            />
+          ) : item.hasCover ? (
+            // The whole first page, as a reader's sidebar shows it.
+            <img
+              src={mediaSrc(item, 320)}
+              alt=""
+              loading="lazy"
+              className="max-h-full max-w-full rounded-[2px] bg-white object-contain shadow-sm ring-1 ring-black/10"
             />
           ) : (
             <FileTextIcon aria-hidden className="text-muted-foreground size-5" />

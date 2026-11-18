@@ -25,3 +25,15 @@ export const rememberMediaSearch = (search: MediaLibrarySearch) => {
 };
 
 export const recallMediaSearch = (): MediaLibrarySearch => last;
+
+// Which way the person just moved between files, so the next file's page arrives from that side:
+// 1 for the next file (older), -1 for the previous. Read once by the page that opens.
+let direction: 1 | -1 | 0 = 0;
+export const setMediaDirection = (next: 1 | -1) => {
+  direction = next;
+};
+export const takeMediaDirection = () => {
+  const taken = direction;
+  direction = 0;
+  return taken;
+};

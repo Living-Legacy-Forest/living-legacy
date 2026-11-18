@@ -1,7 +1,7 @@
 import { media } from '@ll/db/schema';
 import { beforeEach, describe, expect, it } from 'vitest';
 import { testDb } from '../../test/fixtures';
-import { listMediaPage, listMediaSchema } from './media-list';
+import { listMediaExtensions, listMediaPage, listMediaSchema, listMediaTags } from './media-list';
 
 beforeEach(async () => {
   await testDb().delete(media);
@@ -90,6 +90,129 @@ describe('listMediaPage', () => {
     const result = await page({ imagesOnly: true });
     expect(result.items.map((m) => m.filename)).toEqual(['photo.jpg']);
     expect(result.total).toBe(1);
+  });
+
+  it('filters the library to images or to documents, with a count for each', async () => {
+    await addFile('photo.jpg');
+    await addFile('brochure.pdf', {
+      mime: 'application/pdf',
+      variants: [{ width: 640, key: 'k', mime: 'image/jpeg' }],
+    });
+    await addFile('plan.docx', {
+      mime: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+    });
+
+    const images = await page({ kind: 'image' });
+    expect(images.items.map((m) => m.filename)).toEqual(['photo.jpg']);
+    expect(images.total).toBe(1);
+
+    const documents = await page({ kind: 'document' });
+    expect(documents.items.map((m) => m.filename).sort()).toEqual(['brochure.pdf', 'plan.docx']);
+    expect(documents.total).toBe(2);
+
+    expect((await page()).total).toBe(3);
+  });
+
+  it('says which documents have a first-page thumbnail', async () => {
+    await addFile('brochure.pdf', {
+      mime: 'application/pdf',
+      variants: [{ width: 640, key: 'k', mime: 'image/jpeg' }],
+    });
+    await addFile('old.pdf', { mime: 'application/pdf' });
+    await addFile('photo.jpg', { variants: [{ width: 320, key: 'j', mime: 'image/jpeg' }] });
+    const byName = Object.fromEntries((await page()).items.map((m) => [m.filename, m.hasCover]));
+    expect(byName).toEqual({ 'brochure.pdf': true, 'old.pdf': false, 'photo.jpg': false });
+  });
+
+  it('filters by tag, finds tags in search, and counts them', async () => {
+    await addFile('a.jpg', { tags: ['spring', 'forest'] });
+    await addFile('b.jpg', { tags: ['spring'] });
+    await addFile('c.jpg');
+    expect((await page({ tags: ['spring'] })).items.map((m) => m.filename).sort()).toEqual([
+      'a.jpg',
+      'b.jpg',
+    ]);
+    expect((await page({ tags: ['forest'] })).total).toBe(1);
+    expect((await page({ tags: ['nothing'] })).total).toBe(0);
+    // Several tags match a file that has any of them.
+    expect((await page({ tags: ['forest', 'nothing'] })).total).toBe(1);
+    expect((await page({ tags: ['forest', 'spring'] })).total).toBe(2);
+    expect((await page({ q: 'forest' })).items.map((m) => m.filename)).toEqual(['a.jpg']);
+    expect(await listMediaTags(testDb())).toEqual([
+      { tag: 'spring', count: 2 },
+      { tag: 'forest', count: 1 },
+    ]);
+  });
+
+  it('filters by one or several extensions and combines with the other filters', async () => {
+    await addFile('photo.jpg');
+    await addFile('Shot.JPEG');
+    await addFile('logo.png', { mime: 'image/png' });
+    await addFile('brochure.pdf', { mime: 'application/pdf', tags: ['print'] });
+    await addFile('plan.docx', {
+      mime: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+      tags: ['print'],
+    });
+    await addFile('archive.v2.final.pdf', { mime: 'application/pdf' });
+    await addFile('noextension');
+
+    const names = async (input: object) => (await page(input)).items.map((m) => m.filename).sort();
+    expect(await names({ exts: ['pdf'] })).toEqual(['archive.v2.final.pdf', 'brochure.pdf']);
+    expect(await names({ exts: ['jpg', 'jpeg'] })).toEqual(['Shot.JPEG', 'photo.jpg']);
+    expect(await names({ exts: ['pdf', 'docx'] })).toHaveLength(3);
+    expect(await names({ exts: ['pdf'], tags: ['print'] })).toEqual(['brochure.pdf']);
+    expect(await names({ exts: ['pdf'], kind: 'image' })).toEqual([]);
+    expect((await page({ exts: ['pdf'] })).total).toBe(2);
+
+    expect(await listMediaExtensions(testDb())).toEqual([
+      { ext: 'pdf', count: 2 },
+      expect.objectContaining({ count: 1 }),
+      expect.objectContaining({ count: 1 }),
+      expect.objectContaining({ count: 1 }),
+      expect.objectContaining({ count: 1 }),
+    ]);
+  });
+
+  it('refuses an extension that is not plain letters and digits', () => {
+    expect(listMediaSchema.safeParse({ exts: ['pdf'] }).success).toBe(true);
+    expect(listMediaSchema.safeParse({ exts: ["pdf' or '1'='1"] }).success).toBe(false);
+    expect(listMediaSchema.safeParse({ exts: ['.pdf'] }).success).toBe(false);
+  });
+
+  it('puts the library in the chosen order, ties broken the same way every time', async () => {
+    await addFile('banana.jpg', { size: 300, at: 1000 });
+    await addFile('Apple.jpg', { size: 100, at: 2000 });
+    await addFile('cherry.jpg', { size: 200, at: 3000 });
+    await addFile('cherry.jpg', { size: 200, at: 3000 });
+    const names = async (sort: string) =>
+      (await page({ sort } as never)).items.map((m) => m.filename);
+
+    expect(await names('newest')).toEqual(['cherry.jpg', 'cherry.jpg', 'Apple.jpg', 'banana.jpg']);
+    expect(await names('oldest')).toEqual(['banana.jpg', 'Apple.jpg', 'cherry.jpg', 'cherry.jpg']);
+    // Names ignore case.
+    expect(await names('name-az')).toEqual(['Apple.jpg', 'banana.jpg', 'cherry.jpg', 'cherry.jpg']);
+    expect(await names('name-za')).toEqual(['cherry.jpg', 'cherry.jpg', 'banana.jpg', 'Apple.jpg']);
+    expect((await names('largest'))[0]).toBe('banana.jpg');
+    expect((await names('smallest'))[0]).toBe('Apple.jpg');
+    // Something that is not an order falls back to newest.
+    expect(await names('nonsense')).toEqual(await names('newest'));
+
+    // Pages of an order do not repeat or skip, even through equal values.
+    const first = await page({ sort: 'name-az', limit: 2 } as never);
+    const more = await page({ sort: 'name-az', limit: 4 } as never);
+    expect(more.items.slice(0, 2).map((m) => m.id)).toEqual(first.items.map((m) => m.id));
+  });
+
+  it('gives a focal point only when both coordinates are set', async () => {
+    await addFile('both.jpg', { focalX: 0.25, focalY: 0.75 });
+    await addFile('half.jpg', { focalX: 0.5 });
+    await addFile('none.jpg');
+    const byName = Object.fromEntries((await page()).items.map((m) => [m.filename, m.focal]));
+    expect(byName).toEqual({
+      'both.jpg': { x: 0.25, y: 0.75 },
+      'half.jpg': null,
+      'none.jpg': null,
+    });
   });
 
   it('returns a linked file that is not on the page', async () => {

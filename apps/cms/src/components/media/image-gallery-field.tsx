@@ -6,6 +6,7 @@ import { mediaSrc } from '@/lib/upload-media';
 import { ChevronDownIcon, ChevronUpIcon } from '@/components/icons';
 import { useImageUpload } from '@/components/media/image-crop-dialog';
 import { ImageDropZone } from '@/components/media/image-drop-zone';
+import { focalStyle } from '@/components/media/media-file';
 import { AltText, MediaPicker, useMediaItems } from '@/components/media/image-field';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -80,6 +81,7 @@ export function ImageGalleryField({
                     <img
                       src={mediaSrc(item, 640)}
                       alt={item.alt || item.filename}
+                      style={focalStyle(item)}
                       className="size-full object-cover"
                     />
                   ) : (

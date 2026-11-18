@@ -8,7 +8,7 @@ type Use = MediaUsage[number];
 /** Opens the item where it is edited: the item itself where the page can, else its list. */
 function UseLink({ use }: { use: Use }) {
   const text = use.label || 'Untitled';
-  const className = 'underline-offset-4 hover:underline';
+  const className = 'text-primary underline-offset-4 hover:underline';
   switch (use.kind) {
     case 'post':
       return (
@@ -48,7 +48,7 @@ function UseLink({ use }: { use: Use }) {
       );
     case 'event':
       return (
-        <Link to="/events" className={className}>
+        <Link to="/events/$eventId" params={{ eventId: use.id }} className={className}>
           {text}
         </Link>
       );

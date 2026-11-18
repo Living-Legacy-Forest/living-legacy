@@ -24,9 +24,9 @@ function markSwitch(next: ListView) {
 }
 
 /** A list page's List or Grid choice, remembered per page across visits. */
-export function useListView(page: string) {
+export function useListView(page: string, fallback: ListView = 'list') {
   const { listViews } = useRouteContext({ from: '/_app' });
-  const [view, setView] = useState<ListView>(listViews[page] ?? 'list');
+  const [view, setView] = useState<ListView>(listViews[page] ?? fallback);
   const change = (next: ListView) => {
     if (next === view) return;
     markSwitch(next);

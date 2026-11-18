@@ -78,7 +78,8 @@ export async function serveMedia(
       'Content-Length': String(object.size),
       'Cache-Control': EDGE_CACHE,
       ETag: object.httpEtag,
-      ...(isDocumentMime(row.mime)
+      // A PDF's thumbnail is an image; only the document itself gets the document headers.
+      ...(isDocumentMime(row.mime) && !variant
         ? {
             ...DOCUMENT_HEADERS,
             'Content-Disposition': contentDisposition(row.filename, row.mime),

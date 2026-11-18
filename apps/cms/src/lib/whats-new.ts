@@ -55,8 +55,37 @@ export const whatsNew: WhatsNewEntry[] = [
     items: [
       {
         title: 'Choose the order of a list',
-        body: 'Posts, events, locations, team, FAQs, testimonials, announcements, redirects, media coverage, categories and tags each have a Sort button beside Filter. Pages with a hand-set order offer it as Your order, and moving items up or down works only in that order. The choice is kept in the address, so going back keeps it.',
-        link: { label: 'Open Announcements', to: '/announcements' },
+        body: 'Posts, events, locations, team, FAQs, testimonials, announcements, redirects, media coverage, categories, tags and Media each have a Sort button beside Filter. Pages with a hand-set order offer it as Your order, and moving items up or down works only in that order. The choice is kept in the address, so going back keeps it.',
+        link: { label: 'Open Media', to: '/media' },
+      },
+    ],
+  },
+  {
+    id: '2026-11-18-3',
+    kind: 'improved',
+    title: 'A page for every file in Media',
+    items: [
+      {
+        title: 'Each file opens on its own page',
+        body: 'Click a file in Media to see it large, with its details, tags, where it is used and its earlier versions. Use the arrows (or the left and right arrow keys) to move to the next file, and Copy to take a link, a Markdown image or HTML.',
+        link: { label: 'Open Media', to: '/media' },
+      },
+      {
+        title: 'Filter, list view and tags',
+        body: "Show only images or documents, pick one or more formats (PDF, JPG, DOCX and so on) and one or more tags, and switch between grid and list. Tags are added on a file's page.",
+        link: { label: 'Open Media', to: '/media' },
+      },
+      {
+        title: 'Choose what stays in view when an image is cropped',
+        body: "On an image's page, click the part that matters (a face, a tree) and the previews show how it crops. Image fields in the CMS follow it.",
+      },
+      {
+        title: 'Undo a replaced file',
+        body: 'When you replace a file, the old one is kept (the last five) under Earlier versions, where you can download or restore it.',
+      },
+      {
+        title: 'Read a PDF without leaving',
+        body: "A PDF's first page is its thumbnail, and its page has a button to read the pages there.",
       },
     ],
   },

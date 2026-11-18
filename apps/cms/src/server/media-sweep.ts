@@ -1,6 +1,6 @@
 import { findOrphans } from '@ll/content';
 import { createDb } from '@ll/db';
-import { media, user } from '@ll/db/schema';
+import { media, mediaVersions, user } from '@ll/db/schema';
 import { avatarKey } from '@/lib/avatars';
 
 /**
@@ -10,12 +10,14 @@ import { avatarKey } from '@/lib/avatars';
  */
 export async function sweepOrphanedMedia(d1: D1Database, bucket: R2Bucket, now: Date) {
   const db = createDb(d1);
-  const [rows, users] = await Promise.all([
+  const [rows, versions, users] = await Promise.all([
     db.select({ r2Key: media.r2Key, variants: media.variants }).from(media),
+    db.select({ r2Key: mediaVersions.r2Key, variants: mediaVersions.variants }).from(mediaVersions),
     db.select({ image: user.image }).from(user),
   ]);
   const referenced = new Set<string>([
-    ...rows.flatMap((r) => [r.r2Key, ...(r.variants ?? []).map((v) => v.key)]),
+    // Earlier versions are kept on purpose, so their files are not unused.
+    ...[...rows, ...versions].flatMap((r) => [r.r2Key, ...(r.variants ?? []).map((v) => v.key)]),
     ...users.flatMap((u) => avatarKey(u.image) ?? []),
   ]);
 

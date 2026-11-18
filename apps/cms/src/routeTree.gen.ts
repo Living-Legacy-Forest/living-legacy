@@ -38,6 +38,7 @@ import { Route as AppLocationsLocationIdRouteImport } from './routes/_app/locati
 import { Route as AppLocationsNewRouteImport } from './routes/_app/locations/new'
 import { Route as AppMediaCoverageIndexRouteImport } from './routes/_app/media-coverage/index'
 import { Route as AppMediaIndexRouteImport } from './routes/_app/media/index'
+import { Route as AppMediaMediaIdRouteImport } from './routes/_app/media/$mediaId'
 import { Route as AppMissingPagesIndexRouteImport } from './routes/_app/missing-pages/index'
 import { Route as AppPostsIndexRouteImport } from './routes/_app/posts/index'
 import { Route as AppPostsPostIdRouteImport } from './routes/_app/posts/$postId'
@@ -57,6 +58,7 @@ import { Route as ApiAuthSplatRouteImport } from './routes/api/auth/$'
 import { Route as ApiAvatarIndexRouteImport } from './routes/api/avatar/index'
 import { Route as ApiAvatarKeyRouteImport } from './routes/api/avatar/$key'
 import { Route as ApiAvatarsIdRouteImport } from './routes/api/avatars/$id'
+import { Route as ApiMediaVersionsIdRouteImport } from './routes/api/media-versions/$id'
 import { Route as ApiMediaIndexRouteImport } from './routes/api/media/index'
 import { Route as ApiV1TermsRouteImport } from './routes/api/v1/terms'
 import { Route as PreviewEventsDraftIdRouteImport } from './routes/preview/events/$draftId'
@@ -213,6 +215,11 @@ const AppMediaIndexRoute = AppMediaIndexRouteImport.update({
   path: '/media/',
   getParentRoute: () => AppRoute,
 } as any)
+const AppMediaMediaIdRoute = AppMediaMediaIdRouteImport.update({
+  id: '/media/$mediaId',
+  path: '/media/$mediaId',
+  getParentRoute: () => AppRoute,
+} as any)
 const AppMissingPagesIndexRoute = AppMissingPagesIndexRouteImport.update({
   id: '/missing-pages/',
   path: '/missing-pages/',
@@ -308,6 +315,11 @@ const ApiAvatarsIdRoute = ApiAvatarsIdRouteImport.update({
   path: '/api/avatars/$id',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ApiMediaVersionsIdRoute = ApiMediaVersionsIdRouteImport.update({
+  id: '/api/media-versions/$id',
+  path: '/api/media-versions/$id',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ApiMediaIndexRoute = ApiMediaIndexRouteImport.update({
   id: '/api/media/',
   path: '/api/media/',
@@ -382,11 +394,13 @@ export interface FileRoutesByFullPath {
   '/legal/$slug': typeof AppLegalSlugRoute
   '/locations/$locationId': typeof AppLocationsLocationIdRoute
   '/locations/new': typeof AppLocationsNewRoute
+  '/media/$mediaId': typeof AppMediaMediaIdRoute
   '/posts/$postId': typeof AppPostsPostIdRoute
   '/posts/new': typeof AppPostsNewRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
   '/api/avatar/$key': typeof ApiAvatarKeyRoute
   '/api/avatars/$id': typeof ApiAvatarsIdRoute
+  '/api/media-versions/$id': typeof ApiMediaVersionsIdRoute
   '/api/v1/terms': typeof ApiV1TermsRoute
   '/preview/events/$draftId': typeof PreviewEventsDraftIdRoute
   '/preview/legal/$slug': typeof PreviewLegalSlugRoute
@@ -441,11 +455,13 @@ export interface FileRoutesByTo {
   '/legal/$slug': typeof AppLegalSlugRoute
   '/locations/$locationId': typeof AppLocationsLocationIdRoute
   '/locations/new': typeof AppLocationsNewRoute
+  '/media/$mediaId': typeof AppMediaMediaIdRoute
   '/posts/$postId': typeof AppPostsPostIdRoute
   '/posts/new': typeof AppPostsNewRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
   '/api/avatar/$key': typeof ApiAvatarKeyRoute
   '/api/avatars/$id': typeof ApiAvatarsIdRoute
+  '/api/media-versions/$id': typeof ApiMediaVersionsIdRoute
   '/api/v1/terms': typeof ApiV1TermsRoute
   '/preview/events/$draftId': typeof PreviewEventsDraftIdRoute
   '/preview/legal/$slug': typeof PreviewLegalSlugRoute
@@ -503,11 +519,13 @@ export interface FileRoutesById {
   '/_app/legal/$slug': typeof AppLegalSlugRoute
   '/_app/locations/$locationId': typeof AppLocationsLocationIdRoute
   '/_app/locations/new': typeof AppLocationsNewRoute
+  '/_app/media/$mediaId': typeof AppMediaMediaIdRoute
   '/_app/posts/$postId': typeof AppPostsPostIdRoute
   '/_app/posts/new': typeof AppPostsNewRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
   '/api/avatar/$key': typeof ApiAvatarKeyRoute
   '/api/avatars/$id': typeof ApiAvatarsIdRoute
+  '/api/media-versions/$id': typeof ApiMediaVersionsIdRoute
   '/api/v1/terms': typeof ApiV1TermsRoute
   '/preview/events/$draftId': typeof PreviewEventsDraftIdRoute
   '/preview/legal/$slug': typeof PreviewLegalSlugRoute
@@ -565,11 +583,13 @@ export interface FileRouteTypes {
     | '/legal/$slug'
     | '/locations/$locationId'
     | '/locations/new'
+    | '/media/$mediaId'
     | '/posts/$postId'
     | '/posts/new'
     | '/api/auth/$'
     | '/api/avatar/$key'
     | '/api/avatars/$id'
+    | '/api/media-versions/$id'
     | '/api/v1/terms'
     | '/preview/events/$draftId'
     | '/preview/legal/$slug'
@@ -624,11 +644,13 @@ export interface FileRouteTypes {
     | '/legal/$slug'
     | '/locations/$locationId'
     | '/locations/new'
+    | '/media/$mediaId'
     | '/posts/$postId'
     | '/posts/new'
     | '/api/auth/$'
     | '/api/avatar/$key'
     | '/api/avatars/$id'
+    | '/api/media-versions/$id'
     | '/api/v1/terms'
     | '/preview/events/$draftId'
     | '/preview/legal/$slug'
@@ -685,11 +707,13 @@ export interface FileRouteTypes {
     | '/_app/legal/$slug'
     | '/_app/locations/$locationId'
     | '/_app/locations/new'
+    | '/_app/media/$mediaId'
     | '/_app/posts/$postId'
     | '/_app/posts/new'
     | '/api/auth/$'
     | '/api/avatar/$key'
     | '/api/avatars/$id'
+    | '/api/media-versions/$id'
     | '/api/v1/terms'
     | '/preview/events/$draftId'
     | '/preview/legal/$slug'
@@ -737,6 +761,7 @@ export interface RootRouteChildren {
   ApiAuthSplatRoute: typeof ApiAuthSplatRoute
   ApiAvatarKeyRoute: typeof ApiAvatarKeyRoute
   ApiAvatarsIdRoute: typeof ApiAvatarsIdRoute
+  ApiMediaVersionsIdRoute: typeof ApiMediaVersionsIdRoute
   ApiV1TermsRoute: typeof ApiV1TermsRoute
   PreviewEventsDraftIdRoute: typeof PreviewEventsDraftIdRoute
   PreviewLegalSlugRoute: typeof PreviewLegalSlugRoute
@@ -954,6 +979,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppMediaIndexRouteImport
       parentRoute: typeof AppRoute
     }
+    '/_app/media/$mediaId': {
+      id: '/_app/media/$mediaId'
+      path: '/media/$mediaId'
+      fullPath: '/media/$mediaId'
+      preLoaderRoute: typeof AppMediaMediaIdRouteImport
+      parentRoute: typeof AppRoute
+    }
     '/_app/missing-pages/': {
       id: '/_app/missing-pages/'
       path: '/missing-pages'
@@ -1087,6 +1119,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiAvatarsIdRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/media-versions/$id': {
+      id: '/api/media-versions/$id'
+      path: '/api/media-versions/$id'
+      fullPath: '/api/media-versions/$id'
+      preLoaderRoute: typeof ApiMediaVersionsIdRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/api/media/': {
       id: '/api/media/'
       path: '/api/media'
@@ -1197,6 +1236,7 @@ interface AppRouteChildren {
   AppLegalSlugRoute: typeof AppLegalSlugRoute
   AppLocationsLocationIdRoute: typeof AppLocationsLocationIdRoute
   AppLocationsNewRoute: typeof AppLocationsNewRoute
+  AppMediaMediaIdRoute: typeof AppMediaMediaIdRoute
   AppPostsPostIdRoute: typeof AppPostsPostIdRoute
   AppPostsNewRoute: typeof AppPostsNewRoute
   AppActivityIndexRoute: typeof AppActivityIndexRoute
@@ -1236,6 +1276,7 @@ const AppRouteChildren: AppRouteChildren = {
   AppLegalSlugRoute: AppLegalSlugRoute,
   AppLocationsLocationIdRoute: AppLocationsLocationIdRoute,
   AppLocationsNewRoute: AppLocationsNewRoute,
+  AppMediaMediaIdRoute: AppMediaMediaIdRoute,
   AppPostsPostIdRoute: AppPostsPostIdRoute,
   AppPostsNewRoute: AppPostsNewRoute,
   AppActivityIndexRoute: AppActivityIndexRoute,
@@ -1276,6 +1317,7 @@ const rootRouteChildren: RootRouteChildren = {
   ApiAuthSplatRoute: ApiAuthSplatRoute,
   ApiAvatarKeyRoute: ApiAvatarKeyRoute,
   ApiAvatarsIdRoute: ApiAvatarsIdRoute,
+  ApiMediaVersionsIdRoute: ApiMediaVersionsIdRoute,
   ApiV1TermsRoute: ApiV1TermsRoute,
   PreviewEventsDraftIdRoute: PreviewEventsDraftIdRoute,
   PreviewLegalSlugRoute: PreviewLegalSlugRoute,

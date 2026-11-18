@@ -3,7 +3,15 @@
  * replacing the file behind an existing one. Kept out of the route so the
  * integration tests can run it against local R2 and D1.
  */
-import { imageExtension, imageSize } from '@ll/content';
+import {
+  DOCUMENT_NOTE,
+  MAX_DOCUMENT_BYTES,
+  documentTypeFor,
+  imageExtension,
+  imageSize,
+  isDocumentMime,
+  matchesSignature,
+} from '@ll/content';
 import { type MediaVariant, maxImageSide, mediaVariantWidths } from '@ll/db/enums';
 import { media } from '@ll/db/schema';
 import { env } from 'cloudflare:workers';
@@ -15,7 +23,7 @@ import { forgetCachedMedia } from './media-delivery';
 const MAX_BYTES = 10 * 1024 * 1024;
 const ALLOWED_MIME = new Set(['image/jpeg', 'image/png', 'image/webp', 'image/avif', 'image/gif']);
 
-/** An image now in R2, with what its media row needs. */
+/** A file now in R2, with what its media row needs. A document has no size in pixels or copies. */
 export type StoredUpload = {
   r2Key: string;
   /** Every object written, original first, so a failed save can remove them. */
@@ -23,8 +31,8 @@ export type StoredUpload = {
   filename: string;
   mime: string;
   size: number;
-  width: number;
-  height: number;
+  width: number | null;
+  height: number | null;
   variants: MediaVariant[] | null;
 };
 
@@ -39,14 +47,44 @@ export class UploadError extends Error {
 }
 
 /**
- * Checks the `file` in an upload form and writes it and its smaller copies to
+ * A PDF or Office file. Its type comes from the name and its first bytes must be that format's,
+ * so something renamed to .pdf is refused. Nothing is converted or resized.
+ */
+async function storeDocument(file: File): Promise<StoredUpload> {
+  const type = documentTypeFor(file.name, file.type)!;
+  if (file.size > MAX_DOCUMENT_BYTES) {
+    throw new UploadError(`That file is larger than ${MAX_DOCUMENT_BYTES / 1024 / 1024} MB.`);
+  }
+  const bytes = new Uint8Array(await file.arrayBuffer());
+  if (!matchesSignature(bytes, type)) {
+    throw new UploadError(`That file is not a real ${type.label} document.`);
+  }
+  const r2Key = `media/${crypto.randomUUID()}.${type.extension}`;
+  await env.MEDIA.put(r2Key, bytes, { httpMetadata: { contentType: type.mime } });
+  return {
+    r2Key,
+    keys: [r2Key],
+    filename: file.name || r2Key,
+    mime: type.mime,
+    size: file.size,
+    width: null,
+    height: null,
+    variants: null,
+  };
+}
+
+/**
+ * Checks the `file` in an upload form and writes it (and an image's smaller copies) to
  * R2 under fresh keys. Throws UploadError for anything the person can fix.
  */
 export async function storeUpload(form: FormData): Promise<StoredUpload> {
   const file = form.get('file');
   if (!(file instanceof File)) throw new UploadError('No file was uploaded.');
+  if (documentTypeFor(file.name, file.type)) return storeDocument(file);
   if (!ALLOWED_MIME.has(file.type)) {
-    throw new UploadError('Only JPEG, PNG, WebP, AVIF and GIF images are supported.');
+    throw new UploadError(
+      `Only JPEG, PNG, WebP, AVIF and GIF images, or ${DOCUMENT_NOTE} documents, are supported.`
+    );
   }
   if (file.size > MAX_BYTES) throw new UploadError('That file is larger than 10 MB.');
 
@@ -137,7 +175,16 @@ export async function replaceMediaFile(
   const row = await db.query.media.findFirst({ where: eq(media.id, id) });
   if (!row) {
     await env.MEDIA.delete(stored.keys).catch(() => {});
-    throw new UploadError('That image is no longer in the media library.', 404);
+    throw new UploadError('That file is no longer in the media library.', 404);
+  }
+  // An image field would break on a document, and a link to a document on an image.
+  if (isDocumentMime(row.mime) !== isDocumentMime(stored.mime)) {
+    await env.MEDIA.delete(stored.keys).catch(() => {});
+    throw new UploadError(
+      isDocumentMime(row.mime)
+        ? 'A document can only be replaced with another document.'
+        : 'An image can only be replaced with another image.'
+    );
   }
 
   try {

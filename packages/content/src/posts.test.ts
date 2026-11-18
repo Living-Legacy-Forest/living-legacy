@@ -272,3 +272,36 @@ describe('postInputSchema search and sharing fields', () => {
     expect(picked.socialTitle).toBe('Card');
   });
 });
+
+describe('postInputSchema canonical URL', () => {
+  const base = {
+    title: 'T',
+    slug: '',
+    excerpt: '',
+    body: null,
+    authorId: null,
+    categoryIds: [],
+    tags: [],
+    featuredMediaId: null,
+    seoTitle: '',
+    seoDescription: '',
+    ogMediaId: null,
+    noindex: false,
+  };
+  const canonical = (canonicalUrl: string) =>
+    postInputSchema.safeParse({ ...base, canonicalUrl }).success;
+
+  it('takes a full web address or nothing, and nothing else', () => {
+    expect(canonical('')).toBe(true);
+    expect(canonical('https://example.com/a')).toBe(true);
+    for (const bad of [
+      'example.com',
+      'https://x',
+      'javascript:alert(1)',
+      'https://user:pw@example.com',
+      'https://localhost/a',
+    ]) {
+      expect(canonical(bad)).toBe(false);
+    }
+  });
+});

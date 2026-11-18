@@ -76,6 +76,7 @@ import {
   EmptyTitle,
 } from '@/components/ui/empty';
 import { Input } from '@/components/ui/input';
+import { WholeNumberInput } from '@/components/ui/whole-number-input';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import {
   Select,
@@ -937,14 +938,12 @@ function CoverageForm({
           htmlFor="mc-reading"
           hint="Optional. Shown as the read time on the card."
         >
-          <Input
+          <WholeNumberInput
             id="mc-reading"
-            type="number"
-            inputMode="numeric"
             min={1}
             max={240}
             value={readingMinutes}
-            onChange={(e) => setReadingMinutes(e.target.value)}
+            onValueChange={setReadingMinutes}
             className="w-28"
           />
         </FormCell>
@@ -972,6 +971,7 @@ function CoverageForm({
           <Input
             id="mc-url"
             type="url"
+            maxLength={500}
             required
             value={externalUrl}
             onChange={(e) => setExternalUrl(e.target.value)}
@@ -988,14 +988,12 @@ function CoverageForm({
           onCheckedChange={setFeatured}
         />
         <FormCell label="Order" htmlFor="mc-order" hint="Lower numbers come first.">
-          <Input
+          <WholeNumberInput
             id="mc-order"
-            type="number"
-            inputMode="numeric"
             min={0}
             max={9999}
             value={sortOrder}
-            onChange={(e) => setSortOrder(e.target.value)}
+            onValueChange={setSortOrder}
             className="w-28"
           />
         </FormCell>

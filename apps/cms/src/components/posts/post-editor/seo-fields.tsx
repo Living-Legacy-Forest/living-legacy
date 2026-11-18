@@ -92,6 +92,7 @@ export function SeoFields({
           <Input
             id="seo-canonical"
             type="url"
+            maxLength={500}
             inputMode="url"
             value={values.canonicalUrl}
             placeholder={ownUrl}

@@ -306,6 +306,21 @@ describe('guestInputSchema', () => {
     expect(problem({ email: 'sam@example.com' })).toBeNull();
   });
 
+  it('stores an email in lower case and refuses a malformed one', () => {
+    expect(guestInputSchema.parse({ ...guest, email: ' Sam@Example.COM ' }).email).toBe(
+      'sam@example.com'
+    );
+    for (const email of [
+      'sam@',
+      'sam@example',
+      'sam..x@example.com',
+      'a@b.c',
+      'sam @example.com',
+    ]) {
+      expect(problem({ email })).toBe('Enter an email like name@example.com.');
+    }
+  });
+
   it('stores an Australian phone in one format', () => {
     const parsed = guestInputSchema.parse({ ...guest, phone: '+61 412 345 678' });
     expect(parsed.phone).toBe('0412 345 678');

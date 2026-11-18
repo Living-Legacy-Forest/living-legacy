@@ -10,6 +10,7 @@
  * Responses are kept in the edge cache of the data centre that served them,
  * so repeat views skip the database lookup and the R2 read.
  */
+import { contentDisposition, isDocumentMime } from '@ll/content';
 import { type MediaVariant, mediaVariantWidths } from '@ll/db/enums';
 import { media } from '@ll/db/schema';
 import { env } from 'cloudflare:workers';
@@ -77,7 +78,12 @@ export async function serveMedia(
       'Content-Length': String(object.size),
       'Cache-Control': EDGE_CACHE,
       ETag: object.httpEtag,
-      ...UPLOAD_HEADERS,
+      ...(isDocumentMime(row.mime)
+        ? {
+            ...DOCUMENT_HEADERS,
+            'Content-Disposition': contentDisposition(row.filename, row.mime),
+          }
+        : UPLOAD_HEADERS),
     },
   });
   ctx.waitUntil(cache.put(key, response.clone()));
@@ -92,6 +98,16 @@ export async function serveMedia(
 export const UPLOAD_HEADERS = {
   'X-Content-Type-Options': 'nosniff',
   'Content-Security-Policy': "default-src 'none'; sandbox",
+} as const;
+
+/**
+ * Documents. The type is never sniffed, and the policy runs nothing. It has no `sandbox`, which
+ * would stop a browser opening a PDF, so a PDF opens in the browser's own viewer; Office files
+ * are sent as downloads (see contentDisposition) and are never opened as a page.
+ */
+export const DOCUMENT_HEADERS = {
+  'X-Content-Type-Options': 'nosniff',
+  'Content-Security-Policy': "default-src 'none'",
 } as const;
 
 /** Drops this data centre's cached copies of each id; others expire on their own. */

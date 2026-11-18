@@ -4,6 +4,7 @@ import { DateTimePicker } from '@/components/date-time-picker';
 import { FormCell, FormSwitchCell } from '@/components/form-cells';
 import { ImageGalleryField } from '@/components/media/image-gallery-field';
 import { Input } from '@/components/ui/input';
+import { WholeNumberInput } from '@/components/ui/whole-number-input';
 import { NumberField } from '@/components/ui/number-field';
 import {
   Select,
@@ -71,17 +72,12 @@ export function EventSidePanel({
           htmlFor="ev-capacity"
           hint="Total people. Leave empty for no limit."
         >
-          <Input
+          <WholeNumberInput
             id="ev-capacity"
-            type="number"
-            inputMode="numeric"
             min={1}
-            value={values.capacity ?? ''}
-            onChange={(e) =>
-              patch({
-                capacity: e.target.value === '' ? null : Math.max(1, Number(e.target.value)),
-              })
-            }
+            max={100_000}
+            value={values.capacity}
+            onValueChange={(typed) => patch({ capacity: typed === '' ? null : Number(typed) })}
             placeholder="No limit"
             className="w-28"
           />

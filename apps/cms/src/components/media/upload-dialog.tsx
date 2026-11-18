@@ -1,5 +1,5 @@
-// Upload images to Media: a row per file with its own progress, a tick when it lands, or why it
-// failed with a Retry. Each image shows in the library as soon as it is in.
+// Upload images and documents to Media: a row per file with its own progress, a tick when it lands, or why it
+// failed with a Retry. Each file shows in the library as soon as it is in.
 import { useRouter } from '@tanstack/react-router';
 import { useEffect, useRef, useState } from 'react';
 import { Button } from '@/components/ui/button';
@@ -18,7 +18,7 @@ import {
   type FileDropzoneUpload,
 } from '@/components/ui/file-dropzone';
 import { readableError } from '@/lib/errors';
-import { IMAGE_ACCEPT, uploadMedia } from '@/lib/upload-media';
+import { MEDIA_ACCEPT, uploadMedia } from '@/lib/upload-media';
 
 export function MediaUploadDialog({
   open,
@@ -65,19 +65,19 @@ export function MediaUploadDialog({
     <Dialog open={open} onOpenChange={(next) => (next || active === 0) && onOpenChange(next)}>
       <DialogContent className="sm:max-w-lg">
         <DialogHeader>
-          <DialogTitle>Upload images</DialogTitle>
+          <DialogTitle>Upload files</DialogTitle>
           <DialogDescription>
-            Each is resized for the web and ready to use in posts and pages.
+            Images are resized for the web. Documents are kept exactly as they are.
           </DialogDescription>
         </DialogHeader>
         <div className="max-h-[60vh] overflow-y-auto">
           <FileDropzone
             ref={zone}
-            accept={IMAGE_ACCEPT}
-            label="Add images"
+            accept={MEDIA_ACCEPT}
+            label="Add files"
             description="Drop them here, paste, or choose from your device."
-            note="JPG, PNG, WebP, AVIF or GIF"
-            refusal="Only JPG, PNG, WebP, AVIF or GIF images can be uploaded."
+            note="Images (JPG, PNG, WebP, AVIF, GIF) up to 10 MB, or PDF, Word, Excel and PowerPoint up to 20 MB"
+            refusal="Only images, or PDF, Word, Excel and PowerPoint documents, can be uploaded."
             maxFiles={50}
             compactAt={3}
             onUpload={upload}

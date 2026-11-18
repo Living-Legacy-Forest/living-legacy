@@ -6,6 +6,7 @@ import {
 } from '@ll/content';
 import { FormCell, FormSwitchCell } from '@/components/form-cells';
 import { Input } from '@/components/ui/input';
+import { WholeNumberInput } from '@/components/ui/whole-number-input';
 import {
   Select,
   SelectContent,
@@ -84,6 +85,7 @@ export function LocationDetails({ editor }: { editor: LocationEditorState }) {
             <Input
               id="loc-external"
               type="url"
+              maxLength={500}
               value={values.externalUrl}
               onChange={(e) => patch({ externalUrl: e.target.value })}
               placeholder="https://"
@@ -130,6 +132,7 @@ export function LocationDetails({ editor }: { editor: LocationEditorState }) {
           <Input
             id="loc-map"
             type="url"
+            maxLength={500}
             value={values.mapUrl}
             onChange={(e) => patch({ mapUrl: e.target.value })}
             placeholder="https://"
@@ -217,14 +220,12 @@ export function LocationDetails({ editor }: { editor: LocationEditorState }) {
           htmlFor="loc-order"
           hint="Lower numbers come first in the directory."
         >
-          <Input
+          <WholeNumberInput
             id="loc-order"
-            type="number"
-            inputMode="numeric"
             min={0}
             max={9999}
             value={values.sortOrder}
-            onChange={(e) => patch({ sortOrder: e.target.value })}
+            onValueChange={(sortOrder) => patch({ sortOrder })}
             className="w-28"
           />
         </FormCell>

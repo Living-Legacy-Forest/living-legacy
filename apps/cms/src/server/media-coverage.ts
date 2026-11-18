@@ -1,4 +1,4 @@
-import { mediaCoverageKinds, slugify } from '@ll/content';
+import { mediaCoverageKinds, slugify, webUrlSchema, wholeNumberSchema } from '@ll/content';
 import { mediaCoverage } from '@ll/db/schema';
 import { createServerFn } from '@tanstack/react-start';
 import { and, asc, desc, eq, inArray, isNull, ne } from 'drizzle-orm';
@@ -50,15 +50,11 @@ const coverageSchema = z.object({
   source: z.string().trim().min(1).max(80),
   coverageDate: z.number().int().nullable(),
   excerpt: z.string().trim().max(400),
-  readingMinutes: z.number().int().min(1).max(240).nullable(),
+  readingMinutes: wholeNumberSchema('Reading time', 1, 240).nullable(),
   imageMediaId: z.string().nullable(),
-  externalUrl: z
-    .string()
-    .trim()
-    .url()
-    .refine((u) => /^https?:\/\//.test(u), 'Use a web link starting with https://'),
+  externalUrl: webUrlSchema(500),
   featured: z.boolean(),
-  sortOrder: z.number().int().min(0).max(9999),
+  sortOrder: wholeNumberSchema('Order', 0, 9999),
   status: z.enum(['draft', 'published']),
 });
 

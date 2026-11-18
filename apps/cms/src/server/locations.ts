@@ -4,8 +4,12 @@ import {
   richTextPlainText,
   richTextSchema,
   richTextToStored,
+  optionalEmailSchema,
+  optionalPhoneSchema,
+  optionalWebUrlSchema,
   slugify,
   storedToRichText,
+  wholeNumberSchema,
 } from '@ll/content';
 import { eventBookings, events, locations } from '@ll/db/schema';
 import { createServerFn } from '@tanstack/react-start';
@@ -50,10 +54,7 @@ export const listLocations = createServerFn({ method: 'GET' })
 export type LocationsData = Awaited<ReturnType<typeof listLocations>>;
 export type LocationItem = LocationsData[number];
 
-const webLink = z
-  .string()
-  .trim()
-  .refine((u) => u === '' || /^https?:\/\/\S+$/.test(u), 'Use a web link starting with https://');
+const webLink = optionalWebUrlSchema(500);
 
 /** Where the map pin goes: both coordinates, or neither. */
 const pinSchema = z
@@ -78,8 +79,8 @@ const locationSchema = z.object({
   pin: pinSchema,
   mapUrl: webLink,
   hours: z.string().trim().max(400),
-  phone: z.string().trim().max(40),
-  email: z.union([z.literal(''), z.string().trim().email().max(120)]),
+  phone: optionalPhoneSchema(),
+  email: optionalEmailSchema(120),
   hubspotFormId: z.union([
     z.literal(''),
     z
@@ -87,7 +88,7 @@ const locationSchema = z.object({
       .trim()
       .regex(/^[0-9a-f]{8}(-[0-9a-f]{4}){3}-[0-9a-f]{12}$/i, 'Paste the form ID from HubSpot.'),
   ]),
-  sortOrder: z.number().int().min(0).max(9999),
+  sortOrder: wholeNumberSchema('Order', 0, 9999),
   status: z.enum(['draft', 'published']),
 });
 

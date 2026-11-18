@@ -341,6 +341,7 @@ export function SettingsPage({
                 <Input
                   id="settings-email"
                   type="email"
+                  maxLength={120}
                   value={values.contactEmail}
                   placeholder="hello@example.com"
                   onChange={(e) => patch({ contactEmail: e.target.value })}
@@ -364,6 +365,7 @@ export function SettingsPage({
                 <Input
                   id="settings-phone"
                   type="tel"
+                  maxLength={40}
                   value={values.phone}
                   placeholder="1300 000 000"
                   onChange={(e) => patch({ phone: e.target.value })}
@@ -440,6 +442,7 @@ export function SettingsPage({
                   <Input
                     id={`settings-${key}`}
                     type="url"
+                    maxLength={300}
                     value={values[key]}
                     placeholder={placeholder}
                     onChange={(e) => patch({ [key]: e.target.value })}
@@ -515,6 +518,7 @@ export function SettingsPage({
                 <Input
                   id="settings-share-image"
                   type="url"
+                  maxLength={300}
                   value={values.seoImageUrl}
                   placeholder="https://…/share-image.jpg"
                   onChange={(e) => patch({ seoImageUrl: e.target.value })}

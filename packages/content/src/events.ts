@@ -1,6 +1,7 @@
 import { z } from 'zod';
 import type { AustralianState } from './locations';
 import { auPhone } from './phone';
+import { EMAIL_MESSAGE, isEmail, wholeNumberSchema } from './validation';
 import { richTextSchema } from './posts';
 import { type TimeZone, timeZones } from './settings';
 
@@ -176,8 +177,8 @@ export const eventInputSchema = z
       .array(z.string())
       .max(EVENT_PHOTO_LIMIT - 1, `An event can have ${EVENT_PHOTO_LIMIT} photos.`)
       .default([]),
-    capacity: z.number().int().min(1).max(100_000).nullable(),
-    maxPartySize: z.number().int().min(1).max(STAFF_MAX_PARTY_SIZE),
+    capacity: wholeNumberSchema('Capacity', 1, 100_000).nullable(),
+    maxPartySize: wholeNumberSchema('Max per booking', 1, STAFF_MAX_PARTY_SIZE),
     // The default keeps forms and previews saved before it existed readable.
     bookingsOpenAt: z.number().int().nullable().default(null),
     bookingsCloseAt: z.number().int().nullable(),
@@ -222,10 +223,9 @@ export const guestInputSchema = z.object({
   eventId: z.string(),
   firstName: z.string().trim().min(1, 'Enter a first name.').max(60).regex(NAME, NAME_MESSAGE),
   lastName: optionalText(60).refine((v) => !v || NAME.test(v), NAME_MESSAGE),
-  email: optionalText(200).refine(
-    (v) => !v || z.string().email().safeParse(v).success,
-    'Enter an email like name@example.com.'
-  ),
+  email: optionalText(200)
+    .transform((v) => v.toLowerCase())
+    .refine((v) => !v || isEmail(v), EMAIL_MESSAGE),
   phone: optionalText(40)
     .refine((v) => !v || auPhone(v) !== null, 'Enter an Australian mobile or landline number.')
     .transform((v) => (v ? auPhone(v)! : '')),

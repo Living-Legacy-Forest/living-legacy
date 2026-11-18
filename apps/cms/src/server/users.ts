@@ -1,4 +1,5 @@
 import {
+  emailSchema,
   guardRemoval,
   guardRoleChange,
   isEmailDomainAllowed,
@@ -73,7 +74,7 @@ export type TeamData = Awaited<ReturnType<typeof listUsers>>;
 
 export const inviteUser = createServerFn({ method: 'POST' })
   .middleware([requirePermission('users:manage')])
-  .validator(z.object({ email: z.string().email(), role: roleSchema }))
+  .validator(z.object({ email: emailSchema(), role: roleSchema }))
   .handler(async ({ data, context }) => {
     const db = getDb();
     const email = normaliseEmail(data.email);

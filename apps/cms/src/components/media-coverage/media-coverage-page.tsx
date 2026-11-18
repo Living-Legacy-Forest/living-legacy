@@ -621,7 +621,7 @@ function CoverageCard({ item }: { item: MediaCoverageItem }) {
           </div>
         )}
       </div>
-      <p className="text-muted-foreground mt-4 text-xs font-medium tracking-wide uppercase">
+      <p className="text-muted-foreground mt-4 text-xs font-medium">
         {item.source} · {item.kind === 'video' ? 'Video' : 'News'}
       </p>
       <h2 className="mt-1.5 text-lg leading-snug font-medium text-balance">{item.title}</h2>

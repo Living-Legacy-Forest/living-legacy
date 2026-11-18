@@ -47,6 +47,7 @@ export function StatCard({ stat }: { stat: Stat }) {
   // A card whose figure is a total over the span shows the total for the span chosen.
   const shown = days?.headline ? sum(days.counts.slice(-range)) : value;
   const delta = trend && change(days?.counts ?? trend.weeks ?? [], span);
+  const nothing = trend?.none && days && sum(days.counts.slice(-range)) === 0;
 
   const figure = (
     <span className="text-3xl font-medium tracking-tight text-balance tabular-nums">
@@ -102,33 +103,42 @@ export function StatCard({ stat }: { stat: Stat }) {
           </p>
         )}
       </div>
-      {(trend || parts || meter) && (
-        // Holds the chart's height while the chart library loads.
-        <Suspense
-          fallback={
-            <div className="mt-auto px-(--card-spacing) pt-4">
-              <div className={trend ? 'h-32' : meter ? 'h-36' : 'h-28'} />
-            </div>
-          }
+      {nothing ? (
+        <p
+          data-reveal="4"
+          className="text-muted-foreground mt-auto px-(--card-spacing) pt-4 text-xs"
         >
-          {!onClient ? (
-            <div className="mt-auto px-(--card-spacing) pt-4">
-              <div className={trend ? 'h-32' : meter ? 'h-36' : 'h-28'} />
-            </div>
-          ) : (
-            <div data-reveal="4" className="mt-auto px-(--card-spacing) pt-4">
-              {trend && <TrendChart trend={trend} range={range} />}
-              {parts && <PartsChart parts={parts} />}
-              {meter && (
-                // Compact, and without the legend (hovering the bar names each kind): the full
-                // breakdown is on the System page.
-                <div className="[--meter-gap:0.25rem] [--meter-item-pad:0.125rem] [--meter-legend-display:none] [--meter-legend-min:3.5rem] [--meter-text-base:0.625rem] [--meter-text-sm:0.5625rem] [--meter-text-xs:0.5625rem] [--meter-top:20px] [--meter-total-size:0.875rem] [--meter-track:8px]">
-                  <UsageMeter {...meter} />
-                </div>
-              )}
-            </div>
-          )}
-        </Suspense>
+          {trend?.none} in the last {range} days
+        </p>
+      ) : (
+        (trend || parts || meter) && (
+          // Holds the chart's height while the chart library loads.
+          <Suspense
+            fallback={
+              <div className="mt-auto px-(--card-spacing) pt-4">
+                <div className={trend ? 'h-32' : meter ? 'h-36' : 'h-28'} />
+              </div>
+            }
+          >
+            {!onClient ? (
+              <div className="mt-auto px-(--card-spacing) pt-4">
+                <div className={trend ? 'h-32' : meter ? 'h-36' : 'h-28'} />
+              </div>
+            ) : (
+              <div data-reveal="4" className="mt-auto px-(--card-spacing) pt-4">
+                {trend && <TrendChart trend={trend} range={range} />}
+                {parts && <PartsChart parts={parts} />}
+                {meter && (
+                  // Compact, and without the legend (hovering the bar names each kind): the full
+                  // breakdown is on the System page.
+                  <div className="[--meter-gap:0.25rem] [--meter-item-pad:0.125rem] [--meter-legend-display:none] [--meter-legend-min:3.5rem] [--meter-text-base:0.625rem] [--meter-text-sm:0.5625rem] [--meter-text-xs:0.5625rem] [--meter-top:20px] [--meter-total-size:0.875rem] [--meter-track:8px]">
+                    <UsageMeter {...meter} />
+                  </div>
+                )}
+              </div>
+            )}
+          </Suspense>
+        )
       )}
     </Card>
   );

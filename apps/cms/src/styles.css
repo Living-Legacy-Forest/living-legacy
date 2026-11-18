@@ -21,6 +21,26 @@
    where anything revealed on hover needs another way in. */
 @custom-variant touch (@media (hover: none));
 
+/* A dialog opened from the keyboard many times a day (the command menu) shows and hides at once,
+   backdrop included: any animation there reads as lag between the keys and the menu. */
+[data-slot='dialog-content'][data-instant],
+[data-slot='dialog-overlay']:has(~ [data-slot='dialog-content'][data-instant]) {
+  animation: none;
+}
+
+/* On tablets with touch, a control drawn shorter than a fingertip still takes a 44px-tall tap: an
+   invisible layer reaches above and below it, so it looks the same and is easier to hit. The
+   control must be positioned. Only vertical, so neighbours in a row never steal each other's taps. */
+@utility touch-hit {
+  @media (hover: none) and (width >= 48rem) {
+    &::after {
+      content: '';
+      position: absolute;
+      inset: min(0px, calc((100% - 44px) / 2)) 0;
+    }
+  }
+}
+
 /* Scrolls without showing a scrollbar: panes, lists and dialogs, where the content shows it moves. */
 @utility no-scrollbar {
   scrollbar-width: none;
@@ -1094,21 +1114,12 @@
   }
 }
 
-/* A form opening to add or edit, in the pane or a dialog: fields rise one after another,
-   then the buttons. Plays each time one opens or a different item loads (the form remounts),
-   so it is brief. Dialogs on phones are sheets that slide in themselves, so are left alone. */
+/* A form opening to add or edit, in the pane or a dialog: the fields and buttons fade in
+   together, in one quick beat. It plays each time one opens or a different item loads (the
+   form remounts), which is many times a day, so there is no cascade to sit through: a field-by-
+   field rise took 610ms before the buttons settled. Dialogs on phones are sheets that slide in
+   themselves, so are left alone. */
 @media (width >= 48rem) {
-  :is([data-slot='pane-body'], [data-slot='dialog-content']) [data-slot='form-section'] {
-    --section: 0;
-  }
-  :is([data-slot='pane-body'], [data-slot='dialog-content'])
-    [data-slot='form-section']:nth-of-type(2) {
-    --section: 1;
-  }
-  :is([data-slot='pane-body'], [data-slot='dialog-content'])
-    [data-slot='form-section']:nth-of-type(n + 3) {
-    --section: 2;
-  }
   :is([data-slot='pane-body'], [data-slot='dialog-content'])
     :is(
       [data-slot='form-steps'],
@@ -1116,33 +1127,17 @@
       [data-slot='form-switch-cell'],
       [data-slot='form-block'],
       [data-slot='form-section-footer']
-    ):not([data-moved] *) {
-    animation: dashboard-text 350ms cubic-bezier(0.23, 1, 0.32, 1) backwards;
-    animation-delay: calc(30ms + var(--section, 0) * 90ms + var(--cell, 0) * 35ms);
-  }
-  :is([data-slot='pane-body'], [data-slot='dialog-content'])
-    [data-slot='form-group']
-    > :nth-child(2) {
-    --cell: 1;
-  }
-  :is([data-slot='pane-body'], [data-slot='dialog-content'])
-    [data-slot='form-group']
-    > :nth-child(3) {
-    --cell: 2;
-  }
-  :is([data-slot='pane-body'], [data-slot='dialog-content'])
-    [data-slot='form-group']
-    > :nth-child(4) {
-    --cell: 3;
-  }
-  :is([data-slot='pane-body'], [data-slot='dialog-content'])
-    [data-slot='form-group']
-    > :nth-child(n + 5) {
-    --cell: 4;
-  }
+    ):not([data-moved] *),
   [data-slot='pane-body'] [data-slot='form-actions'],
   [data-slot='dialog-content'] [data-slot='dialog-footer'] {
-    animation: dashboard-text 350ms cubic-bezier(0.23, 1, 0.32, 1) 260ms backwards;
+    animation: form-in 160ms cubic-bezier(0.23, 1, 0.32, 1) backwards;
+  }
+}
+
+@keyframes form-in {
+  from {
+    opacity: 0;
+    transform: translateY(2px);
   }
 }
 

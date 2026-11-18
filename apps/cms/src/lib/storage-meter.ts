@@ -18,6 +18,19 @@ function unitFor(usedBytes: number) {
   return { size: big ? GIGABYTE : MEGABYTE, unit: big ? 'GB' : 'MB', decimals: big ? 2 : 1 };
 }
 
+/**
+ * An amount in `size`-byte units, written in GB from one GB up and in MB below, so the
+ * allowance and what is left read "10 GB" and "9.99 GB" rather than "10240 MB".
+ */
+function amountIn(size: number) {
+  return (value: number) => {
+    const bytes = value * size;
+    return bytes >= GIGABYTE
+      ? `${(bytes / GIGABYTE).toFixed(2).replace(/\.?0+$/, '')} GB`
+      : `${(bytes / MEGABYTE).toFixed(1).replace(/\.0$/, '')} MB`;
+  };
+}
+
 /** The media library by kind, against the free allowance. */
 export function libraryMeter(
   kinds: { kind: StoredKind; bytes: number }[],
@@ -29,6 +42,7 @@ export function libraryMeter(
     unit,
     decimals,
     limit: allowanceBytes / size,
+    formatAmount: amountIn(size),
     freeLabel: 'Left',
     overLabel: 'Over allowance',
     segments: kinds
@@ -45,6 +59,7 @@ export function databaseMeter(usedBytes: number, limitBytes: number): Meter {
     unit,
     decimals,
     limit: limitBytes / size,
+    formatAmount: amountIn(size),
     freeLabel: 'Left',
     overLabel: 'Over allowance',
     segments: [{ id: 'database', label: 'Database', value: usedBytes / size }],

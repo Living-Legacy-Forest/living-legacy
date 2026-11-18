@@ -591,7 +591,7 @@ export function WhatsNewPage() {
                   className={cn(
                     index === 0
                       ? 'sr-only'
-                      : 'text-muted-foreground px-2 pt-6 pb-1 text-xs font-medium tracking-wide uppercase'
+                      : 'text-muted-foreground px-2 pt-6 pb-1 text-xs font-medium'
                   )}
                 >
                   {group.name} {group.year}

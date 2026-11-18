@@ -10,7 +10,7 @@ export const pillTrackClass =
   'relative isolate inline-flex w-fit max-w-full min-w-0 items-center gap-0.5';
 
 export const pillItemClass =
-  'relative inline-flex h-7 shrink-0 items-center justify-center gap-1.5 rounded-md px-2.5 text-ui whitespace-nowrap text-muted-foreground outline-none transition-colors duration-150 [-webkit-tap-highlight-color:transparent] pointer-fine:hover:text-foreground focus-visible:ring-[3px] focus-visible:ring-ring/50 aria-pressed:font-medium aria-pressed:text-foreground aria-[current=page]:font-medium aria-[current=page]:text-foreground motion-reduce:transition-none';
+  'touch-hit relative inline-flex h-7 shrink-0 items-center justify-center gap-1.5 rounded-md px-2.5 text-ui whitespace-nowrap text-muted-foreground outline-none transition-colors duration-150 [-webkit-tap-highlight-color:transparent] pointer-fine:hover:text-foreground focus-visible:ring-[3px] focus-visible:ring-ring/50 aria-pressed:font-medium aria-pressed:text-foreground aria-[current=page]:font-medium aria-[current=page]:text-foreground motion-reduce:transition-none';
 
 /** The fill itself; `TabsList` draws it with Base UI's indicator instead. */
 export const pillClass = 'rounded-md bg-muted';

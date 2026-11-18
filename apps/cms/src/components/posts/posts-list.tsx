@@ -465,7 +465,9 @@ export function PostsList({
               <nav
                 aria-label="Post status"
                 data-slot="pill-track"
-                className={cn(pillTrackClass, 'no-scrollbar overflow-x-auto')}
+                // Fills the bar's height on touch screens: it scrolls, so it clips, and the
+                // tabs' taller tap areas (touch-hit) have to fit inside it.
+                className={cn(pillTrackClass, 'no-scrollbar md:touch:self-stretch overflow-x-auto')}
               >
                 <PillGlide value={search.status} />
                 {tabs

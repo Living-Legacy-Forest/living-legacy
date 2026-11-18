@@ -89,6 +89,7 @@ function buildStats(
       trend: {
         kind: 'bar',
         counted: 'people booked',
+        none: 'No bookings',
         days: { keys: trendDays, counts: events.bookedDaily },
       },
       // The overview is for people who run events.

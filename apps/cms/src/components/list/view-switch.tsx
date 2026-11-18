@@ -72,7 +72,7 @@ export function ViewSwitch({
           aria-pressed={value === next}
           title={`${label} view`}
           // The highlight behind is the background; the buttons only change colour.
-          className="text-muted-foreground hover:text-foreground aria-pressed:text-foreground relative size-7 hover:bg-transparent active:bg-transparent dark:hover:bg-transparent dark:active:bg-transparent"
+          className="text-muted-foreground hover:text-foreground aria-pressed:text-foreground touch-hit relative size-7 hover:bg-transparent active:bg-transparent dark:hover:bg-transparent dark:active:bg-transparent"
           onClick={() => onChange(next)}
         >
           <Icon aria-hidden />

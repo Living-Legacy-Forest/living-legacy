@@ -57,14 +57,26 @@ function readStored(metrics: TrendMetric[]): { metric: TrendMetric; days: TrendR
  */
 export function TrendCard({ analytics }: { analytics: boolean }) {
   const metrics = trendMetricKeys;
-  const [{ metric, days }, setChoice] = useState(() => readStored(metrics));
+  // Starts as the server rendered it and takes the saved choice after mount. Reading storage in
+  // the first render made the range buttons keep the server's "30 days" highlighted while the
+  // chart loaded the saved 90.
+  const [{ metric, days }, setChoice] = useState(() => ({
+    metric: metrics[0]!,
+    days: 30 as TrendRange,
+  }));
+  const [restored, setRestored] = useState(false);
   const [trend, setTrend] = useState<DashboardTrend | null>(null);
   // Without analytics there is nothing to wait for.
   const [loading, setLoading] = useState(analytics);
   const [failed, setFailed] = useState(false);
 
   useEffect(() => {
-    if (!analytics) return;
+    setChoice(readStored(metrics));
+    setRestored(true);
+  }, [metrics]);
+
+  useEffect(() => {
+    if (!analytics || !restored) return;
     localStorage.setItem(STORED, JSON.stringify({ metric, days }));
     let live = true;
     setLoading(true);
@@ -80,7 +92,7 @@ export function TrendCard({ analytics }: { analytics: boolean }) {
     return () => {
       live = false;
     };
-  }, [analytics, metric, days]);
+  }, [analytics, restored, metric, days]);
 
   const { label, total: totalLabel } = trendMetrics[metric];
   // Unique visitors come counted over the whole period; the rest add up their days.

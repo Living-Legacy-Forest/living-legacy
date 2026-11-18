@@ -51,6 +51,11 @@ export interface UsageMeterProps {
   overLabel?: string;
   /** Share of the limit at which the meter warns that it is almost full. */
   warnAt?: number;
+  /**
+   * Writes an amount with its unit, for the limit and what is left. Lets a caller step up to a
+   * bigger unit where one reads better ("10 GB", not "10240 MB"). Defaults to `unit`.
+   */
+  formatAmount?: (value: number) => string;
 }
 
 const { spring, duration, ease, blur } = motionTokens;
@@ -423,6 +428,7 @@ export function UsageMeter({
   freeLabel = 'Free',
   overLabel = 'Over limit',
   warnAt = 0.9,
+  formatAmount,
 }: UsageMeterProps) {
   const { reduced, hydrated } = useReducedMotionSafe();
   const root = useRef<HTMLDivElement>(null);
@@ -436,7 +442,8 @@ export function UsageMeter({
   const free = round(Math.max(0, limit - total)),
     over = round(Math.max(0, total - limit));
   const status: Status = total > limit ? 'over' : total >= limit * warnAt ? 'near' : 'ok';
-  const format = (value: number) => `${value.toFixed(decimals)}${unit ? ` ${unit}` : ''}`;
+  const format =
+    formatAmount ?? ((value: number) => `${value.toFixed(decimals)}${unit ? ` ${unit}` : ''}`);
   const limitText = format(limit).replace(/\.0+(?= |$)/, '');
 
   // One motion value per segment id, kept across renders so a changed value springs from where it is.

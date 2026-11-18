@@ -9,6 +9,11 @@ export type Trend = {
   weeks?: number[];
   /** What was counted, for the tooltip and screen readers ("posts published"). */
   counted: string;
+  /**
+   * Said in place of a daily chart whose span counted nothing ("No bookings"), so an empty card
+   * reads as a sentence rather than a blank box. Without it the empty chart is drawn.
+   */
+  none?: string;
   /** Draw the running total, ending at this, instead of each day's or week's count. */
   total?: { value: number; label: string };
   /** A second, quieter wave behind the first (line charts only), such as readers. */
@@ -47,6 +52,8 @@ export type Meter = {
   decimals?: number;
   freeLabel?: string;
   overLabel?: string;
+  /** Writes the limit and what is left in a bigger unit where one reads better. */
+  formatAmount?: (value: number) => string;
 };
 
 /** One part of a ring. Its colour is the chart palette's, in order, so it is not chosen here. */

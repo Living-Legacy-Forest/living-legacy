@@ -23,7 +23,7 @@ import { ImageCropDialog } from '@/components/media/image-crop-dialog';
 import { download, extensionLabel, fileFacts } from '@/components/media/media-file';
 import { MediaUsageList } from '@/components/media/media-usage';
 import { MediaVersions } from '@/components/media/media-versions';
-import { PdfPages } from '@/components/media/pdf-pages';
+import { PdfReader } from '@/components/media/pdf-reader';
 import { Button } from '@/components/ui/button';
 import {
   DropdownMenu,
@@ -81,7 +81,6 @@ export function MediaDetail({
   const [caption, setCaption] = useState(item.caption);
   const [tags, setTags] = useState(item.tags);
   const [focal, setFocal] = useState<Focal | null>(item.focal);
-  const [reading, setReading] = useState(false);
   // The file being cropped, fetched back from the library.
   const [cropping, setCropping] = useState<File | null>(null);
   const [loadingCrop, setLoadingCrop] = useState(false);
@@ -104,7 +103,11 @@ export function MediaDetail({
     const onKey = (e: KeyboardEvent) => {
       if (e.metaKey || e.ctrlKey || e.altKey || e.shiftKey) return;
       const target = e.target as HTMLElement | null;
-      if (target?.closest('input, textarea, select, [contenteditable], [role="dialog"], button')) {
+      if (
+        target?.closest(
+          'input, textarea, select, [contenteditable], [role="dialog"], button, [data-pdf-reader]'
+        )
+      ) {
         return;
       }
       const id = e.key === 'ArrowLeft' ? previousId : e.key === 'ArrowRight' ? nextId : null;
@@ -260,28 +263,29 @@ export function MediaDetail({
 
   const preview = isDocument ? (
     <div className="grid gap-3">
-      <DocumentThumb
-        item={item}
-        width={640}
-        showName={false}
-        className="h-80 w-full rounded-lg border"
-      />
-      <div className="flex flex-wrap items-center gap-3">
-        <a
-          href={item.url}
-          target="_blank"
-          rel="noopener noreferrer"
-          className="text-ui text-primary w-fit underline underline-offset-4"
-        >
-          {isPdf ? 'Open the PDF' : 'Download the file'}
-        </a>
-        {isPdf && (
-          <Button type="button" variant="outline" size="sm" onClick={() => setReading((r) => !r)}>
-            {reading ? 'Hide the pages' : 'Read the pages here'}
-          </Button>
-        )}
-      </div>
-      {isPdf && reading && <PdfPages url={item.url} />}
+      {isPdf ? (
+        // Read in place, a page at a time. The thumbnail shows while the document loads.
+        <PdfReader
+          url={item.url}
+          title={item.filename}
+          placeholder={item.hasCover ? mediaSrc(item, 640) : undefined}
+        />
+      ) : (
+        <DocumentThumb
+          item={item}
+          width={640}
+          showName={false}
+          className="h-80 w-full rounded-lg border"
+        />
+      )}
+      <a
+        href={item.url}
+        target="_blank"
+        rel="noopener noreferrer"
+        className="text-ui text-primary w-fit underline underline-offset-4"
+      >
+        {isPdf ? 'Open the PDF in a new tab' : 'Download the file'}
+      </a>
     </div>
   ) : (
     <FocalPicker

@@ -4,7 +4,7 @@
 export type MediaLibrarySearch = {
   q?: string;
   sort?: string;
-  type?: 'images' | 'documents';
+  types?: ('images' | 'documents')[];
   tags?: string[];
   exts?: string[];
   /** How many files were loaded, so the same ones are back. */
@@ -17,7 +17,7 @@ export const rememberMediaSearch = (search: MediaLibrarySearch) => {
   last = {
     q: search.q,
     sort: search.sort,
-    type: search.type,
+    types: search.types,
     tags: search.tags,
     exts: search.exts,
     show: search.show,

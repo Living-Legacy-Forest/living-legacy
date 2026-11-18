@@ -78,8 +78,11 @@ export const listMediaSchema = z.object({
   q: z.string().max(100).optional(),
   /** Leave out documents, for an image field. */
   imagesOnly: z.boolean().optional(),
-  /** Only images, or only documents, for the library's filter. */
-  kind: z.enum(['image', 'document']).optional(),
+  /** Only images, or only documents; both (or none) shows everything. For the library's filter. */
+  kinds: z
+    .array(z.enum(['image', 'document']))
+    .max(2)
+    .optional(),
   /** Files with any of these tags. */
   tags: z.array(z.string().max(40)).max(20).optional(),
   /** Files whose name ends in any of these (lower case, no dot): "pdf", "jpg". */
@@ -102,8 +105,11 @@ export const listMediaSchema = z.object({
 export async function listMediaPage(db: Db, data: z.infer<typeof listMediaSchema>) {
   const filter = and(
     searchWhere(data.q),
-    data.imagesOnly || data.kind === 'image' ? like(media.mime, 'image/%') : undefined,
-    data.kind === 'document'
+    // Both kinds, or neither, is no narrowing at all.
+    data.imagesOnly || (data.kinds?.length === 1 && data.kinds[0] === 'image')
+      ? like(media.mime, 'image/%')
+      : undefined,
+    data.kinds?.length === 1 && data.kinds[0] === 'document'
       ? inArray(
           media.mime,
           DOCUMENT_TYPES.map((t) => t.mime)

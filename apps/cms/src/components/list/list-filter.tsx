@@ -1,4 +1,4 @@
-import { CheckIcon, FilterIcon } from '@/components/icons';
+import { FilterIcon } from '@/components/icons';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import {
@@ -11,7 +11,6 @@ import {
   CommandSeparator,
 } from '@/components/ui/command';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
-import { cn } from '@/lib/utils';
 
 export type FilterGroup = {
   key: string;
@@ -100,10 +99,7 @@ export function ListFilter({
                           )
                         }
                       >
-                        <CheckIcon
-                          aria-hidden
-                          className={cn('size-3.5', on ? 'opacity-100' : 'opacity-0')}
-                        />
+                        {/* The tick comes from the item itself (data-checked), on the right. */}
                         <span className="min-w-0 truncate">{option.label}</span>
                       </CommandItem>
                     );

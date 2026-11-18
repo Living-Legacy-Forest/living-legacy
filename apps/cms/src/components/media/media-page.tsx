@@ -20,8 +20,7 @@ import {
 } from '@/components/icons';
 import { type RowMenuItem, RowMenu } from '@/components/list/list-row';
 import { PageActions } from '@/components/shell/page-actions';
-import { SegmentedControl } from '@/components/segmented-control';
-import { FilterMenu } from '@/components/list/filter-menu';
+import { ListFilter } from '@/components/list/list-filter';
 import { ListSort, useListSort } from '@/components/list/list-sort';
 import { ViewSwitch, useListView } from '@/components/list/view-switch';
 import { DocumentThumb } from '@/components/media/document-card';
@@ -124,32 +123,48 @@ export function MediaPage({
   const sentinel = useLoadMore<HTMLDivElement>(showMore, hasMore && !loading);
   // So a file's page can come back to this view.
   useEffect(() => rememberMediaSearch(search), [search]);
+  const chosenTypes = search.types ?? [];
   const chosenTags = search.tags ?? [];
   const chosenExts = search.exts ?? [];
-  const filtered = !!search.type || chosenTags.length > 0 || chosenExts.length > 0;
+  const filtered = chosenTypes.length > 0 || chosenTags.length > 0 || chosenExts.length > 0;
   const libraryEmpty = data.total === 0 && !search.q && !filtered;
   // What the count above the files describes: one filter by name, several as "Filtered".
+  const kindsOfFilter = [chosenTypes.length, chosenTags.length, chosenExts.length].filter(Boolean);
   const filterTitle =
-    [search.type, chosenTags.length ? 'tags' : '', chosenExts.length ? 'formats' : ''].filter(
-      Boolean
-    ).length > 1
+    kindsOfFilter.length > 1
       ? 'Filtered'
       : chosenTags.length
         ? chosenTags.map((t) => `#${t}`).join(' ')
         : chosenExts.length
           ? chosenExts.map((e) => e.toUpperCase()).join(', ')
-          : search.type === 'images'
-            ? 'Images'
-            : search.type === 'documents'
-              ? 'Documents'
-              : 'All';
+          : chosenTypes.length === 1
+            ? chosenTypes[0] === 'images'
+              ? 'Images'
+              : 'Documents'
+            : 'All';
+  // One Filter button, the same as on the other lists: a group each for type, format and tags.
+  const filterValues = { types: chosenTypes, formats: chosenExts, tags: chosenTags };
   // A new filter starts again from the first page.
-  const setFilter = (change: { tags?: string[]; exts?: string[] }) =>
+  const changeFilter = (key: string, next: string[]) =>
     void navigate({
       search: (prev) => ({
         ...prev,
-        ...(change.tags && { tags: change.tags.length ? change.tags : undefined }),
-        ...(change.exts && { exts: change.exts.length ? change.exts : undefined }),
+        ...(key === 'types' && {
+          types: next.length ? (next as ('images' | 'documents')[]) : undefined,
+        }),
+        ...(key === 'formats' && { exts: next.length ? next : undefined }),
+        ...(key === 'tags' && { tags: next.length ? next : undefined }),
+        show: undefined,
+      }),
+      replace: true,
+    });
+  const clearFilters = () =>
+    void navigate({
+      search: (prev) => ({
+        ...prev,
+        types: undefined,
+        exts: undefined,
+        tags: undefined,
         show: undefined,
       }),
       replace: true,
@@ -202,46 +217,34 @@ export function MediaPage({
         )}
         {!libraryEmpty && (
           <>
-            <SegmentedControl
-              label="Show"
-              value={search.type ?? 'all'}
-              options={[
-                { value: 'all', label: 'All' },
-                { value: 'images', label: 'Images' },
-                { value: 'documents', label: 'Documents' },
+            <ListFilter
+              groups={[
+                {
+                  key: 'types',
+                  label: 'Type',
+                  options: [
+                    { value: 'images', label: 'Images' },
+                    { value: 'documents', label: 'Documents' },
+                  ],
+                },
+                {
+                  key: 'formats',
+                  label: 'Format',
+                  options: extensions.map((e) => ({
+                    value: e.ext,
+                    label: `${e.ext.toUpperCase()} (${e.count})`,
+                  })),
+                },
+                {
+                  key: 'tags',
+                  label: 'Tag',
+                  options: tags.map((t) => ({ value: t.tag, label: `${t.tag} (${t.count})` })),
+                },
               ]}
-              // A new filter starts again from the first page.
-              onValueChange={(next) =>
-                void navigate({
-                  search: (prev) => ({
-                    ...prev,
-                    type: next === 'all' ? undefined : (next as 'images' | 'documents'),
-                    show: undefined,
-                  }),
-                  replace: true,
-                })
-              }
+              values={filterValues}
+              onChange={changeFilter}
+              onClear={clearFilters}
             />
-            {extensions.length > 1 && (
-              <FilterMenu
-                label="Format"
-                selected={chosenExts}
-                onChange={(exts) => setFilter({ exts })}
-                options={extensions.map((e) => ({
-                  value: e.ext,
-                  label: e.ext.toUpperCase(),
-                  count: e.count,
-                }))}
-              />
-            )}
-            {tags.length > 0 && (
-              <FilterMenu
-                label="Tags"
-                selected={chosenTags}
-                onChange={(next) => setFilter({ tags: next })}
-                options={tags.map((t) => ({ value: t.tag, label: t.tag, count: t.count }))}
-              />
-            )}
             <ListSort options={mediaSorts} value={sort} onChange={setSort} />
             <ViewSwitch value={view} onChange={setView} />
           </>
@@ -314,7 +317,7 @@ export function MediaPage({
                     search: (prev) => ({
                       ...prev,
                       q: undefined,
-                      type: undefined,
+                      types: undefined,
                       tags: undefined,
                       exts: undefined,
                       show: undefined,

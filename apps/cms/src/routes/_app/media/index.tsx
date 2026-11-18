@@ -9,8 +9,12 @@ const searchSchema = z.object({
   // A file to open, from a link elsewhere (Content checks): goes to the file's page.
   selected: z.string().optional().catch(undefined),
   q: z.string().optional().catch(undefined),
-  /** Only images, or only documents. */
-  type: z.enum(['images', 'documents']).optional().catch(undefined),
+  /** Only images, only documents, or both. */
+  types: z
+    .array(z.enum(['images', 'documents']))
+    .max(2)
+    .optional()
+    .catch(undefined),
   sort: z.string().max(30).optional().catch(undefined),
   /** Files with any of these tags. */
   tags: z.array(z.string().max(40)).max(20).optional().catch(undefined),
@@ -41,8 +45,9 @@ export const Route = createFileRoute('/_app/media/')({
           sort: deps.sort as never,
           tags: deps.tags,
           exts: deps.exts,
-          kind:
-            deps.type === 'images' ? 'image' : deps.type === 'documents' ? 'document' : undefined,
+          kinds: deps.types?.map((t) =>
+            t === 'images' ? ('image' as const) : ('document' as const)
+          ),
           limit: deps.show ?? MEDIA_PAGE_SIZE,
         },
       }),

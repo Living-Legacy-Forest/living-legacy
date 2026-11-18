@@ -7,6 +7,7 @@ import { Button } from '../ui/button';
 import { Input } from '../ui/input';
 import { Popover, PopoverContent, PopoverTrigger } from '../ui/popover';
 import { Toggle } from '../ui/toggle';
+import { isEnterKey } from '@/lib/keyboard';
 
 export const LinkControl = () => {
   const { editor, labels, icons } = useRichTextEditorContext();
@@ -46,7 +47,7 @@ export const LinkControl = () => {
   };
 
   const handleKeyDown: (e: React.KeyboardEvent<HTMLInputElement>) => void = (e) => {
-    if (e.key === 'Enter') {
+    if (isEnterKey(e)) {
       e.preventDefault();
       handleSave();
     }

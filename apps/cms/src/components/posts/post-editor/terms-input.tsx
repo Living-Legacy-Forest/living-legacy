@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { XIcon } from '@/components/icons';
 import { Input } from '@/components/ui/input';
+import { isComposing } from '@/lib/keyboard';
 
 /** Short phrases as removable chips. Type one, then press Enter or a comma. */
 export function TermsInput({
@@ -59,7 +60,7 @@ export function TermsInput({
         placeholder={full ? `Up to ${max} terms` : placeholder}
         onChange={(e) => setDraft(e.target.value)}
         onKeyDown={(e) => {
-          if (e.nativeEvent.isComposing) return;
+          if (isComposing(e)) return;
           if (e.key === 'Enter' || e.key === ',') {
             e.preventDefault();
             add();

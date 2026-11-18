@@ -8,6 +8,7 @@ import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover
 import { displayTime, formatDateTime, fromZoned, parseTime, toZoned, zoneName } from '@/lib/format';
 import { useTimeZone } from '@/lib/use-time-zone';
 import { cn } from '@/lib/utils';
+import { isEnterKey } from '@/lib/keyboard';
 
 const pad = (n: number) => String(n).padStart(2, '0');
 
@@ -117,7 +118,7 @@ export function DateTimePicker({
                 if (next) setTimeText(displayTime(next));
               }}
               onKeyDown={(e) => {
-                if (e.key === 'Enter') {
+                if (isEnterKey(e)) {
                   e.preventDefault();
                   setOpen(false);
                 }

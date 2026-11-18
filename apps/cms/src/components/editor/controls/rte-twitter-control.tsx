@@ -19,6 +19,7 @@ import {
   DialogTrigger,
 } from '../ui/dialog';
 import { Input } from '../ui/input';
+import { isEnterKey } from '@/lib/keyboard';
 
 const WIDGET_SCRIPT_URL = 'https://platform.twitter.com/widgets.js';
 const SCRIPT_LOAD_TIMEOUT_MS = 8000;
@@ -397,7 +398,7 @@ export const TwitterEmbedControl = ({ className }: { className?: string }) => {
           placeholder="https://x.com/user/status/..."
           aria-invalid={showError}
           onKeyDown={(e) => {
-            if (e.key === 'Enter' && url && handleInsert()) {
+            if (isEnterKey(e) && url && handleInsert()) {
               setOpen(false);
             }
           }}

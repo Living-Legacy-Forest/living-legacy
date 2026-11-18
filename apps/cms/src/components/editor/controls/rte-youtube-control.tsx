@@ -19,6 +19,7 @@ import {
   DialogClose,
 } from '../ui/dialog';
 import { Input } from '../ui/input';
+import { isEnterKey } from '@/lib/keyboard';
 
 declare module '@tiptap/core' {
   interface Commands<ReturnType> {
@@ -211,7 +212,7 @@ export const YouTubeEmbedControl = ({ className }: { className?: string }) => {
           onChange={(e) => setUrl(e.target.value)}
           placeholder="https://youtube.com/watch?v=..."
           onKeyDown={(e) => {
-            if (e.key === 'Enter' && url) {
+            if (isEnterKey(e) && url) {
               handleInsert();
               setOpen(false);
             }

@@ -17,6 +17,7 @@ import {
 } from '@/lib/format';
 import { useTimeZone } from '@/lib/use-time-zone';
 import { cn } from '@/lib/utils';
+import { isEnterKey } from '@/lib/keyboard';
 
 const MIN_LEAD_MS = 60_000;
 
@@ -188,7 +189,7 @@ export function SchedulePopover({
                 if (next) applyTime(next);
               }}
               onKeyDown={(e) => {
-                if (e.key === 'Enter') void submit();
+                if (isEnterKey(e)) void submit();
               }}
               className="h-9 w-28"
             />

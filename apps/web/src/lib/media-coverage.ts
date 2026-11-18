@@ -3,7 +3,7 @@
  * (Media coverage page) and read from the shared D1 database. Uploaded
  * images are served by the CMS, so their paths are pointed at it.
  */
-import { type MediaCoverageKind, youtubeId } from '@ll/content';
+import { type MediaCoverageKind, focalPosition, youtubeId } from '@ll/content';
 import { CMS_URL } from 'astro:env/server';
 import { env } from 'cloudflare:workers';
 import { mediaSources } from '@/lib/media-srcset';
@@ -32,7 +32,15 @@ export interface CoverageItem {
   href: string;
   /** Set for YouTube videos, which play in place. */
   youtubeId: string | null;
-  image: { src: string; alt: string; width?: number; height?: number; srcset?: string } | null;
+  image: {
+    src: string;
+    alt: string;
+    width?: number;
+    height?: number;
+    srcset?: string;
+    /** CSS `object-position` keeping the chosen focal point in view when cropped. */
+    position?: string;
+  } | null;
   featured: boolean;
 }
 
@@ -53,6 +61,8 @@ type Row = {
   image_width: number | null;
   image_height: number | null;
   image_variants: string | null;
+  image_focal_x: number | null;
+  image_focal_y: number | null;
 };
 
 function coverageImage(r: Row, src: string): NonNullable<CoverageItem['image']> {
@@ -62,6 +72,7 @@ function coverageImage(r: Row, src: string): NonNullable<CoverageItem['image']> 
     width: r.image_width ?? undefined,
     height: r.image_height ?? undefined,
     srcset: mediaSources(src, r.image_width, r.image_variants).srcset,
+    position: focalPosition(r.image_focal_x, r.image_focal_y),
   };
 }
 
@@ -79,7 +90,7 @@ export async function getMediaCoverage(): Promise<CoverageItem[]> {
         `SELECT c.id, c.slug, c.kind, c.title, c.source, c.category, c.coverage_date,
                 c.excerpt, c.reading_minutes, c.external_url, c.featured,
                 m.id AS image_id, m.alt AS image_alt, m.width AS image_width, m.height AS image_height,
-                m.variants AS image_variants
+                m.variants AS image_variants, m.focal_x AS image_focal_x, m.focal_y AS image_focal_y
          FROM media_coverage c
          LEFT JOIN media m ON m.id = c.image_media_id
          WHERE c.status = 'published' AND c.deleted_at IS NULL

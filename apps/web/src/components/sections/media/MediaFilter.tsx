@@ -28,7 +28,14 @@ export interface MediaItem {
   meta: string | null;
   href: string;
   youtubeId: string | null;
-  image: { src: string; alt: string; width?: number; height?: number; srcset?: string } | null;
+  image: {
+    src: string;
+    alt: string;
+    width?: number;
+    height?: number;
+    srcset?: string;
+    position?: string;
+  } | null;
   featured: boolean;
 }
 
@@ -124,6 +131,7 @@ function LinkCard({ item }: { item: MediaItem }) {
             width={item.image.width}
             height={item.image.height}
             alt={item.image.alt}
+            style={item.image.position ? { objectPosition: item.image.position } : undefined}
             loading="lazy"
             className="absolute inset-0 h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
           />

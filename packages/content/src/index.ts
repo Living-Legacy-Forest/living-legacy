@@ -16,6 +16,7 @@ export * from './image-size';
 export * from './documents';
 export * from './validation';
 export * from './list-sorts';
+export * from './focal-point';
 export * from './media-sweep';
 export * from './events';
 export * from './phone';

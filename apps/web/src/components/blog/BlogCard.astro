@@ -42,6 +42,7 @@ const imgSrc = image?.cardUrl ?? image?.url;
           srcset={image?.srcset}
           sizes={image?.srcset ? CARD_SIZES : undefined}
           alt={image?.alt ?? ''}
+          style={image?.position ? `object-position: ${image.position}` : undefined}
           width="800"
           height="534"
           loading="lazy"

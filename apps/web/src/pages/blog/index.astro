@@ -168,6 +168,11 @@ const description =
                       srcset={featured.image?.srcset}
                       sizes={featured.image?.srcset ? FEATURE_SIZES : undefined}
                       alt={featured.image?.alt ?? ''}
+                      style={
+                        featured.image?.position
+                          ? `object-position: ${featured.image.position}`
+                          : undefined
+                      }
                       width="1200"
                       height="800"
                       fetchpriority="high"

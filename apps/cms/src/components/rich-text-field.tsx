@@ -61,7 +61,7 @@ export function RichTextField({
           state={state}
           // The event form scrolls in a box with p-6, and a sticky element stops short of that
           // padding, letting text show above it. -top-6 cancels it so the toolbar meets the edge.
-          className="-top-6"
+          className="-top-6 rounded-t-lg"
         />
         <RichTextEditor.Content
           className={cn(

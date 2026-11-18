@@ -3,7 +3,7 @@
 // versions it used to be. Replaces the side panel, so a file has an address and room to be
 // looked at.
 import { DOCUMENT_ACCEPT, isDocumentMime } from '@ll/content';
-import { Link, useNavigate } from '@tanstack/react-router';
+import { Link, useNavigate, useRouter } from '@tanstack/react-router';
 import { motion, useReducedMotion } from 'motion/react';
 import { useEffect, useRef, useState } from 'react';
 import {
@@ -47,6 +47,7 @@ import { formatBytes, formatDateTime } from '@/lib/format';
 import { motionTokens } from '@/components/arc/lib/motion-tokens';
 import { recallMediaSearch, setMediaDirection, takeMediaDirection } from '@/lib/media-return';
 import { notify, removedNotice } from '@/lib/notify';
+import { addPdfCover } from '@/lib/pdf-cover';
 import { canCrop } from '@/lib/prepare-image';
 import { IMAGE_ACCEPT, mediaSrc, uploadMedia } from '@/lib/upload-media';
 import { useAction } from '@/lib/use-action';
@@ -74,6 +75,8 @@ export function MediaDetail({
 }) {
   const { item, uploader, previousId, nextId, versions } = detail;
   const navigate = useNavigate();
+  const router = useRouter();
+  const [makingCover, setMakingCover] = useState(false);
   const zone = useTimeZone();
   const isDocument = isDocumentMime(item.mime);
   const reduced = useReducedMotion() ?? false;
@@ -200,6 +203,23 @@ export function MediaDetail({
     if (result !== undefined) setReplacement(null);
   }
 
+  // For a PDF uploaded before thumbnails existed: draws its first page from the file here.
+  async function makeCover() {
+    setMakingCover(true);
+    try {
+      await addPdfCover(item);
+      await router.invalidate();
+      notify.success({
+        title: 'Thumbnail made',
+        description: 'The first page now shows in the library.',
+      });
+    } catch (error) {
+      notify.error('Could not make a thumbnail', error);
+    } finally {
+      setMakingCover(false);
+    }
+  }
+
   async function remove() {
     await run(() => deleteMedia({ data: { ids: [item.id] } }), {
       success: removedNotice(1, NOUN),
@@ -290,14 +310,28 @@ export function MediaDetail({
           className="h-80 w-full rounded-lg border"
         />
       )}
-      <a
-        href={item.url}
-        target="_blank"
-        rel="noopener noreferrer"
-        className="text-ui text-primary w-fit underline underline-offset-4"
-      >
-        {isPdf ? 'Open the PDF in a new tab' : 'Download the file'}
-      </a>
+      <div className="flex flex-wrap items-center gap-3">
+        <a
+          href={item.url}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="text-ui text-primary w-fit underline underline-offset-4"
+        >
+          {isPdf ? 'Open the PDF in a new tab' : 'Download the file'}
+        </a>
+        {isPdf && !item.hasCover && (
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            disabled={makingCover}
+            onClick={() => void makeCover()}
+          >
+            {makingCover ? <Spinner data-icon="inline-start" /> : null}
+            Make a thumbnail
+          </Button>
+        )}
+      </div>
     </div>
   ) : (
     <FocalPicker

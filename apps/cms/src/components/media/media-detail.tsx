@@ -4,6 +4,7 @@
 // looked at.
 import { DOCUMENT_ACCEPT, isDocumentMime } from '@ll/content';
 import { Link, useNavigate } from '@tanstack/react-router';
+import { motion, useReducedMotion } from 'motion/react';
 import { useEffect, useRef, useState } from 'react';
 import {
   ArrowRightLeft,
@@ -43,7 +44,8 @@ import { Spinner } from '@/components/ui/spinner';
 import { Textarea } from '@/components/ui/textarea';
 import { splitFilename } from '@/lib/filename';
 import { formatBytes, formatDateTime } from '@/lib/format';
-import { recallMediaSearch } from '@/lib/media-return';
+import { motionTokens } from '@/components/arc/lib/motion-tokens';
+import { recallMediaSearch, setMediaDirection, takeMediaDirection } from '@/lib/media-return';
 import { notify, removedNotice } from '@/lib/notify';
 import { canCrop } from '@/lib/prepare-image';
 import { IMAGE_ACCEPT, mediaSrc, uploadMedia } from '@/lib/upload-media';
@@ -74,6 +76,13 @@ export function MediaDetail({
   const navigate = useNavigate();
   const zone = useTimeZone();
   const isDocument = isDocumentMime(item.mime);
+  const reduced = useReducedMotion() ?? false;
+  // Read once, as this file's page opens: nothing when it was opened from the library.
+  const [enter] = useState(() => {
+    const direction = takeMediaDirection();
+    if (!direction) return false as const;
+    return reduced ? { opacity: 0 } : { opacity: 0, x: direction * 32 };
+  });
   const isPdf = item.mime === 'application/pdf';
   const { base: originalName, ext } = splitFilename(item.filename);
   const [name, setName] = useState(originalName);
@@ -111,7 +120,9 @@ export function MediaDetail({
         return;
       }
       const id = e.key === 'ArrowLeft' ? previousId : e.key === 'ArrowRight' ? nextId : null;
-      if (id) void navigate({ to: '/media/$mediaId', params: { mediaId: id } });
+      if (!id) return;
+      setMediaDirection(e.key === 'ArrowRight' ? 1 : -1);
+      void navigate({ to: '/media/$mediaId', params: { mediaId: id } });
     };
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
@@ -253,6 +264,7 @@ export function MediaDetail({
       aria-label={label}
       title={`${label} (${label === 'Previous file' ? '←' : '→'})`}
       disabled={!id}
+      onClick={() => setMediaDirection(label === 'Previous file' ? -1 : 1)}
       {...(id
         ? { render: <Link to="/media/$mediaId" params={{ mediaId: id }} />, nativeButton: false }
         : {})}
@@ -372,7 +384,16 @@ export function MediaDetail({
           </Button>
         </header>
 
-        <div className="grid min-h-0 flex-1 content-start gap-8 overflow-y-auto p-4 lg:grid-cols-[minmax(0,3fr)_minmax(0,2fr)] lg:p-6">
+        <motion.div
+          // Arrives from the side the person moved toward, so Next and Previous read as movement.
+          initial={enter}
+          animate={{ opacity: 1, x: 0 }}
+          transition={{
+            duration: motionTokens.duration.standard,
+            ease: [...motionTokens.ease.enter],
+          }}
+          className="grid min-h-0 flex-1 content-start gap-8 overflow-y-auto p-4 lg:grid-cols-[minmax(0,3fr)_minmax(0,2fr)] lg:p-6"
+        >
           <div className="grid content-start gap-5">
             {preview}
             {!isDocument && (
@@ -527,7 +548,7 @@ export function MediaDetail({
             </section>
             <MediaUsageList id={item.id} />
           </div>
-        </div>
+        </motion.div>
       </form>
 
       <ConfirmBulkDelete

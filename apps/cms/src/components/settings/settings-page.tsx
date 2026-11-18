@@ -102,6 +102,7 @@ const fontLabels: Record<CmsFont, string> = {
   geist: 'Geist',
   'ibm-plex-sans': 'IBM Plex Sans',
   atkinson: 'Atkinson Hyperlegible',
+  montserrat: 'Montserrat',
   system: 'System font',
 };
 

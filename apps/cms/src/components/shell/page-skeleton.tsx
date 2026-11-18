@@ -79,6 +79,8 @@ export function PageSkeleton({ pathname }: { pathname: string }) {
         )
       ) : splitSections.includes(section) ? (
         <SplitSkeleton />
+      ) : section === 'media' && child ? (
+        <MediaFileSkeleton />
       ) : section === 'media' ? (
         <MediaSkeleton />
       ) : section === 'settings' ? (
@@ -136,6 +138,42 @@ function SplitSkeleton() {
             <Lines count={5} className="space-y-2.5" />
           </div>
         </section>
+      </div>
+    </div>
+  );
+}
+
+/** A media file page: a header bar, then the preview beside its fields, as MediaDetail lays them out. */
+function MediaFileSkeleton() {
+  return (
+    <div className="flex min-h-0 flex-1 flex-col">
+      <div className="flex min-h-12 shrink-0 flex-wrap items-center gap-2 border-b px-3 py-1.5">
+        <Skeleton className="size-7" />
+        <div className="min-w-0 flex-1 space-y-1.5">
+          <Skeleton className="h-4 w-48 max-w-full" />
+          <Skeleton className="h-3 w-32" />
+        </div>
+        <Skeleton className="h-7 w-20 max-sm:size-7" />
+        <Skeleton className="h-7 w-24 max-sm:size-7" />
+        <Skeleton className="h-7 w-20 max-sm:size-7" />
+      </div>
+      <div className="grid min-h-0 flex-1 content-start gap-8 p-4 lg:grid-cols-[minmax(0,3fr)_minmax(0,2fr)] lg:p-6">
+        <div className="grid content-start gap-5">
+          <Skeleton className="aspect-4/3 w-full rounded-lg" />
+          <div className="flex gap-2">
+            <Skeleton className="h-8 w-28" />
+            <Skeleton className="h-8 w-28" />
+          </div>
+        </div>
+        <div className="grid content-start gap-6">
+          {[0, 1, 2].map((i) => (
+            <div key={i} className="grid gap-3">
+              <Skeleton className="h-3.5 w-24" />
+              <Skeleton className="h-8 w-full" />
+            </div>
+          ))}
+          <Lines count={5} className="space-y-2.5 border-t pt-6" />
+        </div>
       </div>
     </div>
   );

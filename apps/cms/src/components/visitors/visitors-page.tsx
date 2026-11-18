@@ -358,7 +358,7 @@ function Pager({ data }: { data: Extract<VisitorsData, { connected: true }> }) {
               });
             }}
           >
-            <SelectTrigger size="sm" aria-label="Rows a page" className="touch:min-h-11 w-18">
+            <SelectTrigger size="sm" aria-label="Rows a page" className="w-18">
               <SelectValue />
             </SelectTrigger>
             <SelectContent>

@@ -709,6 +709,7 @@ export function ColorPicker({
   return (
     <div
       ref={rootRef}
+      data-slot="color-picker"
       className={[styles.root, className].filter(Boolean).join(' ')}
       style={style}
       data-size={fit}

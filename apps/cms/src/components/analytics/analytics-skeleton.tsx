@@ -85,7 +85,7 @@ const CardTitle = () => <Skeleton className="h-4 w-24" />;
 /** The figures across the top: a title, a hint, the number and how it changed. */
 export function Tiles({ count }: { count: number }) {
   return (
-    <Grid className={count === 4 ? 'grid-cols-2 lg:grid-cols-4' : 'grid-cols-2'}>
+    <Grid className={count === 4 ? 'md:grid-cols-2 lg:grid-cols-4' : 'md:grid-cols-2'}>
       {Array.from({ length: count }, (_, i) => (
         <Card key={i} className="gap-0">
           <CardHeader>

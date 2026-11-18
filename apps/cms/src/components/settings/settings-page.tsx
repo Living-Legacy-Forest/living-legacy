@@ -558,7 +558,7 @@ export function SettingsPage({
             title="Content targets"
             description="What the content score measures blog posts against."
           >
-            <SettingsRow id="settings-target-words" title="Words">
+            <SettingsRow id="settings-target-words" title="Words" below>
               <TargetRange
                 id="settings-target-words"
                 noun="words"
@@ -567,7 +567,7 @@ export function SettingsPage({
                 onChange={(min, max) => patch({ targetWordsMin: min, targetWordsMax: max })}
               />
             </SettingsRow>
-            <SettingsRow id="settings-target-headings" title="Headings">
+            <SettingsRow id="settings-target-headings" title="Headings" below>
               <TargetRange
                 id="settings-target-headings"
                 noun="headings"
@@ -588,7 +588,7 @@ export function SettingsPage({
                 onChange={(targetParagraphsMin) => patch({ targetParagraphsMin })}
               />
             </SettingsRow>
-            <SettingsRow id="settings-target-images" title="Images">
+            <SettingsRow id="settings-target-images" title="Images" below>
               <TargetRange
                 id="settings-target-images"
                 noun="images"
@@ -678,7 +678,7 @@ export function SettingsPage({
                   value={String(values.sessionDays)}
                   onValueChange={(value) => value && patch({ sessionDays: Number(value) })}
                 >
-                  <SelectTrigger id="settings-session" className="w-40">
+                  <SelectTrigger id="settings-session" className={fieldWidth}>
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
@@ -705,7 +705,7 @@ export function SettingsPage({
                   value={values.locale}
                   onValueChange={(value) => value && patch({ locale: value as Locale })}
                 >
-                  <SelectTrigger id="settings-locale" className="w-48">
+                  <SelectTrigger id="settings-locale" className={fieldWidth}>
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
@@ -727,7 +727,7 @@ export function SettingsPage({
                   value={values.timeZone}
                   onValueChange={(value) => value && patch({ timeZone: value as TimeZone })}
                 >
-                  <SelectTrigger id="settings-time-zone" className="w-56">
+                  <SelectTrigger id="settings-time-zone" className={fieldWidth}>
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
@@ -780,7 +780,7 @@ export function SettingsPage({
                   value={values.cmsColour}
                   onValueChange={(value) => value && patch({ cmsColour: value as CmsColour })}
                 >
-                  <SelectTrigger id="settings-colour" className="w-56">
+                  <SelectTrigger id="settings-colour" className={fieldWidth}>
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
@@ -802,7 +802,7 @@ export function SettingsPage({
                   value={values.cmsFont}
                   onValueChange={(value) => value && patch({ cmsFont: value as CmsFont })}
                 >
-                  <SelectTrigger id="settings-font" className="w-56">
+                  <SelectTrigger id="settings-font" className={fieldWidth}>
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
@@ -825,7 +825,11 @@ export function SettingsPage({
             )}
             aria-hidden={!dirty}
           >
-            <span className="mr-auto text-sm">You have unsaved changes.</span>
+            {/* Phones: the short form, so the message and both buttons fit on one line. */}
+            <span className="mr-auto min-w-0 truncate text-sm">
+              <span className="md:hidden">Unsaved changes</span>
+              <span className="max-md:hidden">You have unsaved changes.</span>
+            </span>
             <Button
               type="button"
               variant="ghost"
@@ -842,7 +846,9 @@ export function SettingsPage({
                   Saving…
                 </>
               ) : (
-                'Save changes'
+                <>
+                  Save<span className="max-md:hidden"> changes</span>
+                </>
               )}
             </Button>
           </div>
@@ -979,11 +985,13 @@ function TargetInput({
   label,
   value,
   onChange,
+  className,
 }: {
   id?: string;
   label: string;
   value: number;
   onChange: (value: number) => void;
+  className?: string;
 }) {
   return (
     <NumberField
@@ -992,7 +1000,7 @@ function TargetInput({
       value={value}
       aria-label={label}
       onValueChange={onChange}
-      className="w-32"
+      className={cn('w-32', className)}
     />
   );
 }
@@ -1012,15 +1020,22 @@ function TargetRange({
   onChange: (min: number, max: number) => void;
 }) {
   return (
-    <div className="flex items-center gap-2">
+    // Phones: the two fields share the row's full width, under the title.
+    <div className="flex items-center gap-2 max-md:w-full">
       <TargetInput
         id={id}
         label={`Fewest ${noun}`}
         value={min}
         onChange={(n) => onChange(n, max)}
+        className="max-md:w-auto max-md:flex-1"
       />
       <span className="text-muted-foreground text-xs">to</span>
-      <TargetInput label={`Most ${noun}`} value={max} onChange={(n) => onChange(min, n)} />
+      <TargetInput
+        label={`Most ${noun}`}
+        value={max}
+        onChange={(n) => onChange(min, n)}
+        className="max-md:w-auto max-md:flex-1"
+      />
     </div>
   );
 }

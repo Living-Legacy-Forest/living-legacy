@@ -47,7 +47,7 @@ function EnquiriesBody({ data, days }: { data: Enquiries; days: AnalyticsRange }
 
   return (
     <div className="space-y-4 max-md:space-y-3">
-      <div className="grid grid-cols-2 gap-4 max-md:gap-3">
+      <div className="grid gap-4 max-md:gap-3 md:grid-cols-2">
         <Figure label="Enquiries" hint={`Sent in the last ${days} days`}>
           <RollingNumber value={data.total} />
         </Figure>

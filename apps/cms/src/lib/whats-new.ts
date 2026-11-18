@@ -49,6 +49,22 @@ export type WhatsNewEntry = {
 
 export const whatsNew: WhatsNewEntry[] = [
   {
+    id: '2026-11-18-6',
+    kind: 'improved',
+    title: 'Tidier on a phone',
+    items: [
+      {
+        title: 'Save in the top bar for events',
+        body: 'On a phone, an event’s Save button now sits at the top right of the screen, with Preview, Publish, Cancel event and Delete under the … button beside it.',
+        link: { label: 'Open Events', to: '/events' },
+      },
+      {
+        title: 'Easier to tap and read',
+        body: 'Buttons, menus and fields are easier to hit with a finger, and long lists such as time zones open from the bottom of the screen. Figures on Analytics and an event’s Dashboard show one to a row.',
+      },
+    ],
+  },
+  {
     id: '2026-11-18-5',
     kind: 'improved',
     title: 'Focal points on the website',

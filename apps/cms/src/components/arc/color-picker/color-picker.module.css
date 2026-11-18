@@ -479,13 +479,20 @@
 /* A trigger the height of a form field. The trigger, the open panel and the header inside it share one
    fill, border and corner radius, so closing ends on exactly what was there before opening. */
 .root[data-size='field'] {
+  /* The CMS's field height: 32px with a mouse, 44px on a touch screen, as every other field. */
+  --field-height: 32px;
   --radius-panel: 10px;
   /* Opaque, so the form never shows through the panel while it opens and closes. About what a field looks like. */
   --picker-fill: color-mix(in oklab, var(--background) 95%, var(--foreground));
 }
+@media (hover: none) {
+  .root[data-size='field'] {
+    --field-height: 44px;
+  }
+}
 .root[data-size='field'] .trigger {
   width: 100%;
-  height: 36px;
+  height: var(--field-height);
   gap: 8px;
   padding: 3px 10px 3px 3px;
   border-color: var(--input);
@@ -497,8 +504,9 @@
 }
 .root[data-size='field'] .trigger .chip,
 .root[data-size='field'] .head .chip {
-  width: 28px;
-  height: 28px;
+  /* The trigger's height less its 3px padding and 1px border, top and bottom. */
+  width: calc(var(--field-height) - 8px);
+  height: calc(var(--field-height) - 8px);
   border-radius: 7px;
 }
 .root[data-size='field'] .trigger .triggerText,
@@ -509,8 +517,8 @@
 }
 /* The header repeats the trigger, so opening does not change what is under the pointer. */
 .root[data-size='field'] .head {
-  /* 34px: the panel's own 1px border brings the header to the trigger's 36px, so the row does not shift when it opens. */
-  height: 34px;
+  /* The panel's own 1px border brings the header to the trigger's height, so the row does not shift when it opens. */
+  height: calc(var(--field-height) - 2px);
   gap: 8px;
   padding: 3px 6px 3px 3px;
 }
@@ -525,4 +533,10 @@
 .root[data-size='field'] .float {
   top: 0;
   left: 0;
+  /* As wide as the trigger when the trigger is the wider of the two (a full-width field on a phone). */
+  right: 0;
+}
+.root[data-size='field'] .panel {
+  width: 100%;
+  min-width: var(--picker-width);
 }

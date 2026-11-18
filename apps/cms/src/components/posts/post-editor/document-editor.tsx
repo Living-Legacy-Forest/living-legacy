@@ -132,6 +132,7 @@ export function DocumentEditor({
           <Toolbar
             editor={editor}
             state={state}
+            underHeader={pageScroll}
             // Under the app header: 3.5rem plus the notch on phones, and 4rem (it sits 0.5rem down) above.
             className={
               pageScroll ? 'top-[calc(3.5rem+env(safe-area-inset-top))] md:top-16' : undefined

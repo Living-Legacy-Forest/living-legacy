@@ -122,7 +122,7 @@ export function EventsOverview({
         )}
       </div>
 
-      <div className="grid grid-cols-2 gap-4 max-md:gap-3 lg:grid-cols-4">
+      <div className="grid gap-4 max-md:gap-3 md:grid-cols-2 lg:grid-cols-4">
         {buildStats(data).map((stat) => (
           <StatCard key={stat.label} stat={stat} />
         ))}
@@ -141,9 +141,9 @@ export function EventsOverview({
             options={rangeOptions}
           />
         </div>
-        <div className="grid grid-cols-2 gap-4 max-md:gap-3 lg:grid-cols-4">
+        <div className="grid gap-4 max-md:gap-3 md:grid-cols-2 lg:grid-cols-4">
           <Suspense
-            fallback={<ChartsPlaceholder wide="col-span-2 lg:col-span-4" half="col-span-2" />}
+            fallback={<ChartsPlaceholder wide="md:col-span-2 lg:col-span-4" half="md:col-span-2" />}
           >
             <ResultsCharts data={data} />
           </Suspense>

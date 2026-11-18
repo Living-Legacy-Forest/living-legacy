@@ -203,9 +203,16 @@ export function ProfilePage({
               <DropdownMenuTrigger
                 aria-label="Change picture"
                 disabled={avatarUploading}
-                className="bg-background focus-visible:ring-ring absolute inset-0 flex items-center justify-center rounded-full opacity-0 ring-1 ring-black/10 transition-opacity outline-none group-hover:opacity-90 focus-visible:opacity-90 focus-visible:ring-2 disabled:opacity-90 data-popup-open:opacity-90"
+                className="bg-background focus-visible:ring-ring touch:items-end touch:justify-end touch:bg-transparent touch:opacity-100 touch:ring-0 absolute inset-0 flex items-center justify-center rounded-full opacity-0 ring-1 ring-black/10 transition-opacity outline-none group-hover:opacity-90 focus-visible:opacity-90 focus-visible:ring-2 disabled:opacity-90 data-popup-open:opacity-90"
               >
-                {avatarUploading ? <Spinner /> : <CameraIcon aria-hidden className="size-5" />}
+                {/* Touch screens have no hover to reveal the overlay, so the camera sits on a badge. */}
+                <span className="touch:bg-background touch:ring-foreground/10 touch:flex touch:size-7 touch:items-center touch:justify-center touch:rounded-full touch:shadow-sm touch:ring-1 contents">
+                  {avatarUploading ? (
+                    <Spinner />
+                  ) : (
+                    <CameraIcon aria-hidden className="touch:size-4 size-5" />
+                  )}
+                </span>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="start" className="min-w-48">
                 <DropdownMenuItem onClick={() => fileInput.current?.click()}>

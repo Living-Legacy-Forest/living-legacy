@@ -78,8 +78,10 @@ export function DateTimePicker({
               id={id}
               type="button"
               variant="outline"
+              // Room on the right for the clear button, which phones' pill style keeps (styles.css).
+              data-clearable={value !== null || undefined}
               className={cn(
-                'min-w-0 flex-1 justify-start font-normal',
+                'md:text-ui min-w-0 flex-1 justify-start text-base font-normal',
                 'touch:min-h-11',
                 value === null ? 'text-muted-foreground' : 'pr-9'
               )}

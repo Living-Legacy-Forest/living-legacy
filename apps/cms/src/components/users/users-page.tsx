@@ -255,11 +255,7 @@ function RoleControl({
       disabled={disabled}
       onValueChange={(value) => value && onChange(value)}
     >
-      <SelectTrigger
-        size="sm"
-        aria-label={`Role for ${user.name || user.email}`}
-        className="text-ui w-28"
-      >
+      <SelectTrigger size="sm" aria-label={`Role for ${user.name || user.email}`} className="w-28">
         <SelectValue />
       </SelectTrigger>
       <SelectContent align="start" alignItemWithTrigger={false} className="w-auto max-w-80">

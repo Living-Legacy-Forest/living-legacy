@@ -39,6 +39,7 @@ import {
 import { useEffect, useState } from 'react';
 import { CardMeta, ListCard, ListCards } from '@/components/list/list-card';
 import { ListFilter, passes } from '@/components/list/list-filter';
+import { ListSort, byNumber, byText, sortedBy, useListSort } from '@/components/list/list-sort';
 import { TrendChart } from '@/components/list/trend-chart';
 import { readPaneOpen } from '@/lib/list-view';
 import { ViewSwitch, useListView } from '@/components/list/view-switch';
@@ -198,6 +199,16 @@ function redirectMenu(r: Redirect) {
   ];
 }
 
+const SORTS = [
+  { value: 'newest', label: 'Newest' },
+  { value: 'oldest', label: 'Oldest' },
+  { value: 'from-az', label: 'From path, A to Z' },
+  { value: 'from-za', label: 'From path, Z to A' },
+  { value: 'to-az', label: 'Sends to, A to Z' },
+  { value: 'clicks', label: 'Most clicks' },
+  { value: 'recent', label: 'Recently clicked' },
+] as const;
+
 export function RedirectsPage({
   data,
   initialFrom,
@@ -246,7 +257,16 @@ export function RedirectsPage({
     target?.kind === 'edit' ? (data.find((r) => r.id === target.id) ?? null) : null;
   // A redirect removed elsewhere closes the pane.
   const pane = view.pane?.kind === 'edit' && !redirectFor(view.pane) ? null : view.pane;
-  const visible = data.filter(
+  const [sort, setSort] = useListSort(SORTS);
+  const ordered = sortedBy(data, sort, {
+    oldest: (a, b) => byNumber(a.createdAt, b.createdAt),
+    'from-az': (a, b) => byText(a.fromPath, b.fromPath),
+    'from-za': (a, b) => byText(b.fromPath, a.fromPath),
+    'to-az': (a, b) => byText(a.toPath, b.toPath),
+    clicks: (a, b) => byNumber(b.hits, a.hits),
+    recent: (a, b) => byNumber(b.lastHitAt, a.lastHitAt),
+  });
+  const visible = ordered.filter(
     (r) => matchesFilters(r, picked) && matchesSearch(query, [r.fromPath, r.toPath, r.note])
   );
   const clearFilters = () => {
@@ -363,6 +383,7 @@ export function RedirectsPage({
               value={query}
               onChange={setQuery}
             />
+            <ListSort options={SORTS} value={sort} onChange={setSort} />
             <ListFilter
               groups={filterGroups}
               values={picked}

@@ -5,7 +5,10 @@ import { LocationsPage } from '@/components/locations/locations-page';
 import { listLocations } from '@/server/locations';
 
 export const Route = createFileRoute('/_app/locations/')({
-  validateSearch: z.object({ selected: z.string().optional().catch(undefined) }),
+  validateSearch: z.object({
+    selected: z.string().optional().catch(undefined),
+    sort: z.string().max(30).optional().catch(undefined),
+  }),
   loader: () => listLocations(),
   head: () => ({ meta: [{ title: 'Locations | Living Legacy CMS' }] }),
   component: LocationsRoute,

@@ -13,6 +13,7 @@ import { useState } from 'react';
 import { type ColorSwatch, ColorPicker } from '@/components/arc/color-picker/color-picker';
 import { CardMeta, ListCard, ListCards } from '@/components/list/list-card';
 import { ListFilter, passes } from '@/components/list/list-filter';
+import { ListSort, byNumber, byText, sortedBy, useListSort } from '@/components/list/list-sort';
 import { ViewSwitch, useListView } from '@/components/list/view-switch';
 import { DateTimePicker } from '@/components/date-time-picker';
 import { FormCell, FormSection, FormSwitchCell } from '@/components/form-cells';
@@ -126,6 +127,14 @@ const FIELDSET = 'space-y-3 [--form-gap:0.75rem] max-md:space-y-0';
 const LEGEND =
   'mb-2 text-sm font-medium max-md:mb-0 max-md:px-4 max-md:pb-1.5 max-md:text-[0.8125rem] max-md:font-normal max-md:text-(--ios-secondary) max-md:uppercase';
 
+const SORTS = [
+  { value: 'status', label: 'Status, then start date' },
+  { value: 'start-new', label: 'Newest start' },
+  { value: 'start-old', label: 'Oldest start' },
+  { value: 'title-az', label: 'Title, A to Z' },
+  { value: 'title-za', label: 'Title, Z to A' },
+] as const;
+
 export function AnnouncementsPage({
   data,
   canWrite,
@@ -155,7 +164,14 @@ export function AnnouncementsPage({
     (a, b) =>
       statusOrder[status(a)] - statusOrder[status(b)] || (a.startsAt ?? 0) - (b.startsAt ?? 0)
   );
-  const visible = sorted.filter(
+  const [sort, setSort] = useListSort(SORTS);
+  const ordered = sortedBy(sorted, sort, {
+    'start-new': (a, b) => byNumber(b.startsAt, a.startsAt),
+    'start-old': (a, b) => byNumber(a.startsAt, b.startsAt),
+    'title-az': (a, b) => byText(a.title, b.title),
+    'title-za': (a, b) => byText(b.title, a.title),
+  });
+  const visible = ordered.filter(
     (a) =>
       passes(picked.statuses, status(a)) &&
       passes(picked.backgrounds, colourKind(a.background)) &&
@@ -305,6 +321,7 @@ export function AnnouncementsPage({
             onChange={setQuery}
           />
         )}
+        {data.length > 0 && <ListSort options={SORTS} value={sort} onChange={setSort} />}
         {data.length > 0 && (
           <ListFilter
             groups={[

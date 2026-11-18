@@ -1,3 +1,4 @@
+import { motion } from 'motion/react';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import {
   ArrowDownIcon,
@@ -22,6 +23,7 @@ import {
 } from '@/components/ui/context-menu';
 import { Kbd, KbdGroup } from '@/components/ui/kbd';
 import { copyText } from '@/lib/site';
+import { useSortLayout } from '@/lib/sort-motion';
 import { cn } from '@/lib/utils';
 import { ContextMenu as ContextMenuPrimitive } from '@base-ui/react/context-menu';
 import { RowCheckbox } from './list-tools';
@@ -256,6 +258,7 @@ export function ListRow({
   children: React.ReactNode;
 }) {
   const selecting = !!select?.selecting;
+  const sortLayout = useSortLayout();
   const drag = useSwipe(!!swipe && !selecting);
   const hasMenu = !selecting && !!(menu?.length || swipe || select);
   const { actions: menuActions, destructive } = rowActions({
@@ -347,7 +350,8 @@ export function ListRow({
   );
 
   return (
-    <li
+    <motion.li
+      {...sortLayout}
       ref={drag.rowRef}
       data-slot="list-row"
       className={cn(
@@ -386,7 +390,7 @@ export function ListRow({
       ) : (
         surface
       )}
-    </li>
+    </motion.li>
   );
 }
 

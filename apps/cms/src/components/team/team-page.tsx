@@ -24,6 +24,7 @@ import {
 import { ListRow, moveMenuItems, publishMenuItem } from '@/components/list/list-row';
 import { CardMeta, ListCard, ListCards } from '@/components/list/list-card';
 import { ListFilter, publishStatusOptions } from '@/components/list/list-filter';
+import { ListSort, byNumber, byText, sortedBy, useListSort } from '@/components/list/list-sort';
 import { ViewSwitch, useListView } from '@/components/list/view-switch';
 import {
   ConfirmBulkDelete,
@@ -94,6 +95,15 @@ function memberFromCsv(values: Record<string, string>) {
 /** What the pane (or, on smaller screens, the dialog) shows. */
 type Target = { kind: 'edit'; id: string } | { kind: 'new' } | { kind: 'bulk' };
 
+const SORTS = [
+  { value: 'order', label: 'Your order' },
+  { value: 'name-az', label: 'Name, A to Z' },
+  { value: 'name-za', label: 'Name, Z to A' },
+  { value: 'role-az', label: 'Role, A to Z' },
+  { value: 'newest', label: 'Newest' },
+  { value: 'oldest', label: 'Oldest' },
+] as const;
+
 export function TeamPage({ data, canWrite }: { data: TeamListData; canWrite: boolean }) {
   const view = useListPane<Target>();
   const [query, setQuery] = useState('');
@@ -109,13 +119,22 @@ export function TeamPage({ data, canWrite }: { data: TeamListData; canWrite: boo
     target?.kind === 'edit' ? (data.find((m) => m.id === target.id) ?? null) : null;
   // A member removed elsewhere closes the pane.
   const pane = view.pane?.kind === 'edit' && !memberFor(view.pane) ? null : view.pane;
-  const visible = data.filter(
+  const [sort, setSort] = useListSort(SORTS);
+  const ordered = sortedBy(data, sort, {
+    'name-az': (a, b) => byText(a.name, b.name),
+    'name-za': (a, b) => byText(b.name, a.name),
+    'role-az': (a, b) => byText(a.role, b.role) || byText(a.name, b.name),
+    newest: (a, b) => byNumber(b.createdAt, a.createdAt),
+    oldest: (a, b) => byNumber(a.createdAt, b.createdAt),
+  });
+  const visible = ordered.filter(
     (m) =>
       (statuses.length === 0 || statuses.includes(m.status)) &&
       matchesSearch(query, [m.name, m.role, m.bio])
   );
   // Reordering a narrowed list would be confusing, so it waits for a clear search and filter.
-  const narrowed = Boolean(query) || statuses.length > 0;
+  // A different sort is a different order too, and moving a member only makes sense in their own.
+  const narrowed = Boolean(query) || statuses.length > 0 || sort !== 'order';
 
   async function remove(ids: string[]) {
     const result = await run(() => deleteTeamMembers({ data: { ids } }), {
@@ -229,6 +248,7 @@ export function TeamPage({ data, canWrite }: { data: TeamListData; canWrite: boo
             onChange={setQuery}
           />
         )}
+        {data.length > 0 && <ListSort options={SORTS} value={sort} onChange={setSort} />}
         {data.length > 0 && (
           <ListFilter
             groups={[{ key: 'statuses', label: 'Status', options: publishStatusOptions }]}

@@ -5,6 +5,7 @@ import { CalendarClockIcon, PlusIcon } from '@/components/icons';
 import { ListColumn, ListPageLayout, ListRows, NoMatches } from '@/components/list/list-page';
 import { ListRow } from '@/components/list/list-row';
 import { ListFilter } from '@/components/list/list-filter';
+import { ListSort, byText, sortedBy, useListSort } from '@/components/list/list-sort';
 import { CardMeta, ListCard, ListCards } from '@/components/list/list-card';
 import { ViewSwitch, useListView } from '@/components/list/view-switch';
 import { RowCell } from '@/components/list/row-cell';
@@ -57,6 +58,13 @@ function inFilter(e: EventRow, filter: Filter, now: number) {
 }
 
 /** Every event, one row each; a row opens that event's own page. */
+const SORTS = [
+  { value: 'date', label: 'Date' },
+  { value: 'title-az', label: 'Title, A to Z' },
+  { value: 'title-za', label: 'Title, Z to A' },
+  { value: 'place-az', label: 'Place, A to Z' },
+] as const;
+
 export function EventsPage({ data }: { data: EventsData }) {
   const navigate = useNavigate();
   const [query, setQuery] = useState('');
@@ -72,7 +80,8 @@ export function EventsPage({ data }: { data: EventsData }) {
   const now = Date.now();
   // One row for each event, however many dates it repeats on. Coming up reads
   // soonest first; looking back reads latest first.
-  const visible = groupEventDates(
+  const [sort, setSort] = useListSort(SORTS);
+  const dated = groupEventDates(
     data.events
       .filter((e) => inFilter(e, filter, now))
       .filter((e) => !picked.places?.length || picked.places.includes(e.locationId ?? ''))
@@ -82,6 +91,12 @@ export function EventsPage({ data }: { data: EventsData }) {
   ).sort((a, b) =>
     filter === 'upcoming' ? a.lead.startsAt - b.lead.startsAt : b.lead.startsAt - a.lead.startsAt
   );
+  const visible = sortedBy(dated, sort, {
+    'title-az': (a, b) => byText(a.lead.title, b.lead.title),
+    'title-za': (a, b) => byText(b.lead.title, a.lead.title),
+    'place-az': (a, b) =>
+      byText(a.lead.locationName, b.lead.locationName) || byText(a.lead.title, b.lead.title),
+  });
   // Only what is shown: a row ticks the dates it stands for under this filter.
   const selection = useSelection(visible.map((row) => row.key));
   const idsOf = (rows: typeof visible) => rows.flatMap((row) => row.dates.map((d) => d.id));
@@ -127,6 +142,7 @@ export function EventsPage({ data }: { data: EventsData }) {
             />
           </div>
         )}
+        {data.events.length > 0 && <ListSort options={SORTS} value={sort} onChange={setSort} />}
         {data.events.length > 0 && (
           <ListFilter
             groups={[

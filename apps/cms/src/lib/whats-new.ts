@@ -49,6 +49,18 @@ export type WhatsNewEntry = {
 
 export const whatsNew: WhatsNewEntry[] = [
   {
+    id: '2026-11-18-4',
+    kind: 'new',
+    title: 'Sort every list',
+    items: [
+      {
+        title: 'Choose the order of a list',
+        body: 'Posts, events, locations, team, FAQs, testimonials, announcements, redirects, media coverage, categories and tags each have a Sort button beside Filter. Pages with a hand-set order offer it as Your order, and moving items up or down works only in that order. The choice is kept in the address, so going back keeps it.',
+        link: { label: 'Open Announcements', to: '/announcements' },
+      },
+    ],
+  },
+  {
     id: '2026-11-18-2',
     kind: 'new',
     title: 'Documents in Media',

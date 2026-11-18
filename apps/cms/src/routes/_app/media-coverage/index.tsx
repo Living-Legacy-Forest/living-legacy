@@ -5,7 +5,10 @@ import { MediaCoveragePage } from '@/components/media-coverage/media-coverage-pa
 import { listMediaCoverage } from '@/server/media-coverage';
 
 export const Route = createFileRoute('/_app/media-coverage/')({
-  validateSearch: z.object({ selected: z.string().optional().catch(undefined) }),
+  validateSearch: z.object({
+    selected: z.string().optional().catch(undefined),
+    sort: z.string().max(30).optional().catch(undefined),
+  }),
   loader: () => listMediaCoverage(),
   head: () => ({ meta: [{ title: 'Media coverage | Living Legacy CMS' }] }),
   component: MediaCoverageRoute,

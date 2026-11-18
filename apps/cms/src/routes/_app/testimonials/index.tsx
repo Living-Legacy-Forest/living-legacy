@@ -5,7 +5,10 @@ import { TestimonialsPage } from '@/components/testimonials/testimonials-page';
 import { listTestimonials } from '@/server/testimonials';
 
 export const Route = createFileRoute('/_app/testimonials/')({
-  validateSearch: z.object({ selected: z.string().optional().catch(undefined) }),
+  validateSearch: z.object({
+    selected: z.string().optional().catch(undefined),
+    sort: z.string().max(30).optional().catch(undefined),
+  }),
   loader: () => listTestimonials(),
   head: () => ({ meta: [{ title: 'Testimonials | Living Legacy CMS' }] }),
   component: TestimonialsRoute,

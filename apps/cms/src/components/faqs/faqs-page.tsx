@@ -2,6 +2,7 @@ import { MAX_FAQ_TAGS, slugify, splitTags } from '@ll/content';
 import { useState } from 'react';
 import { ListCard, ListCards } from '@/components/list/list-card';
 import { ListFilter, passes, publishStatusOptions } from '@/components/list/list-filter';
+import { ListSort, byText, sortedBy, useListSort } from '@/components/list/list-sort';
 import { ViewSwitch, useListView } from '@/components/list/view-switch';
 import { BulkCsvForm } from '@/components/bulk/bulk-csv-form';
 import {
@@ -143,6 +144,12 @@ function faqFromCsv(values: Record<string, string>) {
   };
 }
 
+const SORTS = [
+  { value: 'order', label: 'Your order' },
+  { value: 'question-az', label: 'Question, A to Z' },
+  { value: 'question-za', label: 'Question, Z to A' },
+] as const;
+
 export function FaqsPage({ data, canWrite }: { data: FaqData; canWrite: boolean }) {
   const view = useListPane<Target>();
   const [query, setQuery] = useState('');
@@ -161,6 +168,7 @@ export function FaqsPage({ data, canWrite }: { data: FaqData; canWrite: boolean 
   // An FAQ removed elsewhere closes the pane.
   const pane = view.pane?.kind === 'faq' && !faqFor(view.pane) ? null : view.pane;
 
+  const [sort, setSort] = useListSort(SORTS);
   const ungrouped = data.faqs.filter((f) => !f.groupId);
   const sections = [
     ...data.groups.map((g) => ({ group: g, faqs: data.faqs.filter((f) => f.groupId === g.id) })),
@@ -176,7 +184,11 @@ export function FaqsPage({ data, canWrite }: { data: FaqData; canWrite: boolean 
     .filter((s) => passes(picked.groups, s.group?.id ?? UNGROUPED))
     .map((s) => ({
       ...s,
-      faqs: s.faqs.filter(
+      // Within each group: the groups stay in their own order.
+      faqs: sortedBy(s.faqs, sort, {
+        'question-az': (a, b) => byText(a.question, b.question),
+        'question-za': (a, b) => byText(b.question, a.question),
+      }).filter(
         (f) =>
           matchesTag(f) &&
           passes(picked.statuses, f.status) &&
@@ -267,6 +279,7 @@ export function FaqsPage({ data, canWrite }: { data: FaqData; canWrite: boolean 
             onChange={setQuery}
           />
         )}
+        {data.faqs.length > 0 && <ListSort options={SORTS} value={sort} onChange={setSort} />}
         {data.faqs.length > 0 && (
           <ListFilter
             groups={[
@@ -404,7 +417,8 @@ export function FaqsPage({ data, canWrite }: { data: FaqData; canWrite: boolean 
                     selectedId={pane?.kind === 'faq' ? pane.id : null}
                     canWrite={canWrite}
                     selection={selection}
-                    searching={searching}
+                    // Moving a question only makes sense in its own order.
+                    searching={searching || sort !== 'order'}
                     grid={grid}
                     onSelect={(faq) => canWrite && view.open({ kind: 'faq', id: faq.id })}
                     onDelete={(faq) => setToDelete([faq.id])}

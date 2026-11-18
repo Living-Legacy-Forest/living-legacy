@@ -13,6 +13,7 @@ export const Route = createFileRoute('/_app/redirects/')({
     from: z.string().max(500).optional().catch(undefined),
     // Missing pages share this page: finding a broken link and fixing it are one job.
     view: z.enum(['missing']).optional().catch(undefined),
+    sort: z.string().max(30).optional().catch(undefined),
   }),
   beforeLoad: ({ context }) => {
     if (!can(context.user.role, 'redirects:write')) throw redirect({ to: '/' });

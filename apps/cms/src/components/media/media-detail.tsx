@@ -264,7 +264,7 @@ export function MediaDetail({
         item={item}
         width={640}
         showName={false}
-        className="h-72 w-full rounded-lg border object-contain"
+        className="h-80 w-full rounded-lg border"
       />
       <div className="flex flex-wrap items-center gap-3">
         <a

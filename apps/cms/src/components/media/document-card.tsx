@@ -1,12 +1,12 @@
 import { documentType } from '@ll/content';
-import { FileTextIcon } from '@/components/icons';
 import { mediaSrc } from '@/lib/upload-media';
 import { cn } from '@/lib/utils';
 import type { MediaItem } from '@/server/media';
 
 /**
- * What a PDF or Office file shows in the library in place of a picture: a page with its type
- * badge (PDF, DOCX…), the program when that says more (Word, Excel), and the file's name.
+ * What a PDF or Office file shows in the library in place of a picture: a sheet of paper with
+ * lines of text on it, its type badge (PDF, DOCX…), the program when that says more (Word,
+ * Excel), and the file's name.
  */
 export function DocumentCard({
   item,
@@ -29,8 +29,15 @@ export function DocumentCard({
         className
       )}
     >
-      <div className="bg-background border-border relative flex aspect-[3/4] h-[42%] max-h-32 min-h-14 items-center justify-center rounded-md border shadow-xs">
-        <FileTextIcon aria-hidden className="text-muted-foreground size-1/3 min-w-5" />
+      <div
+        aria-hidden
+        // A4 proportions, white in both themes like paper, with the shadow a page has on a desk.
+        className="relative flex aspect-[1/1.414] h-[48%] max-h-36 min-h-16 flex-col gap-[3px] rounded-[3px] bg-white p-[11%] shadow-md ring-1 ring-black/10"
+      >
+        <span className="mb-[3px] h-1 w-2/3 rounded-full bg-neutral-400" />
+        {['w-full', 'w-11/12', 'w-full', 'w-3/4', 'w-full', 'w-1/2'].map((width, i) => (
+          <span key={i} className={`h-[2px] rounded-full bg-neutral-200 ${width}`} />
+        ))}
         <span className="bg-foreground text-background absolute -bottom-2 left-1/2 -translate-x-1/2 rounded px-1.5 py-0.5 text-[0.625rem] leading-none font-semibold tracking-wide">
           {badge}
         </span>
@@ -59,13 +66,15 @@ export function DocumentThumb({
   showName?: boolean;
 }) {
   if (!item.hasCover) return <DocumentCard item={item} showName={showName} className={className} />;
+  // The whole page, as a reader shows it, not a crop: paper on a neutral desk.
   return (
-    <img
-      src={mediaSrc(item, width)}
-      alt=""
-      loading="lazy"
-      // A page is taller than the tile: show its top, where the title is.
-      className={cn('bg-muted object-cover object-top', className)}
-    />
+    <div className={cn('bg-muted flex items-center justify-center p-3', className)}>
+      <img
+        src={mediaSrc(item, width)}
+        alt=""
+        loading="lazy"
+        className="max-h-full max-w-full rounded-[3px] bg-white object-contain shadow-md ring-1 ring-black/10"
+      />
+    </div>
   );
 }

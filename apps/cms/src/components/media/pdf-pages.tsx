@@ -55,21 +55,25 @@ export function PdfPages({ url }: { url: string }) {
     return <p className="text-muted-foreground text-sm">This PDF could not be shown here.</p>;
   }
   return (
-    <div ref={holder} className="grid gap-3">
-      {!doc ? (
-        <Spinner />
-      ) : (
-        <>
-          {Array.from({ length: Math.min(doc.numPages, MAX_PAGES) }, (_, i) => (
-            <PdfPage key={i} doc={doc} number={i + 1} width={width} />
-          ))}
-          {doc.numPages > MAX_PAGES && (
-            <p className="text-muted-foreground text-xs">
-              Showing the first {MAX_PAGES} of {doc.numPages} pages.
-            </p>
-          )}
-        </>
-      )}
+    // Pages on a desk: a neutral surface with each sheet raised on it. The pages are measured
+    // inside the padding, so they fit.
+    <div className="bg-muted/60 rounded-lg p-3 sm:p-4">
+      <div ref={holder} className="grid gap-4">
+        {!doc ? (
+          <Spinner />
+        ) : (
+          <>
+            {Array.from({ length: Math.min(doc.numPages, MAX_PAGES) }, (_, i) => (
+              <PdfPage key={i} doc={doc} number={i + 1} width={width} />
+            ))}
+            {doc.numPages > MAX_PAGES && (
+              <p className="text-muted-foreground text-xs">
+                Showing the first {MAX_PAGES} of {doc.numPages} pages.
+              </p>
+            )}
+          </>
+        )}
+      </div>
     </div>
   );
 }
@@ -124,7 +128,7 @@ function PdfPage({ doc, number, width }: { doc: Doc; number: number; width: numb
     <div
       ref={box}
       style={{ aspectRatio: `1 / ${ratio}` }}
-      className="bg-muted overflow-hidden rounded-md border shadow-xs"
+      className="overflow-hidden rounded-[3px] bg-white shadow-md ring-1 ring-black/10"
     >
       <canvas ref={canvas} aria-label={`Page ${number}`} className="block size-full" />
     </div>

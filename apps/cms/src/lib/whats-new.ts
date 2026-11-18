@@ -49,6 +49,18 @@ export type WhatsNewEntry = {
 
 export const whatsNew: WhatsNewEntry[] = [
   {
+    id: '2026-11-18-5',
+    kind: 'improved',
+    title: 'Focal points on the website',
+    items: [
+      {
+        title: 'The website keeps your focal point',
+        body: "The part of an image you chose in Media now stays in view when the website crops it, on blog cards, the featured post, a post's top image and media coverage cards.",
+        link: { label: 'Open Media', to: '/media' },
+      },
+    ],
+  },
+  {
     id: '2026-11-18-4',
     kind: 'new',
     title: 'Sort every list',

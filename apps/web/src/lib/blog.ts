@@ -27,6 +27,8 @@ export interface BlogImage {
   cardUrl?: string;
   /** Smaller renditions with their widths, as an `srcset`, when the source has them. */
   srcset?: string;
+  /** CSS `object-position` keeping the chosen focal point in view when the image is cropped. */
+  position?: string;
 }
 
 export interface BlogHeading {

@@ -10,6 +10,7 @@ import {
   renderRichText,
   richTextPlainText,
   slugify,
+  focalPosition,
 } from '@ll/content';
 import { CMS_URL } from 'astro:env/server';
 import { env } from 'cloudflare:workers';
@@ -53,6 +54,8 @@ type PostRow = {
   image_width: number | null;
   image_height: number | null;
   image_variants: string | null;
+  image_focal_x: number | null;
+  image_focal_y: number | null;
   og_image_id: string | null;
   author_name: string | null;
   author_role: string | null;
@@ -77,6 +80,7 @@ function cmsImage(row: PostRow, imageId: string) {
     height: row.image_height ?? undefined,
     cardUrl: smallUrl,
     srcset,
+    position: focalPosition(row.image_focal_x, row.image_focal_y),
   };
 }
 
@@ -95,7 +99,7 @@ async function load(): Promise<BlogPost[]> {
                 p.noindex, p.canonical_url, p.social_title, p.social_description,
                 p.nofollow, p.nosnippet, p.noimageindex, p.published_at,
                 fm.id AS image_id, fm.alt AS image_alt, fm.width AS image_width, fm.height AS image_height,
-                fm.variants AS image_variants,
+                fm.variants AS image_variants, fm.focal_x AS image_focal_x, fm.focal_y AS image_focal_y,
                 p.og_media_id AS og_image_id,
                 a.name AS author_name, a.role AS author_role, a.bio AS author_bio
          FROM posts p

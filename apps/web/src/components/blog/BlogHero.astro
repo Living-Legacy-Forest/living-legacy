@@ -89,6 +89,7 @@ const showUpdated = new Date(updatedAt).toDateString() !== new Date(publishedAt)
           srcset={image?.srcset}
           sizes={image?.srcset ? HERO_SIZES : undefined}
           alt={image?.alt ?? ''}
+          style={image?.position ? `object-position: ${image.position}` : undefined}
           width={image?.width ?? 1600}
           height={image?.height ?? 900}
           fetchpriority="high"

@@ -10,6 +10,7 @@ import { StarterKit } from '@tiptap/starter-kit';
 import { Link } from '@/components/editor';
 import { Table } from '@/components/extensions/table';
 import { PostImage } from './post-image';
+import { VideoEmbed } from './post-video';
 
 /**
  * Content extensions shared by the post editor and the preview renderer, so
@@ -29,4 +30,5 @@ export const postContentExtensions: Extensions = [
   TaskItem.configure({ nested: true }),
   TextAlign.configure({ types: ['heading', 'paragraph'] }),
   PostImage,
+  VideoEmbed,
 ];

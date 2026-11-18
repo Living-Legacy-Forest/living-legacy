@@ -1,5 +1,6 @@
 'use client';
 
+import { parseVideoUrl } from '@ll/content';
 import { RichTextEditor } from '@/components/editor';
 import type { Editor } from '@tiptap/react';
 import {
@@ -15,6 +16,7 @@ import {
   Plus,
   Quote,
   Table as TableIcon,
+  FileTypeVideoIcon,
 } from '@/components/icons';
 
 import { MediaPicker } from '@/components/media/image-field';
@@ -27,6 +29,17 @@ import {
   DropdownMenuRadioItem,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog';
+import { Input } from '@/components/ui/input';
+import { isEnterKey } from '@/lib/keyboard';
+import { notify } from '@/lib/notify';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { cn } from '@/lib/utils';
 import { useState } from 'react';
@@ -210,6 +223,59 @@ const ColorMenu = ({
   </Popover>
 );
 
+/** Asks for a YouTube or Vimeo link and puts the video in the text. */
+const VideoDialog = ({
+  open,
+  onOpenChange,
+  onInsert,
+}: {
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+  onInsert: (video: NonNullable<ReturnType<typeof parseVideoUrl>>) => void;
+}) => {
+  const [link, setLink] = useState('');
+  const insert = () => {
+    const video = parseVideoUrl(link);
+    if (!video) {
+      notify.error('That link is not supported', 'Paste a YouTube or Vimeo link.');
+      return;
+    }
+    onInsert(video);
+    setLink('');
+  };
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="sm:max-w-md">
+        <DialogHeader>
+          <DialogTitle>Embed a video</DialogTitle>
+          <DialogDescription>
+            Paste a YouTube or Vimeo link. Visitors watch it on the page without leaving.
+          </DialogDescription>
+        </DialogHeader>
+        <Input
+          aria-label="Video link"
+          inputMode="url"
+          value={link}
+          onChange={(e) => setLink(e.target.value)}
+          onKeyDown={(e) => {
+            if (isEnterKey(e)) {
+              e.preventDefault();
+              insert();
+            }
+          }}
+          placeholder="https://www.youtube.com/watch?v=…"
+        />
+        <DialogFooter>
+          <Button variant="outline" onClick={() => onOpenChange(false)}>
+            Cancel
+          </Button>
+          <Button onClick={insert}>Embed video</Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
+};
+
 const InsertMenu = ({ editor }: { editor: Editor | null }) => {
   const run = (command: (chain: ReturnType<Editor['chain']>) => void) => {
     if (editor) {
@@ -217,6 +283,7 @@ const InsertMenu = ({ editor }: { editor: Editor | null }) => {
     }
   };
   const [pickingImage, setPickingImage] = useState(false);
+  const [pickingVideo, setPickingVideo] = useState(false);
   const items = [
     // From the Media library, so the file lives in storage rather than as
     // base64 in the post body.
@@ -224,6 +291,11 @@ const InsertMenu = ({ editor }: { editor: Editor | null }) => {
       Icon: ImageIcon,
       label: 'Image',
       onSelect: () => setPickingImage(true),
+    },
+    {
+      Icon: FileTypeVideoIcon,
+      label: 'Video',
+      onSelect: () => setPickingVideo(true),
     },
     {
       Icon: TableIcon,
@@ -269,6 +341,14 @@ const InsertMenu = ({ editor }: { editor: Editor | null }) => {
           ))}
         </DropdownMenuContent>
       </DropdownMenu>
+      <VideoDialog
+        open={pickingVideo}
+        onOpenChange={setPickingVideo}
+        onInsert={(video) => {
+          setPickingVideo(false);
+          run((c) => c.setVideoEmbed(video).run());
+        }}
+      />
       <MediaPicker
         open={pickingImage}
         onOpenChange={setPickingImage}

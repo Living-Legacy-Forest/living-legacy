@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { CardMeta, ListCard, ListCards } from '@/components/list/list-card';
 import { ListFilter, passes } from '@/components/list/list-filter';
+import { ListSort, byNumber, byText, sortedBy, useListSort } from '@/components/list/list-sort';
 import { ViewSwitch, useListView } from '@/components/list/view-switch';
 import {
   AlertDialog,
@@ -80,6 +81,13 @@ const copy: Record<
 /** What the pane edits: a saved term, or a new one. */
 type Target = { kind: 'edit'; id: string } | { kind: 'new' };
 
+const SORTS = [
+  { value: 'name-az', label: 'Name, A to Z' },
+  { value: 'name-za', label: 'Name, Z to A' },
+  { value: 'most', label: 'Most posts' },
+  { value: 'fewest', label: 'Fewest posts' },
+] as const;
+
 export function TermsPage({
   type,
   data,
@@ -101,7 +109,13 @@ export function TermsPage({
   const revealing = useRevealOnce();
 
   const sorted = [...data].sort((a, b) => a.name.localeCompare(b.name));
-  const visible = sorted.filter(
+  const [sort, setSort] = useListSort(SORTS);
+  const ordered = sortedBy(sorted, sort, {
+    'name-za': (a, b) => byText(b.name, a.name),
+    most: (a, b) => byNumber(b.postCount, a.postCount) || byText(a.name, b.name),
+    fewest: (a, b) => byNumber(a.postCount, b.postCount) || byText(a.name, b.name),
+  });
+  const visible = ordered.filter(
     (t) =>
       passes(usage, t.postCount > 0 ? 'used' : 'unused') &&
       matchesSearch(query, [t.name, t.slug, t.description])
@@ -161,6 +175,7 @@ export function TermsPage({
             onChange={setQuery}
           />
         )}
+        {data.length > 0 && <ListSort options={SORTS} value={sort} onChange={setSort} />}
         {data.length > 0 && (
           <ListFilter
             groups={[

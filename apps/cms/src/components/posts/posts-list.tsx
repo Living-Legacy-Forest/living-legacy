@@ -1,4 +1,4 @@
-import { blogPath, can } from '@ll/content';
+import { blogPath, can, postSorts } from '@ll/content';
 import { Link, useNavigate } from '@tanstack/react-router';
 import {
   CalendarClockIcon,
@@ -39,6 +39,7 @@ import { ListRows, isDesktop } from '@/components/list/list-page';
 import { ListRow, type RowMenuItem } from '@/components/list/list-row';
 import { SearchInput, useSelection } from '@/components/list/list-tools';
 import { ListFilter } from '@/components/list/list-filter';
+import { ListSort, useListSort } from '@/components/list/list-sort';
 import { CardMeta, ListCard, ListCards } from '@/components/list/list-card';
 import { ViewSwitch, useListView } from '@/components/list/view-switch';
 import { RowCell } from '@/components/list/row-cell';
@@ -116,6 +117,7 @@ export function PostsList({
   user: SessionUser;
 }) {
   const navigate = useNavigate({ from: '/posts/' });
+  const [sort, setSort] = useListSort(postSorts);
   const { run, pending } = useAction();
   const revealing = useRevealOnce();
   const selection = useSelection(data.rows.map((r) => r.id));
@@ -319,6 +321,7 @@ export function PostsList({
           value={query}
           onChange={setQuery}
         />
+        <ListSort options={postSorts} value={sort} onChange={setSort} />
         <ListFilter
           groups={[
             {

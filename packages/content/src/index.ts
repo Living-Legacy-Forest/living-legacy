@@ -15,6 +15,7 @@ export * from './media-coverage';
 export * from './image-size';
 export * from './documents';
 export * from './validation';
+export * from './list-sorts';
 export * from './media-sweep';
 export * from './events';
 export * from './phone';

@@ -9,6 +9,7 @@ import { useIsDesktop } from '@/components/editor-page/use-is-desktop';
 import { useState } from 'react';
 import { CardMeta, ListCard, ListCards } from '@/components/list/list-card';
 import { ListFilter, passes, publishStatusOptions } from '@/components/list/list-filter';
+import { ListSort, byText, sortedBy, useListSort } from '@/components/list/list-sort';
 import { ViewSwitch, useListView } from '@/components/list/view-switch';
 import {
   ListColumn,
@@ -88,6 +89,13 @@ const stageItems = (Object.keys(locationStageLabels) as LocationStage[]).map((va
   label: locationStageLabels[value],
 }));
 
+const SORTS = [
+  { value: 'order', label: 'Your order' },
+  { value: 'name-az', label: 'Name, A to Z' },
+  { value: 'name-za', label: 'Name, Z to A' },
+  { value: 'state-az', label: 'State, A to Z' },
+] as const;
+
 export function LocationsPage({
   data,
   search,
@@ -117,7 +125,13 @@ export function LocationsPage({
   const bleed = data.length > 0;
   const desktop = useIsDesktop();
   const selection = useSelection(data.map((l) => l.id));
-  const visible = data.filter(
+  const [sort, setSort] = useListSort(SORTS);
+  const ordered = sortedBy(data, sort, {
+    'name-az': (a, b) => byText(a.name, b.name),
+    'name-za': (a, b) => byText(b.name, a.name),
+    'state-az': (a, b) => byText(a.state, b.state) || byText(a.name, b.name),
+  });
+  const visible = ordered.filter(
     (l) =>
       passes(picked.statuses, l.status) &&
       passes(picked.states, l.state) &&
@@ -232,6 +246,7 @@ export function LocationsPage({
             />
           </div>
         )}
+        {data.length > 0 && <ListSort options={SORTS} value={sort} onChange={setSort} />}
         {data.length > 0 && (
           <ListFilter
             groups={[

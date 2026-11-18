@@ -256,6 +256,7 @@ export const FileTypeDocIcon = make(H.Doc02Icon);
 export const FileTypePdfIcon = make(H.Pdf02Icon);
 export const FileTypeCsvIcon = make(H.Csv02Icon);
 export const RetryIcon = make(H.ReloadIcon);
+export const SortIcon = make(H.ArrowUpDownIcon);
 export const UploadArrowIcon = make(H.ArrowUp02Icon);
 export const RemoveFileIcon = make(H.Cancel01Icon);
 export const AlertCircleIcon = make(H.AlertCircleIcon);

@@ -3,6 +3,7 @@ import { useNavigate } from '@tanstack/react-router';
 import { useState } from 'react';
 import { CardMeta, ListCard, ListCards } from '@/components/list/list-card';
 import { ListFilter, optionsOf, passes, publishStatusOptions } from '@/components/list/list-filter';
+import { ListSort, byNumber, byText, sortedBy, useListSort } from '@/components/list/list-sort';
 import { ViewSwitch, useListView } from '@/components/list/view-switch';
 import {
   DialogActions,
@@ -119,6 +120,15 @@ const kindItems = (Object.keys(mediaCoverageKindLabels) as MediaCoverageKind[]).
 /** What the pane edits in place of the preview (or the dialog shows, on smaller screens). */
 type Target = { kind: 'edit'; id: string } | { kind: 'new' };
 
+const SORTS = [
+  { value: 'order', label: 'Your order' },
+  { value: 'date-new', label: 'Newest coverage' },
+  { value: 'date-old', label: 'Oldest coverage' },
+  { value: 'title-az', label: 'Title, A to Z' },
+  { value: 'title-za', label: 'Title, Z to A' },
+  { value: 'source-az', label: 'Source, A to Z' },
+] as const;
+
 export function MediaCoveragePage({
   data,
   search,
@@ -139,7 +149,15 @@ export function MediaCoveragePage({
   const grid = layout === 'grid';
   const [toDelete, setToDelete] = useState<string[] | null>(null);
   const selection = useSelection(data.map((m) => m.id));
-  const visible = data.filter(
+  const [sort, setSort] = useListSort(SORTS);
+  const ordered = sortedBy(data, sort, {
+    'date-new': (a, b) => byNumber(b.coverageDate, a.coverageDate),
+    'date-old': (a, b) => byNumber(a.coverageDate, b.coverageDate),
+    'title-az': (a, b) => byText(a.title, b.title),
+    'title-za': (a, b) => byText(b.title, a.title),
+    'source-az': (a, b) => byText(a.source, b.source) || byText(a.title, b.title),
+  });
+  const visible = ordered.filter(
     (m) =>
       passes(picked.statuses, m.status) &&
       passes(picked.kinds, m.kind) &&
@@ -253,6 +271,7 @@ export function MediaCoveragePage({
             onChange={setQuery}
           />
         )}
+        {data.length > 0 && <ListSort options={SORTS} value={sort} onChange={setSort} />}
         {data.length > 0 && (
           <ListFilter
             groups={[

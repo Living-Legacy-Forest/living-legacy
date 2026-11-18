@@ -1,3 +1,4 @@
+import { motion } from 'motion/react';
 import { MoreHorizontalIcon } from '@/components/icons';
 import { Button } from '@/components/ui/button';
 import {
@@ -7,6 +8,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
+import { useSortLayout } from '@/lib/sort-motion';
 import { cn } from '@/lib/utils';
 import { type RowMenuItem, rowActions } from './list-row';
 
@@ -75,6 +77,7 @@ export function ListCard({
   children?: React.ReactNode;
 }) {
   const { actions, destructive } = rowActions({ onOpen, previews, items: menu, swipe: remove });
+  const sortLayout = useSortLayout();
   // The title's ::after covers the card, so a click anywhere opens it; the menu sits above.
   const titleClass =
     "text-left after:absolute after:inset-0 after:content-[''] focus-visible:outline-none " +
@@ -82,7 +85,8 @@ export function ListCard({
   const titleText = <span className={largeTitle ? 'line-clamp-2' : 'block truncate'}>{title}</span>;
 
   return (
-    <li
+    <motion.li
+      {...sortLayout}
       data-slot="list-card"
       className={cn(
         'group/card bg-card has-[:focus-visible]:ring-ring/50 relative flex flex-col overflow-hidden rounded-xl border transition-shadow hover:shadow-md has-[:focus-visible]:ring-2 motion-reduce:transition-none',
@@ -154,7 +158,7 @@ export function ListCard({
           ))}
         </DropdownMenuContent>
       </DropdownMenu>
-    </li>
+    </motion.li>
   );
 }
 

@@ -2,6 +2,7 @@ import { useNavigate } from '@tanstack/react-router';
 import { useState } from 'react';
 import { CardMeta, ListCard, ListCards } from '@/components/list/list-card';
 import { ListFilter, optionsOf, passes, publishStatusOptions } from '@/components/list/list-filter';
+import { ListSort, byNumber, byText, sortedBy, useListSort } from '@/components/list/list-sort';
 import { ViewSwitch, useListView } from '@/components/list/view-switch';
 import { BulkCsvForm } from '@/components/bulk/bulk-csv-form';
 import {
@@ -116,6 +117,15 @@ function testimonialFromCsv(values: Record<string, string>) {
 /** What the pane edits in place of the preview (or the dialog shows, on smaller screens). */
 type Target = { kind: 'edit'; id: string } | { kind: 'new' } | { kind: 'bulk' };
 
+const SORTS = [
+  { value: 'featured', label: 'Featured first' },
+  { value: 'newest', label: 'Newest' },
+  { value: 'oldest', label: 'Oldest' },
+  { value: 'name-az', label: 'Name, A to Z' },
+  { value: 'name-za', label: 'Name, Z to A' },
+  { value: 'location-az', label: 'Location, A to Z' },
+] as const;
+
 export function TestimonialsPage({
   data,
   search,
@@ -136,7 +146,15 @@ export function TestimonialsPage({
   const grid = layout === 'grid';
   const [toDelete, setToDelete] = useState<string[] | null>(null);
   const selection = useSelection(data.map((t) => t.id));
-  const visible = data.filter(
+  const [sort, setSort] = useListSort(SORTS);
+  const ordered = sortedBy(data, sort, {
+    newest: (a, b) => byNumber(b.createdAt, a.createdAt),
+    oldest: (a, b) => byNumber(a.createdAt, b.createdAt),
+    'name-az': (a, b) => byText(a.name, b.name),
+    'name-za': (a, b) => byText(b.name, a.name),
+    'location-az': (a, b) => byText(a.location, b.location) || byText(a.name, b.name),
+  });
+  const visible = ordered.filter(
     (t) =>
       passes(picked.statuses, t.status) &&
       passes(picked.featured, t.featured ? 'yes' : 'no') &&
@@ -267,6 +285,7 @@ export function TestimonialsPage({
             onChange={setQuery}
           />
         )}
+        {data.length > 0 && <ListSort options={SORTS} value={sort} onChange={setSort} />}
         {data.length > 0 && (
           <ListFilter
             groups={[

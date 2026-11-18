@@ -6,6 +6,7 @@ import { listPosts, postStatusTabs } from '@/server/posts';
 const searchSchema = z.object({
   status: z.enum(postStatusTabs).catch('all').default('all'),
   q: z.string().optional().catch(undefined),
+  sort: z.string().max(30).optional().catch(undefined),
   categories: z.array(z.string()).optional().catch(undefined),
   authors: z.array(z.string()).optional().catch(undefined),
   page: z.number().int().min(1).optional().catch(undefined),
@@ -17,7 +18,8 @@ export const Route = createFileRoute('/_app/posts/')({
   validateSearch: searchSchema,
   // Changing the previewed post must not reload the list.
   loaderDeps: ({ search: { selected: _selected, ...list } }) => list,
-  loader: ({ deps }) => listPosts({ data: { ...deps, page: deps.page ?? 1 } }),
+  loader: ({ deps }) =>
+    listPosts({ data: { ...deps, sort: deps.sort as never, page: deps.page ?? 1 } }),
   head: () => ({ meta: [{ title: 'Posts | Living Legacy CMS' }] }),
   component: PostsPage,
 });

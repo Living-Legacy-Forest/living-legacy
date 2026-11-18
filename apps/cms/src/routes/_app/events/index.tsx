@@ -9,6 +9,7 @@ export const Route = createFileRoute('/_app/events/')({
   validateSearch: z.object({
     open: z.string().max(64).optional().catch(undefined),
     view: z.enum(['details', 'guests', 'dashboard']).optional().catch(undefined),
+    sort: z.string().max(30).optional().catch(undefined),
   }),
   beforeLoad: ({ search }) => {
     const to = legacyEventRedirect(search);

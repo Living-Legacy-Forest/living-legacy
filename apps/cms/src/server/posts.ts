@@ -9,6 +9,8 @@ import {
   publishErrors,
   roles,
   slugify,
+  type PostSort,
+  postSorts,
 } from '@ll/content';
 import {
   posts,
@@ -73,6 +75,10 @@ export type PostStatusTab = (typeof postStatusTabs)[number];
 
 const listSchema = z.object({
   status: z.enum(postStatusTabs).catch('all'),
+  sort: z
+    .enum(postSorts.map((s) => s.value) as [PostSort, ...PostSort[]])
+    .optional()
+    .catch('default'),
   q: z.string().trim().max(100).optional(),
   categories: z.array(z.string()).max(50).optional(),
   authors: z.array(z.string()).max(50).optional(),
@@ -146,11 +152,22 @@ export const listPosts = createServerFn({ method: 'GET' })
           .leftJoin(teamMembers, eq(teamMembers.id, posts.authorId))
           .where(filters)
           .orderBy(
-            data.status === 'trash'
-              ? desc(posts.deletedAt)
-              : data.status === 'scheduled'
-                ? asc(posts.scheduledAt)
-                : sql`coalesce(${posts.publishedAt}, ${posts.updatedAt}) desc`
+            ...(data.sort && data.sort !== 'default'
+              ? {
+                  updated: [desc(posts.updatedAt)],
+                  oldest: [sql`coalesce(${posts.publishedAt}, ${posts.updatedAt}) asc`],
+                  'title-az': [sql`lower(${posts.title}) asc`],
+                  'title-za': [sql`lower(${posts.title}) desc`],
+                }[data.sort]
+              : [
+                  data.status === 'trash'
+                    ? desc(posts.deletedAt)
+                    : data.status === 'scheduled'
+                      ? asc(posts.scheduledAt)
+                      : sql`coalesce(${posts.publishedAt}, ${posts.updatedAt}) desc`,
+                ]),
+            // Equal values never swap places between pages.
+            asc(posts.id)
           )
           .limit(POSTS_PAGE_SIZE)
           .offset((data.page - 1) * POSTS_PAGE_SIZE),

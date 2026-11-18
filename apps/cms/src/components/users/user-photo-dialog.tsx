@@ -1,6 +1,6 @@
 import { useRouter } from '@tanstack/react-router';
 import { useRef, useState } from 'react';
-import { CameraIcon } from '@/components/icons';
+import {} from '@/components/icons';
 import { useImageUpload } from '@/components/media/image-crop-dialog';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
@@ -185,11 +185,7 @@ export function UserPhotoDialog({
                     disabled={busy !== null}
                     onClick={() => fileInput.current?.click()}
                   >
-                    {busy === 'upload' ? (
-                      <Spinner />
-                    ) : (
-                      <CameraIcon aria-hidden data-icon="inline-start" />
-                    )}
+                    {busy === 'upload' && <Spinner />}
                     {user.image ? 'Replace' : 'Upload'}
                   </Button>
                   <Button

@@ -1,12 +1,6 @@
 import { toCsv } from '@ll/content';
 import { useCallback, useEffect, useState } from 'react';
-import {
-  CheckIcon,
-  DownloadIcon,
-  MoreHorizontalIcon,
-  ScanQrIcon,
-  UserPlusIcon,
-} from '@/components/icons';
+import { CheckIcon, MoreHorizontalIcon, UserPlusIcon } from '@/components/icons';
 import { SearchInput, matchesSearch } from '@/components/list/list-tools';
 import {
   AlertDialog,
@@ -163,12 +157,10 @@ export function EventGuests({ event }: { event: EventRow }) {
             disabled={guests.length === 0}
             onClick={exportCsv}
           >
-            <DownloadIcon aria-hidden data-icon="inline-start" />
             Export CSV
           </Button>
           {editable && confirmed.length > 0 && (
             <Button type="button" variant="outline" size="sm" onClick={() => setScanning(true)}>
-              <ScanQrIcon aria-hidden data-icon="inline-start" />
               Scan tickets
             </Button>
           )}

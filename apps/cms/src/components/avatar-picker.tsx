@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { RotateCcwIcon } from '@/components/icons';
+import {} from '@/components/icons';
 import { Button } from '@/components/ui/button';
 import {
   Dialog,
@@ -95,7 +95,6 @@ export function AvatarPicker({
         </div>
         <DialogFooter className="sm:justify-between">
           <Button type="button" variant="ghost" onClick={() => setSeeds(fresh())}>
-            <RotateCcwIcon aria-hidden data-icon="inline-start" />
             Show more
           </Button>
           <Button type="button" disabled={!chosen || saving} onClick={use}>

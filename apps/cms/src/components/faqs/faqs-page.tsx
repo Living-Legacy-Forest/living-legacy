@@ -31,12 +31,10 @@ import {
   ChevronDownIcon,
   ChevronUpIcon,
   CircleHelpIcon,
-  FolderPlusIcon,
   MoreHorizontalIcon,
   PencilIcon,
   PlusIcon,
   Trash2Icon,
-  UploadIcon,
 } from '@/components/icons';
 import {
   AlertDialog,
@@ -323,11 +321,9 @@ export function FaqsPage({ data, canWrite }: { data: FaqData; canWrite: boolean 
         {canWrite && (
           <div className="flex gap-3 max-md:hidden">
             <Button size="sm" variant="outline" onClick={() => view.open({ kind: 'bulk' })}>
-              <UploadIcon aria-hidden data-icon="inline-start" />
               Bulk update
             </Button>
             <Button size="sm" variant="outline" onClick={() => view.open({ kind: 'group' })}>
-              <FolderPlusIcon aria-hidden data-icon="inline-start" />
               New group
             </Button>
             <Button size="sm" onClick={() => view.open({ kind: 'new' })}>
@@ -371,7 +367,6 @@ export function FaqsPage({ data, canWrite }: { data: FaqData; canWrite: boolean 
             <EmptyContent>
               <div className="flex gap-2">
                 <Button size="sm" variant="outline" onClick={() => view.open({ kind: 'bulk' })}>
-                  <UploadIcon aria-hidden data-icon="inline-start" />
                   Bulk update
                 </Button>
                 <Button size="sm" onClick={() => view.open({ kind: 'new' })}>

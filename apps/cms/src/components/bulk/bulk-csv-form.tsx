@@ -1,6 +1,6 @@
 import { readCsvRecords } from '@ll/content';
 import { useState } from 'react';
-import { DownloadIcon } from '@/components/icons';
+import {} from '@/components/icons';
 import { Button } from '@/components/ui/button';
 import { DropTarget } from '@/components/ui/file-dropzone';
 import { Spinner } from '@/components/ui/spinner';
@@ -135,7 +135,6 @@ export function BulkCsvForm<T>({
               ])
             }
           >
-            <DownloadIcon aria-hidden data-icon="inline-start" />
             Blank template
           </Button>
           <Button
@@ -150,7 +149,6 @@ export function BulkCsvForm<T>({
               ])
             }
           >
-            <DownloadIcon aria-hidden data-icon="inline-start" />
             Current {noun[1]} ({current.length})
           </Button>
         </div>

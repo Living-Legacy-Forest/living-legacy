@@ -465,7 +465,6 @@ export function AnnouncementsPage({
                             disabled={pending}
                             onClick={() => quickPublish(a, rowStatus)}
                           >
-                            <SendIcon aria-hidden data-icon="inline-start" />
                             Publish
                           </Button>
                         )
@@ -1001,12 +1000,12 @@ function TextColourField({ background }: { background: AnnouncementBackground })
       role="group"
       title={`Contrast ${ratio.toFixed(1)} to 1`}
       aria-label={`Text colour, chosen automatically: ${fg}, contrast ${ratio.toFixed(1)} to 1, ${grade}`}
-      className="border-input bg-muted/30 flex h-9 items-center gap-2 rounded-[10px] border p-[3px] pr-2.5"
+      className="border-input bg-muted/30 flex h-8 items-center gap-2 rounded-[10px] border p-[3px] pr-2.5"
     >
       {/* The letters in the text colour on the bar's colour: what the bar will look like. */}
       <span
         aria-hidden
-        className="ring-foreground/10 flex size-7 shrink-0 items-center justify-center rounded-[7px] text-xs font-semibold ring-1"
+        className="ring-foreground/10 flex size-6 shrink-0 items-center justify-center rounded-[7px] text-xs font-semibold ring-1"
         style={{ background: bg, color: fg }}
       >
         Aa

@@ -361,7 +361,7 @@ function StepButton({
       }}
       onContextMenu={(event) => event.preventDefault()}
       className={cn(
-        'text-muted-foreground grid size-7 shrink-0 cursor-pointer touch-manipulation place-items-center rounded-[calc(var(--radius-lg)-4px)] transition-[background-color,color,opacity] duration-150 select-none [-webkit-tap-highlight-color:transparent] [-webkit-touch-callout:none]',
+        'text-muted-foreground grid size-6 shrink-0 cursor-pointer touch-manipulation place-items-center rounded-[calc(var(--radius-lg)-4px)] transition-[background-color,color,opacity] duration-150 select-none [-webkit-tap-highlight-color:transparent] [-webkit-touch-callout:none]',
         'touch:size-9',
         'hover:not-aria-disabled:not-disabled:bg-muted hover:not-aria-disabled:not-disabled:text-foreground',
         // Quick press, spring release: the fill deepens and the glyph sinks while it repeats.
@@ -659,7 +659,7 @@ function NumberField({
       data-disabled={disabled || undefined}
       data-invalid={ariaInvalid || outside || undefined}
       className={cn(
-        'border-input dark:bg-input/30 flex h-9 w-36 max-w-full min-w-0 items-center gap-0.5 rounded-lg border bg-transparent p-[3px] transition-[border-color,background-color,opacity] duration-150',
+        'border-input dark:bg-input/30 flex h-8 w-36 max-w-full min-w-0 items-center gap-0.5 rounded-lg border bg-transparent p-[3px] transition-[border-color,background-color,opacity] duration-150',
         'touch:h-11',
         'hover:border-ring/60 has-[input:focus]:border-ring',
         'data-invalid:border-destructive data-invalid:bg-destructive/5 dark:data-invalid:border-destructive/50',

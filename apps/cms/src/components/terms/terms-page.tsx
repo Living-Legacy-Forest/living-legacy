@@ -15,7 +15,7 @@ import {
   AlertDialogTrigger,
 } from '@/components/ui/alert-dialog';
 import { FormCell, FormSection } from '@/components/form-cells';
-import { FolderIcon, PlusIcon, TagIcon, Trash2Icon } from '@/components/icons';
+import { FolderIcon, PlusIcon, TagIcon } from '@/components/icons';
 import { PageActions } from '@/components/shell/page-actions';
 import {
   DialogActions,
@@ -427,7 +427,6 @@ function DeleteTerm({
           />
         }
       >
-        <Trash2Icon aria-hidden data-icon="inline-start" />
         Delete
       </AlertDialogTrigger>
       <AlertDialogContent>

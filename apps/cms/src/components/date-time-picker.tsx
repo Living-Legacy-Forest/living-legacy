@@ -123,7 +123,7 @@ export function DateTimePicker({
                   setOpen(false);
                 }
               }}
-              className="h-9 w-28"
+              className="h-8 w-28"
             />
             <span className="text-muted-foreground text-xs">
               {zoneName(zone, value ?? undefined)}

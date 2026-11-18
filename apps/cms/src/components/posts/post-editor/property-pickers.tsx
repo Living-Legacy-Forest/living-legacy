@@ -235,7 +235,7 @@ export function UrlPicker({
             onKeyDown={(e) => {
               if (isEnterKey(e)) commit();
             }}
-            className="h-9"
+            className="h-8"
           />
           <p className="text-muted-foreground truncate text-xs">
             {SITE_HOST}/blog/{slugify(draft) || '…'}

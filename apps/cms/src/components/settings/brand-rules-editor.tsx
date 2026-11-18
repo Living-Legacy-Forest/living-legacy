@@ -2,13 +2,7 @@
 // what to write instead. Edits are part of the settings form, saved with it.
 import { BRAND_RULES, BRAND_RULES_MAX, type BrandRule, type BrandSeverity } from '@ll/content';
 import { useState } from 'react';
-import {
-  ChevronLeftIcon,
-  ChevronRightIcon,
-  PlusIcon,
-  RotateCcwIcon,
-  Trash2Icon,
-} from '@/components/icons';
+import { ChevronLeftIcon, ChevronRightIcon, Trash2Icon } from '@/components/icons';
 import { SearchInput } from '@/components/list/list-tools';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -85,7 +79,6 @@ export function BrandRulesEditor({
             size="sm"
             onClick={() => onChange([...BRAND_RULES])}
           >
-            <RotateCcwIcon aria-hidden data-icon="inline-start" />
             Use the guide's list
           </Button>
         )}
@@ -96,7 +89,6 @@ export function BrandRulesEditor({
           disabled={rules.length >= BRAND_RULES_MAX}
           onClick={add}
         >
-          <PlusIcon aria-hidden data-icon="inline-start" />
           Add a word
         </Button>
       </div>

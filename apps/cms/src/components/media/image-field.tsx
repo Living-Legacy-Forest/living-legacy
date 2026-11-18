@@ -8,7 +8,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { mediaSrc } from '@/lib/upload-media';
 import { SearchInput } from '@/components/list/list-tools';
-import { UploadIcon } from '@/components/icons';
+import {} from '@/components/icons';
 import { useImageUpload } from '@/components/media/image-crop-dialog';
 import { ImageDropZone, useFileChooser, useImageDrop } from '@/components/media/image-drop-zone';
 import { Button } from '@/components/ui/button';
@@ -423,7 +423,7 @@ export function MediaPicker({
               disabled={upload.uploading}
               onClick={chooser.open}
             >
-              {upload.uploading ? <Spinner /> : <UploadIcon aria-hidden data-icon="inline-start" />}
+              {upload.uploading && <Spinner />}
               Upload
             </Button>
           </div>

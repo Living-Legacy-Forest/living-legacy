@@ -22,7 +22,8 @@
     "prepare": "husky"
   },
   "overrides": {
-    "tar": ">=7.5.19"
+    "tar": ">=7.5.19",
+    "@emnapi/runtime": "1.11.3"
   },
   "devDependencies": {
     "@commitlint/cli": "^21.2.4",

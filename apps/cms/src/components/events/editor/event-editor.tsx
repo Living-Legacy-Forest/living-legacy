@@ -33,7 +33,7 @@ import {
 } from './event-actions';
 import { EventMain } from './event-main';
 import { EventSidePanel } from './event-side-panel';
-import { EventToolbar } from './event-toolbar';
+import { EVENT_FORM_ID, EventToolbar } from './event-toolbar';
 import { type EventView, EventViewBar, EventViewsHeader } from './event-views';
 import { useEventEditor } from './use-event-editor';
 
@@ -152,6 +152,7 @@ export function EventEditor({
       {/* Kept mounted behind the other views, so unsaved changes survive a look at the guests. */}
       {!cancelled && (
         <form
+          id={EVENT_FORM_ID}
           noValidate
           onSubmit={editor.submit}
           data-slot="event-editor"
@@ -189,6 +190,7 @@ export function EventEditor({
                   onToggleSide={() => setShowSide((v) => !v)}
                   onCancelEvent={() => setCancelling(true)}
                   onDelete={() => setDeleting(true)}
+                  statusInPicker={dates.length > 1}
                 >
                   {viewBar}
                 </EventToolbar>

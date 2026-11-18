@@ -415,13 +415,19 @@ export const Toolbar = ({
   editor,
   state,
   className,
+  underHeader = false,
 }: {
   editor: Editor | null;
   state: EditorSnapshot | null;
   /** Where it sticks, when the page scrolls rather than the editor. */
   className?: string;
+  /** It sticks under the app header, which then turns solid on phones (styles.css). */
+  underHeader?: boolean;
 }) => (
-  <div className={cn('sticky top-0 z-10 sm:px-3 sm:pt-3 sm:pb-1', CANVAS, className)}>
+  <div
+    data-under-header={underHeader || undefined}
+    className={cn('sticky top-0 z-10 sm:px-3 sm:pt-3 sm:pb-1', CANVAS, className)}
+  >
     <div
       className="mx-auto w-full max-w-full [scrollbar-width:none] overflow-x-auto border-b sm:w-fit sm:rounded-xl sm:border sm:shadow-sm [&::-webkit-scrollbar]:hidden"
       style={SCROLL_SHADOWS}

@@ -501,7 +501,8 @@
     background: var(--ios-cell-raised);
   }
   /* An open date range picker grows out of its row, so the group lets it spill over. */
-  [data-slot='form-group']:has([data-slot='date-range-picker'][data-open]) {
+  [data-slot='form-group']:has([data-slot='date-range-picker'][data-open]),
+  [data-slot='form-group']:has([data-slot='color-picker'] [role='dialog']) {
     overflow: visible;
   }
   /* A block whose content draws its own box (the rich-text editor) fills the
@@ -606,9 +607,64 @@
     padding-inline: 0.75rem;
     font-size: 1.0625rem;
   }
+  /* A date that can be cleared keeps room for its clear button at the right. */
+  [data-slot='form-cell'] > :not([data-slot]) [data-slot='popover-trigger'][data-clearable] {
+    padding-right: 2.25rem;
+  }
   [data-slot='form-cell'] > :not([data-slot]) [data-slot='popover-trigger'] svg {
     display: none;
   }
+  /* The header is see-through, as iOS's bar is. With an editor's toolbar stuck right under it,
+     the text scrolling behind would read through on top of the toolbar, so it turns solid. */
+  :root:has([data-under-header]) [data-slot='app-header'] {
+    background: var(--background);
+  }
+
+  /* A long list (nine or more choices, such as time zones) opens as a sheet along the bottom of
+     the screen, in reach of a thumb, over a dimmed page. The positioner's placement is inline
+     style from Base UI, so this overrides it. */
+  [data-slot='select-positioner']:has(
+    [data-slot='select-item']:nth-child(9 of [data-slot='select-item'])
+  ) {
+    position: fixed !important;
+    inset: auto 0.5rem calc(env(safe-area-inset-bottom, 0px) + 0.5rem) 0.5rem !important;
+    width: auto !important;
+    height: auto !important;
+    transform: none !important;
+  }
+  [data-slot='select-positioner']:has(
+      [data-slot='select-item']:nth-child(9 of [data-slot='select-item'])
+    )
+    > [data-slot='select-content'] {
+    width: 100%;
+    max-height: 60dvh;
+    border-radius: 14px;
+    box-shadow: 0 0 0 100vmax rgb(0 0 0 / 0.4);
+    transform-origin: bottom center;
+  }
+  [data-slot='select-positioner']:has(
+      [data-slot='select-item']:nth-child(9 of [data-slot='select-item'])
+    )
+    > [data-slot='select-content'][data-starting-style],
+  [data-slot='select-positioner']:has(
+      [data-slot='select-item']:nth-child(9 of [data-slot='select-item'])
+    )
+    > [data-slot='select-content'][data-ending-style] {
+    scale: 1;
+    translate: 0 1.5rem;
+  }
+
+  /* A number field in a row is a grey pill, as a date is, rather than a bordered box. */
+  :is([data-slot='form-cell'], [data-slot='settings-control']) [data-slot='number-field'] {
+    height: 2.125rem;
+    border-color: transparent;
+    border-radius: 8px;
+    background: var(--ios-fill);
+  }
+  [data-slot='form-cell'] > [data-slot='number-field'] {
+    justify-self: end;
+  }
+
   /* A choice reads as its value and a chevron, in the secondary colour. */
   [data-slot='form-cell'] > :is([data-slot='select-trigger'], [data-slot='popover-trigger']) {
     width: auto;
@@ -713,8 +769,10 @@
   color: var(--primary-foreground);
   transition: opacity 150ms;
 }
-[data-sonner-toaster] [data-sonner-toast][data-styled='true'] [data-button]:hover {
-  opacity: 0.88;
+@media (hover: hover) and (pointer: fine) {
+  [data-sonner-toaster] [data-sonner-toast][data-styled='true'] [data-button]:hover {
+    opacity: 0.88;
+  }
 }
 [data-sonner-toaster] [data-sonner-toast][data-styled='true'] [data-button][data-cancel] {
   background: transparent;
@@ -1416,7 +1474,8 @@
   /* A long press on a control should not select its label. Content stays selectable. */
   button,
   [role='button'],
-  [role='tab'] {
+  [role='tab'],
+  [data-tab-bar] a {
     -webkit-user-select: none;
     user-select: none;
     -webkit-touch-callout: none;
@@ -1442,8 +1501,10 @@
   .maplibregl-ctrl-attrib a {
     @apply text-muted-foreground!;
   }
-  .maplibregl-ctrl-attrib a:hover {
-    @apply text-foreground!;
+  @media (hover: hover) and (pointer: fine) {
+    .maplibregl-ctrl-attrib a:hover {
+      @apply text-foreground!;
+    }
   }
   .maplibregl-ctrl-attrib-button {
     @apply bg-transparent! dark:invert;
@@ -1713,5 +1774,28 @@ h3,
   }
   [data-slot='file-dropzone'][data-dragging] {
     animation: none;
+  }
+}
+
+/* Phones: the editor toolbar under the app header takes the header's colour, so the two read as
+   one bar. In a layer, because the editor's canvas colour is an !important utility, and an
+   !important rule outside every layer loses to one inside a layer. */
+@layer base {
+  @media (width < 48rem) {
+    [data-under-header] {
+      background: var(--background) !important;
+    }
+    /* iOS Safari can draw the stuck toolbar a frame behind the stuck header while a scroll is
+       still gliding, opening a strip between them. A band of the same colour reaching up behind
+       the header covers it. The editor card clips it, so it never shows before the toolbar sticks. */
+    [data-under-header]::before {
+      content: '';
+      position: absolute;
+      inset-inline: 0;
+      bottom: 100%;
+      height: 3.5rem;
+      background: var(--background);
+      pointer-events: none;
+    }
   }
 }

@@ -46,7 +46,7 @@ function dayLabel(event: Upcoming) {
 /** The next month's event dates, each with how full it is. */
 export function UpcomingEvents({ events, now }: { events: Upcoming[]; now: number }) {
   return (
-    <Card className="col-span-2 lg:col-span-4">
+    <Card className="md:col-span-2 lg:col-span-4">
       <CardHeader>
         <CardTitle>Coming up</CardTitle>
         <CardDescription>The next 30 days. Open one to see how it is going.</CardDescription>

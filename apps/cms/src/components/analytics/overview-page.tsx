@@ -61,7 +61,7 @@ function OverviewBody({ data, days }: { data: Overview; days: AnalyticsRange }) 
 
   return (
     <div className="space-y-4 max-md:space-y-3">
-      <div className="grid grid-cols-2 gap-4 max-md:gap-3 lg:grid-cols-4">
+      <div className="grid gap-4 max-md:gap-3 md:grid-cols-2 lg:grid-cols-4">
         <Tile
           label="Unique visitors"
           value={<RollingNumber value={current.visitors} />}

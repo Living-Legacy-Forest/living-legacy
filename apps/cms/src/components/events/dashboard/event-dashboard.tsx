@@ -176,12 +176,14 @@ function EventDashboard({
             </p>
           )}
 
-      <div className="grid grid-cols-2 gap-3 @4xl:grid-cols-4">
+      <div className="grid gap-3 @lg:grid-cols-2 @4xl:grid-cols-4">
         {buildStats(data).map((stat) => (
           <StatCard key={stat.label} stat={stat} />
         ))}
         <Suspense
-          fallback={<ChartsPlaceholder wide="col-span-2 @4xl:col-span-4" half="col-span-2" />}
+          fallback={
+            <ChartsPlaceholder wide="@lg:col-span-2 @4xl:col-span-4" half="@lg:col-span-2" />
+          }
         >
           <EventCharts data={data} onDateChange={onDateChange} />
         </Suspense>
@@ -219,7 +221,7 @@ function GuestsCard({ data, onOpenGuests }: { data: Dashboard; onOpenGuests: () 
     },
   ];
   return (
-    <Card className="col-span-2">
+    <Card className="@lg:col-span-2">
       <CardHeader>
         <CardTitle>Guests</CardTitle>
         <CardDescription>

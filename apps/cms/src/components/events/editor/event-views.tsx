@@ -33,11 +33,23 @@ export function EventViewBar({
 }) {
   return (
     <>
-      <Tabs value={view} onValueChange={(next) => onViewChange(next as EventView)}>
-        <TabsList aria-label="Show">
-          <TabsTrigger value="details">Details</TabsTrigger>
-          <TabsTrigger value="guests">Guests</TabsTrigger>
-          <TabsTrigger value="dashboard">Dashboard</TabsTrigger>
+      {/* Phones: the tabs share the full width, as a segmented control. */}
+      <Tabs
+        value={view}
+        onValueChange={(next) => onViewChange(next as EventView)}
+        // The list sits in a scroll wrapper, which has to grow too.
+        className="max-md:w-full max-md:[&_[data-slot=tabs-list-shell]>*]:flex-1"
+      >
+        <TabsList aria-label="Show" className="max-md:w-full">
+          <TabsTrigger value="details" className="max-md:flex-1!">
+            Details
+          </TabsTrigger>
+          <TabsTrigger value="guests" className="max-md:flex-1!">
+            Guests
+          </TabsTrigger>
+          <TabsTrigger value="dashboard" className="max-md:flex-1!">
+            Dashboard
+          </TabsTrigger>
         </TabsList>
       </Tabs>
       {dates.length > 1 && (
@@ -70,7 +82,10 @@ export function EventViewsHeader(props: Parameters<typeof EventViewBar>[0]) {
         <ChevronLeftIcon aria-hidden data-icon="inline-start" />
         Events
       </Button>
-      <Badge variant="outline">{dateStatus(props.event)}</Badge>
+      {/* A repeating event's date picker already says where it stands; phones leave this out. */}
+      <Badge variant="outline" className={props.dates.length > 1 ? 'max-md:hidden' : undefined}>
+        {dateStatus(props.event)}
+      </Badge>
       <EventViewBar {...props} />
     </header>
   );

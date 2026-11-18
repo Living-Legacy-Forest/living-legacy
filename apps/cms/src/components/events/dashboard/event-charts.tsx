@@ -75,7 +75,7 @@ function DatesChart({ data, onDateChange }: Props) {
   }));
   const faded = (id: string) => date !== null && date.id !== id;
   return (
-    <Card className="col-span-2 @4xl:col-span-4">
+    <Card className="@lg:col-span-2 @4xl:col-span-4">
       <CardHeader>
         <CardTitle>Dates</CardTitle>
         <CardDescription>
@@ -149,7 +149,7 @@ function FillChart({ data }: { data: EventDashboard }) {
       : null;
   const showClose = closesDay !== null && timeline.some((t) => t.daysBefore === closesDay);
   return (
-    <Card className="col-span-2 @4xl:col-span-4">
+    <Card className="@lg:col-span-2 @4xl:col-span-4">
       <CardHeader>
         <CardTitle>How it filled</CardTitle>
         <CardDescription>
@@ -240,7 +240,7 @@ function FillChart({ data }: { data: EventDashboard }) {
 function LeadTimeChart({ data }: { data: EventDashboard }) {
   const { leadTime, totals } = data;
   return (
-    <Card className="col-span-2">
+    <Card className="@lg:col-span-2">
       <CardHeader>
         <CardTitle>How far ahead</CardTitle>
         <CardDescription>When people booked, before their date.</CardDescription>
@@ -280,7 +280,7 @@ function PartySizeChart({ data }: { data: EventDashboard }) {
   const { partySizes, totals } = data;
   const rows = partySizes.map((p) => ({ ...p, label: `${p.size}` }));
   return (
-    <Card className="col-span-2">
+    <Card className="@lg:col-span-2">
       <CardHeader>
         <CardTitle>Party sizes</CardTitle>
         <CardDescription>Bookings by how many people came together.</CardDescription>
@@ -336,7 +336,7 @@ function ArrivalsChart({ data }: { data: EventDashboard }) {
         ? 'Start'
         : `${minutes > 0 ? '+' : '−'}${Math.abs(minutes)} min`;
   return (
-    <Card className="col-span-2">
+    <Card className="@lg:col-span-2">
       <CardHeader>
         <CardTitle>Arrivals</CardTitle>
         <CardDescription>

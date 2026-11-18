@@ -74,7 +74,7 @@ function BookingsChart({ data }: { data: EventsOverview }) {
   const website = data.bookings.reduce((n, b) => n + b.website, 0);
   const staff = data.bookings.reduce((n, b) => n + b.staff, 0);
   return (
-    <Card className="col-span-2 lg:col-span-4">
+    <Card className="md:col-span-2 lg:col-span-4">
       <CardHeader>
         <CardTitle>Bookings</CardTitle>
         <CardDescription>People booked, by when they booked.</CardDescription>
@@ -126,7 +126,7 @@ function TurnUpChart({ data }: { data: EventsOverview }) {
   const { booked, checkedIn, events } = data.turnUpTotals;
   const rate = booked > 0 ? Math.round((checkedIn / booked) * 100) : null;
   return (
-    <Card className="col-span-2">
+    <Card className="md:col-span-2">
       <CardHeader>
         <CardTitle>Turn-up</CardTitle>
         <CardDescription>Who came, at events where guests were checked in.</CardDescription>
@@ -184,7 +184,7 @@ function TurnUpChart({ data }: { data: EventsOverview }) {
 function LocationsChart({ data }: { data: EventsOverview }) {
   const rows = data.byLocation;
   return (
-    <Card className="col-span-2">
+    <Card className="md:col-span-2">
       <CardHeader>
         <CardTitle>By location</CardTitle>
         <CardDescription>People booked at each forest.</CardDescription>

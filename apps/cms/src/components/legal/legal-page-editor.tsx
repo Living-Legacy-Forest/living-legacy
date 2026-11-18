@@ -181,7 +181,8 @@ export function LegalPageEditor({
           )}
         </div>
         {/* Clip, not hidden: hidden would make a scroll box and stop the toolbar sticking. */}
-        <div className="bg-background min-h-[32rem] overflow-clip rounded-lg border">
+        {/* Phones: edge to edge, so the toolbar spans the screen under the header as one bar. */}
+        <div className="bg-background min-h-[32rem] overflow-clip rounded-lg border max-md:-mx-4 max-md:rounded-none max-md:border-x-0">
           <ClientOnly fallback={<DocumentEditorSkeleton />}>
             <Suspense fallback={<DocumentEditorSkeleton />}>
               <DocumentEditor

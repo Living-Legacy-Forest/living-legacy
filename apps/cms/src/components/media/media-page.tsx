@@ -1,4 +1,4 @@
-import { useNavigate, useRouterState } from '@tanstack/react-router';
+import { useNavigate, useRouter, useRouterState } from '@tanstack/react-router';
 import { motion } from 'motion/react';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import {
@@ -46,7 +46,8 @@ import { useLoadMore } from '@/hooks/use-load-more';
 import { MEDIA_MAX_SHOWN, MEDIA_PAGE_SIZE } from '@/lib/media-paging';
 import { formatDate } from '@/lib/format';
 import { type MediaLibrarySearch, rememberMediaSearch } from '@/lib/media-return';
-import { removedNotice } from '@/lib/notify';
+import { notify, removedNotice } from '@/lib/notify';
+import { addPdfCover } from '@/lib/pdf-cover';
 import { useSortLayout } from '@/lib/sort-motion';
 import { useTimeZone } from '@/lib/use-time-zone';
 import { mediaSrc } from '@/lib/upload-media';
@@ -78,7 +79,32 @@ export function MediaPage({
   canDelete: boolean;
 }) {
   const items = data.items;
+  const router = useRouter();
   const [view, setView] = useListView('media', 'grid');
+  // PDFs uploaded before thumbnails existed, among the files loaded, and the one being drawn now.
+  const missingCovers = items.filter((m) => m.mime === 'application/pdf' && !m.hasCover);
+  const [coverProgress, setCoverProgress] = useState<number | null>(null);
+  async function makeCovers() {
+    let failed = 0;
+    for (const [i, file] of missingCovers.entries()) {
+      setCoverProgress(i + 1);
+      try {
+        await addPdfCover(file);
+      } catch {
+        failed += 1;
+      }
+    }
+    setCoverProgress(null);
+    await router.invalidate();
+    if (failed === 0) {
+      notify.success({ title: 'Thumbnails made', description: `${missingCovers.length} done.` });
+    } else {
+      notify.error(
+        'Some thumbnails could not be made',
+        `${failed} of ${missingCovers.length} PDFs could not be drawn, so they keep the generic cover.`
+      );
+    }
+  }
   const [sort, setSort] = useListSort(mediaSorts);
   const zone = useTimeZone();
   const [query, setQuery] = useState(search.q ?? '');
@@ -246,6 +272,19 @@ export function MediaPage({
               onClear={clearFilters}
             />
             <ListSort options={mediaSorts} value={sort} onChange={setSort} />
+            {missingCovers.length > 0 && (
+              <Button
+                variant="outline"
+                size="sm"
+                disabled={coverProgress !== null}
+                onClick={() => void makeCovers()}
+              >
+                {coverProgress !== null && <Spinner data-icon="inline-start" />}
+                {coverProgress !== null
+                  ? `Making ${coverProgress} of ${missingCovers.length}`
+                  : `Make ${missingCovers.length} PDF ${missingCovers.length === 1 ? 'thumbnail' : 'thumbnails'}`}
+              </Button>
+            )}
             <ViewSwitch value={view} onChange={setView} />
           </>
         )}

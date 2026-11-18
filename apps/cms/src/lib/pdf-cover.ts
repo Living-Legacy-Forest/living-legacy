@@ -41,3 +41,23 @@ export async function pdfCover(file: File, width = 640): Promise<File | null> {
     return null;
   }
 }
+
+/**
+ * Makes and saves the first-page thumbnail for a PDF already in the library: for files uploaded
+ * before thumbnails existed. Reads the PDF back from the library, draws page 1 and sends it.
+ */
+export async function addPdfCover(item: { id: string; url: string; filename: string }) {
+  const response = await fetch(item.url);
+  if (!response.ok) throw new Error('Could not load the PDF.');
+  const file = new File([await response.blob()], item.filename, { type: 'application/pdf' });
+  const cover = await pdfCover(file);
+  if (!cover) throw new Error('This PDF could not be drawn, so it keeps the generic cover.');
+
+  const form = new FormData();
+  form.set('cover', cover);
+  const saved = await fetch(`/api/media-cover/${item.id}`, { method: 'POST', body: form });
+  if (!saved.ok) {
+    const body = (await saved.json().catch(() => null)) as { error?: string } | null;
+    throw new Error(body?.error ?? 'Could not save the thumbnail.');
+  }
+}

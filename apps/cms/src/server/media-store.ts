@@ -50,6 +50,51 @@ export class UploadError extends Error {
   }
 }
 
+type Cover = { variant: MediaVariant; bytes: Uint8Array };
+
+/** A PDF's first-page thumbnail if `cover` is a small, readable JPEG; null for anything else. */
+async function readCover(cover: FormDataEntryValue | null, base: string): Promise<Cover | null> {
+  if (!(cover instanceof File) || cover.type !== 'image/jpeg' || cover.size > MAX_COVER_BYTES) {
+    return null;
+  }
+  const bytes = new Uint8Array(await cover.arrayBuffer());
+  const measured = imageSize(bytes);
+  if (!measured || measured.width > maxImageSide || measured.height > maxImageSide * 2) return null;
+  return {
+    variant: { width: measured.width, key: `media/${base}-cover.jpg`, mime: 'image/jpeg' },
+    bytes,
+  };
+}
+
+/**
+ * Gives a PDF already in the library its first-page thumbnail (made in the browser from the file),
+ * for PDFs uploaded before thumbnails existed. A bad thumbnail is refused here, unlike at upload,
+ * since this is the only thing being asked for.
+ */
+export async function attachPdfCover(
+  db: Db,
+  { id, cover, origin }: { id: string; cover: FormDataEntryValue | null; origin: string }
+) {
+  const row = await db.query.media.findFirst({ where: eq(media.id, id) });
+  if (!row) throw new UploadError('That file is no longer in the media library.', 404);
+  if (row.mime !== 'application/pdf') {
+    throw new UploadError('Only a PDF has a first-page thumbnail.');
+  }
+  // The thumbnail sits beside the PDF under the same name, as it does when uploaded with it.
+  const base = row.r2Key.replace(/^media\//, '').replace(/\.pdf$/, '');
+  const thumbnail = await readCover(cover, base);
+  if (!thumbnail) throw new UploadError('That thumbnail could not be used.');
+
+  await env.MEDIA.put(thumbnail.variant.key, thumbnail.bytes, {
+    httpMetadata: { contentType: 'image/jpeg' },
+  });
+  await db
+    .update(media)
+    .set({ variants: [thumbnail.variant], updatedAt: new Date() })
+    .where(eq(media.id, id));
+  await forgetCachedMedia(origin, [id]);
+}
+
 /**
  * A PDF or Office file. Its type comes from the name and its first bytes must be that format's,
  * so something renamed to .pdf is refused. Nothing is converted or resized.
@@ -68,19 +113,7 @@ async function storeDocument(file: File, cover: FormDataEntryValue | null): Prom
 
   // A PDF's first page, made in the browser, is its thumbnail. It is stored as the one smaller
   // copy, so `?w=` serves it. Anything that is not a small JPEG is dropped, never an error.
-  let thumbnail: { variant: MediaVariant; bytes: Uint8Array } | null = null;
-  if (type.extension === 'pdf' && cover instanceof File && cover.type === 'image/jpeg') {
-    if (cover.size <= MAX_COVER_BYTES) {
-      const coverBytes = new Uint8Array(await cover.arrayBuffer());
-      const measured = imageSize(coverBytes);
-      if (measured && measured.width <= maxImageSide && measured.height <= maxImageSide * 2) {
-        thumbnail = {
-          variant: { width: measured.width, key: `media/${base}-cover.jpg`, mime: 'image/jpeg' },
-          bytes: coverBytes,
-        };
-      }
-    }
-  }
+  const thumbnail = type.extension === 'pdf' ? await readCover(cover, base) : null;
 
   const keys = [r2Key, ...(thumbnail ? [thumbnail.variant.key] : [])];
   try {

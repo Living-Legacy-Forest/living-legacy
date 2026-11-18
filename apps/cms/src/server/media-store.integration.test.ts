@@ -4,7 +4,13 @@ import { eq } from 'drizzle-orm';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { addUser, testDb } from '../../test/fixtures';
 import { withBrowserCache } from './media-delivery';
-import { UploadError, replaceMediaFile, restoreMediaVersion, storeUpload } from './media-store';
+import {
+  UploadError,
+  attachPdfCover,
+  replaceMediaFile,
+  restoreMediaVersion,
+  storeUpload,
+} from './media-store';
 
 /** Just enough of a PNG for imageSize: the signature and an IHDR chunk. */
 function png(width: number, height: number, name = 'tree.png') {
@@ -289,5 +295,105 @@ describe('browser caching of media', () => {
       headers: { 'If-None-Match': '"old"' },
     });
     expect(withBrowserCache(stored(), req).status).toBe(200);
+  });
+});
+
+describe('attachPdfCover', () => {
+  const jpeg = (width = 640, height = 905, type = 'image/jpeg') =>
+    new File(
+      [
+        new Uint8Array([
+          0xff,
+          0xd8,
+          0xff,
+          0xc0,
+          0x00,
+          0x11,
+          0x08,
+          height >> 8,
+          height & 255,
+          width >> 8,
+          width & 255,
+          0x03,
+          0x01,
+          0x22,
+          0x00,
+          0x02,
+          0x11,
+          0x01,
+          0x03,
+          0x11,
+          0x01,
+          0xff,
+          0xd9,
+        ]),
+      ],
+      'cover.jpg',
+      { type }
+    );
+  const origin = 'http://cms.test';
+
+  beforeEach(async () => {
+    await testDb().delete(media);
+    vi.stubGlobal('caches', { default: { delete: vi.fn(async () => true) } });
+  });
+
+  async function addPdf() {
+    const f = new FormData();
+    f.set('file', new File(['%PDF-1.7\n'], 'old.pdf', { type: 'application/pdf' }));
+    const stored = await storeUpload(f);
+    const [row] = await testDb().insert(media).values(stored).returning();
+    return row!;
+  }
+  const reload = async (id: string) =>
+    (await testDb().select().from(media).where(eq(media.id, id)))[0]!;
+
+  it('gives an older PDF its first-page thumbnail, beside the PDF', async () => {
+    const row = await addPdf();
+    expect(row.variants).toBeNull();
+
+    await attachPdfCover(testDb(), { id: row.id, cover: jpeg(), origin });
+
+    const after = await reload(row.id);
+    expect(after.variants).toEqual([
+      { width: 640, key: row.r2Key.replace(/\.pdf$/, '-cover.jpg'), mime: 'image/jpeg' },
+    ]);
+    expect(await env.MEDIA.head(after.variants![0]!.key)).not.toBeNull();
+    expect(after.updatedAt.getTime()).toBeGreaterThanOrEqual(row.updatedAt.getTime());
+  });
+
+  it('replaces an existing thumbnail rather than adding a second', async () => {
+    const row = await addPdf();
+    await attachPdfCover(testDb(), { id: row.id, cover: jpeg(640, 905), origin });
+    await attachPdfCover(testDb(), { id: row.id, cover: jpeg(640, 800), origin });
+    expect((await reload(row.id)).variants).toHaveLength(1);
+  });
+
+  it('refuses a missing file, a file that is not a PDF and a thumbnail that is not usable', async () => {
+    await expect(
+      attachPdfCover(testDb(), { id: 'gone', cover: jpeg(), origin })
+    ).rejects.toBeInstanceOf(UploadError);
+
+    const [image] = await testDb()
+      .insert(media)
+      .values({ r2Key: 'media/x.png', filename: 'x.png', mime: 'image/png', size: 1 })
+      .returning();
+    await expect(
+      attachPdfCover(testDb(), { id: image!.id, cover: jpeg(), origin })
+    ).rejects.toThrow('Only a PDF');
+
+    const row = await addPdf();
+    for (const cover of [
+      null,
+      'cover',
+      jpeg(640, 905, 'image/png'),
+      new File(['<html>'], 'cover.jpg', { type: 'image/jpeg' }),
+      jpeg(5000, 5000),
+    ]) {
+      await expect(attachPdfCover(testDb(), { id: row.id, cover, origin })).rejects.toThrow(
+        'could not be used'
+      );
+    }
+    expect((await reload(row.id)).variants).toBeNull();
   });
 });

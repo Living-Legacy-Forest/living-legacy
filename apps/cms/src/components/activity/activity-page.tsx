@@ -111,7 +111,7 @@ export function ActivityPage({ data, search }: { data: ActivityLogData; search: 
           <SelectTrigger
             aria-label="Kind of change"
             size="sm"
-            className="bg-muted/60 text-ui touch:min-h-11 min-w-0 flex-1 border-0 shadow-none sm:w-40 sm:flex-none"
+            className="bg-muted/60 min-w-0 flex-1 border-0 shadow-none sm:w-40 sm:flex-none"
           >
             <SelectValue />
           </SelectTrigger>
@@ -131,7 +131,7 @@ export function ActivityPage({ data, search }: { data: ActivityLogData; search: 
           <SelectTrigger
             aria-label="Person"
             size="sm"
-            className="bg-muted/60 text-ui touch:min-h-11 min-w-0 flex-1 border-0 shadow-none sm:w-44 sm:flex-none"
+            className="bg-muted/60 min-w-0 flex-1 border-0 shadow-none sm:w-44 sm:flex-none"
           >
             <SelectValue />
           </SelectTrigger>

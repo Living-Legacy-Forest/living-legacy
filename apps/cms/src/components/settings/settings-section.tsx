@@ -60,6 +60,7 @@ export function SettingsRow({
   description,
   suffix,
   stacked = false,
+  below = false,
   children,
 }: {
   /** The field's id, so the title labels it (and error toasts can name it). */
@@ -68,6 +69,8 @@ export function SettingsRow({
   description?: ReactNode;
   suffix?: ReactNode;
   stacked?: boolean;
+  /** Phones: the control takes its own line under the title, for one too wide to sit beside it. */
+  below?: boolean;
   children: ReactNode;
 }) {
   if (stacked) {
@@ -104,7 +107,12 @@ export function SettingsRow({
       </div>
       <div
         data-slot="settings-control"
-        className="w-full shrink-0 max-md:col-start-2 max-md:row-start-1 max-md:flex max-md:min-w-0 max-md:justify-end sm:w-auto"
+        className={cn(
+          'w-full shrink-0 max-md:flex max-md:min-w-0 sm:w-auto',
+          below
+            ? 'max-md:col-span-2 max-md:row-start-2 max-md:pb-3'
+            : 'max-md:col-start-2 max-md:row-start-1 max-md:justify-end'
+        )}
       >
         {children}
       </div>

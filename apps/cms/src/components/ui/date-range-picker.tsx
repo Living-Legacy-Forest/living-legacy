@@ -1056,7 +1056,7 @@ function DateRangePicker({
       onKeyDown={onRootKey}
       onBlur={onRootBlur}
       className={cn(
-        'group/drp touch:h-11 relative z-0 block h-8 w-full text-sm transition-[z-index] delay-500 duration-0 data-open:z-30 data-open:delay-0',
+        'group/drp touch:h-11 md:text-ui relative z-0 block h-8 w-full text-base transition-[z-index] delay-500 duration-0 data-open:z-30 data-open:delay-0',
         className
       )}
     >

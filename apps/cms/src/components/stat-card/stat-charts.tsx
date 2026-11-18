@@ -173,11 +173,13 @@ function PeriodBars({
  */
 export function PartsChart({ parts }: { parts: Part[] }) {
   return (
-    // Shorter than the trend charts; the card's figure still sits at its foot.
-    <div className="flex h-28 items-center gap-3 md:gap-4">
+    // Shorter than the trend charts; the card's figure still sits at its foot. From md up the ring
+    // follows the card, not the screen: beside an open sidebar the card is narrow, and a full-size
+    // ring would push its legend out of the card.
+    <div className="@container/parts flex h-28 items-center gap-3 md:gap-4">
       {parts.some((p) => p.value > 0) && (
         <DonutChart
-          className="donut-compact w-16 shrink-0 md:w-28"
+          className="donut-compact w-16 shrink-0 md:w-28 md:@max-[14rem]/parts:w-16"
           label={parts.map((p) => p.label).join(', ')}
           data={parts.map((p) => ({ key: p.key, label: p.label, value: p.value }))}
           formatValue={formatInteger}

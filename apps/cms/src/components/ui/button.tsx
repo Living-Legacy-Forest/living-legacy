@@ -5,9 +5,12 @@ import { Spinner } from '@/components/ui/spinner';
 import { cn } from '@/lib/utils';
 
 const buttonVariants = cva(
+  // On touch screens an invisible ::after stretches the tap area to 44pt (32px + 6px above and
+  // below), so the button keeps its 32px look. Only vertical, as touch-hit (styles.css), so
+  // buttons side by side never take each other's taps.
   // The press shrinks the button a touch (icons a touch more, via --btn-press). Buttons that
   // open a menu, popover or dialog stay still: the layer would measure a shrunken anchor.
-  "group/button relative inline-flex shrink-0 items-center justify-center rounded-lg border border-transparent bg-clip-padding text-sm font-medium whitespace-nowrap transition-all duration-150 ease-[cubic-bezier(0.22,1,0.36,1)] outline-none select-none [--btn-press:0.97] focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50 motion-safe:active:not-aria-[haspopup]:not-data-[popup-open]:scale-(--btn-press) active:duration-100 disabled:pointer-events-none disabled:opacity-50 aria-busy:cursor-progress aria-invalid:border-destructive aria-invalid:ring-destructive/20 dark:aria-invalid:border-destructive/50 dark:aria-invalid:ring-destructive/25 [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-4",
+  "group/button relative inline-flex shrink-0 items-center justify-center rounded-lg border border-transparent bg-clip-padding text-sm font-medium whitespace-nowrap transition-all duration-150 ease-[cubic-bezier(0.22,1,0.36,1)] outline-none select-none [--btn-press:0.97] focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50 motion-safe:active:not-aria-[haspopup]:not-data-[popup-open]:scale-(--btn-press) active:duration-100 disabled:pointer-events-none disabled:opacity-50 aria-busy:cursor-progress aria-invalid:border-destructive aria-invalid:ring-destructive/20 dark:aria-invalid:border-destructive/50 dark:aria-invalid:ring-destructive/25 [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-4 touch:after:absolute touch:after:inset-x-0 touch:after:-inset-y-1.5",
   {
     variants: {
       variant: {
@@ -29,12 +32,12 @@ const buttonVariants = cva(
       size: {
         default:
           'h-8 gap-1.5 px-3 has-data-[icon=inline-end]:pr-2.5 has-data-[icon=inline-start]:pl-2.5',
-        xs: "h-6 gap-1 rounded-[min(var(--radius-md),10px)] px-2 text-xs in-data-[slot=button-group]:rounded-lg has-data-[icon=inline-end]:pr-1.5 has-data-[icon=inline-start]:pl-1.5 [&_svg:not([class*='size-'])]:size-3",
+        xs: "touch:after:-inset-y-2.5 h-6 gap-1 rounded-[min(var(--radius-md),10px)] px-2 text-xs in-data-[slot=button-group]:rounded-lg has-data-[icon=inline-end]:pr-1.5 has-data-[icon=inline-start]:pl-1.5 [&_svg:not([class*='size-'])]:size-3",
         sm: "h-8 gap-1 rounded-[min(var(--radius-md),12px)] px-2.5 text-ui-sm in-data-[slot=button-group]:rounded-lg has-data-[icon=inline-end]:pr-1.5 has-data-[icon=inline-start]:pl-1.5 [&_svg:not([class*='size-'])]:size-3.5",
         lg: 'h-10 gap-1.5 px-3 has-data-[icon=inline-end]:pr-2.5 has-data-[icon=inline-start]:pl-2.5',
         icon: 'size-8 [--btn-press:0.96]',
         'icon-xs':
-          "size-6 rounded-[min(var(--radius-md),10px)] [--btn-press:0.96] in-data-[slot=button-group]:rounded-lg [&_svg:not([class*='size-'])]:size-3",
+          "touch:after:-inset-y-2.5 size-6 rounded-[min(var(--radius-md),10px)] [--btn-press:0.96] in-data-[slot=button-group]:rounded-lg [&_svg:not([class*='size-'])]:size-3",
         'icon-sm':
           'size-8 rounded-[min(var(--radius-md),12px)] [--btn-press:0.96] in-data-[slot=button-group]:rounded-lg',
         'icon-lg': 'size-10 [--btn-press:0.96]',

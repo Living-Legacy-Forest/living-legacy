@@ -28,6 +28,7 @@ import { notify } from '@/lib/notify';
 import { cn } from '@/lib/utils';
 import { useLoadMore } from '@/hooks/use-load-more';
 import { type MediaItem, getMediaItems, listMedia, updateMedia } from '@/server/media';
+import { isEnterKey } from '@/lib/keyboard';
 
 // Images seen this session, so reopening a form shows its image at once.
 const known = new Map<string, MediaItem>();
@@ -260,7 +261,7 @@ export function AltText({
           onChange={(e) => setAlt(e.target.value)}
           onBlur={save}
           onKeyDown={(e) => {
-            if (e.key === 'Enter') {
+            if (isEnterKey(e)) {
               e.preventDefault();
               void save();
             }

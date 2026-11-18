@@ -2,6 +2,7 @@ import { toTags } from '@ll/content';
 import { useState } from 'react';
 import { XIcon } from '@/components/icons';
 import { Badge } from '@/components/ui/badge';
+import { isEnterKey } from '@/lib/keyboard';
 
 /**
  * Tags as removable chips. Enter or a comma adds what was typed; picking a
@@ -53,7 +54,7 @@ export function TagInput({
           else setDraft(e.target.value);
         }}
         onKeyDown={(e) => {
-          if (e.key === 'Enter' && draft.trim()) {
+          if (isEnterKey(e) && draft.trim()) {
             e.preventDefault();
             add(draft);
           } else if (e.key === 'Backspace' && !draft && value.length > 0) {

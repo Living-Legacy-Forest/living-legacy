@@ -16,6 +16,7 @@ import { Label } from '@/components/ui/label';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { cn } from '@/lib/utils';
 import { SITE_HOST } from './seo-fields';
+import { isEnterKey } from '@/lib/keyboard';
 
 export type Option = { id: string; name: string };
 
@@ -232,7 +233,7 @@ export function UrlPicker({
             value={draft}
             onChange={(e) => setDraft(e.target.value)}
             onKeyDown={(e) => {
-              if (e.key === 'Enter') commit();
+              if (isEnterKey(e)) commit();
             }}
             className="h-9"
           />

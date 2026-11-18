@@ -5,6 +5,7 @@ import type { NodeViewProps } from '@tiptap/react';
 import { useCallback, useEffect, useRef, useState } from 'react';
 
 import { AlignIcon, DeleteEmbedIcon, EditUrlIcon, OpenInYouTubeIcon } from '../icons';
+import { isEnterKey } from '@/lib/keyboard';
 
 interface ResizableNodeViewProps extends NodeViewProps {
   children: React.ReactNode;
@@ -61,7 +62,7 @@ const EmbedToolbar = ({
           placeholder="Paste YouTube URL or video ID..."
           className="rte-embed-selector-input"
           onKeyDown={(e) => {
-            if (e.key === 'Enter') {
+            if (isEnterKey(e)) {
               handleSaveUrl();
             } else if (e.key === 'Escape') {
               setIsEditingUrl(false);

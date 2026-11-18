@@ -28,6 +28,7 @@ import { CheckIcon, PipetteIcon, PlusIcon } from '@/components/icons';
 import { TextMorph } from '../text-morph/text-morph';
 import { motionTokens } from '../lib/motion-tokens';
 import styles from './color-picker.module.css';
+import { isEnterKey } from '@/lib/keyboard';
 
 export type ColorFormat = 'hex' | 'rgb' | 'hsl' | 'oklch';
 export interface ColorSwatch {
@@ -860,7 +861,7 @@ export function ColorPicker({
                       setInvalid(false);
                     }}
                     onKeyDown={(event) => {
-                      if (event.key === 'Enter') {
+                      if (isEnterKey(event)) {
                         event.preventDefault();
                         if (submitDraft()) event.currentTarget.select();
                       }

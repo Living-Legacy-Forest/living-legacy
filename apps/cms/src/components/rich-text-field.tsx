@@ -50,18 +50,20 @@ export function RichTextField({
     }) ?? (editor ? readState(editor) : null);
 
   return (
-    <div className="focus-within:border-ring rounded-lg border transition-colors">
+    <div className="focus-within:border-ring overflow-clip rounded-lg border transition-colors">
       <RichTextEditor
         editor={editor}
         variant="subtle"
-        className="overflow-visible! rounded-none! border-0! shadow-none!"
+        className="rounded-none! border-0! shadow-none!"
       >
         <Toolbar
           editor={editor}
           state={state}
           // The event form scrolls in a box with p-6, and a sticky element stops short of that
           // padding, letting text show above it. -top-6 cancels it so the toolbar meets the edge.
-          className="-top-6 rounded-t-lg"
+          // The box uses overflow-clip, not hidden: it rounds the corners without becoming a
+          // scroll container, which would stop the toolbar sticking to the form.
+          className="-top-6"
         />
         <RichTextEditor.Content
           className={cn(

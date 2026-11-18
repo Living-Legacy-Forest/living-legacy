@@ -23,6 +23,7 @@ import {
 } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { focalStyle } from '@/components/media/media-file';
 import { Spinner } from '@/components/ui/spinner';
 import { notify } from '@/lib/notify';
 import { cn } from '@/lib/utils';
@@ -150,6 +151,7 @@ export function ImageField({
               <img
                 src={mediaSrc(item, 640)}
                 alt={item.alt || item.filename}
+                style={focalStyle(item)}
                 className="size-full object-cover"
               />
             ) : (
@@ -465,6 +467,7 @@ export function MediaPicker({
                       src={mediaSrc(m, 320)}
                       alt={m.alt || m.filename}
                       loading="lazy"
+                      style={focalStyle(m)}
                       className="size-full object-cover"
                     />
                   </button>

@@ -28,11 +28,43 @@ export const media = sqliteTable(
     variants: text('variants', { mode: 'json' }).$type<MediaVariant[]>(),
     alt: text('alt'),
     caption: text('caption'),
+    // The part of an image to keep in view when it is cropped to a shape, as 0 to 1 across and
+    // down. Empty means the centre.
+    focalX: real('focal_x'),
+    focalY: real('focal_y'),
+    // Free-form labels for finding files, lower case.
+    tags: text('tags', { mode: 'json' }).$type<string[]>(),
     uploadedBy: text('uploaded_by').references(() => user.id, { onDelete: 'set null' }),
     ...timestamps(),
   },
   // The library and the image picker page through files newest first.
   (t) => [index('media_created').on(t.createdAt, t.id)]
+);
+
+// Files a Media entry used to point at, kept when its file is replaced so the change can be
+// undone. Each holds its own stored objects (and smaller copies), removed with the entry.
+export const mediaVersions = sqliteTable(
+  'media_versions',
+  {
+    id: id(),
+    mediaId: text('media_id')
+      .notNull()
+      .references(() => media.id, { onDelete: 'cascade' }),
+    r2Key: text('r2_key').notNull().unique(),
+    filename: text('filename').notNull(),
+    mime: text('mime').notNull(),
+    size: integer('size').notNull(),
+    width: integer('width'),
+    height: integer('height'),
+    variants: text('variants', { mode: 'json' }).$type<MediaVariant[]>(),
+    /** Who replaced it, so the history says who changed what. */
+    replacedBy: text('replaced_by').references(() => user.id, { onDelete: 'set null' }),
+    /** When this file was replaced (it stopped being the current one). */
+    createdAt: integer('created_at', { mode: 'timestamp_ms' })
+      .notNull()
+      .$defaultFn(() => new Date()),
+  },
+  (t) => [index('media_versions_media').on(t.mediaId, t.createdAt)]
 );
 
 export const teamMembers = sqliteTable('team_members', {

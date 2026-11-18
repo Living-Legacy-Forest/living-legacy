@@ -231,15 +231,16 @@ export const phoneTabs: (NavItem & { to: NonNullable<NavItem['to']>; icon: Lucid
   { title: 'Events', icon: CalendarClockIcon, to: '/events', permission: 'events:manage' },
 ];
 
-/** The post, event and location editors, which have the whole screen on phones (no tab bar). */
+/** The post, event, location and media file pages, which have the whole screen on phones (no tab bar). */
 export const isEditorPath = (pathname: string) =>
-  /^\/(posts|events|locations)\/(?!categories$|tags$|overview$)[^/]+$/.test(pathname);
+  /^\/(posts|events|locations|media)\/(?!categories$|tags$|overview$)[^/]+$/.test(pathname);
 
 /** Where an editor's back button goes: the list it was opened from. */
 export function editorBack(pathname: string) {
   if (!isEditorPath(pathname)) return null;
   if (pathname.startsWith('/events/')) return { to: '/events', label: 'Events' } as const;
   if (pathname.startsWith('/locations/')) return { to: '/locations', label: 'Locations' } as const;
+  if (pathname.startsWith('/media/')) return { to: '/media', label: 'Media' } as const;
   return { to: '/posts', label: 'Posts' } as const;
 }
 

@@ -1,10 +1,10 @@
-import { activityLog, media } from '@ll/db/schema';
+import { activityLog, media, mediaVersions } from '@ll/db/schema';
 import { env } from 'cloudflare:workers';
 import { eq } from 'drizzle-orm';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { addUser, testDb } from '../../test/fixtures';
 import { withBrowserCache } from './media-delivery';
-import { UploadError, replaceMediaFile, storeUpload } from './media-store';
+import { UploadError, replaceMediaFile, restoreMediaVersion, storeUpload } from './media-store';
 
 /** Just enough of a PNG for imageSize: the signature and an IHDR chunk. */
 function png(width: number, height: number, name = 'tree.png') {
@@ -32,6 +32,7 @@ const origin = 'http://cms.test';
 
 describe('replaceMediaFile', () => {
   beforeEach(async () => {
+    await testDb().delete(mediaVersions);
     await testDb().delete(media);
     await testDb().delete(activityLog);
     actor = { id: await addUser('editor'), name: 'Sam Tester' };
@@ -62,11 +63,67 @@ describe('replaceMediaFile', () => {
     expect(after.r2Key).not.toBe(before.r2Key);
     expect(after.updatedAt.getTime()).toBeGreaterThanOrEqual(before.updatedAt.getTime());
     expect(await env.MEDIA.head(after.r2Key)).not.toBeNull();
-    expect(await env.MEDIA.head(before.r2Key)).toBeNull();
+    // The old file is kept as a version, so the replace can be undone.
+    expect(await env.MEDIA.head(before.r2Key)).not.toBeNull();
     // Compared by URL: Request objects carry internals that differ between runtimes.
     expect(cleared.mock.calls.map(([key]) => key.url)).toContain(
       `${origin}/api/media/${before.id}`
     );
+  });
+
+  it('keeps the replaced file as a version, newest first, and no more than five', async () => {
+    const row = await existing();
+    for (let i = 0; i < 7; i++) {
+      const stored = await storeUpload(form(png(20 + i, 20, `v${i}.png`)));
+      await replaceMediaFile(testDb(), { id: row.id, stored, actor, origin });
+      // Versions are told apart by when they were replaced.
+      await new Promise((r) => setTimeout(r, 2));
+    }
+    const kept = await testDb()
+      .select()
+      .from(mediaVersions)
+      .where(eq(mediaVersions.mediaId, row.id));
+    expect(kept).toHaveLength(5);
+    expect(kept.every((v) => v.replacedBy === actor.id)).toBe(true);
+    // The two oldest (the original and the first replacement) are gone, files and all.
+    expect(await env.MEDIA.head(row.r2Key)).toBeNull();
+    for (const v of kept) expect(await env.MEDIA.head(v.r2Key)).not.toBeNull();
+  });
+
+  it('restores an earlier version, keeping the file it replaces as a version', async () => {
+    const before = await existing();
+    const stored = await storeUpload(form(png(1200, 900, 'new.png')));
+    const replaced = await replaceMediaFile(testDb(), { id: before.id, stored, actor, origin });
+    const [version] = await testDb().select().from(mediaVersions);
+
+    await restoreMediaVersion(testDb(), {
+      mediaId: before.id,
+      versionId: version!.id,
+      actor,
+      origin,
+    });
+
+    const [after] = await testDb().select().from(media).where(eq(media.id, before.id));
+    expect(after).toMatchObject({ filename: 'old.png', r2Key: before.r2Key, width: 800 });
+    expect(after!.alt).toBe('A young tree');
+    const versions = await testDb().select().from(mediaVersions);
+    expect(versions.map((v) => v.r2Key)).toEqual([replaced.r2Key]);
+    expect(await env.MEDIA.head(replaced.r2Key)).not.toBeNull();
+    const [entry] = await testDb()
+      .select()
+      .from(activityLog)
+      .where(eq(activityLog.action, 'media.restored'));
+    expect(entry?.summary).toBe('Restored old.png as the file for new.png');
+  });
+
+  it('refuses a version that belongs to another file', async () => {
+    const one = await existing();
+    const stored = await storeUpload(form(png(10, 10, 'a.png')));
+    await replaceMediaFile(testDb(), { id: one.id, stored, actor, origin });
+    const [version] = await testDb().select().from(mediaVersions);
+    await expect(
+      restoreMediaVersion(testDb(), { mediaId: 'other', versionId: version!.id, actor, origin })
+    ).rejects.toBeInstanceOf(UploadError);
   });
 
   it('records the replacement in the activity log', async () => {
@@ -110,6 +167,69 @@ describe('storeUpload', () => {
     });
     expect(stored.r2Key).toMatch(/^media\/[\w-]+\.pdf$/);
     expect(await env.MEDIA.head(stored.r2Key)).not.toBeNull();
+  });
+
+  /** Just enough of a JPEG for imageSize: the markers and a baseline frame header. */
+  function jpeg(width: number, height: number, type = 'image/jpeg') {
+    const bytes = new Uint8Array([
+      0xff,
+      0xd8,
+      0xff,
+      0xc0,
+      0x00,
+      0x11,
+      0x08,
+      height >> 8,
+      height & 255,
+      width >> 8,
+      width & 255,
+      0x03,
+      0x01,
+      0x22,
+      0x00,
+      0x02,
+      0x11,
+      0x01,
+      0x03,
+      0x11,
+      0x01,
+      0xff,
+      0xd9,
+    ]);
+    return new File([bytes], 'cover.jpg', { type });
+  }
+  const pdfWith = (cover?: File) => {
+    const f = form(new File(['%PDF-1.7\n'], 'brochure.pdf', { type: 'application/pdf' }));
+    if (cover) f.set('cover', cover);
+    return f;
+  };
+
+  it('keeps a PDF first-page cover as its one smaller copy', async () => {
+    const stored = await storeUpload(pdfWith(jpeg(640, 905)));
+    expect(stored.variants).toEqual([
+      { width: 640, key: expect.stringMatching(/^media\/[\w-]+-cover\.jpg$/), mime: 'image/jpeg' },
+    ]);
+    expect(stored.keys).toHaveLength(2);
+    expect(await env.MEDIA.head(stored.variants![0]!.key)).not.toBeNull();
+  });
+
+  it('ignores a cover that is not a small JPEG, and still stores the PDF', async () => {
+    for (const cover of [
+      jpeg(640, 905, 'image/png'),
+      new File([new Uint8Array(1024 * 1024 + 1)], 'cover.jpg', { type: 'image/jpeg' }),
+      new File(['<html>'], 'cover.jpg', { type: 'image/jpeg' }),
+      jpeg(5000, 5000),
+    ]) {
+      const stored = await storeUpload(pdfWith(cover));
+      expect(stored.variants).toBeNull();
+      expect(stored.keys).toHaveLength(1);
+    }
+  });
+
+  it('takes no cover for an Office file', async () => {
+    const f = form(new File([new Uint8Array([0x50, 0x4b, 0x03, 0x04, 0])], 'plan.docx'));
+    f.set('cover', jpeg(640, 905));
+    expect((await storeUpload(f)).variants).toBeNull();
   });
 
   it('takes a Word file the browser sent without a type', async () => {

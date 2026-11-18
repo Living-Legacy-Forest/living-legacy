@@ -68,6 +68,12 @@ describe('phone tabs', () => {
     expect(isEditorPath('/posts')).toBe(false);
   });
 
+  it('treats a media file, but not the library, as its own full-screen page', () => {
+    expect(isEditorPath('/media/01J0ABC')).toBe(true);
+    expect(isEditorPath('/media')).toBe(false);
+    expect(editorBack('/media/01J0ABC')).toEqual({ to: '/media', label: 'Media' });
+  });
+
   it('treats an event, but not the events list or overview, as the full-screen editor', () => {
     expect(isEditorPath('/events/01J0ABC')).toBe(true);
     expect(isEditorPath('/events/new')).toBe(true);

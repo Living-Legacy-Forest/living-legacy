@@ -4,21 +4,30 @@ import {
   locations,
   media,
   mediaCoverage,
+  mediaVersions,
   posts,
   teamMembers,
   testimonials,
+  user,
 } from '@ll/db/schema';
 import { createServerFn } from '@tanstack/react-start';
 import { getRequest } from '@tanstack/react-start/server';
 import { env } from 'cloudflare:workers';
-import { eq, inArray, or, sql } from 'drizzle-orm';
+import { and, asc, desc, eq, gt, inArray, lt, or, sql } from 'drizzle-orm';
 import type { SQLiteColumn, SQLiteTable } from 'drizzle-orm/sqlite-core';
 import { z } from 'zod';
 import { getDb } from '@/lib/db';
 import { authMiddleware, requirePermission } from '@/lib/session';
 import { renamedFilename } from '@/lib/filename';
 import { forgetCachedMedia } from './media-delivery';
-import { listMediaPage, listMediaSchema, toItem } from './media-list';
+import {
+  listMediaExtensions as extensionsOf,
+  listMediaPage,
+  listMediaSchema,
+  listMediaTags as tagsOf,
+  toItem,
+} from './media-list';
+import { restoreMediaVersion } from './media-store';
 
 export type { MediaItem } from './media-list';
 
@@ -48,15 +57,37 @@ export const updateMedia = createServerFn({ method: 'POST' })
       caption: z.string().trim().max(500).optional(),
       /** The new name without its extension, which always stays the original. */
       filename: z.string().max(300).optional(),
+      /** Labels for finding the file; lower case, no repeats. */
+      tags: z.array(z.string().trim().toLowerCase().min(1).max(40)).max(20).optional(),
+      /** The part of an image to keep in view when it is cropped; null returns to the centre. */
+      focal: z
+        .object({ x: z.number().min(0).max(1), y: z.number().min(0).max(1) })
+        .nullable()
+        .optional(),
     })
   )
   .handler(async ({ data }) => {
     const db = getDb();
     // Only what was sent: an image field edits the alt text alone and must
     // not clear a caption set in the Media library.
-    const patch: { alt?: string | null; caption?: string | null; filename?: string } = {};
+    const patch: {
+      alt?: string | null;
+      caption?: string | null;
+      filename?: string;
+      tags?: string[] | null;
+      focalX?: number | null;
+      focalY?: number | null;
+    } = {};
     if (data.alt !== undefined) patch.alt = data.alt || null;
     if (data.caption !== undefined) patch.caption = data.caption || null;
+    if (data.tags !== undefined) {
+      const tags = [...new Set(data.tags)];
+      patch.tags = tags.length ? tags : null;
+    }
+    if (data.focal !== undefined) {
+      patch.focalX = data.focal ? Math.round(data.focal.x * 1000) / 1000 : null;
+      patch.focalY = data.focal ? Math.round(data.focal.y * 1000) / 1000 : null;
+    }
     if (data.filename !== undefined) {
       const row = await db.query.media.findFirst({ where: eq(media.id, data.id) });
       if (!row) throw new Error('That file is no longer in the media library.');
@@ -204,11 +235,26 @@ export const deleteMedia = createServerFn({ method: 'POST' })
       .select({ id: media.id, r2Key: media.r2Key, variants: media.variants })
       .from(media)
       .where(inArray(media.id, data.ids));
+    // Earlier versions go with the file (their rows follow it), files and all.
+    const older = await db
+      .select({
+        mediaId: mediaVersions.mediaId,
+        r2Key: mediaVersions.r2Key,
+        variants: mediaVersions.variants,
+      })
+      .from(mediaVersions)
+      .where(inArray(mediaVersions.mediaId, data.ids));
+    const keysOf = (id: string) =>
+      older
+        .filter((v) => v.mediaId === id)
+        .flatMap((v) => [v.r2Key, ...(v.variants ?? []).map((x) => x.key)]);
 
     // A row goes only once its files have: otherwise the files would stay
     // stored with nothing pointing at them. Deleting again retries.
     const results = await Promise.allSettled(
-      rows.map((r) => env.MEDIA.delete([r.r2Key, ...(r.variants ?? []).map((v) => v.key)]))
+      rows.map((r) =>
+        env.MEDIA.delete([r.r2Key, ...(r.variants ?? []).map((v) => v.key), ...keysOf(r.id)])
+      )
     );
     const removed = rows.filter((_, i) => results[i]!.status === 'fulfilled').map((r) => r.id);
     if (removed.length) {
@@ -221,4 +267,94 @@ export const deleteMedia = createServerFn({ method: 'POST' })
       );
     }
     return { removed: removed.length };
+  });
+
+/** Every extension in use with its count, for the library's format filter. */
+export const listMediaExtensions = createServerFn({ method: 'GET' })
+  .middleware([authMiddleware])
+  .handler(() => extensionsOf(getDb()));
+
+/** Every tag in use with its count, for the library's filter. */
+export const listMediaTags = createServerFn({ method: 'GET' })
+  .middleware([authMiddleware])
+  .handler(() => tagsOf(getDb()));
+
+/**
+ * One file for its page: the item, who uploaded it, the files either side of it in the library
+ * (newest first), and its earlier versions.
+ */
+export const getMediaDetail = createServerFn({ method: 'GET' })
+  .middleware([requirePermission('media:write')])
+  .validator(z.object({ id: z.string().max(64) }))
+  .handler(async ({ data }) => {
+    const db = getDb();
+    const row = await db.query.media.findFirst({ where: eq(media.id, data.id) });
+    if (!row) return null;
+
+    const [uploader, newer, older, versions] = await Promise.all([
+      row.uploadedBy
+        ? db.select({ name: user.name }).from(user).where(eq(user.id, row.uploadedBy)).limit(1)
+        : Promise.resolve([]),
+      // The library lists newest first, so "previous" is the file just above this one.
+      db
+        .select({ id: media.id })
+        .from(media)
+        .where(
+          or(
+            gt(media.createdAt, row.createdAt),
+            and(eq(media.createdAt, row.createdAt), gt(media.id, row.id))
+          )
+        )
+        .orderBy(asc(media.createdAt), asc(media.id))
+        .limit(1),
+      db
+        .select({ id: media.id })
+        .from(media)
+        .where(
+          or(
+            lt(media.createdAt, row.createdAt),
+            and(eq(media.createdAt, row.createdAt), lt(media.id, row.id))
+          )
+        )
+        .orderBy(desc(media.createdAt), desc(media.id))
+        .limit(1),
+      db
+        .select({
+          id: mediaVersions.id,
+          filename: mediaVersions.filename,
+          mime: mediaVersions.mime,
+          size: mediaVersions.size,
+          width: mediaVersions.width,
+          height: mediaVersions.height,
+          replacedAt: mediaVersions.createdAt,
+          replacedBy: user.name,
+        })
+        .from(mediaVersions)
+        .leftJoin(user, eq(user.id, mediaVersions.replacedBy))
+        .where(eq(mediaVersions.mediaId, row.id))
+        .orderBy(desc(mediaVersions.createdAt)),
+    ]);
+
+    return {
+      item: toItem(row),
+      uploader: uploader[0]?.name ?? null,
+      previousId: newer[0]?.id ?? null,
+      nextId: older[0]?.id ?? null,
+      versions: versions.map((v) => ({ ...v, replacedAt: v.replacedAt.getTime() })),
+    };
+  });
+
+export type MediaDetail = NonNullable<Awaited<ReturnType<typeof getMediaDetail>>>;
+
+/** Puts an earlier version back as the current file; the one it replaces becomes a version. */
+export const restoreMediaVersionFn = createServerFn({ method: 'POST' })
+  .middleware([requirePermission('media:write')])
+  .validator(z.object({ id: z.string().max(64), versionId: z.string().max(64) }))
+  .handler(async ({ data, context }) => {
+    await restoreMediaVersion(getDb(), {
+      mediaId: data.id,
+      versionId: data.versionId,
+      actor: { id: context.user.id, name: context.user.name },
+      origin: new URL(getRequest().url).origin,
+    });
   });

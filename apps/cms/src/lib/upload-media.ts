@@ -1,6 +1,7 @@
 import { DOCUMENT_ACCEPT, documentTypeFor } from '@ll/content';
 import { mediaVariantWidths } from '@ll/db/enums';
 import type { MediaItem } from '@/server/media';
+import { pdfCover } from './pdf-cover';
 import { makeSizes, prepareImage } from './prepare-image';
 
 export const IMAGE_ACCEPT = 'image/jpeg,image/png,image/webp,image/avif,image/gif';
@@ -68,6 +69,11 @@ export async function uploadMedia(
   if (documentTypeFor(original.name, original.type)) {
     const form = new FormData();
     form.set('file', original);
+    // A PDF's first page is its thumbnail; best effort, so a file that will not render still uploads.
+    if (original.name.toLowerCase().endsWith('.pdf') || original.type === 'application/pdf') {
+      const cover = await pdfCover(original);
+      if (cover) form.set('cover', cover);
+    }
     if (replace) form.set('replace', replace);
     signal?.throwIfAborted();
     const { ok, body } = await send(

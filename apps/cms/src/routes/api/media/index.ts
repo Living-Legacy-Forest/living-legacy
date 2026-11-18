@@ -3,7 +3,7 @@
  * handler rather than a server function, since a server function's validator
  * expects JSON and this receives multipart form data.
  */
-import { type Role, can } from '@ll/content';
+import { type Role, can, isDocumentMime } from '@ll/content';
 import { schema } from '@ll/db';
 import { createFileRoute } from '@tanstack/react-router';
 import { env } from 'cloudflare:workers';
@@ -99,5 +99,6 @@ function toResponse(row: typeof media.$inferSelect) {
     createdAt: row.createdAt.getTime(),
     version: row.updatedAt.getTime(),
     url: `/api/media/${row.id}`,
+    hasCover: isDocumentMime(row.mime) && !!row.variants?.length,
   };
 }

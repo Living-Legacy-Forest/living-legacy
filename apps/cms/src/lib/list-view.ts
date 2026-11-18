@@ -13,12 +13,14 @@ function parse(header: string): Record<string, ListView> {
   const views: Record<string, ListView> = {};
   for (const cookie of header.split(/;\s*/)) {
     const [name, value] = cookie.split('=');
-    if (name?.endsWith(SUFFIX) && value === 'grid') views[name.slice(0, -SUFFIX.length)] = 'grid';
+    if (name?.endsWith(SUFFIX) && (value === 'grid' || value === 'list')) {
+      views[name.slice(0, -SUFFIX.length)] = value;
+    }
   }
   return views;
 }
 
-/** Pages left in grid view, by page name; any other page is a list. */
+/** The view each page was left in, by page name; a page never changed has none and uses its own default. */
 export const readListViews = createIsomorphicFn()
   .server(() => parse(getRequest().headers.get('cookie') ?? ''))
   .client(() => parse(document.cookie));

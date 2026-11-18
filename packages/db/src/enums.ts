@@ -38,6 +38,7 @@ export const activityActions = [
   'event.guest_updated',
   'event.guest_cancelled',
   'media.replaced',
+  'media.restored',
   'legal_page.published',
   'legal_page.review_requested',
 ] as const;

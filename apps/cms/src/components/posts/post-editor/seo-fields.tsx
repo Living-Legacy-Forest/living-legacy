@@ -97,7 +97,7 @@ export function SeoFields({
             value={values.canonicalUrl}
             placeholder={ownUrl}
             onChange={(e) => onChange({ canonicalUrl: e.target.value })}
-            className="text-ui md:text-ui h-9"
+            className="text-ui md:text-ui h-8"
           />
           <p className="text-muted-foreground text-xs">
             Only if this post first appeared elsewhere. Search engines then credit that page, and
@@ -275,7 +275,7 @@ export function CountedField({
           value={value}
           placeholder={placeholder}
           onChange={(e) => onChange(e.target.value)}
-          className="text-ui md:text-ui h-9"
+          className="text-ui md:text-ui h-8"
         />
       )}
     </div>

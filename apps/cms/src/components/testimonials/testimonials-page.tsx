@@ -39,7 +39,6 @@ import {
   PlusIcon,
   StarIcon,
   Trash2Icon,
-  UploadIcon,
 } from '@/components/icons';
 import {
   AlertDialog,
@@ -254,7 +253,6 @@ export function TestimonialsPage({
   const addButtons = (
     <>
       <Button size="sm" variant="outline" onClick={() => view.open({ kind: 'bulk' })}>
-        <UploadIcon aria-hidden data-icon="inline-start" />
         Bulk update
       </Button>
       <Button size="sm" onClick={() => view.open({ kind: 'new' })}>

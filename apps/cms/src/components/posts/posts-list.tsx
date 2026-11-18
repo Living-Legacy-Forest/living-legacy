@@ -436,7 +436,6 @@ export function PostsList({
                       disabled={pending}
                       onClick={() => restore(checkedIds)}
                     >
-                      <RotateCcwIcon aria-hidden data-icon="inline-start" />
                       Restore
                     </Button>
                     {canPurge && (
@@ -458,7 +457,6 @@ export function PostsList({
                     disabled={pending}
                     onClick={() => trash(checkedIds)}
                   >
-                    <Trash2Icon aria-hidden data-icon="inline-start" />
                     Move to trash
                   </Button>
                 )}
@@ -950,7 +948,6 @@ function PreviewPane({
         {inTrash ? (
           canPublish && (
             <Button variant="ghost" size="sm" disabled={pending} onClick={() => onRestore(row.id)}>
-              <RotateCcwIcon aria-hidden data-icon="inline-start" />
               Restore
             </Button>
           )

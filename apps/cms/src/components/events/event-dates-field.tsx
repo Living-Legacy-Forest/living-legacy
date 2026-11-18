@@ -1,6 +1,6 @@
 import { type CalendarDate, toZoned } from '@ll/content';
 import { useState } from 'react';
-import { PlusIcon, XIcon } from '@/components/icons';
+import { XIcon } from '@/components/icons';
 import { Button } from '@/components/ui/button';
 import { DateRangePicker, type DateRange } from '@/components/ui/date-range-picker';
 import { Input } from '@/components/ui/input';
@@ -207,7 +207,6 @@ export function EventDatesField({
           className="text-muted-foreground -ml-2"
           onClick={() => onSessionsChange([...(sessions ?? []), { start: '', end: '' }])}
         >
-          <PlusIcon aria-hidden data-icon="inline-start" />
           Add another time
         </Button>
       )}

@@ -191,7 +191,7 @@ export function SchedulePopover({
               onKeyDown={(e) => {
                 if (isEnterKey(e)) void submit();
               }}
-              className="h-9 w-28"
+              className="h-8 w-28"
             />
             <span className="text-muted-foreground text-xs">
               {zoneName(zone, target ?? undefined)}

@@ -5,7 +5,6 @@ import {
   ChevronUpIcon,
   PlusIcon,
   Trash2Icon,
-  UploadIcon,
   UsersIcon,
 } from '@/components/icons';
 import {
@@ -217,7 +216,6 @@ export function TeamPage({ data, canWrite }: { data: TeamListData; canWrite: boo
   const addButtons = (
     <>
       <Button size="sm" variant="outline" onClick={() => view.open({ kind: 'bulk' })}>
-        <UploadIcon aria-hidden data-icon="inline-start" />
         Bulk update
       </Button>
       <Button size="sm" onClick={() => view.open({ kind: 'new' })}>

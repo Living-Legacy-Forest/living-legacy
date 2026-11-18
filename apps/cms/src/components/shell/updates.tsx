@@ -123,7 +123,6 @@ function SidebarCard() {
       <div role="status" className={box}>
         <p>The CMS has been updated. Reload to get the latest version.</p>
         <Button size="sm" variant="outline" onClick={() => window.location.reload()}>
-          <RotateCcwIcon aria-hidden data-icon="inline-start" />
           Reload
         </Button>
       </div>

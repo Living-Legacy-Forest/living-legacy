@@ -11,7 +11,6 @@ import {
   ChevronLeftIcon,
   ChevronRightIcon,
   CopyIcon,
-  CropIcon,
   DownloadIcon,
   SaveIcon,
   Trash2Icon,
@@ -445,7 +444,7 @@ export function MediaDetail({
                     disabled={loadingCrop || pending}
                     onClick={startCrop}
                   >
-                    {loadingCrop ? <Spinner /> : <CropIcon aria-hidden data-icon="inline-start" />}
+                    {loadingCrop && <Spinner />}
                     Crop a copy
                   </Button>
                 )}

@@ -49,6 +49,18 @@ export type WhatsNewEntry = {
 
 export const whatsNew: WhatsNewEntry[] = [
   {
+    id: '2026-11-18-2',
+    kind: 'new',
+    title: 'Documents in Media',
+    items: [
+      {
+        title: 'Upload PDFs and Word, Excel and PowerPoint files',
+        body: 'Media now keeps documents as well as images, up to 20 MB each. A PDF opens in the browser and Office files download. Open a document to copy its link, replace the file (the link stays the same) or rename it.',
+        link: { label: 'Open Media', to: '/media' },
+      },
+    ],
+  },
+  {
     id: '2026-11-18',
     kind: 'new',
     title: 'Videos in descriptions and posts',

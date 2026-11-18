@@ -93,9 +93,58 @@ describe('replaceMediaFile', () => {
 });
 
 describe('storeUpload', () => {
-  it('refuses a file that is not an image', async () => {
-    const pdf = new File(['%PDF-1.7'], 'brochure.pdf', { type: 'application/pdf' });
-    await expect(storeUpload(form(pdf))).rejects.toThrow('Only JPEG, PNG, WebP, AVIF and GIF');
+  it('refuses a file that is neither an image nor a supported document', async () => {
+    const page = new File(['<html>'], 'page.html', { type: 'text/html' });
+    await expect(storeUpload(form(page))).rejects.toThrow('Only JPEG, PNG, WebP, AVIF and GIF');
+  });
+
+  it('stores a PDF as a document with no dimensions or smaller copies', async () => {
+    const pdf = new File(['%PDF-1.7\n'], 'brochure.pdf', { type: 'application/pdf' });
+    const stored = await storeUpload(form(pdf));
+    expect(stored).toMatchObject({
+      mime: 'application/pdf',
+      filename: 'brochure.pdf',
+      width: null,
+      height: null,
+      variants: null,
+    });
+    expect(stored.r2Key).toMatch(/^media\/[\w-]+\.pdf$/);
+    expect(await env.MEDIA.head(stored.r2Key)).not.toBeNull();
+  });
+
+  it('takes a Word file the browser sent without a type', async () => {
+    const docx = new File([new Uint8Array([0x50, 0x4b, 0x03, 0x04, 0])], 'plan.docx');
+    const stored = await storeUpload(form(docx));
+    expect(stored.mime).toContain('wordprocessingml');
+    expect(stored.r2Key.endsWith('.docx')).toBe(true);
+  });
+
+  it('refuses a document whose contents are not that format', async () => {
+    const fake = new File(['<script>alert(1)</script>'], 'evil.pdf', { type: 'application/pdf' });
+    await expect(storeUpload(form(fake))).rejects.toThrow('not a real PDF');
+  });
+
+  it('refuses a document over the size limit', async () => {
+    const big = new File([new Uint8Array(20 * 1024 * 1024 + 1)], 'big.pdf', {
+      type: 'application/pdf',
+    });
+    await expect(storeUpload(form(big))).rejects.toThrow('larger than 20 MB');
+  });
+
+  it('will not swap an image for a document', async () => {
+    const stored = await storeUpload(form(png(10, 10, 'a.png')));
+    const [row] = await testDb().insert(media).values(stored).returning();
+    const pdf = new File(['%PDF-1.7\n'], 'brochure.pdf', { type: 'application/pdf' });
+    const next = await storeUpload(form(pdf));
+    await expect(
+      replaceMediaFile(testDb(), {
+        id: row!.id,
+        stored: next,
+        actor: { id: await addUser('editor'), name: 'Sam' },
+        origin,
+      })
+    ).rejects.toThrow('only be replaced with another image');
+    expect(await env.MEDIA.head(next.r2Key)).toBeNull();
   });
 });
 

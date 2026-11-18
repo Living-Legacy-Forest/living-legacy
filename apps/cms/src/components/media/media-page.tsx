@@ -22,6 +22,7 @@ import { FormCell, FormSection } from '@/components/form-cells';
 import { DialogActions, ListDialog } from '@/components/list/list-page';
 import { type RowMenuItem, RowMenu } from '@/components/list/list-row';
 import { PageActions } from '@/components/shell/page-actions';
+import { DocumentCard } from '@/components/media/document-card';
 import { ImageCropDialog } from '@/components/media/image-crop-dialog';
 import { MediaUsageList } from '@/components/media/media-usage';
 import { MediaUploadDialog } from '@/components/media/upload-dialog';
@@ -61,6 +62,7 @@ import { splitFilename } from '@/lib/filename';
 import { formatBytes } from '@/lib/format';
 import { canCrop } from '@/lib/prepare-image';
 import { IMAGE_ACCEPT, mediaSrc, uploadMedia } from '@/lib/upload-media';
+import { DOCUMENT_ACCEPT, isDocumentMime } from '@ll/content';
 import { useAction } from '@/lib/use-action';
 import { cn } from '@/lib/utils';
 import { type MediaItem, type MediaListData, deleteMedia, updateMedia } from '@/server/media';
@@ -187,7 +189,7 @@ export function MediaPage({
               : undefined
           }
           add={{
-            label: 'Upload images',
+            label: 'Upload files',
             onClick: () => setUploading(true),
           }}
         />
@@ -201,13 +203,14 @@ export function MediaPage({
             </EmptyMedia>
             <EmptyTitle>No media yet</EmptyTitle>
             <EmptyDescription>
-              Upload images for posts, team members and testimonials. Drag and drop works too.
+              Upload images, and PDF or Word documents, for posts, events and team members. Drag and
+              drop works too.
             </EmptyDescription>
           </EmptyHeader>
           <EmptyContent>
             <Button size="sm" onClick={() => setUploading(true)}>
               <UploadIcon aria-hidden data-icon="inline-start" />
-              Upload images
+              Upload files
             </Button>
           </EmptyContent>
         </Empty>
@@ -363,12 +366,19 @@ function MediaTile({
         onClick={onOpen}
         className="focus-visible:ring-ring absolute inset-0 outline-none focus-visible:ring-2"
       >
-        <img
-          src={mediaSrc(item, 320)}
-          alt={item.alt || item.filename}
-          loading="lazy"
-          className="size-full object-cover transition-opacity group-hover:opacity-80"
-        />
+        {isDocumentMime(item.mime) ? (
+          <DocumentCard
+            item={item}
+            className="size-full transition-opacity group-hover:opacity-80"
+          />
+        ) : (
+          <img
+            src={mediaSrc(item, 320)}
+            alt={item.alt || item.filename}
+            loading="lazy"
+            className="size-full object-cover transition-opacity group-hover:opacity-80"
+          />
+        )}
       </button>
     </div>
   );
@@ -393,7 +403,11 @@ function MediaTile({
       anchorRef={anchor}
       previewClassName="p-0"
       preview={
-        <img src={mediaSrc(item, 640)} alt="" className="aspect-square w-full object-cover" />
+        isDocumentMime(item.mime) ? (
+          <DocumentCard item={item} className="aspect-square w-full" />
+        ) : (
+          <img src={mediaSrc(item, 640)} alt="" className="aspect-square w-full object-cover" />
+        )
       }
     >
       {tile}
@@ -441,6 +455,7 @@ function MediaEditForm({
   inSheet?: boolean;
 }) {
   const router = useRouter();
+  const isDocument = isDocumentMime(item.mime);
   const { base: originalName, ext } = splitFilename(item.filename);
   const [name, setName] = useState(originalName);
   const [alt, setAlt] = useState(item.alt);
@@ -513,7 +528,7 @@ function MediaEditForm({
       success: {
         title: 'File replaced',
         description:
-          'Everything using this image shows the new file. The website updates within a day.',
+          'Everything using this file shows the new one. The website updates within a day.',
       },
       error: 'Could not replace the file',
     });
@@ -528,7 +543,19 @@ function MediaEditForm({
     if (result) onClose();
   }
 
-  const preview = (
+  const preview = isDocument ? (
+    <div className="grid gap-2">
+      <DocumentCard item={item} showName={false} className="h-40 rounded-md border" />
+      <a
+        href={item.url}
+        target="_blank"
+        rel="noopener noreferrer"
+        className="text-ui text-primary w-fit underline underline-offset-4"
+      >
+        {item.mime === 'application/pdf' ? 'Open the PDF' : 'Download the file'}
+      </a>
+    </div>
+  ) : (
     <img
       src={mediaSrc(item, 1280)}
       alt={item.alt || item.filename}
@@ -538,7 +565,7 @@ function MediaEditForm({
   const crop = (
     <div className="grid gap-3">
       <div className="flex flex-wrap items-center gap-2">
-        {canCrop({ type: item.mime }) && (
+        {!isDocument && canCrop({ type: item.mime }) && (
           <Button
             type="button"
             variant="outline"
@@ -563,7 +590,7 @@ function MediaEditForm({
         <input
           ref={replaceInput}
           type="file"
-          accept={IMAGE_ACCEPT}
+          accept={isDocument ? DOCUMENT_ACCEPT : IMAGE_ACCEPT}
           className="hidden"
           onChange={(e) => {
             setReplacement(e.target.files?.[0] ?? null);
@@ -575,7 +602,8 @@ function MediaEditForm({
         <div className="bg-muted/50 grid gap-3 rounded-md border p-3">
           <p className="text-ui">
             Replace with <span className="font-medium break-all">{replacement.name}</span>?
-            Everything using this image shows the new file. The alt text and caption stay.
+            Everything using this {isDocument ? 'document' : 'image'} shows the new file. The{' '}
+            {isDocument ? 'caption stays' : 'alt text and caption stay'}.
           </p>
           <div className="flex gap-2">
             <Button type="button" size="sm" disabled={pending} onClick={replaceFile}>
@@ -595,7 +623,9 @@ function MediaEditForm({
         </div>
       ) : (
         <p className="text-muted-foreground text-xs">
-          A crop is saved as a new file. Replacing keeps this image's address.
+          {isDocument
+            ? "Replacing keeps this document's address, so links to it keep working."
+            : "A crop is saved as a new file. Replacing keeps this image's address."}
         </p>
       )}
     </div>
@@ -651,9 +681,11 @@ function MediaEditForm({
             <FormCell label="Name" htmlFor="m-name">
               {nameInput}
             </FormCell>
-            <FormCell label="Alt text" htmlFor="m-alt">
-              {altInput}
-            </FormCell>
+            {!isDocument && (
+              <FormCell label="Alt text" htmlFor="m-alt">
+                {altInput}
+              </FormCell>
+            )}
             <FormCell label="Caption" htmlFor="m-caption">
               {captionInput}
             </FormCell>
@@ -711,10 +743,12 @@ function MediaEditForm({
               Only the name in the library changes. Anything using this file keeps working.
             </p>
           </div>
-          <div className="grid gap-3">
-            <Label htmlFor="m-alt">Alt text</Label>
-            {altInput}
-          </div>
+          {!isDocument && (
+            <div className="grid gap-3">
+              <Label htmlFor="m-alt">Alt text</Label>
+              {altInput}
+            </div>
+          )}
           <div className="grid gap-3">
             <Label htmlFor="m-caption">Caption</Label>
             {captionInput}

@@ -16,5 +16,18 @@ export const Route = createFileRoute('/_app/checks/')({
 function ChecksRoute() {
   const data = Route.useLoaderData();
   const { user } = Route.useRouteContext();
-  return <ContentChecksPage data={data} canEditMedia={can(user.role, 'media:write')} />;
+  return (
+    <ContentChecksPage
+      data={data}
+      canEditMedia={can(user.role, 'media:write')}
+      // The check is open to people who only look after SEO, who cannot open most of these.
+      canFix={{
+        post: can(user.role, 'posts:write') || can(user.role, 'posts:publish'),
+        faq: can(user.role, 'content:write'),
+        event: can(user.role, 'events:manage'),
+        location: can(user.role, 'content:write'),
+        legal: can(user.role, 'content:write'),
+      }}
+    />
+  );
 }

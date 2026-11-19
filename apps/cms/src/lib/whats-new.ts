@@ -27,7 +27,8 @@ export type WhatsNewItem = {
       | '/analytics/enquiries'
       | '/analytics/traffic'
       | '/analytics/audience'
-      | '/activity';
+      | '/activity'
+      | '/checks';
     hash?: string;
   };
 };
@@ -48,6 +49,18 @@ export type WhatsNewEntry = {
 };
 
 export const whatsNew: WhatsNewEntry[] = [
+  {
+    id: '2026-11-19-4',
+    kind: 'new',
+    title: 'Check the brand language across the site',
+    items: [
+      {
+        title: 'Brand language in Content checks',
+        body: 'Content checks now lists every published post, FAQ, upcoming event, location and legal page that uses a word the brand language guide rules out, with what to write instead and a button to open it. It follows the guide an admin keeps in Settings.',
+        link: { label: 'Open Content checks', to: '/checks' },
+      },
+    ],
+  },
   {
     id: '2026-11-19-3',
     kind: 'improved',

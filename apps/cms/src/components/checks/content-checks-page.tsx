@@ -7,6 +7,7 @@ import {
   LinkIcon,
   ImageIcon,
   type LucideIcon,
+  PencilLineIcon,
   SearchIcon,
 } from '@/components/icons';
 import { Button, buttonVariants } from '@/components/ui/button';
@@ -18,12 +19,12 @@ import { useAction } from '@/lib/use-action';
 import { usePaged } from '@/lib/use-paged';
 import { useTimeZone } from '@/lib/use-time-zone';
 import { cn } from '@/lib/utils';
-import type { ContentChecks } from '@/server/content-checks';
+import type { BrandBreach, ContentChecks } from '@/server/content-checks';
 import { updateMedia } from '@/server/media';
 import { useRevealOnce } from '@/lib/use-reveal-once';
 import { RevealWords } from '@/components/dashboard/reveal-words';
 
-type CheckKey = 'noDescription' | 'noImage' | 'noAlt' | 'events';
+type CheckKey = 'noDescription' | 'noImage' | 'noAlt' | 'events' | 'brand';
 
 /** Every check, passing or not, so the page shows what is looked at as well as what failed. */
 const CHECKS: { key: CheckKey; icon: LucideIcon; title: string; passing: string; why: string }[] = [
@@ -55,6 +56,13 @@ const CHECKS: { key: CheckKey; icon: LucideIcon; title: string; passing: string;
     passing: 'Every upcoming event has a cover photo and a summary.',
     why: 'Event lists on the website show the cover photo and summary.',
   },
+  {
+    key: 'brand',
+    icon: PencilLineIcon,
+    title: 'Brand language',
+    passing: 'Nothing published uses a word the guide rules out.',
+    why: 'The brand language guide rules these words out. Each shows what to write instead. An admin can edit the guide in Settings.',
+  },
 ];
 
 /** What each check lists, for the pager's count. */
@@ -63,6 +71,7 @@ const NOUNS: Record<CheckKey, string> = {
   noImage: 'posts',
   noAlt: 'images',
   events: 'events',
+  brand: 'items',
 };
 /** Rows here are tall, so a page is shorter than a plain list's. */
 const PAGE_SIZES = [10, 25, 50, 100] as const;
@@ -72,10 +81,13 @@ const fixClass = cn(buttonVariants({ variant: 'outline', size: 'sm' }), 'touch:m
 export function ContentChecksPage({
   data,
   canEditMedia,
+  canFix,
 }: {
   data: ContentChecks;
   /** Alt text is saved to the media library, which needs media:write. */
   canEditMedia: boolean;
+  /** Which kinds of item the viewer can open to fix; the rest are listed without a link. */
+  canFix: Record<BrandBreach['kind'], boolean>;
 }) {
   const failing = CHECKS.filter((check) => data[check.key].total > 0);
   const passing = CHECKS.filter((check) => data[check.key].total === 0);
@@ -102,7 +114,7 @@ export function ContentChecksPage({
 
       {failing.map((check) => (
         <CheckSection key={check.key} check={check} total={data[check.key].total}>
-          <CheckRows checkKey={check.key} data={data} canEditMedia={canEditMedia} />
+          <CheckRows checkKey={check.key} data={data} canEditMedia={canEditMedia} canFix={canFix} />
         </CheckSection>
       ))}
 
@@ -220,12 +232,14 @@ function CheckRows({
   checkKey,
   data,
   canEditMedia,
+  canFix,
 }: {
   checkKey: CheckKey;
   data: ContentChecks;
   canEditMedia: boolean;
+  canFix: Record<BrandBreach['kind'], boolean>;
 }) {
-  const rows = useCheckRows(checkKey, data, canEditMedia);
+  const rows = useCheckRows(checkKey, data, canEditMedia, canFix);
   const paged = usePaged(rows, '', PAGE_SIZES);
   const { page, pageCount } = paged.pager;
 
@@ -247,10 +261,57 @@ function CheckRows({
   );
 }
 
+const BRAND_KIND: Record<BrandBreach['kind'], string> = {
+  post: 'Post',
+  faq: 'FAQ',
+  event: 'Event',
+  location: 'Location',
+  legal: 'Legal page',
+};
+
+/** "Post · “plots” ×2 → Legacy Ground, or their tree · 1 more to look at". */
+function brandDetail(b: BrandBreach) {
+  const shown = b.never
+    .slice(0, 3)
+    .map((f) => `“${f.found}”${f.count > 1 ? ` ×${f.count}` : ''} → ${f.instead}`);
+  const hidden = b.never.length - shown.length;
+  return [
+    BRAND_KIND[b.kind],
+    ...shown,
+    hidden > 0 && `and ${hidden} more`,
+    b.avoid > 0 && `${b.avoid} to look at`,
+  ]
+    .filter(Boolean)
+    .join(' · ');
+}
+
+/** The way to the item's editor. */
+function brandFix(b: BrandBreach) {
+  switch (b.kind) {
+    case 'post':
+      return <FixLink label="Open the post" to="/posts/$postId" params={{ postId: b.id }} />;
+    case 'faq':
+      return <FixLink label="Open the FAQ" to="/faqs" search={{ edit: b.id }} />;
+    case 'event':
+      return <FixLink label="Open the event" to="/events/$eventId" params={{ eventId: b.id }} />;
+    case 'location':
+      return (
+        <FixLink
+          label="Open the location"
+          to="/locations/$locationId"
+          params={{ locationId: b.id }}
+        />
+      );
+    case 'legal':
+      return <FixLink label="Open the page" to="/legal/$slug" params={{ slug: b.slug ?? '' }} />;
+  }
+}
+
 function useCheckRows(
   checkKey: CheckKey,
   data: ContentChecks,
-  canEditMedia: boolean
+  canEditMedia: boolean,
+  canFix: Record<BrandBreach['kind'], boolean>
 ): ReactElement[] {
   const timeZone = useTimeZone();
   // Kept here, not in each row, so alt text typed but not yet saved survives a change of page.
@@ -291,6 +352,16 @@ function useCheckRows(
           alt={drafts[m.id] ?? ''}
           onAlt={(alt) => setDrafts((previous) => ({ ...previous, [m.id]: alt }))}
         />
+      ));
+    case 'brand':
+      return data.brand.rows.map((b) => (
+        <Row key={`${b.kind}-${b.id}`}>
+          <span className="min-w-0 flex-1">
+            <span className="text-ui line-clamp-2">{b.title || 'Untitled'}</span>
+            <span className="text-muted-foreground block text-xs">{brandDetail(b)}</span>
+          </span>
+          {canFix[b.kind] && brandFix(b)}
+        </Row>
       ));
     case 'events':
       return data.events.rows.map((e) => (

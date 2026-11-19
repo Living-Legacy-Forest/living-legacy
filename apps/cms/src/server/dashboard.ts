@@ -229,7 +229,7 @@ async function loadAttention(
             )
           )
       : null,
-    canCheck ? loadContentChecks(db) : null,
+    canCheck ? loadContentChecks(db, { fresh: false }) : null,
     canRedirect ? loadMissingPages(db) : null,
     canEvents
       ? db
@@ -270,7 +270,11 @@ async function loadAttention(
     scheduledThisWeek: scheduled && Number(scheduled[0]?.total ?? 0),
     contentIssues:
       checks &&
-      checks.noDescription.total + checks.noImage.total + checks.noAlt.total + checks.events.total,
+      checks.noDescription.total +
+        checks.noImage.total +
+        checks.noAlt.total +
+        checks.events.total +
+        checks.brand.total,
     missingPages: missing && {
       total: missing.length,
       busiest: missing[0] ? { path: missing[0].path, hits: missing[0].hits } : null,

@@ -2,6 +2,7 @@ import { can } from '@ll/content';
 import { createFileRoute, redirect, useNavigate } from '@tanstack/react-router';
 import { z } from 'zod';
 import { MissingPagesPage } from '@/components/missing-pages/missing-pages-page';
+import { RedirectCoveragePage } from '@/components/redirects/redirect-coverage';
 import { RedirectsPage } from '@/components/redirects/redirects-page';
 import { SegmentedControl } from '@/components/segmented-control';
 import { listMissingPages } from '@/server/not-found';
@@ -12,7 +13,7 @@ export const Route = createFileRoute('/_app/redirects/')({
     // An old path to start a new redirect for, from Missing pages.
     from: z.string().max(500).optional().catch(undefined),
     // Missing pages share this page: finding a broken link and fixing it are one job.
-    view: z.enum(['missing']).optional().catch(undefined),
+    view: z.enum(['missing', 'coverage']).optional().catch(undefined),
     sort: z.string().max(30).optional().catch(undefined),
   }),
   beforeLoad: ({ context }) => {
@@ -36,7 +37,7 @@ function RedirectsRoute() {
       label="Show"
       value={view ?? 'redirects'}
       onValueChange={(next) =>
-        navigate({ search: next === 'missing' ? { view: 'missing' } : {}, replace: true })
+        navigate({ search: next === 'redirects' ? {} : { view: next }, replace: true })
       }
       options={[
         { value: 'redirects', label: 'Redirects' },
@@ -44,6 +45,7 @@ function RedirectsRoute() {
           value: 'missing',
           label: missing.length > 0 ? `Missing pages (${missing.length})` : 'Missing pages',
         },
+        { value: 'coverage', label: 'Coverage' },
       ]}
       className="w-auto"
     />
@@ -51,6 +53,8 @@ function RedirectsRoute() {
 
   return view === 'missing' ? (
     <MissingPagesPage data={missing} switcher={switcher} />
+  ) : view === 'coverage' ? (
+    <RedirectCoveragePage switcher={switcher} />
   ) : (
     <RedirectsPage
       data={redirects}

@@ -74,6 +74,7 @@ const fromGuest = (g: Guest): typeof empty => ({
 export function AddGuestDialog({
   event,
   guest = null,
+  waitlist = false,
   open,
   onOpenChange,
   onAdded,
@@ -81,6 +82,8 @@ export function AddGuestDialog({
   event: EventRow;
   /** The booking to edit; null adds a new one. */
   guest?: Guest | null;
+  /** Adds to the event's waiting list instead of booking in: for a party it has no room for. */
+  waitlist?: boolean;
   open: boolean;
   onOpenChange: (open: boolean) => void;
   onAdded: () => void;
@@ -115,12 +118,18 @@ export function AddGuestDialog({
           success: { title: 'Booking updated', description: `Booking ${guest.reference}.` },
           error: 'Could not update the booking',
         })
-      : await run(() => addGuest({ data }), {
-          success: (r) => ({
-            title: 'Guest added',
-            description: `Booking ${r.reference}. HubSpot sends their emails once it is connected.`,
-          }),
-          error: 'Could not add the guest',
+      : await run(() => addGuest({ data: { ...data, waitlist } }), {
+          success: (r) =>
+            r.waitlisted
+              ? {
+                  title: 'Added to the waiting list',
+                  description: `Reference ${r.reference}. No place is held, and HubSpot is not told until they are moved in.`,
+                }
+              : {
+                  title: 'Guest added',
+                  description: `Booking ${r.reference}. HubSpot sends their emails once it is connected.`,
+                },
+          error: waitlist ? 'Could not add to the waiting list' : 'Could not add the guest',
         });
     if (result) {
       setValues(empty);
@@ -133,11 +142,21 @@ export function AddGuestDialog({
     <ListDialog
       open={open}
       onClose={() => onOpenChange(false)}
-      title={guest ? 'Edit booking' : 'Add a guest'}
+      title={
+        guest
+          ? guest.status === 'waitlisted'
+            ? 'Edit waiting list entry'
+            : 'Edit booking'
+          : waitlist
+            ? 'Add to the waiting list'
+            : 'Add a guest'
+      }
       description={
         guest
-          ? `Booking ${guest.reference} for ${event.title}.`
-          : `A phone booking or a walk-in for ${event.title}.`
+          ? `${guest.status === 'waitlisted' ? 'Waiting list entry' : 'Booking'} ${guest.reference} for ${event.title}.`
+          : waitlist
+            ? `For someone ${event.title} has no room for. No place is held; move them in when one frees up.`
+            : `A phone booking or a walk-in for ${event.title}.`
       }
     >
       <form noValidate onSubmit={submit} className={cn('space-y-4 max-md:space-y-7', TOUCH_FIELDS)}>
@@ -248,6 +267,8 @@ export function AddGuestDialog({
               </>
             ) : guest ? (
               'Save changes'
+            ) : waitlist ? (
+              'Add to waiting list'
             ) : (
               'Add guest'
             )}

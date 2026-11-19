@@ -10,7 +10,9 @@ import {
   bookingReference,
   capacityProblem,
   deleteEventProblem,
+  promoteProblem,
   seatsTaken,
+  waitlistProblem,
   stateTimeZone,
 } from './events';
 
@@ -33,6 +35,7 @@ describe('seatsTaken', () => {
       seatsTaken([
         { status: 'confirmed', partySize: 3 },
         { status: 'cancelled', partySize: 4 },
+        { status: 'waitlisted', partySize: 5 },
         { status: 'confirmed', partySize: 2 },
       ])
     ).toBe(5);
@@ -100,6 +103,51 @@ describe('bookingProblem', () => {
 
   it('has no limit without a capacity', () => {
     expect(bookingProblem(event({ capacity: null }), 6, 500, now, 'website')).toBeNull();
+  });
+});
+
+describe('waitlistProblem', () => {
+  it('accepts a party the event has no room for', () => {
+    expect(waitlistProblem(event(), 2, 10, now)).toBeNull();
+    // Room for 1, party of 3: they cannot be booked, so they can wait.
+    expect(waitlistProblem(event(), 3, 9, now)).toBeNull();
+  });
+
+  it('sends a party that fits to be booked instead', () => {
+    expect(waitlistProblem(event(), 2, 8, now)).toBe(
+      'There are 2 places left, so add them as a guest instead.'
+    );
+    expect(waitlistProblem(event(), 1, 9, now)).toBe(
+      'There is a place left, so add them as a guest instead.'
+    );
+  });
+
+  it('has no waiting list for an event with no limit', () => {
+    expect(waitlistProblem(event({ capacity: null }), 2, 500, now)).toBe(
+      'This event has no limit, so it has no waiting list.'
+    );
+  });
+
+  it('keeps a booking’s other rules: cancelled, finished and party size', () => {
+    expect(waitlistProblem(event({ status: 'cancelled' }), 2, 10, now)).toBe(
+      'This event has been cancelled.'
+    );
+    expect(waitlistProblem(event(), 2, 10, now + 51 * HOUR)).toBe('This event has finished.');
+    expect(waitlistProblem(event(), 51, 10, now)).toBe('Bookings are limited to 50 people.');
+    expect(waitlistProblem(event(), 0, 10, now)).toBe('Book at least one place.');
+  });
+});
+
+describe('promoteProblem', () => {
+  it('lets a party move in when it fits, or when there is no limit', () => {
+    expect(promoteProblem(10, 6, 4)).toBeNull();
+    expect(promoteProblem(null, 900, 4)).toBeNull();
+  });
+
+  it('says why it cannot', () => {
+    expect(promoteProblem(10, 10, 2)).toBe('This event is still fully booked.');
+    expect(promoteProblem(10, 9, 2)).toBe('Only 1 place is left.');
+    expect(promoteProblem(10, 7, 4)).toBe('Only 3 places are left.');
   });
 });
 

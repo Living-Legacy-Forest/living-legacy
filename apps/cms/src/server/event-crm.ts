@@ -2,7 +2,7 @@ import { HUBSPOT_EVENT_PROPERTIES, hubspotBookingProperties, latestPerEmail } fr
 import { type Db, createDb } from '@ll/db';
 import { eventBookings, events, locations } from '@ll/db/schema';
 import { env } from 'cloudflare:workers';
-import { and, asc, eq, inArray, isNotNull, isNull } from 'drizzle-orm';
+import { and, asc, eq, inArray, isNotNull, isNull, ne } from 'drizzle-orm';
 
 // HubSpot sends every guest email (confirmation, reminder, cancellation) from
 // workflows on the contact properties in @ll/content (event-crm.ts). The CMS
@@ -40,7 +40,8 @@ async function ensureProperties(token: string) {
   propertiesReady = true;
 }
 
-async function pendingBookings(db: Db) {
+/** Bookings HubSpot has not heard of yet, oldest first. Exported for its test. */
+export async function pendingBookings(db: Db) {
   const rows = await db
     .select({
       booking: eventBookings,
@@ -51,7 +52,14 @@ async function pendingBookings(db: Db) {
     .from(eventBookings)
     .innerJoin(events, eq(eventBookings.eventId, events.id))
     .leftJoin(locations, eq(events.locationId, locations.id))
-    .where(and(isNull(eventBookings.crmSyncedAt), isNotNull(eventBookings.email)))
+    // A party on the waiting list is not booked, so HubSpot hears of them only once they move in.
+    .where(
+      and(
+        isNull(eventBookings.crmSyncedAt),
+        isNotNull(eventBookings.email),
+        ne(eventBookings.status, 'waitlisted')
+      )
+    )
     .orderBy(asc(eventBookings.createdAt))
     .limit(BATCH * 2);
   return rows.map(({ booking: b, event: e, locationName, address }) => ({
@@ -62,7 +70,8 @@ async function pendingBookings(db: Db) {
     phone: b.phone,
     partySize: b.partySize,
     reference: b.reference,
-    status: b.status,
+    // Never waitlisted: the query above leaves those out.
+    status: b.status === 'cancelled' ? ('cancelled' as const) : ('confirmed' as const),
     createdAt: b.createdAt.getTime(),
     cancelledAt: b.cancelledAt?.getTime() ?? null,
     event: {

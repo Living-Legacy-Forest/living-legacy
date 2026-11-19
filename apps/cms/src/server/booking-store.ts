@@ -76,3 +76,53 @@ export async function updateBookingDetails(
     ) + ${b.partySize} <= ${capacity})`);
   return result.meta.changes === 1;
 }
+
+/**
+ * Puts a party on the event's waiting list. No place is held and nothing is counted, so there is
+ * nothing to race against; a clashing reference is retried with a new one.
+ */
+export async function insertWaitlisted(
+  db: Db,
+  b: Omit<NewBooking, 'source' | 'consentAt'>
+): Promise<{ id: string; reference: string }> {
+  for (let attempt = 0; ; attempt++) {
+    const id = crypto.randomUUID();
+    const reference = bookingReference(crypto.getRandomValues(new Uint8Array(6)));
+    try {
+      await db.run(sql`
+        INSERT INTO event_bookings
+          (id, event_id, reference, first_name, last_name, email, phone, party_size, note,
+           status, source, consent_at, created_at)
+        VALUES (${id}, ${b.eventId}, ${reference}, ${b.firstName}, ${b.lastName}, ${b.email},
+          ${b.phone}, ${b.partySize}, ${b.note}, 'waitlisted', 'staff', NULL, ${Date.now()})`);
+      return { id, reference };
+    } catch (error) {
+      if (attempt < 3 && String(error).includes('event_bookings.reference')) continue;
+      throw error;
+    }
+  }
+}
+
+/**
+ * Moves a waiting party into the event, in one statement that also checks the places are still
+ * there, so it cannot overbook if someone is booked at the same moment. It is dated now: the
+ * trend of bookings should show when they got a place, not when they joined the list. Marked
+ * unsynced, so HubSpot hears of it as a new booking. Returns false when there was no room, or the
+ * booking is no longer waiting.
+ */
+export async function promoteBooking(
+  db: Db,
+  id: string,
+  eventId: string,
+  partySize: number,
+  capacity: number | null
+): Promise<boolean> {
+  const result = await db.run(sql`
+    UPDATE event_bookings
+    SET status = 'confirmed', created_at = ${Date.now()}, crm_synced_at = NULL
+    WHERE id = ${id} AND status = 'waitlisted' AND (${capacity} IS NULL OR (
+      SELECT coalesce(sum(party_size), 0) FROM event_bookings
+      WHERE event_id = ${eventId} AND status = 'confirmed'
+    ) + ${partySize} <= ${capacity})`);
+  return result.meta.changes === 1;
+}

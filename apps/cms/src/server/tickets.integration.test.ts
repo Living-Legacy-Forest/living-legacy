@@ -76,6 +76,18 @@ describe('checkInByCode', () => {
     expect((await checkInByCode(testDb(), eventId, 'LL-BBBBBB', userId)).kind).toBe('cancelled');
   });
 
+  it('does not check in a party on the waiting list', async () => {
+    const userId = await addUser('editor');
+    const eventId = await addEvent();
+    await book(eventId, 'LL-WWWWWW', { status: 'waitlisted' });
+    const result = await checkInByCode(testDb(), eventId, 'LL-WWWWWW', userId);
+    expect(result.kind).toBe('waitlisted');
+    const stored = await testDb().query.eventBookings.findFirst({
+      where: eq(eventBookings.id, 'LL-WWWWWW'),
+    });
+    expect(stored?.checkedInAt).toBeNull();
+  });
+
   it('names the other date when the ticket is for another event', async () => {
     const userId = await addUser('editor');
     const today = await addEvent();

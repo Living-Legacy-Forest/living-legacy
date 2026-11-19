@@ -28,7 +28,14 @@ import { useAction } from '@/lib/use-action';
 import { usePaged } from '@/lib/use-paged';
 import { cn } from '@/lib/utils';
 import type { EventRow } from '@/server/events';
-import { type Guest, cancelGuest, getGuests, setCheckedIn } from '@/server/event-guests';
+import {
+  type Guest,
+  cancelGuest,
+  getGuests,
+  promoteGuest,
+  removeFromWaitlist,
+  setCheckedIn,
+} from '@/server/event-guests';
 import { Reveal } from '@/components/reveal';
 import { AddGuestDialog } from './add-guest-dialog';
 import { TicketScanner } from './ticket-scanner';
@@ -41,8 +48,10 @@ export function EventGuests({ event }: { event: EventRow }) {
   const [guests, setGuests] = useState<Guest[] | null>(null);
   const [query, setQuery] = useState('');
   const [adding, setAdding] = useState(false);
+  const [addingToWaitlist, setAddingToWaitlist] = useState(false);
   const [scanning, setScanning] = useState(false);
   const [toCancel, setToCancel] = useState<Guest | null>(null);
+  const [toRemove, setToRemove] = useState<Guest | null>(null);
   // Kept while the dialog closes, so its title does not change mid-animation.
   const [editing, setEditing] = useState<Guest | null>(null);
   const [editOpen, setEditOpen] = useState(false);
@@ -79,7 +88,14 @@ export function EventGuests({ event }: { event: EventRow }) {
 
   const confirmed = guests.filter((g) => g.status === 'confirmed');
   const cancelled = guests.filter((g) => g.status === 'cancelled');
+  // First come, first served: the order they were put on the list.
+  const waiting = guests
+    .filter((g) => g.status === 'waitlisted')
+    .sort((a, b) => a.createdAt - b.createdAt);
+  const waitingPeople = waiting.reduce((n, g) => n + g.partySize, 0);
   const booked = confirmed.reduce((n, g) => n + g.partySize, 0);
+  /** Places still free; null when the event has no limit. */
+  const left = event.capacity === null ? null : Math.max(0, event.capacity - booked);
   const arrived = confirmed.reduce((n, g) => n + (g.checkedInAt === null ? 0 : g.partySize), 0);
   const editable = event.status !== 'cancelled';
 
@@ -97,6 +113,19 @@ export function EventGuests({ event }: { event: EventRow }) {
       replace(g.id, g.checkedInAt);
       notify.error('Could not update the check-in', error);
     }
+  }
+
+  async function moveIn(g: Guest) {
+    const done = await run(() => promoteGuest({ data: { id: g.id } }), {
+      success: {
+        title: 'Moved into the event',
+        description: `${fullName(g)} now has ${places(g.partySize)}. HubSpot sends their emails once it is connected.`,
+      },
+      error: 'Could not move them in',
+    });
+    // Reloaded either way: someone else may have taken the places meanwhile.
+    await reload();
+    return done;
   }
 
   function exportCsv() {
@@ -121,7 +150,7 @@ export function EventGuests({ event }: { event: EventRow }) {
         g.phone,
         String(g.partySize),
         g.note,
-        g.status === 'confirmed' ? 'Confirmed' : 'Cancelled',
+        { confirmed: 'Confirmed', waitlisted: 'Waiting list', cancelled: 'Cancelled' }[g.status],
         g.checkedInAt === null ? '' : formatDateTime(g.checkedInAt, zone),
         formatDateTime(g.createdAt, zone),
       ]),
@@ -141,13 +170,19 @@ export function EventGuests({ event }: { event: EventRow }) {
 
   return (
     <div className="space-y-4">
-      <dl className="grid grid-cols-3 gap-2 text-center">
+      <dl
+        className={cn(
+          'grid gap-2 text-center',
+          waiting.length > 0 ? 'grid-cols-2 sm:grid-cols-4' : 'grid-cols-3'
+        )}
+      >
         <Stat
           label="Booked"
           value={event.capacity === null ? `${booked}` : `${booked} of ${event.capacity}`}
         />
         <Stat label="Bookings" value={`${confirmed.length}`} />
         <Stat label="Checked in" value={`${arrived} of ${booked}`} />
+        {waiting.length > 0 && <Stat label="Waiting" value={`${waitingPeople}`} />}
       </dl>
 
       <div className="flex flex-wrap items-center gap-2">
@@ -157,7 +192,7 @@ export function EventGuests({ event }: { event: EventRow }) {
           value={query}
           onChange={setQuery}
         />
-        <div className="touch:w-full touch:*:min-h-11 touch:*:flex-1 ml-auto flex gap-2">
+        <div className="touch:w-full touch:*:min-h-11 touch:*:flex-1 ml-auto flex flex-wrap gap-2">
           <Button
             type="button"
             variant="outline"
@@ -170,6 +205,16 @@ export function EventGuests({ event }: { event: EventRow }) {
           {editable && confirmed.length > 0 && (
             <Button type="button" variant="outline" size="sm" onClick={() => setScanning(true)}>
               Scan tickets
+            </Button>
+          )}
+          {editable && event.capacity !== null && (
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              onClick={() => setAddingToWaitlist(true)}
+            >
+              Add to waiting list
             </Button>
           )}
           {editable && (
@@ -251,6 +296,76 @@ export function EventGuests({ event }: { event: EventRow }) {
         <Pager {...confirmedPaged.pager} noun="bookings" label="Booking pages" />
       )}
 
+      <Reveal show={waiting.length > 0}>
+        <section className="space-y-2">
+          <div className="space-y-0.5 max-md:px-4">
+            <h3 className="text-muted-foreground text-xs font-medium max-md:text-[0.8125rem] max-md:font-normal max-md:text-(--ios-secondary) max-md:uppercase">
+              Waiting list
+            </h3>
+            <p className="text-muted-foreground text-xs">
+              {left !== null && left > 0
+                ? `${places(left)} free. Move someone in below, then let them know: no place was held and they have not been emailed.`
+                : 'No places are free. When a booking is cancelled, move the next party in. They are not emailed.'}
+            </p>
+          </div>
+          <ul className={GUEST_LIST}>
+            {waiting.filter(matches).map((g, index) => {
+              const fits = left === null || g.partySize <= left;
+              return (
+                <li key={g.id} className={GUEST_ROW}>
+                  <GuestDetails
+                    guest={g}
+                    position={index + 1}
+                    since={`Waiting since ${formatDateTime(g.createdAt, zone)}`}
+                  />
+                  {editable && (
+                    <>
+                      <Button
+                        type="button"
+                        variant="outline"
+                        disabled={!fits}
+                        title={fits ? undefined : `Needs ${places(g.partySize)}; ${left} free.`}
+                        className="min-h-11 min-w-24 shrink-0 sm:min-h-9 sm:min-w-28"
+                        onClick={() => moveIn(g)}
+                      >
+                        Move in
+                      </Button>
+                      <DropdownMenu>
+                        <DropdownMenuTrigger
+                          render={
+                            <Button
+                              variant="ghost"
+                              size="icon-sm"
+                              aria-label={`More for ${fullName(g)}`}
+                              className="touch:size-11 shrink-0"
+                            />
+                          }
+                        >
+                          <MoreHorizontalIcon aria-hidden />
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end">
+                          <DropdownMenuItem
+                            onClick={() => {
+                              setEditing(g);
+                              setEditOpen(true);
+                            }}
+                          >
+                            Edit entry
+                          </DropdownMenuItem>
+                          <DropdownMenuItem variant="destructive" onClick={() => setToRemove(g)}>
+                            Remove from list
+                          </DropdownMenuItem>
+                        </DropdownMenuContent>
+                      </DropdownMenu>
+                    </>
+                  )}
+                </li>
+              );
+            })}
+          </ul>
+        </section>
+      </Reveal>
+
       <Reveal show={cancelled.length > 0}>
         <section className="space-y-2">
           <h3 className="text-muted-foreground text-xs font-medium max-md:px-4 max-md:text-[0.8125rem] max-md:font-normal max-md:text-(--ios-secondary) max-md:uppercase">
@@ -269,6 +384,13 @@ export function EventGuests({ event }: { event: EventRow }) {
       <AddGuestDialog event={event} open={adding} onOpenChange={setAdding} onAdded={reload} />
       <AddGuestDialog
         event={event}
+        waitlist
+        open={addingToWaitlist}
+        onOpenChange={setAddingToWaitlist}
+        onAdded={reload}
+      />
+      <AddGuestDialog
+        event={event}
         guest={editing}
         open={editOpen}
         onOpenChange={setEditOpen}
@@ -280,6 +402,45 @@ export function EventGuests({ event }: { event: EventRow }) {
         onOpenChange={setScanning}
         onChange={() => void reload()}
       />
+
+      <AlertDialog open={toRemove !== null} onOpenChange={(open) => !open && setToRemove(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>
+              Take {toRemove ? fullName(toRemove) : 'them'} off the waiting list?
+            </AlertDialogTitle>
+            <AlertDialogDescription>
+              They were never booked, so their details are deleted. They are not emailed.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Keep them</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={async () => {
+                const g = toRemove;
+                if (!g) return;
+                setToRemove(null);
+                const done = await run(
+                  async () => {
+                    await removeFromWaitlist({ data: { id: g.id } });
+                    return true;
+                  },
+                  {
+                    success: {
+                      title: 'Taken off the waiting list',
+                      description: `${fullName(g)}’s details were deleted.`,
+                    },
+                    error: 'Could not remove them',
+                  }
+                );
+                if (done) await reload();
+              }}
+            >
+              Remove
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
 
       <AlertDialog open={toCancel !== null} onOpenChange={(open) => !open && setToCancel(null)}>
         <AlertDialogContent>
@@ -306,7 +467,11 @@ export function EventGuests({ event }: { event: EventRow }) {
                   {
                     success: {
                       title: 'Booking cancelled',
-                      description: `${places(g.partySize)} freed for others.`,
+                      description: `${places(g.partySize)} freed for others.${
+                        waiting.length > 0
+                          ? ` ${waitingPeople} ${waitingPeople === 1 ? 'person is' : 'people are'} on the waiting list.`
+                          : ''
+                      }`,
                     },
                     error: 'Could not cancel the booking',
                   }
@@ -343,10 +508,28 @@ const GUEST_LIST =
 const GUEST_ROW =
   'grid grid-cols-[minmax(0,1fr)_auto_auto] items-center gap-x-3 gap-y-1 px-3 py-2.5 sm:flex sm:gap-y-0 max-md:px-4';
 
-function GuestDetails({ guest: g }: { guest: Guest }) {
+function GuestDetails({
+  guest: g,
+  position,
+  since,
+}: {
+  guest: Guest;
+  /** Place in the waiting list, from 1. */
+  position?: number;
+  /** When they were put on the waiting list. */
+  since?: string;
+}) {
   return (
     <div className="contents sm:block sm:min-w-0 sm:flex-1">
       <div className="flex min-w-0 flex-wrap items-center gap-x-2 gap-y-0.5 sm:flex-nowrap">
+        {position !== undefined && (
+          <span
+            aria-label={`Number ${position} on the list`}
+            className="text-muted-foreground text-xs tabular-nums"
+          >
+            #{position}
+          </span>
+        )}
         {/* Finding the right person matters most at the door, so a phone shows all of a name. */}
         <span className="max-w-full truncate font-medium max-sm:wrap-break-word max-sm:whitespace-normal">
           {fullName(g)}
@@ -363,6 +546,7 @@ function GuestDetails({ guest: g }: { guest: Guest }) {
           {g.email && ` · ${g.email}`}
           {!g.email && g.phone && ` · ${g.phone}`}
         </div>
+        {since && <div className="text-muted-foreground mt-0.5 text-xs">{since}</div>}
         {g.note && <div className="text-muted-foreground mt-0.5 text-xs">{g.note}</div>}
       </div>
     </div>

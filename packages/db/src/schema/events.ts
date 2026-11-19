@@ -79,7 +79,7 @@ export const eventBookings = sqliteTable(
     partySize: integer('party_size').notNull(),
     /** Accessibility or dietary needs. */
     note: text('note'),
-    status: text('status', { enum: ['confirmed', 'cancelled'] })
+    status: text('status', { enum: ['confirmed', 'waitlisted', 'cancelled'] })
       .notNull()
       .default('confirmed'),
     source: text('source', { enum: ['website', 'staff'] }).notNull(),

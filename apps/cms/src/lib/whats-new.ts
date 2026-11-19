@@ -51,6 +51,18 @@ export type WhatsNewEntry = {
 
 export const whatsNew: WhatsNewEntry[] = [
   {
+    id: '2026-11-19-9',
+    kind: 'new',
+    title: 'A waiting list for full events',
+    items: [
+      {
+        title: 'Waiting list on the guest list',
+        body: 'When an event has no room for a party, use Add to waiting list on its Guests tab. They hold no place and are not counted or emailed. When a booking is cancelled, Move in puts the next party into the event, once their places are free. Taking someone off the list deletes their details.',
+        link: { label: 'Open Events', to: '/events' },
+      },
+    ],
+  },
+  {
     id: '2026-11-19-8',
     kind: 'new',
     title: 'See what is going out, month by month',

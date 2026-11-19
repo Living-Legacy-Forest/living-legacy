@@ -12,8 +12,23 @@ import {
   shiftMonth,
   toZoned,
 } from '@ll/content';
-import { Link } from '@tanstack/react-router';
-import { useState } from 'react';
+import { Link, useNavigate } from '@tanstack/react-router';
+import {
+  AnimatePresence,
+  type PanInfo,
+  type Variants,
+  motion,
+  useIsPresent,
+  useReducedMotion,
+} from 'motion/react';
+import {
+  type ReactNode,
+  useCallback,
+  useLayoutEffect,
+  useRef,
+  useState,
+  useSyncExternalStore,
+} from 'react';
 import { SegmentedControl } from '@/components/segmented-control';
 import { CalendarClockIcon, ChevronLeftIcon, ChevronRightIcon, FileText } from '@/components/icons';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
@@ -211,8 +226,99 @@ function DayCell({
   );
 }
 
+// The month slides the way you moved (forward comes in from the right) and the block below it
+// follows the new month's height, since a month is four to six weeks tall. Same curves as the
+// date picker's month change. Month changes are occasional, so this stays short.
+const ease = {
+  enter: [0.16, 1, 0.3, 1],
+  standard: [0.22, 1, 0.36, 1],
+} as const;
+const SLIDE = 48;
+const slide: Variants = {
+  enter: (direction: number) => ({ opacity: 0, x: direction * SLIDE }),
+  center: { opacity: 1, x: 0, transition: { duration: 0.22, ease: ease.enter } },
+  exit: (direction: number) => ({
+    opacity: 0,
+    x: direction * -SLIDE,
+    transition: { duration: 0.15, ease: ease.standard },
+  }),
+};
+// Reduced motion keeps the change legible with a fade and drops the travel.
+const fade: Variants = {
+  enter: { opacity: 0 },
+  center: { opacity: 1, transition: { duration: 0.15 } },
+  exit: { opacity: 0, transition: { duration: 0.1 } },
+};
+const heightSpring = { type: 'spring', visualDuration: 0.3, bounce: 0 } as const;
+
+/** Swiping to change month is for fingers; with a mouse it would fight text selection and links. */
+function subscribeTouch(notify: () => void) {
+  const query = window.matchMedia('(hover: none)');
+  query.addEventListener('change', notify);
+  return () => query.removeEventListener('change', notify);
+}
+const useTouch = () =>
+  useSyncExternalStore(
+    subscribeTouch,
+    () => window.matchMedia('(hover: none)').matches,
+    () => false
+  );
+
+/** One month's content. Tells its parent how tall it is, so the space it sits in can follow. */
+function MonthPane({
+  direction,
+  reduced,
+  animateHeight,
+  onHeight,
+  children,
+}: {
+  direction: number;
+  reduced: boolean;
+  /** This pane arrived because the month changed, so its height is worth animating to. */
+  animateHeight: boolean;
+  onHeight: (height: number, animate: boolean) => void;
+  children: ReactNode;
+}) {
+  const ref = useRef<HTMLDivElement>(null);
+  // Fixed when the pane mounts: the parent's flag flips back once the month has been shown, and
+  // reading it again would cancel the height animation it started.
+  const arrivedByChange = useRef(animateHeight).current;
+  // A pane that is leaving is lifted out of the flow; its size no longer says anything.
+  const present = useIsPresent();
+  useLayoutEffect(() => {
+    const element = ref.current;
+    if (!element || !present) return;
+    let first = true;
+    const report = () => {
+      // Only the arrival animates; later size changes (a resized window) follow at once.
+      onHeight(element.offsetHeight, first && arrivedByChange);
+      first = false;
+    };
+    report();
+    const observer = new ResizeObserver(report);
+    observer.observe(element);
+    return () => observer.disconnect();
+  }, [present, arrivedByChange, onHeight]);
+
+  return (
+    <motion.div
+      ref={ref}
+      custom={direction}
+      variants={reduced ? fade : slide}
+      initial="enter"
+      animate="center"
+      exit="exit"
+    >
+      {children}
+    </motion.div>
+  );
+}
+
 export function CalendarPage({ data, now }: { data: CalendarData; now: number }) {
   const siteZone = useTimeZone();
+  const navigate = useNavigate({ from: '/calendar/' });
+  const reduced = !!useReducedMotion();
+  const touch = useTouch();
   const [filter, setFilter] = useState<Filter>('all');
   const month = parseMonthKey(data.month)!;
   const weeks = monthGrid(month);
@@ -226,6 +332,30 @@ export function CalendarPage({ data, now }: { data: CalendarData; now: number })
   const next = monthKey(shiftMonth(month, 1));
   const days = weeks.flat();
   const busy = days.filter((d) => byDay.has(dayKey(d)) && d.inMonth);
+
+  // Which way the month moved: 1 is forward. "YYYY-MM" sorts as dates do.
+  const shown = useRef(data.month);
+  const changed = data.month !== shown.current;
+  const direction = data.month >= shown.current ? 1 : -1;
+  useLayoutEffect(() => {
+    shown.current = data.month;
+  }, [data.month]);
+
+  const [height, setHeight] = useState<number | null>(null);
+  const [heightAnimates, setHeightAnimates] = useState(false);
+  const onHeight = useCallback((next: number, animate: boolean) => {
+    setHeight(next);
+    setHeightAnimates(animate);
+  }, []);
+
+  // A swipe left goes forward, as turning a page does. A short or slow drag springs back.
+  const dragged = useRef(false);
+  const go = (to: string) => void navigate({ to: '/calendar', search: { month: to } });
+  const onDragEnd = (_: unknown, { offset, velocity }: PanInfo) => {
+    window.setTimeout(() => (dragged.current = false), 50);
+    if (Math.abs(offset.x) < 72 && Math.abs(velocity.x) < 500) return;
+    go(offset.x < 0 ? next : previous);
+  };
 
   return (
     <div data-slot="stack-page" className="space-y-4">
@@ -279,61 +409,98 @@ export function CalendarPage({ data, now }: { data: CalendarData; now: number })
         )}
       </div>
 
-      {/* Wider screens: the month as a grid. */}
-      <div role="grid" aria-label={monthName(month)} className="max-md:hidden">
-        <div role="row" className="text-muted-foreground grid grid-cols-7 text-xs">
-          {WEEKDAYS.map((name) => (
-            <div key={name} role="columnheader" className="px-2 pb-1.5">
-              {name}
-            </div>
-          ))}
-        </div>
-        <div className="border-r border-b">
-          {weeks.map((week) => (
-            <div key={dayKey(week[0]!)} role="row" className="grid grid-cols-7">
-              {week.map((day) => (
-                <DayCell
-                  key={dayKey(day)}
-                  day={day}
-                  entries={byDay.get(dayKey(day)) ?? []}
-                  today={dayKey(day) === today}
-                  siteZone={siteZone}
-                />
-              ))}
-            </div>
-          ))}
-        </div>
-      </div>
-
-      {/* Phones: only the days with something on. */}
-      <div className="md:hidden">
-        {busy.length === 0 ? (
-          <p className="text-muted-foreground px-1 py-6 text-center text-sm">
-            Nothing scheduled in {monthName(month)}.
-          </p>
-        ) : (
-          <div className="divide-y rounded-xl border">
-            {busy.map((day) => (
-              <section key={dayKey(day)} aria-label={dayName(day)}>
-                <h3
-                  className={cn(
-                    'bg-muted/40 px-4 py-1.5 text-xs font-medium',
-                    dayKey(day) === today && 'text-primary'
-                  )}
-                >
-                  {dayName(day)}
-                  {dayKey(day) === today && ' · Today'}
-                </h3>
-                <div className="divide-y">
-                  {byDay.get(dayKey(day))!.map((entry) => (
-                    <AgendaRow key={entry.key} entry={entry} siteZone={siteZone} />
+      {/* The height follows the month; sideways, whatever is sliding is clipped at the edge. */}
+      <motion.div
+        initial={false}
+        animate={{ height: height ?? 'auto' }}
+        transition={heightAnimates && !reduced ? heightSpring : { duration: 0 }}
+        className="relative overflow-x-clip"
+      >
+        <motion.div
+          className="relative"
+          // Vertical scrolling stays the browser's; only a sideways drag is ours.
+          style={{ touchAction: 'pan-y' }}
+          drag={touch ? 'x' : false}
+          dragDirectionLock
+          dragSnapToOrigin
+          dragElastic={0.2}
+          dragMomentum={false}
+          onDragStart={() => (dragged.current = true)}
+          onDragEnd={onDragEnd}
+          // Letting go over a chip after a swipe must not open it.
+          onClickCapture={(event) => {
+            if (!dragged.current) return;
+            event.preventDefault();
+            event.stopPropagation();
+          }}
+        >
+          <AnimatePresence initial={false} mode="popLayout" custom={direction}>
+            <MonthPane
+              key={data.month}
+              direction={direction}
+              reduced={reduced}
+              animateHeight={changed}
+              onHeight={onHeight}
+            >
+              {/* Wider screens: the month as a grid. */}
+              <div role="grid" aria-label={monthName(month)} className="max-md:hidden">
+                <div role="row" className="text-muted-foreground grid grid-cols-7 text-xs">
+                  {WEEKDAYS.map((name) => (
+                    <div key={name} role="columnheader" className="px-2 pb-1.5">
+                      {name}
+                    </div>
                   ))}
                 </div>
-              </section>
-            ))}
-          </div>
-        )}
-      </div>
+                <div className="border-r border-b">
+                  {weeks.map((week) => (
+                    <div key={dayKey(week[0]!)} role="row" className="grid grid-cols-7">
+                      {week.map((day) => (
+                        <DayCell
+                          key={dayKey(day)}
+                          day={day}
+                          entries={byDay.get(dayKey(day)) ?? []}
+                          today={dayKey(day) === today}
+                          siteZone={siteZone}
+                        />
+                      ))}
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              {/* Phones: only the days with something on. */}
+              <div className="md:hidden">
+                {busy.length === 0 ? (
+                  <p className="text-muted-foreground px-1 py-6 text-center text-sm">
+                    Nothing scheduled in {monthName(month)}.
+                  </p>
+                ) : (
+                  <div className="divide-y rounded-xl border">
+                    {busy.map((day) => (
+                      <section key={dayKey(day)} aria-label={dayName(day)}>
+                        <h3
+                          className={cn(
+                            'bg-muted/40 px-4 py-1.5 text-xs font-medium',
+                            dayKey(day) === today && 'text-primary'
+                          )}
+                        >
+                          {dayName(day)}
+                          {dayKey(day) === today && ' · Today'}
+                        </h3>
+                        <div className="divide-y">
+                          {byDay.get(dayKey(day))!.map((entry) => (
+                            <AgendaRow key={entry.key} entry={entry} siteZone={siteZone} />
+                          ))}
+                        </div>
+                      </section>
+                    ))}
+                  </div>
+                )}
+              </div>
+            </MonthPane>
+          </AnimatePresence>
+        </motion.div>
+      </motion.div>
 
       <p className="text-muted-foreground text-xs">
         {data.includeEvents

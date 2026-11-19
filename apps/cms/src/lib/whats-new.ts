@@ -57,7 +57,7 @@ export const whatsNew: WhatsNewEntry[] = [
     items: [
       {
         title: 'Content calendar',
-        body: 'A month view of scheduled and published posts and, if you manage events, events too. Posts sit on the day they go live; events on the day they start. Click anything to open it and change its date there. On a phone it becomes a list of the days that have something on.',
+        body: 'A month view of scheduled and published posts and, if you manage events, events too. Posts sit on the day they go live; events on the day they start. Click anything to open it and change its date there. On a phone it becomes a list of the days that have something on, and you can swipe sideways to change month.',
         link: { label: 'Open the calendar', to: '/calendar' },
       },
     ],

@@ -50,6 +50,18 @@ export type WhatsNewEntry = {
 
 export const whatsNew: WhatsNewEntry[] = [
   {
+    id: '2026-11-19-5',
+    kind: 'new',
+    title: 'Check the old site against your redirects',
+    items: [
+      {
+        title: 'Coverage, for the move to the national site',
+        body: 'On Redirects, the new Coverage view takes a list of the old site’s addresses, pasted, from a file or as a sitemap, and shows which already have a redirect, which are still a page on the new site, and which need one. Type a destination beside each missing address and create them all at once.',
+        link: { label: 'Open Redirects', to: '/redirects' },
+      },
+    ],
+  },
+  {
     id: '2026-11-19-4',
     kind: 'new',
     title: 'Check the brand language across the site',

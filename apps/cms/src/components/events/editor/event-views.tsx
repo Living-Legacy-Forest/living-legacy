@@ -11,7 +11,8 @@ export type EventView = 'details' | 'guests' | 'dashboard';
 
 /**
  * The tabs, and for a repeating event the date being viewed. The date sits
- * beside the tabs so neither moves when switching between them.
+ * beside the tabs so neither moves when switching between them. The editor's
+ * Details view moves it into the side panel when there is room (`showDate`).
  */
 export function EventViewBar({
   view,
@@ -20,6 +21,7 @@ export function EventViewBar({
   dates,
   showingAll,
   onPickDate,
+  showDate = true,
 }: {
   view: EventView;
   onViewChange: (view: EventView) => void;
@@ -30,6 +32,8 @@ export function EventViewBar({
   showingAll: boolean;
   /** A date's id, or null for all dates (the Dashboard only). */
   onPickDate: (id: string | null) => void;
+  /** False when the date is shown somewhere else. */
+  showDate?: boolean;
 }) {
   return (
     <>
@@ -52,7 +56,7 @@ export function EventViewBar({
           </TabsTrigger>
         </TabsList>
       </Tabs>
-      {dates.length > 1 && (
+      {showDate && dates.length > 1 && (
         <div className="flex min-w-0 max-sm:order-first max-sm:w-full max-sm:*:w-full">
           <SeriesDatePicker
             compact

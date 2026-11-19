@@ -15,6 +15,7 @@ import {
 } from '@/components/ui/select';
 import { zoneName } from '@/lib/format';
 import type { EventRow } from '@/server/events';
+import { SeriesDatePicker } from '../series-date-picker';
 import type { EventEditorState } from './use-event-editor';
 
 const NO_LOCATION = 'none';
@@ -35,9 +36,12 @@ function Section({ title, children }: { title: string; children: React.ReactNode
 export function EventSidePanel({
   editor,
   event,
+  series,
 }: {
   editor: EventEditorState;
   event: EventRow | null;
+  /** A repeating event's dates, to move between them from here. */
+  series?: { dates: EventRow[]; onPick: (id: string) => void };
 }) {
   const { values, patch, zone, locations } = editor;
   const location = locations.find((l) => l.id === values.locationId);
@@ -48,6 +52,16 @@ export function EventSidePanel({
 
   return (
     <div className="space-y-6 [--form-gap:1rem]">
+      {event && series && (
+        <section aria-label="Date" className="border-b pb-6">
+          <SeriesDatePicker
+            event={event}
+            dates={series.dates}
+            onPick={(id) => id && series.onPick(id)}
+          />
+        </section>
+      )}
+
       {event && (
         <Section title="Bookings">
           <p className="text-2xl font-semibold tabular-nums">

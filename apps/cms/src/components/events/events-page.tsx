@@ -9,8 +9,6 @@ import { ListSort, byText, sortedBy, useListSort } from '@/components/list/list-
 import { CardMeta, ListCard, ListCards } from '@/components/list/list-card';
 import { ViewSwitch, useListView } from '@/components/list/view-switch';
 import { RowCell } from '@/components/list/row-cell';
-import { TrendChart } from '@/components/list/trend-chart';
-import { dummyTrend } from '@/components/list/dummy-trend';
 import { cn } from '@/lib/utils';
 import { formatDate, formatTimeRange } from '@/lib/format';
 import {
@@ -332,7 +330,6 @@ function EventCard({
           {capacity > 0 ? `${booked} of ${capacity} booked` : `${booked} booked`}
         </span>
       </CardMeta>
-      <TrendChart series={dummyTrend(lead.id)} label="Bookings" className="mt-1 h-10 w-full" />
     </ListCard>
   );
 }
@@ -385,9 +382,6 @@ function EventSummary({
             </span>
           )}
         </span>
-      </span>
-      <span className={cn('flex shrink-0 max-sm:hidden', wide && 'lg:max-xl:hidden')}>
-        <TrendChart series={dummyTrend(lead.id)} label="Bookings" showTotal={wide} />
       </span>
       {wide && (
         <span className="animate-in fade-in slide-in-from-right-2 hidden shrink-0 items-center gap-6 text-xs duration-300 lg:flex">

@@ -49,6 +49,18 @@ export type WhatsNewEntry = {
 
 export const whatsNew: WhatsNewEntry[] = [
   {
+    id: '2026-11-19-2',
+    kind: 'improved',
+    title: 'Only real numbers in charts',
+    items: [
+      {
+        title: 'Real post views, no placeholder charts',
+        body: 'The small charts on the Posts list now show real page views from the last 30 days, and appear only when analytics is connected. The placeholder charts that were on Posts and Events are gone, so no number you see there is invented.',
+        link: { label: 'Open Events', to: '/events' },
+      },
+    ],
+  },
+  {
     id: '2026-11-19',
     kind: 'improved',
     title: 'Long lists come in pages',

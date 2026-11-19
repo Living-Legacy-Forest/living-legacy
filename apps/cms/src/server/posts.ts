@@ -27,6 +27,7 @@ import { getRequest } from '@tanstack/react-start/server';
 import { and, asc, count, desc, eq, inArray, isNotNull, isNull, like, ne, sql } from 'drizzle-orm';
 import { z } from 'zod';
 import { getDb } from '@/lib/db';
+import { pageSizeParam } from '@/lib/page-size';
 import { cmsOrigin, sendReviewRequestedEmail } from '@/lib/email';
 import { type SessionUser, authMiddleware, requirePermission } from '@/lib/session';
 import { readSiteSettings } from '@/lib/site-settings';
@@ -61,8 +62,6 @@ const publishRoles = () => roles.filter((r) => can(r, 'posts:publish'));
 /** Posts per page, and the other sizes the list offers. */
 export const POSTS_PAGE_SIZES = [10, 20, 50, 100] as const;
 export const POSTS_PAGE_SIZE = 20;
-export const isPostsPageSize = (n: unknown): n is (typeof POSTS_PAGE_SIZES)[number] =>
-  (POSTS_PAGE_SIZES as readonly unknown[]).includes(n);
 
 export const postStatusTabs = [
   'all',
@@ -88,7 +87,7 @@ const listSchema = z.object({
   authors: z.array(z.string()).max(50).optional(),
   page: z.number().int().min(1).catch(1),
   /** Posts a page; anything but a size on offer is the usual one. */
-  rows: z.number().refine(isPostsPageSize).optional().catch(undefined),
+  rows: pageSizeParam(POSTS_PAGE_SIZES),
 });
 
 export const listPosts = createServerFn({ method: 'GET' })

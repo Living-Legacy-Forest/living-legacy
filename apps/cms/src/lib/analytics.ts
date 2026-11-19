@@ -3,6 +3,7 @@
 // the server (which shapes PostHog's rows) and the pages.
 
 import { z } from 'zod';
+import { pageSizeParam } from './page-size';
 import { type TrafficSource, sourceLabels, trafficSource } from './visitors';
 
 export const ANALYTICS_RANGES = [7, 30, 90] as const;
@@ -106,13 +107,11 @@ export const formLabels: Record<string, string> = {
 export const PAGE_SIZES = [10, 25, 50, 100] as const;
 export type PageSize = (typeof PAGE_SIZES)[number];
 export const DEFAULT_PAGE_SIZE: PageSize = 25;
-export const isPageSize = (n: unknown): n is PageSize =>
-  (PAGE_SIZES as readonly unknown[]).includes(n);
 
 /** The Pages page's search: the period, which page of the table, and how many rows a page. */
 export const pagesSearch = analyticsSearch.extend({
   page: z.number().int().min(1).optional().catch(undefined),
-  rows: z.number().refine(isPageSize).optional().catch(undefined),
+  rows: pageSizeParam(PAGE_SIZES),
 });
 
 /** One measure split into parts over a run of days, the biggest part first. */

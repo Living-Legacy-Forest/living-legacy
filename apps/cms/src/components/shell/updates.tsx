@@ -1,4 +1,5 @@
 import { Link } from '@tanstack/react-router';
+import { AnimatePresence, motion, useReducedMotion } from 'motion/react';
 import { type ReactNode, createContext, useContext, useEffect, useMemo, useState } from 'react';
 import { MegaphoneIcon, RotateCcwIcon, XIcon } from '@/components/icons';
 import { Button } from '@/components/ui/button';
@@ -111,25 +112,79 @@ export function UpdatesProvider({ joinedAt, children }: { joinedAt: number; chil
   return <UpdatesContext.Provider value={value}>{children}</UpdatesContext.Provider>;
 }
 
+const EASE_OUT = [0.22, 1, 0.36, 1] as const;
+const CLOSE = { type: 'spring', visualDuration: 0.3, bounce: 0 } as const;
+
+/**
+ * Dismissing is rare, so the note leaves rather than vanishes: it fades and goes back where it
+ * came from (`lift`: the sidebar card down, the phone strip up) while the space it held closes,
+ * so what is around it glides into place instead of jumping. `gap` is the spacing its container
+ * puts after it, closed with it. Nothing animates in: it is there when the page is. Reduced
+ * motion fades only.
+ */
+function Leaves({
+  show,
+  lift,
+  gap = 0,
+  className,
+  children,
+}: {
+  show: boolean;
+  lift: number;
+  gap?: number;
+  className?: string;
+  children: ReactNode;
+}) {
+  const reduced = !!useReducedMotion();
+  return (
+    <AnimatePresence initial={false}>
+      {show && (
+        <motion.div
+          key="note"
+          className={className}
+          exit={
+            reduced
+              ? { opacity: 0, pointerEvents: 'none', transition: { duration: 0.1 } }
+              : {
+                  opacity: 0,
+                  y: lift,
+                  height: 0,
+                  marginBottom: -gap,
+                  overflow: 'hidden',
+                  // Already going: a second tap on it must not open the notes.
+                  pointerEvents: 'none',
+                  transition: {
+                    opacity: { duration: 0.15, ease: EASE_OUT },
+                    y: { duration: 0.2, ease: EASE_OUT },
+                    height: CLOSE,
+                    marginBottom: CLOSE,
+                  },
+                }
+          }
+        >
+          {children}
+        </motion.div>
+      )}
+    </AnimatePresence>
+  );
+}
+
 /** The sidebar card above View website. Hidden when the sidebar is icons only. */
 function SidebarCard() {
   const { unseen, newDeploy, dismiss } = useUpdates();
-  if (!newDeploy && unseen.length === 0) return null;
+  const show = newDeploy || unseen.length > 0;
   const box =
     'text-ui bg-sidebar-accent/60 text-sidebar-foreground mx-2 flex flex-col gap-2 rounded-lg border p-3 group-data-[collapsible=icon]:hidden';
 
-  if (newDeploy) {
-    return (
-      <div role="status" className={box}>
-        <p>The CMS has been updated. Reload to get the latest version.</p>
-        <Button size="sm" variant="outline" onClick={() => window.location.reload()}>
-          Reload
-        </Button>
-      </div>
-    );
-  }
-
-  return (
+  // Built here, not inside the wrapper, so a note that is leaving keeps what it was showing.
+  const note = !show ? null : newDeploy ? (
+    <div role="status" className={box}>
+      <p>The CMS has been updated. Reload to get the latest version.</p>
+      <Button size="sm" variant="outline" onClick={() => window.location.reload()}>
+        Reload
+      </Button>
+    </div>
+  ) : (
     <div role="status" className={cn(box, 'relative')}>
       <div className="min-w-0">
         <div className="text-muted-foreground flex items-center gap-1.5 text-xs">
@@ -152,6 +207,12 @@ function SidebarCard() {
       </Button>
     </div>
   );
+
+  return (
+    <Leaves show={show} lift={8}>
+      {note}
+    </Leaves>
+  );
 }
 
 /**
@@ -160,27 +221,23 @@ function SidebarCard() {
  */
 function PhoneStrip() {
   const { unseen, newDeploy, dismiss } = useUpdates();
-  if (!newDeploy && unseen.length === 0) return null;
+  const show = newDeploy || unseen.length > 0;
   const strip =
     'bg-muted/70 flex h-11 items-center gap-1 rounded-full border pl-3.5 pr-1 text-[0.875rem] md:hidden';
 
-  if (newDeploy) {
-    return (
-      <div role="status" className={strip}>
-        <RotateCcwIcon aria-hidden className="text-muted-foreground size-4 shrink-0" />
-        <span className="min-w-0 flex-1 truncate pl-1.5">The CMS has been updated</span>
-        <button
-          type="button"
-          onClick={() => window.location.reload()}
-          className="text-tint h-11 shrink-0 px-3 font-semibold active:opacity-50"
-        >
-          Reload
-        </button>
-      </div>
-    );
-  }
-
-  return (
+  const note = !show ? null : newDeploy ? (
+    <div role="status" className={strip}>
+      <RotateCcwIcon aria-hidden className="text-muted-foreground size-4 shrink-0" />
+      <span className="min-w-0 flex-1 truncate pl-1.5">The CMS has been updated</span>
+      <button
+        type="button"
+        onClick={() => window.location.reload()}
+        className="text-tint h-11 shrink-0 px-3 font-semibold active:opacity-50"
+      >
+        Reload
+      </button>
+    </div>
+  ) : (
     <div role="status" className={strip}>
       <Link
         to="/whats-new"
@@ -201,6 +258,14 @@ function PhoneStrip() {
         <XIcon aria-hidden className="size-4" />
       </button>
     </div>
+  );
+
+  // The page below sits 1rem (gap-4) under the strip: closed with it, so the page title does not
+  // jump when the strip is finally removed. Hidden from md up, where there is no strip.
+  return (
+    <Leaves show={show} lift={-8} gap={16} className="md:hidden">
+      {note}
+    </Leaves>
   );
 }
 

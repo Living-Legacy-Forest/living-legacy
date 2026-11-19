@@ -9,7 +9,7 @@ import {
   announcementContrast,
   announcementStatus,
 } from '@ll/content';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { type ColorSwatch, ColorPicker } from '@/components/arc/color-picker/color-picker';
 import { CardMeta, ListCard, ListCards } from '@/components/list/list-card';
 import { ListFilter, passes } from '@/components/list/list-filter';
@@ -138,11 +138,24 @@ const SORTS = [
 export function AnnouncementsPage({
   data,
   canWrite,
+  initialEdit,
+  onOpenedInitial,
 }: {
   data: AnnouncementsData;
   canWrite: boolean;
+  /** An announcement to open on arrival. */
+  initialEdit?: string;
+  onOpenedInitial?: () => void;
 }) {
   const view = useListPane<Target>();
+  useEffect(() => {
+    if (!initialEdit) return;
+    if (canWrite && data.some((a) => a.id === initialEdit)) {
+      view.open({ kind: 'edit', id: initialEdit });
+    }
+    onOpenedInitial?.();
+    // Only on arrival with ?edit=, not on every render that has it.
+  }, [initialEdit]);
   const [query, setQuery] = useState('');
   // Ticked values per filter group; an empty group does not narrow the list.
   const [picked, setPicked] = useState<Record<string, string[]>>({});

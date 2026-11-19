@@ -27,6 +27,7 @@ function ChecksRoute() {
         event: can(user.role, 'events:manage'),
         location: can(user.role, 'content:write'),
         legal: can(user.role, 'content:write'),
+        announcement: can(user.role, 'content:write'),
       }}
     />
   );

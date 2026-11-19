@@ -276,6 +276,7 @@ const BRAND_KIND: Record<BrandBreach['kind'], string> = {
   event: 'Event',
   location: 'Location',
   legal: 'Legal page',
+  announcement: 'Announcement',
 };
 
 /** "Post · “plots” ×2 → Legacy Ground, or their tree · 1 more to look at". */
@@ -327,6 +328,8 @@ function itemFix(b: Pick<BrandBreach, 'kind' | 'id' | 'slug'>) {
       );
     case 'legal':
       return <FixLink label="Open the page" to="/legal/$slug" params={{ slug: b.slug ?? '' }} />;
+    case 'announcement':
+      return <FixLink label="Open the announcement" to="/announcements" search={{ edit: b.id }} />;
   }
 }
 

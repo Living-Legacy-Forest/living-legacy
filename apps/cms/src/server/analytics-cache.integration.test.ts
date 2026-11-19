@@ -48,6 +48,24 @@ describe('refresh', () => {
     expect(await readThrough(env.DB, 'k', vi.fn(), T0 + minutes(13))).toEqual({ n: 2 });
   });
 
+  it('tries once more after a timeout, and stores the answer', async () => {
+    const timeout = Object.assign(new Error('aborted'), { name: 'TimeoutError' });
+    const fetcher = vi.fn().mockRejectedValueOnce(timeout).mockResolvedValue({ n: 3 });
+    expect(await refresh(env.DB, 'slow', fetcher, T0)).toBe(true);
+    expect(fetcher).toHaveBeenCalledTimes(2);
+    expect(await readThrough(env.DB, 'slow', vi.fn(), T0)).toEqual({ n: 3 });
+  });
+
+  it('throws a second timeout, and any other failure straight away', async () => {
+    const timeout = Object.assign(new Error('aborted'), { name: 'TimeoutError' });
+    const stalled = vi.fn().mockRejectedValue(timeout);
+    await expect(refresh(env.DB, 'a', stalled, T0)).rejects.toThrow('aborted');
+    expect(stalled).toHaveBeenCalledTimes(2);
+    const broken = vi.fn().mockRejectedValue(new Error('PostHog said 500'));
+    await expect(refresh(env.DB, 'b', broken, T0)).rejects.toThrow('PostHog said 500');
+    expect(broken).toHaveBeenCalledTimes(1);
+  });
+
   it('stores an answer nobody has asked for yet', async () => {
     expect(await refresh(env.DB, 'new', vi.fn().mockResolvedValue([1]), T0)).toBe(true);
     expect(await readThrough(env.DB, 'new', vi.fn(), T0)).toEqual([1]);

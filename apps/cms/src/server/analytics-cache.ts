@@ -57,7 +57,13 @@ export async function readThrough<T>(
   }
 }
 
-/** Renews `key` unless it is still young. Returns whether PostHog was asked. */
+const isTimeout = (error: unknown) => error instanceof Error && error.name === 'TimeoutError';
+
+/**
+ * Renews `key` unless it is still young. Returns whether PostHog was asked. PostHog now and then
+ * stalls past our time limit on a query that answers fine a moment later, so a timeout is tried
+ * once more; any other failure, or a second timeout, is thrown for the job to report.
+ */
 export async function refresh<T>(
   d1: D1Database,
   key: string,
@@ -66,7 +72,14 @@ export async function refresh<T>(
 ): Promise<boolean> {
   const stored = await read(d1, key);
   if (stored && now - stored.at < REFRESH_AFTER_MS) return false;
-  await write(d1, key, await fetcher(), now);
+  let value: T;
+  try {
+    value = await fetcher();
+  } catch (error) {
+    if (!isTimeout(error)) throw error;
+    value = await fetcher();
+  }
+  await write(d1, key, value, now);
   return true;
 }
 

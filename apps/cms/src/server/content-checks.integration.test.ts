@@ -1,5 +1,14 @@
 // The brand language check, against local D1: which published content it reads, and which it leaves.
-import { events, faqs, legalPages, locations, posts, redirects, siteSettings } from '@ll/db/schema';
+import {
+  announcements,
+  events,
+  faqs,
+  legalPages,
+  locations,
+  posts,
+  redirects,
+  siteSettings,
+} from '@ll/db/schema';
 import { beforeEach, describe, expect, it } from 'vitest';
 import { addUser, days, testDb } from '../../test/fixtures';
 import { loadContentChecks } from './content-checks';
@@ -20,6 +29,7 @@ beforeEach(async () => {
   await db.delete(legalPages);
   await db.delete(siteSettings);
   await db.delete(redirects);
+  await db.delete(announcements);
 });
 
 const brand = async () => (await loadContentChecks(testDb())).brand;
@@ -208,6 +218,50 @@ const withLinks = (...hrefs: string[]) => ({
   ],
 });
 const links = async () => (await loadContentChecks(testDb())).links;
+
+describe('announcement bars', () => {
+  const bar = (over: Partial<typeof announcements.$inferInsert> = {}) => ({
+    title: 'November bar',
+    message: 'Walk the Living Legacy Forest',
+    ...over,
+  });
+
+  it('reads the wording on a live bar, not its internal title', async () => {
+    await testDb()
+      .insert(announcements)
+      .values([
+        bar({ title: 'About plots', message: 'Quiet and kind.' }),
+        bar({ title: 'Clean title', messageDesktop: 'Book a plot today', ctaLabel: 'Act now' }),
+      ]);
+    const { rows } = await brand();
+    expect(rows.map((r) => [r.kind, r.title])).toEqual([['announcement', 'Clean title']]);
+    expect(rows[0]?.never.map((f) => f.found).sort()).toEqual(['Act now', 'plot']);
+  });
+
+  it('leaves out bars that are off or over, and reads one still to start', async () => {
+    await testDb()
+      .insert(announcements)
+      .values([
+        bar({ title: 'Off', message: 'A plot', enabled: false }),
+        bar({ title: 'Over', message: 'A plot', endsAt: past() }),
+        bar({ title: 'Later', message: 'A plot', startsAt: soon() }),
+      ]);
+    expect((await brand()).rows.map((r) => r.title)).toEqual(['Later']);
+  });
+
+  it('finds a button that goes to a page the site does not have, and not one that works', async () => {
+    await testDb()
+      .insert(announcements)
+      .values([
+        bar({ title: 'Broken', ctaLabel: 'Read more', ctaUrl: '/nowhere' }),
+        bar({ title: 'Other site', ctaLabel: 'Read more', ctaUrl: 'https://example.com/x' }),
+        bar({ title: 'No button' }),
+      ]);
+    const { rows } = (await loadContentChecks(testDb())).links;
+    expect(rows.map((r) => [r.kind, r.title])).toEqual([['announcement', 'Broken']]);
+    expect(rows[0]?.broken[0]).toMatchObject({ href: '/nowhere', text: 'Read more' });
+  });
+});
 
 describe('broken link check', () => {
   it('finds links to pages that are not there, in every type it reads', async () => {

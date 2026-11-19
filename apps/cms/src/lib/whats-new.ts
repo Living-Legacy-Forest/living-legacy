@@ -50,6 +50,18 @@ export type WhatsNewEntry = {
 
 export const whatsNew: WhatsNewEntry[] = [
   {
+    id: '2026-11-19-7',
+    kind: 'improved',
+    title: 'Announcement bars are checked too',
+    items: [
+      {
+        title: 'Announcements in Content checks',
+        body: 'The brand language and broken link checks now read announcement bars that are switched on and have not ended, including the button label and its address. Each one has a button that opens it on the Announcements page.',
+        link: { label: 'Open Content checks', to: '/checks' },
+      },
+    ],
+  },
+  {
     id: '2026-11-19-6',
     kind: 'new',
     title: 'Find broken links',

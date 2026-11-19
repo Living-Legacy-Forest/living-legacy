@@ -9,9 +9,18 @@ import {
   scanBrand,
   storedToRichText,
 } from '@ll/content';
-import { events, faqs, legalPages, locations, media, posts, redirects } from '@ll/db/schema';
+import {
+  announcements,
+  events,
+  faqs,
+  legalPages,
+  locations,
+  media,
+  posts,
+  redirects,
+} from '@ll/db/schema';
 import { createServerFn } from '@tanstack/react-start';
-import { and, asc, eq, gte, isNull, sql } from 'drizzle-orm';
+import { and, asc, eq, gt, gte, isNull, or, sql } from 'drizzle-orm';
 import { getDb } from '@/lib/db';
 import { authMiddleware } from '@/lib/session';
 import { loadContentTargets } from './post-score';
@@ -31,7 +40,7 @@ const blank = (column: unknown) => sql`coalesce(trim(${column}), '') = ''`;
  *   own alt text, so these are the image fields);
  * - upcoming published events with no cover photo or no summary;
  * - published content that uses a word the brand language guide rules out (posts, FAQs,
- *   upcoming events, locations and the legal pages).
+ *   upcoming events, locations, the legal pages and announcement bars).
  */
 export const getContentChecks = createServerFn({ method: 'GET' })
   .middleware([authMiddleware])
@@ -139,7 +148,7 @@ export async function loadContentChecks(
   };
 }
 
-export type ItemKind = 'post' | 'faq' | 'event' | 'location' | 'legal';
+export type ItemKind = 'post' | 'faq' | 'event' | 'location' | 'legal' | 'announcement';
 export type BrandBreach = {
   id: string;
   kind: ItemKind;
@@ -171,73 +180,94 @@ let scanMemo: { at: number; brand: BrandBreach[]; links: LinkBreach[] } | null =
 async function scanPublished(db: ReturnType<typeof getDb>, fresh: boolean) {
   if (!fresh && scanMemo && Date.now() - scanMemo.at < SCAN_TTL_MS) return scanMemo;
 
-  const [targets, [postRows, faqRows, eventRows, locationRows, legalRows, ruleRows]] =
-    await Promise.all([
-      loadContentTargets(db),
-      db.batch([
-        db
-          .select({
-            id: posts.id,
-            slug: posts.slug,
-            title: posts.title,
-            seoTitle: posts.seoTitle,
-            seoDescription: posts.seoDescription,
-            excerpt: posts.excerpt,
-            socialTitle: posts.socialTitle,
-            socialDescription: posts.socialDescription,
-            body: posts.body,
-          })
-          .from(posts)
-          .where(and(eq(posts.status, 'published'), isNull(posts.deletedAt))),
-        db
-          .select({ id: faqs.id, question: faqs.question, answer: faqs.answer })
-          .from(faqs)
-          .where(and(eq(faqs.status, 'published'), isNull(faqs.deletedAt))),
-        db
-          .select({
-            id: events.id,
-            seriesId: events.seriesId,
-            title: events.title,
-            summary: events.summary,
-            description: events.description,
-            venue: events.venue,
-          })
-          .from(events)
-          .where(and(eq(events.status, 'published'), gte(events.endsAt, new Date())))
-          .orderBy(asc(events.startsAt)),
-        db
-          .select({
-            id: locations.id,
-            slug: locations.slug,
-            stage: locations.stage,
-            name: locations.name,
-            intro: locations.intro,
-            about: locations.about,
-          })
-          .from(locations)
-          .where(and(eq(locations.status, 'published'), isNull(locations.deletedAt))),
-        db
-          .select({
-            id: legalPages.id,
-            slug: legalPages.slug,
-            title: legalPages.title,
-            seoDescription: legalPages.seoDescription,
-            body: legalPages.body,
-          })
-          .from(legalPages)
-          .where(and(eq(legalPages.status, 'published'), isNull(legalPages.deletedAt))),
-        db
-          .select({
-            id: redirects.id,
-            fromPath: redirects.fromPath,
-            toPath: redirects.toPath,
-            statusCode: redirects.statusCode,
-            keepQuery: redirects.keepQuery,
-          })
-          .from(redirects)
-          .where(eq(redirects.enabled, true)),
-      ]),
-    ]);
+  const [
+    targets,
+    [postRows, faqRows, eventRows, locationRows, legalRows, announcementRows, ruleRows],
+  ] = await Promise.all([
+    loadContentTargets(db),
+    db.batch([
+      db
+        .select({
+          id: posts.id,
+          slug: posts.slug,
+          title: posts.title,
+          seoTitle: posts.seoTitle,
+          seoDescription: posts.seoDescription,
+          excerpt: posts.excerpt,
+          socialTitle: posts.socialTitle,
+          socialDescription: posts.socialDescription,
+          body: posts.body,
+        })
+        .from(posts)
+        .where(and(eq(posts.status, 'published'), isNull(posts.deletedAt))),
+      db
+        .select({ id: faqs.id, question: faqs.question, answer: faqs.answer })
+        .from(faqs)
+        .where(and(eq(faqs.status, 'published'), isNull(faqs.deletedAt))),
+      db
+        .select({
+          id: events.id,
+          seriesId: events.seriesId,
+          title: events.title,
+          summary: events.summary,
+          description: events.description,
+          venue: events.venue,
+        })
+        .from(events)
+        .where(and(eq(events.status, 'published'), gte(events.endsAt, new Date())))
+        .orderBy(asc(events.startsAt)),
+      db
+        .select({
+          id: locations.id,
+          slug: locations.slug,
+          stage: locations.stage,
+          name: locations.name,
+          intro: locations.intro,
+          about: locations.about,
+        })
+        .from(locations)
+        .where(and(eq(locations.status, 'published'), isNull(locations.deletedAt))),
+      db
+        .select({
+          id: legalPages.id,
+          slug: legalPages.slug,
+          title: legalPages.title,
+          seoDescription: legalPages.seoDescription,
+          body: legalPages.body,
+        })
+        .from(legalPages)
+        .where(and(eq(legalPages.status, 'published'), isNull(legalPages.deletedAt))),
+      // What visitors can see: switched on and not yet over. One still to start is read too,
+      // so a mistake is caught before the bar goes up.
+      db
+        .select({
+          id: announcements.id,
+          title: announcements.title,
+          message: announcements.message,
+          messageTablet: announcements.messageTablet,
+          messageDesktop: announcements.messageDesktop,
+          ctaLabel: announcements.ctaLabel,
+          ctaUrl: announcements.ctaUrl,
+        })
+        .from(announcements)
+        .where(
+          and(
+            eq(announcements.enabled, true),
+            or(isNull(announcements.endsAt), gt(announcements.endsAt, new Date()))
+          )
+        ),
+      db
+        .select({
+          id: redirects.id,
+          fromPath: redirects.fromPath,
+          toPath: redirects.toPath,
+          statusCode: redirects.statusCode,
+          keepQuery: redirects.keepQuery,
+        })
+        .from(redirects)
+        .where(eq(redirects.enabled, true)),
+    ]),
+  ]);
 
   const rules = targets.brandRules;
   // The pages the new site serves, to tell a link that works from one that leads nowhere.
@@ -256,7 +286,9 @@ async function scanPublished(db: ReturnType<typeof getDb>, fresh: boolean) {
     title: string,
     parts: BrandScanPart[],
     documents: (RichTextDoc | null)[],
-    slug?: string
+    slug?: string,
+    /** Links that are not inside a document, such as a button's address. */
+    otherLinks: { href: string; text: string }[] = []
   ) => {
     const result = scanBrand(parts, rules);
     if (result) {
@@ -270,7 +302,7 @@ async function scanPublished(db: ReturnType<typeof getDb>, fresh: boolean) {
       });
     }
     const broken = brokenLinks(
-      documents.flatMap((d) => (d ? outlineRichText(d).links : [])),
+      [...documents.flatMap((d) => (d ? outlineRichText(d).links : [])), ...otherLinks],
       ruleRows,
       live
     );
@@ -309,6 +341,18 @@ async function scanPublished(db: ReturnType<typeof getDb>, fresh: boolean) {
   for (const g of legalRows) {
     const body = doc(g.body);
     check('legal', g.id, g.title, [g.title, g.seoDescription, body], [body], g.slug);
+  }
+  for (const a of announcementRows) {
+    // The title is only for editors, so it is not read; the wording on the bar is.
+    check(
+      'announcement',
+      a.id,
+      a.title,
+      [a.message, a.messageTablet, a.messageDesktop, a.ctaLabel],
+      [],
+      undefined,
+      a.ctaUrl ? [{ href: a.ctaUrl, text: a.ctaLabel ?? '' }] : []
+    );
   }
 
   const worstBrand = (b: BrandBreach) => b.never.reduce((sum, f) => sum + f.count, 0);

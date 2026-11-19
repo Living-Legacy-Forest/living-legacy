@@ -58,7 +58,11 @@ function assertCanEdit(row: PostRow, actor: SessionUser) {
 /** Roles that may publish, i.e. who is eligible to review a post. */
 const publishRoles = () => roles.filter((r) => can(r, 'posts:publish'));
 
+/** Posts per page, and the other sizes the list offers. */
+export const POSTS_PAGE_SIZES = [10, 20, 50, 100] as const;
 export const POSTS_PAGE_SIZE = 20;
+export const isPostsPageSize = (n: unknown): n is (typeof POSTS_PAGE_SIZES)[number] =>
+  (POSTS_PAGE_SIZES as readonly unknown[]).includes(n);
 
 export const postStatusTabs = [
   'all',
@@ -83,6 +87,8 @@ const listSchema = z.object({
   categories: z.array(z.string()).max(50).optional(),
   authors: z.array(z.string()).max(50).optional(),
   page: z.number().int().min(1).catch(1),
+  /** Posts a page; anything but a size on offer is the usual one. */
+  rows: z.number().refine(isPostsPageSize).optional().catch(undefined),
 });
 
 export const listPosts = createServerFn({ method: 'GET' })
@@ -90,6 +96,7 @@ export const listPosts = createServerFn({ method: 'GET' })
   .validator(listSchema)
   .handler(async ({ data }) => {
     const db = getDb();
+    const pageSize = data.rows ?? POSTS_PAGE_SIZE;
     const notTrashed = isNull(posts.deletedAt);
     const byTab = {
       all: notTrashed,
@@ -169,8 +176,8 @@ export const listPosts = createServerFn({ method: 'GET' })
             // Equal values never swap places between pages.
             asc(posts.id)
           )
-          .limit(POSTS_PAGE_SIZE)
-          .offset((data.page - 1) * POSTS_PAGE_SIZE),
+          .limit(pageSize)
+          .offset((data.page - 1) * pageSize),
         db
           .select({ id: terms.id, name: terms.name })
           .from(terms)
@@ -217,7 +224,8 @@ export const listPosts = createServerFn({ method: 'GET' })
         trash: Number(counts?.trash ?? 0),
       },
       total,
-      pageCount: Math.max(1, Math.ceil(total / POSTS_PAGE_SIZE)),
+      pageCount: Math.max(1, Math.ceil(total / pageSize)),
+      pageSize,
       // A cookie, not local storage, so the server renders the pane the way it was left. The list
       // is expanded until someone opens the preview.
       previewOpen: /(?:^|;\s*)posts_preview=open/.test(getRequest().headers.get('cookie') ?? ''),

@@ -1,22 +1,8 @@
 import { createLink, useNavigate } from '@tanstack/react-router';
 import { useState } from 'react';
 import { ArrowDownIcon } from '@/components/icons';
-import {
-  Pagination,
-  PaginationContent,
-  PaginationEllipsis,
-  PaginationItem,
-  PaginationLink,
-  PaginationNext,
-  PaginationPrevious,
-} from '@/components/ui/pagination';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select';
+import { PaginationLink } from '@/components/ui/pagination';
+import { Pager } from '@/components/pager';
 import {
   Table,
   TableBody,
@@ -36,7 +22,6 @@ import {
   percentOf,
 } from '@/lib/analytics';
 import { formatInteger } from '@/lib/format';
-import { pageNumbers } from '@/lib/page-numbers';
 import { siteUrl } from '@/lib/site';
 import { cn } from '@/lib/utils';
 import type { AnalyticsResult, PageRow } from '@/server/analytics';
@@ -174,28 +159,20 @@ function PagesTable({
         ))}
       </ul>
 
-      <Pager total={rows.length} page={page} pageCount={pageCount} pageSize={pageSize} />
+      <PagesPager total={rows.length} page={page} pageCount={pageCount} pageSize={pageSize} />
     </>
   );
 }
 
 // Page links that navigate inside the app, keeping the period and the rows chosen.
-const PageNumber = createLink(PaginationLink);
-const PagePrevious = createLink(PaginationPrevious);
-const PageNext = createLink(PaginationNext);
+const PageItem = createLink(PaginationLink);
 const EXACT = { exact: true } as const;
-const endProps = {
-  'aria-disabled': true,
-  tabIndex: -1,
-  className: 'pointer-events-none opacity-50',
-} as const;
-const SIZE_ITEMS = PAGE_SIZES.map((n) => ({ value: String(n), label: String(n) }));
 
 type PagesSearch = { days?: number; page?: number; rows?: number };
 const toPage = (n: number) => (prev: PagesSearch) => ({ ...prev, page: n > 1 ? n : undefined });
 
 /** Where in the list this is, how many rows a page, and the way to the others. */
-function Pager({
+function PagesPager({
   total,
   page,
   pageCount,
@@ -207,94 +184,33 @@ function Pager({
   pageSize: PageSize;
 }) {
   const navigate = useNavigate({ from: '/analytics/pages' });
-  const from = (page - 1) * pageSize + 1;
-  const to = Math.min(page * pageSize, total);
 
   return (
-    <div className="text-muted-foreground mt-3 flex flex-wrap items-center justify-between gap-x-4 gap-y-2 text-xs">
-      <div className="flex items-center gap-4">
-        <span className="tabular-nums">
-          {formatInteger(from)}–{formatInteger(to)} of {formatInteger(total)} pages
-        </span>
-        <label className="flex items-center gap-2">
-          Rows
-          <Select
-            items={SIZE_ITEMS}
-            value={String(pageSize)}
-            // A new page size starts again from the first page.
-            onValueChange={(value) => {
-              const rows = Number(value);
-              void navigate({
-                search: (s) => ({
-                  ...s,
-                  rows: rows === DEFAULT_PAGE_SIZE ? undefined : rows,
-                  page: undefined,
-                }),
-              });
-            }}
-          >
-            <SelectTrigger size="sm" aria-label="Rows a page" className="w-18">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              {SIZE_ITEMS.map((item) => (
-                <SelectItem key={item.value} value={item.value}>
-                  {item.label}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        </label>
-      </div>
-      {pageCount > 1 && (
-        <Pagination aria-label="Pages of the table" className="mx-0 w-auto justify-end">
-          <PaginationContent>
-            <PaginationItem>
-              {page <= 1 ? (
-                <PaginationPrevious {...endProps} />
-              ) : (
-                <PagePrevious
-                  to="/analytics/pages"
-                  activeOptions={EXACT}
-                  search={toPage(page - 1)}
-                  className="touch:min-h-11"
-                />
-              )}
-            </PaginationItem>
-            {pageNumbers(page, pageCount).map((n, i) => (
-              <PaginationItem key={n ?? `gap-${i}`}>
-                {n === null ? (
-                  <PaginationEllipsis />
-                ) : (
-                  <PageNumber
-                    to="/analytics/pages"
-                    activeOptions={EXACT}
-                    search={toPage(n)}
-                    isActive={n === page}
-                    aria-label={`Page ${n}`}
-                    className="touch:size-11 tabular-nums"
-                  >
-                    {n}
-                  </PageNumber>
-                )}
-              </PaginationItem>
-            ))}
-            <PaginationItem>
-              {page >= pageCount ? (
-                <PaginationNext {...endProps} />
-              ) : (
-                <PageNext
-                  to="/analytics/pages"
-                  activeOptions={EXACT}
-                  search={toPage(page + 1)}
-                  className="touch:min-h-11"
-                />
-              )}
-            </PaginationItem>
-          </PaginationContent>
-        </Pagination>
+    <Pager
+      page={page}
+      pageCount={pageCount}
+      total={total}
+      pageSize={pageSize}
+      noun="pages"
+      label="Pages of the table"
+      rows={{
+        options: PAGE_SIZES,
+        // A new page size starts again from the first page.
+        onChange: (rows) =>
+          void navigate({
+            search: (s) => ({
+              ...s,
+              rows: rows === DEFAULT_PAGE_SIZE ? undefined : rows,
+              page: undefined,
+            }),
+          }),
+      }}
+      renderItem={({ page: n, props, content }) => (
+        <PageItem to="/analytics/pages" activeOptions={EXACT} search={toPage(n)} {...props}>
+          {content}
+        </PageItem>
       )}
-    </div>
+    />
   );
 }
 

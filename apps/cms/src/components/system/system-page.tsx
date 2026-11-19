@@ -1,14 +1,7 @@
 import { Suspense, lazy } from 'react';
-import { CircleCheckIcon, ExternalLinkIcon } from '@/components/icons';
+import { ExternalLinkIcon } from '@/components/icons';
 import { buttonVariants } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import {
-  Empty,
-  EmptyDescription,
-  EmptyHeader,
-  EmptyMedia,
-  EmptyTitle,
-} from '@/components/ui/empty';
 import {
   Item,
   ItemActions,
@@ -25,6 +18,7 @@ import { useTimeZone } from '@/lib/use-time-zone';
 import { cn } from '@/lib/utils';
 import type { SystemStatus } from '@/server/system';
 import { type HealthStatus, checkTone, jobTone, summariseTones } from '@/lib/system-status';
+import { FailuresList } from './failures-list';
 import { StatusPulse } from './status-pulse';
 import { useRevealOnce } from '@/lib/use-reveal-once';
 import { RevealWords } from '@/components/dashboard/reveal-words';
@@ -214,31 +208,7 @@ export function SystemPage({ data }: { data: SystemStatus }) {
           <CardDescription>The last 14 days, newest first.</CardDescription>
         </CardHeader>
         <CardContent>
-          {failures.length === 0 ? (
-            <Empty className="border py-8">
-              <EmptyHeader>
-                <EmptyMedia variant="icon">
-                  <CircleCheckIcon aria-hidden />
-                </EmptyMedia>
-                <EmptyTitle className="text-sm">No failures</EmptyTitle>
-                <EmptyDescription>
-                  Every job has run without a problem for 14 days.
-                </EmptyDescription>
-              </EmptyHeader>
-            </Empty>
-          ) : (
-            <ItemGroup className="gap-0 divide-y">
-              {failures.map((failure) => (
-                <Item key={failure.id} size="sm" className={rowClass}>
-                  <ItemContent className="min-w-0">
-                    <ItemTitle>{failure.title}</ItemTitle>
-                    <ItemDescription>{formatDateTime(failure.startedAt, timeZone)}</ItemDescription>
-                    <p className="text-sm wrap-break-word">{failure.error}</p>
-                  </ItemContent>
-                </Item>
-              ))}
-            </ItemGroup>
-          )}
+          <FailuresList failures={failures} timeZone={timeZone} />
         </CardContent>
       </Card>
     </div>

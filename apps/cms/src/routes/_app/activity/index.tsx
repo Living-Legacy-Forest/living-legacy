@@ -2,10 +2,12 @@ import { can } from '@ll/content';
 import { createFileRoute, redirect } from '@tanstack/react-router';
 import { z } from 'zod';
 import { ActivityPage } from '@/components/activity/activity-page';
-import { activityKinds, listActivity } from '@/server/activity-log';
+import { activityKinds, isActivityPageSize, listActivity } from '@/server/activity-log';
 
 const searchSchema = z.object({
   page: z.number().int().min(1).optional().catch(undefined),
+  /** Entries a page, when not the usual 15. */
+  rows: z.number().refine(isActivityPageSize).optional().catch(undefined),
   /** One kind of change: posts, events, people and so on. */
   kind: z.enum(activityKinds).optional().catch(undefined),
   /** One person, by user id. */

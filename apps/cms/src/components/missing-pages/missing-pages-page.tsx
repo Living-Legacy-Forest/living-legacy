@@ -8,13 +8,18 @@ import {
   EmptyMedia,
   EmptyTitle,
 } from '@/components/ui/empty';
+import { Pager } from '@/components/pager';
 import { formatDateTime, formatInteger, formatRelative } from '@/lib/format';
 import { useAction } from '@/lib/use-action';
+import { usePaged } from '@/lib/use-paged';
 import { useTimeZone } from '@/lib/use-time-zone';
 import { cn } from '@/lib/utils';
 import { type MissingPage, dismissMissingPage } from '@/server/not-found';
 import { useRevealOnce } from '@/lib/use-reveal-once';
 import { RevealWords } from '@/components/dashboard/reveal-words';
+
+/** Each row carries two buttons, so the pages are shorter than a plain list's. */
+const PAGE_SIZES = [10, 25, 50, 100] as const;
 
 export function MissingPagesPage({
   data,
@@ -26,6 +31,7 @@ export function MissingPagesPage({
 }) {
   const timeZone = useTimeZone();
   const { run, pending } = useAction();
+  const paged = usePaged(data, '', PAGE_SIZES);
 
   const revealing = useRevealOnce();
 
@@ -62,7 +68,7 @@ export function MissingPagesPage({
         </Empty>
       ) : (
         <ul className="divide-y rounded-lg border max-md:divide-(--ios-separator) max-md:overflow-hidden max-md:rounded-[10px] max-md:border-0 max-md:bg-(--ios-cell)">
-          {data.map((page) => (
+          {paged.shown.map((page) => (
             <li
               key={page.path}
               className="flex flex-col gap-2 px-4 py-3 sm:flex-row sm:items-center sm:gap-4"
@@ -111,6 +117,7 @@ export function MissingPagesPage({
           ))}
         </ul>
       )}
+      {paged.needed && <Pager {...paged.pager} noun="paths" label="Pages of missing paths" />}
     </div>
   );
 }

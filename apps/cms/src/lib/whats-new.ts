@@ -49,6 +49,22 @@ export type WhatsNewEntry = {
 
 export const whatsNew: WhatsNewEntry[] = [
   {
+    id: '2026-11-19',
+    kind: 'improved',
+    title: 'Long lists come in pages',
+    items: [
+      {
+        title: 'Pages and a rows choice',
+        body: 'Long lists now show a page at a time, with page numbers and a Rows choice at the bottom so you can see 10, 25, 50 or 100 at once. Redirects, Missing pages, Media coverage, Testimonials, an event’s guest list, Content checks, Posts, Activity and Uptime all work this way.',
+        link: { label: 'Open Redirects', to: '/redirects' },
+      },
+      {
+        title: 'Selecting works a page at a time',
+        body: 'On Redirects, Media coverage and Testimonials, the tick box at the top selects the rows on the page you are looking at. Ticks stay when you move to another page.',
+      },
+    ],
+  },
+  {
     id: '2026-11-18-6',
     kind: 'improved',
     title: 'Tidier on a phone',

@@ -1,8 +1,9 @@
 import { MetricCard } from '@/components/arc/metric-card/metric-card';
 import { RevealWords } from '@/components/dashboard/reveal-words';
-import { ChevronLeftIcon, ChevronRightIcon, ExternalLinkIcon } from '@/components/icons';
+import { ExternalLinkIcon } from '@/components/icons';
+import { Pager } from '@/components/pager';
 import { StatusPulse } from '@/components/system/status-pulse';
-import { Button, buttonVariants } from '@/components/ui/button';
+import { buttonVariants } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { useState } from 'react';
 import { formatDateTime, formatInteger, formatRelative } from '@/lib/format';
@@ -119,14 +120,16 @@ function MonitorRow({ monitor, anchor }: { monitor: UptimeMonitor; anchor: numbe
 }
 
 const INCIDENTS_PER_PAGE = 10;
+const INCIDENT_PAGE_SIZES = [10, 25, 50, 100] as const;
 
 function IncidentList({ incidents, timeZone }: { incidents: UptimeIncident[]; timeZone: string }) {
   const [wanted, setPage] = useState(1);
-  const pageCount = Math.ceil(incidents.length / INCIDENTS_PER_PAGE);
+  const [pageSize, setPageSize] = useState<number>(INCIDENTS_PER_PAGE);
+  const pageCount = Math.max(1, Math.ceil(incidents.length / pageSize));
   // Fresh data can hold fewer incidents than the page asked for.
   const page = Math.min(wanted, pageCount);
-  const from = (page - 1) * INCIDENTS_PER_PAGE;
-  const shown = incidents.slice(from, from + INCIDENTS_PER_PAGE);
+  const from = (page - 1) * pageSize;
+  const shown = incidents.slice(from, from + pageSize);
   return (
     <>
       <ul className="divide-y">
@@ -147,38 +150,25 @@ function IncidentList({ incidents, timeZone }: { incidents: UptimeIncident[]; ti
           </li>
         ))}
       </ul>
-      {pageCount > 1 && (
-        <div className="text-muted-foreground mt-3 flex items-center justify-between gap-2 text-xs">
-          <span className="tabular-nums">
-            {formatInteger(from + 1)}–{formatInteger(from + shown.length)} of{' '}
-            {formatInteger(incidents.length)} incidents
-          </span>
-          <div className="flex items-center gap-1">
-            <Button
-              variant="ghost"
-              size="icon-sm"
-              aria-label="Previous page"
-              className="touch:min-h-11 touch:min-w-11"
-              disabled={page <= 1}
-              onClick={() => setPage(page - 1)}
-            >
-              <ChevronLeftIcon aria-hidden />
-            </Button>
-            <span className="tabular-nums">
-              {page} of {pageCount}
-            </span>
-            <Button
-              variant="ghost"
-              size="icon-sm"
-              aria-label="Next page"
-              className="touch:min-h-11 touch:min-w-11"
-              disabled={page >= pageCount}
-              onClick={() => setPage(page + 1)}
-            >
-              <ChevronRightIcon aria-hidden />
-            </Button>
-          </div>
-        </div>
+      {/* With no more incidents than the smallest page, there is nothing to page or to choose. */}
+      {incidents.length > INCIDENT_PAGE_SIZES[0] && (
+        <Pager
+          page={page}
+          pageCount={pageCount}
+          total={incidents.length}
+          pageSize={pageSize}
+          noun="incidents"
+          label="Incident pages"
+          onPageChange={setPage}
+          rows={{
+            options: INCIDENT_PAGE_SIZES,
+            // A new page size starts again from the first page.
+            onChange: (rows) => {
+              setPageSize(rows);
+              setPage(1);
+            },
+          }}
+        />
       )}
     </>
   );

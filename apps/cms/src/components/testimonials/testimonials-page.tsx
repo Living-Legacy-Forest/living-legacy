@@ -25,6 +25,8 @@ import {
   featureMenuItem,
   publishMenuItem,
 } from '@/components/list/list-row';
+import { Pager } from '@/components/pager';
+import { usePaged } from '@/lib/use-paged';
 import {
   ConfirmBulkDelete,
   SearchInput,
@@ -160,6 +162,8 @@ export function TestimonialsPage({
       passes(picked.locations, t.location) &&
       matchesSearch(query, [t.name, t.quote, t.relationship, t.location])
   );
+  // A new search, filter or order starts again from the first page.
+  const paged = usePaged(visible, JSON.stringify([query, picked, sort]));
   const clearFilters = () => {
     setPicked({});
     selection.clear();
@@ -359,6 +363,7 @@ export function TestimonialsPage({
               <SelectionBar
                 selection={selection}
                 visibleIds={visible.map((t) => t.id)}
+                pageIds={paged.shown.map((t) => t.id)}
                 title="All"
                 total={data.length}
                 pending={pending}
@@ -377,7 +382,7 @@ export function TestimonialsPage({
               </NoMatches>
             ) : grid ? (
               <ListCards>
-                {visible.map((t) => (
+                {paged.shown.map((t) => (
                   <ListCard
                     key={t.id}
                     title={t.name}
@@ -411,7 +416,7 @@ export function TestimonialsPage({
               </ListCards>
             ) : (
               <ListRows>
-                {visible.map((t) => (
+                {paged.shown.map((t) => (
                   <ListRow
                     key={t.id}
                     align="start"
@@ -446,6 +451,14 @@ export function TestimonialsPage({
                   </ListRow>
                 ))}
               </ListRows>
+            )}
+            {paged.needed && (
+              <Pager
+                {...paged.pager}
+                noun="testimonials"
+                label="Testimonial pages"
+                className="mt-0 shrink-0 border-t px-3 py-2 max-md:border-0"
+              />
             )}
           </ListColumn>
 

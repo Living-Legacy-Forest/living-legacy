@@ -2,8 +2,6 @@ import { blogPath, can, postSorts } from '@ll/content';
 import { Link, useNavigate } from '@tanstack/react-router';
 import {
   CalendarClockIcon,
-  ChevronLeftIcon,
-  ChevronRightIcon,
   CircleAlertIcon,
   CopyIcon,
   ExternalLinkIcon,
@@ -36,6 +34,7 @@ import {
 } from '@/components/ui/alert-dialog';
 import { Button } from '@/components/ui/button';
 import { ListRows, isDesktop } from '@/components/list/list-page';
+import { Pager } from '@/components/pager';
 import { ListRow, type RowMenuItem } from '@/components/list/list-row';
 import { SearchInput, useSelection } from '@/components/list/list-tools';
 import { ListFilter } from '@/components/list/list-filter';
@@ -72,6 +71,7 @@ import { useTimeZone } from '@/lib/use-time-zone';
 import { cn } from '@/lib/utils';
 import {
   POSTS_PAGE_SIZE,
+  POSTS_PAGE_SIZES,
   type PostListData,
   type PostListRow,
   type PostStatusTab,
@@ -93,6 +93,7 @@ export type PostListSearch = {
   categories?: string[];
   authors?: string[];
   page?: number;
+  rows?: number;
   selected?: string;
 };
 
@@ -300,8 +301,6 @@ export function PostsList({
   };
 
   const page = search.page ?? 1;
-  const from = data.total === 0 ? 0 : (page - 1) * POSTS_PAGE_SIZE + 1;
-  const to = Math.min(page * POSTS_PAGE_SIZE, data.total);
   const checkedIds = selection.checkedIds;
   const selectedRow = data.rows.find((r) => r.id === selectedId) ?? null;
 
@@ -566,45 +565,37 @@ export function PostsList({
           )}
 
           {data.total > 0 && (
-            <div className="text-muted-foreground flex h-10 shrink-0 items-center justify-between border-t px-3 text-xs max-md:border-0">
-              <span className="tabular-nums">
-                {from}-{to} of {data.total}
-              </span>
-              {data.pageCount > 1 && (
-                <div className="flex gap-0.5">
-                  <Button
-                    variant="ghost"
-                    size="icon-xs"
-                    aria-label="Previous page"
-                    disabled={page <= 1}
-                    onClick={() =>
-                      navigate({
-                        search: (prev) => ({
-                          ...prev,
-                          page: page - 1 > 1 ? page - 1 : undefined,
-                          selected: undefined,
-                        }),
-                      })
-                    }
-                  >
-                    <ChevronLeftIcon aria-hidden />
-                  </Button>
-                  <Button
-                    variant="ghost"
-                    size="icon-xs"
-                    aria-label="Next page"
-                    disabled={page >= data.pageCount}
-                    onClick={() =>
-                      navigate({
-                        search: (prev) => ({ ...prev, page: page + 1, selected: undefined }),
-                      })
-                    }
-                  >
-                    <ChevronRightIcon aria-hidden />
-                  </Button>
-                </div>
-              )}
-            </div>
+            <Pager
+              page={page}
+              pageCount={data.pageCount}
+              total={data.total}
+              pageSize={data.pageSize}
+              noun="posts"
+              label="Post pages"
+              className="mt-0 shrink-0 border-t px-3 py-2 max-md:border-0"
+              onPageChange={(n) =>
+                navigate({
+                  search: (prev) => ({
+                    ...prev,
+                    page: n > 1 ? n : undefined,
+                    selected: undefined,
+                  }),
+                })
+              }
+              rows={{
+                options: POSTS_PAGE_SIZES,
+                // A new page size starts again from the first page.
+                onChange: (rows) =>
+                  navigate({
+                    search: (prev) => ({
+                      ...prev,
+                      rows: rows === POSTS_PAGE_SIZE ? undefined : rows,
+                      page: undefined,
+                      selected: undefined,
+                    }),
+                  }),
+              }}
+            />
           )}
         </section>
 

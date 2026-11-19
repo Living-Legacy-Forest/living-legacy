@@ -6,24 +6,16 @@ import {
   motion,
   useReducedMotion,
 } from 'motion/react';
-import { type MouseEvent, useCallback, useEffect, useId, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useId, useMemo, useRef, useState } from 'react';
 import { ArrowRight, CheckIcon, ChevronDown } from '@/components/icons';
 import { useUpdates } from '@/components/shell/updates';
-import {
-  Pagination,
-  PaginationContent,
-  PaginationEllipsis,
-  PaginationItem,
-  PaginationLink,
-  PaginationNext,
-  PaginationPrevious,
-} from '@/components/ui/pagination';
-import { pageNumbers } from '@/lib/page-numbers';
+import { Pager } from '@/components/pager';
 import { cn } from '@/lib/utils';
 import { type WhatsNewEntry, type WhatsNewKind, whatsNew } from '@/lib/whats-new';
 
 /** Notes per page. */
 const PAGE_SIZE = 10;
+const PAGE_SIZES = [10, 25, 50, 100] as const;
 
 const kinds: { id: WhatsNewKind; label: string }[] = [
   { id: 'new', label: 'New' },
@@ -240,20 +232,6 @@ function EntryRow({
   );
 }
 
-/** Previous or Next at either end: shown, but not a link, so nothing marks it as the current page. */
-const endProps = {
-  'aria-disabled': true,
-  tabIndex: -1,
-  className: 'pointer-events-none opacity-50',
-} as const;
-
-const pageProps = (n: number, go: (n: number) => void) => ({
-  onClick: (event: MouseEvent<HTMLAnchorElement>) => {
-    event.preventDefault();
-    go(n);
-  },
-});
-
 /** Every note, newest first, filtered by kind and grouped by month. Opening it counts as having seen them. */
 export function WhatsNewPage() {
   const uid = useId();
@@ -275,6 +253,7 @@ export function WhatsNewPage() {
 
   const [filters, setFilters] = useState<WhatsNewKind[]>([]);
   const [page, setPage] = useState(1);
+  const [pageSize, setPageSize] = useState<number>(PAGE_SIZE);
   // A month on another page: scroll to it once that page has rendered.
   const pendingJump = useRef<string | null>(null);
   const [open, setOpen] = useState<string[]>(() => (entries[0] ? [entries[0].id] : []));
@@ -298,10 +277,10 @@ export function WhatsNewPage() {
     () => entries.filter((e) => filters.length === 0 || filters.includes(kindOf(e))),
     [entries, filters]
   );
-  const pageCount = Math.max(1, Math.ceil(visible.length / PAGE_SIZE));
+  const pageCount = Math.max(1, Math.ceil(visible.length / pageSize));
   const pageNow = Math.min(page, pageCount);
-  const from = (pageNow - 1) * PAGE_SIZE;
-  const shown = useMemo(() => visible.slice(from, from + PAGE_SIZE), [visible, from]);
+  const from = (pageNow - 1) * pageSize;
+  const shown = useMemo(() => visible.slice(from, from + pageSize), [visible, from, pageSize]);
   // Every month with notes, for the month bar, however many pages they span.
   const allGroups = useMemo(
     () =>
@@ -385,7 +364,7 @@ export function WhatsNewPage() {
   }
   function jumpTo(key: string) {
     const index = visible.findIndex((e) => e.id.startsWith(key));
-    const target = Math.floor(index / PAGE_SIZE) + 1;
+    const target = Math.floor(index / pageSize) + 1;
     if (index >= 0 && target !== pageNow) {
       pendingJump.current = key;
       setPage(target);
@@ -623,47 +602,25 @@ export function WhatsNewPage() {
         </div>
       </motion.div>
 
-      {pageCount > 1 && (
-        <div className="text-muted-foreground mt-3 flex flex-wrap items-center justify-between gap-2 text-xs">
-          <span className="tabular-nums">
-            {from + 1}–{Math.min(from + PAGE_SIZE, visible.length)} of {visible.length}
-          </span>
-          <Pagination aria-label="What's new pages" className="mx-0 w-auto justify-end">
-            <PaginationContent>
-              <PaginationItem>
-                <PaginationPrevious
-                  href="#"
-                  {...(pageNow <= 1 ? endProps : pageProps(pageNow - 1, goToPage))}
-                  className={cn('touch:min-h-11', pageNow <= 1 && endProps.className)}
-                />
-              </PaginationItem>
-              {pageNumbers(pageNow, pageCount).map((n, i) => (
-                <PaginationItem key={n ?? `gap-${i}`}>
-                  {n === null ? (
-                    <PaginationEllipsis />
-                  ) : (
-                    <PaginationLink
-                      href="#"
-                      {...pageProps(n, goToPage)}
-                      isActive={n === pageNow}
-                      aria-label={`Page ${n}`}
-                      className="touch:size-11 tabular-nums"
-                    >
-                      {n}
-                    </PaginationLink>
-                  )}
-                </PaginationItem>
-              ))}
-              <PaginationItem>
-                <PaginationNext
-                  href="#"
-                  {...(pageNow >= pageCount ? endProps : pageProps(pageNow + 1, goToPage))}
-                  className={cn('touch:min-h-11', pageNow >= pageCount && endProps.className)}
-                />
-              </PaginationItem>
-            </PaginationContent>
-          </Pagination>
-        </div>
+      {/* With no more notes than the smallest page, there is nothing to page or to choose. */}
+      {visible.length > PAGE_SIZES[0] && (
+        <Pager
+          page={pageNow}
+          pageCount={pageCount}
+          total={visible.length}
+          pageSize={pageSize}
+          noun="notes"
+          label="What's new pages"
+          onPageChange={goToPage}
+          rows={{
+            options: PAGE_SIZES,
+            // A new page size starts again from the first page.
+            onChange: (rows) => {
+              setPageSize(rows);
+              goToPage(1);
+            },
+          }}
+        />
       )}
     </section>
   );

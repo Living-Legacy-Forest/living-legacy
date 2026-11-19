@@ -1,4 +1,4 @@
-import { MAX_FAQ_TAGS, slugify, splitTags } from '@ll/content';
+import { MAX_FAQ_TAGS, slugify, splitTags, toTags } from '@ll/content';
 import { useState } from 'react';
 import { ListCard, ListCards } from '@/components/list/list-card';
 import { ListFilter, passes, publishStatusOptions } from '@/components/list/list-filter';
@@ -92,8 +92,8 @@ import {
   saveFaqGroup,
   setFaqStatus,
 } from '@/server/faqs';
-import { TagInput } from './tag-input';
-import { FormBlock, FormCell, FormSection, FormSwitchCell } from '@/components/form-cells';
+import { TagInput } from '@/components/arc/tag-input/tag-input';
+import { FormCell, FormSection, FormSwitchCell } from '@/components/form-cells';
 import { PageActions } from '@/components/shell/page-actions';
 
 const UNGROUPED = 'ungrouped';
@@ -248,7 +248,6 @@ export function FaqsPage({ data, canWrite }: { data: FaqData; canWrite: boolean 
       target={target}
       faq={faqFor(target)}
       groups={data.groups}
-      knownTags={knownTags}
       onSaved={onSaved}
       footer={(formPending) =>
         actions(<SubmitButton pending={formPending} target={target} />, formPending)
@@ -829,14 +828,12 @@ function TargetForm({
   target,
   faq,
   groups,
-  knownTags,
   onSaved,
   footer,
 }: {
   target: FormTarget;
   faq: Faq | null;
   groups: FaqGroup[];
-  knownTags: string[];
   onSaved: (saved: Target | null) => void;
   footer: (pending: boolean) => React.ReactNode;
 }) {
@@ -853,7 +850,6 @@ function TargetForm({
     <FaqForm
       faq={faq}
       groups={groups}
-      knownTags={knownTags}
       defaultGroupId={target.kind === 'new' ? target.groupId : undefined}
       onSaved={(id) => onSaved({ kind: 'faq', id })}
       footer={footer}
@@ -864,14 +860,12 @@ function TargetForm({
 function FaqForm({
   faq,
   groups,
-  knownTags,
   defaultGroupId,
   onSaved,
   footer,
 }: {
   faq: Faq | null;
   groups: FaqGroup[];
-  knownTags: string[];
   defaultGroupId: string | undefined;
   onSaved: (id: string) => void;
   footer: (pending: boolean) => React.ReactNode;
@@ -959,19 +953,14 @@ function FaqForm({
           </Select>
         </FormCell>
       </FormSection>
-      <FormBlock
+      <TagInput
+        id="faq-tags"
         label="Tags"
-        htmlFor="faq-tags"
-        hint="Where this FAQ appears on the website, e.g. home, pricing or a location. Press Enter or a comma after each tag."
-      >
-        <TagInput
-          id="faq-tags"
-          value={tags}
-          onChange={(next) => setTags(next.slice(0, MAX_FAQ_TAGS))}
-          suggestions={knownTags}
-          placeholder="home, pricing"
-        />
-      </FormBlock>
+        description="Where this FAQ appears on the website, e.g. home, pricing or a location. Press Enter or a comma after each tag."
+        value={tags}
+        onValueChange={(next) => setTags(toTags(next).slice(0, MAX_FAQ_TAGS))}
+        placeholder="home, pricing"
+      />
       <FormSection>
         <FormSwitchCell
           id="faq-published"

@@ -11,18 +11,15 @@ import {
   EmptyMedia,
   EmptyTitle,
 } from '@/components/ui/empty';
-import { getMediaDetail, listMediaTags } from '@/server/media';
+import { getMediaDetail } from '@/server/media';
 
 export const Route = createFileRoute('/_app/media/$mediaId')({
   beforeLoad: ({ context }) => {
     if (!can(context.user.role, 'media:write')) throw redirect({ to: '/' });
   },
   loader: async ({ params }) => {
-    const [detail, tags] = await Promise.all([
-      getMediaDetail({ data: { id: params.mediaId } }),
-      listMediaTags(),
-    ]);
-    return { detail, tags };
+    const detail = await getMediaDetail({ data: { id: params.mediaId } });
+    return { detail };
   },
   head: ({ loaderData }) => ({
     meta: [{ title: `${loaderData?.detail?.item.filename ?? 'File'} | Living Legacy CMS` }],
@@ -31,7 +28,7 @@ export const Route = createFileRoute('/_app/media/$mediaId')({
 });
 
 function MediaFilePage() {
-  const { detail, tags } = Route.useLoaderData();
+  const { detail } = Route.useLoaderData();
   const { user } = Route.useRouteContext();
 
   if (!detail) {
@@ -56,11 +53,6 @@ function MediaFilePage() {
   }
 
   return (
-    <MediaDetail
-      key={detail.item.id}
-      detail={detail}
-      tagSuggestions={tags.map((t) => t.tag)}
-      canDelete={can(user.role, 'content:purge')}
-    />
+    <MediaDetail key={detail.item.id} detail={detail} canDelete={can(user.role, 'content:purge')} />
   );
 }

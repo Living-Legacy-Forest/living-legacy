@@ -2,7 +2,7 @@
 // images) a focal point beside its details, tags and alt text, then where it is used and the
 // versions it used to be. Replaces the side panel, so a file has an address and room to be
 // looked at.
-import { DOCUMENT_ACCEPT, isDocumentMime } from '@ll/content';
+import { DOCUMENT_ACCEPT, isDocumentMime, toTags } from '@ll/content';
 import { Link, useNavigate, useRouter } from '@tanstack/react-router';
 import { motion, useReducedMotion } from 'motion/react';
 import { useEffect, useRef, useState } from 'react';
@@ -15,7 +15,7 @@ import {
   SaveIcon,
   Trash2Icon,
 } from '@/components/icons';
-import { TagInput } from '@/components/faqs/tag-input';
+import { TagInput } from '@/components/arc/tag-input/tag-input';
 import { ConfirmBulkDelete } from '@/components/list/list-tools';
 import { DocumentThumb } from '@/components/media/document-card';
 import { FocalPicker, type Focal } from '@/components/media/focal-point';
@@ -63,15 +63,7 @@ const sameFocal = (a: Focal | null, b: Focal | null) =>
 const sameTags = (a: string[], b: string[]) =>
   a.length === b.length && a.every((t, i) => t === b[i]);
 
-export function MediaDetail({
-  detail,
-  tagSuggestions,
-  canDelete,
-}: {
-  detail: Detail;
-  tagSuggestions: string[];
-  canDelete: boolean;
-}) {
+export function MediaDetail({ detail, canDelete }: { detail: Detail; canDelete: boolean }) {
   const { item, uploader, previousId, nextId, versions } = detail;
   const navigate = useNavigate();
   const router = useRouter();
@@ -553,19 +545,14 @@ export function MediaDetail({
                 onChange={(e) => setCaption(e.target.value)}
               />
             </div>
-            <div className="grid gap-3">
-              <Label htmlFor="m-tags">Tags</Label>
-              <TagInput
-                id="m-tags"
-                value={tags}
-                onChange={setTags}
-                suggestions={tagSuggestions}
-                placeholder="Add a tag, like spring or brochure"
-              />
-              <p className="text-muted-foreground -mt-1 text-xs">
-                For finding files in the library. Press Enter or a comma to add one.
-              </p>
-            </div>
+            <TagInput
+              id="m-tags"
+              label="Tags"
+              description="For finding files in the library. Press Enter or a comma to add one."
+              value={tags}
+              onValueChange={(next) => setTags(toTags(next))}
+              placeholder="Add a tag, like spring or brochure"
+            />
             <section className="grid gap-2" aria-labelledby="m-facts">
               <h3 id="m-facts" className="text-sm font-medium">
                 Details

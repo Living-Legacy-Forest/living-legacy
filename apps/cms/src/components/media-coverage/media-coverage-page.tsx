@@ -25,6 +25,8 @@ import {
   featureMenuItem,
   publishMenuItem,
 } from '@/components/list/list-row';
+import { Pager } from '@/components/pager';
+import { usePaged } from '@/lib/use-paged';
 import {
   ConfirmBulkDelete,
   SearchInput,
@@ -166,6 +168,8 @@ export function MediaCoveragePage({
       passes(picked.featured, m.featured ? 'yes' : 'no') &&
       matchesSearch(query, [m.title, m.source, m.category, m.excerpt])
   );
+  // A new search, filter or order starts again from the first page.
+  const paged = usePaged(visible, JSON.stringify([query, picked, sort]));
   const clearFilters = () => {
     setPicked({});
     selection.clear();
@@ -361,6 +365,7 @@ export function MediaCoveragePage({
               <SelectionBar
                 selection={selection}
                 visibleIds={visible.map((m) => m.id)}
+                pageIds={paged.shown.map((m) => m.id)}
                 title="All"
                 total={data.length}
                 pending={pending}
@@ -379,7 +384,7 @@ export function MediaCoveragePage({
               </NoMatches>
             ) : grid ? (
               <ListCards>
-                {visible.map((m) => (
+                {paged.shown.map((m) => (
                   <ListCard
                     key={m.id}
                     title={m.title}
@@ -414,7 +419,7 @@ export function MediaCoveragePage({
               </ListCards>
             ) : (
               <ListRows>
-                {visible.map((m) => (
+                {paged.shown.map((m) => (
                   <ListRow
                     key={m.id}
                     align="start"
@@ -449,6 +454,14 @@ export function MediaCoveragePage({
                   </ListRow>
                 ))}
               </ListRows>
+            )}
+            {paged.needed && (
+              <Pager
+                {...paged.pager}
+                noun="articles"
+                label="Media coverage pages"
+                className="mt-0 shrink-0 border-t px-3 py-2 max-md:border-0"
+              />
             )}
           </ListColumn>
 

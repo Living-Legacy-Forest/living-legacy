@@ -26,20 +26,13 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import {
-  Pagination,
-  PaginationContent,
-  PaginationEllipsis,
-  PaginationItem,
-  PaginationLink,
-  PaginationNext,
-  PaginationPrevious,
-} from '@/components/ui/pagination';
+import { PaginationLink } from '@/components/ui/pagination';
+import { Pager } from '@/components/pager';
 import { formatDateTime, formatLongDate, formatRelative } from '@/lib/format';
-import { pageNumbers } from '@/lib/page-numbers';
 import { useTimeZone } from '@/lib/use-time-zone';
 import {
   ACTIVITY_PAGE_SIZE,
+  ACTIVITY_PAGE_SIZES,
   type ActivityKind,
   type ActivityLogData,
   type ActivityLogEntry,
@@ -47,7 +40,13 @@ import {
 import { useRevealOnce } from '@/lib/use-reveal-once';
 import { RevealWords } from '@/components/dashboard/reveal-words';
 
-export type ActivitySearch = { page?: number; kind?: ActivityKind; who?: string; day?: string };
+export type ActivitySearch = {
+  page?: number;
+  rows?: number;
+  kind?: ActivityKind;
+  who?: string;
+  day?: string;
+};
 
 const kinds: Record<ActivityKind, { label: string; icon: LucideIcon }> = {
   post: { label: 'Posts', icon: FileText },
@@ -234,31 +233,19 @@ export function ActivityPage({ data, search }: { data: ActivityLogData; search: 
         </ul>
       )}
 
-      {data.total > 0 && <Pager data={data} />}
+      {data.total > 0 && <ActivityPager data={data} />}
     </div>
   );
 }
 
 // Pagination links that navigate inside the app, keeping the filters.
-const PageLink = createLink(PaginationLink);
-const PagePrevious = createLink(PaginationPrevious);
-const PageNext = createLink(PaginationNext);
-// Only the page shown counts as current; by default a link without ?page would
-// match every page.
+const PageItem = createLink(PaginationLink);
 const EXACT = { exact: true } as const;
 
-/** Previous or Next at either end: shown, but not a link, so nothing marks it as the current page. */
-const endProps = {
-  'aria-disabled': true,
-  tabIndex: -1,
-  className: 'pointer-events-none opacity-50',
-} as const;
-
 /** "16–30 of 45" and the pages, as links, so they open in a new tab too. */
-function Pager({ data }: { data: ActivityLogData }) {
-  const { page, pageCount, total } = data;
-  const from = (page - 1) * ACTIVITY_PAGE_SIZE + 1;
-  const to = Math.min(page * ACTIVITY_PAGE_SIZE, total);
+function ActivityPager({ data }: { data: ActivityLogData }) {
+  const { page, pageCount, pageSize, total } = data;
+  const navigate = useNavigate({ from: '/activity/' });
   // Page 1 has no ?page, so its address stays the plain /activity.
   const toPage = (n: number) => (prev: ActivitySearch) => ({
     ...prev,
@@ -266,58 +253,30 @@ function Pager({ data }: { data: ActivityLogData }) {
   });
 
   return (
-    <div className="text-muted-foreground mt-3 flex flex-wrap items-center justify-between gap-2 text-xs">
-      <span className="tabular-nums">
-        {from}–{to} of {total}
-      </span>
-      {pageCount > 1 && (
-        <Pagination aria-label="Activity pages" className="mx-0 w-auto justify-end">
-          <PaginationContent>
-            <PaginationItem>
-              {page <= 1 ? (
-                <PaginationPrevious {...endProps} />
-              ) : (
-                <PagePrevious
-                  to="/activity"
-                  activeOptions={EXACT}
-                  search={toPage(page - 1)}
-                  className="touch:min-h-11"
-                />
-              )}
-            </PaginationItem>
-            {pageNumbers(page, pageCount).map((n, i) => (
-              <PaginationItem key={n ?? `gap-${i}`}>
-                {n === null ? (
-                  <PaginationEllipsis />
-                ) : (
-                  <PageLink
-                    to="/activity"
-                    activeOptions={EXACT}
-                    search={toPage(n)}
-                    isActive={n === page}
-                    aria-label={`Page ${n}`}
-                    className="touch:size-11 tabular-nums"
-                  >
-                    {n}
-                  </PageLink>
-                )}
-              </PaginationItem>
-            ))}
-            <PaginationItem>
-              {page >= pageCount ? (
-                <PaginationNext {...endProps} />
-              ) : (
-                <PageNext
-                  to="/activity"
-                  activeOptions={EXACT}
-                  search={toPage(page + 1)}
-                  className="touch:min-h-11"
-                />
-              )}
-            </PaginationItem>
-          </PaginationContent>
-        </Pagination>
+    <Pager
+      page={page}
+      pageCount={pageCount}
+      total={total}
+      pageSize={pageSize}
+      noun="changes"
+      label="Activity pages"
+      rows={{
+        options: ACTIVITY_PAGE_SIZES,
+        // A new page size starts again from the first page.
+        onChange: (rows) =>
+          void navigate({
+            search: (prev) => ({
+              ...prev,
+              rows: rows === ACTIVITY_PAGE_SIZE ? undefined : rows,
+              page: undefined,
+            }),
+          }),
+      }}
+      renderItem={({ page: n, props, content }) => (
+        <PageItem to="/activity" activeOptions={EXACT} search={toPage(n)} {...props}>
+          {content}
+        </PageItem>
       )}
-    </div>
+    />
   );
 }

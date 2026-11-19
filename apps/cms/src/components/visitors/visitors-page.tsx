@@ -6,13 +6,6 @@ import { Flag } from '@/components/flag';
 import { GlobeIcon, LaptopIcon, SmartphoneIcon, TabletIcon } from '@/components/icons';
 import { SegmentedControl } from '@/components/segmented-control';
 import { Badge } from '@/components/ui/badge';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select';
 import { Button } from '@/components/ui/button';
 import {
   Empty,
@@ -22,15 +15,8 @@ import {
   EmptyMedia,
   EmptyTitle,
 } from '@/components/ui/empty';
-import {
-  Pagination,
-  PaginationContent,
-  PaginationEllipsis,
-  PaginationItem,
-  PaginationLink,
-  PaginationNext,
-  PaginationPrevious,
-} from '@/components/ui/pagination';
+import { PaginationLink } from '@/components/ui/pagination';
+import { Pager } from '@/components/pager';
 import {
   Table,
   TableBody,
@@ -40,7 +26,6 @@ import {
   TableRow,
 } from '@/components/ui/table';
 import { formatDateTime, formatInteger, formatRelative } from '@/lib/format';
-import { pageNumbers } from '@/lib/page-numbers';
 import { siteUrl } from '@/lib/site';
 import { useRevealOnce } from '@/lib/use-reveal-once';
 import { useTimeZone } from '@/lib/use-time-zone';
@@ -236,7 +221,7 @@ function VisitorsBody({ data }: { data: VisitorsData }) {
         ))}
       </ul>
 
-      <Pager data={data} />
+      <VisitorsPager data={data} />
     </>
   );
 }
@@ -312,113 +297,44 @@ function PageLink({ page }: { page: { path: string; title: string } }) {
 }
 
 // Pagination links that navigate inside the app, keeping the period.
-const PageNumber = createLink(PaginationLink);
-const PagePrevious = createLink(PaginationPrevious);
-const PageNext = createLink(PaginationNext);
+const PageItem = createLink(PaginationLink);
 const EXACT = { exact: true } as const;
-const endProps = {
-  'aria-disabled': true,
-  tabIndex: -1,
-  className: 'pointer-events-none opacity-50',
-} as const;
 
 type VisitorsSearch = { page?: number; days?: number; rows?: number };
-const SIZE_ITEMS = VISITOR_PAGE_SIZES.map((n) => ({ value: String(n), label: String(n) }));
 
-function Pager({ data }: { data: Extract<VisitorsData, { connected: true }> }) {
+function VisitorsPager({ data }: { data: Extract<VisitorsData, { connected: true }> }) {
   const { page, pageCount, total, pageSize } = data;
   const navigate = useNavigate({ from: '/analytics/visitors' });
-  const from = (page - 1) * pageSize + 1;
-  const to = Math.min(page * pageSize, total);
   const toPage = (n: number) => (prev: VisitorsSearch) => ({
     ...prev,
     page: n > 1 ? n : undefined,
   });
 
   return (
-    <div className="text-muted-foreground mt-3 flex flex-wrap items-center justify-between gap-2 text-xs">
-      <div className="flex items-center gap-4">
-        <span className="tabular-nums">
-          {formatInteger(from)}–{formatInteger(to)} of {formatInteger(total)} visits
-        </span>
-        <label className="flex items-center gap-2">
-          Rows
-          <Select
-            items={SIZE_ITEMS}
-            value={String(pageSize)}
-            // A new page size starts again from the first page.
-            onValueChange={(value) => {
-              const rows = Number(value);
-              void navigate({
-                search: (s) => ({
-                  ...s,
-                  rows: rows === VISITORS_PAGE_SIZE ? undefined : rows,
-                  page: undefined,
-                }),
-              });
-            }}
-          >
-            <SelectTrigger size="sm" aria-label="Rows a page" className="w-18">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              {SIZE_ITEMS.map((item) => (
-                <SelectItem key={item.value} value={item.value}>
-                  {item.label}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        </label>
-      </div>
-      {pageCount > 1 && (
-        <Pagination aria-label="Visitor pages" className="mx-0 w-auto justify-end">
-          <PaginationContent>
-            <PaginationItem>
-              {page <= 1 ? (
-                <PaginationPrevious {...endProps} />
-              ) : (
-                <PagePrevious
-                  to="/analytics/visitors"
-                  activeOptions={EXACT}
-                  search={toPage(page - 1)}
-                  className="touch:min-h-11"
-                />
-              )}
-            </PaginationItem>
-            {pageNumbers(page, pageCount).map((n, i) => (
-              <PaginationItem key={n ?? `gap-${i}`}>
-                {n === null ? (
-                  <PaginationEllipsis />
-                ) : (
-                  <PageNumber
-                    to="/analytics/visitors"
-                    activeOptions={EXACT}
-                    search={toPage(n)}
-                    isActive={n === page}
-                    aria-label={`Page ${n}`}
-                    className="touch:size-11 tabular-nums"
-                  >
-                    {n}
-                  </PageNumber>
-                )}
-              </PaginationItem>
-            ))}
-            <PaginationItem>
-              {page >= pageCount ? (
-                <PaginationNext {...endProps} />
-              ) : (
-                <PageNext
-                  to="/analytics/visitors"
-                  activeOptions={EXACT}
-                  search={toPage(page + 1)}
-                  className="touch:min-h-11"
-                />
-              )}
-            </PaginationItem>
-          </PaginationContent>
-        </Pagination>
+    <Pager
+      page={page}
+      pageCount={pageCount}
+      total={total}
+      pageSize={pageSize}
+      noun="visits"
+      label="Visitor pages"
+      rows={{
+        options: VISITOR_PAGE_SIZES,
+        // A new page size starts again from the first page.
+        onChange: (rows) =>
+          void navigate({
+            search: (s) => ({
+              ...s,
+              rows: rows === VISITORS_PAGE_SIZE ? undefined : rows,
+              page: undefined,
+            }),
+          }),
+      }}
+      renderItem={({ page: n, props, content }) => (
+        <PageItem to="/analytics/visitors" activeOptions={EXACT} search={toPage(n)} {...props}>
+          {content}
+        </PageItem>
       )}
-    </div>
+    />
   );
 }

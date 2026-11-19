@@ -24,6 +24,7 @@ import { Route as AppAnalyticsTrafficRouteImport } from './routes/_app/analytics
 import { Route as AppAnalyticsVisitorsRouteImport } from './routes/_app/analytics/visitors'
 import { Route as AppAnnouncementsIndexRouteImport } from './routes/_app/announcements/index'
 import { Route as AppApiKeysIndexRouteImport } from './routes/_app/api-keys/index'
+import { Route as AppCalendarIndexRouteImport } from './routes/_app/calendar/index'
 import { Route as AppChecksIndexRouteImport } from './routes/_app/checks/index'
 import { Route as AppEventsIndexRouteImport } from './routes/_app/events/index'
 import { Route as AppEventsEventIdRouteImport } from './routes/_app/events/$eventId'
@@ -144,6 +145,11 @@ const AppAnnouncementsIndexRoute = AppAnnouncementsIndexRouteImport.update({
 const AppApiKeysIndexRoute = AppApiKeysIndexRouteImport.update({
   id: '/api-keys/',
   path: '/api-keys/',
+  getParentRoute: () => AppRoute,
+} as any)
+const AppCalendarIndexRoute = AppCalendarIndexRouteImport.update({
+  id: '/calendar/',
+  path: '/calendar/',
   getParentRoute: () => AppRoute,
 } as any)
 const AppChecksIndexRoute = AppChecksIndexRouteImport.update({
@@ -416,6 +422,7 @@ export interface FileRoutesByFullPath {
   '/analytics/': typeof AppAnalyticsIndexRoute
   '/announcements/': typeof AppAnnouncementsIndexRoute
   '/api-keys/': typeof AppApiKeysIndexRoute
+  '/calendar/': typeof AppCalendarIndexRoute
   '/checks/': typeof AppChecksIndexRoute
   '/events/': typeof AppEventsIndexRoute
   '/faqs/': typeof AppFaqsIndexRoute
@@ -478,6 +485,7 @@ export interface FileRoutesByTo {
   '/analytics': typeof AppAnalyticsIndexRoute
   '/announcements': typeof AppAnnouncementsIndexRoute
   '/api-keys': typeof AppApiKeysIndexRoute
+  '/calendar': typeof AppCalendarIndexRoute
   '/checks': typeof AppChecksIndexRoute
   '/events': typeof AppEventsIndexRoute
   '/faqs': typeof AppFaqsIndexRoute
@@ -543,6 +551,7 @@ export interface FileRoutesById {
   '/_app/analytics/': typeof AppAnalyticsIndexRoute
   '/_app/announcements/': typeof AppAnnouncementsIndexRoute
   '/_app/api-keys/': typeof AppApiKeysIndexRoute
+  '/_app/calendar/': typeof AppCalendarIndexRoute
   '/_app/checks/': typeof AppChecksIndexRoute
   '/_app/events/': typeof AppEventsIndexRoute
   '/_app/faqs/': typeof AppFaqsIndexRoute
@@ -608,6 +617,7 @@ export interface FileRouteTypes {
     | '/analytics/'
     | '/announcements/'
     | '/api-keys/'
+    | '/calendar/'
     | '/checks/'
     | '/events/'
     | '/faqs/'
@@ -670,6 +680,7 @@ export interface FileRouteTypes {
     | '/analytics'
     | '/announcements'
     | '/api-keys'
+    | '/calendar'
     | '/checks'
     | '/events'
     | '/faqs'
@@ -734,6 +745,7 @@ export interface FileRouteTypes {
     | '/_app/analytics/'
     | '/_app/announcements/'
     | '/_app/api-keys/'
+    | '/_app/calendar/'
     | '/_app/checks/'
     | '/_app/events/'
     | '/_app/faqs/'
@@ -892,6 +904,13 @@ declare module '@tanstack/react-router' {
       path: '/api-keys'
       fullPath: '/api-keys/'
       preLoaderRoute: typeof AppApiKeysIndexRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/_app/calendar/': {
+      id: '/_app/calendar/'
+      path: '/calendar'
+      fullPath: '/calendar/'
+      preLoaderRoute: typeof AppCalendarIndexRouteImport
       parentRoute: typeof AppRoute
     }
     '/_app/checks/': {
@@ -1262,6 +1281,7 @@ interface AppRouteChildren {
   AppActivityIndexRoute: typeof AppActivityIndexRoute
   AppAnnouncementsIndexRoute: typeof AppAnnouncementsIndexRoute
   AppApiKeysIndexRoute: typeof AppApiKeysIndexRoute
+  AppCalendarIndexRoute: typeof AppCalendarIndexRoute
   AppChecksIndexRoute: typeof AppChecksIndexRoute
   AppEventsIndexRoute: typeof AppEventsIndexRoute
   AppFaqsIndexRoute: typeof AppFaqsIndexRoute
@@ -1302,6 +1322,7 @@ const AppRouteChildren: AppRouteChildren = {
   AppActivityIndexRoute: AppActivityIndexRoute,
   AppAnnouncementsIndexRoute: AppAnnouncementsIndexRoute,
   AppApiKeysIndexRoute: AppApiKeysIndexRoute,
+  AppCalendarIndexRoute: AppCalendarIndexRoute,
   AppChecksIndexRoute: AppChecksIndexRoute,
   AppEventsIndexRoute: AppEventsIndexRoute,
   AppFaqsIndexRoute: AppFaqsIndexRoute,

@@ -1,0 +1,346 @@
+// A month of posts and events together. Read-only: each entry opens its own editor, where it is
+// scheduled. A grid on wider screens; on phones, where seven columns would be unreadable, the
+// same month as a list of the days that have something on.
+import {
+  type CalendarMonth,
+  type GridDay,
+  bucketByDay,
+  dayKey,
+  monthGrid,
+  monthKey,
+  parseMonthKey,
+  shiftMonth,
+  toZoned,
+} from '@ll/content';
+import { Link } from '@tanstack/react-router';
+import { useState } from 'react';
+import { SegmentedControl } from '@/components/segmented-control';
+import { CalendarClockIcon, ChevronLeftIcon, ChevronRightIcon, FileText } from '@/components/icons';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { buttonVariants } from '@/components/ui/button';
+import { displayTime } from '@/lib/format';
+import { useTimeZone } from '@/lib/use-time-zone';
+import { cn } from '@/lib/utils';
+import type { CalendarData, CalendarEntry } from '@/server/calendar';
+
+type Filter = 'all' | 'post' | 'event';
+
+const WEEKDAYS = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+/** How many entries a day cell shows before "N more". */
+const SHOWN = 3;
+
+const STATE_DOT: Record<CalendarEntry['state'], string> = {
+  scheduled: 'bg-indigo-500',
+  published: 'bg-emerald-500',
+  draft: 'bg-neutral-400',
+  cancelled: 'bg-red-400',
+};
+const STATE_WORD: Record<CalendarEntry['state'], string> = {
+  scheduled: 'scheduled',
+  published: 'published',
+  draft: 'draft',
+  cancelled: 'cancelled',
+};
+
+const monthName = ({ year, month }: CalendarMonth) =>
+  new Date(Date.UTC(year, month, 1)).toLocaleDateString('en-AU', {
+    month: 'long',
+    year: 'numeric',
+    timeZone: 'UTC',
+  });
+
+const dayName = (d: GridDay) =>
+  new Date(Date.UTC(d.year, d.month, d.day)).toLocaleDateString('en-AU', {
+    weekday: 'long',
+    day: 'numeric',
+    month: 'long',
+    timeZone: 'UTC',
+  });
+
+function timeOf(entry: CalendarEntry, siteZone: string) {
+  const wall = toZoned(entry.at, entry.timeZone || siteZone);
+  return displayTime(`${wall.hour}:${wall.minute}`);
+}
+
+/** What the entry is, for people who cannot see its icon and colour. */
+function describe(entry: CalendarEntry, time: string) {
+  const what =
+    entry.kind === 'post'
+      ? `Post, ${STATE_WORD[entry.state]}`
+      : entry.kind === 'event'
+        ? `Event, ${STATE_WORD[entry.state]}`
+        : 'Event goes live';
+  return `${what}, ${time}: ${entry.title || 'Untitled'}`;
+}
+
+function EntryLink({
+  entry,
+  siteZone,
+  className,
+  children,
+  ...rest
+}: {
+  entry: CalendarEntry;
+  siteZone: string;
+  className?: string;
+  children: React.ReactNode;
+} & React.ComponentProps<'a'>) {
+  const label = describe(entry, timeOf(entry, siteZone));
+  const common = { 'aria-label': label, className, ...rest };
+  return entry.kind === 'post' ? (
+    <Link to="/posts/$postId" params={{ postId: entry.id }} {...common}>
+      {children}
+    </Link>
+  ) : (
+    <Link to="/events/$eventId" params={{ eventId: entry.id }} {...common}>
+      {children}
+    </Link>
+  );
+}
+
+function EntryIcon({ entry }: { entry: CalendarEntry }) {
+  const Icon = entry.kind === 'post' ? FileText : CalendarClockIcon;
+  return <Icon aria-hidden className="text-muted-foreground size-3.5 shrink-0" />;
+}
+
+/** One line in a day cell. */
+function Chip({ entry, siteZone }: { entry: CalendarEntry; siteZone: string }) {
+  return (
+    <EntryLink
+      entry={entry}
+      siteZone={siteZone}
+      className="hover:bg-muted focus-visible:ring-ring/50 flex items-center gap-1.5 rounded-md px-1.5 py-1 text-xs outline-none focus-visible:ring-2"
+    >
+      <span aria-hidden className={cn('size-1.5 shrink-0 rounded-full', STATE_DOT[entry.state])} />
+      <EntryIcon entry={entry} />
+      <span className="text-muted-foreground shrink-0 tabular-nums">
+        {entry.kind === 'event-live' ? 'Live' : timeOf(entry, siteZone)}
+      </span>
+      <span className={cn('truncate', entry.state === 'cancelled' && 'line-through')}>
+        {entry.title || 'Untitled'}
+      </span>
+    </EntryLink>
+  );
+}
+
+/** A row on phones: 44pt to tap, with the kind and state spelt out. */
+function AgendaRow({ entry, siteZone }: { entry: CalendarEntry; siteZone: string }) {
+  const kind =
+    entry.kind === 'post' ? 'Post' : entry.kind === 'event' ? 'Event' : 'Event goes live';
+  return (
+    <EntryLink
+      entry={entry}
+      siteZone={siteZone}
+      className="touch:min-h-11 hover:bg-muted flex items-center gap-3 px-4 py-2.5 outline-none"
+    >
+      <span className="text-muted-foreground w-16 shrink-0 text-xs tabular-nums">
+        {timeOf(entry, siteZone)}
+      </span>
+      <span className="min-w-0 flex-1">
+        <span
+          className={cn(
+            'text-ui line-clamp-2',
+            entry.state === 'cancelled' && 'text-muted-foreground line-through'
+          )}
+        >
+          {entry.title || 'Untitled'}
+        </span>
+        <span className="text-muted-foreground flex items-center gap-1.5 text-xs">
+          <span
+            aria-hidden
+            className={cn('size-1.5 shrink-0 rounded-full', STATE_DOT[entry.state])}
+          />
+          {kind}
+          {entry.kind !== 'event-live' && ` · ${STATE_WORD[entry.state]}`}
+        </span>
+      </span>
+    </EntryLink>
+  );
+}
+
+function DayCell({
+  day,
+  entries,
+  today,
+  siteZone,
+}: {
+  day: GridDay;
+  entries: CalendarEntry[];
+  today: boolean;
+  siteZone: string;
+}) {
+  const shown = entries.slice(0, SHOWN);
+  const hidden = entries.length - shown.length;
+  return (
+    <div
+      role="gridcell"
+      aria-label={dayName(day)}
+      className={cn('min-h-28 min-w-0 border-t border-l p-1.5', !day.inMonth && 'bg-muted/30')}
+    >
+      <span
+        className={cn(
+          'mb-1 ml-0.5 inline-grid h-6 min-w-6 place-items-center rounded-full px-1 text-xs tabular-nums',
+          today ? 'bg-primary text-primary-foreground font-semibold' : 'text-muted-foreground',
+          !day.inMonth && !today && 'opacity-60'
+        )}
+      >
+        {day.day}
+      </span>
+      <div className="space-y-0.5">
+        {shown.map((entry) => (
+          <Chip key={entry.key} entry={entry} siteZone={siteZone} />
+        ))}
+        {hidden > 0 && (
+          <Popover>
+            <PopoverTrigger
+              className="text-muted-foreground hover:bg-muted w-full rounded-md px-1.5 py-1 text-left text-xs"
+              aria-label={`${hidden} more on ${dayName(day)}`}
+            >
+              {hidden} more
+            </PopoverTrigger>
+            <PopoverContent align="start" className="w-72 space-y-0.5 p-2">
+              <p className="text-ui px-1.5 pb-1 font-medium">{dayName(day)}</p>
+              {entries.map((entry) => (
+                <Chip key={entry.key} entry={entry} siteZone={siteZone} />
+              ))}
+            </PopoverContent>
+          </Popover>
+        )}
+      </div>
+    </div>
+  );
+}
+
+export function CalendarPage({ data, now }: { data: CalendarData; now: number }) {
+  const siteZone = useTimeZone();
+  const [filter, setFilter] = useState<Filter>('all');
+  const month = parseMonthKey(data.month)!;
+  const weeks = monthGrid(month);
+  const today = dayKey(toZoned(now, siteZone));
+  const thisMonth = monthKey(toZoned(now, siteZone));
+  const entries = data.entries.filter(
+    (e) => filter === 'all' || (filter === 'post' ? e.kind === 'post' : e.kind !== 'post')
+  );
+  const byDay = bucketByDay(entries, siteZone);
+  const previous = monthKey(shiftMonth(month, -1));
+  const next = monthKey(shiftMonth(month, 1));
+  const days = weeks.flat();
+  const busy = days.filter((d) => byDay.has(dayKey(d)) && d.inMonth);
+
+  return (
+    <div data-slot="stack-page" className="space-y-4">
+      <div className="flex flex-wrap items-end justify-between gap-3">
+        <h1 data-slot="page-title" className="text-2xl">
+          Content calendar
+        </h1>
+        {data.includeEvents && (
+          <SegmentedControl
+            label="Show"
+            value={filter}
+            onValueChange={setFilter}
+            options={[
+              { value: 'all', label: 'All' },
+              { value: 'post', label: 'Posts' },
+              { value: 'event', label: 'Events' },
+            ]}
+            className="max-md:w-full"
+          />
+        )}
+      </div>
+
+      <div className="flex items-center gap-2">
+        <Link
+          to="/calendar"
+          search={{ month: previous }}
+          aria-label="Previous month"
+          className={buttonVariants({ variant: 'outline', size: 'icon' })}
+        >
+          <ChevronLeftIcon aria-hidden />
+        </Link>
+        <Link
+          to="/calendar"
+          search={{ month: next }}
+          aria-label="Next month"
+          className={buttonVariants({ variant: 'outline', size: 'icon' })}
+        >
+          <ChevronRightIcon aria-hidden />
+        </Link>
+        <h2 aria-live="polite" className="text-ui min-w-0 flex-1 truncate px-1 font-semibold">
+          {monthName(month)}
+        </h2>
+        {data.month !== thisMonth && (
+          <Link
+            to="/calendar"
+            search={{}}
+            className={buttonVariants({ variant: 'outline', size: 'default' })}
+          >
+            Today
+          </Link>
+        )}
+      </div>
+
+      {/* Wider screens: the month as a grid. */}
+      <div role="grid" aria-label={monthName(month)} className="max-md:hidden">
+        <div role="row" className="text-muted-foreground grid grid-cols-7 text-xs">
+          {WEEKDAYS.map((name) => (
+            <div key={name} role="columnheader" className="px-2 pb-1.5">
+              {name}
+            </div>
+          ))}
+        </div>
+        <div className="border-r border-b">
+          {weeks.map((week) => (
+            <div key={dayKey(week[0]!)} role="row" className="grid grid-cols-7">
+              {week.map((day) => (
+                <DayCell
+                  key={dayKey(day)}
+                  day={day}
+                  entries={byDay.get(dayKey(day)) ?? []}
+                  today={dayKey(day) === today}
+                  siteZone={siteZone}
+                />
+              ))}
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {/* Phones: only the days with something on. */}
+      <div className="md:hidden">
+        {busy.length === 0 ? (
+          <p className="text-muted-foreground px-1 py-6 text-center text-sm">
+            Nothing scheduled in {monthName(month)}.
+          </p>
+        ) : (
+          <div className="divide-y rounded-xl border">
+            {busy.map((day) => (
+              <section key={dayKey(day)} aria-label={dayName(day)}>
+                <h3
+                  className={cn(
+                    'bg-muted/40 px-4 py-1.5 text-xs font-medium',
+                    dayKey(day) === today && 'text-primary'
+                  )}
+                >
+                  {dayName(day)}
+                  {dayKey(day) === today && ' · Today'}
+                </h3>
+                <div className="divide-y">
+                  {byDay.get(dayKey(day))!.map((entry) => (
+                    <AgendaRow key={entry.key} entry={entry} siteZone={siteZone} />
+                  ))}
+                </div>
+              </section>
+            ))}
+          </div>
+        )}
+      </div>
+
+      <p className="text-muted-foreground text-xs">
+        {data.includeEvents
+          ? 'Posts sit on the day they go live. Events sit on the day they start; a draft event set to go live is marked “Live” on that day.'
+          : 'Posts sit on the day they go live.'}{' '}
+        Times are in the site’s time zone, or the event’s own.
+      </p>
+    </div>
+  );
+}

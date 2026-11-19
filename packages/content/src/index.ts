@@ -34,3 +34,4 @@ export * from './migration';
 export * from './link-check';
 export * from './structured-data';
 export * from './legal-pages';
+export * from './calendar';

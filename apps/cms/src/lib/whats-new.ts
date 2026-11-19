@@ -28,7 +28,8 @@ export type WhatsNewItem = {
       | '/analytics/traffic'
       | '/analytics/audience'
       | '/activity'
-      | '/checks';
+      | '/checks'
+      | '/calendar';
     hash?: string;
   };
 };
@@ -49,6 +50,18 @@ export type WhatsNewEntry = {
 };
 
 export const whatsNew: WhatsNewEntry[] = [
+  {
+    id: '2026-11-19-8',
+    kind: 'new',
+    title: 'See what is going out, month by month',
+    items: [
+      {
+        title: 'Content calendar',
+        body: 'A month view of scheduled and published posts and, if you manage events, events too. Posts sit on the day they go live; events on the day they start. Click anything to open it and change its date there. On a phone it becomes a list of the days that have something on.',
+        link: { label: 'Open the calendar', to: '/calendar' },
+      },
+    ],
+  },
   {
     id: '2026-11-19-7',
     kind: 'improved',

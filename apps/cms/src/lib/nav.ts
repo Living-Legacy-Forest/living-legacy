@@ -57,6 +57,7 @@ export type NavItem = {
     | '/analytics/visitors'
     | '/integrations'
     | '/checks'
+    | '/calendar'
     | '/announcements'
     | '/events'
     | '/events/overview'
@@ -108,6 +109,7 @@ export const navGroups: NavGroup[] = [
           { title: 'Tags', icon: TagIcon, to: '/posts/tags' },
         ],
       },
+      { title: 'Content calendar', icon: CalendarClockIcon, to: '/calendar' },
       { title: 'Media', icon: MediaIcon, to: '/media', permission: 'media:write' },
       { title: 'Announcements', icon: MegaphoneIcon, to: '/announcements' },
       { title: 'Media coverage', icon: NewspaperIcon, to: '/media-coverage' },

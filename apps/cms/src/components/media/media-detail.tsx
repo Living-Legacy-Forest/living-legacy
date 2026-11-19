@@ -345,64 +345,67 @@ export function MediaDetail({ detail, canDelete }: { detail: Detail; canDelete: 
   return (
     <>
       <form onSubmit={save} data-slot="media-detail" className="flex min-h-0 flex-1 flex-col">
-        <header className="flex min-h-12 shrink-0 flex-wrap items-center gap-x-2 gap-y-2 border-b px-3 py-1.5">
+        {/* Phones: the name on its own line, then Previous and Next with the actions. */}
+        <header className="flex min-h-12 shrink-0 flex-wrap items-center gap-x-2 gap-y-1 border-b px-3 py-1.5 max-md:py-2">
           {back}
           <div className="flex items-center">
             {neighbour(previousId, 'Previous file', <ChevronLeftIcon aria-hidden />)}
             {neighbour(nextId, 'Next file', <ChevronRightIcon aria-hidden />)}
           </div>
-          <div className="min-w-0 flex-1">
+          <div className="min-w-0 flex-1 max-md:order-first max-md:basis-full max-md:px-1">
             <h1 className="truncate text-sm font-medium">{item.filename}</h1>
             <p className="text-muted-foreground text-xs">
               {fileFacts(item)}
               {dirty && <span aria-live="polite"> · Unsaved changes</span>}
             </p>
           </div>
-          <DropdownMenu>
-            <DropdownMenuTrigger
-              render={<Button type="button" variant="ghost" size="sm" />}
-              aria-label="Copy"
-            >
-              <CopyIcon aria-hidden data-icon="inline-start" />
-              <span className="max-sm:sr-only">Copy</span>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end" className="min-w-44 p-1">
-              {snippets.map((s) => (
-                <DropdownMenuItem
-                  key={s.label}
-                  className="text-ui rounded-md py-1"
-                  onClick={() => void copy(s.label, s.text)}
-                >
-                  {s.label}
-                </DropdownMenuItem>
-              ))}
-            </DropdownMenuContent>
-          </DropdownMenu>
-          <Button type="button" variant="ghost" size="sm" onClick={() => download(item)}>
-            <DownloadIcon aria-hidden data-icon="inline-start" />
-            <span className="max-sm:sr-only">Download</span>
-          </Button>
-          {canDelete && (
-            <Button
-              type="button"
-              variant="ghost"
-              size="sm"
-              className="text-muted-foreground hover:text-destructive"
-              disabled={pending}
-              onClick={() => setConfirmingDelete(true)}
-            >
-              <Trash2Icon aria-hidden data-icon="inline-start" />
-              <span className="max-sm:sr-only">Delete</span>
+          <div className="ml-auto flex items-center gap-1">
+            <DropdownMenu>
+              <DropdownMenuTrigger
+                render={<Button type="button" variant="ghost" size="sm" />}
+                aria-label="Copy"
+              >
+                <CopyIcon aria-hidden data-icon="inline-start" />
+                <span className="max-sm:sr-only">Copy</span>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="min-w-44 p-1">
+                {snippets.map((s) => (
+                  <DropdownMenuItem
+                    key={s.label}
+                    className="text-ui rounded-md py-1"
+                    onClick={() => void copy(s.label, s.text)}
+                  >
+                    {s.label}
+                  </DropdownMenuItem>
+                ))}
+              </DropdownMenuContent>
+            </DropdownMenu>
+            <Button type="button" variant="ghost" size="sm" onClick={() => download(item)}>
+              <DownloadIcon aria-hidden data-icon="inline-start" />
+              <span className="max-sm:sr-only">Download</span>
             </Button>
-          )}
-          <Button type="submit" size="sm" disabled={pending || !dirty}>
-            {pending ? (
-              <Spinner data-icon="inline-start" />
-            ) : (
-              <SaveIcon aria-hidden data-icon="inline-start" />
+            {canDelete && (
+              <Button
+                type="button"
+                variant="ghost"
+                size="sm"
+                className="text-muted-foreground hover:text-destructive"
+                disabled={pending}
+                onClick={() => setConfirmingDelete(true)}
+              >
+                <Trash2Icon aria-hidden data-icon="inline-start" />
+                <span className="max-sm:sr-only">Delete</span>
+              </Button>
             )}
-            Save
-          </Button>
+            <Button type="submit" size="sm" disabled={pending || !dirty}>
+              {pending ? (
+                <Spinner data-icon="inline-start" />
+              ) : (
+                <SaveIcon aria-hidden data-icon="inline-start" />
+              )}
+              Save
+            </Button>
+          </div>
         </header>
 
         <motion.div

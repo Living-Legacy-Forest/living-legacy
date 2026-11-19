@@ -82,6 +82,9 @@ export function useSelection(ids: string[]) {
         return next;
       }),
     set: (next: string[]) => setChecked(new Set(next)),
+    add: (more: string[]) => setChecked((prev) => new Set([...prev, ...more])),
+    remove: (fewer: string[]) =>
+      setChecked((prev) => new Set([...prev].filter((id) => !fewer.includes(id)))),
     startEditing: () => setEditing(true),
     /** Unticks everything and leaves Edit mode. */
     clear: () => {
@@ -100,6 +103,7 @@ export type Selection = ReturnType<typeof useSelection>;
 export function SelectionBar({
   selection,
   visibleIds,
+  pageIds,
   title,
   total,
   pending,
@@ -107,7 +111,10 @@ export function SelectionBar({
   editInTopBar = true,
 }: {
   selection: Selection;
+  /** Every row the search and filters leave, for the count. */
   visibleIds: string[];
+  /** On a paged list, the rows on this page: select-all then covers them only, and keeps other pages' ticks. */
+  pageIds?: string[];
   title: string;
   total: number;
   pending: boolean;
@@ -119,7 +126,8 @@ export function SelectionBar({
   // Phones: the bar is the small grey heading above the grouped list.
   const phoneHeading =
     'max-md:h-auto max-md:min-h-8 max-md:border-0 max-md:px-4 max-md:pb-1.5 max-md:[&>span]:text-[0.8125rem] max-md:[&>span]:font-normal max-md:[&>span]:text-(--ios-secondary) max-md:[&>span]:uppercase';
-  const allChecked = visibleIds.length > 0 && visibleIds.every(selection.isChecked);
+  const scope = pageIds ?? visibleIds;
+  const allChecked = scope.length > 0 && scope.every(selection.isChecked);
   const filtered = visibleIds.length !== total;
 
   if (!onDelete) {
@@ -138,8 +146,16 @@ export function SelectionBar({
       <Checkbox
         aria-label={allChecked ? 'Clear selection' : 'Select all shown'}
         checked={allChecked}
-        disabled={visibleIds.length === 0}
-        onCheckedChange={() => (allChecked ? selection.clear() : selection.set(visibleIds))}
+        disabled={scope.length === 0}
+        onCheckedChange={() =>
+          pageIds
+            ? allChecked
+              ? selection.remove(scope)
+              : selection.add(scope)
+            : allChecked
+              ? selection.clear()
+              : selection.set(visibleIds)
+        }
         className={cn(!selection.selecting && 'touch:hidden')}
       />
       {count > 0 ? (

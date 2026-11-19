@@ -463,7 +463,8 @@ export function RedirectsPage({
             header={
               <SelectionBar
                 selection={selection}
-                visibleIds={paged.shown.map((r) => r.id)}
+                visibleIds={visible.map((r) => r.id)}
+                pageIds={paged.shown.map((r) => r.id)}
                 title="All"
                 total={data.length}
                 pending={pending}

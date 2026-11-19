@@ -4,6 +4,7 @@ import { useEffect, useId, useLayoutEffect, useRef, useState } from 'react';
 import type { KeyboardEvent, MouseEvent } from 'react';
 import { AnimatePresence, motion, useAnimate, useReducedMotion } from 'motion/react';
 import { XIcon as Xmark } from '@/components/icons';
+import { isComposing } from '@/lib/keyboard';
 import { motionTokens } from '../lib/motion-tokens';
 import styles from './tag-input.module.css';
 
@@ -242,6 +243,8 @@ export function TagInput({
           }
         );
       say(`${existing} is already added`);
+      // Cleared, or blurring after the tag is removed would add it again.
+      setDraft('');
       return;
     }
     update([...tags, tag]);
@@ -260,7 +263,8 @@ export function TagInput({
     const atStart = input.selectionStart === 0 && input.selectionEnd === 0;
     const index = active === null ? tags.length : tags.indexOf(active);
     let handled = true;
-    if (key === 'Enter' || key === ',') add();
+    // Not while an input method is still picking characters: Enter then confirms a candidate.
+    if ((key === 'Enter' || key === ',') && !isComposing(event)) add();
     else if ((key === 'Backspace' || key === 'Delete') && active !== null) remove(active);
     else if (key === 'Backspace' && atStart && tags.length) pick(tags[tags.length - 1]!);
     else if (key === 'ArrowLeft' && (atStart || active !== null) && index > 0)

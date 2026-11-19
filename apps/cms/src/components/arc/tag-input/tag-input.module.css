@@ -93,6 +93,16 @@
   font-size: var(--field-text);
   white-space: nowrap;
   cursor: default;
+  /* A long tag shortens rather than pushing its remove button out of the field. */
+  max-width: 100%;
+}
+.tag .tagLabel {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.tag button {
+  flex-shrink: 0;
 }
 .tag button {
   display: grid;

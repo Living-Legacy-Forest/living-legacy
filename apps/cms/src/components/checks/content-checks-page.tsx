@@ -253,6 +253,8 @@ function useCheckRows(
   canEditMedia: boolean
 ): ReactElement[] {
   const timeZone = useTimeZone();
+  // Kept here, not in each row, so alt text typed but not yet saved survives a change of page.
+  const [drafts, setDrafts] = useState<Record<string, string>>({});
 
   switch (checkKey) {
     case 'noDescription':
@@ -281,7 +283,14 @@ function useCheckRows(
       ));
     case 'noAlt':
       return data.noAlt.rows.map((m) => (
-        <AltTextRow key={m.id} id={m.id} filename={m.filename} canEdit={canEditMedia} />
+        <AltTextRow
+          key={m.id}
+          id={m.id}
+          filename={m.filename}
+          canEdit={canEditMedia}
+          alt={drafts[m.id] ?? ''}
+          onAlt={(alt) => setDrafts((previous) => ({ ...previous, [m.id]: alt }))}
+        />
       ));
     case 'events':
       return data.events.rows.map((e) => (
@@ -305,8 +314,19 @@ function useCheckRows(
 }
 
 /** Alt text is quick to write, so it is written here rather than in the media library. */
-function AltTextRow({ id, filename, canEdit }: { id: string; filename: string; canEdit: boolean }) {
-  const [alt, setAlt] = useState('');
+function AltTextRow({
+  id,
+  filename,
+  canEdit,
+  alt,
+  onAlt,
+}: {
+  id: string;
+  filename: string;
+  canEdit: boolean;
+  alt: string;
+  onAlt: (alt: string) => void;
+}) {
   const { run, pending } = useAction();
 
   return (
@@ -335,7 +355,7 @@ function AltTextRow({ id, filename, canEdit }: { id: string; filename: string; c
             placeholder="Describe the image"
             value={alt}
             maxLength={300}
-            onChange={(e) => setAlt(e.target.value)}
+            onChange={(e) => onAlt(e.target.value)}
             className="touch:min-h-11 min-w-0 flex-1"
           />
           <Button

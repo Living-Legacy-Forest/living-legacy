@@ -364,7 +364,8 @@ export function MediaCoveragePage({
             header={
               <SelectionBar
                 selection={selection}
-                visibleIds={paged.shown.map((m) => m.id)}
+                visibleIds={visible.map((m) => m.id)}
+                pageIds={paged.shown.map((m) => m.id)}
                 title="All"
                 total={data.length}
                 pending={pending}

@@ -362,7 +362,8 @@ export function TestimonialsPage({
             header={
               <SelectionBar
                 selection={selection}
-                visibleIds={paged.shown.map((t) => t.id)}
+                visibleIds={visible.map((t) => t.id)}
+                pageIds={paged.shown.map((t) => t.id)}
                 title="All"
                 total={data.length}
                 pending={pending}

@@ -390,8 +390,9 @@ export function LineChart({
   // The value axis is as wide as its widest number, so the plot takes all the rest. Until it is
   // measured the stylesheet's width stands.
   const [gutterWidth, setGutterWidth] = useState<number | null>(null);
-  // Bumped once the old labels have finished fading out, which are measured until they are gone.
-  const [labelsLeft, setLabelsLeft] = useState(0);
+  // Bumped to measure again: once the old labels have finished fading out (they are measured until
+  // they are gone), and when a web font arrives that makes the numbers a different width.
+  const [remeasure, setRemeasure] = useState(0);
   const tipSize = useRef({ w: 0, h: 0 });
   const tracks = useRef(new Map<string, Track>());
   const drawn = useMotionValue(0);
@@ -467,7 +468,20 @@ export function LineChart({
       )
     );
     setGutterWidth(widest > 0 ? Math.ceil(widest) + TICK_GAP : null);
-  }, [tickLabels, labelsLeft]);
+  }, [tickLabels, remeasure]);
+
+  useEffect(() => {
+    const fonts = typeof document === 'undefined' ? undefined : document.fonts;
+    if (!fonts) return;
+    let live = true;
+    const again = () => live && setRemeasure((n) => n + 1);
+    void fonts.ready.then(again);
+    fonts.addEventListener('loadingdone', again);
+    return () => {
+      live = false;
+      fonts.removeEventListener('loadingdone', again);
+    };
+  }, []);
 
   // The plot draws in its own pixels: measure the width, follow resizes, and size the tooltip for its flip.
   useLayoutEffect(() => {
@@ -853,7 +867,7 @@ export function LineChart({
           </AnimatePresence>
         </div>
         <div ref={gutter} className={styles.gutter} aria-hidden="true">
-          <AnimatePresence initial={false} onExitComplete={() => setLabelsLeft((n) => n + 1)}>
+          <AnimatePresence initial={false} onExitComplete={() => setRemeasure((n) => n + 1)}>
             {steady.ticks.map((value) => (
               <TickLabel
                 key={value}

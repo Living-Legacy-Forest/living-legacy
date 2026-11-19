@@ -303,9 +303,7 @@ export function EventGuests({ event }: { event: EventRow }) {
               Waiting list
             </h3>
             <p className="text-muted-foreground text-xs">
-              {left !== null && left > 0
-                ? `${places(left)} free. Move someone in below, then let them know: no place was held and they have not been emailed.`
-                : 'No places are free. When a booking is cancelled, move the next party in. They are not emailed.'}
+              {left !== null && left > 0 ? `${places(left)} free.` : 'No places free.'}
             </p>
           </div>
           <ul className={GUEST_LIST}>

@@ -331,7 +331,7 @@ export function MediaPage({
         <div
           className={cn(
             'flex min-h-0 flex-1 flex-col overflow-hidden rounded-lg border',
-            // Phones: no frame; the grid runs edge to edge, as Photos does.
+            // Phones: no frame. The grid keeps the page's side gutters; the list runs edge to edge.
             'max-md:flex-none max-md:overflow-visible max-md:rounded-none max-md:border-0',
             dragOver && 'ring-ring ring-2'
           )}
@@ -375,7 +375,7 @@ export function MediaPage({
               className="flex-1 overflow-y-auto p-3 max-md:-mx-4 max-md:overflow-visible max-md:p-0"
             >
               {view === 'grid' ? (
-                <div className="grid grid-cols-2 gap-3 max-md:grid-cols-3 max-md:gap-0.5 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6">
+                <div className="grid grid-cols-2 gap-3 max-md:grid-cols-3 max-md:gap-2 max-md:px-4 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6">
                   {items.map((m, index) => (
                     <MediaTile
                       key={m.id}
@@ -470,8 +470,8 @@ function MediaTile({
       {...sortLayout}
       ref={anchor}
       className={cn(
-        'group max-md:bg-muted relative aspect-square overflow-hidden rounded-md border max-md:rounded-none max-md:border-0',
-        checked && 'ring-ring ring-2 max-md:ring-inset',
+        'group max-md:bg-muted relative aspect-square overflow-hidden rounded-md border',
+        checked && 'ring-ring ring-2',
         // While its context menu is open, so it is clear which file the menu acts on.
         'group-data-popup-open/row-menu:ring-ring group-data-popup-open/row-menu:ring-2'
       )}

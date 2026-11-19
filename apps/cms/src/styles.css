@@ -1537,12 +1537,15 @@
   }
 }
 
-/* Headings break into even lines instead of leaving one word on the last. */
-h1,
-h2,
-h3,
-[data-slot='card-title'] {
-  text-wrap: balance;
+/* Headings break into even lines instead of leaving one word on the last. In the base layer, so
+   a heading's own classes win: `truncate` keeps a long file name to one line. */
+@layer base {
+  h1,
+  h2,
+  h3,
+  [data-slot='card-title'] {
+    text-wrap: balance;
+  }
 }
 
 /* iOS large titles: the page heading is big on phones and shrinks into the top

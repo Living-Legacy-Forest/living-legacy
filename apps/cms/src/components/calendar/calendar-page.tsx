@@ -614,13 +614,6 @@ export function CalendarPage({ data, now }: { data: CalendarData; now: number })
           </AnimatePresence>
         </motion.div>
       </motion.div>
-
-      <p className="text-muted-foreground text-xs">
-        {data.includeEvents
-          ? 'Posts sit on the day they go live. Events sit on the day they start; a draft event set to go live is marked “Live” on that day.'
-          : 'Posts sit on the day they go live.'}{' '}
-        Times are in the site’s time zone, or the event’s own.
-      </p>
     </div>
   );
 }

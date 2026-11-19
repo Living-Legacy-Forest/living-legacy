@@ -155,7 +155,7 @@ export function AddGuestDialog({
         guest
           ? `${guest.status === 'waitlisted' ? 'Waiting list entry' : 'Booking'} ${guest.reference} for ${event.title}.`
           : waitlist
-            ? `For someone ${event.title} has no room for. No place is held; move them in when one frees up.`
+            ? `For ${event.title}. No place is held until you move them in.`
             : `A phone booking or a walk-in for ${event.title}.`
       }
     >

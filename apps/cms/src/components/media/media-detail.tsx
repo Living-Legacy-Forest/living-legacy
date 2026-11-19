@@ -20,7 +20,7 @@ import { ConfirmBulkDelete } from '@/components/list/list-tools';
 import { DocumentThumb } from '@/components/media/document-card';
 import { FocalPicker, type Focal } from '@/components/media/focal-point';
 import { ImageCropDialog } from '@/components/media/image-crop-dialog';
-import { download, extensionLabel, fileFacts } from '@/components/media/media-file';
+import { download, fileFacts } from '@/components/media/media-file';
 import { MediaUsageList } from '@/components/media/media-usage';
 import { MediaVersions } from '@/components/media/media-versions';
 import { PdfReader } from '@/components/media/pdf-reader';
@@ -42,7 +42,7 @@ import { Label } from '@/components/ui/label';
 import { Spinner } from '@/components/ui/spinner';
 import { Textarea } from '@/components/ui/textarea';
 import { splitFilename } from '@/lib/filename';
-import { formatBytes, formatDateTime } from '@/lib/format';
+import { formatDateTime } from '@/lib/format';
 import { motionTokens } from '@/components/arc/lib/motion-tokens';
 import { recallMediaSearch, setMediaDirection, takeMediaDirection } from '@/lib/media-return';
 import { notify, removedNotice } from '@/lib/notify';
@@ -334,12 +334,8 @@ export function MediaDetail({ detail, canDelete }: { detail: Detail; canDelete: 
     />
   );
 
+  // Size and dimensions are under the name, and the type is its extension.
   const facts: [string, string][] = [
-    ['Type', `${extensionLabel(item)} · ${item.mime}`],
-    ...(item.width && item.height
-      ? ([['Dimensions', `${item.width} × ${item.height} px`]] as [string, string][])
-      : []),
-    ['Size', formatBytes(item.size)],
     ['Uploaded', `${formatDateTime(item.createdAt, zone)}${uploader ? ` by ${uploader}` : ''}`],
     ...(item.version - item.createdAt > 60_000
       ? ([['File changed', formatDateTime(item.version, zone)]] as [string, string][])
@@ -349,64 +345,67 @@ export function MediaDetail({ detail, canDelete }: { detail: Detail; canDelete: 
   return (
     <>
       <form onSubmit={save} data-slot="media-detail" className="flex min-h-0 flex-1 flex-col">
-        <header className="flex min-h-12 shrink-0 flex-wrap items-center gap-x-2 gap-y-2 border-b px-3 py-1.5">
+        {/* Phones: the name on its own line, then Previous and Next with the actions. */}
+        <header className="flex min-h-12 shrink-0 flex-wrap items-center gap-x-2 gap-y-1 border-b px-3 py-1.5 max-md:py-2">
           {back}
           <div className="flex items-center">
             {neighbour(previousId, 'Previous file', <ChevronLeftIcon aria-hidden />)}
             {neighbour(nextId, 'Next file', <ChevronRightIcon aria-hidden />)}
           </div>
-          <div className="min-w-0 flex-1">
+          <div className="min-w-0 flex-1 max-md:order-first max-md:basis-full max-md:px-1">
             <h1 className="truncate text-sm font-medium">{item.filename}</h1>
             <p className="text-muted-foreground text-xs">
               {fileFacts(item)}
               {dirty && <span aria-live="polite"> · Unsaved changes</span>}
             </p>
           </div>
-          <DropdownMenu>
-            <DropdownMenuTrigger
-              render={<Button type="button" variant="ghost" size="sm" />}
-              aria-label="Copy"
-            >
-              <CopyIcon aria-hidden data-icon="inline-start" />
-              <span className="max-sm:sr-only">Copy</span>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end" className="min-w-44 p-1">
-              {snippets.map((s) => (
-                <DropdownMenuItem
-                  key={s.label}
-                  className="text-ui rounded-md py-1"
-                  onClick={() => void copy(s.label, s.text)}
-                >
-                  {s.label}
-                </DropdownMenuItem>
-              ))}
-            </DropdownMenuContent>
-          </DropdownMenu>
-          <Button type="button" variant="ghost" size="sm" onClick={() => download(item)}>
-            <DownloadIcon aria-hidden data-icon="inline-start" />
-            <span className="max-sm:sr-only">Download</span>
-          </Button>
-          {canDelete && (
-            <Button
-              type="button"
-              variant="ghost"
-              size="sm"
-              className="text-destructive hover:text-destructive"
-              disabled={pending}
-              onClick={() => setConfirmingDelete(true)}
-            >
-              <Trash2Icon aria-hidden data-icon="inline-start" />
-              <span className="max-sm:sr-only">Delete</span>
+          <div className="ml-auto flex items-center gap-1">
+            <DropdownMenu>
+              <DropdownMenuTrigger
+                render={<Button type="button" variant="ghost" size="sm" />}
+                aria-label="Copy"
+              >
+                <CopyIcon aria-hidden data-icon="inline-start" />
+                <span className="max-sm:sr-only">Copy</span>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="min-w-44 p-1">
+                {snippets.map((s) => (
+                  <DropdownMenuItem
+                    key={s.label}
+                    className="text-ui rounded-md py-1"
+                    onClick={() => void copy(s.label, s.text)}
+                  >
+                    {s.label}
+                  </DropdownMenuItem>
+                ))}
+              </DropdownMenuContent>
+            </DropdownMenu>
+            <Button type="button" variant="ghost" size="sm" onClick={() => download(item)}>
+              <DownloadIcon aria-hidden data-icon="inline-start" />
+              <span className="max-sm:sr-only">Download</span>
             </Button>
-          )}
-          <Button type="submit" size="sm" disabled={pending || !dirty}>
-            {pending ? (
-              <Spinner data-icon="inline-start" />
-            ) : (
-              <SaveIcon aria-hidden data-icon="inline-start" />
+            {canDelete && (
+              <Button
+                type="button"
+                variant="ghost"
+                size="sm"
+                className="text-muted-foreground hover:text-destructive"
+                disabled={pending}
+                onClick={() => setConfirmingDelete(true)}
+              >
+                <Trash2Icon aria-hidden data-icon="inline-start" />
+                <span className="max-sm:sr-only">Delete</span>
+              </Button>
             )}
-            Save
-          </Button>
+            <Button type="submit" size="sm" disabled={pending || !dirty}>
+              {pending ? (
+                <Spinner data-icon="inline-start" />
+              ) : (
+                <SaveIcon aria-hidden data-icon="inline-start" />
+              )}
+              Save
+            </Button>
+          </div>
         </header>
 
         <motion.div
@@ -421,11 +420,6 @@ export function MediaDetail({ detail, canDelete }: { detail: Detail; canDelete: 
         >
           <div className="grid content-start gap-5">
             {preview}
-            {!isDocument && (
-              <p className="text-muted-foreground -mt-2 text-xs">
-                Click the picture to choose the part that stays in view when it is cropped.
-              </p>
-            )}
             <div className="grid gap-3">
               <div className="flex flex-wrap items-center gap-2">
                 {!isDocument && canCrop({ type: item.mime }) && (
@@ -461,7 +455,7 @@ export function MediaDetail({ detail, canDelete }: { detail: Detail; canDelete: 
                   }}
                 />
               </div>
-              {replacement ? (
+              {replacement && (
                 <div className="bg-muted/50 grid gap-3 rounded-md border p-3">
                   <p className="text-ui">
                     Replace with <span className="font-medium break-all">{replacement.name}</span>?
@@ -485,19 +479,13 @@ export function MediaDetail({ detail, canDelete }: { detail: Detail; canDelete: 
                     </Button>
                   </div>
                 </div>
-              ) : (
-                <p className="text-muted-foreground text-xs">
-                  {isDocument
-                    ? "Replacing keeps this document's address, so links to it keep working."
-                    : "A crop is saved as a new file. Replacing keeps this image's address."}
-                </p>
               )}
             </div>
             <MediaVersions mediaId={item.id} versions={versions} />
           </div>
 
           <div className="grid content-start gap-6">
-            <div className="grid gap-3">
+            <div className="grid gap-2">
               <Label htmlFor="m-name">Name</Label>
               <InputGroup>
                 <InputGroupInput
@@ -514,28 +502,31 @@ export function MediaDetail({ detail, canDelete }: { detail: Detail; canDelete: 
                   </InputGroupAddon>
                 )}
               </InputGroup>
-              <p className="text-muted-foreground -mt-1 text-xs">
-                Only the name in the library changes. Anything using this file keeps working.
-              </p>
+              {/* Said once it matters: renaming worries people about what uses the file. */}
+              {renamed && (
+                <p className="text-muted-foreground text-xs">
+                  Only the library name changes. Anything using the file keeps working.
+                </p>
+              )}
             </div>
             {!isDocument && (
-              <div className="grid gap-3">
+              <div className="grid gap-2">
                 <Label htmlFor="m-alt">Alt text</Label>
                 <Input
                   id="m-alt"
                   maxLength={300}
                   value={alt}
                   onChange={(e) => setAlt(e.target.value)}
-                  placeholder="Describes the image for screen readers and SEO"
+                  placeholder="What the image shows"
                 />
                 {alt.trim() === '' && (
                   <p className="text-xs text-amber-600 dark:text-amber-400">
-                    No alt text yet. Screen readers and search engines skip an image without it.
+                    Screen readers and search engines skip an image without alt text.
                   </p>
                 )}
               </div>
             )}
-            <div className="grid gap-3">
+            <div className="grid gap-2">
               <Label htmlFor="m-caption">Caption</Label>
               <Textarea
                 id="m-caption"
@@ -548,25 +539,27 @@ export function MediaDetail({ detail, canDelete }: { detail: Detail; canDelete: 
             <TagInput
               id="m-tags"
               label="Tags"
-              description="For finding files in the library. Press Enter or a comma to add one."
               value={tags}
               onValueChange={(next) => setTags(toTags(next))}
-              placeholder="Add a tag, like spring or brochure"
+              placeholder="Add a tag and press Enter"
             />
-            <section className="grid gap-2" aria-labelledby="m-facts">
-              <h3 id="m-facts" className="text-sm font-medium">
-                Details
-              </h3>
-              <dl className="grid grid-cols-[auto_1fr] gap-x-4 gap-y-1.5 text-sm">
-                {facts.map(([label, value]) => (
-                  <div key={label} className="contents">
-                    <dt className="text-muted-foreground">{label}</dt>
-                    <dd className="min-w-0 break-words">{value}</dd>
-                  </div>
-                ))}
-              </dl>
-            </section>
-            <MediaUsageList id={item.id} />
+            {/* What you edit, then what is known about the file. */}
+            <div className="grid gap-6 border-t pt-6">
+              <section className="grid gap-2" aria-labelledby="m-facts">
+                <h3 id="m-facts" className="text-sm font-medium">
+                  Details
+                </h3>
+                <dl className="grid grid-cols-[auto_1fr] gap-x-4 gap-y-1.5 text-sm">
+                  {facts.map(([label, value]) => (
+                    <div key={label} className="contents">
+                      <dt className="text-muted-foreground">{label}</dt>
+                      <dd className="min-w-0 break-words">{value}</dd>
+                    </div>
+                  ))}
+                </dl>
+              </section>
+              <MediaUsageList id={item.id} />
+            </div>
           </div>
         </motion.div>
       </form>

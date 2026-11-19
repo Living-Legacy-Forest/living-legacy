@@ -79,32 +79,39 @@ export function FocalPicker({
         />
       </button>
 
-      <div className="flex flex-wrap items-end gap-4">
-        {SHAPES.map((shape) => (
-          <figure key={shape.label} className="grid gap-1">
-            <img
-              src={src}
-              alt=""
-              style={{ objectPosition: position }}
-              className={cn('bg-muted rounded-md border object-cover', shape.className)}
-            />
-            <figcaption className="text-muted-foreground text-xs">{shape.label}</figcaption>
-          </figure>
-        ))}
-        <div className="ml-auto grid justify-items-end gap-1">
-          <p className="text-muted-foreground text-xs">
-            {value ? `Keeps ${pct(value.x)} across, ${pct(value.y)} down in view` : 'Centre'}
-          </p>
-          <Button
-            type="button"
-            variant="outline"
-            size="sm"
-            disabled={!value}
-            onClick={() => onChange(null)}
-          >
-            Reset to centre
-          </Button>
+      <div className="grid gap-2">
+        <div className="flex flex-wrap items-end gap-4">
+          {SHAPES.map((shape) => (
+            <figure key={shape.label} className="grid gap-1">
+              <img
+                src={src}
+                alt=""
+                style={{ objectPosition: position }}
+                // The crops pan to a new point rather than jump, which shows what the point does.
+                className={cn(
+                  'bg-muted rounded-md border object-cover transition-[object-position] duration-200 ease-out motion-reduce:transition-none',
+                  shape.className
+                )}
+              />
+              <figcaption className="text-muted-foreground text-xs">{shape.label}</figcaption>
+            </figure>
+          ))}
+          {/* Only once there is something to reset: the centre is the default. */}
+          {value && (
+            <Button
+              type="button"
+              variant="ghost"
+              size="sm"
+              className="ml-auto"
+              onClick={() => onChange(null)}
+            >
+              Reset to centre
+            </Button>
+          )}
         </div>
+        <p className="text-muted-foreground text-xs">
+          Click the picture to choose what stays in view when it is cropped.
+        </p>
       </div>
     </div>
   );

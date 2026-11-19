@@ -116,13 +116,13 @@ export function StatCard({ stat }: { stat: Stat }) {
           <Suspense
             fallback={
               <div className="mt-auto px-(--card-spacing) pt-4">
-                <div className={trend ? 'h-32' : meter ? 'h-36' : 'h-28'} />
+                <div className={meter ? 'h-36' : 'h-32'} />
               </div>
             }
           >
             {!onClient ? (
               <div className="mt-auto px-(--card-spacing) pt-4">
-                <div className={trend ? 'h-32' : meter ? 'h-36' : 'h-28'} />
+                <div className={meter ? 'h-36' : 'h-32'} />
               </div>
             ) : (
               <div data-reveal="4" className="mt-auto px-(--card-spacing) pt-4">

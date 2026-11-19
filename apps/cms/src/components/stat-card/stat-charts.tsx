@@ -173,14 +173,14 @@ function PeriodBars({
  */
 export function PartsChart({ parts }: { parts: Part[] }) {
   return (
-    // Shorter than the trend charts; the card's figure still sits at its foot. From md up the ring
-    // follows the card, not the screen: beside an open sidebar the card is narrow, and a full-size
-    // ring would push its legend out of the card. Never smaller than 80px: below that the hole is
-    // too narrow for a three-digit total and it shows "2…".
-    <div className="@container/parts flex h-28 items-center gap-3 md:gap-4">
+    // As tall as the trend charts (h-32), so cards in a row line up and the card's figure sits at
+    // the same foot. From md up the ring follows the card, not the screen: beside an open sidebar
+    // the card is narrow, and a full-size ring would push its legend out of the card. Never
+    // smaller than 80px: below that the hole is too narrow for a three-digit total ("2…").
+    <div className="@container/parts flex h-32 items-center gap-3 md:gap-4">
       {parts.some((p) => p.value > 0) && (
         <DonutChart
-          className="donut-compact w-24 shrink-0 md:w-28 md:@max-[14rem]/parts:w-20"
+          className="donut-compact w-28 shrink-0 md:w-32 md:@max-[14rem]/parts:w-24"
           label={parts.map((p) => p.label).join(', ')}
           data={parts.map((p) => ({ key: p.key, label: p.label, value: p.value }))}
           formatValue={formatInteger}

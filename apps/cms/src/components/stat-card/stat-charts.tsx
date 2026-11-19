@@ -184,8 +184,9 @@ export function PartsChart({ parts }: { parts: Part[] }) {
           data={parts.map((p) => ({ key: p.key, label: p.label, value: p.value }))}
           formatValue={formatInteger}
           legend={false}
-          size={112}
-          thickness={14}
+          // The ring never grows past this: 128px from md up, held to the card's width below that.
+          size={128}
+          thickness={16}
           groupBelow={0}
           maxSegments={parts.length}
         />

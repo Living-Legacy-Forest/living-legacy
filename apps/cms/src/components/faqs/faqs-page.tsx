@@ -1,5 +1,5 @@
 import { MAX_FAQ_TAGS, slugify, splitTags, toTags } from '@ll/content';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { ListCard, ListCards } from '@/components/list/list-card';
 import { ListFilter, passes, publishStatusOptions } from '@/components/list/list-filter';
 import { ListSort, byText, sortedBy, useListSort } from '@/components/list/list-sort';
@@ -148,8 +148,27 @@ const SORTS = [
   { value: 'question-za', label: 'Question, Z to A' },
 ] as const;
 
-export function FaqsPage({ data, canWrite }: { data: FaqData; canWrite: boolean }) {
+export function FaqsPage({
+  data,
+  canWrite,
+  initialEdit,
+  onOpenedInitial,
+}: {
+  data: FaqData;
+  canWrite: boolean;
+  /** An FAQ to open on arrival. */
+  initialEdit?: string;
+  onOpenedInitial?: () => void;
+}) {
   const view = useListPane<Target>();
+  useEffect(() => {
+    if (!initialEdit) return;
+    if (canWrite && data.faqs.some((f) => f.id === initialEdit)) {
+      view.open({ kind: 'faq', id: initialEdit });
+    }
+    onOpenedInitial?.();
+    // Only on arrival with ?edit=, not on every render that has it.
+  }, [initialEdit]);
   const [query, setQuery] = useState('');
   // Ticked values per filter group; an empty group does not narrow the list.
   const [picked, setPicked] = useState<Record<string, string[]>>({});

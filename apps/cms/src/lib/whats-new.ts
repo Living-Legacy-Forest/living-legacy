@@ -50,6 +50,18 @@ export type WhatsNewEntry = {
 
 export const whatsNew: WhatsNewEntry[] = [
   {
+    id: '2026-11-19-6',
+    kind: 'new',
+    title: 'Find broken links',
+    items: [
+      {
+        title: 'Broken links in Content checks',
+        body: 'Content checks now lists links in published posts, FAQs, events, locations and legal pages that go to a page this website does not have. Each shows the link text and where it points, with a button to open the item. A link that a redirect catches counts as working; links to other sites are not checked.',
+        link: { label: 'Open Content checks', to: '/checks' },
+      },
+    ],
+  },
+  {
     id: '2026-11-19-5',
     kind: 'new',
     title: 'Check the old site against your redirects',

@@ -274,7 +274,8 @@ async function loadAttention(
         checks.noImage.total +
         checks.noAlt.total +
         checks.events.total +
-        checks.brand.total,
+        checks.brand.total +
+        checks.links.total,
     missingPages: missing && {
       total: missing.length,
       busiest: missing[0] ? { path: missing[0].path, hits: missing[0].hits } : null,

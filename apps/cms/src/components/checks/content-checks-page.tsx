@@ -5,6 +5,7 @@ import {
   CircleAlertIcon,
   CircleCheckIcon,
   LinkIcon,
+  Link2Off,
   ImageIcon,
   type LucideIcon,
   PencilLineIcon,
@@ -19,12 +20,12 @@ import { useAction } from '@/lib/use-action';
 import { usePaged } from '@/lib/use-paged';
 import { useTimeZone } from '@/lib/use-time-zone';
 import { cn } from '@/lib/utils';
-import type { BrandBreach, ContentChecks } from '@/server/content-checks';
+import type { BrandBreach, ContentChecks, LinkBreach } from '@/server/content-checks';
 import { updateMedia } from '@/server/media';
 import { useRevealOnce } from '@/lib/use-reveal-once';
 import { RevealWords } from '@/components/dashboard/reveal-words';
 
-type CheckKey = 'noDescription' | 'noImage' | 'noAlt' | 'events' | 'brand';
+type CheckKey = 'noDescription' | 'noImage' | 'noAlt' | 'events' | 'brand' | 'links';
 
 /** Every check, passing or not, so the page shows what is looked at as well as what failed. */
 const CHECKS: { key: CheckKey; icon: LucideIcon; title: string; passing: string; why: string }[] = [
@@ -63,6 +64,13 @@ const CHECKS: { key: CheckKey; icon: LucideIcon; title: string; passing: string;
     passing: 'Nothing published uses a word the guide rules out.',
     why: 'The brand language guide rules these words out. Each shows what to write instead. An admin can edit the guide in Settings.',
   },
+  {
+    key: 'links',
+    icon: Link2Off,
+    title: 'Broken links',
+    passing: 'Every link to a page on this site leads somewhere.',
+    why: 'These links go to a page the website does not have, and no redirect catches them, so visitors land on a not-found page. Fix the link, or add a redirect. Links to other sites are not checked.',
+  },
 ];
 
 /** What each check lists, for the pager's count. */
@@ -72,6 +80,7 @@ const NOUNS: Record<CheckKey, string> = {
   noAlt: 'images',
   events: 'events',
   brand: 'items',
+  links: 'items',
 };
 /** Rows here are tall, so a page is shorter than a plain list's. */
 const PAGE_SIZES = [10, 25, 50, 100] as const;
@@ -285,8 +294,22 @@ function brandDetail(b: BrandBreach) {
     .join(' · ');
 }
 
+/** "Post · “Our process” → /old-page · and 2 more". */
+function linkDetail(b: LinkBreach) {
+  const shown = b.broken
+    .slice(0, 3)
+    .map(
+      (l) =>
+        `${l.text.trim() ? `“${l.text.trim()}” → ` : ''}${l.href}${l.reason === 'gone' ? ' (removed)' : ''}`
+    );
+  const hidden = b.broken.length - shown.length;
+  return [BRAND_KIND[b.kind], ...shown, hidden > 0 && `and ${hidden} more`]
+    .filter(Boolean)
+    .join(' · ');
+}
+
 /** The way to the item's editor. */
-function brandFix(b: BrandBreach) {
+function itemFix(b: Pick<BrandBreach, 'kind' | 'id' | 'slug'>) {
   switch (b.kind) {
     case 'post':
       return <FixLink label="Open the post" to="/posts/$postId" params={{ postId: b.id }} />;
@@ -360,7 +383,17 @@ function useCheckRows(
             <span className="text-ui line-clamp-2">{b.title || 'Untitled'}</span>
             <span className="text-muted-foreground block text-xs">{brandDetail(b)}</span>
           </span>
-          {canFix[b.kind] && brandFix(b)}
+          {canFix[b.kind] && itemFix(b)}
+        </Row>
+      ));
+    case 'links':
+      return data.links.rows.map((b) => (
+        <Row key={`${b.kind}-${b.id}`}>
+          <span className="min-w-0 flex-1">
+            <span className="text-ui line-clamp-2">{b.title || 'Untitled'}</span>
+            <span className="text-muted-foreground block text-xs break-all">{linkDetail(b)}</span>
+          </span>
+          {canFix[b.kind] && itemFix(b)}
         </Row>
       ));
     case 'events':

@@ -21,7 +21,7 @@ beforeEach(async () => {
 describe('checkHealth', () => {
   it('is healthy when the website loads and the 5-minute jobs ran lately', async () => {
     await ran('publish-posts', 4);
-    expect(await checkHealth(env.DB, siteUp, now)).toEqual({ ok: true, problems: [] });
+    expect(await checkHealth(env.DB, siteUp, now)).toEqual({ ok: true, problems: [], details: [] });
   });
 
   it('names the website when it does not load', async () => {
@@ -29,6 +29,7 @@ describe('checkHealth', () => {
     expect(await checkHealth(env.DB, siteDown, now)).toEqual({
       ok: false,
       problems: ['website'],
+      details: ['The home page answered 503 instead of loading.'],
     });
   });
 
@@ -39,10 +40,13 @@ describe('checkHealth', () => {
     expect(await checkHealth(env.DB, siteUp, now)).toEqual({
       ok: false,
       problems: ['scheduled jobs'],
+      details: ['The last 5-minute job ran 16 minutes ago.'],
     });
   });
 
   it('names the scheduled jobs when none has ever run', async () => {
-    expect((await checkHealth(env.DB, siteUp, now)).problems).toEqual(['scheduled jobs']);
+    const health = await checkHealth(env.DB, siteUp, now);
+    expect(health.problems).toEqual(['scheduled jobs']);
+    expect(health.details).toEqual(['No 5-minute job has run.']);
   });
 });

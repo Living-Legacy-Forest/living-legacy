@@ -272,6 +272,7 @@ export function MediaDetail({ detail, canDelete }: { detail: Detail; canDelete: 
       type="button"
       variant="ghost"
       size="icon-sm"
+      className="touch:size-11"
       aria-label={label}
       title={`${label} (${label === 'Previous file' ? '←' : '→'})`}
       disabled={!id}
@@ -349,8 +350,16 @@ export function MediaDetail({ detail, canDelete }: { detail: Detail; canDelete: 
         <header className="flex min-h-12 shrink-0 flex-wrap items-center gap-x-2 gap-y-1 border-b px-3 py-1.5 max-md:py-2">
           {back}
           <div className="flex items-center">
-            {neighbour(previousId, 'Previous file', <ChevronLeftIcon aria-hidden />)}
-            {neighbour(nextId, 'Next file', <ChevronRightIcon aria-hidden />)}
+            {neighbour(
+              previousId,
+              'Previous file',
+              <ChevronLeftIcon aria-hidden className="touch:size-5 size-4" />
+            )}
+            {neighbour(
+              nextId,
+              'Next file',
+              <ChevronRightIcon aria-hidden className="touch:size-5 size-4" />
+            )}
           </div>
           <div className="min-w-0 flex-1 max-md:order-first max-md:basis-full max-md:px-1">
             <h1 className="truncate text-sm font-medium">{item.filename}</h1>
@@ -362,10 +371,17 @@ export function MediaDetail({ detail, canDelete }: { detail: Detail; canDelete: 
           <div className="ml-auto flex items-center gap-1">
             <DropdownMenu>
               <DropdownMenuTrigger
-                render={<Button type="button" variant="ghost" size="sm" />}
+                render={
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="sm"
+                    className="touch:min-h-11 touch:min-w-11"
+                  />
+                }
                 aria-label="Copy"
               >
-                <CopyIcon aria-hidden data-icon="inline-start" />
+                <CopyIcon aria-hidden data-icon="inline-start" className="touch:size-5 size-4" />
                 <span className="max-sm:sr-only">Copy</span>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end" className="min-w-44 p-1">
@@ -380,8 +396,14 @@ export function MediaDetail({ detail, canDelete }: { detail: Detail; canDelete: 
                 ))}
               </DropdownMenuContent>
             </DropdownMenu>
-            <Button type="button" variant="ghost" size="sm" onClick={() => download(item)}>
-              <DownloadIcon aria-hidden data-icon="inline-start" />
+            <Button
+              type="button"
+              variant="ghost"
+              size="sm"
+              className="touch:min-h-11 touch:min-w-11"
+              onClick={() => download(item)}
+            >
+              <DownloadIcon aria-hidden data-icon="inline-start" className="touch:size-5 size-4" />
               <span className="max-sm:sr-only">Download</span>
             </Button>
             {canDelete && (
@@ -389,19 +411,19 @@ export function MediaDetail({ detail, canDelete }: { detail: Detail; canDelete: 
                 type="button"
                 variant="ghost"
                 size="sm"
-                className="text-muted-foreground hover:text-destructive"
+                className="text-muted-foreground hover:text-destructive touch:min-h-11 touch:min-w-11"
                 disabled={pending}
                 onClick={() => setConfirmingDelete(true)}
               >
-                <Trash2Icon aria-hidden data-icon="inline-start" />
+                <Trash2Icon aria-hidden data-icon="inline-start" className="touch:size-5 size-4" />
                 <span className="max-sm:sr-only">Delete</span>
               </Button>
             )}
-            <Button type="submit" size="sm" disabled={pending || !dirty}>
+            <Button type="submit" size="sm" className="touch:min-h-11" disabled={pending || !dirty}>
               {pending ? (
                 <Spinner data-icon="inline-start" />
               ) : (
-                <SaveIcon aria-hidden data-icon="inline-start" />
+                <SaveIcon aria-hidden data-icon="inline-start" className="touch:size-5 size-4" />
               )}
               Save
             </Button>

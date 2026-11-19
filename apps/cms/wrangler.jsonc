@@ -12,7 +12,8 @@
   // "Living Legacy CMS", US region) through the account's OpenTelemetry
   // destination of this name, which must exist before a deploy. Email
   // addresses are masked before anything is logged (src/lib/redact-console.ts).
-  // Traces are kept in Cloudflare only; they have no destination.
+  // Traces are kept in Cloudflare only; they have no destination. Sentry already
+  // traces every request, so these are sampled at 10%, as a second view.
   "observability": {
     "enabled": true,
     "head_sampling_rate": 1,
@@ -26,7 +27,7 @@
     },
     "traces": {
       "enabled": true,
-      "head_sampling_rate": 1,
+      "head_sampling_rate": 0.1,
       "persist": true
     }
   },

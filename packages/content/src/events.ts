@@ -10,7 +10,9 @@ import { type TimeZone, timeZones } from './settings';
 
 export const eventStatuses = ['draft', 'published', 'cancelled'] as const;
 export type EventStatus = (typeof eventStatuses)[number];
-export const bookingStatuses = ['confirmed', 'cancelled'] as const;
+// `waitlisted` is someone staff have put on an event's waiting list because it is full: no place
+// is held for them, they are not counted, and they are not sent to HubSpot until moved to guests.
+export const bookingStatuses = ['confirmed', 'waitlisted', 'cancelled'] as const;
 export type BookingStatus = (typeof bookingStatuses)[number];
 export const bookingSources = ['website', 'staff'] as const;
 export type BookingSource = (typeof bookingSources)[number];
@@ -105,6 +107,38 @@ export function bookingProblem(
       return left === 1 ? 'Only 1 place is left.' : `Only ${left} places are left.`;
   }
   return null;
+}
+
+/**
+ * Why a party cannot go on the waiting list, or null if it can. A waiting list is for a party the
+ * event has no room for: with room (or no limit) they should simply be booked in.
+ */
+export function waitlistProblem(
+  event: BookableEvent,
+  partySize: number,
+  taken: number,
+  now: number
+): string | null {
+  // Every other rule is a booking's, so judge as if the event were empty and the party fits.
+  const other = bookingProblem({ ...event, capacity: null }, partySize, 0, now, 'staff');
+  if (other) return other;
+  if (event.capacity === null) return 'This event has no limit, so it has no waiting list.';
+  const left = event.capacity - taken;
+  if (partySize <= left) {
+    return left === 1
+      ? 'There is a place left, so add them as a guest instead.'
+      : `There are ${left} places left, so add them as a guest instead.`;
+  }
+  return null;
+}
+
+/** Whether `partySize` could be moved off the waiting list into the places left, and why not. */
+export function promoteProblem(capacity: number | null, taken: number, partySize: number) {
+  if (capacity === null) return null;
+  const left = capacity - taken;
+  if (partySize <= left) return null;
+  if (left <= 0) return 'This event is still fully booked.';
+  return left === 1 ? 'Only 1 place is left.' : `Only ${left} places are left.`;
 }
 
 /** A new capacity must still hold everyone already booked. */

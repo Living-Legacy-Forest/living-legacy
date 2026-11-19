@@ -48,6 +48,8 @@ export type ScanResult =
   | { kind: 'checked-in'; guest: ScannedGuest }
   | { kind: 'already'; guest: ScannedGuest }
   | { kind: 'cancelled'; guest: ScannedGuest }
+  /** On the waiting list: no place has been held, so they are not checked in. */
+  | { kind: 'waitlisted'; guest: ScannedGuest }
   /** A ticket for another date or time of the event, or another event altogether. */
   | {
       kind: 'other-event';
@@ -87,6 +89,7 @@ export async function checkInByCode(
     checkedInAt: b.checkedInAt?.getTime() ?? null,
   };
   if (b.status === 'cancelled') return { kind: 'cancelled', guest };
+  if (b.status === 'waitlisted') return { kind: 'waitlisted', guest };
   if (b.eventId !== eventId) {
     return {
       kind: 'other-event',

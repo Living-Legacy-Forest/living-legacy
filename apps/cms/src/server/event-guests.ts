@@ -1,12 +1,25 @@
-import { bookingProblem, guestInputSchema, normaliseEmail, seatsTaken } from '@ll/content';
+import {
+  type BookableEvent,
+  bookingProblem,
+  guestInputSchema,
+  normaliseEmail,
+  promoteProblem,
+  seatsTaken,
+  waitlistProblem,
+} from '@ll/content';
 import { eventBookings, events } from '@ll/db/schema';
 import { createServerFn } from '@tanstack/react-start';
-import { asc, eq } from 'drizzle-orm';
+import { and, asc, eq } from 'drizzle-orm';
 import { z } from 'zod';
 import { getDb } from '@/lib/db';
 import { requirePermission } from '@/lib/session';
 import { logActivity } from './activity-log';
-import { insertBooking, updateBookingDetails } from './booking-store';
+import {
+  insertBooking,
+  insertWaitlisted,
+  promoteBooking,
+  updateBookingDetails,
+} from './booking-store';
 import { checkInByCode } from './tickets';
 
 export const getGuests = createServerFn({ method: 'GET' })
@@ -36,9 +49,25 @@ export const getGuests = createServerFn({ method: 'GET' })
 
 export type Guest = Awaited<ReturnType<typeof getGuests>>[number];
 
+/** An event as the booking rules see it. */
+const bookable = (event: typeof events.$inferSelect): BookableEvent => ({
+  status: event.status,
+  startsAt: event.startsAt.getTime(),
+  endsAt: event.endsAt.getTime(),
+  bookingsOpenAt: event.bookingsOpenAt?.getTime() ?? null,
+  bookingsCloseAt: event.bookingsCloseAt?.getTime() ?? null,
+  capacity: event.capacity,
+  maxPartySize: event.maxPartySize,
+});
+
+/**
+ * Books a guest in, or, with `waitlist`, puts them on the waiting list because the event has no
+ * room for them. The waiting list holds no place; staff move people in by hand when places free
+ * up, as HubSpot (not the CMS) is what emails guests.
+ */
 export const addGuest = createServerFn({ method: 'POST' })
   .middleware([requirePermission('events:manage')])
-  .validator(guestInputSchema)
+  .validator(guestInputSchema.extend({ waitlist: z.boolean().default(false) }))
   .handler(async ({ data, context }) => {
     const db = getDb();
     const event = await db.query.events.findFirst({ where: eq(events.id, data.eventId) });
@@ -47,39 +76,52 @@ export const addGuest = createServerFn({ method: 'POST' })
       .select({ status: eventBookings.status, partySize: eventBookings.partySize })
       .from(eventBookings)
       .where(eq(eventBookings.eventId, event.id));
-    const problem = bookingProblem(
-      {
-        status: event.status,
-        startsAt: event.startsAt.getTime(),
-        endsAt: event.endsAt.getTime(),
-        bookingsOpenAt: event.bookingsOpenAt?.getTime() ?? null,
-        bookingsCloseAt: event.bookingsCloseAt?.getTime() ?? null,
-        capacity: event.capacity,
-        maxPartySize: event.maxPartySize,
-      },
-      data.partySize,
-      seatsTaken(bookings),
-      Date.now(),
-      'staff'
-    );
-    if (problem) throw new Error(problem);
+    const taken = seatsTaken(bookings);
+    const now = Date.now();
+    const details = {
+      eventId: event.id,
+      firstName: data.firstName,
+      lastName: data.lastName || null,
+      email: data.email ? normaliseEmail(data.email) : null,
+      phone: data.phone || null,
+      partySize: data.partySize,
+      note: data.note || null,
+    };
+
+    if (data.waitlist) {
+      const problem = waitlistProblem(bookable(event), data.partySize, taken, now);
+      if (problem) throw new Error(problem);
+      const entry = await insertWaitlisted(db, details);
+      await logActivity(db, {
+        actorId: context.user.id,
+        actorName: context.user.name,
+        action: 'event.guest_waitlisted',
+        summary: `Put ${data.firstName} (${data.partySize}) on the waiting list for ${event.title}`,
+      });
+      return { reference: entry.reference, waitlisted: true as const };
+    }
+
+    // When room is the only thing in the way, say there is somewhere else for them to go.
+    const toWait = (message: string) =>
+      event.capacity !== null &&
+      bookingProblem(
+        { ...bookable(event), capacity: null },
+        data.partySize,
+        taken,
+        now,
+        'staff'
+      ) === null
+        ? `${message} You can put them on the waiting list instead.`
+        : message;
+    const problem = bookingProblem(bookable(event), data.partySize, taken, now, 'staff');
+    if (problem) throw new Error(toWait(problem));
 
     const booking = await insertBooking(
       db,
-      {
-        eventId: event.id,
-        firstName: data.firstName,
-        lastName: data.lastName || null,
-        email: data.email ? normaliseEmail(data.email) : null,
-        phone: data.phone || null,
-        partySize: data.partySize,
-        note: data.note || null,
-        source: 'staff',
-        consentAt: null,
-      },
+      { ...details, source: 'staff', consentAt: null },
       event.capacity
     );
-    if (!booking) throw new Error('This event is fully booked.');
+    if (!booking) throw new Error(toWait('This event is fully booked.'));
 
     await logActivity(db, {
       actorId: context.user.id,
@@ -88,7 +130,7 @@ export const addGuest = createServerFn({ method: 'POST' })
       summary: `Added ${data.firstName} (${data.partySize}) to ${event.title}`,
     });
     // New bookings start unsynced; the HubSpot sync picks them up.
-    return { reference: booking.reference };
+    return { reference: booking.reference, waitlisted: false as const };
   });
 
 /** Changes a guest's details or party size; the event must still have room for them. */
@@ -105,6 +147,30 @@ export const updateGuest = createServerFn({ method: 'POST' })
     const event = await db.query.events.findFirst({ where: eq(events.id, booking.eventId) });
     if (!event) throw new Error('That event no longer exists.');
     if (event.status === 'cancelled') throw new Error('This event has been cancelled.');
+
+    if (booking.status === 'waitlisted') {
+      // They hold no place, so there is no room to check, and HubSpot has not heard of them.
+      await db.batch([
+        db
+          .update(eventBookings)
+          .set({
+            firstName: data.firstName,
+            lastName: data.lastName || null,
+            email: data.email ? normaliseEmail(data.email) : null,
+            phone: data.phone || null,
+            partySize: data.partySize,
+            note: data.note || null,
+          })
+          .where(and(eq(eventBookings.id, booking.id), eq(eventBookings.status, 'waitlisted'))),
+        logActivity(db, {
+          actorId: context.user.id,
+          actorName: context.user.name,
+          action: 'event.guest_updated',
+          summary: `Updated the waiting list entry ${booking.reference}`,
+        }),
+      ]);
+      return;
+    }
 
     const updated = await updateBookingDetails(
       db,
@@ -158,6 +224,8 @@ export const cancelGuest = createServerFn({ method: 'POST' })
       where: eq(eventBookings.id, data.id),
     });
     if (!booking || booking.status === 'cancelled') return;
+    if (booking.status === 'waitlisted')
+      throw new Error('Remove them from the waiting list instead.');
     await db.batch([
       db
         .update(eventBookings)
@@ -169,6 +237,73 @@ export const cancelGuest = createServerFn({ method: 'POST' })
         actorName: context.user.name,
         action: 'event.guest_cancelled',
         summary: `Cancelled the booking ${booking.reference}`,
+      }),
+    ]);
+  });
+
+/** Moves a waiting party into the event, if its places are still there. */
+export const promoteGuest = createServerFn({ method: 'POST' })
+  .middleware([requirePermission('events:manage')])
+  .validator(z.object({ id: z.string() }))
+  .handler(async ({ data, context }) => {
+    const db = getDb();
+    const booking = await db.query.eventBookings.findFirst({
+      where: eq(eventBookings.id, data.id),
+    });
+    if (!booking || booking.status !== 'waitlisted') {
+      throw new Error('They are no longer on the waiting list.');
+    }
+    const event = await db.query.events.findFirst({ where: eq(events.id, booking.eventId) });
+    if (!event) throw new Error('That event no longer exists.');
+    // Everything but room: a party can be moved in only to an event that can still be booked.
+    const closed = bookingProblem(
+      { ...bookable(event), capacity: null },
+      booking.partySize,
+      0,
+      Date.now(),
+      'staff'
+    );
+    if (closed) throw new Error(closed);
+
+    const moved = await promoteBooking(db, booking.id, event.id, booking.partySize, event.capacity);
+    if (!moved) {
+      const rows = await db
+        .select({ status: eventBookings.status, partySize: eventBookings.partySize })
+        .from(eventBookings)
+        .where(eq(eventBookings.eventId, event.id));
+      throw new Error(
+        promoteProblem(event.capacity, seatsTaken(rows), booking.partySize) ??
+          'They are no longer on the waiting list.'
+      );
+    }
+    await logActivity(db, {
+      actorId: context.user.id,
+      actorName: context.user.name,
+      action: 'event.guest_promoted',
+      summary: `Moved ${booking.firstName} (${booking.partySize}) from the waiting list into ${event.title}`,
+    });
+    return { reference: booking.reference };
+  });
+
+/** Takes a party off the waiting list. They were never booked, so nothing is kept of them. */
+export const removeFromWaitlist = createServerFn({ method: 'POST' })
+  .middleware([requirePermission('events:manage')])
+  .validator(z.object({ id: z.string() }))
+  .handler(async ({ data, context }) => {
+    const db = getDb();
+    const booking = await db.query.eventBookings.findFirst({
+      where: eq(eventBookings.id, data.id),
+    });
+    if (!booking || booking.status !== 'waitlisted') return;
+    await db.batch([
+      db
+        .delete(eventBookings)
+        .where(and(eq(eventBookings.id, booking.id), eq(eventBookings.status, 'waitlisted'))),
+      logActivity(db, {
+        actorId: context.user.id,
+        actorName: context.user.name,
+        action: 'event.waitlist_removed',
+        summary: `Took ${booking.firstName} (${booking.partySize}) off the waiting list`,
       }),
     ]);
   });

@@ -2,7 +2,13 @@ import { eventBookings, events } from '@ll/db/schema';
 import { eq } from 'drizzle-orm';
 import { beforeEach, describe, expect, it } from 'vitest';
 import { testDb } from '../../test/fixtures';
-import { type BookingDetails, insertBooking, updateBookingDetails } from './booking-store';
+import {
+  type BookingDetails,
+  insertBooking,
+  insertWaitlisted,
+  promoteBooking,
+  updateBookingDetails,
+} from './booking-store';
 
 let slugs = 0;
 
@@ -95,5 +101,64 @@ describe('updateBookingDetails', () => {
 
     expect(await updateBookingDetails(testDb(), id, eventId, details(1), null)).toBe(false);
     expect((await stored(id))?.partySize).toBe(2);
+  });
+});
+
+describe('the waiting list', () => {
+  async function wait(eventId: string, partySize: number) {
+    const { id } = await insertWaitlisted(testDb(), { eventId, ...details(partySize) });
+    return id;
+  }
+
+  it('adds a party that holds no place and has a reference', async () => {
+    const eventId = await addEvent(4);
+    const id = await wait(eventId, 3);
+    const row = await stored(id);
+    expect(row).toMatchObject({ status: 'waitlisted', partySize: 3, source: 'staff' });
+    expect(row?.reference).toMatch(/^LL-/);
+    // Nothing is held: a booking for the whole event still fits.
+    expect(
+      await insertBooking(testDb(), { eventId, ...details(4), source: 'staff', consentAt: null }, 4)
+    ).not.toBeNull();
+  });
+
+  it('moves a party in when there is room, dated now and ready for the HubSpot sync', async () => {
+    const eventId = await addEvent(5);
+    const id = await wait(eventId, 3);
+    await testDb()
+      .update(eventBookings)
+      .set({ createdAt: new Date('2026-01-01'), crmSyncedAt: new Date() })
+      .where(eq(eventBookings.id, id));
+    expect(await promoteBooking(testDb(), id, eventId, 3, 5)).toBe(true);
+    const row = await stored(id);
+    expect(row?.status).toBe('confirmed');
+    expect(row?.crmSyncedAt).toBeNull();
+    expect(row!.createdAt.getTime()).toBeGreaterThan(Date.now() - 60_000);
+  });
+
+  it('will not overbook: it only moves in while the places are there', async () => {
+    const eventId = await addEvent(5);
+    await insertBooking(testDb(), { eventId, ...details(3), source: 'staff', consentAt: null }, 5);
+    const id = await wait(eventId, 3);
+    expect(await promoteBooking(testDb(), id, eventId, 3, 5)).toBe(false);
+    expect((await stored(id))?.status).toBe('waitlisted');
+  });
+
+  it('moves a party in once someone else cancels', async () => {
+    const eventId = await addEvent(5);
+    const first = await book(eventId, 4);
+    const id = await wait(eventId, 3);
+    expect(await promoteBooking(testDb(), id, eventId, 3, 5)).toBe(false);
+    await testDb()
+      .update(eventBookings)
+      .set({ status: 'cancelled' })
+      .where(eq(eventBookings.id, first));
+    expect(await promoteBooking(testDb(), id, eventId, 3, 5)).toBe(true);
+  });
+
+  it('only moves a party that is still waiting', async () => {
+    const eventId = await addEvent(null);
+    const confirmed = await book(eventId, 2);
+    expect(await promoteBooking(testDb(), confirmed, eventId, 2, null)).toBe(false);
   });
 });

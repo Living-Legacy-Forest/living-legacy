@@ -289,6 +289,13 @@ function ResultCard({
           Icon: OctagonXIcon,
           title: 'This booking was cancelled',
         } as const;
+      case 'waitlisted':
+        return {
+          tone: 'warn',
+          Icon: TriangleAlertIcon,
+          title: 'On the waiting list',
+          detail: 'No place is held for them yet. Move them into the event from the guest list.',
+        } as const;
       case 'other-event':
         return {
           tone: 'warn',

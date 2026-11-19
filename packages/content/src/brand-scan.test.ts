@@ -60,6 +60,26 @@ describe('scanBrand', () => {
     expect(scanBrand(['A final resting place'], rules)).toBeNull();
   });
 
+  it('does not make a name out of the end of one field and the start of the next', () => {
+    expect(scanBrand(['Earth', 'SApHE', doc('treatment')])).toBeNull();
+  });
+
+  it('still reads a name across the text nodes of one document', () => {
+    const split: RichTextDoc = {
+      type: 'doc',
+      content: [
+        {
+          type: 'paragraph',
+          content: [
+            { type: 'text', text: 'Earth' },
+            { type: 'text', text: 'saphe', marks: [{ type: 'bold' }] },
+          ],
+        },
+      ],
+    };
+    expect(scanBrand([split])?.never[0]?.found).toBe('Earthsaphe');
+  });
+
   it('has nothing to judge when there is no text', () => {
     expect(scanBrand([null, undefined, '  ', doc('')])).toBeNull();
   });

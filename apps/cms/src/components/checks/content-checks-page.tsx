@@ -81,10 +81,13 @@ const fixClass = cn(buttonVariants({ variant: 'outline', size: 'sm' }), 'touch:m
 export function ContentChecksPage({
   data,
   canEditMedia,
+  canFix,
 }: {
   data: ContentChecks;
   /** Alt text is saved to the media library, which needs media:write. */
   canEditMedia: boolean;
+  /** Which kinds of item the viewer can open to fix; the rest are listed without a link. */
+  canFix: Record<BrandBreach['kind'], boolean>;
 }) {
   const failing = CHECKS.filter((check) => data[check.key].total > 0);
   const passing = CHECKS.filter((check) => data[check.key].total === 0);
@@ -111,7 +114,7 @@ export function ContentChecksPage({
 
       {failing.map((check) => (
         <CheckSection key={check.key} check={check} total={data[check.key].total}>
-          <CheckRows checkKey={check.key} data={data} canEditMedia={canEditMedia} />
+          <CheckRows checkKey={check.key} data={data} canEditMedia={canEditMedia} canFix={canFix} />
         </CheckSection>
       ))}
 
@@ -229,12 +232,14 @@ function CheckRows({
   checkKey,
   data,
   canEditMedia,
+  canFix,
 }: {
   checkKey: CheckKey;
   data: ContentChecks;
   canEditMedia: boolean;
+  canFix: Record<BrandBreach['kind'], boolean>;
 }) {
-  const rows = useCheckRows(checkKey, data, canEditMedia);
+  const rows = useCheckRows(checkKey, data, canEditMedia, canFix);
   const paged = usePaged(rows, '', PAGE_SIZES);
   const { page, pageCount } = paged.pager;
 
@@ -305,7 +310,8 @@ function brandFix(b: BrandBreach) {
 function useCheckRows(
   checkKey: CheckKey,
   data: ContentChecks,
-  canEditMedia: boolean
+  canEditMedia: boolean,
+  canFix: Record<BrandBreach['kind'], boolean>
 ): ReactElement[] {
   const timeZone = useTimeZone();
   // Kept here, not in each row, so alt text typed but not yet saved survives a change of page.
@@ -354,7 +360,7 @@ function useCheckRows(
             <span className="text-ui line-clamp-2">{b.title || 'Untitled'}</span>
             <span className="text-muted-foreground block text-xs">{brandDetail(b)}</span>
           </span>
-          {brandFix(b)}
+          {canFix[b.kind] && brandFix(b)}
         </Row>
       ));
     case 'events':

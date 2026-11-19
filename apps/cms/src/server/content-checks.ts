@@ -1,4 +1,10 @@
-import { type BrandScanPart, type RichTextDoc, can, scanBrand } from '@ll/content';
+import {
+  type BrandScanPart,
+  type RichTextDoc,
+  can,
+  scanBrand,
+  storedToRichText,
+} from '@ll/content';
 import { events, faqs, legalPages, locations, media, posts } from '@ll/db/schema';
 import { createServerFn } from '@tanstack/react-start';
 import { and, asc, eq, gte, isNull, sql } from 'drizzle-orm';
@@ -194,6 +200,7 @@ async function brandBreaches(db: ReturnType<typeof getDb>, fresh: boolean): Prom
           id: legalPages.id,
           slug: legalPages.slug,
           title: legalPages.title,
+          seoDescription: legalPages.seoDescription,
           body: legalPages.body,
         })
         .from(legalPages)
@@ -236,16 +243,22 @@ async function brandBreaches(db: ReturnType<typeof getDb>, fresh: boolean): Prom
     ]);
   }
   for (const f of faqRows) check('faq', f.id, f.question, [f.question, doc(f.answer)]);
-  // A repeating event is one row per date, all with the same wording: check it once.
+  // A repeating event is one row per date, usually with the same wording: check each wording once.
+  // A date edited on its own can differ from the rest, so it is not skipped for being in a series.
   const seen = new Set<string>();
   for (const e of eventRows) {
-    const key = e.seriesId ?? e.id;
+    const key = `${e.seriesId ?? e.id}|${JSON.stringify([e.title, e.summary, e.description, e.venue])}`;
     if (seen.has(key)) continue;
     seen.add(key);
     check('event', e.id, e.title, [e.title, e.summary, doc(e.description), e.venue]);
   }
-  for (const l of locationRows) check('location', l.id, l.name, [l.name, l.intro, l.about]);
-  for (const g of legalRows) check('legal', g.id, g.title, [g.title, doc(g.body)], g.slug);
+  for (const l of locationRows) {
+    // Stored as a rich text document, or as Markdown in older rows.
+    check('location', l.id, l.name, [l.name, l.intro, storedToRichText(l.about)]);
+  }
+  for (const g of legalRows) {
+    check('legal', g.id, g.title, [g.title, g.seoDescription, doc(g.body)], g.slug);
+  }
 
   const worst = (b: BrandBreach) => b.never.reduce((sum, f) => sum + f.count, 0);
   rows.sort((a, b) => worst(b) - worst(a) || a.title.localeCompare(b.title));

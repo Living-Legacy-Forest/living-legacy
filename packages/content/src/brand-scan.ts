@@ -31,11 +31,20 @@ export function scanBrand(
       pieces.push(outline.text, ...outline.imageAlts);
     }
   }
-  // Each distinct piece once: a search title that repeats the title would double every count.
-  const text = [...new Set(pieces.filter(Boolean))].join('\n');
-  if (!text) return null;
-
-  const findings = findBrandProblems(text, rules);
+  // Each distinct piece once, and each on its own: a search title that repeats the title would
+  // double every count, and joined pieces could make a name that is in neither ("Earth" then
+  // "SApHE").
+  const merged = new Map<string, BrandFinding>();
+  for (const piece of new Set(pieces.filter(Boolean))) {
+    for (const finding of findBrandProblems(piece, rules)) {
+      const key = `${finding.kind}|${finding.severity}|${finding.instead}|${finding.found.toLowerCase()}`;
+      const seen = merged.get(key);
+      if (seen) seen.count += finding.count;
+      else merged.set(key, { ...finding });
+    }
+  }
+  const findings = [...merged.values()];
+  if (findings.length === 0) return null;
   const never = findings
     .filter((f) => f.severity === 'critical')
     .map(({ found, count, instead, kind }) => ({ found, count, instead, kind }));

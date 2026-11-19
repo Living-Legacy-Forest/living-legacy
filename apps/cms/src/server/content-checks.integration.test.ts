@@ -104,6 +104,64 @@ describe('brand language check', () => {
     expect((await brand()).total).toBe(1);
   });
 
+  it("reads a legal page's search description too", async () => {
+    await testDb()
+      .insert(legalPages)
+      .values({
+        slug: 'privacy',
+        title: 'Privacy',
+        status: 'published',
+        seoDescription: 'Where your plot is kept',
+        body: doc('Quiet and kind.'),
+      });
+    expect((await brand()).rows.map((r) => r.kind)).toEqual(['legal']);
+  });
+
+  it('checks a date of a repeating event that was edited on its own', async () => {
+    await testDb()
+      .insert(events)
+      .values(
+        [
+          { slug: 'a', summary: 'A calm morning' },
+          { slug: 'b', summary: 'Plots available' },
+          { slug: 'c', summary: 'A calm morning' },
+        ].map((e) => ({
+          ...e,
+          title: 'Open day',
+          seriesId: 'series-1',
+          startsAt: soon(),
+          endsAt: soon(),
+          status: 'published' as const,
+        }))
+      );
+    expect((await brand()).total).toBe(1);
+  });
+
+  it("reads a location's about as a document, so formatting does not hide a name", async () => {
+    const about = JSON.stringify({
+      type: 'doc',
+      content: [
+        {
+          type: 'paragraph',
+          content: [
+            { type: 'text', text: 'Earth' },
+            { type: 'text', text: 'saphe', marks: [{ type: 'bold' }] },
+          ],
+        },
+      ],
+    });
+    await testDb().insert(locations).values({
+      name: 'Living Legacy Somewhere',
+      slug: 'somewhere',
+      state: 'VIC',
+      stage: 'live',
+      status: 'published',
+      about,
+    });
+    const { rows } = await brand();
+    expect(rows[0]?.never[0]).toMatchObject({ found: 'Earthsaphe', instead: 'EarthSApHE' });
+  });
+
   it('judges by the guide an admin has edited in Settings, not the starting list', async () => {
     const admin = await addUser('admin');
     await testDb()

@@ -48,7 +48,7 @@ export function EventToolbar({
   onToggleSide: () => void;
   onCancelEvent: () => void;
   onDelete: () => void;
-  /** The date picker already says where it stands, so phones leave out the badge. */
+  /** The date picker is in this bar and already says where it stands, so the badge is left out. */
   statusInPicker?: boolean;
   /** Tabs and the date picker, between the status and the buttons. */
   children?: React.ReactNode;
@@ -98,7 +98,7 @@ export function EventToolbar({
           </button>
         }
       />
-      <Badge variant="outline" className={statusInPicker ? 'max-md:hidden' : undefined}>
+      <Badge variant="outline" className={statusInPicker ? 'hidden' : undefined}>
         {event ? dateStatus(event) : 'New'}
       </Badge>
       {editor.dirty && (

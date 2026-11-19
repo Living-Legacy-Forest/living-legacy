@@ -77,6 +77,9 @@ export function EventEditor({
   const [allDates, setAllDates] = useState(false);
 
   const cancelled = event?.status === 'cancelled';
+  // A repeating event's date moves to the side panel while it is beside the form; with the panel
+  // hidden, or stacked under the form on a phone, it stays up in the bar.
+  const dateInPanel = Boolean(event) && dates.length > 1 && desktop && showSide;
   const showingAll = view === 'dashboard' && allDates && dates.length > 1;
 
   /** Goes to the list; the promise settles once it has, before anything is refreshed. */
@@ -92,6 +95,7 @@ export function EventEditor({
       event={event}
       dates={dates}
       showingAll={showingAll}
+      showDate={!dateInPanel}
       onPickDate={(id) => {
         setAllDates(id === null);
         if (id) onPickDate?.(id);
@@ -190,7 +194,7 @@ export function EventEditor({
                   onToggleSide={() => setShowSide((v) => !v)}
                   onCancelEvent={() => setCancelling(true)}
                   onDelete={() => setDeleting(true)}
-                  statusInPicker={dates.length > 1}
+                  statusInPicker={dates.length > 1 && !dateInPanel}
                 >
                   {viewBar}
                 </EventToolbar>
@@ -217,7 +221,11 @@ export function EventEditor({
                 id="event-side"
                 className="text-ui lg:no-scrollbar min-w-0 lg:h-[calc(100svh-7.5rem)] lg:overflow-x-hidden lg:overflow-y-auto lg:overscroll-contain lg:pb-6 lg:pl-6"
               >
-                <EventSidePanel editor={editor} event={event} />
+                <EventSidePanel
+                  editor={editor}
+                  event={event}
+                  series={dateInPanel ? { dates, onPick: (id) => onPickDate?.(id) } : undefined}
+                />
               </aside>
             </ResizablePanel>
           </ResizablePanels>

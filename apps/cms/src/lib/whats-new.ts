@@ -49,6 +49,18 @@ export type WhatsNewEntry = {
 
 export const whatsNew: WhatsNewEntry[] = [
   {
+    id: '2026-11-19-3',
+    kind: 'improved',
+    title: 'A tidier event bar',
+    items: [
+      {
+        title: 'Switch dates from the side panel',
+        body: 'On a repeating event, the date you are viewing now sits at the top of the side panel, so the bar above has room for Preview, Publish and Save on one line. Hide the panel, or use a phone, and it goes back to the bar.',
+        link: { label: 'Open Events', to: '/events' },
+      },
+    ],
+  },
+  {
     id: '2026-11-19-2',
     kind: 'improved',
     title: 'Only real numbers in charts',

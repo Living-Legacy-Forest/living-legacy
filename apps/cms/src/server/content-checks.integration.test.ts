@@ -1,5 +1,5 @@
 // The brand language check, against local D1: which published content it reads, and which it leaves.
-import { events, faqs, legalPages, locations, posts, siteSettings } from '@ll/db/schema';
+import { events, faqs, legalPages, locations, posts, redirects, siteSettings } from '@ll/db/schema';
 import { beforeEach, describe, expect, it } from 'vitest';
 import { addUser, days, testDb } from '../../test/fixtures';
 import { loadContentChecks } from './content-checks';
@@ -19,6 +19,7 @@ beforeEach(async () => {
   await db.delete(locations);
   await db.delete(legalPages);
   await db.delete(siteSettings);
+  await db.delete(redirects);
 });
 
 const brand = async () => (await loadContentChecks(testDb())).brand;
@@ -191,5 +192,144 @@ describe('brand language check', () => {
         { title: 'B', slug: 'b', status: 'published', excerpt: 'Plots, plots and a grave.' },
       ]);
     expect((await brand()).rows.map((r) => r.title)).toEqual(['B', 'A']);
+  });
+});
+
+const withLinks = (...hrefs: string[]) => ({
+  type: 'doc',
+  content: [
+    {
+      type: 'paragraph',
+      content: hrefs.flatMap((href, i) => [
+        { type: 'text', text: `link ${i} `, marks: [{ type: 'link', attrs: { href } }] },
+        { type: 'text', text: ' and ' },
+      ]),
+    },
+  ],
+});
+const links = async () => (await loadContentChecks(testDb())).links;
+
+describe('broken link check', () => {
+  it('finds links to pages that are not there, in every type it reads', async () => {
+    const db = testDb();
+    await db.insert(posts).values({
+      title: 'A post',
+      slug: 'a-post',
+      status: 'published',
+      body: withLinks('/old-page'),
+    });
+    await db
+      .insert(faqs)
+      .values({ question: 'Q?', answer: withLinks('/old-faq-page'), status: 'published' });
+    await db.insert(events).values({
+      title: 'Open day',
+      slug: 'open-day',
+      startsAt: soon(),
+      endsAt: soon(),
+      status: 'published',
+      description: withLinks('/old-event-page'),
+    });
+    await db.insert(locations).values({
+      name: 'Living Legacy Somewhere',
+      slug: 'somewhere',
+      state: 'VIC',
+      stage: 'live',
+      status: 'published',
+      about: JSON.stringify(withLinks('/old-location-page')),
+    });
+    await db.insert(legalPages).values({
+      slug: 'terms',
+      title: 'Terms',
+      status: 'published',
+      body: withLinks('/old-legal-page'),
+    });
+
+    const { total, rows } = await links();
+    expect(total).toBe(5);
+    expect(rows.map((r) => r.kind).sort()).toEqual(['event', 'faq', 'legal', 'location', 'post']);
+    expect(rows.find((r) => r.kind === 'post')?.broken).toEqual([
+      { href: '/old-page', text: 'link 0', reason: 'missing' },
+    ]);
+  });
+
+  it('passes links to pages the site serves, ones a redirect catches, and other sites', async () => {
+    const db = testDb();
+    await db.insert(redirects).values({ fromPath: '/moved', toPath: '/contact', statusCode: 301 });
+    await db.insert(posts).values([
+      { title: 'Target', slug: 'target', status: 'published' },
+      {
+        title: 'Linker',
+        slug: 'linker',
+        status: 'published',
+        body: withLinks(
+          '/contact',
+          '/blog/target',
+          '/moved',
+          'https://other.example/page',
+          'https://livinglegacy.com.au/faqs/#top',
+          '/documents/guide.pdf',
+          'mailto:hello@example.com'
+        ),
+      },
+    ]);
+    expect((await links()).total).toBe(0);
+  });
+
+  it('fails a link to a draft post, a trashed post, an off redirect and a page marked as gone', async () => {
+    const db = testDb();
+    await db.insert(redirects).values([
+      { fromPath: '/removed', toPath: '', statusCode: 410 },
+      { fromPath: '/switched-off', toPath: '/contact', statusCode: 301, enabled: false },
+    ]);
+    await db.insert(posts).values([
+      { title: 'A draft', slug: 'a-draft', status: 'draft' },
+      { title: 'A trashed one', slug: 'trashed', status: 'published', deletedAt: new Date() },
+      {
+        title: 'Linker',
+        slug: 'linker',
+        status: 'published',
+        body: withLinks('/blog/a-draft', '/blog/trashed', '/switched-off', '/removed'),
+      },
+    ]);
+    const { rows } = await links();
+    expect(rows).toHaveLength(1);
+    expect(rows[0]?.broken.map((b) => [b.href, b.reason])).toEqual([
+      ['/blog/a-draft', 'missing'],
+      ['/blog/trashed', 'missing'],
+      ['/switched-off', 'missing'],
+      ['/removed', 'gone'],
+    ]);
+  });
+
+  it('does not call a forest that has its own site a broken link target', async () => {
+    const db = testDb();
+    await db.insert(locations).values([
+      { name: 'Here', slug: 'here', state: 'VIC', stage: 'live', status: 'published' },
+      {
+        name: 'Elsewhere',
+        slug: 'elsewhere',
+        state: 'NSW',
+        stage: 'external',
+        status: 'published',
+      },
+    ]);
+    await db.insert(posts).values({
+      title: 'Linker',
+      slug: 'linker',
+      status: 'published',
+      body: withLinks('/locations/here', '/locations/elsewhere'),
+    });
+    const { rows } = await links();
+    expect(rows[0]?.broken.map((b) => b.href)).toEqual(['/locations/elsewhere']);
+  });
+
+  it('puts the item with the most broken links first', async () => {
+    await testDb()
+      .insert(posts)
+      .values([
+        { title: 'One', slug: 'one', status: 'published', body: withLinks('/x') },
+        { title: 'Three', slug: 'three', status: 'published', body: withLinks('/a', '/b', '/c') },
+      ]);
+    expect((await links()).rows.map((r) => r.title)).toEqual(['Three', 'One']);
   });
 });

@@ -31,5 +31,6 @@ export * from './brand-language';
 export * from './brand-scan';
 export * from './content-score';
 export * from './migration';
+export * from './link-check';
 export * from './structured-data';
 export * from './legal-pages';

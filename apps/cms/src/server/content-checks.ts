@@ -1,11 +1,15 @@
 import {
   type BrandScanPart,
+  type BrokenLink,
   type RichTextDoc,
+  brokenLinks,
   can,
+  liveSitePaths,
+  outlineRichText,
   scanBrand,
   storedToRichText,
 } from '@ll/content';
-import { events, faqs, legalPages, locations, media, posts } from '@ll/db/schema';
+import { events, faqs, legalPages, locations, media, posts, redirects } from '@ll/db/schema';
 import { createServerFn } from '@tanstack/react-start';
 import { and, asc, eq, gte, isNull, sql } from 'drizzle-orm';
 import { getDb } from '@/lib/db';
@@ -124,19 +128,21 @@ export async function loadContentChecks(
     }));
 
   const capped = <T>(rows: T[]) => ({ total: rows.length, rows: rows.slice(0, SHOWN) });
+  const scanned = await scanPublished(db, fresh);
   return {
     noDescription: capped(noDescription),
     noImage: capped(noImage),
     noAlt: capped(noAlt),
     events: capped(eventsMissing),
-    brand: capped(await brandBreaches(db, fresh)),
+    brand: capped(scanned.brand),
+    links: capped(scanned.links),
   };
 }
 
-export type BrandKind = 'post' | 'faq' | 'event' | 'location' | 'legal';
+export type ItemKind = 'post' | 'faq' | 'event' | 'location' | 'legal';
 export type BrandBreach = {
   id: string;
-  kind: BrandKind;
+  kind: ItemKind;
   title: string;
   /** A legal page is opened by its slug. */
   slug?: string;
@@ -145,81 +151,116 @@ export type BrandBreach = {
   /** Words that are only usually wrong; counted, not listed. */
   avoid: number;
 };
+export type LinkBreach = {
+  id: string;
+  kind: ItemKind;
+  title: string;
+  slug?: string;
+  /** Links to this site that lead nowhere. */
+  broken: BrokenLink[];
+};
 
 // The scan reads every published body, so the dashboard reuses a recent answer.
-const BRAND_TTL_MS = 5 * 60 * 1000;
-let brandMemo: { at: number; rows: BrandBreach[] } | null = null;
+const SCAN_TTL_MS = 5 * 60 * 1000;
+let scanMemo: { at: number; brand: BrandBreach[]; links: LinkBreach[] } | null = null;
 
-/** Published content that breaks the brand language guide, the worst first. */
-async function brandBreaches(db: ReturnType<typeof getDb>, fresh: boolean): Promise<BrandBreach[]> {
-  if (!fresh && brandMemo && Date.now() - brandMemo.at < BRAND_TTL_MS) return brandMemo.rows;
+/**
+ * One pass over everything published: what breaks the brand language guide, and which links to
+ * this site lead nowhere. Both read the same bodies, so they share the read.
+ */
+async function scanPublished(db: ReturnType<typeof getDb>, fresh: boolean) {
+  if (!fresh && scanMemo && Date.now() - scanMemo.at < SCAN_TTL_MS) return scanMemo;
 
-  const [targets, [postRows, faqRows, eventRows, locationRows, legalRows]] = await Promise.all([
-    loadContentTargets(db),
-    db.batch([
-      db
-        .select({
-          id: posts.id,
-          title: posts.title,
-          seoTitle: posts.seoTitle,
-          seoDescription: posts.seoDescription,
-          excerpt: posts.excerpt,
-          socialTitle: posts.socialTitle,
-          socialDescription: posts.socialDescription,
-          body: posts.body,
-        })
-        .from(posts)
-        .where(and(eq(posts.status, 'published'), isNull(posts.deletedAt))),
-      db
-        .select({ id: faqs.id, question: faqs.question, answer: faqs.answer })
-        .from(faqs)
-        .where(and(eq(faqs.status, 'published'), isNull(faqs.deletedAt))),
-      db
-        .select({
-          id: events.id,
-          seriesId: events.seriesId,
-          title: events.title,
-          summary: events.summary,
-          description: events.description,
-          venue: events.venue,
-        })
-        .from(events)
-        .where(and(eq(events.status, 'published'), gte(events.endsAt, new Date())))
-        .orderBy(asc(events.startsAt)),
-      db
-        .select({
-          id: locations.id,
-          name: locations.name,
-          intro: locations.intro,
-          about: locations.about,
-        })
-        .from(locations)
-        .where(and(eq(locations.status, 'published'), isNull(locations.deletedAt))),
-      db
-        .select({
-          id: legalPages.id,
-          slug: legalPages.slug,
-          title: legalPages.title,
-          seoDescription: legalPages.seoDescription,
-          body: legalPages.body,
-        })
-        .from(legalPages)
-        .where(and(eq(legalPages.status, 'published'), isNull(legalPages.deletedAt))),
-    ]),
-  ]);
+  const [targets, [postRows, faqRows, eventRows, locationRows, legalRows, ruleRows]] =
+    await Promise.all([
+      loadContentTargets(db),
+      db.batch([
+        db
+          .select({
+            id: posts.id,
+            slug: posts.slug,
+            title: posts.title,
+            seoTitle: posts.seoTitle,
+            seoDescription: posts.seoDescription,
+            excerpt: posts.excerpt,
+            socialTitle: posts.socialTitle,
+            socialDescription: posts.socialDescription,
+            body: posts.body,
+          })
+          .from(posts)
+          .where(and(eq(posts.status, 'published'), isNull(posts.deletedAt))),
+        db
+          .select({ id: faqs.id, question: faqs.question, answer: faqs.answer })
+          .from(faqs)
+          .where(and(eq(faqs.status, 'published'), isNull(faqs.deletedAt))),
+        db
+          .select({
+            id: events.id,
+            seriesId: events.seriesId,
+            title: events.title,
+            summary: events.summary,
+            description: events.description,
+            venue: events.venue,
+          })
+          .from(events)
+          .where(and(eq(events.status, 'published'), gte(events.endsAt, new Date())))
+          .orderBy(asc(events.startsAt)),
+        db
+          .select({
+            id: locations.id,
+            slug: locations.slug,
+            stage: locations.stage,
+            name: locations.name,
+            intro: locations.intro,
+            about: locations.about,
+          })
+          .from(locations)
+          .where(and(eq(locations.status, 'published'), isNull(locations.deletedAt))),
+        db
+          .select({
+            id: legalPages.id,
+            slug: legalPages.slug,
+            title: legalPages.title,
+            seoDescription: legalPages.seoDescription,
+            body: legalPages.body,
+          })
+          .from(legalPages)
+          .where(and(eq(legalPages.status, 'published'), isNull(legalPages.deletedAt))),
+        db
+          .select({
+            id: redirects.id,
+            fromPath: redirects.fromPath,
+            toPath: redirects.toPath,
+            statusCode: redirects.statusCode,
+            keepQuery: redirects.keepQuery,
+          })
+          .from(redirects)
+          .where(eq(redirects.enabled, true)),
+      ]),
+    ]);
 
   const rules = targets.brandRules;
-  const rows: BrandBreach[] = [];
+  // The pages the new site serves, to tell a link that works from one that leads nowhere.
+  const live = liveSitePaths({
+    postSlugs: postRows.map((p) => p.slug),
+    // A forest that has moved to its own site has no page here.
+    locationSlugs: locationRows.filter((l) => l.stage !== 'external').map((l) => l.slug),
+  });
+  const brand: BrandBreach[] = [];
+  const links: LinkBreach[] = [];
+  const doc = (value: unknown) => (value as RichTextDoc | null) ?? null;
+
   const check = (
-    kind: BrandKind,
+    kind: ItemKind,
     id: string,
     title: string,
     parts: BrandScanPart[],
+    documents: (RichTextDoc | null)[],
     slug?: string
   ) => {
     const result = scanBrand(parts, rules);
     if (result) {
-      rows.push({
+      brand.push({
         id,
         kind,
         title,
@@ -228,21 +269,28 @@ async function brandBreaches(db: ReturnType<typeof getDb>, fresh: boolean): Prom
         avoid: result.avoid,
       });
     }
+    const broken = brokenLinks(
+      documents.flatMap((d) => (d ? outlineRichText(d).links : [])),
+      ruleRows,
+      live
+    );
+    if (broken.length > 0) links.push({ id, kind, title, slug, broken });
   };
-  const doc = (value: unknown) => (value as RichTextDoc | null) ?? null;
 
   for (const p of postRows) {
-    check('post', p.id, p.title, [
+    const body = doc(p.body);
+    check(
+      'post',
+      p.id,
       p.title,
-      p.seoTitle,
-      p.seoDescription,
-      p.excerpt,
-      p.socialTitle,
-      p.socialDescription,
-      doc(p.body),
-    ]);
+      [p.title, p.seoTitle, p.seoDescription, p.excerpt, p.socialTitle, p.socialDescription, body],
+      [body]
+    );
   }
-  for (const f of faqRows) check('faq', f.id, f.question, [f.question, doc(f.answer)]);
+  for (const f of faqRows) {
+    const answer = doc(f.answer);
+    check('faq', f.id, f.question, [f.question, answer], [answer]);
+  }
   // A repeating event is one row per date, usually with the same wording: check each wording once.
   // A date edited on its own can differ from the rest, so it is not skipped for being in a series.
   const seen = new Set<string>();
@@ -250,18 +298,22 @@ async function brandBreaches(db: ReturnType<typeof getDb>, fresh: boolean): Prom
     const key = `${e.seriesId ?? e.id}|${JSON.stringify([e.title, e.summary, e.description, e.venue])}`;
     if (seen.has(key)) continue;
     seen.add(key);
-    check('event', e.id, e.title, [e.title, e.summary, doc(e.description), e.venue]);
+    const description = doc(e.description);
+    check('event', e.id, e.title, [e.title, e.summary, description, e.venue], [description]);
   }
   for (const l of locationRows) {
     // Stored as a rich text document, or as Markdown in older rows.
-    check('location', l.id, l.name, [l.name, l.intro, storedToRichText(l.about)]);
+    const about = storedToRichText(l.about);
+    check('location', l.id, l.name, [l.name, l.intro, about], [about]);
   }
   for (const g of legalRows) {
-    check('legal', g.id, g.title, [g.title, g.seoDescription, doc(g.body)], g.slug);
+    const body = doc(g.body);
+    check('legal', g.id, g.title, [g.title, g.seoDescription, body], [body], g.slug);
   }
 
-  const worst = (b: BrandBreach) => b.never.reduce((sum, f) => sum + f.count, 0);
-  rows.sort((a, b) => worst(b) - worst(a) || a.title.localeCompare(b.title));
-  brandMemo = { at: Date.now(), rows };
-  return rows;
+  const worstBrand = (b: BrandBreach) => b.never.reduce((sum, f) => sum + f.count, 0);
+  brand.sort((a, b) => worstBrand(b) - worstBrand(a) || a.title.localeCompare(b.title));
+  links.sort((a, b) => b.broken.length - a.broken.length || a.title.localeCompare(b.title));
+  scanMemo = { at: Date.now(), brand, links };
+  return scanMemo;
 }

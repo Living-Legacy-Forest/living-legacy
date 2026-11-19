@@ -21,7 +21,7 @@ import {
   trendRanges,
 } from '@/lib/dashboard-trend';
 import { RollingNumber } from '@/components/rolling-number';
-import { formatInteger } from '@/lib/format';
+import { formatCompact, formatInteger } from '@/lib/format';
 import { notify } from '@/lib/notify';
 import { cn } from '@/lib/utils';
 import { type DashboardTrend, getDashboardTrend } from '@/server/dashboard-trend';
@@ -157,7 +157,7 @@ export function TrendCard({ analytics }: { analytics: boolean }) {
           loading={loading}
           formatValue={(value) => formatInteger(value)}
           // Counts are whole, so a small range keeps only its whole-number lines labelled.
-          formatTick={(value) => (Number.isInteger(value) ? formatInteger(value) : '')}
+          formatTick={(value) => (Number.isInteger(value) ? formatCompact(value) : '')}
           emptyLabel={
             !analytics
               ? "Website analytics aren't connected to the CMS yet"

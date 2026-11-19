@@ -11,7 +11,7 @@ import {
   percentOf,
 } from '@/lib/analytics';
 import { axisEvery, longDate, percentChange, shortDate } from '@/lib/dashboard-trend';
-import { formatInteger } from '@/lib/format';
+import { formatCompact, formatInteger } from '@/lib/format';
 import { siteUrl } from '@/lib/site';
 import { cn } from '@/lib/utils';
 import type { AnalyticsResult, Overview, PeriodTotals } from '@/server/analytics';
@@ -116,7 +116,7 @@ function OverviewBody({ data, days }: { data: Overview; days: AnalyticsRange }) 
             data={chart}
             height={240}
             formatValue={(value) => formatInteger(value)}
-            formatTick={(value) => (Number.isInteger(value) ? formatInteger(value) : '')}
+            formatTick={(value) => (Number.isInteger(value) ? formatCompact(value) : '')}
             categoryLabel="Day"
           />
         </CardContent>

@@ -113,7 +113,7 @@
 .chart {
   position: relative;
   display: grid;
-  grid-template-columns: minmax(0, 1fr) 48px;
+  grid-template-columns: minmax(0, 1fr) var(--gutter, 48px);
   grid-template-rows: auto 26px;
   min-width: 0;
 }
@@ -293,11 +293,16 @@
   grid-area: 1 / 2;
   min-width: 0;
 }
+/* Pinned to the column's right edge, so a short number ("0", "25") leaves no gap there and a long
+   one grows to the left, into the plot, never out of the card. Flex, not text-align: text-align
+   only right-aligns text that fits, and wider text would overflow to the right. */
 .tick {
   position: absolute;
   top: 0;
-  left: 10px;
-  display: block;
+  right: 0;
+  left: 6px;
+  display: flex;
+  justify-content: flex-end;
   height: 0;
   white-space: nowrap;
   pointer-events: none;

@@ -48,12 +48,19 @@ const colours = {
   ink: '#17231c',
   inkSoft: '#4b5b51',
   moss: '#2c4633',
+  // The CMS's raised button, mixed from the green: lit at the top, a bright edge, a darker rim.
+  mossTop: '#4c6252',
+  mossHighlight: '#6b7e70',
+  mossEdge: '#283f2e',
   paper: '#f6f2e9',
   line: '#e4dccb',
   white: '#ffffff',
 };
 
 const SITE_URL = 'https://livinglegacy.com.au';
+// Always the live CMS's copy, never the running one's: a mail app cannot reach localhost, so in
+// development, or on a preview, the logo would show as a broken image. It is a static asset.
+const LOGO_URL = 'https://cms.livinglegacy.com.au/email/logo-mark.png';
 const LEGAL_LINE = 'Forest Conservation Australia Pty Ltd · ABN 59 639 330 617';
 const serif = "Georgia, 'Times New Roman', serif";
 const sans = "-apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif";
@@ -70,19 +77,20 @@ function escapeHtml(value: string) {
 export const cmsOrigin = () => new URL(env.BETTER_AUTH_URL).origin;
 
 /**
- * One branded layout for every CMS email. Tables and inline styles, because
+ * One branded layout for every CMS email: the logo and heading centred above a card that holds
+ * the message and button, with the note as a strip along its foot. Tables and inline styles, because
  * Outlook and Gmail ignore most modern CSS. `preheader`, `heading` and
  * `button.url` are plain text and escaped here; `intro` is HTML, so callers
  * escape what they put in it.
  */
-function layout(opts: {
+export function layout(opts: {
   /** Inbox preview text, shown after the subject and hidden in the email. */
   preheader: string;
   heading: string;
   /** Paragraphs of HTML above the button. */
   intro: string[];
   button: { label: string; url: string };
-  /** HTML shown in a soft panel below the button, e.g. a security note. */
+  /** HTML shown in a tinted strip along the bottom of the card, e.g. a security note. */
   note?: string;
 }) {
   const url = escapeHtml(opts.button.url);
@@ -92,7 +100,6 @@ function layout(opts: {
         `<p style="margin:0 0 16px;font-family:${sans};font-size:15px;line-height:24px;color:${colours.inkSoft};">${p}</p>`
     )
     .join('');
-
   return `<!doctype html>
 <html lang="en-AU">
 <head>
@@ -107,55 +114,62 @@ function layout(opts: {
 <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="background:${colours.paper};">
   <tr>
     <td align="center" style="padding:40px 16px;">
-      <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="max-width:520px;">
+      <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="max-width:560px;">
         <tr>
-          <td style="padding:0 4px 24px;">
-            <table role="presentation" cellpadding="0" cellspacing="0" border="0">
+          <td align="center" style="padding:0 0 28px;">
+            <table role="presentation" align="center" cellpadding="0" cellspacing="0" border="0">
               <tr>
                 <td style="vertical-align:middle;padding-right:12px;">
                   <!-- The mark is white, so it sits on a green tile. -->
                   <table role="presentation" cellpadding="0" cellspacing="0" border="0">
                     <tr>
                       <td style="background:${colours.moss};border-radius:10px;padding:8px 7px;">
-                        <img src="${cmsOrigin()}/email/logo-mark.png" width="30" height="25" alt="Living Legacy" style="display:block;border:0;">
+                        <img src="${LOGO_URL}" width="30" height="25" alt="Living Legacy" style="display:block;border:0;">
                       </td>
                     </tr>
                   </table>
                 </td>
-                <td style="vertical-align:middle;font-family:${serif};font-size:18px;color:${colours.ink};">Living Legacy</td>
+                <td style="vertical-align:middle;font-family:${serif};font-size:20px;"><a href="${SITE_URL}" style="color:${colours.ink};text-decoration:none;">Living Legacy</a></td>
               </tr>
             </table>
           </td>
         </tr>
         <tr>
-          <td style="background:${colours.white};border:1px solid ${colours.line};border-radius:12px;padding:40px 36px;">
-            <h1 style="margin:0 0 16px;font-family:${serif};font-size:26px;line-height:32px;font-weight:normal;color:${colours.ink};">${escapeHtml(opts.heading)}</h1>
-            ${paragraphs}
-            <table role="presentation" cellpadding="0" cellspacing="0" border="0" style="margin:8px 0 24px;">
+          <td align="center" style="padding:0 8px 28px;">
+            <h1 style="margin:0;font-family:${serif};font-size:30px;line-height:38px;font-weight:normal;text-align:center;color:${colours.ink};">${escapeHtml(opts.heading)}</h1>
+          </td>
+        </tr>
+        <tr>
+          <td>
+            <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="border-collapse:separate;border-spacing:0;background:${colours.white};border:1px solid ${colours.line};border-radius:12px;overflow:hidden;">
               <tr>
-                <td style="border-radius:8px;background:${colours.moss};">
-                  <a href="${url}" style="display:inline-block;padding:13px 28px;font-family:${sans};font-size:15px;font-weight:600;color:${colours.white};text-decoration:none;border-radius:8px;">${opts.button.label}</a>
+                <td style="padding:36px 36px 32px;">
+                  ${paragraphs}
+                  <table role="presentation" cellpadding="0" cellspacing="0" border="0" style="margin:8px 0 24px;">
+                    <tr>
+                      <td style="border-radius:8px;background:${colours.moss};">
+                        <a href="${url}" style="display:inline-block;padding:8px 20px;font-family:${sans};font-size:14px;line-height:20px;font-weight:500;color:${colours.white};text-decoration:none;background-color:${colours.moss};background-image:linear-gradient(to bottom,${colours.mossTop},${colours.moss});border:1px solid ${colours.mossEdge};border-radius:8px;box-shadow:inset 0 1px 0 ${colours.mossHighlight},0 1px 2px rgba(0,0,0,0.05);">${opts.button.label}</a>
+                      </td>
+                    </tr>
+                  </table>
+                  <p style="margin:0 0 6px;font-family:${sans};font-size:13px;line-height:20px;color:${colours.inkSoft};">Or copy this link:</p>
+                  <p style="margin:0;font-family:${sans};font-size:13px;line-height:20px;word-break:break-all;"><a href="${url}" style="color:${colours.moss};">${url}</a></p>
                 </td>
-              </tr>
-            </table>
-            <p style="margin:0 0 6px;font-family:${sans};font-size:13px;line-height:20px;color:${colours.inkSoft};">If the button does not work, copy this link into your browser:</p>
-            <p style="margin:0;font-family:${sans};font-size:13px;line-height:20px;word-break:break-all;"><a href="${url}" style="color:${colours.moss};">${url}</a></p>
-            ${
-              opts.note
-                ? `<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="margin-top:28px;">
+              </tr>${
+                opts.note
+                  ? `
               <tr>
-                <td style="background:${colours.paper};border-radius:8px;padding:14px 16px;font-family:${sans};font-size:13px;line-height:20px;color:${colours.inkSoft};">${opts.note}</td>
-              </tr>
-            </table>`
-                : ''
-            }
+                <td style="background:${colours.paper};border-top:1px solid ${colours.line};padding:20px 36px;font-family:${sans};font-size:13px;line-height:20px;color:${colours.inkSoft};">${opts.note}</td>
+              </tr>`
+                  : ''
+              }
+            </table>
           </td>
         </tr>
         <tr>
-          <td style="padding:24px 4px 0;font-family:${sans};font-size:12px;line-height:19px;color:${colours.inkSoft};">
-            <p style="margin:0 0 4px;"><a href="${SITE_URL}" style="color:${colours.ink};text-decoration:none;font-weight:600;">Living Legacy</a></p>
+          <td align="center" style="padding:32px 8px 0;font-family:${sans};font-size:12px;line-height:19px;color:${colours.inkSoft};text-align:center;">
             <p style="margin:0 0 4px;">${LEGAL_LINE}</p>
-            <p style="margin:0;">Sent by the Living Legacy content system. Please do not reply to this email.</p>
+            <p style="margin:0;">Please do not reply to this email.</p>
           </td>
         </tr>
       </table>
@@ -166,14 +180,7 @@ function layout(opts: {
 </html>`;
 }
 
-const textFooter = [
-  '',
-  '--',
-  'Living Legacy',
-  LEGAL_LINE,
-  SITE_URL,
-  'Sent by the Living Legacy content system. Please do not reply to this email.',
-];
+const textFooter = ['', '--', LEGAL_LINE, 'Please do not reply to this email.'];
 
 export async function sendMagicLinkEmail(to: string, url: string): Promise<void> {
   const subject = 'Your sign-in link for Living Legacy';
@@ -181,25 +188,22 @@ export async function sendMagicLinkEmail(to: string, url: string): Promise<void>
   const now = Date.now();
   const requested = `${formatDateTime(now, timeZone)} (${zoneName(timeZone, now)})`;
   const text = [
-    'Sign in to the Living Legacy CMS with this link:',
+    'Sign in to Living Legacy with this link:',
     '',
     url,
     '',
     'It works once and expires in 5 minutes.',
     '',
-    `Requested for ${to} on ${requested}. If this was not you, you can ignore`,
-    'this email. No one can sign in without the link.',
+    `Requested for ${to} on ${requested}. If this was not you, ignore this email.`,
     ...textFooter,
   ].join('\n');
 
   const html = layout({
     preheader: 'Your sign-in link. It works once and expires in 5 minutes.',
     heading: 'Sign in to the CMS',
-    intro: [
-      'Use the button below to sign in to the Living Legacy content system. The link works once and expires in 5 minutes.',
-    ],
+    intro: ['This link works once and expires in 5 minutes.'],
     button: { label: 'Sign in', url },
-    note: `Requested for <strong style="color:${colours.ink};">${escapeHtml(to)}</strong> on ${escapeHtml(requested)}. If this was not you, you can ignore this email. No one can sign in without the link.`,
+    note: `Requested for <strong style="color:${colours.ink};">${escapeHtml(to)}</strong> on ${escapeHtml(requested)}. If this was not you, ignore this email.`,
   });
 
   await send({ to, subject, html, text });
@@ -244,8 +248,7 @@ export async function sendChangeEmailVerificationEmail(to: string, url: string):
     '',
     `Confirm it with this link: ${url}`,
     '',
-    'If this was not you, you can ignore this email. Your email stays unchanged',
-    'until this link is used.',
+    'If this was not you, ignore this email. Nothing changes until you confirm.',
     ...textFooter,
   ].join('\n');
 
@@ -253,10 +256,10 @@ export async function sendChangeEmailVerificationEmail(to: string, url: string):
     preheader: 'Confirm this email change to the Living Legacy CMS.',
     heading: 'Confirm your new email',
     intro: [
-      `Use the button below to confirm <strong style="color:${colours.ink};">${escapeHtml(to)}</strong> as the sign-in email for a Living Legacy CMS account.`,
+      `Confirm <strong style="color:${colours.ink};">${escapeHtml(to)}</strong> as your sign-in email.`,
     ],
     button: { label: 'Confirm email', url },
-    note: 'If this was not you, you can ignore this email. The email stays unchanged until this link is used.',
+    note: 'If this was not you, ignore this email. Nothing changes until you confirm.',
   });
 
   await send({ to, subject, html, text });
@@ -269,7 +272,7 @@ export async function sendInviteEmail(to: string, loginUrl: string, role: Role):
     '',
     `Go to ${loginUrl} and sign in with this email (${to}) to get started.`,
     '',
-    'If you were not expecting this invitation, you can ignore this email.',
+    'If you were not expecting this invitation, ignore this email.',
     ...textFooter,
   ].join('\n');
 
@@ -277,11 +280,10 @@ export async function sendInviteEmail(to: string, loginUrl: string, role: Role):
     preheader: 'You have been invited to help manage the Living Legacy website.',
     heading: 'You are invited',
     intro: [
-      `You have been given access to the Living Legacy content system, where the website is managed, as ${roleNames[role]}.`,
-      `Sign in with <strong style="color:${colours.ink};">${escapeHtml(to)}</strong> to get started. There is no password; we email you a sign-in link each time.`,
+      `You have been given access as ${roleNames[role]}. Sign in with <strong style="color:${colours.ink};">${escapeHtml(to)}</strong>. There is no password: we email you a sign-in link each time.`,
     ],
     button: { label: 'Accept invitation', url: loginUrl },
-    note: 'If you were not expecting this invitation, you can ignore this email. Nothing happens until you sign in.',
+    note: 'If you were not expecting this, ignore this email. Nothing happens until you sign in.',
   });
 
   await send({ to, subject, html, text });

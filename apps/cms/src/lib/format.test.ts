@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import {
   displayTime,
   formatBytes,
+  formatCompact,
   formatDate,
   formatRelative,
   formatTimeRange,
@@ -10,6 +11,19 @@ import {
 } from './format';
 
 const MELBOURNE = 'Australia/Melbourne';
+
+describe('formatCompact', () => {
+  it('keeps hundreds whole and shortens from the thousands, so an axis label stays narrow', () => {
+    expect([0, 25, 100, 950, 999].map(formatCompact)).toEqual(['0', '25', '100', '950', '999']);
+    expect([1000, 1200, 12_500, 125_000, 1_500_000].map(formatCompact)).toEqual([
+      '1K',
+      '1.2K',
+      '12.5K',
+      '125K',
+      '1.5M',
+    ]);
+  });
+});
 
 describe('formatBytes', () => {
   it('picks the largest unit that keeps the number at least 1', () => {

@@ -8,7 +8,7 @@ import {
   ChartTooltipContent,
 } from '@/components/ui/chart';
 import { chartReveal } from '@/lib/chart-motion';
-import { formatInteger } from '@/lib/format';
+import { formatCompact, formatInteger } from '@/lib/format';
 import { useTimeZone } from '@/lib/use-time-zone';
 import { axisEvery, longDate, shortDate } from '@/lib/dashboard-trend';
 import { type Part, type Range, type Trend, dayMonth, sum, weekName, weekStart } from './shared';
@@ -72,7 +72,6 @@ const barCursor = { fill: 'color-mix(in oklch, var(--muted-foreground) 10%, tran
 const tint = (share: number) => `color-mix(in oklch, var(--color-count) ${share}%, transparent)`;
 /** The trend's 128px (h-32) less the 26px date row. */
 const PLOT_HEIGHT = 102;
-const compact = new Intl.NumberFormat('en-AU', { notation: 'compact', maximumFractionDigits: 1 });
 const sentence = (text: string) => text.charAt(0).toUpperCase() + text.slice(1);
 
 /** The span as a line chart, or as bars. Hover or scrub for each day's or week's figure. */
@@ -115,7 +114,7 @@ export function TrendChart({ trend, range }: { trend: Trend; range: Range }) {
         formatValue={(value) => formatInteger(value)}
         // Counts are whole, so a small range keeps only its whole-number lines labelled. Big ones
         // are short ("1.5K"), as the axis column is narrow.
-        formatTick={(value) => (Number.isInteger(value) ? compact.format(value) : '')}
+        formatTick={(value) => (Number.isInteger(value) ? formatCompact(value) : '')}
         data={data.map((d, i) => ({
           key: String(i),
           label: d.name,
@@ -173,19 +172,21 @@ function PeriodBars({
  */
 export function PartsChart({ parts }: { parts: Part[] }) {
   return (
-    // Shorter than the trend charts; the card's figure still sits at its foot. From md up the ring
-    // follows the card, not the screen: beside an open sidebar the card is narrow, and a full-size
-    // ring would push its legend out of the card.
-    <div className="@container/parts flex h-28 items-center gap-3 md:gap-4">
+    // As tall as the trend charts (h-32), so cards in a row line up and the card's figure sits at
+    // the same foot. From md up the ring follows the card, not the screen: beside an open sidebar
+    // the card is narrow, and a full-size ring would push its legend out of the card. Never
+    // smaller than 80px: below that the hole is too narrow for a three-digit total ("2…").
+    <div className="@container/parts flex h-32 items-center gap-3 md:gap-4">
       {parts.some((p) => p.value > 0) && (
         <DonutChart
-          className="donut-compact w-16 shrink-0 md:w-28 md:@max-[14rem]/parts:w-16"
+          className="donut-compact w-28 shrink-0 md:w-32 md:@max-[14rem]/parts:w-24"
           label={parts.map((p) => p.label).join(', ')}
           data={parts.map((p) => ({ key: p.key, label: p.label, value: p.value }))}
           formatValue={formatInteger}
           legend={false}
-          size={112}
-          thickness={14}
+          // The ring never grows past this: 128px from md up, held to the card's width below that.
+          size={128}
+          thickness={16}
           groupBelow={0}
           maxSegments={parts.length}
         />

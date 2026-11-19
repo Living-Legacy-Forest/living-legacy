@@ -281,3 +281,7 @@
 :global(.donut-compact) :is(.centerLabel, .centerMeta) {
   display: none;
 }
+/* A small ring has little hole to spare: take less off its width than the full-size 16px. */
+:global(.donut-compact) .center {
+  width: calc(var(--inner) - 8px);
+}

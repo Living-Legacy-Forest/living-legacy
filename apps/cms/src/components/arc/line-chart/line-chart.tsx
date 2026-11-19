@@ -117,6 +117,8 @@ const fadeFast = { duration: duration.instant, ease: [...ease.standard] } as con
 /** Room above the top gridline, and the gap between the crosshair and its tooltip. */
 const TOP = 12,
   GAP = 14;
+/** The space between the plot and the value axis's numbers. */
+const TICK_GAP = 8;
 const PALETTE = [
   'var(--accent)',
   'color-mix(in oklab, var(--foreground) 46%, var(--surface))',
@@ -278,7 +280,9 @@ function TickLabel({
       exit={{ opacity: 0, transition: fadeFast }}
       transition={{ duration: duration.standard, ease: [...ease.standard] }}
     >
-      <span className={styles.tickText}>{format(value)}</span>
+      <span className={styles.tickText} data-tick-text>
+        {format(value)}
+      </span>
     </motion.span>
   );
 }
@@ -318,6 +322,7 @@ export function LineChart({
   const reduced = useReducedMotionSafe();
   const figure = useRef<HTMLElement>(null);
   const plot = useRef<HTMLDivElement>(null);
+  const gutter = useRef<HTMLDivElement>(null);
   const tip = useRef<HTMLDivElement>(null);
   const clip = useRef<SVGRectElement>(null);
   const crosshair = useRef<SVGLineElement>(null);
@@ -382,6 +387,12 @@ export function LineChart({
 
   const width = useRef(0);
   const [plotWidth, setPlotWidth] = useState(0);
+  // The value axis is as wide as its widest number, so the plot takes all the rest. Until it is
+  // measured the stylesheet's width stands.
+  const [gutterWidth, setGutterWidth] = useState<number | null>(null);
+  // Bumped to measure again: once the old labels have finished fading out (they are measured until
+  // they are gone), and when a web font arrives that makes the numbers a different width.
+  const [remeasure, setRemeasure] = useState(0);
   const tipSize = useRef({ w: 0, h: 0 });
   const tracks = useRef(new Map<string, Track>());
   const drawn = useMotionValue(0);
@@ -445,6 +456,32 @@ export function LineChart({
   useMotionValueEvent(scale.min, 'change', paint);
   useMotionValueEvent(scale.max, 'change', paint);
   useLayoutEffect(paint);
+
+  // Measured when the labels change, not on every render: a hover re-renders the chart.
+  const tickLabels = steady.ticks.map((value) => formatTick(value)).join('|');
+  useLayoutEffect(() => {
+    const widest = Math.max(
+      0,
+      ...Array.from(
+        gutter.current?.querySelectorAll<HTMLElement>('[data-tick-text]') ?? [],
+        (node) => node.offsetWidth
+      )
+    );
+    setGutterWidth(widest > 0 ? Math.ceil(widest) + TICK_GAP : null);
+  }, [tickLabels, remeasure]);
+
+  useEffect(() => {
+    const fonts = typeof document === 'undefined' ? undefined : document.fonts;
+    if (!fonts) return;
+    let live = true;
+    const again = () => live && setRemeasure((n) => n + 1);
+    void fonts.ready.then(again);
+    fonts.addEventListener('loadingdone', again);
+    return () => {
+      live = false;
+      fonts.removeEventListener('loadingdone', again);
+    };
+  }, []);
 
   // The plot draws in its own pixels: measure the width, follow resizes, and size the tooltip for its flip.
   useLayoutEffect(() => {
@@ -681,6 +718,7 @@ export function LineChart({
       )}
       <div
         className={styles.chart}
+        style={gutterWidth ? ({ '--gutter': `${gutterWidth}px` } as CSSProperties) : undefined}
         data-scrubbing={scrubbing || undefined}
         data-loading={loading || undefined}
       >
@@ -828,8 +866,8 @@ export function LineChart({
             )}
           </AnimatePresence>
         </div>
-        <div className={styles.gutter} aria-hidden="true">
-          <AnimatePresence initial={false}>
+        <div ref={gutter} className={styles.gutter} aria-hidden="true">
+          <AnimatePresence initial={false} onExitComplete={() => setRemeasure((n) => n + 1)}>
             {steady.ticks.map((value) => (
               <TickLabel
                 key={value}

@@ -28,6 +28,8 @@ export type CalendarEntry = {
   at: number;
   /** An event's own zone; posts are placed in the site's. */
   timeZone: string | null;
+  /** Where an event is held; posts have none. */
+  venue: string | null;
   state: 'scheduled' | 'published' | 'draft' | 'cancelled';
 };
 
@@ -82,6 +84,7 @@ export async function loadCalendar(
             id: events.id,
             title: events.title,
             timeZone: events.timeZone,
+            venue: events.venue,
             status: events.status,
             startsAt: events.startsAt,
             publishAt: events.publishAt,
@@ -114,6 +117,7 @@ export async function loadCalendar(
       title: p.title,
       at: at.getTime(),
       timeZone: null,
+      venue: null,
       state: p.status === 'published' ? 'published' : 'scheduled',
     });
   }
@@ -127,6 +131,7 @@ export async function loadCalendar(
         title: e.title,
         at: e.startsAt.getTime(),
         timeZone: e.timeZone,
+        venue: e.venue,
         state: e.status,
       });
     }
@@ -138,6 +143,7 @@ export async function loadCalendar(
         title: e.title,
         at: e.publishAt.getTime(),
         timeZone: null,
+        venue: e.venue,
         state: 'scheduled',
       });
     }

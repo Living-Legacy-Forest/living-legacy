@@ -115,6 +115,20 @@ describe('content calendar', () => {
     expect(await entries(false)).toEqual([['post', 'A post', 'scheduled']]);
   });
 
+  it('carries an event’s venue for the tooltip, and none for a post', async () => {
+    await testDb()
+      .insert(events)
+      .values(event({ status: 'published', venue: '12 Forest Road' }));
+    await testDb()
+      .insert(posts)
+      .values({ title: 'A post', slug: 'p', status: 'draft', scheduledAt: at(10, 20) });
+    const all = await loadCalendar(testDb(), NOVEMBER, { includeEvents: true });
+    expect(all.map((e) => [e.kind, e.venue]).sort()).toEqual([
+      ['event', '12 Forest Road'],
+      ['post', null],
+    ]);
+  });
+
   it('keeps an event’s own time zone for the page to place it by', async () => {
     await testDb()
       .insert(events)

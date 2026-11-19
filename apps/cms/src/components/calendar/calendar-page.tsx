@@ -32,8 +32,9 @@ import {
 import { SegmentedControl } from '@/components/segmented-control';
 import { CalendarClockIcon, ChevronLeftIcon, ChevronRightIcon, FileText } from '@/components/icons';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { buttonVariants } from '@/components/ui/button';
-import { displayTime } from '@/lib/format';
+import { displayTime, formatDateTime, zoneName } from '@/lib/format';
 import { useTimeZone } from '@/lib/use-time-zone';
 import { cn } from '@/lib/utils';
 import type { CalendarData, CalendarEntry } from '@/server/calendar';
@@ -173,23 +174,60 @@ function Reveal({
   );
 }
 
+const kindWord = (entry: CalendarEntry) =>
+  entry.kind === 'post' ? 'Post' : entry.kind === 'event' ? 'Event' : 'Event goes live';
+
+/** What a chip is too small to say: its whole title, what it is, when, and where. */
+function EntryTip({ entry, siteZone }: { entry: CalendarEntry; siteZone: string }) {
+  const zone = entry.timeZone || siteZone;
+  // Say so when an event is in another zone than the one every other time here is shown in.
+  const away =
+    entry.timeZone && entry.timeZone !== siteZone ? ` (${zoneName(zone, entry.at)})` : '';
+  return (
+    <span className="flex flex-col gap-0.5 text-left">
+      <span className="font-medium">{entry.title || 'Untitled'}</span>
+      <span className="opacity-70">
+        {kindWord(entry)}
+        {entry.kind !== 'event-live' && ` · ${STATE_WORD[entry.state]}`}
+      </span>
+      <span className="opacity-70">
+        {formatDateTime(entry.at, zone)}
+        {away}
+      </span>
+      {entry.venue && <span className="opacity-70">{entry.venue}</span>}
+    </span>
+  );
+}
+
 /** One line in a day cell. */
 function Chip({ entry, siteZone }: { entry: CalendarEntry; siteZone: string }) {
   return (
-    <EntryLink
-      entry={entry}
-      siteZone={siteZone}
-      className="hover:bg-muted focus-visible:ring-ring/50 flex items-center gap-1.5 rounded-md px-1.5 py-1 text-xs outline-none focus-visible:ring-2"
-    >
-      <span aria-hidden className={cn('size-1.5 shrink-0 rounded-full', STATE_DOT[entry.state])} />
-      <EntryIcon entry={entry} />
-      <span className="text-muted-foreground shrink-0 tabular-nums">
-        {entry.kind === 'event-live' ? 'Live' : timeOf(entry, siteZone)}
-      </span>
-      <span className={cn('truncate', entry.state === 'cancelled' && 'line-through')}>
-        {entry.title || 'Untitled'}
-      </span>
-    </EntryLink>
+    <Tooltip>
+      <TooltipTrigger
+        render={
+          <EntryLink
+            entry={entry}
+            siteZone={siteZone}
+            className="hover:bg-muted focus-visible:ring-ring/50 flex items-center gap-1.5 rounded-md px-1.5 py-1 text-xs outline-none focus-visible:ring-2"
+          >
+            <span
+              aria-hidden
+              className={cn('size-1.5 shrink-0 rounded-full', STATE_DOT[entry.state])}
+            />
+            <EntryIcon entry={entry} />
+            <span className="text-muted-foreground shrink-0 tabular-nums">
+              {entry.kind === 'event-live' ? 'Live' : timeOf(entry, siteZone)}
+            </span>
+            <span className={cn('truncate', entry.state === 'cancelled' && 'line-through')}>
+              {entry.title || 'Untitled'}
+            </span>
+          </EntryLink>
+        }
+      />
+      <TooltipContent side="top" align="start">
+        <EntryTip entry={entry} siteZone={siteZone} />
+      </TooltipContent>
+    </Tooltip>
   );
 }
 
@@ -505,30 +543,32 @@ export function CalendarPage({ data, now }: { data: CalendarData; now: number })
               onHeight={onHeight}
             >
               {/* Wider screens: the month as a grid. */}
-              <div role="grid" aria-label={monthName(month)} className="max-md:hidden">
-                <div role="row" className="text-muted-foreground grid grid-cols-7 text-xs">
-                  {WEEKDAYS.map((name) => (
-                    <div key={name} role="columnheader" className="px-2 pb-1.5">
-                      {name}
-                    </div>
-                  ))}
+              <TooltipProvider delay={400}>
+                <div role="grid" aria-label={monthName(month)} className="max-md:hidden">
+                  <div role="row" className="text-muted-foreground grid grid-cols-7 text-xs">
+                    {WEEKDAYS.map((name) => (
+                      <div key={name} role="columnheader" className="px-2 pb-1.5">
+                        {name}
+                      </div>
+                    ))}
+                  </div>
+                  <div className="border-r border-b">
+                    {weeks.map((week) => (
+                      <div key={dayKey(week[0]!)} role="row" className="grid grid-cols-7">
+                        {week.map((day) => (
+                          <DayCell
+                            key={dayKey(day)}
+                            day={day}
+                            entries={byDay.get(dayKey(day)) ?? []}
+                            today={dayKey(day) === today}
+                            siteZone={siteZone}
+                          />
+                        ))}
+                      </div>
+                    ))}
+                  </div>
                 </div>
-                <div className="border-r border-b">
-                  {weeks.map((week) => (
-                    <div key={dayKey(week[0]!)} role="row" className="grid grid-cols-7">
-                      {week.map((day) => (
-                        <DayCell
-                          key={dayKey(day)}
-                          day={day}
-                          entries={byDay.get(dayKey(day)) ?? []}
-                          today={dayKey(day) === today}
-                          siteZone={siteZone}
-                        />
-                      ))}
-                    </div>
-                  ))}
-                </div>
-              </div>
+              </TooltipProvider>
 
               {/* Phones: only the days with something on. */}
               <div className="md:hidden">

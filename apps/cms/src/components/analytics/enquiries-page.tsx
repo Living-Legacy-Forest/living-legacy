@@ -3,7 +3,7 @@ import { RollingNumber } from '@/components/rolling-number';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { type AnalyticsRange, formatPercent, pageName, percentOf } from '@/lib/analytics';
 import { axisEvery, longDate, shortDate } from '@/lib/dashboard-trend';
-import { formatInteger } from '@/lib/format';
+import { formatCompact, formatInteger } from '@/lib/format';
 import { siteUrl } from '@/lib/site';
 import type { AnalyticsResult, Enquiries } from '@/server/analytics';
 import { AnalyticsPage } from './analytics-page';
@@ -70,7 +70,7 @@ function EnquiriesBody({ data, days }: { data: Enquiries; days: AnalyticsRange }
             data={chart}
             height={200}
             formatValue={(value) => formatInteger(value)}
-            formatTick={(value) => (Number.isInteger(value) ? formatInteger(value) : '')}
+            formatTick={(value) => (Number.isInteger(value) ? formatCompact(value) : '')}
             categoryLabel="Day"
           />
         </CardContent>

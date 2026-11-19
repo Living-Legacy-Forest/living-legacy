@@ -6,6 +6,16 @@ export function formatInteger(value: number) {
   return new Intl.NumberFormat(LOCALE).format(value);
 }
 
+const compactNumber = new Intl.NumberFormat(LOCALE, {
+  notation: 'compact',
+  maximumFractionDigits: 1,
+});
+
+/** A short number for an axis: "950", "1.2K", "12K", "1.5M". The full figure belongs in a tooltip. */
+export function formatCompact(value: number) {
+  return compactNumber.format(value);
+}
+
 export function formatBytes(bytes: number) {
   const units = ['B', 'KB', 'MB', 'GB'];
   let value = bytes;

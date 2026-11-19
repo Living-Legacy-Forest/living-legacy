@@ -8,7 +8,7 @@ import {
   ChartTooltipContent,
 } from '@/components/ui/chart';
 import { chartReveal } from '@/lib/chart-motion';
-import { formatInteger } from '@/lib/format';
+import { formatCompact, formatInteger } from '@/lib/format';
 import { useTimeZone } from '@/lib/use-time-zone';
 import { axisEvery, longDate, shortDate } from '@/lib/dashboard-trend';
 import { type Part, type Range, type Trend, dayMonth, sum, weekName, weekStart } from './shared';
@@ -72,7 +72,6 @@ const barCursor = { fill: 'color-mix(in oklch, var(--muted-foreground) 10%, tran
 const tint = (share: number) => `color-mix(in oklch, var(--color-count) ${share}%, transparent)`;
 /** The trend's 128px (h-32) less the 26px date row. */
 const PLOT_HEIGHT = 102;
-const compact = new Intl.NumberFormat('en-AU', { notation: 'compact', maximumFractionDigits: 1 });
 const sentence = (text: string) => text.charAt(0).toUpperCase() + text.slice(1);
 
 /** The span as a line chart, or as bars. Hover or scrub for each day's or week's figure. */
@@ -115,7 +114,7 @@ export function TrendChart({ trend, range }: { trend: Trend; range: Range }) {
         formatValue={(value) => formatInteger(value)}
         // Counts are whole, so a small range keeps only its whole-number lines labelled. Big ones
         // are short ("1.5K"), as the axis column is narrow.
-        formatTick={(value) => (Number.isInteger(value) ? compact.format(value) : '')}
+        formatTick={(value) => (Number.isInteger(value) ? formatCompact(value) : '')}
         data={data.map((d, i) => ({
           key: String(i),
           label: d.name,

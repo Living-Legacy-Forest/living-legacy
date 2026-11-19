@@ -24,8 +24,17 @@ describe('email layout', () => {
     expect(button).toBeGreaterThan(card);
   });
 
-  it('serves the logo from the CMS origin, not a path under it', () => {
-    expect(layout(base)).toContain('src="https://cms.example.com/email/logo-mark.png"');
+  it('always loads the logo from the live CMS, so it shows in development and on previews', () => {
+    const html = layout(base);
+    expect(html).toContain('src="https://cms.livinglegacy.com.au/email/logo-mark.png"');
+    expect(html).not.toContain('cms.example.com/email');
+  });
+
+  it('draws the button like the CMS button: a gradient, a rim and a top highlight', () => {
+    const html = layout(base);
+    expect(html).toContain('linear-gradient(to bottom,#4c6252,#2c4633)');
+    expect(html).toContain('border:1px solid #283f2e');
+    expect(html).toContain('inset 0 1px 0 #6b7e70');
   });
 
   it('escapes the heading, the preview text and the link, but not the intro HTML', () => {

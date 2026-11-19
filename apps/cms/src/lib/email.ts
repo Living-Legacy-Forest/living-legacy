@@ -48,12 +48,19 @@ const colours = {
   ink: '#17231c',
   inkSoft: '#4b5b51',
   moss: '#2c4633',
+  // The CMS's raised button, mixed from the green: lit at the top, a bright edge, a darker rim.
+  mossTop: '#4c6252',
+  mossHighlight: '#6b7e70',
+  mossEdge: '#283f2e',
   paper: '#f6f2e9',
   line: '#e4dccb',
   white: '#ffffff',
 };
 
 const SITE_URL = 'https://livinglegacy.com.au';
+// Always the live CMS's copy, never the running one's: a mail app cannot reach localhost, so in
+// development, or on a preview, the logo would show as a broken image. It is a static asset.
+const LOGO_URL = 'https://cms.livinglegacy.com.au/email/logo-mark.png';
 const LEGAL_LINE = 'Forest Conservation Australia Pty Ltd · ABN 59 639 330 617';
 const serif = "Georgia, 'Times New Roman', serif";
 const sans = "-apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif";
@@ -117,7 +124,7 @@ export function layout(opts: {
                   <table role="presentation" cellpadding="0" cellspacing="0" border="0">
                     <tr>
                       <td style="background:${colours.moss};border-radius:10px;padding:8px 7px;">
-                        <img src="${cmsOrigin()}/email/logo-mark.png" width="30" height="25" alt="Living Legacy" style="display:block;border:0;">
+                        <img src="${LOGO_URL}" width="30" height="25" alt="Living Legacy" style="display:block;border:0;">
                       </td>
                     </tr>
                   </table>
@@ -141,7 +148,7 @@ export function layout(opts: {
                   <table role="presentation" cellpadding="0" cellspacing="0" border="0" style="margin:8px 0 24px;">
                     <tr>
                       <td style="border-radius:8px;background:${colours.moss};">
-                        <a href="${url}" style="display:inline-block;padding:13px 28px;font-family:${sans};font-size:15px;font-weight:600;color:${colours.white};text-decoration:none;border-radius:8px;">${opts.button.label}</a>
+                        <a href="${url}" style="display:inline-block;padding:10px 20px;font-family:${sans};font-size:14px;line-height:20px;font-weight:500;color:${colours.white};text-decoration:none;background-color:${colours.moss};background-image:linear-gradient(to bottom,${colours.mossTop},${colours.moss});border:1px solid ${colours.mossEdge};border-radius:8px;box-shadow:inset 0 1px 0 ${colours.mossHighlight},0 1px 2px rgba(0,0,0,0.05);">${opts.button.label}</a>
                       </td>
                     </tr>
                   </table>

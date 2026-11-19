@@ -23,17 +23,30 @@ export async function checkHealth(d1: D1Database, fetcher: typeof fetch, now: nu
   const lastRun = jobs?.lastRun?.getTime() ?? null;
 
   const problems: string[] = [];
-  if (judgeWebsite(website).status === 'problem') problems.push('website');
+  // Why, for the logs. The public answer names only what failed.
+  const details: string[] = [];
+  const verdict = judgeWebsite(website);
+  if (verdict.status === 'problem') {
+    problems.push('website');
+    details.push(verdict.detail);
+  }
   if (lastRun === null || now - lastRun > cronSchedules['every-5-minutes'].staleAfterMs) {
     problems.push('scheduled jobs');
+    details.push(
+      lastRun === null
+        ? 'No 5-minute job has run.'
+        : `The last 5-minute job ran ${Math.round((now - lastRun) / 60_000)} minutes ago.`
+    );
   }
-  return { ok: problems.length === 0, problems };
+  return { ok: problems.length === 0, problems, details };
 }
+
+type Health = Awaited<ReturnType<typeof checkHealth>>;
 
 // The answer is kept briefly per Worker, so calling the address in a loop
 // cannot turn into a flood of requests to the website.
 const REUSE_MS = 30_000;
-let last: { at: number; response: { ok: boolean; problems: string[] } } | null = null;
+let last: { at: number; response: Health } | null = null;
 
 /** GET or HEAD /api/health: 200 "ok", or 503 naming what failed. Never cached by browsers. */
 export async function healthResponse(request: Request, d1: D1Database): Promise<Response> {
@@ -43,6 +56,12 @@ export async function healthResponse(request: Request, d1: D1Database): Promise<
   const now = Date.now();
   if (!last || now - last.at > REUSE_MS) {
     last = { at: now, response: await checkHealth(d1, fetch, now) };
+    // Once per check, not per call, so a monitor calling often does not repeat it.
+    if (!last.response.ok) {
+      console.warn(
+        `[health] failing: ${last.response.problems.join(', ')}. ${last.response.details.join(' ')}`
+      );
+    }
   }
   const { ok, problems } = last.response;
   return new Response(

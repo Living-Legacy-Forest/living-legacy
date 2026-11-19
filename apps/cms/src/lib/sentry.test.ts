@@ -25,3 +25,24 @@ describe('scrubEmails', () => {
     expect(scrubEmails(circular)).toBe(circular);
   });
 });
+
+describe('sentryOptions', () => {
+  // With span streaming (the SDK's default) these are ignored, and the SDK logs a warning on every
+  // request. Masking and filtering belong on spans.
+  it('uses no transaction hooks, which the SDK ignores', async () => {
+    const { sentryOptions } = await import('./sentry');
+    expect(sentryOptions).not.toHaveProperty('beforeSendTransaction');
+    expect(sentryOptions).not.toHaveProperty('ignoreTransactions');
+  });
+
+  it('masks email addresses in spans', async () => {
+    const { sentryOptions } = await import('./sentry');
+    const span = {
+      name: 'GET /login',
+      attributes: { 'url.full': { value: '/login?email=jo@example.com' } },
+    };
+    expect(JSON.stringify(sentryOptions.beforeSendSpan(span as never))).not.toContain(
+      'jo@example.com'
+    );
+  });
+});

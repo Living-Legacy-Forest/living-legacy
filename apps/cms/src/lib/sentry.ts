@@ -38,5 +38,7 @@ export const sentryOptions = {
   // expected after every deploy, not a bug.
   ignoreErrors: [/Server function info not found/],
   beforeSend: scrubEmails,
-  beforeSendTransaction: scrubEmails,
+  // Spans carry URLs and attributes, so they are masked too. Not `beforeSendTransaction`: with
+  // span streaming, the SDK's default, that is ignored (and logs a warning on every request).
+  beforeSendSpan: scrubEmails,
 };

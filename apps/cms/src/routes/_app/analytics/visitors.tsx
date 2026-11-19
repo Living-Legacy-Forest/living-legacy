@@ -1,6 +1,7 @@
 import { createFileRoute } from '@tanstack/react-router';
 import { z } from 'zod';
 import { VisitorsPage } from '@/components/visitors/visitors-page';
+import { pageSizeParam } from '@/lib/page-size';
 import { VISITOR_PAGE_SIZES, VISITOR_RANGES, type VisitorPageSize } from '@/lib/visitors';
 import { listVisitors } from '@/server/visitors';
 
@@ -13,11 +14,7 @@ const searchSchema = z.object({
     .optional()
     .catch(undefined),
   /** Visits a page; 50 when left out. */
-  rows: z
-    .number()
-    .refine((n) => (VISITOR_PAGE_SIZES as readonly number[]).includes(n))
-    .optional()
-    .catch(undefined),
+  rows: pageSizeParam(VISITOR_PAGE_SIZES),
 });
 
 export const Route = createFileRoute('/_app/analytics/visitors')({

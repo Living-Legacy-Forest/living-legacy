@@ -43,7 +43,6 @@ import { CardMeta, ListCard, ListCards } from '@/components/list/list-card';
 import { ViewSwitch, useListView } from '@/components/list/view-switch';
 import { RowCell } from '@/components/list/row-cell';
 import { TrendChart } from '@/components/list/trend-chart';
-import { dummyTrend } from '@/components/list/dummy-trend';
 import { PillGlide, pillItemClass, pillTrackClass } from '@/components/ui/pill-track';
 import { PageActions } from '@/components/shell/page-actions';
 import {
@@ -86,6 +85,7 @@ import { PostArticle } from './post-article';
 import { PostStatusBadge } from './post-status-badge';
 import { ReviewerPopover } from './reviewer-popover';
 import { clearPostPreviews, loadPostPreview, usePostPreview } from './use-post-preview';
+import { usePostViews } from './use-post-views';
 
 export type PostListSearch = {
   status: PostStatusTab;
@@ -301,6 +301,7 @@ export function PostsList({
   };
 
   const page = search.page ?? 1;
+  const views = usePostViews(data.rows.filter((r) => !r.deletedAt).map((r) => r.slug));
   const checkedIds = selection.checkedIds;
   const selectedRow = data.rows.find((r) => r.id === selectedId) ?? null;
 
@@ -527,7 +528,7 @@ export function PostsList({
                   // A card's Open already goes to the editor.
                   menu={rowMenu(row).filter((item) => item.label !== 'Edit')}
                   remove={removeAction(row)}
-                  views={row.deletedAt ? undefined : dummyTrend(row.slug)}
+                  views={views?.[row.slug]}
                 />
               ))}
             </ListCards>
@@ -552,7 +553,7 @@ export function PostsList({
                   swipe={removeAction(row)}
                   menu={rowMenu(row)}
                   previewOpen={previewOpen}
-                  views={row.deletedAt ? undefined : dummyTrend(row.slug)}
+                  views={views?.[row.slug]}
                   onSelect={() => {
                     // Choosing the post already showing closes the preview again.
                     if (previewOpen && row.id === selectedId) return setPreview(false);

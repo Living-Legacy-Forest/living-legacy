@@ -195,7 +195,7 @@ export function ImageField({
           <Button
             type="button"
             size="sm"
-            variant="ghost"
+            variant="outline"
             className="touch:min-h-11"
             onClick={() => setPicking(true)}
           >

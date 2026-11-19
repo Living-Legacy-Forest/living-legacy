@@ -17,6 +17,8 @@ import {
   useListPane,
 } from '@/components/list/list-page';
 import { ListRow, type RowMenuItem } from '@/components/list/list-row';
+import { Pager } from '@/components/pager';
+import { usePaged } from '@/lib/use-paged';
 import { copyLink, openInNewTab, siteUrl } from '@/lib/site';
 import {
   ConfirmBulkDelete,
@@ -268,6 +270,8 @@ export function RedirectsPage({
   const visible = ordered.filter(
     (r) => matchesFilters(r, picked) && matchesSearch(query, [r.fromPath, r.toPath, r.note])
   );
+  // A new search, filter or order starts again from the first page.
+  const paged = usePaged(visible, JSON.stringify([query, picked, sort]));
   const clearFilters = () => {
     setPicked({});
     selection.clear();
@@ -459,7 +463,7 @@ export function RedirectsPage({
             header={
               <SelectionBar
                 selection={selection}
-                visibleIds={visible.map((r) => r.id)}
+                visibleIds={paged.shown.map((r) => r.id)}
                 title="All"
                 total={data.length}
                 pending={pending}
@@ -479,7 +483,7 @@ export function RedirectsPage({
               </NoMatches>
             ) : grid ? (
               <ListCards>
-                {visible.map((r) => (
+                {paged.shown.map((r) => (
                   <ListCard
                     key={r.id}
                     title={r.fromPath}
@@ -494,7 +498,7 @@ export function RedirectsPage({
               </ListCards>
             ) : (
               <ListRows>
-                {visible.map((r) => (
+                {paged.shown.map((r) => (
                   <ListRow
                     key={r.id}
                     align="start"
@@ -520,6 +524,14 @@ export function RedirectsPage({
                   </ListRow>
                 ))}
               </ListRows>
+            )}
+            {paged.needed && (
+              <Pager
+                {...paged.pager}
+                noun="redirects"
+                label="Redirect pages"
+                className="mt-0 shrink-0 border-t px-3 py-2 max-md:border-0"
+              />
             )}
           </ListColumn>
 

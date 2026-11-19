@@ -1,5 +1,5 @@
 import { Link, type LinkProps } from '@tanstack/react-router';
-import { useState } from 'react';
+import { type ReactElement, useState } from 'react';
 import {
   CalendarClockIcon,
   CircleAlertIcon,
@@ -11,9 +11,11 @@ import {
 } from '@/components/icons';
 import { Button, buttonVariants } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { Pager } from '@/components/pager';
 import { Spinner } from '@/components/ui/spinner';
 import { formatDate, formatInteger } from '@/lib/format';
 import { useAction } from '@/lib/use-action';
+import { usePaged } from '@/lib/use-paged';
 import { useTimeZone } from '@/lib/use-time-zone';
 import { cn } from '@/lib/utils';
 import type { ContentChecks } from '@/server/content-checks';
@@ -55,6 +57,16 @@ const CHECKS: { key: CheckKey; icon: LucideIcon; title: string; passing: string;
   },
 ];
 
+/** What each check lists, for the pager's count. */
+const NOUNS: Record<CheckKey, string> = {
+  noDescription: 'posts',
+  noImage: 'posts',
+  noAlt: 'images',
+  events: 'events',
+};
+/** Rows here are tall, so a page is shorter than a plain list's. */
+const PAGE_SIZES = [10, 25, 50, 100] as const;
+
 const fixClass = cn(buttonVariants({ variant: 'outline', size: 'sm' }), 'touch:min-h-11 shrink-0');
 
 export function ContentChecksPage({
@@ -90,8 +102,7 @@ export function ContentChecksPage({
 
       {failing.map((check) => (
         <CheckSection key={check.key} check={check} total={data[check.key].total}>
-          <Items checkKey={check.key} data={data} canEditMedia={canEditMedia} />
-          <More shown={data[check.key].rows.length} total={data[check.key].total} />
+          <CheckRows checkKey={check.key} data={data} canEditMedia={canEditMedia} />
         </CheckSection>
       ))}
 
@@ -154,9 +165,7 @@ function CheckSection({
           </p>
         </div>
       </header>
-      <ul className="divide-y border-t max-md:divide-(--ios-separator) max-md:overflow-hidden max-md:rounded-[10px] max-md:border-0 max-md:bg-(--ios-cell)">
-        {children}
-      </ul>
+      {children}
     </section>
   );
 }
@@ -206,7 +215,8 @@ function FixLink({ label, ...link }: LinkProps & { label: string }) {
   );
 }
 
-function Items({
+/** A failing check's rows, a page at a time. The server lists up to 100; "And N more" follows the last. */
+function CheckRows({
   checkKey,
   data,
   canEditMedia,
@@ -215,6 +225,33 @@ function Items({
   data: ContentChecks;
   canEditMedia: boolean;
 }) {
+  const rows = useCheckRows(checkKey, data, canEditMedia);
+  const paged = usePaged(rows, '', PAGE_SIZES);
+  const { page, pageCount } = paged.pager;
+
+  return (
+    <>
+      <ul className="divide-y border-t max-md:divide-(--ios-separator) max-md:overflow-hidden max-md:rounded-[10px] max-md:border-0 max-md:bg-(--ios-cell)">
+        {paged.shown}
+        {page === pageCount && <More shown={rows.length} total={data[checkKey].total} />}
+      </ul>
+      {paged.needed && (
+        <Pager
+          {...paged.pager}
+          noun={NOUNS[checkKey]}
+          label={`Pages of ${NOUNS[checkKey]} to fix`}
+          className="mt-0 border-t px-4 py-2 max-md:border-0"
+        />
+      )}
+    </>
+  );
+}
+
+function useCheckRows(
+  checkKey: CheckKey,
+  data: ContentChecks,
+  canEditMedia: boolean
+): ReactElement[] {
   const timeZone = useTimeZone();
 
   switch (checkKey) {

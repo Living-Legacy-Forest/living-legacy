@@ -2,6 +2,7 @@ import { toCsv } from '@ll/content';
 import { useCallback, useEffect, useState } from 'react';
 import { CheckIcon, MoreHorizontalIcon, UserPlusIcon } from '@/components/icons';
 import { SearchInput, matchesSearch } from '@/components/list/list-tools';
+import { Pager } from '@/components/pager';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -24,6 +25,7 @@ import { Spinner } from '@/components/ui/spinner';
 import { formatDateTime } from '@/lib/format';
 import { notify } from '@/lib/notify';
 import { useAction } from '@/lib/use-action';
+import { usePaged } from '@/lib/use-paged';
 import { cn } from '@/lib/utils';
 import type { EventRow } from '@/server/events';
 import { type Guest, cancelGuest, getGuests, setCheckedIn } from '@/server/event-guests';
@@ -59,6 +61,14 @@ export function EventGuests({ event }: { event: EventRow }) {
     void reload();
   }, [reload]);
 
+  const matches = (g: Guest) =>
+    matchesSearch(query, [g.firstName, g.lastName, g.email, g.phone, g.reference]);
+  // Before the loading return below, as hooks cannot follow it. A new search starts again from page 1.
+  const confirmedPaged = usePaged(
+    (guests ?? []).filter((g) => g.status === 'confirmed' && matches(g)),
+    query
+  );
+
   if (guests === null) {
     return (
       <div className="flex justify-center py-12">
@@ -71,8 +81,6 @@ export function EventGuests({ event }: { event: EventRow }) {
   const cancelled = guests.filter((g) => g.status === 'cancelled');
   const booked = confirmed.reduce((n, g) => n + g.partySize, 0);
   const arrived = confirmed.reduce((n, g) => n + (g.checkedInAt === null ? 0 : g.partySize), 0);
-  const matches = (g: Guest) =>
-    matchesSearch(query, [g.firstName, g.lastName, g.email, g.phone, g.reference]);
   const editable = event.status !== 'cancelled';
 
   const replace = (id: string, checkedInAt: number | null) =>
@@ -179,7 +187,7 @@ export function EventGuests({ event }: { event: EventRow }) {
         </p>
       ) : (
         <ul className={GUEST_LIST}>
-          {confirmed.filter(matches).map((g) => (
+          {confirmedPaged.shown.map((g) => (
             <li
               key={g.id}
               className={cn(
@@ -238,6 +246,9 @@ export function EventGuests({ event }: { event: EventRow }) {
             </li>
           ))}
         </ul>
+      )}
+      {confirmedPaged.needed && (
+        <Pager {...confirmedPaged.pager} noun="bookings" label="Booking pages" />
       )}
 
       <Reveal show={cancelled.length > 0}>

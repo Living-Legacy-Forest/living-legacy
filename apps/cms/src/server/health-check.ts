@@ -7,6 +7,22 @@ import { judgeWebsite, probeWebsite } from './system-health';
 const FIVE_MINUTE_JOBS = cronJobs.filter((j) => j.schedule === 'every-5-minutes').map((j) => j.key);
 
 /**
+ * The website probe, tried a second time when the first finds a problem. The website's host
+ * sometimes fails one request and answers the next (HTTP 525, an SSL error between Cloudflare and
+ * it), and one blip should not mark the CMS down. Two failures in a row still do.
+ */
+async function probeWebsiteTwice(fetcher: typeof fetch) {
+  const first = await probeWebsite(fetcher);
+  const firstVerdict = judgeWebsite(first);
+  if (firstVerdict.status !== 'problem') return first;
+  const second = await probeWebsite(fetcher);
+  if (judgeWebsite(second).status !== 'problem') {
+    console.warn(`[health] the website failed once, then loaded. ${firstVerdict.detail}`);
+  }
+  return second;
+}
+
+/**
  * The public health check behind /api/health, for an uptime monitor (Better
  * Stack): one check covers the CMS answering at all, the website loading, and
  * the 5-minute jobs still running, a second line of defence beside their
@@ -14,7 +30,7 @@ const FIVE_MINUTE_JOBS = cronJobs.filter((j) => j.schedule === 'every-5-minutes'
  */
 export async function checkHealth(d1: D1Database, fetcher: typeof fetch, now: number) {
   const [website, [jobs]] = await Promise.all([
-    probeWebsite(fetcher),
+    probeWebsiteTwice(fetcher),
     createDb(d1)
       .select({ lastRun: max(cronRuns.startedAt) })
       .from(cronRuns)

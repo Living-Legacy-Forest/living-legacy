@@ -33,6 +33,35 @@ describe('checkHealth', () => {
     });
   });
 
+  it('forgives one failed probe of the website, and still says so', async () => {
+    await ran('publish-posts', 4);
+    const answers = [525, 200];
+    const calls: number[] = [];
+    const flaky = async () => {
+      const status = answers[calls.length] ?? 200;
+      calls.push(status);
+      return new Response('home', { status });
+    };
+    expect(await checkHealth(env.DB, flaky, now)).toEqual({ ok: true, problems: [], details: [] });
+    expect(calls).toEqual([525, 200]);
+  });
+
+  it('tries the website twice before naming it', async () => {
+    await ran('publish-posts', 4);
+    let tries = 0;
+    const down = async () => {
+      tries += 1;
+      return new Response('oops', { status: 525 });
+    };
+    const health = await checkHealth(env.DB, down, now);
+    expect(tries).toBe(2);
+    expect(health).toEqual({
+      ok: false,
+      problems: ['website'],
+      details: ['The home page answered 525 instead of loading.'],
+    });
+  });
+
   it('names the scheduled jobs once the 5-minute ones go 15 minutes without a run', async () => {
     await ran('publish-posts', 16);
     // A daily job running lately does not count for the 5-minute schedule.

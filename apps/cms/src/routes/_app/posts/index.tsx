@@ -1,7 +1,7 @@
 import { createFileRoute } from '@tanstack/react-router';
 import { z } from 'zod';
 import { PostsList } from '@/components/posts/posts-list';
-import { listPosts, postStatusTabs } from '@/server/posts';
+import { isPostsPageSize, listPosts, postStatusTabs } from '@/server/posts';
 
 const searchSchema = z.object({
   status: z.enum(postStatusTabs).catch('all').default('all'),
@@ -10,6 +10,8 @@ const searchSchema = z.object({
   categories: z.array(z.string()).optional().catch(undefined),
   authors: z.array(z.string()).optional().catch(undefined),
   page: z.number().int().min(1).optional().catch(undefined),
+  /** Posts a page, when not the usual 20. */
+  rows: z.number().refine(isPostsPageSize).optional().catch(undefined),
   /** Post shown in the preview pane. */
   selected: z.string().optional().catch(undefined),
 });

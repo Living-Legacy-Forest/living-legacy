@@ -25,8 +25,11 @@ export function logActivity(db: Db, entry: LogEntry) {
   return db.insert(activityLog).values(entry);
 }
 
-/** Entries per page on the Activity page. */
-export const ACTIVITY_PAGE_SIZE = 15;
+/** Entries per page on the Activity page, and the other sizes it offers. */
+export const ACTIVITY_PAGE_SIZES = [15, 25, 50, 100] as const;
+export const ACTIVITY_PAGE_SIZE = ACTIVITY_PAGE_SIZES[0];
+export const isActivityPageSize = (n: unknown): n is (typeof ACTIVITY_PAGE_SIZES)[number] =>
+  (ACTIVITY_PAGE_SIZES as readonly unknown[]).includes(n);
 
 /** What the log can be narrowed to: the part of each action before the dot. */
 export const activityKinds = ['post', 'event', 'user', 'redirect', 'settings', 'api_key'] as const;
@@ -67,6 +70,8 @@ export const listActivity = createServerFn({ method: 'GET' })
   .validator(
     z.object({
       page: z.number().int().min(1).catch(1),
+      /** Entries a page; anything but a size on offer is the usual one. */
+      rows: z.number().refine(isActivityPageSize).catch(ACTIVITY_PAGE_SIZE).optional(),
       kind: z.enum(activityKinds).optional().catch(undefined),
       who: z.string().max(64).optional().catch(undefined),
       /** One day, YYYY-MM-DD in the site's time zone, picked on the calendar. */
@@ -100,7 +105,8 @@ export const listActivity = createServerFn({ method: 'GET' })
         .where(isNotNull(activityLog.actorId))
         .groupBy(activityLog.actorId),
     ]);
-    const pageCount = Math.max(1, Math.ceil(total / ACTIVITY_PAGE_SIZE));
+    const pageSize = data.rows ?? ACTIVITY_PAGE_SIZE;
+    const pageCount = Math.max(1, Math.ceil(total / pageSize));
     // A page past the end (an old link, entries since removed) shows the last one.
     const page = Math.min(data.page, pageCount);
     const rows = await db
@@ -108,13 +114,14 @@ export const listActivity = createServerFn({ method: 'GET' })
       .from(activityLog)
       .where(where)
       .orderBy(desc(activityLog.createdAt), desc(activityLog.id))
-      .limit(ACTIVITY_PAGE_SIZE)
-      .offset((page - 1) * ACTIVITY_PAGE_SIZE);
+      .limit(pageSize)
+      .offset((page - 1) * pageSize);
     return {
       days: await calendar(timeZone, filters),
       rows: rows.map((r) => ({ ...r, createdAt: r.createdAt.getTime() })),
       page,
       pageCount,
+      pageSize,
       total,
       people: people
         .filter((p): p is typeof p & { id: string } => p.id !== null)

@@ -2,7 +2,8 @@
 // what to write instead. Edits are part of the settings form, saved with it.
 import { BRAND_RULES, BRAND_RULES_MAX, type BrandRule, type BrandSeverity } from '@ll/content';
 import { useState } from 'react';
-import { ChevronLeftIcon, ChevronRightIcon, Trash2Icon } from '@/components/icons';
+import { Trash2Icon } from '@/components/icons';
+import { Pager } from '@/components/pager';
 import { SearchInput } from '@/components/list/list-tools';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -20,6 +21,7 @@ const severityItems: { value: BrandSeverity; label: string }[] = [
 ];
 
 const PAGE_SIZE = 10;
+const PAGE_SIZES = [10, 25, 50, 100] as const;
 
 const sameAsGuide = (rules: BrandRule[]) => JSON.stringify(rules) === JSON.stringify(BRAND_RULES);
 
@@ -32,6 +34,7 @@ export function BrandRulesEditor({
 }) {
   const [query, setQuery] = useState('');
   const [page, setPage] = useState(1);
+  const [pageSize, setPageSize] = useState<number>(PAGE_SIZE);
   const q = query.trim().toLowerCase();
   const shown = rules
     .map((rule, index) => ({ rule, index }))
@@ -40,11 +43,11 @@ export function BrandRulesEditor({
         !q || rule.match.toLowerCase().includes(q) || rule.instead.toLowerCase().includes(q)
     );
   const never = rules.filter((r) => r.severity === 'critical').length;
-  const pageCount = Math.max(1, Math.ceil(shown.length / PAGE_SIZE));
+  const pageCount = Math.max(1, Math.ceil(shown.length / pageSize));
   // Removing the last word on the last page moves back a page.
   const current = Math.min(page, pageCount);
-  const from = (current - 1) * PAGE_SIZE;
-  const onPage = shown.slice(from, from + PAGE_SIZE);
+  const from = (current - 1) * pageSize;
+  const onPage = shown.slice(from, from + pageSize);
 
   const edit = (index: number, next: Partial<BrandRule>) =>
     onChange(rules.map((rule, i) => (i === index ? { ...rule, ...next } : rule)));
@@ -162,37 +165,24 @@ export function BrandRulesEditor({
       )}
 
       {shown.length > 0 && (
-        <div className="text-muted-foreground flex h-11 items-center justify-between px-4 text-xs">
-          <span className="tabular-nums">
-            {from + 1}-{from + onPage.length} of {shown.length}
-          </span>
-          {pageCount > 1 && (
-            <div className="flex gap-0.5">
-              <Button
-                type="button"
-                variant="ghost"
-                size="icon-xs"
-                aria-label="Previous page of words"
-                className="touch:size-11"
-                disabled={current <= 1}
-                onClick={() => setPage(current - 1)}
-              >
-                <ChevronLeftIcon aria-hidden />
-              </Button>
-              <Button
-                type="button"
-                variant="ghost"
-                size="icon-xs"
-                aria-label="Next page of words"
-                className="touch:size-11"
-                disabled={current >= pageCount}
-                onClick={() => setPage(current + 1)}
-              >
-                <ChevronRightIcon aria-hidden />
-              </Button>
-            </div>
-          )}
-        </div>
+        <Pager
+          page={current}
+          pageCount={pageCount}
+          total={shown.length}
+          pageSize={pageSize}
+          noun="words"
+          label="Pages of words"
+          className="mt-0 min-h-11 px-4 py-2"
+          onPageChange={setPage}
+          rows={{
+            options: PAGE_SIZES,
+            // A new page size starts again from the first page.
+            onChange: (rows) => {
+              setPageSize(rows);
+              setPage(1);
+            },
+          }}
+        />
       )}
     </>
   );

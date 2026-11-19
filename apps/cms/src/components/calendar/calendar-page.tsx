@@ -118,6 +118,61 @@ function EntryIcon({ entry }: { entry: CalendarEntry }) {
   return <Icon aria-hidden className="text-muted-foreground size-3.5 shrink-0" />;
 }
 
+// The date picker's curves, so the two feel alike.
+const ease = {
+  enter: [0.16, 1, 0.3, 1],
+  standard: [0.22, 1, 0.36, 1],
+} as const;
+
+// Switching All / Posts / Events: what stays glides into place, what goes fades and lifts away,
+// what arrives rises in, a touch later for each one so a group reads as arriving together. A
+// month change replaces the whole pane instead, so entries only animate for the filter.
+const reveal: Variants = {
+  hidden: { opacity: 0, y: 6 },
+  shown: (index: number) => ({
+    opacity: 1,
+    y: 0,
+    transition: { duration: 0.2, ease: ease.enter, delay: Math.min(index, 6) * 0.035 },
+  }),
+  gone: { opacity: 0, y: -4, transition: { duration: 0.12, ease: ease.standard } },
+};
+const revealReduced: Variants = {
+  hidden: { opacity: 0 },
+  shown: { opacity: 1, transition: { duration: 0.12 } },
+  gone: { opacity: 0, transition: { duration: 0.08 } },
+};
+
+/** An entry, or a day of them, that animates in and out as the filter changes. */
+function Reveal({
+  index,
+  as = 'div',
+  className,
+  children,
+  ...rest
+}: {
+  index: number;
+  as?: 'div' | 'section';
+  className?: string;
+  children: ReactNode;
+} & React.ComponentProps<'div'>) {
+  const reduced = !!useReducedMotion();
+  const Tag = motion[as];
+  return (
+    <Tag
+      layout={reduced ? false : 'position'}
+      custom={index}
+      variants={reduced ? revealReduced : reveal}
+      initial="hidden"
+      animate="shown"
+      exit="gone"
+      className={className}
+      {...(rest as object)}
+    >
+      {children}
+    </Tag>
+  );
+}
+
 /** One line in a day cell. */
 function Chip({ entry, siteZone }: { entry: CalendarEntry; siteZone: string }) {
   return (
@@ -201,10 +256,15 @@ function DayCell({
       >
         {day.day}
       </span>
-      <div className="space-y-0.5">
-        {shown.map((entry) => (
-          <Chip key={entry.key} entry={entry} siteZone={siteZone} />
-        ))}
+      <div className="relative flex flex-col gap-0.5">
+        {/* Not on first showing: a new month brings its own entrance. */}
+        <AnimatePresence initial={false} mode="popLayout">
+          {shown.map((entry, index) => (
+            <Reveal key={entry.key} index={index}>
+              <Chip entry={entry} siteZone={siteZone} />
+            </Reveal>
+          ))}
+        </AnimatePresence>
         {hidden > 0 && (
           <Popover>
             <PopoverTrigger
@@ -229,10 +289,6 @@ function DayCell({
 // The month slides the way you moved (forward comes in from the right) and the block below it
 // follows the new month's height, since a month is four to six weeks tall. Same curves as the
 // date picker's month change. Month changes are occasional, so this stays short.
-const ease = {
-  enter: [0.16, 1, 0.3, 1],
-  standard: [0.22, 1, 0.36, 1],
-} as const;
 const SLIDE = 48;
 const slide: Variants = {
   enter: (direction: number) => ({ opacity: 0, x: direction * SLIDE }),
@@ -343,9 +399,15 @@ export function CalendarPage({ data, now }: { data: CalendarData; now: number })
 
   const [height, setHeight] = useState<number | null>(null);
   const [heightAnimates, setHeightAnimates] = useState(false);
+  // A filter change reshapes the month (on a phone, the list), so the height follows that too.
+  const filtered = useRef(0);
+  const changeFilter = (next: Filter) => {
+    filtered.current = performance.now();
+    setFilter(next);
+  };
   const onHeight = useCallback((next: number, animate: boolean) => {
     setHeight(next);
-    setHeightAnimates(animate);
+    setHeightAnimates(animate || performance.now() - filtered.current < 400);
   }, []);
 
   // A swipe left goes forward, as turning a page does. A short or slow drag springs back.
@@ -367,7 +429,7 @@ export function CalendarPage({ data, now }: { data: CalendarData; now: number })
           <SegmentedControl
             label="Show"
             value={filter}
-            onValueChange={setFilter}
+            onValueChange={changeFilter}
             options={[
               { value: 'all', label: 'All' },
               { value: 'post', label: 'Posts' },
@@ -476,24 +538,35 @@ export function CalendarPage({ data, now }: { data: CalendarData; now: number })
                   </p>
                 ) : (
                   <div className="divide-y rounded-xl border">
-                    {busy.map((day) => (
-                      <section key={dayKey(day)} aria-label={dayName(day)}>
-                        <h3
-                          className={cn(
-                            'bg-muted/40 px-4 py-1.5 text-xs font-medium',
-                            dayKey(day) === today && 'text-primary'
-                          )}
+                    <AnimatePresence initial={false} mode="popLayout">
+                      {busy.map((day, dayIndex) => (
+                        <Reveal
+                          as="section"
+                          index={dayIndex}
+                          key={dayKey(day)}
+                          aria-label={dayName(day)}
                         >
-                          {dayName(day)}
-                          {dayKey(day) === today && ' · Today'}
-                        </h3>
-                        <div className="divide-y">
-                          {byDay.get(dayKey(day))!.map((entry) => (
-                            <AgendaRow key={entry.key} entry={entry} siteZone={siteZone} />
-                          ))}
-                        </div>
-                      </section>
-                    ))}
+                          <h3
+                            className={cn(
+                              'bg-muted/40 px-4 py-1.5 text-xs font-medium',
+                              dayKey(day) === today && 'text-primary'
+                            )}
+                          >
+                            {dayName(day)}
+                            {dayKey(day) === today && ' · Today'}
+                          </h3>
+                          <div className="divide-y">
+                            <AnimatePresence initial={false} mode="popLayout">
+                              {byDay.get(dayKey(day))!.map((entry, index) => (
+                                <Reveal key={entry.key} index={index}>
+                                  <AgendaRow entry={entry} siteZone={siteZone} />
+                                </Reveal>
+                              ))}
+                            </AnimatePresence>
+                          </div>
+                        </Reveal>
+                      ))}
+                    </AnimatePresence>
                   </div>
                 )}
               </div>

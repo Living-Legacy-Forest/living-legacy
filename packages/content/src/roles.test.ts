@@ -8,10 +8,12 @@ import {
   extraPermissionsSchema,
   grantablePermissions,
   parseExtraPermissions,
+  permissionRequires,
   permissions,
   permissionsFor,
   rolesGranting,
   toAccess,
+  withRequiredPermissions,
 } from './roles';
 
 describe('can', () => {
@@ -203,6 +205,64 @@ describe('extraPermissionsSchema', () => {
   it('de-duplicates valid input', () => {
     const parsed = extraPermissionsSchema.parse(['seo:write', 'seo:write']);
     expect(parsed).toEqual(['seo:write']);
+  });
+
+  it('adds what a permission needs on parse, so a publisher can always write', () => {
+    expect(extraPermissionsSchema.parse(['posts:publish'])).toEqual([
+      'posts:write',
+      'posts:publish',
+    ]);
+    expect(extraPermissionsSchema.parse(['legal:publish'])).toEqual([
+      'content:write',
+      'legal:publish',
+    ]);
+    expect(extraPermissionsSchema.parse(['settings:write'])).toEqual([
+      'seo:write',
+      'settings:write',
+    ]);
+  });
+
+  it('still rejects user management alongside a dependent permission', () => {
+    expect(extraPermissionsSchema.safeParse(['posts:publish', 'users:manage']).success).toBe(false);
+  });
+});
+
+describe('permissionRequires', () => {
+  it('names what each dependent permission needs', () => {
+    expect(permissionRequires).toEqual({
+      'posts:publish': 'posts:write',
+      'legal:publish': 'content:write',
+      'settings:write': 'seo:write',
+    });
+  });
+});
+
+describe('withRequiredPermissions', () => {
+  it('adds the permission each entry needs', () => {
+    expect(withRequiredPermissions(['posts:publish'])).toEqual(['posts:write', 'posts:publish']);
+    expect(withRequiredPermissions(['legal:publish'])).toEqual(['content:write', 'legal:publish']);
+    expect(withRequiredPermissions(['settings:write'])).toEqual(['seo:write', 'settings:write']);
+  });
+
+  it('does not repeat a requirement that is already listed', () => {
+    expect(withRequiredPermissions(['posts:publish', 'posts:write', 'posts:publish'])).toEqual([
+      'posts:write',
+      'posts:publish',
+    ]);
+  });
+
+  it('leaves unrelated permissions alone, in a steady order', () => {
+    expect(withRequiredPermissions(['settings:write', 'redirects:write'])).toEqual([
+      'seo:write',
+      'redirects:write',
+      'settings:write',
+    ]);
+    expect(withRequiredPermissions(['redirects:write'])).toEqual(['redirects:write']);
+    expect(withRequiredPermissions([])).toEqual([]);
+  });
+
+  it('does not add a dependent for a requirement chosen alone', () => {
+    expect(withRequiredPermissions(['posts:write'])).toEqual(['posts:write']);
   });
 });
 

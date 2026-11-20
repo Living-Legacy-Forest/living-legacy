@@ -74,13 +74,37 @@ export function parseExtraPermissions(stored: unknown): Permission[] {
   return [...new Set(value.filter(isGrantable))];
 }
 
+/**
+ * A permission that does nothing on its own: the screen it opens, or the save behind it, is
+ * guarded by another permission. Applied when extras are stored and in the checklist, never
+ * inside `can`, so a role's own permissions are read exactly as listed.
+ */
+export const permissionRequires: Partial<Record<Permission, Permission>> = {
+  // The editor shows Save, and `savePost` refuses it without write.
+  'posts:publish': 'posts:write',
+  // Legal review requests link to the legal editor, which needs content:write.
+  'legal:publish': 'content:write',
+  // The Settings screen and its save are guarded by seo:write.
+  'settings:write': 'seo:write',
+};
+
+/** The extras with whatever they need added, once each, in the order of the permission list. */
+export function withRequiredPermissions(extras: readonly Permission[]): Permission[] {
+  const wanted = new Set(extras);
+  for (const permission of extras) {
+    const required = permissionRequires[permission];
+    if (required) wanted.add(required);
+  }
+  return permissions.filter((permission) => wanted.has(permission));
+}
+
 export const extraPermissionsSchema: z.ZodType<Permission[]> = z
   .array(
     z.string().refine(isGrantable, {
       message: 'Choose from the permissions that can be added.',
     })
   )
-  .transform((names) => [...new Set(names as Permission[])]);
+  .transform((names) => withRequiredPermissions(names as Permission[]));
 
 export function toAccess(row: { role: string; extraPermissions?: string | null }): Access {
   const parsed = roleSchema.safeParse(row.role);

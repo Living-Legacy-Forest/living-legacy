@@ -1,7 +1,14 @@
 // What the extra-access checklist shows and how ticking behaves. Kept free of React and UI
 // so it runs under plain Node tests. It only shapes what an admin sees and sends; the
 // server decides what a person may actually do.
-import { can, grantablePermissions, type Permission, type Role } from '@ll/content';
+import {
+  can,
+  grantablePermissions,
+  permissionRequires,
+  withRequiredPermissions,
+  type Permission,
+  type Role,
+} from '@ll/content';
 
 export const roleLabels: Record<Role, string> = {
   admin: 'Admin',
@@ -95,11 +102,24 @@ function inOrder(list: Iterable<Permission>): Permission[] {
 
 const roleHas = (role: Role, permission: Permission) => can({ role }, permission);
 
-/** A publisher who cannot write sees a Save button the server then refuses. */
-function needsWrite(role: Role, extras: readonly Permission[]) {
-  return (
-    !roleHas(role, 'posts:write') &&
-    (extras.includes('posts:publish') || roleHas(role, 'posts:publish'))
+// Said beside a permission that is ticked only because another one needs it. Keyed by the
+// permission that needs it.
+const neededNotes: Partial<Record<Permission, string>> = {
+  'posts:publish': 'Needed to publish',
+  'legal:publish': 'Needed to publish legal pages',
+  'settings:write': 'Needed to change settings',
+};
+
+/**
+ * The selected (or role-held) permission that needs this one, when the role itself does not
+ * have this one: without it, that permission would sit there doing nothing.
+ */
+function neededBy(role: Role, extras: readonly Permission[], permission: Permission) {
+  if (roleHas(role, permission)) return undefined;
+  return grantablePermissions.find(
+    (dependent) =>
+      permissionRequires[dependent] === permission &&
+      (extras.includes(dependent) || roleHas(role, dependent))
   );
 }
 
@@ -116,8 +136,13 @@ export function permissionState(role: Role, extras: readonly Permission[], permi
   if (roleHas(role, permission)) {
     return { checked: true, locked: true, note: `Included in ${roleLabels[role]}` };
   }
-  if (permission === 'posts:write' && needsWrite(role, extras)) {
-    return { checked: true, locked: true, note: 'Needed to publish' };
+  const dependent = neededBy(role, extras, permission);
+  if (dependent) {
+    return {
+      checked: true,
+      locked: true,
+      note: neededNotes[dependent] ?? 'Needed for another permission',
+    };
   }
   return { checked: extras.includes(permission), locked: false, note: null };
 }
@@ -132,21 +157,15 @@ export function applyExtraChange(
   const extras = splitExtras(role, current).extras;
   if (!grantable.has(permission) || roleHas(role, permission)) return extras;
   if (checked) {
-    const next = [...extras, permission];
-    if (permission === 'posts:publish' && !roleHas(role, 'posts:write')) next.push('posts:write');
-    return inOrder(next);
+    return splitExtras(role, withRequiredPermissions([...extras, permission])).extras;
   }
-  if (permission === 'posts:write' && needsWrite(role, extras)) return extras;
+  if (neededBy(role, extras, permission)) return extras;
   return inOrder(extras.filter((p) => p !== permission));
 }
 
-/** What to save for a person: only real extras, with write alongside publish. */
+/** What to save for a person: only real extras, with whatever each one needs alongside it. */
 export function normaliseExtras(role: Role, selected: readonly Permission[]): Permission[] {
-  const { extras } = splitExtras(role, selected);
-  if (extras.includes('posts:publish') && !roleHas(role, 'posts:write')) {
-    return inOrder([...extras, 'posts:write']);
-  }
-  return extras;
+  return splitExtras(role, withRequiredPermissions(splitExtras(role, selected).extras)).extras;
 }
 
 /** The extras as a short line for a list row. */

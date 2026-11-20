@@ -1,3 +1,4 @@
+import { extraPermissionsSchema } from '@ll/content';
 import { activityLog, invitation, user } from '@ll/db/schema';
 import { eq } from 'drizzle-orm';
 import { beforeEach, describe, expect, it } from 'vitest';
@@ -64,6 +65,28 @@ describe('extra permissions', () => {
 
     await invite([]);
     expect((await testDb().select().from(invitation))[0]!.extraPermissions).toBe('[]');
+  });
+
+  it('stores what a publisher needs to save when the input goes through the schema', async () => {
+    // The server functions validate with this schema, so this is what reaches the database.
+    const id = await addUser('viewer', 'Vi Viewer');
+    await setUserExtraPermissions(
+      testDb(),
+      id,
+      extraPermissionsSchema.parse(['posts:publish']),
+      actor
+    );
+    expect(await stored(id)).toBe('["posts:write","posts:publish"]');
+
+    await saveInvitation(testDb(), {
+      email: 'new@example.test',
+      role: 'viewer',
+      extraPermissions: extraPermissionsSchema.parse(['settings:write', 'legal:publish']),
+      invitedBy: actor.id,
+    });
+    expect((await testDb().select().from(invitation))[0]!.extraPermissions).toBe(
+      '["seo:write","content:write","settings:write","legal:publish"]'
+    );
   });
 
   it('lists extras as arrays, with malformed stored values as empty', async () => {

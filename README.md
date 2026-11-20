@@ -54,6 +54,20 @@ The button appears once both are set, and can be switched off under Settings > S
 Someone already in the CMS who signs in with Google for the first time keeps their account and
 role; a new Google account still needs an invite.
 
+### Writing suggestions
+
+The Suggest buttons in the CMS (search text, summary, tags, alt text and brand fixes) call Claude
+Haiku 5.5 through the Anthropic API. They send only the text or image being edited, plus the brand
+guide, never names, email addresses or guest details. Set `ANTHROPIC_API_KEY` in
+`apps/cms/.dev.vars` locally and as a Worker secret (`bunx wrangler secret put ANTHROPIC_API_KEY`
+from `apps/cms`). Without it the buttons are not shown.
+
+An admin can switch the buttons off and set how many suggestions each person can ask for a day
+(100 to start with, counted per press, starting again at midnight in the site's time zone) under
+Settings > Writing assistant. The System page shows today's and the last week's use, who used it,
+and an estimated cost (rates in `apps/cms/src/server/ai/pricing.ts`). For a hard stop on the bill
+as a whole, also set a monthly spend limit for the key's workspace in the Anthropic Console.
+
 ## Database changes
 
 1. Edit the schema in `packages/db/src/schema/`.

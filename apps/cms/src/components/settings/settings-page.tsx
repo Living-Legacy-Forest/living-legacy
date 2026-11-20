@@ -8,6 +8,7 @@ import {
   parseEmailDomains,
   sessionDayOptions,
   siteIconProblem,
+  AI_DAILY_LIMIT_MAX,
 } from '@ll/content';
 import { Link, getRouteApi, useBlocker, useRouter } from '@tanstack/react-router';
 import { type ReactNode, useEffect, useRef, useState } from 'react';
@@ -25,6 +26,7 @@ import { ArrowRight, ChevronDownIcon } from '@/components/icons';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { StatusPulse } from '@/components/system/status-pulse';
 import { NumberField } from '@/components/ui/number-field';
 import { BrandRulesEditor } from '@/components/settings/brand-rules-editor';
 import { SettingsRow, SettingsSection } from '@/components/settings/settings-section';
@@ -61,6 +63,7 @@ import {
   saveSiteSettings,
   timeZones,
 } from '@/server/settings';
+import { forgetCachedAiEnabled } from '@/lib/ai-status';
 import { useRevealOnce } from '@/lib/use-reveal-once';
 import { RevealWords } from '@/components/dashboard/reveal-words';
 
@@ -75,6 +78,7 @@ const sections = [
   { id: 'search', title: 'Search & sharing' },
   { id: 'content-targets', title: 'Content targets' },
   { id: 'brand-language', title: 'Brand language' },
+  { id: 'writing-assistant', title: 'Writing assistant' },
   { id: 'legal', title: 'Legal' },
   { id: 'sign-in', title: 'Sign-in & security' },
   { id: 'appearance', title: 'Language & appearance' },
@@ -196,17 +200,30 @@ function problem(v: SiteSettings): { field: string; message: string } | null {
   if (targets) return { field: 'settings-target-words', message: targets };
   const brand = brandRulesProblem(v.brandRules);
   if (brand) return { field: 'brand-language', message: brand };
+  if (
+    !Number.isInteger(v.aiDailyLimit) ||
+    v.aiDailyLimit < 1 ||
+    v.aiDailyLimit > AI_DAILY_LIMIT_MAX
+  ) {
+    return {
+      field: 'settings-ai-limit',
+      message: `Enter a whole number from 1 to ${AI_DAILY_LIMIT_MAX}.`,
+    };
+  }
   return null;
 }
 
 export function SettingsPage({
   data,
   seoOnly = false,
+  assistantKeySet,
   legalPages,
 }: {
   data: SiteSettings;
   /** For SEO people: only the Search & sharing section. */
   seoOnly?: boolean;
+  /** Whether the writing assistant's key is set on the server, for admins; absent otherwise. */
+  assistantKeySet?: boolean;
   /** The legal pages, for people who can edit them; absent for everyone else. */
   legalPages?: LegalPageSummary[];
 }) {
@@ -259,7 +276,9 @@ export function SettingsPage({
     if (result) {
       setSaved(result);
       setValues(result);
-      // The root loader caches the theme and time zone; pick up the new ones.
+      // The root loader caches the theme and time zone; pick up the new ones. The Suggest buttons
+      // follow the switch, so they are asked about again too.
+      forgetCachedAiEnabled();
       await router.invalidate();
     }
   }
@@ -634,6 +653,57 @@ export function SettingsPage({
               onChange={(brandRules) => patch({ brandRules })}
             />
           </SettingsSection>
+
+          {!seoOnly && (
+            <SettingsSection
+              id="writing-assistant"
+              title="Writing assistant"
+              description="The Suggest buttons that write search text, summaries, tags, alt text, captions and brand fixes. They only suggest: nothing is saved until a person saves it."
+            >
+              <SettingsRow
+                id="settings-ai-enabled"
+                title="Suggest buttons"
+                description="When off, the buttons are hidden for everyone and nothing is sent to the AI."
+              >
+                <Switch
+                  id="settings-ai-enabled"
+                  checked={values.aiEnabled}
+                  onCheckedChange={(checked) => patch({ aiEnabled: checked })}
+                />
+              </SettingsRow>
+              <SettingsRow
+                id="settings-ai-limit"
+                title="Suggestions each person can ask for a day"
+                description="Counted each time a Suggest button is pressed, and starting again at midnight in the site's time zone. For a monthly cap on the whole bill, use the spend limit in the Anthropic Console."
+              >
+                <NumberField
+                  id="settings-ai-limit"
+                  min={1}
+                  max={AI_DAILY_LIMIT_MAX}
+                  value={values.aiDailyLimit}
+                  aria-label="Suggestions each person can ask for a day"
+                  onValueChange={(aiDailyLimit) => patch({ aiDailyLimit })}
+                  className="w-32"
+                />
+              </SettingsRow>
+              {assistantKeySet !== undefined && (
+                <SettingsRow
+                  id="settings-ai-key"
+                  title="Connection"
+                  description={
+                    assistantKeySet
+                      ? 'The key is set on the server. Use and cost are on the System page.'
+                      : 'No key is set on the server, so the buttons are hidden. An admin adds it as the ANTHROPIC_API_KEY secret on the CMS Worker.'
+                  }
+                >
+                  <StatusPulse
+                    tone={assistantKeySet ? 'green' : 'yellow'}
+                    label={assistantKeySet ? 'Connected' : 'Not set up'}
+                  />
+                </SettingsRow>
+              )}
+            </SettingsSection>
+          )}
 
           {legalPages && <LegalPagesSection pages={legalPages} />}
 

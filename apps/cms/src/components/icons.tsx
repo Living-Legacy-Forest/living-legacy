@@ -324,6 +324,8 @@ export const FolderIcon = animated(AnimatedFolder01Icon);
 export const LinkIcon = animated(AnimatedLink01Icon);
 export const PlusIcon = animated(AnimatedAdd01Icon);
 export const TagIcon = animated(AnimatedTag01Icon);
+// The writing assistant's Suggest buttons.
+export const SparklesIcon = make(H.SparklesIcon);
 export const Trash2Icon = animated(AnimatedDelete02Icon);
 // The rich-text editor's toolbar is pressed constantly while typing, so its icons stay still.
 // These are the ones other screens also use in their animated form.

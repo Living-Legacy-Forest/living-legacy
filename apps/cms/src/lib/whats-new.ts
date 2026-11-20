@@ -51,6 +51,32 @@ export type WhatsNewEntry = {
 
 export const whatsNew: WhatsNewEntry[] = [
   {
+    id: '2026-11-20-5',
+    kind: 'new',
+    title: 'Suggestions as you write',
+    items: [
+      {
+        title: 'Suggest search text, a summary and tags',
+        body: 'In a post, the Suggest button beside Title, Description, Focus keyword, Summary and Tags writes one for you, following the brand guide. Check it, then save as usual. Undo puts back what was there.',
+      },
+      {
+        title: 'Suggest alt text, a caption and tags for images',
+        body: 'On a file in Media, Suggest looks at the image and writes alt text, a caption or tags for it, and image pickers have it for alt text. Tags reuse the ones the library already has where they fit.',
+        link: { label: 'Open Media', to: '/media' },
+      },
+      {
+        title: 'Manage the writing assistant',
+        body: 'Admins can switch the Suggest buttons off and set how many each person can ask for a day in Settings. The System page shows how much it has been used, who used it, and an estimated cost.',
+        link: { label: 'Open System', to: '/system' },
+      },
+      {
+        title: 'Suggest a fix for brand problems',
+        body: 'Each brand language problem in a post’s content score, and on Content checks, has Suggest a fix, which rewrites that sentence.',
+        link: { label: 'Open Content checks', to: '/checks' },
+      },
+    ],
+  },
+  {
     id: '2026-11-20-4',
     kind: 'new',
     title: 'Resize the list',

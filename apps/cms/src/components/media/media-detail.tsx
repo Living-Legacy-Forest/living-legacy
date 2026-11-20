@@ -15,6 +15,7 @@ import {
   SaveIcon,
   Trash2Icon,
 } from '@/components/icons';
+import { SuggestButton, SuggestTagsButton } from '@/components/ai/suggest-button';
 import { TagInput } from '@/components/arc/tag-input/tag-input';
 import { ConfirmBulkDelete } from '@/components/list/list-tools';
 import { DocumentThumb } from '@/components/media/document-card';
@@ -52,6 +53,7 @@ import { canCrop } from '@/lib/prepare-image';
 import { IMAGE_ACCEPT, mediaSrc, uploadMedia } from '@/lib/upload-media';
 import { useAction } from '@/lib/use-action';
 import { useTimeZone } from '@/lib/use-time-zone';
+import { suggestAltText, suggestMediaCaption, suggestMediaTags } from '@/server/ai';
 import { type MediaDetail as Detail, deleteMedia, updateMedia } from '@/server/media';
 
 const NOUN: [string, string] = ['file', 'files'];
@@ -537,7 +539,16 @@ export function MediaDetail({ detail, canDelete }: { detail: Detail; canDelete: 
             </div>
             {!isDocument && (
               <div className="grid gap-2">
-                <Label htmlFor="m-alt">Alt text</Label>
+                <div className="flex items-center justify-between gap-2">
+                  <Label htmlFor="m-alt">Alt text</Label>
+                  <SuggestButton
+                    value={alt}
+                    request={() =>
+                      suggestAltText({ data: { mediaId: item.id } }).then((r) => r.text)
+                    }
+                    onApply={setAlt}
+                  />
+                </div>
                 <Input
                   id="m-alt"
                   maxLength={300}
@@ -553,7 +564,18 @@ export function MediaDetail({ detail, canDelete }: { detail: Detail; canDelete: 
               </div>
             )}
             <div className="grid gap-2">
-              <Label htmlFor="m-caption">Caption</Label>
+              <div className="flex items-center justify-between gap-2">
+                <Label htmlFor="m-caption">Caption</Label>
+                {!isDocument && (
+                  <SuggestButton
+                    value={caption}
+                    request={() =>
+                      suggestMediaCaption({ data: { mediaId: item.id } }).then((r) => r.text)
+                    }
+                    onApply={setCaption}
+                  />
+                )}
+              </div>
               <Textarea
                 id="m-caption"
                 rows={3}
@@ -562,13 +584,27 @@ export function MediaDetail({ detail, canDelete }: { detail: Detail; canDelete: 
                 onChange={(e) => setCaption(e.target.value)}
               />
             </div>
-            <TagInput
-              id="m-tags"
-              label="Tags"
-              value={tags}
-              onValueChange={(next) => setTags(toTags(next))}
-              placeholder="Add a tag and press Enter"
-            />
+            <div className="grid gap-2">
+              <TagInput
+                id="m-tags"
+                label="Tags"
+                value={tags}
+                onValueChange={(next) => setTags(toTags(next))}
+                placeholder="Add a tag and press Enter"
+              />
+              {!isDocument && (
+                <div>
+                  <SuggestTagsButton
+                    tags={tags}
+                    request={() =>
+                      suggestMediaTags({ data: { mediaId: item.id } }).then((r) => r.tags)
+                    }
+                    // The library keeps at most 20 tags on a file.
+                    onApply={(next) => setTags(toTags(next).slice(0, 20))}
+                  />
+                </div>
+              )}
+            </div>
             {/* What you edit, then what is known about the file. */}
             <div className="grid gap-6 border-t pt-6">
               <section className="grid gap-2" aria-labelledby="m-facts">

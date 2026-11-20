@@ -1,12 +1,14 @@
 import {
   type BrandFinding,
   type ContentScore,
+  type PostInput,
   type StructureCount,
   type TermUse,
   structureCaption,
   structureProgress,
 } from '@ll/content';
 import { useState } from 'react';
+import { PostBrandFix } from '@/components/ai/post-brand-fix';
 import { ChevronRightIcon, CircleAlertIcon, TriangleAlertIcon } from '@/components/icons';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import { COLLAPSIBLE_CONTENT } from '@/lib/motion';
@@ -16,7 +18,16 @@ import { ScoreGauge } from './score-gauge';
 import { tone } from './score-tone';
 
 /** The score, structure counts, terms and brand problems for the post being edited. Advice only. */
-export function ContentScorePanel({ result }: { result: ContentScore }) {
+export function ContentScorePanel({
+  result,
+  values,
+  update,
+}: {
+  result: ContentScore;
+  /** The post being edited, so a brand problem can offer a rewrite of its own sentence. */
+  values: PostInput;
+  update: (patch: Partial<PostInput>) => void;
+}) {
   const [details, setDetails] = useState(false);
   return (
     <div className="space-y-5 pt-3">
@@ -41,7 +52,7 @@ export function ContentScorePanel({ result }: { result: ContentScore }) {
       </div>
       <Structure structure={result.structure} />
       <Terms terms={result.terms} />
-      <Brand brand={result.brand} />
+      <Brand brand={result.brand} values={values} update={update} />
       <p className="text-muted-foreground text-xs">
         {result.source === 'settings'
           ? 'Targets from Settings.'
@@ -150,7 +161,15 @@ function Terms({ terms }: { terms: TermUse[] }) {
   );
 }
 
-function Brand({ brand }: { brand: BrandFinding[] }) {
+function Brand({
+  brand,
+  values,
+  update,
+}: {
+  brand: BrandFinding[];
+  values: PostInput;
+  update: (patch: Partial<PostInput>) => void;
+}) {
   return (
     <section aria-labelledby="score-brand" className="space-y-2">
       <Heading id="score-brand">Brand language</Heading>
@@ -174,6 +193,11 @@ function Brand({ brand }: { brand: BrandFinding[] }) {
                     <span className="text-muted-foreground tabular-nums"> ×{finding.count}</span>
                   )}
                   <span className="text-muted-foreground"> → {finding.instead}</span>
+                  {critical && (
+                    <span className="mt-1 block">
+                      <PostBrandFix found={finding.found} values={values} update={update} />
+                    </span>
+                  )}
                 </span>
               </li>
             );

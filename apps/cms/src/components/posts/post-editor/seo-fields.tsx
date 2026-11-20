@@ -6,6 +6,9 @@ import {
   SEO_DESCRIPTION_LIMIT,
   SEO_TITLE_LIMIT,
 } from '@ll/content';
+import type { ReactNode } from 'react';
+import { SuggestButton } from '@/components/ai/suggest-button';
+import { suggestPostText } from '@/components/ai/post-suggestions';
 import { ImageField } from '@/components/media/image-field';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -48,6 +51,13 @@ export function SeoFields({
         limit={SEO_TITLE_LIMIT}
         placeholder={values.title}
         onChange={(seoTitle) => onChange({ seoTitle })}
+        action={
+          <SuggestButton
+            value={values.seoTitle}
+            request={() => suggestPostText('seoTitle', values)}
+            onApply={(seoTitle) => onChange({ seoTitle })}
+          />
+        }
       />
       <CountedField
         id="seo-description"
@@ -57,6 +67,13 @@ export function SeoFields({
         placeholder={values.excerpt || 'Summarise the post in a sentence or two.'}
         multiline
         onChange={(seoDescription) => onChange({ seoDescription })}
+        action={
+          <SuggestButton
+            value={values.seoDescription}
+            request={() => suggestPostText('seoDescription', values)}
+            onApply={(seoDescription) => onChange({ seoDescription })}
+          />
+        }
       />
       <div className="space-y-1">
         <CountedField
@@ -66,6 +83,13 @@ export function SeoFields({
           limit={FOCUS_KEYWORD_LIMIT}
           placeholder="The phrase people search for"
           onChange={(focusKeyword) => onChange({ focusKeyword })}
+          action={
+            <SuggestButton
+              value={values.focusKeyword}
+              request={() => suggestPostText('focusKeyword', values)}
+              onApply={(focusKeyword) => onChange({ focusKeyword })}
+            />
+          }
         />
         <p className="text-muted-foreground text-xs">Used only for the content score.</p>
       </div>
@@ -238,6 +262,7 @@ export function CountedField({
   placeholder,
   multiline = false,
   onChange,
+  action,
 }: {
   id: string;
   label: string;
@@ -246,6 +271,8 @@ export function CountedField({
   placeholder?: string;
   multiline?: boolean;
   onChange: (value: string) => void;
+  /** A control beside the count, such as a Suggest button. */
+  action?: ReactNode;
 }) {
   const over = value.length > limit;
   return (
@@ -254,11 +281,14 @@ export function CountedField({
         <Label htmlFor={id} className="text-muted-foreground text-xs font-normal">
           {label}
         </Label>
-        <span
-          className={cn('text-muted-foreground text-xs tabular-nums', over && 'text-destructive')}
-        >
-          {value.length}/{limit}
-        </span>
+        <div className="flex items-center gap-2">
+          {action}
+          <span
+            className={cn('text-muted-foreground text-xs tabular-nums', over && 'text-destructive')}
+          >
+            {value.length}/{limit}
+          </span>
+        </div>
       </div>
       {multiline ? (
         <Textarea

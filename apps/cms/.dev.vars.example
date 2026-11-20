@@ -27,6 +27,10 @@ GOOGLE_CLIENT_SECRET=
 # Optional: overrides the deployed URL in wrangler.jsonc for local dev.
 BETTER_AUTH_URL=http://localhost:3100
 
+# Optional: the Suggest buttons (search text, summary, tags, alt text, brand fixes). An Anthropic
+# API key. Leave unset and the buttons are not shown.
+ANTHROPIC_API_KEY=
+
 # Optional: page-view charts on the Posts list. A PostHog personal API key with the
 # "query:read" scope, and the numeric project id. Leave unset and the charts are skipped.
 # POSTHOG_API_HOST defaults to https://us.posthog.com.

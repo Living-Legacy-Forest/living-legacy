@@ -29,6 +29,7 @@ export * from './recurrence';
 export * from './rich-text-outline';
 export * from './brand-language';
 export * from './brand-scan';
+export * from './brand-context';
 export * from './content-score';
 export * from './migration';
 export * from './link-check';

@@ -1,5 +1,6 @@
 // Scans one piece of published content for the brand language guide, for the Content checks
 // page. Pure, so it can be tested without a database: the CMS feeds it each item's text.
+import { sentenceAround } from './brand-context';
 import { type BrandFinding, type BrandRule, findBrandProblems } from './brand-language';
 import { outlineRichText } from './rich-text-outline';
 import type { RichTextDoc } from './posts';
@@ -9,7 +10,10 @@ export type BrandScanPart = string | RichTextDoc | null | undefined;
 
 export interface BrandScanResult {
   /** What the guide rules out, as it was written: words never to use, and misspelt names. */
-  never: Pick<BrandFinding, 'found' | 'count' | 'instead' | 'kind'>[];
+  never: (Pick<BrandFinding, 'found' | 'count' | 'instead' | 'kind'> & {
+    /** The first sentence it was found in, so a fix can rewrite just that. */
+    sentence: string;
+  })[];
   /** Words that are usually wrong but sometimes fine in context. Counted, not listed. */
   avoid: number;
 }
@@ -35,19 +39,29 @@ export function scanBrand(
   // double every count, and joined pieces could make a name that is in neither ("Earth" then
   // "SApHE").
   const merged = new Map<string, BrandFinding>();
+  const sentences = new Map<string, string>();
   for (const piece of new Set(pieces.filter(Boolean))) {
     for (const finding of findBrandProblems(piece, rules)) {
       const key = `${finding.kind}|${finding.severity}|${finding.instead}|${finding.found.toLowerCase()}`;
       const seen = merged.get(key);
       if (seen) seen.count += finding.count;
-      else merged.set(key, { ...finding });
+      else {
+        merged.set(key, { ...finding });
+        sentences.set(key, sentenceAround(piece, finding.found) ?? piece);
+      }
     }
   }
   const findings = [...merged.values()];
   if (findings.length === 0) return null;
-  const never = findings
-    .filter((f) => f.severity === 'critical')
-    .map(({ found, count, instead, kind }) => ({ found, count, instead, kind }));
+  const never = [...merged.entries()]
+    .filter(([, f]) => f.severity === 'critical')
+    .map(([key, { found, count, instead, kind }]) => ({
+      found,
+      count,
+      instead,
+      kind,
+      sentence: sentences.get(key) ?? '',
+    }));
   if (never.length === 0) return null;
   return {
     never,

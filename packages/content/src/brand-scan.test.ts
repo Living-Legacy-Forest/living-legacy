@@ -23,8 +23,14 @@ describe('scanBrand', () => {
         count: 1,
         instead: 'Legacy Ground, or their tree',
         kind: 'term',
+        sentence: 'A final resting place',
       },
     ]);
+  });
+
+  it('gives each never finding the sentence it was found in', () => {
+    const result = scanBrand(['Our forest is calm. Choose a plot today.']);
+    expect(result?.never[0]).toMatchObject({ found: 'plot', sentence: 'Choose a plot today.' });
   });
 
   it('reads the text and the image descriptions of a rich text document', () => {
@@ -35,14 +41,26 @@ describe('scanBrand', () => {
   it('counts a word that appears in two places once per place, not twice for a repeated title', () => {
     const result = scanBrand(['Plots available', 'Plots available', doc('More about plots.')]);
     expect(result?.never).toEqual([
-      { found: 'Plots', count: 2, instead: 'Legacy Ground, or their tree', kind: 'term' },
+      {
+        found: 'Plots',
+        count: 2,
+        instead: 'Legacy Ground, or their tree',
+        kind: 'term',
+        sentence: 'Plots available',
+      },
     ]);
   });
 
   it('fails a misspelt product name', () => {
     const result = scanBrand(['Our EARTHSAPHE treatment']);
     expect(result?.never).toEqual([
-      { found: 'EARTHSAPHE', count: 1, instead: 'EarthSApHE', kind: 'spelling' },
+      {
+        found: 'EARTHSAPHE',
+        count: 1,
+        instead: 'EarthSApHE',
+        kind: 'spelling',
+        sentence: 'Our EARTHSAPHE treatment',
+      },
     ]);
   });
 

@@ -156,7 +156,7 @@ export type BrandBreach = {
   /** A legal page is opened by its slug. */
   slug?: string;
   /** What must be fixed: how it was written, how often, and what to write instead. */
-  never: { found: string; count: number; instead: string }[];
+  never: { found: string; count: number; instead: string; sentence: string }[];
   /** Words that are only usually wrong; counted, not listed. */
   avoid: number;
 };
@@ -297,7 +297,12 @@ async function scanPublished(db: ReturnType<typeof getDb>, fresh: boolean) {
         kind,
         title,
         slug,
-        never: result.never.map(({ found, count, instead }) => ({ found, count, instead })),
+        never: result.never.map(({ found, count, instead, sentence }) => ({
+          found,
+          count,
+          instead,
+          sentence,
+        })),
         avoid: result.avoid,
       });
     }

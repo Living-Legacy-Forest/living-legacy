@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { BRAND_RULES } from './brand-language';
 import {
+  AI_DAILY_LIMIT_MAX,
   contentTargetProblem,
   contentTargetsFrom,
   SITE_SETTINGS_DEFAULTS,
@@ -29,6 +30,29 @@ describe('parseSiteSettings', () => {
 
   it('treats a missing row as the defaults', () => {
     expect(parseSiteSettings(undefined)).toEqual(SITE_SETTINGS_DEFAULTS);
+  });
+});
+
+describe('writing assistant settings', () => {
+  it('is on, at 100 suggestions a person a day, until set otherwise', () => {
+    const settings = parseSiteSettings(undefined);
+    expect(settings.aiEnabled).toBe(true);
+    expect(settings.aiDailyLimit).toBe(100);
+  });
+
+  it('reads a stored switch and limit', () => {
+    const settings = parseSiteSettings({ aiEnabled: false, aiDailyLimit: 25 });
+    expect(settings.aiEnabled).toBe(false);
+    expect(settings.aiDailyLimit).toBe(25);
+  });
+
+  it('falls back to 100 for a limit that is not a whole number from 1 up to the maximum', () => {
+    for (const bad of [0, -5, 2.5, AI_DAILY_LIMIT_MAX + 1]) {
+      expect(parseSiteSettings({ aiDailyLimit: bad }).aiDailyLimit).toBe(100);
+    }
+    expect(parseSiteSettings({ aiDailyLimit: AI_DAILY_LIMIT_MAX }).aiDailyLimit).toBe(
+      AI_DAILY_LIMIT_MAX
+    );
   });
 });
 

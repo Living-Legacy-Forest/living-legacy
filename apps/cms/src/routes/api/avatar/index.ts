@@ -29,10 +29,7 @@ export const Route = createFileRoute('/api/avatar/')({
         const form = await request.formData();
         const forUserId = form.get('userId');
         const isSelf = typeof forUserId !== 'string' || forUserId === session.user.id;
-        if (
-          !isSelf &&
-          !can(toAccess({ ...session.user, role: session.user.role ?? 'viewer' }), 'users:manage')
-        ) {
+        if (!isSelf && !can(toAccess(session.user), 'users:manage')) {
           return new Response('Forbidden', { status: 403 });
         }
         const db = getDb();

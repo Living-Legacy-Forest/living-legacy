@@ -1,25 +1,12 @@
-import { type Permission, type Role, can, parseExtraPermissions } from '@ll/content';
+import { type Permission, can } from '@ll/content';
 import { createMiddleware, createServerFn } from '@tanstack/react-start';
 import { getRequest } from '@tanstack/react-start/server';
 import { env } from 'cloudflare:workers';
 import { getAuth } from './auth';
+import { type SessionUser, toSessionUser } from './session-user';
 import { readSiteSettings } from './site-settings';
 
-export type SessionUser = {
-  id: string;
-  name: string;
-  email: string;
-  image: string | null;
-  imageAlt: string | null;
-  bio: string | null;
-  /** A chosen drawn avatar, shown when there is no photo. */
-  avatarSeed: string | null;
-  role: Role;
-  /** Permissions an admin gave this person on top of their role. */
-  extraPermissions: Permission[];
-  /** When the account was made, so What's new skips what came before. */
-  createdAt: number;
-};
+export type { SessionUser } from './session-user';
 
 /** `fresh` skips the session cookie cache, for when stale details would show. */
 async function loadUser({ fresh = false } = {}): Promise<SessionUser | null> {
@@ -28,19 +15,7 @@ async function loadUser({ fresh = false } = {}): Promise<SessionUser | null> {
     query: { disableCookieCache: fresh },
   });
   if (!session) return null;
-  const { id, name, email, image, imageAlt, bio, role, createdAt, avatarSeed } = session.user;
-  return {
-    id,
-    name,
-    email,
-    image: image ?? null,
-    imageAlt: (imageAlt as string | null) ?? null,
-    bio: (bio as string | null) ?? null,
-    avatarSeed: (avatarSeed as string | null) ?? null,
-    role: role as Role,
-    extraPermissions: parseExtraPermissions(session.user.extraPermissions),
-    createdAt: new Date(createdAt).getTime(),
-  };
+  return toSessionUser(session.user);
 }
 
 export const getCurrentUser = createServerFn({ method: 'GET' }).handler(() =>

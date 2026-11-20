@@ -1,6 +1,7 @@
 import {
   emailSchema,
   extraPermissionsSchema,
+  guardExtraPermissionsChange,
   guardRemoval,
   guardRoleChange,
   isEmailDomainAllowed,
@@ -98,6 +99,9 @@ export const setExtraPermissions = createServerFn({ method: 'POST' })
   .middleware([requirePermission('users:manage')])
   .validator(z.object({ userId: z.string(), extraPermissions: extraPermissionsSchema }))
   .handler(async ({ data, context }) => {
+    // The Users screen hides this for yourself, but the server decides.
+    const error = guardExtraPermissionsChange({ isSelf: data.userId === context.user.id });
+    if (error) throw new Error(error);
     await setUserExtraPermissions(getDb(), data.userId, data.extraPermissions, context.user);
   });
 

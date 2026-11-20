@@ -4,6 +4,7 @@ import {
   applyExtraChange,
   describeExtras,
   extraAccessGroups,
+  extrasLine,
   invitePayload,
   normaliseExtras,
   permissionState,
@@ -259,6 +260,18 @@ describe('describeExtras', () => {
 
   it('is empty when there are none', () => {
     expect(describeExtras([])).toBe('');
+  });
+});
+
+describe('extrasLine', () => {
+  it('shows only what the role does not already include', () => {
+    expect(extrasLine('author', ['posts:write', 'redirects:write'])).toBe('Edit redirects');
+  });
+
+  it('is empty when the role covers everything stored, and for an admin', () => {
+    expect(extrasLine('author', ['posts:write', 'media:write'])).toBe('');
+    expect(extrasLine('admin', ['redirects:write'])).toBe('');
+    expect(extrasLine('viewer', [])).toBe('');
   });
 });
 

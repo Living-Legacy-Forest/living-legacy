@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import {
   canReceiveMagicLink,
   can,
+  guardExtraPermissionsChange,
   guardRemoval,
   guardRoleChange,
   resolveSignupRole,
@@ -129,6 +130,18 @@ describe('guardRoleChange', () => {
     expect(
       guardRoleChange({ isSelf: false, targetIsLastAdmin: true, newRole: 'admin' })
     ).toBeNull();
+  });
+});
+
+describe('guardExtraPermissionsChange', () => {
+  it('stops you changing your own access', () => {
+    expect(guardExtraPermissionsChange({ isSelf: true })).toBe(
+      'You cannot change your own access.'
+    );
+  });
+
+  it('allows changing someone else’s', () => {
+    expect(guardExtraPermissionsChange({ isSelf: false })).toBeNull();
   });
 });
 
@@ -275,6 +288,15 @@ describe('toAccess', () => {
 
   it('treats missing extras as none', () => {
     expect(toAccess({ role: 'editor' })).toEqual({ role: 'editor', extraPermissions: [] });
+  });
+
+  it('falls back to viewer when the role is missing or null', () => {
+    expect(toAccess({ role: null }).role).toBe('viewer');
+    expect(toAccess({ role: undefined, extraPermissions: '["seo:write"]' })).toEqual({
+      role: 'viewer',
+      extraPermissions: ['seo:write'],
+    });
+    expect(toAccess({}).role).toBe('viewer');
   });
 });
 

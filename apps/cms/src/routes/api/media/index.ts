@@ -19,9 +19,7 @@ export const Route = createFileRoute('/api/media/')({
       POST: async ({ request }) => {
         const session = await getAuth().api.getSession({ headers: request.headers });
         if (!session) return new Response('Unauthorized', { status: 401 });
-        if (
-          !can(toAccess({ ...session.user, role: session.user.role ?? 'viewer' }), 'media:write')
-        ) {
+        if (!can(toAccess(session.user), 'media:write')) {
           return new Response('Forbidden', { status: 403 });
         }
 

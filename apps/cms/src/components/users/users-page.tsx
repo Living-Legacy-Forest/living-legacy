@@ -18,7 +18,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { ExtraAccess } from '@/components/users/extra-access';
 import {
-  describeExtras,
+  extrasLine,
   invitePayload,
   normaliseExtras,
   resendPayload,
@@ -196,9 +196,9 @@ function UsersTable({ data }: { data: TeamData }) {
                         {isSelf && <Badge variant="secondary">You</Badge>}
                       </div>
                       <div className="text-muted-foreground truncate text-xs">{u.email}</div>
-                      {u.role !== 'admin' && u.extraPermissions.length > 0 && (
+                      {extrasLine(u.role, u.extraPermissions) && (
                         <div className="text-muted-foreground mt-0.5 text-xs">
-                          Extra access: {describeExtras(u.extraPermissions)}
+                          Extra access: {extrasLine(u.role, u.extraPermissions)}
                         </div>
                       )}
                       {/* Phones have no room for the role and activity columns. */}
@@ -618,9 +618,9 @@ function InvitationsTable({ invitations }: { invitations: TeamData['invitations'
           <TableRow key={invite.email}>
             <TableCell className="w-full max-w-0 py-3">
               <div className="truncate">{invite.email}</div>
-              {invite.extraPermissions.length > 0 && invite.role !== 'admin' && (
+              {extrasLine(invite.role, invite.extraPermissions) && (
                 <div className="text-muted-foreground text-xs">
-                  Extra access: {describeExtras(invite.extraPermissions)}
+                  Extra access: {extrasLine(invite.role, invite.extraPermissions)}
                 </div>
               )}
               <div className="text-muted-foreground text-xs sm:hidden">

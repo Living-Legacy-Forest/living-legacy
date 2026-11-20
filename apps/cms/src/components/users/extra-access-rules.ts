@@ -173,6 +173,11 @@ export function describeExtras(extras: readonly Permission[]): string {
   return extras.map((permission) => labelOf.get(permission) ?? permission).join(', ');
 }
 
+/** What a row says a person has beyond their role, or empty when there is nothing to say. */
+export function extrasLine(role: Role, stored: readonly Permission[]): string {
+  return describeExtras(splitExtras(role, stored).extras);
+}
+
 export function invitePayload(email: string, role: Role, selected: readonly Permission[]) {
   return { email, role, extraPermissions: normaliseExtras(role, selected) };
 }

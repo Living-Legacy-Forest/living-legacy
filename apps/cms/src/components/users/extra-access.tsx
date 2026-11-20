@@ -44,7 +44,9 @@ export function ExtraAccess({
                   )}
                 >
                   <Checkbox
-                    className="mt-0.5"
+                    // Base UI's root is a span, so the `disabled:` styles never match; it sets
+                    // data-disabled instead.
+                    className="mt-0.5 data-disabled:opacity-50"
                     checked={state.checked}
                     disabled={off}
                     onCheckedChange={(on) =>

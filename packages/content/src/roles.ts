@@ -106,7 +106,8 @@ export const extraPermissionsSchema: z.ZodType<Permission[]> = z
   )
   .transform((names) => withRequiredPermissions(names as Permission[]));
 
-export function toAccess(row: { role: string; extraPermissions?: string | null }): Access {
+/** Reads a person's access from a database row or session user; an unknown role is a viewer. */
+export function toAccess(row: { role?: string | null; extraPermissions?: string | null }): Access {
   const parsed = roleSchema.safeParse(row.role);
   return {
     role: parsed.success ? parsed.data : 'viewer',
@@ -176,6 +177,11 @@ export function guardRoleChange(opts: {
     return 'There must be at least one admin.';
   }
   return null;
+}
+
+/** Changing your own access would let an admin quietly widen it, so it stays with someone else. */
+export function guardExtraPermissionsChange(opts: { isSelf: boolean }): string | null {
+  return opts.isSelf ? 'You cannot change your own access.' : null;
 }
 
 /** Guards removal so you cannot remove yourself or the last admin. */

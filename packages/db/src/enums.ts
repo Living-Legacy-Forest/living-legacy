@@ -19,6 +19,7 @@ export const activityActions = [
   'post.unpublished',
   'user.invited',
   'user.role_changed',
+  'user.permissions_changed',
   'user.removed',
   'user.photo_changed',
   'redirect.created',

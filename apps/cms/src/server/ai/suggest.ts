@@ -2,10 +2,11 @@
 // one only suggests; the editor accepts it in the form and saves as usual. Nothing here writes.
 // Server only. src/server/ai.ts holds the server functions that call these; the logic lives here
 // so the browser build never has to resolve what it imports.
-import { BRAND_RULES, type BrandRule, type Role, can } from '@ll/content';
+import { BRAND_RULES, type BrandRule, type Role, can, toTags } from '@ll/content';
 import type { Db } from '@ll/db';
 import { z } from 'zod';
 import brandGuide from '../../../../../docs/brand-language.md?raw';
+import { listMediaTags } from '../media-list';
 import { loadContentTargets } from '../post-score';
 import { loadAltImage } from './alt-image';
 import { canSuggest } from './client';
@@ -21,6 +22,9 @@ const NOT_ALLOWED = 'You do not have permission to do that.';
 const NOT_SET_UP = "The writing assistant isn't set up.";
 const MAX_TAGS = 5;
 const TAG_LIMIT = 60;
+/** What the library stores for a tag (the Media server function's own limit). */
+const MEDIA_TAG_LIMIT = 40;
+const NO_IMAGE_TAGS = "Couldn't find tags that fit this image. Choose them yourself.";
 const NO_TAGS = "Couldn't find tags that fit this post. Choose them yourself.";
 /**
  * How much of a post is sent. Plenty for a search title, summary or tags (the opening says what a
@@ -96,32 +100,109 @@ export async function suggestPostFieldFor(
 }
 
 // ---------------------------------------------------------------------------
-// Alt text
+// Images: alt text, caption and tags
 
-export async function suggestAltTextFor(
+type MediaInput = { mediaId: string };
+
+/** What every image suggestion needs first: permission, a client, and the picture itself. */
+async function openImage(
   db: Db,
   bucket: R2Bucket,
   client: AiClient | null,
   actor: Actor,
-  input: { mediaId: string }
-): Promise<{ text: string }> {
+  input: MediaInput
+) {
   if (!can(actor.role, 'media:write')) throw new SuggestError(NOT_ALLOWED);
   if (!client) throw new SuggestError(NOT_SET_UP);
+  return { client, ...(await loadAltImage(db, bucket, input.mediaId)) };
+}
 
-  const { block, caption } = await loadAltImage(db, bucket, input.mediaId);
+async function suggestImageText(
+  field: 'alt' | 'caption',
+  db: Db,
+  bucket: R2Bucket,
+  client: AiClient | null,
+  actor: Actor,
+  input: MediaInput
+): Promise<{ text: string }> {
+  const image = await openImage(db, bucket, client, actor, input);
   await reserveSuggestion(db, actor.id);
-  const out = await runSuggestion(client, {
-    field: 'alt',
+  const out = await runSuggestion(image.client, {
+    field,
     brandGuide,
     rules: await brandRules(db),
     content: [
-      block,
-      { type: 'text', text: caption ? `Its caption: ${caption}` : 'Describe this image.' },
+      image.block,
+      {
+        type: 'text',
+        // An alt text is written knowing the caption; a caption is written from the picture.
+        text:
+          field === 'alt' && image.caption
+            ? `Its caption: ${image.caption}`
+            : 'Describe this image.',
+      },
     ],
     schema: textReply,
     texts: (reply) => [reply.text],
   });
   return { text: out.text.trim() };
+}
+
+export const suggestAltTextFor = (
+  db: Db,
+  bucket: R2Bucket,
+  client: AiClient | null,
+  actor: Actor,
+  input: MediaInput
+) => suggestImageText('alt', db, bucket, client, actor, input);
+
+export const suggestMediaCaptionFor = (
+  db: Db,
+  bucket: R2Bucket,
+  client: AiClient | null,
+  actor: Actor,
+  input: MediaInput
+) => suggestImageText('caption', db, bucket, client, actor, input);
+
+/**
+ * Labels for finding an image in the library, tidied the way the library stores them. The tags
+ * already in use are passed along so the model reuses them instead of inventing near-duplicates.
+ */
+export async function suggestMediaTagsFor(
+  db: Db,
+  bucket: R2Bucket,
+  client: AiClient | null,
+  actor: Actor,
+  input: MediaInput
+): Promise<{ tags: string[] }> {
+  const image = await openImage(db, bucket, client, actor, input);
+  await reserveSuggestion(db, actor.id);
+  const rules = await brandRules(db);
+  const used = (await listMediaTags(db)).map((row) => row.tag);
+
+  const out = await runSuggestion(image.client, {
+    field: 'mediaTags',
+    brandGuide,
+    rules,
+    content: [
+      image.block,
+      {
+        type: 'text',
+        text: used.length
+          ? `Tags already used in the library: ${used.join(', ')}`
+          : 'The library has no tags yet.',
+      },
+    ],
+    schema: tagsReply,
+    texts: () => [],
+  });
+  // Written the way the library stores them; a label that breaks the guide is dropped, not a
+  // reason to ask (and pay) again.
+  const tags = toTags(out.tags).filter(
+    (tag) => guardProblems(tag, { limit: MEDIA_TAG_LIMIT, rules }).length === 0
+  );
+  if (tags.length === 0) throw new SuggestError(NO_IMAGE_TAGS);
+  return { tags: tags.slice(0, MAX_TAGS) };
 }
 
 // ---------------------------------------------------------------------------

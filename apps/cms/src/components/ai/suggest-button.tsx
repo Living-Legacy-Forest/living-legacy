@@ -122,7 +122,7 @@ export function SuggestTagsButton({
           const have = new Set(tags.map((tag) => tag.toLowerCase()));
           const added = (await request()).filter((tag) => !have.has(tag.toLowerCase()));
           if (added.length === 0) {
-            throw new Error('Every tag that fits is already on this post.');
+            throw new Error('Every tag that fits is already there.');
           }
           return [...tags, ...added];
         })

@@ -10,7 +10,15 @@ import type Anthropic from '@anthropic-ai/sdk';
 export const AI_MODEL = 'claude-haiku-5-5';
 
 export type SuggestField =
-  'seoTitle' | 'seoDescription' | 'excerpt' | 'focusKeyword' | 'tags' | 'alt' | 'brandFix';
+  | 'seoTitle'
+  | 'seoDescription'
+  | 'excerpt'
+  | 'focusKeyword'
+  | 'tags'
+  | 'alt'
+  | 'caption'
+  | 'mediaTags'
+  | 'brandFix';
 
 /** What each field is for and its length limit. The limit is the one the field is saved against. */
 export const FIELD_SPECS: Record<SuggestField, { limit: number; brief: string }> = {
@@ -42,7 +50,17 @@ export const FIELD_SPECS: Record<SuggestField, { limit: number; brief: string }>
   alt: {
     limit: 300,
     brief:
-      'Write the alt text for this image, for someone using a screen reader. Describe what is visible in under 125 characters. Do not begin with "image of" or "photo of".',
+      'Write the alt text for this image, for someone using a screen reader. Describe what is visible in under 125 characters. Do not begin with "image of" or "photo of". Do not guess who anyone is or where it was taken.',
+  },
+  caption: {
+    limit: 500,
+    brief:
+      'Write a caption for this image: one short sentence shown to visitors under the picture. Say what is happening rather than what is obvious at a glance. Do not guess who anyone is or where it was taken.',
+  },
+  mediaTags: {
+    limit: 40,
+    brief:
+      'Choose up to five short labels to help staff find this image in the media library, such as the subject or the season. Prefer labels from the list of tags already used in the library, and add a new one only when none of them fits. Write each in lower case, one or two words.',
   },
   brandFix: {
     limit: 2000,

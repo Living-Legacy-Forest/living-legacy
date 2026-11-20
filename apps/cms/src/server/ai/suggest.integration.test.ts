@@ -1,10 +1,17 @@
 // The writing assistant's server side, against local D1 and R2 with a fake model.
 import type { Role } from '@ll/content';
 import { aiUsage, media, siteSettings } from '@ll/db/schema';
+import { eq } from 'drizzle-orm';
 import { env } from 'cloudflare:workers';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { addUser, testDb } from '../../../test/fixtures';
-import { suggestAltTextFor, suggestBrandFixFor, suggestPostFieldFor } from './suggest';
+import {
+  suggestAltTextFor,
+  suggestBrandFixFor,
+  suggestMediaCaptionFor,
+  suggestMediaTagsFor,
+  suggestPostFieldFor,
+} from './suggest';
 import { aiEnabled, getAiClient } from './client';
 import { loadAltImage } from './alt-image';
 import type { AiClient } from './run';
@@ -356,5 +363,103 @@ describe('the daily limit', () => {
       limit: 60,
     });
     expect(await usedToday()).toBe(2);
+  });
+});
+
+describe('suggestMediaCaptionFor', () => {
+  it('writes a caption from the image, with the caption brief, and counts one', async () => {
+    await addImage({ id: 'cap1', original: bytes(1, 2, 3), filename: 'secret-name.png' });
+    const { client, create } = fakeClient('Morning light on the new planting.');
+    const out = await suggestMediaCaptionFor(testDb(), env.MEDIA, client, actor(), {
+      mediaId: 'cap1',
+    });
+    expect(out).toEqual({ text: 'Morning light on the new planting.' });
+    const sent = create.mock.calls[0]![0];
+    expect(sent.messages[0].content.some((b: { type: string }) => b.type === 'image')).toBe(true);
+    expect(JSON.stringify(sent.system)).toContain('caption');
+    expect(JSON.stringify(sent)).not.toContain('secret-name');
+    expect(await usedToday()).toBe(1);
+  });
+
+  it('holds the caption to the brand guide', async () => {
+    await addImage({ id: 'cap2', original: bytes(1) });
+    const { client, create } = fakeClient();
+    create.mockResolvedValueOnce(answer({ text: 'A quiet plot.' }));
+    create.mockResolvedValueOnce(answer({ text: 'A quiet place.' }));
+    const out = await suggestMediaCaptionFor(testDb(), env.MEDIA, client, actor(), {
+      mediaId: 'cap2',
+    });
+    expect(out).toEqual({ text: 'A quiet place.' });
+  });
+
+  it('refuses a file that is not a photo or image, and a role without media access', async () => {
+    await addImage({ id: 'cap3', mime: 'image/svg+xml', original: bytes(1) });
+    const { client } = fakeClient();
+    await expect(
+      suggestMediaCaptionFor(testDb(), env.MEDIA, client, actor(), { mediaId: 'cap3' })
+    ).rejects.toThrow('Alt text can only be suggested for photos and images.');
+    await expect(
+      suggestMediaCaptionFor(testDb(), env.MEDIA, client, actor('seo'), { mediaId: 'cap3' })
+    ).rejects.toThrow('You do not have permission to do that.');
+    expect(await usedToday()).toBe(0);
+  });
+});
+
+describe('suggestMediaTagsFor', () => {
+  const tagsFrom = (tags: string[]) => {
+    const create = vi.fn().mockResolvedValue(answer({ tags }));
+    return { client: { messages: { create } } as unknown as AiClient, create };
+  };
+
+  it('tidies the labels the way the library stores them and drops repeats', async () => {
+    await addImage({ id: 'tag1', original: bytes(1, 2, 3) });
+    const { client } = tagsFrom(['Tree Planting', 'tree-planting', 'Forest!']);
+    const out = await suggestMediaTagsFor(testDb(), env.MEDIA, client, actor(), {
+      mediaId: 'tag1',
+    });
+    expect(out).toEqual({ tags: ['tree-planting', 'forest'] });
+  });
+
+  it('drops a label that breaks the brand guide and keeps the rest', async () => {
+    await addImage({ id: 'tag2', original: bytes(1) });
+    const { client } = tagsFrom(['plots', 'forest']);
+    const out = await suggestMediaTagsFor(testDb(), env.MEDIA, client, actor(), {
+      mediaId: 'tag2',
+    });
+    expect(out).toEqual({ tags: ['forest'] });
+  });
+
+  it('keeps at most five', async () => {
+    await addImage({ id: 'tag3', original: bytes(1) });
+    const { client } = tagsFrom(['a1', 'a2', 'a3', 'a4', 'a5', 'a6', 'a7']);
+    const out = await suggestMediaTagsFor(testDb(), env.MEDIA, client, actor(), {
+      mediaId: 'tag3',
+    });
+    expect(out).toEqual({ tags: ['a1', 'a2', 'a3', 'a4', 'a5'] });
+  });
+
+  it('says so when no label is usable', async () => {
+    await addImage({ id: 'tag4', original: bytes(1) });
+    const { client } = tagsFrom(['plots']);
+    await expect(
+      suggestMediaTagsFor(testDb(), env.MEDIA, client, actor(), { mediaId: 'tag4' })
+    ).rejects.toThrow("Couldn't find tags that fit this image. Choose them yourself.");
+  });
+
+  it('tells the model which tags the library already uses, most used first', async () => {
+    await addImage({ id: 'tag5', original: bytes(1) });
+    await addImage({ id: 'tag5b', original: bytes(2) });
+    await testDb()
+      .update(media)
+      .set({ tags: ['events', 'forest'] })
+      .where(eq(media.id, 'tag5'));
+    await testDb()
+      .update(media)
+      .set({ tags: ['forest'] })
+      .where(eq(media.id, 'tag5b'));
+    const { client, create } = tagsFrom(['forest']);
+    await suggestMediaTagsFor(testDb(), env.MEDIA, client, actor(), { mediaId: 'tag5' });
+    const text = JSON.stringify(create.mock.calls[0]![0].messages);
+    expect(text).toContain('already used in the library: forest, events');
   });
 });

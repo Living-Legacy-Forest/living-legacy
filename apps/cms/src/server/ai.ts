@@ -6,7 +6,13 @@ import { getDb } from '@/lib/db';
 import { authMiddleware, requirePermission } from '@/lib/session';
 import { aiEnabled, getAiClient } from './ai/client';
 import { altTextSchema, brandFixSchema, postFieldSchema } from './ai/schemas';
-import { suggestAltTextFor, suggestBrandFixFor, suggestPostFieldFor } from './ai/suggest';
+import {
+  suggestAltTextFor,
+  suggestBrandFixFor,
+  suggestMediaCaptionFor,
+  suggestMediaTagsFor,
+  suggestPostFieldFor,
+} from './ai/suggest';
 
 export const suggestPostField = createServerFn({ method: 'POST' })
   .middleware([authMiddleware])
@@ -18,6 +24,20 @@ export const suggestAltText = createServerFn({ method: 'POST' })
   .validator(altTextSchema)
   .handler(({ data, context }) =>
     suggestAltTextFor(getDb(), env.MEDIA, getAiClient(), context.user, data)
+  );
+
+export const suggestMediaCaption = createServerFn({ method: 'POST' })
+  .middleware([requirePermission('media:write')])
+  .validator(altTextSchema)
+  .handler(({ data, context }) =>
+    suggestMediaCaptionFor(getDb(), env.MEDIA, getAiClient(), context.user, data)
+  );
+
+export const suggestMediaTags = createServerFn({ method: 'POST' })
+  .middleware([requirePermission('media:write')])
+  .validator(altTextSchema)
+  .handler(({ data, context }) =>
+    suggestMediaTagsFor(getDb(), env.MEDIA, getAiClient(), context.user, data)
   );
 
 export const suggestBrandFix = createServerFn({ method: 'POST' })

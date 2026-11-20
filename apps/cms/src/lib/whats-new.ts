@@ -60,8 +60,8 @@ export const whatsNew: WhatsNewEntry[] = [
         body: 'In a post, the Suggest button beside Title, Description, Focus keyword, Summary and Tags writes one for you, following the brand guide. Check it, then save as usual. Undo puts back what was there.',
       },
       {
-        title: 'Suggest alt text',
-        body: 'Beside alt text in Media and in image pickers, Suggest looks at the image and describes it for screen readers.',
+        title: 'Suggest alt text, a caption and tags for images',
+        body: 'On a file in Media, Suggest looks at the image and writes alt text, a caption or tags for it, and image pickers have it for alt text. Tags reuse the ones the library already has where they fit.',
         link: { label: 'Open Media', to: '/media' },
       },
       {

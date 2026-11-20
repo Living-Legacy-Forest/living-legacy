@@ -56,7 +56,7 @@ export function SeriesCalendar({
   const sessions = viewing ? (byDay.get(dayKey(viewing)) ?? []) : [];
 
   return (
-    <div className={cn('space-y-1.5', className)}>
+    <div className={cn('flex flex-col gap-1.5', compact && 'items-start', className)}>
       <Popover open={open} onOpenChange={setOpen}>
         <PopoverTrigger
           render={

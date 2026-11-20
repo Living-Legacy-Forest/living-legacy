@@ -290,6 +290,7 @@ export function MediaDetail({ detail, canDelete }: { detail: Detail; canDelete: 
       {isPdf ? (
         // Read in place, a page at a time. The thumbnail shows while the document loads.
         <PdfReader
+          key={item.url}
           url={item.url}
           title={item.filename}
           placeholder={item.hasCover ? mediaSrc(item, 640) : undefined}

@@ -363,6 +363,74 @@ export const saveEvent = createServerFn({ method: 'POST' })
     return { id: current.id, dates: changed };
   });
 
+/**
+ * A copy of an event, all its dates, as a draft to edit: no bookings, nothing scheduled, and a
+ * web address of its own ("-copy"). Cancelled dates are left behind unless every date is cancelled.
+ */
+export const duplicateEvent = createServerFn({ method: 'POST' })
+  .middleware([requirePermission('events:manage')])
+  .validator(z.object({ id: z.string() }))
+  .handler(async ({ data, context }) => {
+    const db = getDb();
+    const source = await db.query.events.findFirst({ where: eq(events.id, data.id) });
+    if (!source) throw new Error('That event no longer exists.');
+    const siblings = source.seriesId
+      ? await db
+          .select()
+          .from(events)
+          .where(eq(events.seriesId, source.seriesId))
+          .orderBy(asc(events.startsAt))
+      : [source];
+    const live = siblings.filter((d) => d.status !== 'cancelled');
+    const dates = live.length > 0 ? live : siblings;
+
+    // Leave room for the suffixes: slugify cuts at 80, which would drop "-copy" off a long address.
+    const base = slugify(`${source.slug.slice(0, 70)}-copy`);
+    let slug = base;
+    for (let n = 2; await db.query.events.findFirst({ where: eq(events.slug, slug) }); n++) {
+      slug = `${base}-${n}`;
+    }
+    const title = `Copy of ${source.title}`.slice(0, 120);
+    const seriesId = dates.length > 1 ? crypto.randomUUID() : null;
+    const now = new Date();
+    const rows = dates.map((d) => ({
+      seriesId,
+      title,
+      slug,
+      timeZone: d.timeZone,
+      locationId: d.locationId,
+      venue: d.venue,
+      summary: d.summary,
+      description: d.description,
+      heroMediaId: d.heroMediaId,
+      galleryMediaIds: d.galleryMediaIds,
+      capacity: d.capacity,
+      maxPartySize: d.maxPartySize,
+      startsAt: d.startsAt,
+      endsAt: d.endsAt,
+      bookingsOpenAt: d.bookingsOpenAt,
+      bookingsCloseAt: d.bookingsCloseAt,
+      status: 'draft' as const,
+      publishAt: null,
+      createdBy: context.user.id,
+      updatedBy: context.user.id,
+      createdAt: now,
+      updatedAt: now,
+    }));
+    // One statement per date: D1 limits how many values one statement binds.
+    const created = await db.batch([
+      db.insert(events).values(rows[0]!).returning({ id: events.id }),
+      ...rows.slice(1).map((r) => db.insert(events).values(r).returning({ id: events.id })),
+      logActivity(db, {
+        actorId: context.user.id,
+        actorName: context.user.name,
+        action: 'event.saved',
+        summary: `Duplicated the event ${source.title}`,
+      }),
+    ]);
+    return { id: created[0][0]!.id, dates: rows.length };
+  });
+
 const scoped = z.object({ id: z.string(), scope: seriesScopeSchema });
 
 export const cancelEvent = createServerFn({ method: 'POST' })

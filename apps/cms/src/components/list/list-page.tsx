@@ -13,6 +13,7 @@
 import { createContext, useContext, useLayoutEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { PanelRightIcon } from '@/components/icons';
+import { SplitHandle, useSplit } from '@/components/list/split-handle';
 import { Button } from '@/components/ui/button';
 import {
   Dialog,
@@ -75,22 +76,52 @@ export function useListPane<T>() {
 export function ListPageLayout({
   children,
   className,
+  resizable,
 }: {
   children: React.ReactNode;
   /** To size the columns differently, e.g. a narrower list beside a long form. */
   className?: string;
+  /**
+   * Puts a draggable divider between the list and the pane. `key` is what the width is remembered
+   * under (one per page); `defaultShare` is the list's share of the width until someone moves it.
+   * `active: false` hides the divider and leaves the columns to `className`, for a page whose pane
+   * folds away. `animated` is for a page that animates its columns (it then uses plain `fr` tracks,
+   * which the browser can animate between).
+   */
+  resizable?: { key: string; defaultShare: number; active?: boolean; animated?: boolean };
 }) {
+  const frame = useRef<HTMLDivElement>(null);
+  const split = useSplit(resizable?.key, resizable?.defaultShare ?? 0.5);
+  const share = split.share;
+  const columns = resizable?.animated
+    ? `${share}fr ${1 - share}fr`
+    : `minmax(20rem,${share}fr) minmax(0,${1 - share}fr)`;
   return (
     <div
+      ref={frame}
       data-slot="list-panes"
+      data-resizing={split.dragging || undefined}
+      style={resizable ? ({ '--split-cols': columns } as React.CSSProperties) : undefined}
       className={cn(
-        'grid min-h-0 flex-1 grid-cols-1 overflow-hidden rounded-lg border lg:grid-cols-[minmax(20rem,1fr)_minmax(0,1fr)]',
+        'relative grid min-h-0 flex-1 grid-cols-1 overflow-hidden rounded-lg border lg:grid-cols-[minmax(20rem,1fr)_minmax(0,1fr)]',
+        resizable &&
+          'data-resizing:select-none lg:grid-cols-[var(--split-cols)] lg:data-resizing:transition-none',
         // Phones: no frame. The list is an iOS grouped list that ends with its rows.
         'max-md:flex-none max-md:overflow-visible max-md:rounded-none max-md:border-0',
         className
       )}
     >
       {children}
+      {resizable && (resizable.active ?? true) && (
+        <SplitHandle
+          frame={frame}
+          share={share}
+          onShare={split.setShare}
+          onDragging={split.setDragging}
+          onCommit={split.commit}
+          onReset={split.reset}
+        />
+      )}
     </div>
   );
 }

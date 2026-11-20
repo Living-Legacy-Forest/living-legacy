@@ -356,7 +356,7 @@ export function TestimonialsPage({
           )}
         </Empty>
       ) : (
-        <ListPageLayout>
+        <ListPageLayout resizable={{ key: 'testimonials', defaultShare: 0.5 }}>
           <ListColumn
             label="Testimonials"
             header={

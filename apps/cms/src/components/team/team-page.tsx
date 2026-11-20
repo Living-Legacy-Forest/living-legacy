@@ -302,7 +302,7 @@ export function TeamPage({ data, canWrite }: { data: TeamListData; canWrite: boo
           )}
         </Empty>
       ) : (
-        <ListPageLayout>
+        <ListPageLayout resizable={{ key: 'team', defaultShare: 0.5 }}>
           <ListColumn
             label="Team members"
             header={

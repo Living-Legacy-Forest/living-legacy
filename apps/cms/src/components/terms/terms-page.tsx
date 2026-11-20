@@ -245,7 +245,7 @@ export function TermsPage({
           )}
         </Empty>
       ) : (
-        <ListPageLayout>
+        <ListPageLayout resizable={{ key: 'terms', defaultShare: 0.5 }}>
           <ListColumn
             label={title}
             header={

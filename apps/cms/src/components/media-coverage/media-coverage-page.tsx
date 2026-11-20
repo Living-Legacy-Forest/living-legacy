@@ -358,7 +358,7 @@ export function MediaCoveragePage({
           {canWrite && <EmptyContent>{addButton}</EmptyContent>}
         </Empty>
       ) : (
-        <ListPageLayout>
+        <ListPageLayout resizable={{ key: 'media-coverage', defaultShare: 0.5 }}>
           <ListColumn
             label="Media coverage"
             header={

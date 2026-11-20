@@ -1,9 +1,16 @@
 import { groupEventDates } from '@ll/content';
-import { useNavigate } from '@tanstack/react-router';
+import { useNavigate, useRouter } from '@tanstack/react-router';
 import { useState } from 'react';
-import { CalendarClockIcon, PlusIcon } from '@/components/icons';
+import {
+  CalendarClockIcon,
+  ChartPieIcon,
+  CopyIcon,
+  PlusIcon,
+  UsersIcon,
+  XIcon,
+} from '@/components/icons';
 import { ListColumn, ListPageLayout, ListRows, NoMatches } from '@/components/list/list-page';
-import { ListRow } from '@/components/list/list-row';
+import { ListRow, type RowMenuItem } from '@/components/list/list-row';
 import { ListFilter } from '@/components/list/list-filter';
 import { ListSort, byText, sortedBy, useListSort } from '@/components/list/list-sort';
 import { CardMeta, ListCard, ListCards } from '@/components/list/list-card';
@@ -11,6 +18,7 @@ import { ViewSwitch, useListView } from '@/components/list/view-switch';
 import { RowCell } from '@/components/list/row-cell';
 import { cn } from '@/lib/utils';
 import { formatDate, formatTimeRange } from '@/lib/format';
+import { CancelEventDialog } from './editor/event-actions';
 import {
   ConfirmBulkDelete,
   SearchInput,
@@ -34,7 +42,7 @@ import { removedNotice } from '@/lib/notify';
 import { RevealWords } from '@/components/dashboard/reveal-words';
 import { useAction } from '@/lib/use-action';
 import { useRevealOnce } from '@/lib/use-reveal-once';
-import { type EventRow, type EventsData, deleteEvents } from '@/server/events';
+import { type EventRow, type EventsData, deleteEvents, duplicateEvent } from '@/server/events';
 import { dateStatus, startsIn } from './series-date-picker';
 
 const NOUN: [string, string] = ['event', 'events'];
@@ -65,11 +73,13 @@ const SORTS = [
 
 export function EventsPage({ data }: { data: EventsData }) {
   const navigate = useNavigate();
+  const router = useRouter();
   const [query, setQuery] = useState('');
   const [filter, setFilter] = useState<Filter>('upcoming');
   // Ticked values per group; empty means that group does not narrow the list.
   const [picked, setPicked] = useState<Record<string, string[]>>({ places: [], statuses: [] });
   const [toDelete, setToDelete] = useState<string[] | null>(null);
+  const [toCancel, setToCancel] = useState<EventRow | null>(null);
   const { run, pending } = useAction();
   const revealing = useRevealOnce();
   const [layout, setLayout] = useListView('events');
@@ -101,7 +111,48 @@ export function EventsPage({ data }: { data: EventsData }) {
 
   const openEvent = (id: string) =>
     void navigate({ to: '/events/$eventId', params: { eventId: id } });
+  const openView = (id: string, view: 'guests' | 'dashboard') =>
+    void navigate({ to: '/events/$eventId', params: { eventId: id }, search: { view } });
+  // Open's neighbours in the right-click menu, and the card's ⋯ menu.
+  const menuFor = (row: (typeof visible)[number]): RowMenuItem[] => [
+    {
+      label: 'Guest list',
+      icon: <UsersIcon aria-hidden />,
+      onSelect: () => openView(row.lead.id, 'guests'),
+    },
+    {
+      label: 'Dashboard',
+      icon: <ChartPieIcon aria-hidden />,
+      onSelect: () => openView(row.lead.id, 'dashboard'),
+    },
+    {
+      label: 'Duplicate',
+      icon: <CopyIcon aria-hidden />,
+      onSelect: () => void duplicate(row.lead.id),
+    },
+    ...(row.lead.status === 'cancelled'
+      ? []
+      : [
+          {
+            label: 'Cancel event',
+            icon: <XIcon aria-hidden />,
+            onSelect: () => setToCancel(row.lead),
+            destructive: true,
+          },
+        ]),
+  ];
   const createEvent = () => void navigate({ to: '/events/new' });
+
+  async function duplicate(id: string) {
+    const result = await run(async () => duplicateEvent({ data: { id } }), {
+      success: {
+        title: 'Event duplicated',
+        description: 'It is a draft. Change its dates and title before publishing.',
+      },
+      error: 'Could not duplicate',
+    });
+    if (result) openEvent(result.id);
+  }
 
   async function remove(ids: string[]) {
     const result = await run(async () => (await deleteEvents({ data: { ids } })).dates, {
@@ -243,6 +294,7 @@ export function EventsPage({ data }: { data: EventsData }) {
                     key={row.key}
                     row={row}
                     onOpen={() => openEvent(row.lead.id)}
+                    menu={menuFor(row)}
                     onDelete={() => setToDelete(idsOf([row]))}
                   />
                 ))}
@@ -260,6 +312,7 @@ export function EventsPage({ data }: { data: EventsData }) {
                       selecting: selection.selecting,
                       onToggle: () => selection.toggle(row.key),
                     }}
+                    menu={menuFor(row)}
                     swipe={{ label: 'Delete', onAction: () => setToDelete(idsOf([row])) }}
                     onOpen={() => openEvent(row.lead.id)}
                   >
@@ -270,6 +323,15 @@ export function EventsPage({ data }: { data: EventsData }) {
             )}
           </ListColumn>
         </ListPageLayout>
+      )}
+
+      {toCancel && (
+        <CancelEventDialog
+          event={toCancel}
+          open
+          onOpenChange={(open) => !open && setToCancel(null)}
+          onDone={() => void router.invalidate()}
+        />
       )}
 
       <ConfirmBulkDelete
@@ -297,10 +359,12 @@ function rowStatus(dates: EventRow[]) {
 function EventCard({
   row,
   onOpen,
+  menu,
   onDelete,
 }: {
   row: ReturnType<typeof groupEventDates<EventRow>>[number];
   onOpen: () => void;
+  menu: RowMenuItem[];
   onDelete: () => void;
 }) {
   const { lead, dates, upcoming } = row;
@@ -316,6 +380,7 @@ function EventCard({
       image={lead.heroMediaId ? `/api/media/${lead.heroMediaId}?w=640` : null}
       icon={<CalendarClockIcon aria-hidden />}
       onOpen={onOpen}
+      menu={menu}
       remove={{ label: 'Delete', onAction: onDelete }}
     >
       <span className="flex min-w-0 items-center gap-2 text-xs">

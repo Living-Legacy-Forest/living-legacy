@@ -36,7 +36,12 @@ export type SuggestRequest<T extends z.ZodType> = {
   limit?: number;
 };
 
-type Usage = { input_tokens: number; output_tokens: number };
+type Usage = {
+  input_tokens: number;
+  output_tokens: number;
+  cache_read_input_tokens: number;
+  cache_creation_input_tokens: number;
+};
 
 /**
  * Asks the model for one suggestion and holds it to the brand guide. A reply that is malformed or
@@ -48,7 +53,12 @@ export async function runSuggestion<T extends z.ZodType>(
   req: SuggestRequest<T>
 ): Promise<z.infer<T>> {
   const limit = req.limit ?? FIELD_SPECS[req.field].limit;
-  const usage: Usage = { input_tokens: 0, output_tokens: 0 };
+  const usage: Usage = {
+    input_tokens: 0,
+    output_tokens: 0,
+    cache_read_input_tokens: 0,
+    cache_creation_input_tokens: 0,
+  };
   // One usage line per call, so spend is visible in Workers Logs. Field, model, token counts and
   // outcome only: never the post, the image or the suggestion.
   const log = (outcome: Outcome) =>
@@ -64,10 +74,14 @@ export async function runSuggestion<T extends z.ZodType>(
 
     let response;
     try {
-      response = await client.messages.parse({
+      // `create`, not `parse`: the SDK's parser throws its own error on malformed JSON (with a piece
+      // of the reply in it) before the stop reason can be read. Reading the reply here lets a
+      // refusal be a refusal, and a malformed or cut-off reply get its one more go.
+      response = await client.messages.create({
         model: AI_MODEL,
-        max_tokens: 1024,
-        cache_control: { type: 'ephemeral' },
+        // A ceiling, not a charge: only what is written is paid for. Thinking counts towards it,
+        // so it leaves room rather than cutting a reply off and paying for a second call.
+        max_tokens: 2048,
         system: systemPrompt(req.brandGuide, req.field),
         messages,
         output_config: { effort: 'low', format: zodOutputFormat(req.schema) },
@@ -78,13 +92,15 @@ export async function runSuggestion<T extends z.ZodType>(
     }
     usage.input_tokens += response.usage.input_tokens;
     usage.output_tokens += response.usage.output_tokens;
+    usage.cache_read_input_tokens += response.usage.cache_read_input_tokens ?? 0;
+    usage.cache_creation_input_tokens += response.usage.cache_creation_input_tokens ?? 0;
 
     if (response.stop_reason === 'refusal') {
       log('refused');
       throw new SuggestError(REFUSED);
     }
 
-    const out = response.parsed_output as z.infer<T> | null;
+    const out = response.stop_reason === 'max_tokens' ? null : readReply(response, req.schema);
     const problems = out
       ? req
           .texts(out)
@@ -100,10 +116,31 @@ export async function runSuggestion<T extends z.ZodType>(
   throw new SuggestError(GUARD_FAILED);
 }
 
-/** Never carries the provider's own message, which can echo what was sent. */
+/** The reply's JSON, checked against the schema; null when it is missing, malformed or the wrong shape. */
+function readReply<T extends z.ZodType>(response: Anthropic.Message, schema: T): z.infer<T> | null {
+  const text = response.content.find((block) => block.type === 'text')?.text;
+  if (!text) return null;
+  try {
+    const parsed = schema.safeParse(JSON.parse(text));
+    return parsed.success ? parsed.data : null;
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * Never carries the provider's own message, which can echo what was sent or what came back. What
+ * went wrong is logged by kind and status only.
+ */
 function toSuggestError(error: unknown): Error {
   if (error instanceof SuggestError) return error;
+  console.error(
+    JSON.stringify({
+      event: 'ai_suggest_failed',
+      kind: error instanceof Error ? error.constructor.name : typeof error,
+      status: error instanceof Anthropic.APIError ? error.status : undefined,
+    })
+  );
   if (error instanceof Anthropic.RateLimitError) return new SuggestError(BUSY);
-  if (error instanceof Anthropic.APIError) return new SuggestError(DOWN);
-  return error instanceof Error ? error : new SuggestError(DOWN);
+  return new SuggestError(DOWN);
 }

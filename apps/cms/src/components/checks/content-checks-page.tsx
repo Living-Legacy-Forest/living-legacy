@@ -390,7 +390,7 @@ function useCheckRows(
               <span className="mt-1.5 flex flex-wrap gap-1.5">
                 {b.never.slice(0, 3).map((f) => (
                   <BrandFixButton
-                    key={f.found}
+                    key={`${f.found}|${f.sentence}`}
                     sentence={f.sentence}
                     found={f.found}
                     limit={2000}

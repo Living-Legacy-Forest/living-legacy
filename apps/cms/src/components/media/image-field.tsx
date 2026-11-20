@@ -163,7 +163,7 @@ export function ImageField({
             )}
           </div>
           <div className="min-w-0 flex-1 space-y-2">
-            {item && <AltText id={`${id}-alt`} item={item} onSaved={update} />}
+            {item && <AltText key={item.id} id={`${id}-alt`} item={item} onSaved={update} />}
             <div className="flex gap-2">
               <Button
                 type="button"
@@ -286,15 +286,18 @@ export function AltText({
       </div>
       <div className="flex items-center justify-between gap-2">
         <p className="text-muted-foreground text-xs">
-          {item.alt ? 'Saved with the image in Media.' : 'Needed for screen readers and search.'}
+          {alt.trim() !== stored.current
+            ? 'Not saved yet. Press Enter or click away to save it.'
+            : item.alt
+              ? 'Saved with the image in Media.'
+              : 'Needed for screen readers and search.'}
         </p>
         <SuggestButton
           value={alt}
           request={() => suggestAltText({ data: { mediaId: item.id } }).then((r) => r.text)}
-          onApply={(next) => {
-            setAlt(next);
-            void save(next);
-          }}
+          // Only fills the field: it is saved when the editor presses Enter or moves on, never
+          // straight away, because this text goes live on every page that shows the image.
+          onApply={setAlt}
         />
       </div>
     </div>

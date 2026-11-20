@@ -6,8 +6,11 @@ import { SuggestError } from './run';
 
 /** What the model reads as an image. SVGs and documents are not photos. */
 const READABLE = new Set(['image/jpeg', 'image/png', 'image/gif', 'image/webp']);
-/** Wider than this is shrunk by the model anyway, so the smaller copy is as good and much cheaper. */
-const MAX_WIDTH = 1568;
+/**
+ * The widest stored copy to send. An image costs tokens by its area, and the 640px copy (about 360
+ * tokens) describes a photo as well as the 1280px one (about 1,450) for alt text.
+ */
+const MAX_WIDTH = 1024;
 /** The API's limit for one image. */
 const MAX_BYTES = 5 * 1024 * 1024;
 

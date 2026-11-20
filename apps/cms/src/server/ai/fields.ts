@@ -55,10 +55,18 @@ const GENERAL_RULES = `Reply with the suggested text only: no quotation marks ar
 Write in Australian English, in sentence case. Never use an em dash or an en dash. Never use an exclamation mark.
 Everything below the line is the brand guide. Follow it exactly: use the approved names, and never write a word it rules out.`;
 
-/** The brand guide goes first, as the stable part, then the brief for the field being written. */
+/**
+ * The brand guide goes first, as the stable part, then the brief for the field being written. The
+ * cache mark sits on the guide alone: it is the same for every post and field, so calls within a few
+ * minutes of each other read it from the cache at a tenth of the price instead of paying for it again.
+ */
 export function systemPrompt(brandGuide: string, field: SuggestField): Anthropic.TextBlockParam[] {
   return [
-    { type: 'text', text: `${GENERAL_RULES}\n\n---\n\n${brandGuide}` },
+    {
+      type: 'text',
+      text: `${GENERAL_RULES}\n\n---\n\n${brandGuide}`,
+      cache_control: { type: 'ephemeral' },
+    },
     {
       type: 'text',
       text: `${FIELD_SPECS[field].brief}\nThe reply must be at most ${FIELD_SPECS[field].limit} characters.`,

@@ -57,5 +57,9 @@ export function PostBrandFix({
   const rest = field === 'body' ? 0 : values[field].length - sentence.length;
   const limit = Math.max(sentence.length, FIELD_LIMITS[field] - rest);
 
-  return <BrandFixButton sentence={sentence} found={found} limit={limit} apply={apply} />;
+  // Keyed by the sentence: once the wording changes, an earlier rewrite is thrown away and a new
+  // one is asked for, so Use it can never put back words the editor has since changed.
+  return (
+    <BrandFixButton key={sentence} sentence={sentence} found={found} limit={limit} apply={apply} />
+  );
 }

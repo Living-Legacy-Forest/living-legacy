@@ -9,12 +9,20 @@ import brandGuide from '../../../../../docs/brand-language.md?raw';
 import { loadContentTargets } from '../post-score';
 import { loadAltImage } from './alt-image';
 import { canSuggest } from './client';
+import { guardProblems } from './guard';
 import { type AiClient, SuggestError, runSuggestion } from './run';
 import type { BrandFixInput, PostFieldInput } from './schemas';
 
 const NOT_ALLOWED = 'You do not have permission to do that.';
 const NOT_SET_UP = "The writing assistant isn't set up.";
 const MAX_TAGS = 5;
+const TAG_LIMIT = 60;
+const NO_TAGS = "Couldn't find tags that fit this post. Choose them yourself.";
+/**
+ * How much of a post is sent. Plenty for a search title, summary or tags (the opening says what a
+ * post is about), and it keeps a very long post from costing many times a normal one.
+ */
+const POST_CHARS = 12_000;
 
 const textReply = z.object({ text: z.string() });
 const tagsReply = z.object({ tags: z.array(z.string()) });
@@ -43,26 +51,31 @@ export async function suggestPostFieldFor(
     `Summary: ${input.excerpt}`,
     '',
     'Post:',
-    input.bodyMarkdown,
+    input.bodyMarkdown.length > POST_CHARS
+      ? `${input.bodyMarkdown.slice(0, POST_CHARS)}\n\n(The post continues; only its start is shown.)`
+      : input.bodyMarkdown,
   ];
   if (input.field === 'tags') lines.push('', `Existing tags: ${input.tagNames.join(', ')}`);
   const content = [{ type: 'text' as const, text: lines.join('\n') }];
   const rules = await brandRules(db);
 
   if (input.field === 'tags') {
+    // Tags are picked from the list, not written, so one bad pick is dropped rather than failing
+    // (and paying for) the whole reply again.
     const out = await runSuggestion(client, {
       field: 'tags',
       brandGuide,
       rules,
       content,
       schema: tagsReply,
-      texts: (reply) => reply.tags,
-      allowed: input.tagNames,
+      texts: () => [],
     });
     const known = new Map(input.tagNames.map((name) => [name.toLowerCase(), name]));
     const tags = [...new Set(out.tags.map((tag) => known.get(tag.trim().toLowerCase())))].filter(
-      (tag): tag is string => Boolean(tag)
+      (tag): tag is string =>
+        Boolean(tag) && guardProblems(tag!, { limit: TAG_LIMIT, rules }).length === 0
     );
+    if (tags.length === 0) throw new SuggestError(NO_TAGS);
     return { tags: tags.slice(0, MAX_TAGS) };
   }
 

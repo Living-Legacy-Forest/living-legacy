@@ -10,13 +10,18 @@ import type { AiClient } from './run';
 
 const MB = 1024 * 1024;
 
+/** A reply as the API sends it: JSON as text. */
+const answer = (out: unknown) => ({
+  content: [{ type: 'text', text: JSON.stringify(out) }],
+  stop_reason: 'end_turn',
+  usage: { input_tokens: 10, output_tokens: 5 },
+});
+
 function fakeClient(text = 'A calm place to walk.') {
-  const parse = vi.fn().mockResolvedValue({
-    parsed_output: { text },
-    stop_reason: 'end_turn',
-    usage: { input_tokens: 10, output_tokens: 5 },
+  const create = vi.fn().mockResolvedValue({
+    ...answer({ text }),
   });
-  return { client: { messages: { parse } } as unknown as AiClient, parse };
+  return { client: { messages: { create } } as unknown as AiClient, create };
 }
 
 const bytes = (...values: number[]) => new Uint8Array(values);
@@ -74,21 +79,21 @@ describe('the key', () => {
 });
 
 describe('loadAltImage', () => {
-  it('sends the largest variant up to 1568px wide rather than the original', async () => {
+  it('sends the largest stored copy up to 1024px wide, which is plenty to describe it', async () => {
     await addImage({
       id: 'img1',
       original: bytes(1, 2, 3),
       variants: [
+        { width: 320, data: bytes(1, 1, 1) },
         { width: 640, data: bytes(7, 7, 7) },
-        { width: 1200, data: bytes(9, 9, 9) },
-        { width: 2400, data: bytes(5, 5, 5) },
+        { width: 1280, data: bytes(9, 9, 9) },
       ],
     });
     const { block } = await loadAltImage(testDb(), env.MEDIA, 'img1');
     expect(block.source).toEqual({
       type: 'base64',
       media_type: 'image/png',
-      data: base64(bytes(9, 9, 9)),
+      data: base64(bytes(7, 7, 7)),
     });
   });
 
@@ -127,21 +132,21 @@ describe('loadAltImage', () => {
 describe('suggestAltTextFor', () => {
   it('sends the image and never the filename', async () => {
     await addImage({ id: 'img4', original: bytes(1, 2, 3), filename: 'secret-name.png' });
-    const { client, parse } = fakeClient('Sunlight through young trees.');
+    const { client, create } = fakeClient('Sunlight through young trees.');
     const out = await suggestAltTextFor(testDb(), env.MEDIA, client, 'editor', { mediaId: 'img4' });
     expect(out).toEqual({ text: 'Sunlight through young trees.' });
-    const content = parse.mock.calls[0]![0].messages[0].content;
+    const content = create.mock.calls[0]![0].messages[0].content;
     expect(content.some((b: { type: string }) => b.type === 'image')).toBe(true);
-    expect(JSON.stringify(parse.mock.calls[0]![0])).not.toContain('secret-name');
+    expect(JSON.stringify(create.mock.calls[0]![0])).not.toContain('secret-name');
   });
 
   it('needs permission to edit media', async () => {
     await addImage({ id: 'img5', original: bytes(1) });
-    const { client, parse } = fakeClient();
+    const { client, create } = fakeClient();
     await expect(
       suggestAltTextFor(testDb(), env.MEDIA, client, 'seo', { mediaId: 'img5' })
     ).rejects.toThrow('You do not have permission to do that.');
-    expect(parse).not.toHaveBeenCalled();
+    expect(create).not.toHaveBeenCalled();
   });
 });
 
@@ -154,17 +159,17 @@ describe('suggestPostFieldFor', () => {
   };
 
   it('asks for a search description and returns the text', async () => {
-    const { client, parse } = fakeClient('A quiet walk among the trees.');
+    const { client, create } = fakeClient('A quiet walk among the trees.');
     const out = await suggestPostFieldFor(testDb(), client, 'author', {
       ...post,
       field: 'seoDescription',
     });
     expect(out).toEqual({ text: 'A quiet walk among the trees.' });
-    expect(JSON.stringify(parse.mock.calls[0]![0].messages)).toContain('A walk in the forest');
+    expect(JSON.stringify(create.mock.calls[0]![0].messages)).toContain('A walk in the forest');
   });
 
   it('does not call the model for a post with nothing written', async () => {
-    const { client, parse } = fakeClient();
+    const { client, create } = fakeClient();
     await expect(
       suggestPostFieldFor(testDb(), client, 'author', {
         field: 'excerpt',
@@ -174,7 +179,7 @@ describe('suggestPostFieldFor', () => {
         tagNames: [],
       })
     ).rejects.toThrow('Write some of the post first.');
-    expect(parse).not.toHaveBeenCalled();
+    expect(create).not.toHaveBeenCalled();
   });
 
   it('uses the brand rules saved in Settings', async () => {
@@ -184,38 +189,71 @@ describe('suggestPostFieldFor', () => {
         id: 'site',
         data: { brandRules: [{ match: 'tranquil', instead: 'calm', severity: 'critical' }] },
       });
-    const { client, parse } = fakeClient('A tranquil walk.');
-    parse.mockResolvedValueOnce({
-      parsed_output: { text: 'A tranquil walk.' },
-      stop_reason: 'end_turn',
-      usage: { input_tokens: 1, output_tokens: 1 },
+    const { client, create } = fakeClient('A tranquil walk.');
+    create.mockResolvedValueOnce({
+      ...answer({ text: 'A tranquil walk.' }),
     });
-    parse.mockResolvedValueOnce({
-      parsed_output: { text: 'A calm walk.' },
-      stop_reason: 'end_turn',
-      usage: { input_tokens: 1, output_tokens: 1 },
+    create.mockResolvedValueOnce({
+      ...answer({ text: 'A calm walk.' }),
     });
     const out = await suggestPostFieldFor(testDb(), client, 'editor', {
       ...post,
       field: 'seoDescription',
     });
     expect(out).toEqual({ text: 'A calm walk.' });
-    expect(parse).toHaveBeenCalledTimes(2);
+    expect(create).toHaveBeenCalledTimes(2);
   });
 
+  const tagsFrom = (tags: string[]) => {
+    const create = vi.fn().mockResolvedValue(answer({ tags }));
+    return { client: { messages: { create } } as unknown as AiClient, create };
+  };
+
   it('returns tags only from the existing list, in the list spelling', async () => {
-    const parse = vi.fn().mockResolvedValue({
-      parsed_output: { tags: ['events', 'Forests'] },
-      stop_reason: 'end_turn',
-      usage: { input_tokens: 1, output_tokens: 1 },
-    });
-    const out = await suggestPostFieldFor(
-      testDb(),
-      { messages: { parse } } as unknown as AiClient,
-      'editor',
-      { ...post, field: 'tags' }
-    );
+    const { client } = tagsFrom(['events', 'Forests']);
+    const out = await suggestPostFieldFor(testDb(), client, 'editor', { ...post, field: 'tags' });
     expect(out).toEqual({ tags: ['Events', 'Forests'] });
+  });
+
+  it('drops a tag that is not in the list or breaks the guide, and keeps the rest', async () => {
+    const { client, create } = tagsFrom(['events', 'Gardening', 'Plots']);
+    const out = await suggestPostFieldFor(testDb(), client, 'editor', {
+      ...post,
+      tagNames: ['Events', 'Forests', 'Plots'],
+      field: 'tags',
+    });
+    expect(out).toEqual({ tags: ['Events'] });
+    expect(create).toHaveBeenCalledTimes(1);
+  });
+
+  it('says so when none of the suggested tags can be used', async () => {
+    const { client } = tagsFrom(['Gardening']);
+    await expect(
+      suggestPostFieldFor(testDb(), client, 'editor', { ...post, field: 'tags' })
+    ).rejects.toThrow("Couldn't find tags that fit this post. Choose them yourself.");
+  });
+
+  it('keeps at most five tags', async () => {
+    const names = ['A1', 'A2', 'A3', 'A4', 'A5', 'A6', 'A7'];
+    const { client } = tagsFrom(names);
+    const out = await suggestPostFieldFor(testDb(), client, 'editor', {
+      ...post,
+      tagNames: names,
+      field: 'tags',
+    });
+    expect(out).toEqual({ tags: names.slice(0, 5) });
+  });
+
+  it('sends at most the first 12,000 characters of a long post, and says it was cut', async () => {
+    const { client, create } = fakeClient('A long walk.');
+    await suggestPostFieldFor(testDb(), client, 'editor', {
+      ...post,
+      bodyMarkdown: 'word '.repeat(10_000),
+      field: 'seoDescription',
+    });
+    const text: string = create.mock.calls[0]![0].messages[0].content[0].text;
+    expect(text.length).toBeLessThan(13_000);
+    expect(text).toContain('The post continues');
   });
 
   it('is not allowed for a viewer', async () => {

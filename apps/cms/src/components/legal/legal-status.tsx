@@ -1,4 +1,6 @@
+import { AnimatePresence, motion, useReducedMotion } from 'motion/react';
 import { formatDate, formatRelative } from '@/lib/format';
+import { enterTransition, exitTransition } from '@/lib/motion';
 import { useTimeZone } from '@/lib/use-time-zone';
 import { cn } from '@/lib/utils';
 import type { LegalPageEditorData } from '@/server/legal-pages';
@@ -29,13 +31,36 @@ export function LegalStatus({ data, dirty }: { data: LegalPageEditorData; dirty:
             {publisher && ` by ${publisher}`}
           </p>
         )}
-        {dirty ? (
-          <p>Edits not saved yet</p>
-        ) : data.hasDraft ? (
-          <p>Draft saved {formatRelative(data.updatedAt)}</p>
-        ) : null}
+        <AnimatePresence initial={false}>
+          {dirty ? (
+            <ExpandingLine key="dirty">Edits not saved yet</ExpandingLine>
+          ) : data.hasDraft ? (
+            <ExpandingLine key="draft">Draft saved {formatRelative(data.updatedAt)}</ExpandingLine>
+          ) : null}
+        </AnimatePresence>
         {data.reviewRequestedAt && <p>Review asked for {formatRelative(data.reviewRequestedAt)}</p>}
       </div>
     </section>
+  );
+}
+
+/** A status line that opens and closes in place, so the lines under it slide rather than jump. */
+function ExpandingLine({ children }: { children: React.ReactNode }) {
+  const reduce = useReducedMotion() ?? false;
+  const closed = { height: 0, opacity: 0 };
+  return (
+    <motion.p
+      className="overflow-hidden"
+      initial={reduce ? false : closed}
+      animate={{ height: 'auto', opacity: 1 }}
+      exit={
+        reduce
+          ? { opacity: 0, transition: { duration: 0 } }
+          : { ...closed, transition: exitTransition }
+      }
+      transition={enterTransition}
+    >
+      {children}
+    </motion.p>
   );
 }

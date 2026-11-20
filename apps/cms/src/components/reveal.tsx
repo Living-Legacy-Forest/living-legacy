@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { SECTION_MOTION } from '@/lib/motion';
 import { cn } from '@/lib/utils';
 
 const reducedMotion = () =>
@@ -58,7 +59,8 @@ export function Reveal({
         else setMounted(false);
       }}
       className={cn(
-        'grid transition-[grid-template-rows,opacity] duration-200 ease-out',
+        'grid transition-[grid-template-rows,opacity]',
+        SECTION_MOTION,
         open ? 'grid-rows-[1fr] opacity-100' : 'grid-rows-[0fr] opacity-0',
         className
       )}

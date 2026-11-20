@@ -51,6 +51,21 @@ export type WhatsNewEntry = {
 
 export const whatsNew: WhatsNewEntry[] = [
   {
+    id: '2026-11-20-2',
+    kind: 'improved',
+    title: 'Smaller headings and a smoother post editor',
+    items: [
+      {
+        title: 'Heading 4, 5 and 6',
+        body: 'The text style menu in the post editor now offers Heading 4, 5 and 6 as well as Heading 1 to 3. On the website, Heading 5 and 6 appear at the same size as Heading 4.',
+      },
+      {
+        title: 'The properties panel slides',
+        body: 'Hiding or showing the side panel on a post now slides it away and back, the same way it does for events and locations.',
+      },
+    ],
+  },
+  {
     id: '2026-11-20',
     kind: 'new',
     title: 'Duplicate an event',

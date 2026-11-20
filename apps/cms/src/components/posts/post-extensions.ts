@@ -18,7 +18,7 @@ import { VideoEmbed } from './post-video';
  * allowlist in @ll/content (isAllowedRichText).
  */
 export const postContentExtensions: Extensions = [
-  StarterKit.configure({ gapcursor: false, heading: { levels: [1, 2, 3] }, link: false }),
+  StarterKit.configure({ gapcursor: false, heading: { levels: [1, 2, 3, 4, 5, 6] }, link: false }),
   Link,
   TextStyle,
   Color,

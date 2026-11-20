@@ -22,6 +22,7 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { Spinner } from '@/components/ui/spinner';
+import { UnsavedLabel } from '@/components/unsaved-label';
 import { copyLink, openInNewTab, siteUrl } from '@/lib/site';
 import type { LocationItem } from '@/server/locations';
 import type { LocationEditorState } from './use-location-editor';
@@ -63,11 +64,7 @@ export function LocationToolbar({
       <Badge variant="outline">
         {item ? (item.status === 'published' ? 'Published' : 'Draft') : 'New'}
       </Badge>
-      {editor.dirty && (
-        <span className="text-muted-foreground text-xs" aria-live="polite">
-          Unsaved changes
-        </span>
-      )}
+      <UnsavedLabel show={editor.dirty} gap={12} className="text-muted-foreground text-xs" />
       <div className="ml-auto flex items-center gap-1 max-md:w-full max-md:flex-wrap max-md:justify-end">
         <Button
           type="button"

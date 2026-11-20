@@ -5,6 +5,9 @@ export const TEXT_STYLES = [
   { className: 'font-bold', label: 'Heading 1', value: '1' },
   { className: 'font-semibold', label: 'Heading 2', value: '2' },
   { className: 'font-medium', label: 'Heading 3', value: '3' },
+  { className: 'font-medium', label: 'Heading 4', value: '4' },
+  { className: 'font-normal', label: 'Heading 5', value: '5' },
+  { className: 'font-normal', label: 'Heading 6', value: '6' },
 ] as const;
 
 export const ALIGNMENTS = [
@@ -49,7 +52,7 @@ export const SHORTCUTS = [
       ['Superscript', 'Mod+.'],
       ['Subscript', 'Mod+,'],
       ['Link', 'Mod+K'],
-      ['Heading 1 to 3', 'Mod+Alt+1'],
+      ['Heading 1 to 6', 'Mod+Alt+1'],
       ['Task list', 'Mod+Shift+9'],
       ['Indent', 'Tab'],
     ],

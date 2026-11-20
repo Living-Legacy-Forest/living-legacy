@@ -44,6 +44,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { splitFilename } from '@/lib/filename';
 import { formatDateTime } from '@/lib/format';
 import { motionTokens } from '@/components/arc/lib/motion-tokens';
+import { UnsavedLabel } from '@/components/unsaved-label';
 import { recallMediaSearch, setMediaDirection, takeMediaDirection } from '@/lib/media-return';
 import { notify, removedNotice } from '@/lib/notify';
 import { addPdfCover } from '@/lib/pdf-cover';
@@ -366,7 +367,9 @@ export function MediaDetail({ detail, canDelete }: { detail: Detail; canDelete: 
             <h1 className="truncate text-sm font-medium">{item.filename}</h1>
             <p className="text-muted-foreground text-xs">
               {fileFacts(item)}
-              {dirty && <span aria-live="polite"> · Unsaved changes</span>}
+              <UnsavedLabel show={dirty} className="inline-block align-bottom">
+                {'\u00a0· Unsaved changes'}
+              </UnsavedLabel>
             </p>
           </div>
           <div className="ml-auto flex items-center gap-1">

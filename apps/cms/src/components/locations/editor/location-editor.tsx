@@ -19,6 +19,7 @@ import { useIsDesktop } from '@/components/editor-page/use-is-desktop';
 import { TOUCH_FIELDS } from '@/components/form-steps';
 import { removedNotice } from '@/lib/notify';
 import { useAction } from '@/lib/use-action';
+import { PANE_GAP_MOTION } from '@/lib/motion';
 import { cn } from '@/lib/utils';
 import { type LocationItem, deleteLocations } from '@/server/locations';
 import { DeleteLocationDialog } from '../delete-location';
@@ -100,7 +101,7 @@ export function LocationEditor({
               className={cn(
                 'bg-background flex min-w-0 flex-col overflow-hidden rounded-lg border lg:h-[calc(100svh-7.5rem)]',
                 // The gap closes with the panel, on the same curve, so the card does not jump.
-                'motion-reduce:transition-none lg:transition-[margin-right] lg:duration-300 lg:ease-[cubic-bezier(0.32,0.72,0,1)]',
+                PANE_GAP_MOTION,
                 showMap && 'lg:mr-6'
               )}
             >

@@ -1,4 +1,5 @@
 import { useRouter } from '@tanstack/react-router';
+import { AnimatePresence, motion, useReducedMotion } from 'motion/react';
 import { useEffect, useRef, useState } from 'react';
 import { CameraIcon, MailIcon } from '@/components/icons';
 import { useImageUpload } from '@/components/media/image-crop-dialog';
@@ -12,6 +13,7 @@ import { Spinner } from '@/components/ui/spinner';
 import { Textarea } from '@/components/ui/textarea';
 import { authClient } from '@/lib/auth-client';
 import { reportInvalid } from '@/lib/form-validation';
+import { enterTransition, exitTransition } from '@/lib/motion';
 import { type SessionUser, forgetCachedUser } from '@/lib/session';
 import { notify } from '@/lib/notify';
 import { useAction } from '@/lib/use-action';
@@ -59,6 +61,7 @@ export function ProfilePage({
   const fileInput = useRef<HTMLInputElement>(null);
   const formRef = useRef<HTMLFormElement>(null);
   const { run, pending } = useAction();
+  const reduce = useReducedMotion() ?? false;
 
   useEffect(() => {
     if (justConfirmedEmail) {
@@ -328,28 +331,41 @@ export function ProfilePage({
           </SettingsSection>
 
           {/* Only there while something is unsaved, so it takes no room otherwise. */}
-          {dirty && (
-            <div className="bg-background/95 animate-in fade-in slide-in-from-bottom-2 sticky bottom-[calc(var(--tab-bar-height)+1rem)] z-10 mt-4 flex items-center gap-3 rounded-lg border px-4 py-3 shadow-lg backdrop-blur max-md:hidden">
-              <span className="mr-auto text-sm">You have unsaved changes.</span>
-              <Button
-                type="button"
-                variant="ghost"
-                size="sm"
-                disabled={pending}
-                onClick={() => {
-                  setName(user.name);
-                  setBio(user.bio ?? '');
-                  setImageAlt(user.imageAlt ?? '');
-                }}
+          <AnimatePresence initial={false}>
+            {dirty && (
+              <motion.div
+                key="unsaved-bar"
+                initial={reduce ? false : { opacity: 0, y: 8 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={
+                  reduce
+                    ? { opacity: 0, transition: { duration: 0 } }
+                    : { opacity: 0, y: 8, transition: exitTransition }
+                }
+                transition={enterTransition}
+                className="bg-background/95 sticky bottom-[calc(var(--tab-bar-height)+1rem)] z-10 mt-4 flex items-center gap-3 rounded-lg border px-4 py-3 shadow-lg backdrop-blur max-md:hidden"
               >
-                Discard
-              </Button>
-              <Button type="submit" size="sm" disabled={pending}>
-                {pending ? <Spinner /> : null}
-                Save changes
-              </Button>
-            </div>
-          )}
+                <span className="mr-auto text-sm">You have unsaved changes.</span>
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="sm"
+                  disabled={pending}
+                  onClick={() => {
+                    setName(user.name);
+                    setBio(user.bio ?? '');
+                    setImageAlt(user.imageAlt ?? '');
+                  }}
+                >
+                  Discard
+                </Button>
+                <Button type="submit" size="sm" disabled={pending}>
+                  {pending ? <Spinner /> : null}
+                  Save changes
+                </Button>
+              </motion.div>
+            )}
+          </AnimatePresence>
         </form>
 
         <SettingsSection

@@ -8,13 +8,13 @@ import {
   Ban,
   ChevronDown,
   Code2,
-  ImageIcon,
+  EditorImage as ImageIcon,
   IndentDecrease,
   IndentIncrease,
-  ListTodo,
+  EditorListTodo as ListTodo,
   Minus,
-  Plus,
-  Quote,
+  EditorPlus as Plus,
+  EditorQuote as Quote,
   Table as TableIcon,
   FileTypeVideoIcon,
 } from '@/components/icons';
@@ -70,7 +70,7 @@ const TextStyleMenu = ({ editor, value }: { editor: Editor | null; value: string
         className="flex flex-col gap-0.5"
         value={value}
         onValueChange={(next) => {
-          const level = Number(next) as 0 | 1 | 2 | 3;
+          const level = Number(next) as 0 | 1 | 2 | 3 | 4 | 5 | 6;
           const chain = editor?.chain().focus();
           (level ? chain?.setHeading({ level }) : chain?.setParagraph())?.run();
         }}

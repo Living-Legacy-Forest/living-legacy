@@ -6,6 +6,7 @@ import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip
 import { findNavItem, footerLinks, sectionFor, sidebarSections } from '@/lib/nav';
 import type { SessionUser } from '@/lib/session';
 import type { SidebarState } from '@/lib/sidebar-state';
+import { SECTION_MOTION } from '@/lib/motion';
 import { cn } from '@/lib/utils';
 import { CommandMenu } from './command-menu';
 import { ShortcutsRow, ThemeRow } from './rail-tools';
@@ -17,8 +18,7 @@ import { SidebarUpdateCard, useUpdates } from './updates';
 // sizes the whole sidebar from them.
 
 /** Columns open and close on the same curve the sidebar's sections used to. */
-const column =
-  'flex min-h-0 shrink-0 flex-col overflow-hidden transition-[width] duration-200 ease-[cubic-bezier(0.25,1,0.5,1)] motion-reduce:transition-none';
+const column = `flex min-h-0 shrink-0 flex-col overflow-hidden transition-[width] ${SECTION_MOTION}`;
 
 function Logo() {
   return (

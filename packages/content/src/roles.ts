@@ -43,8 +43,68 @@ const grants: Record<Role, readonly Permission[]> = {
   viewer: [],
 };
 
-export function can(role: Role, permission: Permission): boolean {
-  return grants[role].includes(permission);
+/** What a person may do: their role, plus anything an admin added for them alone. */
+export type Access = { role: Role; extraPermissions?: readonly Permission[] };
+
+// Handing out user management would let someone promote themselves, so it stays with admins.
+export const grantablePermissions: readonly Permission[] = permissions.filter(
+  (permission) => permission !== 'users:manage'
+);
+
+const grantable = new Set<string>(grantablePermissions);
+
+function isGrantable(value: unknown): value is Permission {
+  return typeof value === 'string' && grantable.has(value);
+}
+
+/**
+ * Reads extras from the database column or a request. Never throws: a corrupt
+ * value must cost someone their extras, not lock them out of the CMS.
+ */
+export function parseExtraPermissions(stored: unknown): Permission[] {
+  let value = stored;
+  if (typeof value === 'string') {
+    try {
+      value = JSON.parse(value);
+    } catch {
+      return [];
+    }
+  }
+  if (!Array.isArray(value)) return [];
+  return [...new Set(value.filter(isGrantable))];
+}
+
+export const extraPermissionsSchema: z.ZodType<Permission[]> = z
+  .array(
+    z.string().refine(isGrantable, {
+      message: 'Choose from the permissions that can be added.',
+    })
+  )
+  .transform((names) => [...new Set(names as Permission[])]);
+
+export function toAccess(row: { role: string; extraPermissions?: string | null }): Access {
+  const parsed = roleSchema.safeParse(row.role);
+  return {
+    role: parsed.success ? parsed.data : 'viewer',
+    extraPermissions: parseExtraPermissions(row.extraPermissions),
+  };
+}
+
+/** @deprecated Pass an `Access` so a person's extra permissions count. Removed once callers move over. */
+export function can(access: Access | Role, permission: Permission): boolean {
+  if (typeof access === 'string') return grants[access].includes(permission);
+  if (grants[access.role].includes(permission)) return true;
+  // Re-filtered so a hand-built Access cannot grant users:manage.
+  return isGrantable(permission) && (access.extraPermissions ?? []).includes(permission);
+}
+
+/** The roles that carry a permission by default. */
+export function rolesGranting(permission: Permission): Role[] {
+  return roles.filter((role) => grants[role].includes(permission));
+}
+
+export function permissionsFor(access: Access): Permission[] {
+  return permissions.filter((permission) => can(access, permission));
 }
 
 export function normaliseEmail(email: string): string {

@@ -5,6 +5,13 @@ import {
   guardRemoval,
   guardRoleChange,
   resolveSignupRole,
+  extraPermissionsSchema,
+  grantablePermissions,
+  parseExtraPermissions,
+  permissions,
+  permissionsFor,
+  rolesGranting,
+  toAccess,
 } from './roles';
 
 describe('can', () => {
@@ -134,5 +141,99 @@ describe('guardRemoval', () => {
 
   it('allows removing others', () => {
     expect(guardRemoval({ isSelf: false, targetIsLastAdmin: false })).toBeNull();
+  });
+});
+
+describe('extra permissions', () => {
+  it('adds extras on top of the role without widening anything else', () => {
+    const access = { role: 'author', extraPermissions: ['redirects:write'] } as const;
+    expect(can(access, 'redirects:write')).toBe(true);
+    expect(can(access, 'posts:write')).toBe(true);
+    expect(can(access, 'settings:write')).toBe(false);
+    expect(can({ role: 'viewer', extraPermissions: ['posts:write'] }, 'posts:write')).toBe(true);
+  });
+
+  it('still accepts a bare role', () => {
+    expect(can('author', 'redirects:write')).toBe(false);
+  });
+
+  it('never lets a hand-built access grant user management', () => {
+    const access = { role: 'viewer', extraPermissions: ['users:manage'] } as const;
+    expect(can(access, 'users:manage')).toBe(false);
+  });
+
+  it('keeps users:manage out of the grantable list and everything else in', () => {
+    expect(grantablePermissions).not.toContain('users:manage');
+    for (const permission of permissions.filter((p) => p !== 'users:manage')) {
+      expect(grantablePermissions).toContain(permission);
+    }
+  });
+});
+
+describe('parseExtraPermissions', () => {
+  it('returns an empty list for anything unusable', () => {
+    for (const stored of ['not json', '{"a":1}', null, undefined, 42]) {
+      expect(parseExtraPermissions(stored)).toEqual([]);
+    }
+  });
+
+  it('de-duplicates', () => {
+    expect(parseExtraPermissions('["redirects:write","redirects:write"]')).toEqual([
+      'redirects:write',
+    ]);
+  });
+
+  it('drops unknown and non-grantable names', () => {
+    expect(parseExtraPermissions('["users:manage","bogus:thing","seo:write"]')).toEqual([
+      'seo:write',
+    ]);
+  });
+
+  it('accepts an array as well as a JSON string', () => {
+    expect(parseExtraPermissions(['seo:write', 7])).toEqual(['seo:write']);
+  });
+});
+
+describe('extraPermissionsSchema', () => {
+  it('rejects user management and unknown names', () => {
+    expect(extraPermissionsSchema.safeParse(['users:manage']).success).toBe(false);
+    expect(extraPermissionsSchema.safeParse(['bogus:thing']).success).toBe(false);
+  });
+
+  it('de-duplicates valid input', () => {
+    const parsed = extraPermissionsSchema.parse(['seo:write', 'seo:write']);
+    expect(parsed).toEqual(['seo:write']);
+  });
+});
+
+describe('toAccess', () => {
+  it('falls back to viewer for an unknown role', () => {
+    const access = toAccess({ role: 'wizard', extraPermissions: '["seo:write"]' });
+    expect(access.role).toBe('viewer');
+    expect(access.extraPermissions).toEqual(['seo:write']);
+  });
+
+  it('treats missing extras as none', () => {
+    expect(toAccess({ role: 'editor' })).toEqual({ role: 'editor', extraPermissions: [] });
+  });
+});
+
+describe('rolesGranting', () => {
+  it('lists the roles that carry a permission', () => {
+    expect(rolesGranting('posts:publish')).toEqual(['admin', 'editor']);
+  });
+});
+
+describe('permissionsFor', () => {
+  it('merges role and extras without repeats', () => {
+    const list = permissionsFor({
+      role: 'author',
+      extraPermissions: ['redirects:write', 'posts:write'],
+    });
+    expect(list).toEqual(expect.arrayContaining(['posts:write', 'media:write', 'redirects:write']));
+    for (const permission of ['posts:write', 'media:write', 'redirects:write']) {
+      expect(list.filter((p) => p === permission)).toHaveLength(1);
+    }
+    expect(list).toHaveLength(3);
   });
 });

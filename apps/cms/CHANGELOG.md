@@ -1,5 +1,52 @@
 # Changelog
 
+## [1.3.0](https://github.com/Living-Legacy-Forest/living-legacy/compare/cms-v1.2.0...cms-v1.3.0) (2026-11-20)
+
+
+### Features
+
+* **cms:** a content calendar for scheduled posts and events ([#250](https://github.com/Living-Legacy-Forest/living-legacy/issues/250)) ([eb8ff3b](https://github.com/Living-Legacy-Forest/living-legacy/commit/eb8ff3b68571ade7f91e662a49312294290895e8))
+* **cms:** a Coverage view on Redirects for the migration ([#246](https://github.com/Living-Legacy-Forest/living-legacy/issues/246)) ([f4c0124](https://github.com/Living-Legacy-Forest/living-legacy/commit/f4c01244e7e67332e17a9bd8c03c00cf1b521c09))
+* **cms:** a waiting list for events that are full ([#251](https://github.com/Living-Legacy-Forest/living-legacy/issues/251)) ([682c829](https://github.com/Living-Legacy-Forest/living-legacy/commit/682c829b93830d85c5b5207c8ed6a9a6fc19da18))
+* **cms:** animated tag input and one pager across paged screens ([#240](https://github.com/Living-Legacy-Forest/living-legacy/issues/240)) ([85bafb8](https://github.com/Living-Legacy-Forest/living-legacy/commit/85bafb8d6a7d07afc2db8c639b25e876d129fa5e))
+* **cms:** brand language check on Content checks ([#245](https://github.com/Living-Legacy-Forest/living-legacy/issues/245)) ([a9ec650](https://github.com/Living-Legacy-Forest/living-legacy/commit/a9ec6500674b03f41f010041f35a6edd6d18cdcd))
+* **cms:** broken link check on Content checks ([#247](https://github.com/Living-Legacy-Forest/living-legacy/issues/247)) ([35d4ce8](https://github.com/Living-Legacy-Forest/living-legacy/commit/35d4ce867fb3439d7e5657172f2d41b34af7f037))
+* **cms:** card titles, list menu actions and system donut ([#220](https://github.com/Living-Legacy-Forest/living-legacy/issues/220)) ([170a5b3](https://github.com/Living-Legacy-Forest/living-legacy/commit/170a5b36b199b875267b8b9883e971bcc2a12f4e))
+* **cms:** check announcement bars on Content checks ([#249](https://github.com/Living-Legacy-Forest/living-legacy/issues/249)) ([4213d8e](https://github.com/Living-Legacy-Forest/living-legacy/commit/4213d8ea81c52b67e825743ae6bf78c34d0ab47a))
+* **cms:** documents in Media and strict input validation ([#227](https://github.com/Living-Legacy-Forest/living-legacy/issues/227)) ([a74dd7a](https://github.com/Living-Legacy-Forest/living-legacy/commit/a74dd7a39ec8525be375aaec686600a3d51c2fd5))
+* **cms:** duplicate events, PDF book reader, 36px phone controls ([#255](https://github.com/Living-Legacy-Forest/living-legacy/issues/255)) ([6c2900c](https://github.com/Living-Legacy-Forest/living-legacy/commit/6c2900c22bb7cb86483a3e1fd48e6104b8e85105))
+* **cms:** job runs card uses the uiarc bar chart ([#223](https://github.com/Living-Legacy-Forest/living-legacy/issues/223)) ([d592f45](https://github.com/Living-Legacy-Forest/living-legacy/commit/d592f45852e8bc2064bf6d9e2a6af65139134f19))
+* **cms:** make first-page thumbnails for PDFs uploaded before they existed ([#231](https://github.com/Living-Legacy-Forest/living-legacy/issues/231)) ([adae184](https://github.com/Living-Legacy-Forest/living-legacy/commit/adae184fc9f5d62faa96e3db7e21d5d9156be5dd))
+* **cms:** media library overhaul with file pages, PDF covers, versions and tags ([#229](https://github.com/Living-Legacy-Forest/living-legacy/issues/229)) ([dcb56c2](https://github.com/Living-Legacy-Forest/living-legacy/commit/dcb56c2c8bba49c89ea2b8532dd96f1888c3084c))
+* **cms:** one 32px height for buttons and fields, fewer icons on buttons ([#235](https://github.com/Living-Legacy-Forest/living-legacy/issues/235)) ([5a760f6](https://github.com/Living-Legacy-Forest/living-legacy/commit/5a760f6bcede522421038b417a14ceb1f97c16d9))
+* **cms:** one Filter button for Media, with type, format and tag groups ([#233](https://github.com/Living-Legacy-Forest/living-legacy/issues/233)) ([abf179b](https://github.com/Living-Legacy-Forest/living-legacy/commit/abf179b0fc903950277f3846d393d66ce0596b7d))
+* **cms:** resizable list divider and a tidier pager on list pages ([#258](https://github.com/Living-Legacy-Forest/living-legacy/issues/258)) ([dfcb5c9](https://github.com/Living-Legacy-Forest/living-legacy/commit/dfcb5c9ec3b28603bbb1cc77974540c137bd82ac))
+* **cms:** show PDFs as whole pages, read them in place, slide between files ([#232](https://github.com/Living-Legacy-Forest/living-legacy/issues/232)) ([58a9496](https://github.com/Living-Legacy-Forest/living-legacy/commit/58a94964cdd90949e7e758de040c546e95565f22))
+* **cms:** smoother unsaved states, sliding post panel, heading 4 to 6, static editor icons ([#256](https://github.com/Living-Legacy-Forest/living-legacy/issues/256)) ([c677b8f](https://github.com/Living-Legacy-Forest/living-legacy/commit/c677b8f8c8be88363d0e391a8498cd5fcf673c5a))
+* **cms:** sort every list page, with motion when the order changes ([#228](https://github.com/Living-Legacy-Forest/living-legacy/issues/228)) ([ffaca43](https://github.com/Living-Legacy-Forest/living-legacy/commit/ffaca43e047416a2382e7353c1b365395dc47856))
+* **cms:** uptime page, redirect click charts and pane toggle ([#222](https://github.com/Living-Legacy-Forest/living-legacy/issues/222)) ([be5b41c](https://github.com/Living-Legacy-Forest/living-legacy/commit/be5b41c21a2293cf9f34a35a8cf6acadeb3f6316))
+* **cms:** video embeds and a floating toolbar in event descriptions ([#226](https://github.com/Living-Legacy-Forest/living-legacy/issues/226)) ([2e20805](https://github.com/Living-Legacy-Forest/living-legacy/commit/2e20805cd005072551efad600d6c4f7eb52dd0ae))
+* **cms:** what's new page and announcement preview ([#213](https://github.com/Living-Legacy-Forest/living-legacy/issues/213)) ([e51713f](https://github.com/Living-Legacy-Forest/living-legacy/commit/e51713f8ccf8c3a81118e63419043fa9a9ceca34))
+* **cms:** writing assistant with Suggest buttons, daily limit and admin controls ([#259](https://github.com/Living-Legacy-Forest/living-legacy/issues/259)) ([56dce07](https://github.com/Living-Legacy-Forest/living-legacy/commit/56dce0756d18cab7e61cb697e048bf56fdebc4d8))
+* **web:** keep an image's focal point in view when it is cropped ([#230](https://github.com/Living-Legacy-Forest/living-legacy/issues/230)) ([cb59e6f](https://github.com/Living-Legacy-Forest/living-legacy/commit/cb59e6f8ae52c001c353e9f153bca24e54ecb207))
+
+
+### Bug Fixes
+
+* **cms:** IME-safe Enter and a steadier theme button ([#225](https://github.com/Living-Legacy-Forest/living-legacy/issues/225)) ([af5d248](https://github.com/Living-Legacy-Forest/living-legacy/commit/af5d2484baaeb1296e345c9a1432ecb304f99ead))
+* **cms:** keep the FAQs sort order ([#252](https://github.com/Living-Legacy-Forest/living-legacy/issues/252)) ([2d14f20](https://github.com/Living-Legacy-Forest/living-legacy/commit/2d14f20302040bcab0e1bc30b1b4a06abe5d88cb))
+* **cms:** mask emails in spans, log health failures, trim trace sampling ([#242](https://github.com/Living-Legacy-Forest/living-legacy/issues/242)) ([fd5806d](https://github.com/Living-Legacy-Forest/living-legacy/commit/fd5806d11da273acd7058d2ce13053eb5731af69))
+* **cms:** match the media file loading skeleton to its page, add Montserrat font option ([#234](https://github.com/Living-Legacy-Forest/living-legacy/issues/234)) ([09fdf54](https://github.com/Living-Legacy-Forest/living-legacy/commit/09fdf54d0ca77f7dfcf1db545c84ca8059e5058a))
+* **cms:** mobile touch targets, fields, menus and phone layouts ([#237](https://github.com/Living-Legacy-Forest/living-legacy/issues/237)) ([91cd51b](https://github.com/Living-Legacy-Forest/living-legacy/commit/91cd51b11fc6375876291bc23fecaee5a89ad889))
+* **cms:** move a repeating event's date to the side panel ([#243](https://github.com/Living-Legacy-Forest/living-legacy/issues/243)) ([a342e91](https://github.com/Living-Legacy-Forest/living-legacy/commit/a342e91dd358231b41a10e3796ea8021f015ed1a))
+* **cms:** page skeleton shapes match the loaded pages ([#224](https://github.com/Living-Legacy-Forest/living-legacy/issues/224)) ([7269251](https://github.com/Living-Legacy-Forest/living-legacy/commit/7269251e73337052d86fbd270d1e976c93993a7a))
+* **cms:** phone polish, chart axes and a centred email layout ([#254](https://github.com/Living-Legacy-Forest/living-legacy/issues/254)) ([54bc122](https://github.com/Living-Legacy-Forest/living-legacy/commit/54bc122f3aea6e1e4dc693c7d4f97f61136bc108))
+* **cms:** plainer copy on the calendar, waiting list and media editor ([#253](https://github.com/Living-Legacy-Forest/living-legacy/issues/253)) ([355ecd0](https://github.com/Living-Legacy-Forest/living-legacy/commit/355ecd041bc492a312f1c9a6aa40c69fb2f52f45))
+* **cms:** retry the analytics refresh once when PostHog times out ([#248](https://github.com/Living-Legacy-Forest/living-legacy/issues/248)) ([da12f49](https://github.com/Living-Legacy-Forest/living-legacy/commit/da12f4931619f5b5b0ac51269a7cad8c2e3a2d2a))
+* **cms:** tablet and desktop polish for dashboard, touch targets and motion ([#236](https://github.com/Living-Legacy-Forest/living-legacy/issues/236)) ([724e815](https://github.com/Living-Legacy-Forest/living-legacy/commit/724e815e94754ee41b5adc15b74a5c3a4febbefc))
+* **cms:** try the website twice before the health check fails ([#244](https://github.com/Living-Legacy-Forest/living-legacy/issues/244)) ([0cf0ec3](https://github.com/Living-Legacy-Forest/living-legacy/commit/0cf0ec3430b32486b740e07b208627dda52ce185))
+* **cms:** visitors paging and times, rows per page, full-width analytics ([#221](https://github.com/Living-Legacy-Forest/living-legacy/issues/221)) ([8be5524](https://github.com/Living-Legacy-Forest/living-legacy/commit/8be55247ca34afaf0999aae7c9a0e8125c0d899c))
+
 ## [1.2.0](https://github.com/Living-Legacy-Forest/living-legacy/compare/cms-v1.1.0...cms-v1.2.0) (2026-11-15)
 
 

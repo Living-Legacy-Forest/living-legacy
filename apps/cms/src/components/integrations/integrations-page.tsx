@@ -56,6 +56,7 @@ import { reportInvalid } from '@/lib/form-validation';
 import { notify } from '@/lib/notify';
 import { useAction } from '@/lib/use-action';
 import { useTimeZone } from '@/lib/use-time-zone';
+import { COLLAPSIBLE_CONTENT } from '@/lib/motion';
 import { cn } from '@/lib/utils';
 import { type ApiKeyRow, createApiKey, revokeApiKey } from '@/server/api-keys';
 import { useRevealOnce } from '@/lib/use-reveal-once';
@@ -168,7 +169,7 @@ function RevokedKeys({ keys }: { keys: ApiKeyRow[] }) {
         <span className="ml-1 text-xs font-normal tabular-nums">{keys.length}</span>
       </CollapsibleTrigger>
       {/* Height animates from Base UI's measured panel height; instant with reduced motion. */}
-      <CollapsibleContent className="h-(--collapsible-panel-height) overflow-hidden transition-[height,opacity] duration-200 ease-[cubic-bezier(0.25,1,0.5,1)] data-ending-style:h-0 data-ending-style:opacity-0 data-starting-style:h-0 data-starting-style:opacity-0 motion-reduce:transition-none">
+      <CollapsibleContent className={COLLAPSIBLE_CONTENT}>
         <div className={cn('mt-2.5 max-md:mt-1.5', groupBoxClass)}>
           <KeysTable keys={keys} />
         </div>

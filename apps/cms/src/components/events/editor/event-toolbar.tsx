@@ -18,6 +18,7 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { Spinner } from '@/components/ui/spinner';
+import { UnsavedLabel } from '@/components/unsaved-label';
 import type { EventRow } from '@/server/events';
 import { openEventPreview } from '../event-preview-store';
 import { dateStatus } from '../series-date-picker';
@@ -101,11 +102,11 @@ export function EventToolbar({
       <Badge variant="outline" className={statusInPicker ? 'hidden' : undefined}>
         {event ? dateStatus(event) : 'New'}
       </Badge>
-      {editor.dirty && (
-        <span className="text-muted-foreground text-xs max-md:hidden" aria-live="polite">
-          Unsaved changes
-        </span>
-      )}
+      <UnsavedLabel
+        show={editor.dirty}
+        gap={12}
+        className="text-muted-foreground text-xs max-md:hidden"
+      />
       {children}
       <div className="ml-auto flex items-center gap-1 max-md:hidden">
         <Button

@@ -14,7 +14,7 @@ export const initials = (name: string) =>
 const countWords = (text: string) => text.split(/\s+/).filter(Boolean).length;
 
 export const readState = (e: Editor) => {
-  const level = [1, 2, 3].find((l) => e.isActive('heading', { level: l }));
+  const level = [1, 2, 3, 4, 5, 6].find((l) => e.isActive('heading', { level: l }));
   const text = e.state.doc.textBetween(0, e.state.doc.content.size, ' ');
   return {
     align: ALIGNMENTS.find((a) => e.isActive({ textAlign: a.value }))?.value ?? 'left',

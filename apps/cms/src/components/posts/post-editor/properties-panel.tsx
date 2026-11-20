@@ -17,6 +17,7 @@ import { formatDateTime } from '@/lib/format';
 import { useTimeZone } from '@/lib/use-time-zone';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
+import { COLLAPSIBLE_CONTENT } from '@/lib/motion';
 import { cn } from '@/lib/utils';
 import { ContentScorePanel } from './content-score/content-score-panel';
 import { useContentScore } from './content-score/use-content-score';
@@ -239,7 +240,7 @@ function Section({
         {count !== undefined && <span className="ml-auto tabular-nums">{count}</span>}
       </CollapsibleTrigger>
       {/* Height animates from Base UI's measured panel height; instant with reduced motion. */}
-      <CollapsibleContent className="h-(--collapsible-panel-height) overflow-hidden transition-[height,opacity] duration-200 ease-[cubic-bezier(0.25,1,0.5,1)] data-ending-style:h-0 data-ending-style:opacity-0 data-starting-style:h-0 data-starting-style:opacity-0 motion-reduce:transition-none">
+      <CollapsibleContent className={COLLAPSIBLE_CONTENT}>
         <div className="pt-3">{children}</div>
       </CollapsibleContent>
     </Collapsible>

@@ -9,6 +9,7 @@ import {
 import { useState } from 'react';
 import { ChevronRightIcon, CircleAlertIcon, TriangleAlertIcon } from '@/components/icons';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
+import { COLLAPSIBLE_CONTENT } from '@/lib/motion';
 import { cn } from '@/lib/utils';
 import { ScoreChecks } from './score-checks';
 import { ScoreGauge } from './score-gauge';
@@ -33,7 +34,7 @@ export function ContentScorePanel({ result }: { result: ContentScore }) {
             />
           </CollapsibleTrigger>
           {/* Opens to Base UI's measured height, as the sidebar's sections do; instant with reduced motion. */}
-          <CollapsibleContent className="h-(--collapsible-panel-height) overflow-hidden transition-[height,opacity] duration-200 ease-[cubic-bezier(0.25,1,0.5,1)] data-ending-style:h-0 data-ending-style:opacity-0 data-starting-style:h-0 data-starting-style:opacity-0 motion-reduce:transition-none">
+          <CollapsibleContent className={COLLAPSIBLE_CONTENT}>
             <ScoreChecks checks={result.checks} categories={result.categories} />
           </CollapsibleContent>
         </Collapsible>

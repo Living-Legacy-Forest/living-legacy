@@ -9,6 +9,7 @@
  */
 import { ClientOnly, Link } from '@tanstack/react-router';
 import { Suspense, lazy, useState } from 'react';
+import { useIsDesktop } from '@/components/editor-page/use-is-desktop';
 import { Trash2Icon } from '@/components/icons';
 import {
   AlertDialog,
@@ -29,6 +30,7 @@ import {
   EmptyMedia,
   EmptyTitle,
 } from '@/components/ui/empty';
+import { PANE_GAP_MOTION } from '@/lib/motion';
 import { cn } from '@/lib/utils';
 import type { PostEditorData } from '@/server/posts';
 import { DocumentEditorSkeleton } from './document-editor-skeleton';
@@ -70,6 +72,7 @@ export function PostEditor({
   const editor = usePostEditor({ data, access, onReload });
   const presence = usePostPresence(editor.meta.id, editor.meta.updatedAt);
   const [showProperties, setShowProperties] = useState(true);
+  const desktop = useIsDesktop();
   const { values, update } = editor;
 
   if (editor.meta.trashed && editor.meta.id) return <TrashedPost editor={editor} />;
@@ -87,6 +90,8 @@ export function PostEditor({
           // Below lg the panel sits under the editor, as before: the group stacks and its
           // divider goes. From lg, hiding the panel also hides the divider.
           'max-lg:block! max-lg:[&>*+*]:mt-6 max-lg:[&>[role=separator]]:hidden',
+          // The panel slides shut on its own, so the divider and its restore tab have no job
+          // once it has: the toolbar button brings it back.
           !showProperties && '[&>[role=separator]]:hidden'
         )}
       >
@@ -101,6 +106,8 @@ export function PostEditor({
             data-slot="post-editor-main"
             className={cn(
               'bg-background flex min-w-0 flex-col overflow-hidden rounded-lg border lg:h-[calc(100svh-7.5rem)]',
+              // The gap closes with the panel, on the same curve, so the card does not jump.
+              PANE_GAP_MOTION,
               showProperties && 'lg:mr-6'
             )}
           >
@@ -137,8 +144,12 @@ export function PostEditor({
           defaultSize={24}
           minSize={240}
           maxSize={560}
-          // Hidden only on lg and up: below that the panel sits under the editor and has no toggle.
-          className={cn('max-lg:max-w-none!', !showProperties && 'lg:hidden!')}
+          // Slides shut and open with the toolbar button, only on lg and up: below that the panel
+          // sits under the editor and has no toggle. Dragging it shut keeps the button in step.
+          collapsible
+          collapsed={!showProperties && desktop}
+          onCollapsedChange={(collapsed) => setShowProperties(!collapsed)}
+          className="max-lg:max-w-none!"
         >
           <aside
             id="post-properties"

@@ -1,3 +1,4 @@
+import { AnimatePresence, motion, useReducedMotion } from 'motion/react';
 import { useState } from 'react';
 import {
   CopyIcon,
@@ -21,6 +22,7 @@ import {
 import { type PageMenuItem, PageActions } from '@/components/shell/page-actions';
 import { Spinner } from '@/components/ui/spinner';
 import { useIsMobile } from '@/hooks/use-mobile';
+import { enterTransition, exitTransition } from '@/lib/motion';
 import { cn } from '@/lib/utils';
 import { PostStatusBadge } from '../post-status-badge';
 import { ReviewerPopover } from '../reviewer-popover';
@@ -64,9 +66,7 @@ export function EditorToolbar({
           showDate
           className="text-foreground text-ui"
         />
-        <span className="text-muted-foreground text-xs" aria-live="polite">
-          {editor.saveState}
-        </span>
+        <SaveState editor={editor} />
         {access === 'full' && !editor.isLive && (
           <div className="ml-auto">
             <SchedulePopover
@@ -94,9 +94,7 @@ export function EditorToolbar({
         showDate
         className="text-foreground text-ui"
       />
-      <span className="text-muted-foreground text-xs" aria-live="polite">
-        {editor.saveState}
-      </span>
+      <SaveState editor={editor} />
       {/* On phones the actions take a row of their own, with Save and Publish sharing it. */}
       <div className="ml-auto flex items-center gap-1 max-md:w-full max-md:flex-wrap max-md:justify-end">
         {access === 'full' && (
@@ -405,5 +403,31 @@ function Busy({
       <Spinner data-icon="inline-start" />
       {label}
     </>
+  );
+}
+
+/** Where the draft stands. Changing between unsaved and saved fades one into the other. */
+function SaveState({ editor }: { editor: PostEditorState }) {
+  const reduce = useReducedMotion() ?? false;
+  const dirty = editor.dirty;
+  return (
+    <span className="text-muted-foreground relative inline-flex text-xs" aria-live="polite">
+      <AnimatePresence initial={false} mode="popLayout">
+        <motion.span
+          key={dirty ? 'unsaved' : 'saved'}
+          className="whitespace-nowrap"
+          initial={{ opacity: 0, y: reduce ? 0 : 4 }}
+          animate={{ opacity: 1, y: 0 }}
+          exit={{
+            opacity: 0,
+            y: reduce ? 0 : -4,
+            transition: reduce ? { duration: 0 } : exitTransition,
+          }}
+          transition={reduce ? { duration: 0 } : enterTransition}
+        >
+          {editor.saveState}
+        </motion.span>
+      </AnimatePresence>
+    </span>
   );
 }

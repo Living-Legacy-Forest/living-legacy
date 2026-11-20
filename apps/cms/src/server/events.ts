@@ -384,7 +384,8 @@ export const duplicateEvent = createServerFn({ method: 'POST' })
     const live = siblings.filter((d) => d.status !== 'cancelled');
     const dates = live.length > 0 ? live : siblings;
 
-    const base = slugify(`${source.slug}-copy`);
+    // Leave room for the suffixes: slugify cuts at 80, which would drop "-copy" off a long address.
+    const base = slugify(`${source.slug.slice(0, 70)}-copy`);
     let slug = base;
     for (let n = 2; await db.query.events.findFirst({ where: eq(events.slug, slug) }); n++) {
       slug = `${base}-${n}`;

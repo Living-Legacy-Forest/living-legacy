@@ -116,7 +116,10 @@ function usePageRenderer(doc: Doc | null, boxW: number, boxH: number): Renderer 
             (value) => {
               created.value = value;
             },
-            () => entries.delete(number)
+            () => {
+              // Only this draw's own entry: a stale failure must not evict newer work.
+              if (entries.get(number) === created) entries.delete(number);
+            }
           );
           entries.set(number, created);
           entry = created;
@@ -155,7 +158,9 @@ const indexOf = (page: number, layout: Layout) =>
  * flick leaves it, at the speed the finger had, and never overshoots (a leaf past flat would pass
  * through the page).
  */
-const SPRING = { type: 'spring', duration: 0.55, bounce: 0 } as const;
+// Set by stiffness and damping (a duration-based spring would ignore the velocity); 30 is just
+// past critical damping for this stiffness, so it settles without overshoot.
+const SPRING = { type: 'spring', stiffness: 220, damping: 30, mass: 1 } as const;
 /**
  * From a button or a key there is no speed to carry on, and a spring would front-load the turn: the
  * leaf crosses the spine in a tenth of a second, then drifts down unseen. A sine ease-in-out
@@ -170,7 +175,7 @@ const BEND = 14;
 const DRAG_START = 8;
 const FLICK = 0.3;
 
-type Turn = { from: number; to: number };
+type Turn = { from: number; to: number; layout: Layout };
 
 /** Where the leaf's angle starts and ends. One page lifts edge-on; two swing right over. */
 function angles(layout: Layout, dir: number) {
@@ -261,12 +266,15 @@ export function PdfReader({
   const playing = useRef<{ stop: () => void } | null>(null);
   const drag = useRef<Drag | null>(null);
   // A turn asked for while another is playing waits its turn, so quick presses are not lost.
-  const queued = useRef(0);
+  const queued = useRef<number[]>([]);
+  // Whose preparation of a turn is current, so a cancelled one never installs a leaf.
+  const prep = useRef(0);
 
   const count = doc?.numPages ?? 0;
   // Two pages need room; a phone shows one whatever was chosen.
   const canDouble = size.width >= 400;
-  const layout: Layout = canDouble ? chosen : 'single';
+  // A turn keeps the layout it began in, even if the stage is resized under it.
+  const layout: Layout = turn?.layout ?? (canDouble ? chosen : 'single');
   const index = indexOf(page, layout);
   const first = layout === 'single' ? 1 : 0;
   const last = layout === 'single' ? count : Math.floor(count / 2);
@@ -320,13 +328,24 @@ export function PdfReader({
     const to = index + dir;
     if (to < first || to > last) return null;
     turning.current = true;
+    const id = ++prep.current;
     // Draw what the turn shows first, so no face is blank while it moves.
     const shown = [sides(index, layout, count), sides(to, layout, count)];
-    await Promise.all(
-      shown.flatMap((s) => [s.left, s.right]).flatMap((n) => (n === null ? [] : [renderer.get(n)]))
-    ).catch(() => {});
+    try {
+      await Promise.all(
+        shown
+          .flatMap((s) => [s.left, s.right])
+          .flatMap((n) => (n === null ? [] : [renderer.get(n)]))
+      );
+    } catch {
+      // A page that will not draw: stay where we are, and let the next press try again.
+      if (id === prep.current) turning.current = false;
+      return null;
+    }
+    // Cancelled while drawing: nothing to install.
+    if (id !== prep.current) return null;
     rot.set(angles(layout, dir).start);
-    const next = { from: index, to };
+    const next: Turn = { from: index, to, layout };
     setTurn(next);
     return next;
   };
@@ -344,10 +363,18 @@ export function PdfReader({
     });
   };
 
-  const go = async (delta: number) => {
+  /** Runs the next waiting press, in the order they were made. */
+  function drain() {
+    const next = queued.current.shift();
+    if (next !== undefined) void go(next);
+  }
+
+  async function go(delta: number) {
+    // Nothing to turn until the document has pages.
+    if (count === 0) return;
     if (drag.current?.started) return;
     if (turning.current) {
-      queued.current += delta;
+      queued.current.push(delta);
       return;
     }
     const dir = delta > 0 ? 1 : -1;
@@ -358,16 +385,13 @@ export function PdfReader({
     }
     const t = await begin(dir);
     if (t) settle(t, dir, true, 0, true);
-    else queued.current = 0;
-  };
+    // Out of range (or cancelled): the press is dropped, the ones behind it still run.
+    else drain();
+  }
 
   // Once a turn has landed, the next one waits for a render so it starts from the new page.
   useEffect(() => {
-    if (turn || !queued.current) return;
-    // One step at a time: each waiting press is a turn of its own.
-    const step = Math.sign(queued.current);
-    queued.current -= step;
-    void go(step);
+    if (!turn) drain();
   }, [turn]);
 
   const finish = (d: Drag, t: Turn, dx: number) => {
@@ -382,6 +406,8 @@ export function PdfReader({
     const commit = forward > FLICK || (progress > 0.5 && forward > -FLICK);
     // Carry the speed of the finger over, converted from px per ms to degrees per second.
     const velocity = ((-(end - start) * d.dir) / span) * vx * 1000;
+    // Start from where the finger let go, which can be ahead of the last move.
+    rot.set(start + (end - start) * progress);
     settle(t, d.dir, commit, velocity);
   };
 
@@ -439,6 +465,11 @@ export function PdfReader({
       onPointerMove={(e) => {
         const d = drag.current;
         if (!d || e.pointerId !== d.id) return;
+        // A mouse let go outside the book before it took hold: there is no release to wait for.
+        if (e.pointerType === 'mouse' && e.buttons === 0 && !d.started) {
+          drag.current = null;
+          return;
+        }
         d.samples.push({ x: e.clientX, t: e.timeStamp });
         if (d.samples.length > 8) d.samples.shift();
         const dx = e.clientX - d.x0;
@@ -482,6 +513,11 @@ export function PdfReader({
         if (!d || e.pointerId !== d.id) return;
         drag.current = null;
         if (d.turn) settle(d.turn, d.dir, false);
+        else if (d.started) {
+          // Cancelled while the turn was still being prepared: drop it and free the lock.
+          prep.current++;
+          turning.current = false;
+        }
       }}
     >
       {/* Padding leaves room for the arrows, the switch and the counter; the book fits the rest. */}

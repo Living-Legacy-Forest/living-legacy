@@ -1072,7 +1072,7 @@ function DateRangePicker({
         disabled={!today}
         inert={open || undefined}
         onClick={openPanel}
-        className="focus-visible:ring-ring/50 touch:h-9 relative z-1 flex h-8 w-full cursor-pointer items-center gap-2 rounded-lg px-2.5 text-left whitespace-nowrap outline-none [-webkit-tap-highlight-color:transparent] focus-visible:ring-3 disabled:cursor-default"
+        className="focus-visible:ring-ring/50 touch:h-9 touch:after:absolute touch:after:inset-x-0 touch:after:-inset-y-1 relative z-1 flex h-8 w-full cursor-pointer items-center gap-2 rounded-lg px-2.5 text-left whitespace-nowrap outline-none [-webkit-tap-highlight-color:transparent] focus-visible:ring-3 disabled:cursor-default"
       >
         <motion.span
           className="text-muted-foreground grid shrink-0 place-items-center"

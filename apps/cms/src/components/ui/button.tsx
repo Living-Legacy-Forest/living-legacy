@@ -31,15 +31,15 @@ const buttonVariants = cva(
       },
       size: {
         default:
-          'touch:h-9 touch:after:-inset-y-1 h-8 gap-1.5 px-3 has-data-[icon=inline-end]:pr-2.5 has-data-[icon=inline-start]:pl-2.5',
+          'touch:h-9 touch:after:-inset-y-[5px] h-8 gap-1.5 px-3 has-data-[icon=inline-end]:pr-2.5 has-data-[icon=inline-start]:pl-2.5',
         xs: "touch:after:-inset-y-2.5 h-6 gap-1 rounded-[min(var(--radius-md),10px)] px-2 text-xs in-data-[slot=button-group]:rounded-lg has-data-[icon=inline-end]:pr-1.5 has-data-[icon=inline-start]:pl-1.5 [&_svg:not([class*='size-'])]:size-3",
-        sm: "touch:h-9 touch:after:-inset-y-1 h-8 gap-1 rounded-[min(var(--radius-md),12px)] px-2.5 text-ui-sm in-data-[slot=button-group]:rounded-lg has-data-[icon=inline-end]:pr-1.5 has-data-[icon=inline-start]:pl-1.5 [&_svg:not([class*='size-'])]:size-3.5",
+        sm: "touch:h-9 touch:after:-inset-y-[5px] h-8 gap-1 rounded-[min(var(--radius-md),12px)] px-2.5 text-ui-sm in-data-[slot=button-group]:rounded-lg has-data-[icon=inline-end]:pr-1.5 has-data-[icon=inline-start]:pl-1.5 [&_svg:not([class*='size-'])]:size-3.5",
         lg: 'h-10 gap-1.5 px-3 has-data-[icon=inline-end]:pr-2.5 has-data-[icon=inline-start]:pl-2.5',
-        icon: 'touch:size-9 touch:after:-inset-y-1 size-8 [--btn-press:0.96]',
+        icon: 'touch:size-9 touch:after:-inset-y-[5px] size-8 [--btn-press:0.96]',
         'icon-xs':
           "touch:after:-inset-y-2.5 size-6 rounded-[min(var(--radius-md),10px)] [--btn-press:0.96] in-data-[slot=button-group]:rounded-lg [&_svg:not([class*='size-'])]:size-3",
         'icon-sm':
-          'touch:size-9 touch:after:-inset-y-1 size-8 rounded-[min(var(--radius-md),12px)] [--btn-press:0.96] in-data-[slot=button-group]:rounded-lg',
+          'touch:size-9 touch:after:-inset-y-[5px] size-8 rounded-[min(var(--radius-md),12px)] [--btn-press:0.96] in-data-[slot=button-group]:rounded-lg',
         'icon-lg': 'size-10 [--btn-press:0.96]',
       },
     },

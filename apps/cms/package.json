@@ -20,6 +20,7 @@
   "dependencies": {
     "@animate-ui/react": "^2.4.3",
     "@animateicons/react": "0.13.0",
+    "@anthropic-ai/sdk": "^1.10.0",
     "@base-ui/react": "^1.8.0",
     "@dicebear/core": "^9.4.3",
     "@dicebear/notionists": "^9.4.2",

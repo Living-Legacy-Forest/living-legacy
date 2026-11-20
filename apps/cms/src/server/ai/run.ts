@@ -1,0 +1,106 @@
+import Anthropic from '@anthropic-ai/sdk';
+import { zodOutputFormat } from '@anthropic-ai/sdk/helpers/zod';
+import type { BrandRule } from '@ll/content';
+import type { z } from 'zod';
+import { AI_MODEL, FIELD_SPECS, type SuggestField, systemPrompt } from './fields';
+import { guardProblems } from './guard';
+
+/** The part of the SDK client this needs, so tests can hand in a fake. */
+export type AiClient = Pick<Anthropic, 'messages'>;
+
+/** An error whose message is a sentence an editor can read; shown as a toast as it is. */
+export class SuggestError extends Error {
+  override name = 'SuggestError';
+}
+
+const GUARD_FAILED =
+  "Couldn't write one that follows the brand guide. Try again or write it yourself.";
+const REFUSED = "The writing assistant couldn't help with this one. Write it yourself.";
+const BUSY = 'The writing assistant is busy. Try again in a moment.';
+const DOWN = "The writing assistant isn't answering. Try again soon.";
+
+type Outcome = 'ok' | 'retried' | 'guard_failed' | 'refused' | 'error';
+
+export type SuggestRequest<T extends z.ZodType> = {
+  field: SuggestField;
+  brandGuide: string;
+  rules: readonly BrandRule[];
+  /** The item's own text or image, nothing else. */
+  content: Anthropic.ContentBlockParam[];
+  schema: T;
+  /** Every string in the reply that has to pass the guard. */
+  texts: (out: z.infer<T>) => string[];
+  /** For tags: the only names the reply may contain. */
+  allowed?: readonly string[];
+  /** Overrides the field's own limit (a brand fix is as long as the sentence it replaces). */
+  limit?: number;
+};
+
+type Usage = { input_tokens: number; output_tokens: number };
+
+/**
+ * Asks the model for one suggestion and holds it to the brand guide. A reply that is malformed or
+ * breaks the guide gets one more go, told exactly what was wrong; after that it is an error, and
+ * the text is never returned.
+ */
+export async function runSuggestion<T extends z.ZodType>(
+  client: AiClient,
+  req: SuggestRequest<T>
+): Promise<z.infer<T>> {
+  const limit = req.limit ?? FIELD_SPECS[req.field].limit;
+  const usage: Usage = { input_tokens: 0, output_tokens: 0 };
+  const log = (outcome: Outcome) =>
+    console.info(
+      JSON.stringify({ event: 'ai_suggest', field: req.field, model: AI_MODEL, ...usage, outcome })
+    );
+
+  let feedback: string | null = null;
+  for (let attempt = 0; attempt < 2; attempt += 1) {
+    const messages: Anthropic.MessageParam[] = [{ role: 'user', content: req.content }];
+    if (feedback) messages.push({ role: 'user', content: feedback });
+
+    let response;
+    try {
+      response = await client.messages.parse({
+        model: AI_MODEL,
+        max_tokens: 1024,
+        cache_control: { type: 'ephemeral' },
+        system: systemPrompt(req.brandGuide, req.field),
+        messages,
+        output_config: { effort: 'low', format: zodOutputFormat(req.schema) },
+      });
+    } catch (error) {
+      log('error');
+      throw toSuggestError(error);
+    }
+    usage.input_tokens += response.usage.input_tokens;
+    usage.output_tokens += response.usage.output_tokens;
+
+    if (response.stop_reason === 'refusal') {
+      log('refused');
+      throw new SuggestError(REFUSED);
+    }
+
+    const out = response.parsed_output as z.infer<T> | null;
+    const problems = out
+      ? req
+          .texts(out)
+          .flatMap((text) => guardProblems(text, { limit, rules: req.rules, allowed: req.allowed }))
+      : ['The reply was not in the required format.'];
+    if (out && problems.length === 0) {
+      log(attempt === 0 ? 'ok' : 'retried');
+      return out;
+    }
+    feedback = `That reply cannot be used:\n- ${problems.join('\n- ')}\nWrite it again, fixing every problem.`;
+  }
+  log('guard_failed');
+  throw new SuggestError(GUARD_FAILED);
+}
+
+/** Never carries the provider's own message, which can echo what was sent. */
+function toSuggestError(error: unknown): Error {
+  if (error instanceof SuggestError) return error;
+  if (error instanceof Anthropic.RateLimitError) return new SuggestError(BUSY);
+  if (error instanceof Anthropic.APIError) return new SuggestError(DOWN);
+  return error instanceof Error ? error : new SuggestError(DOWN);
+}

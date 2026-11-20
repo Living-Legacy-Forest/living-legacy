@@ -1,4 +1,4 @@
-import type { Role } from '@ll/content';
+import type { Permission, Role } from '@ll/content';
 import { apiKeys, user } from '@ll/db/schema';
 import { eq } from 'drizzle-orm';
 import { describe, expect, it } from 'vitest';
@@ -8,9 +8,10 @@ import { type ApiActor, authenticateApiRequest, generateApiKey, hashApiKey } fro
 async function addKey(
   role: Role,
   scope: 'read' | 'write',
-  extra: Partial<typeof apiKeys.$inferInsert> = {}
+  extra: Partial<typeof apiKeys.$inferInsert> = {},
+  extraPermissions: Permission[] = []
 ) {
-  const userId = await addUser(role, `Key owner (${role})`);
+  const userId = await addUser(role, `Key owner (${role})`, extraPermissions);
   const { key, prefix } = generateApiKey();
   const [row] = await testDb()
     .insert(apiKeys)
@@ -85,6 +86,18 @@ describe('authenticateApiRequest', () => {
     expect(await authenticateApiRequest(request(key), 'write')).not.toBeInstanceOf(Response);
 
     await testDb().update(user).set({ role: 'viewer' }).where(eq(user.id, userId));
+    await expectError(await authenticateApiRequest(request(key), 'write'), 403, 'can only read');
+  });
+
+  it('lets a write key work for an owner who was given posts:write on top of a viewer role', async () => {
+    const { key, userId } = await addKey('viewer', 'write', {}, ['posts:write']);
+    const actor = await authenticateApiRequest(request(key), 'write');
+    expect(actor).not.toBeInstanceOf(Response);
+    expect(actor).toMatchObject({ userId, role: 'viewer', extraPermissions: ['posts:write'] });
+  });
+
+  it('refuses a write key whose viewer owner has no extra permissions', async () => {
+    const { key } = await addKey('viewer', 'write');
     await expectError(await authenticateApiRequest(request(key), 'write'), 403, 'can only read');
   });
 

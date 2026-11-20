@@ -11,6 +11,7 @@ import {
   PencilLineIcon,
   SearchIcon,
 } from '@/components/icons';
+import { BrandFixButton } from '@/components/ai/brand-fix-button';
 import { Button, buttonVariants } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Pager } from '@/components/pager';
@@ -385,6 +386,19 @@ function useCheckRows(
           <span className="min-w-0 flex-1">
             <span className="text-ui line-clamp-2">{b.title || 'Untitled'}</span>
             <span className="text-muted-foreground block text-xs">{brandDetail(b)}</span>
+            {canFix[b.kind] && (
+              <span className="mt-1.5 flex flex-wrap gap-1.5">
+                {b.never.slice(0, 3).map((f) => (
+                  <BrandFixButton
+                    key={f.found}
+                    sentence={f.sentence}
+                    found={f.found}
+                    limit={2000}
+                    label={`Suggest a fix for “${f.found}”`}
+                  />
+                ))}
+              </span>
+            )}
           </span>
           {canFix[b.kind] && itemFix(b)}
         </Row>

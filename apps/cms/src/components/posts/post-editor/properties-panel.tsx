@@ -50,7 +50,7 @@ export function PropertiesPanel({
   return (
     <>
       <Section id="post-section-score" title="Content score" count={score.score} defaultOpen first>
-        <ContentScorePanel result={score} />
+        <ContentScorePanel result={score} values={values} update={update} />
       </Section>
 
       <Section title="Properties" defaultOpen>

@@ -73,7 +73,13 @@ describe('brand language check', () => {
     expect(total).toBe(5);
     expect(rows.map((r) => r.kind).sort()).toEqual(['event', 'faq', 'legal', 'location', 'post']);
     expect(rows.find((r) => r.kind === 'post')?.never).toEqual([
-      { found: 'plot', count: 1, instead: 'Legacy Ground, or their tree' },
+      {
+        found: 'plot',
+        count: 1,
+        instead: 'Legacy Ground, or their tree',
+        // The sentence it was found in, so a fix can rewrite just that.
+        sentence: 'Choosing a plot',
+      },
     ]);
     // A legal page is opened by its slug.
     expect(rows.find((r) => r.kind === 'legal')?.slug).toBe('terms');

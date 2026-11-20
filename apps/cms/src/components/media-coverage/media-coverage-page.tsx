@@ -10,6 +10,7 @@ import {
   ListColumn,
   ListDialog,
   ListPageLayout,
+  ListPager,
   ListRows,
   NoMatches,
   PaneActions,
@@ -25,7 +26,6 @@ import {
   featureMenuItem,
   publishMenuItem,
 } from '@/components/list/list-row';
-import { Pager } from '@/components/pager';
 import { usePaged } from '@/lib/use-paged';
 import {
   ConfirmBulkDelete,
@@ -456,7 +456,7 @@ export function MediaCoveragePage({
               </ListRows>
             )}
             {paged.needed && (
-              <Pager
+              <ListPager
                 {...paged.pager}
                 noun="articles"
                 label="Media coverage pages"

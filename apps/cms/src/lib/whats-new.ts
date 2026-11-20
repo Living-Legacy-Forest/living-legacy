@@ -60,6 +60,10 @@ export const whatsNew: WhatsNewEntry[] = [
         body: 'On Redirects, FAQs, Team and the other pages with a list beside an editor, drag the line between them to give the list or the editor more room. Double-click the line to put it back. On a keyboard, focus the line and use the arrow keys. The page remembers your width.',
         link: { label: 'Open Redirects', to: '/redirects' },
       },
+      {
+        title: 'The page links tuck away at the top',
+        body: 'On Redirects, Testimonials and Media coverage, the page numbers slide out of the way while the list is scrolled to the top, and come back as soon as you scroll down. They always show when every row fits.',
+      },
     ],
   },
   {

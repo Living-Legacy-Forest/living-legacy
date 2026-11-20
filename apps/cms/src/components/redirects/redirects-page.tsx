@@ -7,6 +7,7 @@ import {
   ListColumn,
   ListDialog,
   ListPageLayout,
+  ListPager,
   ListRows,
   NoMatches,
   PaneActions,
@@ -17,7 +18,6 @@ import {
   useListPane,
 } from '@/components/list/list-page';
 import { ListRow, type RowMenuItem } from '@/components/list/list-row';
-import { Pager } from '@/components/pager';
 import { usePaged } from '@/lib/use-paged';
 import { copyLink, openInNewTab, siteUrl } from '@/lib/site';
 import {
@@ -530,7 +530,7 @@ export function RedirectsPage({
               </ListRows>
             )}
             {paged.needed && (
-              <Pager
+              <ListPager
                 {...paged.pager}
                 noun="redirects"
                 label="Redirect pages"

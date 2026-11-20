@@ -14,6 +14,8 @@ import { createContext, useContext, useLayoutEffect, useRef, useState } from 're
 import { createPortal } from 'react-dom';
 import { PanelRightIcon } from '@/components/icons';
 import { SplitHandle, useSplit } from '@/components/list/split-handle';
+import { useHidePagerAtTop } from '@/components/list/use-hide-pager-at-top';
+import { Pager } from '@/components/pager';
 import { Button } from '@/components/ui/button';
 import {
   Dialog,
@@ -126,6 +128,12 @@ export function ListPageLayout({
   );
 }
 
+/** The list's scrolling rows, which the pager under them watches to know when to tuck itself away. */
+const RowsContext = createContext<{
+  rows: HTMLElement | null;
+  setRows: (element: HTMLElement | null) => void;
+} | null>(null);
+
 /** The left column: a header (usually a SelectionBar) over the scrolling rows. */
 export function ListColumn({
   label,
@@ -141,15 +149,18 @@ export function ListColumn({
   /** Out of reach (hidden, not removed), for a page that can fold its list away. */
   inert?: boolean;
 }) {
+  const [rows, setRows] = useState<HTMLElement | null>(null);
   return (
-    <section
-      aria-label={label}
-      inert={inert}
-      className={cn('flex min-h-0 flex-col lg:border-r', className)}
-    >
-      {header}
-      {children}
-    </section>
+    <RowsContext value={{ rows, setRows }}>
+      <section
+        aria-label={label}
+        inert={inert}
+        className={cn('flex min-h-0 flex-col lg:border-r', className)}
+      >
+        {header}
+        {children}
+      </section>
+    </RowsContext>
   );
 }
 
@@ -167,8 +178,10 @@ export function ListRows({
   className?: string;
   inset?: 'text' | 'media';
 }) {
+  const registry = useContext(RowsContext);
   return (
     <ul
+      ref={registry?.setRows}
       data-slot="list-rows"
       // 16px of padding, then a 60px thumbnail and a 12px gap before the text.
       style={{ '--row-inset': inset === 'media' ? '5.5rem' : '1rem' } as React.CSSProperties}
@@ -209,6 +222,31 @@ export function NoMatches({
       <Button variant="ghost" size="sm" onClick={onClear}>
         {clearLabel}
       </Button>
+    </div>
+  );
+}
+
+/**
+ * The pager under a list's rows. It slides away while the rows are scrolled to the very top, and
+ * back as soon as they scroll, so the first rows get the room. It always shows when every row fits
+ * (or hiding it would stop the list scrolling), so the other pages stay reachable.
+ */
+export function ListPager(props: React.ComponentProps<typeof Pager>) {
+  const rows = useContext(RowsContext)?.rows ?? null;
+  const content = useRef<HTMLDivElement>(null);
+  const hidden = useHidePagerAtTop(rows, content);
+  return (
+    <div
+      inert={hidden}
+      aria-hidden={hidden || undefined}
+      className={cn(
+        'grid shrink-0 transition-[grid-template-rows,opacity] duration-200 ease-out motion-reduce:transition-none',
+        hidden ? 'grid-rows-[0fr] opacity-0' : 'grid-rows-[1fr] opacity-100'
+      )}
+    >
+      <div ref={content} className="min-h-0 overflow-hidden">
+        <Pager {...props} />
+      </div>
     </div>
   );
 }

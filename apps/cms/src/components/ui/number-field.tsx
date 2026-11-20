@@ -660,7 +660,7 @@ function NumberField({
       data-invalid={ariaInvalid || outside || undefined}
       className={cn(
         'border-input dark:bg-input/30 flex h-8 w-36 max-w-full min-w-0 items-center gap-0.5 rounded-lg border bg-transparent p-[3px] transition-[border-color,background-color,opacity] duration-150',
-        'touch:h-11',
+        'touch:h-9',
         'hover:border-ring/60 has-[input:focus]:border-ring',
         'data-invalid:border-destructive data-invalid:bg-destructive/5 dark:data-invalid:border-destructive/50',
         'data-disabled:bg-input/50 data-disabled:opacity-50',

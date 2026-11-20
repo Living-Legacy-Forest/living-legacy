@@ -1056,7 +1056,7 @@ function DateRangePicker({
       onKeyDown={onRootKey}
       onBlur={onRootBlur}
       className={cn(
-        'group/drp touch:h-11 md:text-ui relative z-0 block h-8 w-full text-base transition-[z-index] delay-500 duration-0 data-open:z-30 data-open:delay-0',
+        'group/drp touch:h-9 md:text-ui relative z-0 block h-8 w-full text-base transition-[z-index] delay-500 duration-0 data-open:z-30 data-open:delay-0',
         className
       )}
     >
@@ -1072,7 +1072,7 @@ function DateRangePicker({
         disabled={!today}
         inert={open || undefined}
         onClick={openPanel}
-        className="focus-visible:ring-ring/50 touch:h-11 relative z-1 flex h-8 w-full cursor-pointer items-center gap-2 rounded-lg px-2.5 text-left whitespace-nowrap outline-none [-webkit-tap-highlight-color:transparent] focus-visible:ring-3 disabled:cursor-default"
+        className="focus-visible:ring-ring/50 touch:h-9 relative z-1 flex h-8 w-full cursor-pointer items-center gap-2 rounded-lg px-2.5 text-left whitespace-nowrap outline-none [-webkit-tap-highlight-color:transparent] focus-visible:ring-3 disabled:cursor-default"
       >
         <motion.span
           className="text-muted-foreground grid shrink-0 place-items-center"

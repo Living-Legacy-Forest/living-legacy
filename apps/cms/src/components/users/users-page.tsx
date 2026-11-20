@@ -1,4 +1,4 @@
-import { type Role } from '@ll/content';
+import { type Permission, type Role } from '@ll/content';
 import { CameraIcon, Trash2Icon, UserPlusIcon } from '@/components/icons';
 import { useState } from 'react';
 import {
@@ -16,6 +16,13 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { ExtraAccess } from '@/components/users/extra-access';
+import {
+  describeExtras,
+  invitePayload,
+  normaliseExtras,
+  resendPayload,
+} from '@/components/users/extra-access-rules';
 import { UserPhotoDialog } from '@/components/users/user-photo-dialog';
 import { FormCell, FormSection, groupBoxClass, groupHeadingClass } from '@/components/form-cells';
 import { DialogActions, ListDialog } from '@/components/list/list-page';
@@ -47,6 +54,7 @@ import {
   inviteUser,
   removeUser,
   revokeInvitation,
+  setExtraPermissions,
 } from '@/server/users';
 import { avatarSrc } from '@/lib/avatar';
 import { useRevealOnce } from '@/lib/use-reveal-once';
@@ -137,6 +145,7 @@ export function UsersPage({ data }: { data: TeamData }) {
 
 function UsersTable({ data }: { data: TeamData }) {
   const { run, pending } = useAction();
+  const [accessFor, setAccessFor] = useState<TeamUser | null>(null);
 
   function changeRole(u: TeamUser, value: string) {
     if (value === u.role) return;
@@ -150,75 +159,98 @@ function UsersTable({ data }: { data: TeamData }) {
   }
 
   return (
-    <Table className={tableCellPadding}>
-      <TableHeader className="max-sm:hidden">
-        <TableRow className="hover:bg-transparent">
-          <TableHead>Name</TableHead>
-          <TableHead className="w-36 max-sm:hidden">Role</TableHead>
-          <TableHead className="w-32 max-md:hidden">Last active</TableHead>
-          <TableHead className="w-0" />
-        </TableRow>
-      </TableHeader>
-      <TableBody>
-        {data.users.map((u) => {
-          const isSelf = u.id === data.currentUserId;
-          const isLastAdmin = u.role === 'admin' && data.adminCount === 1;
-          // You can't demote or remove yourself, or the only admin; show the
-          // role as text rather than a control that does nothing.
-          const locked = isSelf || isLastAdmin;
-          const role = (
-            <RoleControl
-              user={u}
-              locked={locked}
-              note={isLastAdmin && !isSelf ? 'Only admin' : undefined}
-              disabled={pending}
-              onChange={(value) => changeRole(u, value)}
-            />
-          );
-          return (
-            <TableRow key={u.id}>
-              <TableCell className="w-full max-w-0 py-3">
-                <div className="flex items-center gap-3 max-sm:items-start">
-                  <UserAvatar user={u} isSelf={isSelf} />
-                  <div className="min-w-0 flex-1">
-                    <div className="flex items-center gap-2 font-medium">
-                      <span className="truncate">{u.name || u.email}</span>
-                      {isSelf && <Badge variant="secondary">You</Badge>}
-                    </div>
-                    <div className="text-muted-foreground truncate text-xs">{u.email}</div>
-                    {/* Phones have no room for the role and activity columns. */}
-                    <div className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1 sm:hidden">
-                      {role}
-                      <LastActive at={u.lastActiveAt} className="text-xs" />
+    <>
+      <Table className={tableCellPadding}>
+        <TableHeader className="max-sm:hidden">
+          <TableRow className="hover:bg-transparent">
+            <TableHead>Name</TableHead>
+            <TableHead className="w-36 max-sm:hidden">Role</TableHead>
+            <TableHead className="w-32 max-md:hidden">Last active</TableHead>
+            <TableHead className="w-0" />
+          </TableRow>
+        </TableHeader>
+        <TableBody>
+          {data.users.map((u) => {
+            const isSelf = u.id === data.currentUserId;
+            const isLastAdmin = u.role === 'admin' && data.adminCount === 1;
+            // You can't demote or remove yourself, or the only admin; show the
+            // role as text rather than a control that does nothing.
+            const locked = isSelf || isLastAdmin;
+            const role = (
+              <RoleControl
+                user={u}
+                locked={locked}
+                note={isLastAdmin && !isSelf ? 'Only admin' : undefined}
+                disabled={pending}
+                onChange={(value) => changeRole(u, value)}
+              />
+            );
+            return (
+              <TableRow key={u.id}>
+                <TableCell className="w-full max-w-0 py-3">
+                  <div className="flex items-center gap-3 max-sm:items-start">
+                    <UserAvatar user={u} isSelf={isSelf} />
+                    <div className="min-w-0 flex-1">
+                      <div className="flex items-center gap-2 font-medium">
+                        <span className="truncate">{u.name || u.email}</span>
+                        {isSelf && <Badge variant="secondary">You</Badge>}
+                      </div>
+                      <div className="text-muted-foreground truncate text-xs">{u.email}</div>
+                      {u.role !== 'admin' && u.extraPermissions.length > 0 && (
+                        <div className="text-muted-foreground mt-0.5 text-xs">
+                          Extra access: {describeExtras(u.extraPermissions)}
+                        </div>
+                      )}
+                      {/* Phones have no room for the role and activity columns. */}
+                      <div className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1 sm:hidden">
+                        {role}
+                        <LastActive at={u.lastActiveAt} className="text-xs" />
+                      </div>
                     </div>
                   </div>
-                </div>
-              </TableCell>
-              <TableCell className="max-sm:hidden">{role}</TableCell>
-              <TableCell className="max-md:hidden">
-                <LastActive at={u.lastActiveAt} className="text-sm" />
-              </TableCell>
-              <TableCell>
-                {!locked && (
-                  <RemoveUser
-                    user={u}
-                    onConfirm={() =>
-                      run(() => removeUser({ data: { userId: u.id } }), {
-                        success: {
-                          title: 'User removed',
-                          description: `${u.name || u.email} is signed out and can no longer sign in.`,
-                        },
-                        error: 'Could not remove the user',
-                      })
-                    }
-                  />
-                )}
-              </TableCell>
-            </TableRow>
-          );
-        })}
-      </TableBody>
-    </Table>
+                </TableCell>
+                <TableCell className="max-sm:hidden">{role}</TableCell>
+                <TableCell className="max-md:hidden">
+                  <LastActive at={u.lastActiveAt} className="text-sm" />
+                </TableCell>
+                <TableCell>
+                  <div className="flex items-center justify-end gap-1">
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="touch:min-h-11"
+                      aria-label={`Access for ${u.name || u.email}`}
+                      onClick={() => setAccessFor(u)}
+                    >
+                      Access
+                    </Button>
+                    {!locked && (
+                      <RemoveUser
+                        user={u}
+                        onConfirm={() =>
+                          run(() => removeUser({ data: { userId: u.id } }), {
+                            success: {
+                              title: 'User removed',
+                              description: `${u.name || u.email} is signed out and can no longer sign in.`,
+                            },
+                            error: 'Could not remove the user',
+                          })
+                        }
+                      />
+                    )}
+                  </div>
+                </TableCell>
+              </TableRow>
+            );
+          })}
+        </TableBody>
+      </Table>
+      <AccessDialog
+        user={accessFor}
+        isSelf={accessFor?.id === data.currentUserId}
+        onClose={() => setAccessFor(null)}
+      />
+    </>
   );
 }
 
@@ -269,6 +301,96 @@ function RoleControl({
         ))}
       </SelectContent>
     </Select>
+  );
+}
+
+/** A person's extra access, on top of their role. Your own is read-only. */
+function AccessDialog({
+  user,
+  isSelf,
+  onClose,
+}: {
+  user: TeamUser | null;
+  isSelf: boolean;
+  onClose: () => void;
+}) {
+  return (
+    <ListDialog
+      open={user !== null}
+      onClose={onClose}
+      title="Access"
+      description={
+        user
+          ? user.role === 'admin'
+            ? `${user.name || user.email} is ${roleLabel(user.role)}.`
+            : `${user.name || user.email} is ${roleLabel(user.role)}. Anything you add here is on top of that.`
+          : undefined
+      }
+    >
+      {user && <AccessForm user={user} isSelf={isSelf} onDone={onClose} />}
+    </ListDialog>
+  );
+}
+
+function AccessForm({
+  user,
+  isSelf,
+  onDone,
+}: {
+  user: TeamUser;
+  isSelf: boolean;
+  onDone: () => void;
+}) {
+  const [extras, setExtras] = useState<Permission[]>(user.extraPermissions);
+  const { run, pending } = useAction();
+  const readOnly = isSelf || user.role === 'admin';
+
+  async function submit(e: React.FormEvent) {
+    e.preventDefault();
+    // Closes only when the save worked: the function returns nothing, so `run`'s result
+    // cannot tell success from failure.
+    await run(
+      () =>
+        setExtraPermissions({
+          data: { userId: user.id, extraPermissions: normaliseExtras(user.role, extras) },
+        }),
+      {
+        success: {
+          title: 'Access saved',
+          description: 'It can take up to five minutes to reach someone who is signed in.',
+        },
+        error: 'Could not save access',
+        afterAction: onDone,
+      }
+    );
+  }
+
+  return (
+    <form noValidate onSubmit={submit} className="space-y-5 max-md:space-y-7">
+      {isSelf && user.role !== 'admin' && (
+        <p className="text-muted-foreground text-sm">You cannot change your own access.</p>
+      )}
+      <ExtraAccess
+        role={user.role}
+        value={extras}
+        onChange={setExtras}
+        disabled={readOnly || pending}
+      />
+      {!readOnly && (
+        <DialogActions>
+          <Button type="submit" disabled={pending}>
+            {pending ? (
+              <>
+                <Spinner />
+                Saving…
+              </>
+            ) : (
+              'Save access'
+            )}
+          </Button>
+        </DialogActions>
+      )}
+    </form>
   );
 }
 
@@ -357,12 +479,13 @@ function InviteDialog({
 }) {
   const [email, setEmail] = useState('');
   const [role, setRole] = useState<Role>('editor');
+  const [extras, setExtras] = useState<Permission[]>([]);
   const { run, pending } = useAction();
 
   async function submit(e: React.FormEvent) {
     e.preventDefault();
     if (!reportInvalid(e.currentTarget)) return;
-    const result = await run(() => inviteUser({ data: { email, role } }), {
+    const result = await run(() => inviteUser({ data: invitePayload(email, role, extras) }), {
       success: (r) =>
         r.emailed
           ? { title: 'Invite sent', description: `${r.email} can sign in from the email.` }
@@ -376,6 +499,7 @@ function InviteDialog({
       setOpen(false);
       setEmail('');
       setRole('editor');
+      setExtras([]);
     }
   }
 
@@ -384,7 +508,7 @@ function InviteDialog({
       open={open}
       onClose={() => setOpen(false)}
       title="Invite someone"
-      description="They get an email with a link to sign in. You can change their role later."
+      description="They get an email with a link to sign in. You can change their role and access later."
       icon={
         <span className="bg-muted text-foreground mb-1 flex size-10 items-center justify-center rounded-lg">
           <UserPlusIcon aria-hidden className="size-5" />
@@ -416,7 +540,11 @@ function InviteDialog({
                     key={item.value}
                     type="button"
                     aria-pressed={selected}
-                    onClick={() => setRole(item.value as Role)}
+                    onClick={() => {
+                      // Extras are picked against a role, so a new role starts with none.
+                      if (item.value !== role) setExtras([]);
+                      setRole(item.value as Role);
+                    }}
                     className={cn(
                       'focus-visible:ring-ring rounded-lg border p-3 text-left transition-colors outline-none focus-visible:ring-2',
                       selected ? 'border-foreground bg-muted/50' : 'border-border hover:bg-muted/40'
@@ -429,6 +557,10 @@ function InviteDialog({
               })}
             </div>
           </FormSection>
+        </div>
+        <div className="space-y-3 max-md:space-y-2">
+          <Label className={groupHeadingClass}>Extra access</Label>
+          <ExtraAccess role={role} value={extras} onChange={setExtras} disabled={pending} />
         </div>
         <DialogActions>
           <Button type="submit" disabled={pending}>
@@ -451,7 +583,7 @@ function InvitationsTable({ invitations }: { invitations: TeamData['invitations'
   const { run, pending } = useAction();
 
   const resend = (invite: TeamData['invitations'][number]) =>
-    run(() => inviteUser({ data: { email: invite.email, role: invite.role } }), {
+    run(() => inviteUser({ data: resendPayload(invite) }), {
       success: (r) =>
         r.emailed
           ? { title: 'Invite sent again', description: `A new email is on its way to ${r.email}.` }
@@ -486,6 +618,11 @@ function InvitationsTable({ invitations }: { invitations: TeamData['invitations'
           <TableRow key={invite.email}>
             <TableCell className="w-full max-w-0 py-3">
               <div className="truncate">{invite.email}</div>
+              {invite.extraPermissions.length > 0 && invite.role !== 'admin' && (
+                <div className="text-muted-foreground text-xs">
+                  Extra access: {describeExtras(invite.extraPermissions)}
+                </div>
+              )}
               <div className="text-muted-foreground text-xs sm:hidden">
                 {roleLabel(invite.role)} · invited {formatRelative(invite.createdAt)}
               </div>

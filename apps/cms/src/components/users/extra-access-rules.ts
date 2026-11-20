@@ -1,0 +1,168 @@
+// What the extra-access checklist shows and how ticking behaves. Kept free of React and UI
+// so it runs under plain Node tests. It only shapes what an admin sees and sends; the
+// server decides what a person may actually do.
+import { can, grantablePermissions, type Permission, type Role } from '@ll/content';
+
+export const roleLabels: Record<Role, string> = {
+  admin: 'Admin',
+  editor: 'Editor',
+  author: 'Author',
+  seo: 'SEO',
+  viewer: 'Viewer',
+};
+
+type Item = { permission: Permission; label: string; hint?: string };
+
+// Labels are the comments beside each permission in roles.ts, as short plain sentences.
+export const extraAccessGroups: readonly { heading: string; items: readonly Item[] }[] = [
+  {
+    heading: 'Posts',
+    items: [
+      {
+        permission: 'posts:write',
+        label: 'Write and edit posts',
+        hint: 'Saved as drafts. Authors can only change their own.',
+      },
+      {
+        permission: 'posts:publish',
+        label: 'Publish and manage posts',
+        hint: 'Publish, schedule, unpublish, trash and restore posts, and edit anyone’s.',
+      },
+    ],
+  },
+  {
+    heading: 'SEO',
+    items: [
+      {
+        permission: 'seo:write',
+        label: 'Edit SEO fields',
+        hint: 'A post’s SEO fields and the search and sharing settings.',
+      },
+      { permission: 'redirects:write', label: 'Edit redirects' },
+    ],
+  },
+  {
+    heading: 'Content',
+    items: [
+      {
+        permission: 'content:write',
+        label: 'Edit FAQs, testimonials, team and announcements',
+        hint: 'Also post categories.',
+      },
+      {
+        permission: 'content:purge',
+        label: 'Delete content for good',
+        hint: 'From the trash, and media.',
+      },
+      {
+        permission: 'content:replace',
+        label: 'Search and replace across all content',
+        hint: 'Changes many pages at once.',
+      },
+    ],
+  },
+  {
+    heading: 'Events',
+    items: [
+      {
+        permission: 'events:manage',
+        label: 'Manage events and guest lists',
+        hint: 'Guest lists hold names, emails and phone numbers.',
+      },
+    ],
+  },
+  { heading: 'Media', items: [{ permission: 'media:write', label: 'Upload and edit media' }] },
+  {
+    heading: 'Other',
+    items: [
+      { permission: 'settings:write', label: 'Change settings' },
+      { permission: 'legal:publish', label: 'Publish legal pages' },
+    ],
+  },
+];
+
+const labelOf = new Map<Permission, string>(
+  extraAccessGroups.flatMap((group) => group.items.map((i) => [i.permission, i.label] as const))
+);
+
+const grantable = new Set<Permission>(grantablePermissions);
+
+// Kept in the order of the permission list so a saved list does not depend on click order.
+function inOrder(list: Iterable<Permission>): Permission[] {
+  const wanted = new Set(list);
+  return grantablePermissions.filter((permission) => wanted.has(permission));
+}
+
+const roleHas = (role: Role, permission: Permission) => can({ role }, permission);
+
+/** A publisher who cannot write sees a Save button the server then refuses. */
+function needsWrite(role: Role, extras: readonly Permission[]) {
+  return (
+    !roleHas(role, 'posts:write') &&
+    (extras.includes('posts:publish') || roleHas(role, 'posts:publish'))
+  );
+}
+
+export function splitExtras(role: Role, selected: readonly Permission[]) {
+  const chosen = inOrder(selected);
+  if (role === 'admin') return { included: chosen, extras: [] as Permission[] };
+  return {
+    included: chosen.filter((permission) => roleHas(role, permission)),
+    extras: chosen.filter((permission) => !roleHas(role, permission)),
+  };
+}
+
+export function permissionState(role: Role, extras: readonly Permission[], permission: Permission) {
+  if (roleHas(role, permission)) {
+    return { checked: true, locked: true, note: `Included in ${roleLabels[role]}` };
+  }
+  if (permission === 'posts:write' && needsWrite(role, extras)) {
+    return { checked: true, locked: true, note: 'Needed to publish' };
+  }
+  return { checked: extras.includes(permission), locked: false, note: null };
+}
+
+/** The extras after one box is ticked or unticked. */
+export function applyExtraChange(
+  role: Role,
+  current: readonly Permission[],
+  permission: Permission,
+  checked: boolean
+): Permission[] {
+  const extras = splitExtras(role, current).extras;
+  if (!grantable.has(permission) || roleHas(role, permission)) return extras;
+  if (checked) {
+    const next = [...extras, permission];
+    if (permission === 'posts:publish' && !roleHas(role, 'posts:write')) next.push('posts:write');
+    return inOrder(next);
+  }
+  if (permission === 'posts:write' && needsWrite(role, extras)) return extras;
+  return inOrder(extras.filter((p) => p !== permission));
+}
+
+/** What to save for a person: only real extras, with write alongside publish. */
+export function normaliseExtras(role: Role, selected: readonly Permission[]): Permission[] {
+  const { extras } = splitExtras(role, selected);
+  if (extras.includes('posts:publish') && !roleHas(role, 'posts:write')) {
+    return inOrder([...extras, 'posts:write']);
+  }
+  return extras;
+}
+
+/** The extras as a short line for a list row. */
+export function describeExtras(extras: readonly Permission[]): string {
+  return extras.map((permission) => labelOf.get(permission) ?? permission).join(', ');
+}
+
+export function invitePayload(email: string, role: Role, selected: readonly Permission[]) {
+  return { email, role, extraPermissions: normaliseExtras(role, selected) };
+}
+
+/** Inviting an email again replaces its invitation, so a resend must carry the extras along. */
+export function resendPayload(invite: {
+  email: string;
+  role: Role;
+  extraPermissions: readonly Permission[];
+}) {
+  return invitePayload(invite.email, invite.role, invite.extraPermissions);
+}

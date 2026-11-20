@@ -13,6 +13,9 @@
 import { createContext, useContext, useLayoutEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { PanelRightIcon } from '@/components/icons';
+import { SplitHandle, useSplit } from '@/components/list/split-handle';
+import { useHidePagerAtTop } from '@/components/list/use-hide-pager-at-top';
+import { Pager } from '@/components/pager';
 import { Button } from '@/components/ui/button';
 import {
   Dialog,
@@ -75,25 +78,61 @@ export function useListPane<T>() {
 export function ListPageLayout({
   children,
   className,
+  resizable,
 }: {
   children: React.ReactNode;
   /** To size the columns differently, e.g. a narrower list beside a long form. */
   className?: string;
+  /**
+   * Puts a draggable divider between the list and the pane. `key` is what the width is remembered
+   * under (one per page); `defaultShare` is the list's share of the width until someone moves it.
+   * `active: false` hides the divider and leaves the columns to `className`, for a page whose pane
+   * folds away. `animated` is for a page that animates its columns (it then uses plain `fr` tracks,
+   * which the browser can animate between).
+   */
+  resizable?: { key: string; defaultShare: number; active?: boolean; animated?: boolean };
 }) {
+  const frame = useRef<HTMLDivElement>(null);
+  const split = useSplit(resizable?.key, resizable?.defaultShare ?? 0.5);
+  const share = split.share;
+  const columns = resizable?.animated
+    ? `${share}fr ${1 - share}fr`
+    : `minmax(20rem,${share}fr) minmax(0,${1 - share}fr)`;
   return (
     <div
+      ref={frame}
       data-slot="list-panes"
+      data-resizing={split.dragging || undefined}
+      style={resizable ? ({ '--split-cols': columns } as React.CSSProperties) : undefined}
       className={cn(
-        'grid min-h-0 flex-1 grid-cols-1 overflow-hidden rounded-lg border lg:grid-cols-[minmax(20rem,1fr)_minmax(0,1fr)]',
+        'relative grid min-h-0 flex-1 grid-cols-1 overflow-hidden rounded-lg border lg:grid-cols-[minmax(20rem,1fr)_minmax(0,1fr)]',
+        resizable &&
+          'data-resizing:select-none lg:grid-cols-[var(--split-cols)] lg:data-resizing:transition-none',
         // Phones: no frame. The list is an iOS grouped list that ends with its rows.
         'max-md:flex-none max-md:overflow-visible max-md:rounded-none max-md:border-0',
         className
       )}
     >
       {children}
+      {resizable && (resizable.active ?? true) && (
+        <SplitHandle
+          frame={frame}
+          share={share}
+          onShare={split.setShare}
+          onDragging={split.setDragging}
+          onCommit={split.commit}
+          onReset={split.reset}
+        />
+      )}
     </div>
   );
 }
+
+/** The list's scrolling rows, which the pager under them watches to know when to tuck itself away. */
+const RowsContext = createContext<{
+  rows: HTMLElement | null;
+  setRows: (element: HTMLElement | null) => void;
+} | null>(null);
 
 /** The left column: a header (usually a SelectionBar) over the scrolling rows. */
 export function ListColumn({
@@ -110,15 +149,18 @@ export function ListColumn({
   /** Out of reach (hidden, not removed), for a page that can fold its list away. */
   inert?: boolean;
 }) {
+  const [rows, setRows] = useState<HTMLElement | null>(null);
   return (
-    <section
-      aria-label={label}
-      inert={inert}
-      className={cn('flex min-h-0 flex-col lg:border-r', className)}
-    >
-      {header}
-      {children}
-    </section>
+    <RowsContext value={{ rows, setRows }}>
+      <section
+        aria-label={label}
+        inert={inert}
+        className={cn('flex min-h-0 flex-col lg:border-r', className)}
+      >
+        {header}
+        {children}
+      </section>
+    </RowsContext>
   );
 }
 
@@ -136,8 +178,10 @@ export function ListRows({
   className?: string;
   inset?: 'text' | 'media';
 }) {
+  const registry = useContext(RowsContext);
   return (
     <ul
+      ref={registry?.setRows}
       data-slot="list-rows"
       // 16px of padding, then a 60px thumbnail and a 12px gap before the text.
       style={{ '--row-inset': inset === 'media' ? '5.5rem' : '1rem' } as React.CSSProperties}
@@ -178,6 +222,31 @@ export function NoMatches({
       <Button variant="ghost" size="sm" onClick={onClear}>
         {clearLabel}
       </Button>
+    </div>
+  );
+}
+
+/**
+ * The pager under a list's rows. It slides away while the rows are scrolled to the very top, and
+ * back as soon as they scroll, so the first rows get the room. It always shows when every row fits
+ * (or hiding it would stop the list scrolling), so the other pages stay reachable.
+ */
+export function ListPager(props: React.ComponentProps<typeof Pager>) {
+  const rows = useContext(RowsContext)?.rows ?? null;
+  const content = useRef<HTMLDivElement>(null);
+  const hidden = useHidePagerAtTop(rows, content);
+  return (
+    <div
+      inert={hidden}
+      aria-hidden={hidden || undefined}
+      className={cn(
+        'grid shrink-0 transition-[grid-template-rows,opacity] duration-200 ease-out motion-reduce:transition-none',
+        hidden ? 'grid-rows-[0fr] opacity-0' : 'grid-rows-[1fr] opacity-100'
+      )}
+    >
+      <div ref={content} className="min-h-0 overflow-hidden">
+        <Pager {...props} />
+      </div>
     </div>
   );
 }

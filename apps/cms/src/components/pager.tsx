@@ -140,7 +140,9 @@ export function Pager({
         )}
       </div>
       {pageCount > 1 && (
-        <Pagination aria-label={label} className="mx-0 w-auto justify-end">
+        // ml-auto keeps the page links at the right edge when they wrap under the counter, as they
+        // are when everything fits on one line (a list beside an open pane is narrow).
+        <Pagination aria-label={label} className="mr-0 ml-auto w-auto justify-end">
           <PaginationContent>
             <PaginationItem>
               {page <= 1 ? (

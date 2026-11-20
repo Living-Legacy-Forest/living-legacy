@@ -10,6 +10,7 @@ import {
   ListColumn,
   ListDialog,
   ListPageLayout,
+  ListPager,
   ListRows,
   NoMatches,
   PaneActions,
@@ -25,7 +26,6 @@ import {
   featureMenuItem,
   publishMenuItem,
 } from '@/components/list/list-row';
-import { Pager } from '@/components/pager';
 import { usePaged } from '@/lib/use-paged';
 import {
   ConfirmBulkDelete,
@@ -356,7 +356,7 @@ export function TestimonialsPage({
           )}
         </Empty>
       ) : (
-        <ListPageLayout>
+        <ListPageLayout resizable={{ key: 'testimonials', defaultShare: 0.5 }}>
           <ListColumn
             label="Testimonials"
             header={
@@ -453,7 +453,7 @@ export function TestimonialsPage({
               </ListRows>
             )}
             {paged.needed && (
-              <Pager
+              <ListPager
                 {...paged.pager}
                 noun="testimonials"
                 label="Testimonial pages"

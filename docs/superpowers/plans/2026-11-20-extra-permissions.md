@@ -38,10 +38,12 @@ Failure modes the spec implies but a straight reading would not test, most likel
 ### Task 1: Shared access rules
 
 **Files:**
+
 - Modify: `packages/content/src/roles.ts`
 - Test: `packages/content/src/roles.test.ts`
 
 **Interfaces:**
+
 - Produces (all exported from `@ll/content`):
   - `type Access = { role: Role; extraPermissions?: readonly Permission[] }`
   - `grantablePermissions: readonly Permission[]`: every permission except `users:manage`
@@ -63,11 +65,13 @@ Failure modes the spec implies but a straight reading would not test, most likel
 ### Task 2: Database column and test fixtures
 
 **Files:**
+
 - Modify: `packages/db/src/schema/auth.ts` (both `user` and `invitation`)
 - Create: `packages/db/migrations/0040_extra-permissions.sql` (+ snapshot and journal entry, generated)
 - Modify: `apps/cms/test/fixtures.ts`
 
 **Interfaces:**
+
 - Produces: `user.extraPermissions` and `invitation.extraPermissions`: `text('extra_permissions').notNull().default('[]')`, comment: JSON array of permission names; read through `parseExtraPermissions`, never directly.
 - Produces: `addUser(role?: Role, name?: string, extraPermissions?: Permission[]): Promise<string>` in `fixtures.ts`; stores `JSON.stringify(extraPermissions ?? [])`.
 
@@ -83,6 +87,7 @@ Failure modes the spec implies but a straight reading would not test, most likel
 ### Task 3: Session, sign-up and the SQL publisher lookup
 
 **Files:**
+
 - Modify: `apps/cms/src/lib/auth.ts` (`additionalFields`; user-create `before` hook)
 - Modify: `apps/cms/src/lib/session.ts` (`SessionUser`, `loadUser`, `requirePermission`)
 - Create: `apps/cms/src/server/access-sql.ts`
@@ -90,6 +95,7 @@ Failure modes the spec implies but a straight reading would not test, most likel
 - Test: `apps/cms/src/server/access-sql.integration.test.ts`
 
 **Interfaces:**
+
 - Consumes: Task 1 `parseExtraPermissions`, `rolesGranting`, `grantablePermissions`, `can`; Task 2 column and `addUser`.
 - Produces: `SessionUser.extraPermissions: Permission[]`.
 - Produces: `hasPermissionSql(permission: Permission): SQL`, in `access-sql.ts`: true for rows of `user` whose role grants it, or (when the permission is grantable) whose `extra_permissions` JSON array contains it. Use `inArray(user.role, rolesGranting(permission))` OR `EXISTS (SELECT 1 FROM json_each(user.extra_permissions) WHERE value = ?)`. Wrap `json_each` so malformed JSON in a row cannot fail the whole query (`json_valid(...)` guard).
@@ -110,6 +116,7 @@ Failure modes the spec implies but a straight reading would not test, most likel
 **Files:** every file `grep -rn "can(" apps/cms/src` lists, plus the ones below. Do not leave a `can(<role>, …)` call.
 
 **Interfaces:**
+
 - Consumes: Task 1 `can`, `toAccess`; Task 3 `SessionUser.extraPermissions`.
 - Produces (changed signatures):
   - `isNavItemAllowed(item: NavItem, access: Access)` and `sidebarSections(access: Access)` in `lib/nav.ts`
@@ -132,10 +139,12 @@ Pattern: a call that has a `SessionUser` passes the user (`can(context.user, p)`
 ### Task 5: Server functions for editing extras
 
 **Files:**
+
 - Modify: `apps/cms/src/server/users.ts` (`listUsers`, `inviteUser`, new `setExtraPermissions`)
 - Test: `apps/cms/src/server/users.integration.test.ts` (create; the handler logic goes in an exported helper so it can be tested without a request, matching how other server files split store and handler)
 
 **Interfaces:**
+
 - Consumes: Task 1 `extraPermissionsSchema`, `parseExtraPermissions`; Task 2 columns, `addUser`.
 - Produces:
   - `setExtraPermissions` server fn: `POST`, `requirePermission('users:manage')`, validator `z.object({ userId: z.string(), extraPermissions: extraPermissionsSchema })`. Updates `user.extraPermissions`; throws `'That user no longer exists.'` for a missing id; logs `action: 'user.permissions_changed'`, `summary: "Changed <name>'s extra access from <before> to <after>"` (comma-separated names, `none` when empty).
@@ -153,10 +162,12 @@ Pattern: a call that has a `SessionUser` passes the user (`can(context.user, p)`
 ### Task 6: Users screen
 
 **Files:**
+
 - Modify: `apps/cms/src/components/users/users-page.tsx`
 - Create: `apps/cms/src/components/users/extra-access.tsx` (the checklist, used by both the person's pane and the invite form)
 
 **Interfaces:**
+
 - Consumes: Task 5 `setExtraPermissions`, `inviteUser`, `listUsers` shape; Task 1 `grantablePermissions`, `can`, `Role`.
 - Produces: `<ExtraAccess role={Role} value={Permission[]} onChange={(next: Permission[]) => void} disabled?={boolean} />`. One checkbox per grantable permission, grouped under the headings the comments in `roles.ts` imply (Posts, SEO, Content, Events, Media, Other). Permissions the role already includes are ticked, locked and labelled `Included in <role>`; they are never in `value`. Each label is a plain-language sentence taken from the comment beside the permission in `roles.ts` (for example "Edit redirects"). `users:manage` is not shown.
 
@@ -173,6 +184,7 @@ Pattern: a call that has a `SessionUser` passes the user (`can(context.user, p)`
 ### Task 7: What's new and full check
 
 **Files:**
+
 - Modify: `apps/cms/src/lib/whats-new.ts` (add `'/users'` to the link `to` union if absent; add one entry at the top)
 
 - [ ] **Step 1: Add the entry** dated 2026-11-20: title "Extra access for one person", body in plain sentences saying an admin can give someone a single extra permission, such as managing redirects, without changing their role, linking to Users with label "Open Users".

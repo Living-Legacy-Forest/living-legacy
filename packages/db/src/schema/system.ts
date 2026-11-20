@@ -177,3 +177,18 @@ export const analyticsCache = sqliteTable('analytics_cache', {
   value: text('value').notNull(),
   fetchedAt: integer('fetched_at').notNull(),
 });
+
+// How many writing suggestions each person has asked for on a day, so one person (or a stuck
+// button) cannot run up the bill. One row per person per day; old days are tidied as it is used.
+export const aiUsage = sqliteTable(
+  'ai_usage',
+  {
+    userId: text('user_id')
+      .notNull()
+      .references(() => user.id, { onDelete: 'cascade' }),
+    /** The calendar day in the site's time zone, YYYY-MM-DD. */
+    day: text('day').notNull(),
+    count: integer('count').notNull().default(0),
+  },
+  (t) => [primaryKey({ columns: [t.userId, t.day] })]
+);

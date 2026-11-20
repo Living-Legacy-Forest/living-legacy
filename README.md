@@ -62,6 +62,11 @@ guide, never names, email addresses or guest details. Set `ANTHROPIC_API_KEY` in
 `apps/cms/.dev.vars` locally and as a Worker secret (`bunx wrangler secret put ANTHROPIC_API_KEY`
 from `apps/cms`). Without it the buttons are not shown.
 
+Each person can ask for 100 suggestions a day (`DAILY_SUGGESTION_LIMIT` in
+`apps/cms/src/server/ai/usage.ts`); it starts again at midnight in the site's time zone. For a
+hard stop on the bill as a whole, also set a monthly spend limit for the key's workspace in the
+Anthropic Console.
+
 ## Database changes
 
 1. Edit the schema in `packages/db/src/schema/`.

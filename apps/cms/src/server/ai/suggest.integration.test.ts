@@ -1,12 +1,14 @@
 // The writing assistant's server side, against local D1 and R2 with a fake model.
-import { media, siteSettings } from '@ll/db/schema';
+import type { Role } from '@ll/content';
+import { aiUsage, media, siteSettings } from '@ll/db/schema';
 import { env } from 'cloudflare:workers';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { testDb } from '../../../test/fixtures';
+import { addUser, testDb } from '../../../test/fixtures';
 import { suggestAltTextFor, suggestBrandFixFor, suggestPostFieldFor } from './suggest';
 import { aiEnabled, getAiClient } from './client';
 import { loadAltImage } from './alt-image';
 import type { AiClient } from './run';
+import { usageDay } from './usage';
 
 const MB = 1024 * 1024;
 
@@ -55,7 +57,15 @@ async function addImage(opts: {
     });
 }
 
+// The person asking. Each test gets a fresh one, so what they have used today starts at nothing.
+let me: string;
+const actor = (role: Role = 'editor') => ({ id: me, role });
+const usedToday = async () =>
+  (await testDb().select().from(aiUsage)).reduce((sum, row) => sum + row.count, 0);
+
 beforeEach(async () => {
+  me = await addUser();
+  await testDb().delete(aiUsage);
   await testDb().delete(media);
   await testDb().delete(siteSettings);
   delete (env as { ANTHROPIC_API_KEY?: string }).ANTHROPIC_API_KEY;
@@ -133,7 +143,9 @@ describe('suggestAltTextFor', () => {
   it('sends the image and never the filename', async () => {
     await addImage({ id: 'img4', original: bytes(1, 2, 3), filename: 'secret-name.png' });
     const { client, create } = fakeClient('Sunlight through young trees.');
-    const out = await suggestAltTextFor(testDb(), env.MEDIA, client, 'editor', { mediaId: 'img4' });
+    const out = await suggestAltTextFor(testDb(), env.MEDIA, client, actor('editor'), {
+      mediaId: 'img4',
+    });
     expect(out).toEqual({ text: 'Sunlight through young trees.' });
     const content = create.mock.calls[0]![0].messages[0].content;
     expect(content.some((b: { type: string }) => b.type === 'image')).toBe(true);
@@ -144,7 +156,7 @@ describe('suggestAltTextFor', () => {
     await addImage({ id: 'img5', original: bytes(1) });
     const { client, create } = fakeClient();
     await expect(
-      suggestAltTextFor(testDb(), env.MEDIA, client, 'seo', { mediaId: 'img5' })
+      suggestAltTextFor(testDb(), env.MEDIA, client, actor('seo'), { mediaId: 'img5' })
     ).rejects.toThrow('You do not have permission to do that.');
     expect(create).not.toHaveBeenCalled();
   });
@@ -160,7 +172,7 @@ describe('suggestPostFieldFor', () => {
 
   it('asks for a search description and returns the text', async () => {
     const { client, create } = fakeClient('A quiet walk among the trees.');
-    const out = await suggestPostFieldFor(testDb(), client, 'author', {
+    const out = await suggestPostFieldFor(testDb(), client, actor('author'), {
       ...post,
       field: 'seoDescription',
     });
@@ -171,7 +183,7 @@ describe('suggestPostFieldFor', () => {
   it('does not call the model for a post with nothing written', async () => {
     const { client, create } = fakeClient();
     await expect(
-      suggestPostFieldFor(testDb(), client, 'author', {
+      suggestPostFieldFor(testDb(), client, actor('author'), {
         field: 'excerpt',
         title: '  ',
         excerpt: '',
@@ -196,7 +208,7 @@ describe('suggestPostFieldFor', () => {
     create.mockResolvedValueOnce({
       ...answer({ text: 'A calm walk.' }),
     });
-    const out = await suggestPostFieldFor(testDb(), client, 'editor', {
+    const out = await suggestPostFieldFor(testDb(), client, actor('editor'), {
       ...post,
       field: 'seoDescription',
     });
@@ -211,13 +223,16 @@ describe('suggestPostFieldFor', () => {
 
   it('returns tags only from the existing list, in the list spelling', async () => {
     const { client } = tagsFrom(['events', 'Forests']);
-    const out = await suggestPostFieldFor(testDb(), client, 'editor', { ...post, field: 'tags' });
+    const out = await suggestPostFieldFor(testDb(), client, actor('editor'), {
+      ...post,
+      field: 'tags',
+    });
     expect(out).toEqual({ tags: ['Events', 'Forests'] });
   });
 
   it('drops a tag that is not in the list or breaks the guide, and keeps the rest', async () => {
     const { client, create } = tagsFrom(['events', 'Gardening', 'Plots']);
-    const out = await suggestPostFieldFor(testDb(), client, 'editor', {
+    const out = await suggestPostFieldFor(testDb(), client, actor('editor'), {
       ...post,
       tagNames: ['Events', 'Forests', 'Plots'],
       field: 'tags',
@@ -229,14 +244,14 @@ describe('suggestPostFieldFor', () => {
   it('says so when none of the suggested tags can be used', async () => {
     const { client } = tagsFrom(['Gardening']);
     await expect(
-      suggestPostFieldFor(testDb(), client, 'editor', { ...post, field: 'tags' })
+      suggestPostFieldFor(testDb(), client, actor('editor'), { ...post, field: 'tags' })
     ).rejects.toThrow("Couldn't find tags that fit this post. Choose them yourself.");
   });
 
   it('keeps at most five tags', async () => {
     const names = ['A1', 'A2', 'A3', 'A4', 'A5', 'A6', 'A7'];
     const { client } = tagsFrom(names);
-    const out = await suggestPostFieldFor(testDb(), client, 'editor', {
+    const out = await suggestPostFieldFor(testDb(), client, actor('editor'), {
       ...post,
       tagNames: names,
       field: 'tags',
@@ -246,7 +261,7 @@ describe('suggestPostFieldFor', () => {
 
   it('sends at most the first 12,000 characters of a long post, and says it was cut', async () => {
     const { client, create } = fakeClient('A long walk.');
-    await suggestPostFieldFor(testDb(), client, 'editor', {
+    await suggestPostFieldFor(testDb(), client, actor('editor'), {
       ...post,
       bodyMarkdown: 'word '.repeat(10_000),
       field: 'seoDescription',
@@ -259,7 +274,7 @@ describe('suggestPostFieldFor', () => {
   it('is not allowed for a viewer', async () => {
     const { client } = fakeClient();
     await expect(
-      suggestPostFieldFor(testDb(), client, 'viewer', { ...post, field: 'excerpt' })
+      suggestPostFieldFor(testDb(), client, actor('viewer'), { ...post, field: 'excerpt' })
     ).rejects.toThrow('You do not have permission to do that.');
   });
 });
@@ -267,7 +282,7 @@ describe('suggestPostFieldFor', () => {
 describe('suggestBrandFixFor', () => {
   it('rewrites the sentence and holds it to the limit it was given', async () => {
     const { client } = fakeClient('Choose a tree today.');
-    const out = await suggestBrandFixFor(testDb(), client, 'editor', {
+    const out = await suggestBrandFixFor(testDb(), client, actor('editor'), {
       text: 'Choose a plot today.',
       found: 'plot',
       limit: 60,
@@ -277,11 +292,69 @@ describe('suggestBrandFixFor', () => {
 
   it('says the assistant is not set up when there is no client', async () => {
     await expect(
-      suggestBrandFixFor(testDb(), null, 'editor', {
+      suggestBrandFixFor(testDb(), null, actor('editor'), {
         text: 'Choose a plot today.',
         found: 'plot',
         limit: 60,
       })
     ).rejects.toThrow("The writing assistant isn't set up.");
+  });
+});
+
+describe('the daily limit', () => {
+  const post = { title: 'A walk', excerpt: '', bodyMarkdown: 'We walked.', tagNames: [] };
+  const useUpTheDay = (n: number) =>
+    testDb()
+      .insert(aiUsage)
+      .values({ userId: me, day: usageDay(new Date(), 'Australia/Melbourne'), count: n });
+
+  it('counts one suggestion per press, even when the reply is retried', async () => {
+    const { client, create } = fakeClient('Choose a plot today.');
+    create.mockResolvedValueOnce(answer({ text: 'Choose a plot today.' }));
+    create.mockResolvedValueOnce(answer({ text: 'Choose a tree today.' }));
+    await suggestPostFieldFor(testDb(), client, actor(), { ...post, field: 'excerpt' });
+    expect(create).toHaveBeenCalledTimes(2);
+    expect(await usedToday()).toBe(1);
+  });
+
+  it('stops before the model once the day is used up, and says so', async () => {
+    await useUpTheDay(100);
+    const { client, create } = fakeClient();
+    await expect(
+      suggestPostFieldFor(testDb(), client, actor(), { ...post, field: 'excerpt' })
+    ).rejects.toThrow("You've used today's 100 suggestions. They start again at midnight.");
+    expect(create).not.toHaveBeenCalled();
+  });
+
+  it('does not use one up when the press fails before reaching the model', async () => {
+    const { client } = fakeClient();
+    await expect(
+      suggestPostFieldFor(testDb(), client, actor(), {
+        field: 'excerpt',
+        title: '',
+        excerpt: '',
+        bodyMarkdown: '',
+        tagNames: [],
+      })
+    ).rejects.toThrow('Write some of the post first.');
+    await expect(
+      suggestPostFieldFor(testDb(), client, actor('viewer'), { ...post, field: 'excerpt' })
+    ).rejects.toThrow('You do not have permission to do that.');
+    await expect(
+      suggestAltTextFor(testDb(), env.MEDIA, client, actor(), { mediaId: 'gone' })
+    ).rejects.toThrow('That image is no longer in Media.');
+    expect(await usedToday()).toBe(0);
+  });
+
+  it('counts alt text and brand fixes too', async () => {
+    await addImage({ id: 'limit-img', original: bytes(1, 2, 3) });
+    const { client } = fakeClient('Sunlight through young trees.');
+    await suggestAltTextFor(testDb(), env.MEDIA, client, actor(), { mediaId: 'limit-img' });
+    await suggestBrandFixFor(testDb(), fakeClient('Choose a tree today.').client, actor(), {
+      text: 'Choose a plot today.',
+      found: 'plot',
+      limit: 60,
+    });
+    expect(await usedToday()).toBe(2);
   });
 });

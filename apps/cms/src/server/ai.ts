@@ -11,23 +11,19 @@ import { suggestAltTextFor, suggestBrandFixFor, suggestPostFieldFor } from './ai
 export const suggestPostField = createServerFn({ method: 'POST' })
   .middleware([authMiddleware])
   .validator(postFieldSchema)
-  .handler(({ data, context }) =>
-    suggestPostFieldFor(getDb(), getAiClient(), context.user.role, data)
-  );
+  .handler(({ data, context }) => suggestPostFieldFor(getDb(), getAiClient(), context.user, data));
 
 export const suggestAltText = createServerFn({ method: 'POST' })
   .middleware([requirePermission('media:write')])
   .validator(altTextSchema)
   .handler(({ data, context }) =>
-    suggestAltTextFor(getDb(), env.MEDIA, getAiClient(), context.user.role, data)
+    suggestAltTextFor(getDb(), env.MEDIA, getAiClient(), context.user, data)
   );
 
 export const suggestBrandFix = createServerFn({ method: 'POST' })
   .middleware([authMiddleware])
   .validator(brandFixSchema)
-  .handler(({ data, context }) =>
-    suggestBrandFixFor(getDb(), getAiClient(), context.user.role, data)
-  );
+  .handler(({ data, context }) => suggestBrandFixFor(getDb(), getAiClient(), context.user, data));
 
 /** Whether to show the Suggest buttons to this person. */
 export const getAiStatus = createServerFn({ method: 'GET' })

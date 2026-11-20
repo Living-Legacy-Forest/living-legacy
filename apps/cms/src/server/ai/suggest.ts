@@ -12,6 +12,10 @@ import { canSuggest } from './client';
 import { guardProblems } from './guard';
 import { type AiClient, SuggestError, runSuggestion } from './run';
 import type { BrandFixInput, PostFieldInput } from './schemas';
+import { reserveSuggestion } from './usage';
+
+/** Who is asking: their role decides what they may do, and their id is what the daily limit counts. */
+export type Actor = { id: string; role: Role };
 
 const NOT_ALLOWED = 'You do not have permission to do that.';
 const NOT_SET_UP = "The writing assistant isn't set up.";
@@ -37,10 +41,10 @@ async function brandRules(db: Db): Promise<readonly BrandRule[]> {
 export async function suggestPostFieldFor(
   db: Db,
   client: AiClient | null,
-  role: Role,
+  actor: Actor,
   input: PostFieldInput
 ): Promise<{ text: string } | { tags: string[] }> {
-  if (!canSuggest(role)) throw new SuggestError(NOT_ALLOWED);
+  if (!canSuggest(actor.role)) throw new SuggestError(NOT_ALLOWED);
   if (!client) throw new SuggestError(NOT_SET_UP);
   if (![input.title, input.excerpt, input.bodyMarkdown].some((part) => part.trim())) {
     throw new SuggestError('Write some of the post first.');
@@ -58,6 +62,7 @@ export async function suggestPostFieldFor(
   if (input.field === 'tags') lines.push('', `Existing tags: ${input.tagNames.join(', ')}`);
   const content = [{ type: 'text' as const, text: lines.join('\n') }];
   const rules = await brandRules(db);
+  await reserveSuggestion(db, actor.id);
 
   if (input.field === 'tags') {
     // Tags are picked from the list, not written, so one bad pick is dropped rather than failing
@@ -97,13 +102,14 @@ export async function suggestAltTextFor(
   db: Db,
   bucket: R2Bucket,
   client: AiClient | null,
-  role: Role,
+  actor: Actor,
   input: { mediaId: string }
 ): Promise<{ text: string }> {
-  if (!can(role, 'media:write')) throw new SuggestError(NOT_ALLOWED);
+  if (!can(actor.role, 'media:write')) throw new SuggestError(NOT_ALLOWED);
   if (!client) throw new SuggestError(NOT_SET_UP);
 
   const { block, caption } = await loadAltImage(db, bucket, input.mediaId);
+  await reserveSuggestion(db, actor.id);
   const out = await runSuggestion(client, {
     field: 'alt',
     brandGuide,
@@ -124,11 +130,12 @@ export async function suggestAltTextFor(
 export async function suggestBrandFixFor(
   db: Db,
   client: AiClient | null,
-  role: Role,
+  actor: Actor,
   input: BrandFixInput
 ): Promise<{ text: string }> {
-  if (!canSuggest(role)) throw new SuggestError(NOT_ALLOWED);
+  if (!canSuggest(actor.role)) throw new SuggestError(NOT_ALLOWED);
   if (!client) throw new SuggestError(NOT_SET_UP);
+  await reserveSuggestion(db, actor.id);
 
   const out = await runSuggestion(client, {
     field: 'brandFix',

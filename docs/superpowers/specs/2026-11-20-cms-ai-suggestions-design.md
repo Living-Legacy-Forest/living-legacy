@@ -34,7 +34,9 @@ connector.
   Worth doing later as a cleanup, once the single-item flow is trusted.
 - No AI on the public website (`apps/web`).
 - No change to the `/mcp` connector.
-- No per-user usage limits or admin on/off switch in v1 (see Left to the builder).
+- No admin on/off switch in v1 (see Open for later). A daily limit per person was added after the
+  first build: 100 suggestions a day, counted per press, starting again at midnight in the site's
+  time zone (`ai_usage` table, `server/ai/usage.ts`).
 
 ## Anti-goals (a failure even if it technically works)
 
@@ -175,6 +177,5 @@ These are small calls with a sensible default; none changes what gets built.
 ## Open for later (not decided)
 
 - An admin switch in Settings to turn suggestions off.
-- A per-person or daily cap, if use turns out heavier than expected.
 - Bulk alt-text for existing images missing it.
 - Applying a brand fix directly inside the rich-text body.

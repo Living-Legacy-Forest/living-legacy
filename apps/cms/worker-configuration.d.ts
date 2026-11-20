@@ -12,6 +12,7 @@ interface __BaseEnv_CloudflareEnv {
 	POSTHOG_PERSONAL_API_KEY?: string;
 	POSTHOG_PROJECT_ID?: string;
 	POSTHOG_API_HOST?: string;
+	ANTHROPIC_API_KEY?: string;
 }
 declare namespace Cloudflare {
 	interface GlobalProps {

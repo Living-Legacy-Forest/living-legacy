@@ -54,6 +54,14 @@ The button appears once both are set, and can be switched off under Settings > S
 Someone already in the CMS who signs in with Google for the first time keeps their account and
 role; a new Google account still needs an invite.
 
+### Writing suggestions
+
+The Suggest buttons in the CMS (search text, summary, tags, alt text and brand fixes) call Claude
+Haiku 5.5 through the Anthropic API. They send only the text or image being edited, plus the brand
+guide, never names, email addresses or guest details. Set `ANTHROPIC_API_KEY` in
+`apps/cms/.dev.vars` locally and as a Worker secret (`bunx wrangler secret put ANTHROPIC_API_KEY`
+from `apps/cms`). Without it the buttons are not shown.
+
 ## Database changes
 
 1. Edit the schema in `packages/db/src/schema/`.

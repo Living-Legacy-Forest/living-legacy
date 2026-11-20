@@ -49,7 +49,10 @@ export async function runSuggestion<T extends z.ZodType>(
 ): Promise<z.infer<T>> {
   const limit = req.limit ?? FIELD_SPECS[req.field].limit;
   const usage: Usage = { input_tokens: 0, output_tokens: 0 };
+  // One usage line per call, so spend is visible in Workers Logs. Field, model, token counts and
+  // outcome only: never the post, the image or the suggestion.
   const log = (outcome: Outcome) =>
+    // eslint-disable-next-line no-console -- the only info-level line; it carries no content
     console.info(
       JSON.stringify({ event: 'ai_suggest', field: req.field, model: AI_MODEL, ...usage, outcome })
     );

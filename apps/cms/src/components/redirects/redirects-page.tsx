@@ -451,7 +451,9 @@ export function RedirectsPage({
         <ListPageLayout
           className={cn(
             'motion-reduce:transition-none lg:transition-[grid-template-columns] lg:duration-300 lg:ease-[cubic-bezier(0.32,0.72,0,1)]',
-            paneOpen ? 'lg:grid-cols-[2fr_3fr]' : 'lg:grid-cols-[1fr_0fr]'
+            // The list gets the larger share: the edit form is only about 450px wide, and the list
+            // needs room for the address, its target and the pager on one line.
+            paneOpen ? 'lg:grid-cols-[3fr_2fr]' : 'lg:grid-cols-[1fr_0fr]'
           )}
         >
           <ListColumn

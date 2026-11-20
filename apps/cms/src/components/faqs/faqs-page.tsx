@@ -396,7 +396,7 @@ export function FaqsPage({
           )}
         </Empty>
       ) : (
-        <ListPageLayout>
+        <ListPageLayout resizable={{ key: 'faqs', defaultShare: 0.5 }}>
           <ListColumn
             label="FAQs"
             header={

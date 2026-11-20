@@ -398,7 +398,7 @@ export function AnnouncementsPage({
           {canWrite && <EmptyContent>{newButton}</EmptyContent>}
         </Empty>
       ) : (
-        <ListPageLayout>
+        <ListPageLayout resizable={{ key: 'announcements', defaultShare: 0.5 }}>
           <ListColumn
             label="Announcements"
             header={

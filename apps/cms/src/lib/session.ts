@@ -1,4 +1,4 @@
-import { type Permission, type Role, can } from '@ll/content';
+import { type Permission, type Role, can, parseExtraPermissions } from '@ll/content';
 import { createMiddleware, createServerFn } from '@tanstack/react-start';
 import { getRequest } from '@tanstack/react-start/server';
 import { env } from 'cloudflare:workers';
@@ -15,6 +15,8 @@ export type SessionUser = {
   /** A chosen drawn avatar, shown when there is no photo. */
   avatarSeed: string | null;
   role: Role;
+  /** Permissions an admin gave this person on top of their role. */
+  extraPermissions: Permission[];
   /** When the account was made, so What's new skips what came before. */
   createdAt: number;
 };
@@ -36,6 +38,7 @@ async function loadUser({ fresh = false } = {}): Promise<SessionUser | null> {
     bio: (bio as string | null) ?? null,
     avatarSeed: (avatarSeed as string | null) ?? null,
     role: role as Role,
+    extraPermissions: parseExtraPermissions(session.user.extraPermissions),
     createdAt: new Date(createdAt).getTime(),
   };
 }
@@ -83,7 +86,7 @@ export function requirePermission(permission: Permission) {
   return createMiddleware({ type: 'function' })
     .middleware([authMiddleware])
     .server(({ next, context }) => {
-      if (!can(context.user.role, permission)) {
+      if (!can(context.user, permission)) {
         throw new Error('You do not have permission to do that.');
       }
       return next();

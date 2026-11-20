@@ -7,8 +7,8 @@ import {
   contentTargetsFrom,
   postInputSchema,
   publishErrors,
-  roles,
   slugify,
+  toAccess,
   type PostSort,
   postSorts,
 } from '@ll/content';
@@ -31,6 +31,7 @@ import { pageSizeParam } from '@/lib/page-size';
 import { cmsOrigin, sendReviewRequestedEmail } from '@/lib/email';
 import { type SessionUser, authMiddleware, requirePermission } from '@/lib/session';
 import { readSiteSettings } from '@/lib/site-settings';
+import { hasPermissionSql } from './access-sql';
 import { logActivity } from './activity-log';
 import { loadContentTargets, scoreInputFromColumns, scorePost } from './post-score';
 import {
@@ -57,7 +58,6 @@ function assertCanEdit(row: PostRow, actor: SessionUser) {
 }
 
 /** Roles that may publish, i.e. who is eligible to review a post. */
-const publishRoles = () => roles.filter((r) => can(r, 'posts:publish'));
 
 /** Posts per page, and the other sizes the list offers. */
 export const POSTS_PAGE_SIZES = [10, 20, 50, 100] as const;
@@ -185,7 +185,7 @@ export const listPosts = createServerFn({ method: 'GET' })
         db
           .select({ id: user.id, name: user.name })
           .from(user)
-          .where(inArray(user.role, publishRoles()))
+          .where(hasPermissionSql('posts:publish'))
           .orderBy(asc(user.name)),
         db
           .select({ id: teamMembers.id, name: teamMembers.name })
@@ -262,7 +262,7 @@ export const getPostEditorData = createServerFn({ method: 'GET' })
       db
         .select({ id: user.id, name: user.name })
         .from(user)
-        .where(inArray(user.role, publishRoles()))
+        .where(hasPermissionSql('posts:publish'))
         .orderBy(asc(user.name)),
       db
         .select({ id: locations.id, name: locations.name })
@@ -467,7 +467,7 @@ export const requestReview = createServerFn({ method: 'POST' })
     let reviewerId: string | null = null;
     if (data.reviewerId) {
       const reviewer = await db.query.user.findFirst({ where: eq(user.id, data.reviewerId) });
-      if (!reviewer || !can(reviewer.role, 'posts:publish')) {
+      if (!reviewer || !can(toAccess(reviewer), 'posts:publish')) {
         throw new Error('Choose someone who can publish posts.');
       }
       reviewerId = reviewer.id;
@@ -487,7 +487,7 @@ export const requestReview = createServerFn({ method: 'POST' })
       .where(
         reviewerId
           ? eq(user.id, reviewerId)
-          : and(inArray(user.role, publishRoles()), ne(user.id, context.user.id))
+          : and(hasPermissionSql('posts:publish'), ne(user.id, context.user.id))
       );
     const postUrl = `${cmsOrigin()}/posts/${row.id}`;
     await Promise.allSettled(

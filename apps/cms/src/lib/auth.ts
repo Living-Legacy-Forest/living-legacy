@@ -1,6 +1,7 @@
 import {
   canReceiveMagicLink,
   normaliseEmail,
+  parseExtraPermissions,
   resolveSignupRole,
   sessionDayOptions,
 } from '@ll/content';
@@ -57,6 +58,7 @@ function createAuth() {
     user: {
       additionalFields: {
         role: { type: 'string', required: false, defaultValue: 'editor', input: false },
+        extraPermissions: { type: 'string', required: false, defaultValue: '[]', input: false },
         bio: { type: 'string', required: false },
         imageAlt: { type: 'string', required: false },
         theme: { type: 'string', required: false },
@@ -121,7 +123,14 @@ function createAuth() {
             if (!role) {
               throw new APIError('FORBIDDEN', { message: 'not_invited' });
             }
-            return { data: { ...user, email, role } };
+            return {
+              data: {
+                ...user,
+                email,
+                role,
+                extraPermissions: JSON.stringify(parseExtraPermissions(invite?.extraPermissions)),
+              },
+            };
           },
           // The invitation has been used. Removing it means a user an admin
           // later deletes cannot simply sign back in.

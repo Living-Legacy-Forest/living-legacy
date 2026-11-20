@@ -42,8 +42,6 @@ const SSR_DEPS = [
   'embla-carousel-react',
   '@hugeicons/react',
   '@hugeicons/core-free-icons',
-  // The home hero's optional motion entrance (src/components/ui/hero-04.tsx).
-  'motion/react',
   'posthog-node',
   'sonner',
   'tailwind-merge',

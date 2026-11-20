@@ -1,5 +1,4 @@
 import * as React from 'react';
-import { motion, useReducedMotion, type Variants } from 'motion/react';
 
 import { cn } from '@/lib/utils';
 
@@ -17,11 +16,11 @@ export interface Hero04Props {
   secondaryAlt?: string;
   /**
    * `rise` is the site's CSS entrance: it plays as soon as the HTML paints, so
-   * the hero works rendered statically with no JavaScript. `subtle` is a
-   * motion entrance and needs the component hydrated; until then the hero
-   * stays hidden, so keep it off anything above the fold.
+   * the hero works rendered statically with no JavaScript. The registry's
+   * `motion` entrance was removed: unused, it still loaded framer-motion into
+   * the Worker on every home page render.
    */
-  animation?: 'none' | 'rise' | 'subtle';
+  animation?: 'none' | 'rise';
   primaryCTA: CtaProps;
   secondaryCTA?: CtaProps;
   variant?: 'standard' | 'compact';
@@ -60,53 +59,18 @@ const variantStyles = {
   },
 } as const;
 
-const container: Variants = {
-  hidden: {},
-  visible: { transition: { staggerChildren: 0.1, delayChildren: 0.05 } },
-};
-
-const item: Variants = {
-  hidden: { opacity: 0, y: 12, filter: 'blur(6px)' },
-  visible: {
-    opacity: 1,
-    y: 0,
-    filter: 'blur(0px)',
-    transition: { duration: 0.5, ease: [0.22, 1, 0.36, 1] },
-  },
-};
-
-const mediaItem: Variants = {
-  hidden: { opacity: 0, y: 24, filter: 'blur(8px)' },
-  visible: {
-    opacity: 1,
-    y: 0,
-    filter: 'blur(0px)',
-    transition: { duration: 0.6, ease: [0.22, 1, 0.36, 1] },
-  },
-};
-
 function Reveal({
   mode,
-  variants,
   delay,
   className,
   children,
 }: Readonly<{
-  mode: 'none' | 'rise' | 'motion';
-  variants?: Variants;
+  mode: 'none' | 'rise';
   /** Seconds before the CSS entrance starts. */
   delay: number;
   className?: string;
   children: React.ReactNode;
 }>) {
-  if (mode === 'motion') {
-    return (
-      <motion.div variants={variants ?? item} className={className}>
-        {children}
-      </motion.div>
-    );
-  }
-
   if (mode === 'rise') {
     return (
       <div className={cn('rise', className)} style={{ animationDelay: `${delay}s` }}>
@@ -133,8 +97,6 @@ export function Hero04({
   variant = 'standard',
   fullHeight = false,
 }: Readonly<Hero04Props>) {
-  const reduce = useReducedMotion();
-  const mode = animation === 'subtle' ? (reduce ? 'none' : 'motion') : animation;
   const vs = variantStyles[variant];
 
   const backgroundElement = washImage && (
@@ -194,15 +156,14 @@ export function Hero04({
 
   const content = (
     <>
-      <Reveal mode={mode} delay={0.05} className={cn('flex flex-col items-start', vs.header)}>
+      <Reveal mode={animation} delay={0.05} className={cn('flex flex-col items-start', vs.header)}>
         {titleElement}
         {descriptionElement}
         {ctasElement}
       </Reveal>
 
       <Reveal
-        mode={mode}
-        variants={mediaItem}
+        mode={animation}
         delay={0.2}
         className={cn('w-full', fullHeight && fullHeightStyles.media)}
       >
@@ -220,19 +181,7 @@ export function Hero04({
     >
       {backgroundElement}
 
-      {mode === 'motion' ? (
-        <motion.div
-          className={gridClass}
-          variants={container}
-          initial="hidden"
-          whileInView="visible"
-          viewport={{ once: true, margin: '-80px' }}
-        >
-          {content}
-        </motion.div>
-      ) : (
-        <div className={gridClass}>{content}</div>
-      )}
+      <div className={gridClass}>{content}</div>
     </section>
   );
 }

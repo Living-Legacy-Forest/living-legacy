@@ -10,6 +10,8 @@ import {
   TagIcon,
   UserIcon,
 } from '@/components/icons';
+import { suggestPostTags, suggestPostText } from '@/components/ai/post-suggestions';
+import { SuggestButton, SuggestTagsButton } from '@/components/ai/suggest-button';
 import { ImageField } from '@/components/media/image-field';
 import { Button } from '@/components/ui/button';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
@@ -91,6 +93,13 @@ export function PropertiesPanel({
               onChange={(tags) => update({ tags })}
               onCreate={async (name) => update({ tags: [...values.tags, name] })}
             />
+            <div className="px-2 pt-1 pb-1">
+              <SuggestTagsButton
+                tags={values.tags}
+                request={() => suggestPostTags(values, editor.tags)}
+                onApply={(tags) => update({ tags })}
+              />
+            </div>
           </Property>
           <Property label="URL" icon={LinkIcon}>
             <UrlPicker
@@ -112,9 +121,16 @@ export function PropertiesPanel({
             </Property>
           )}
           <div className="space-y-1.5 pt-3">
-            <Label htmlFor="post-summary" className="text-muted-foreground text-xs font-normal">
-              Summary
-            </Label>
+            <div className="flex items-center justify-between">
+              <Label htmlFor="post-summary" className="text-muted-foreground text-xs font-normal">
+                Summary
+              </Label>
+              <SuggestButton
+                value={values.excerpt}
+                request={() => suggestPostText('excerpt', values)}
+                onApply={(excerpt) => update({ excerpt })}
+              />
+            </div>
             <Textarea
               id="post-summary"
               value={values.excerpt}

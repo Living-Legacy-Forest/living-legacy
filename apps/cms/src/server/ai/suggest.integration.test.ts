@@ -2,11 +2,11 @@
 import { media, siteSettings } from '@ll/db/schema';
 import { env } from 'cloudflare:workers';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { testDb } from '../../test/fixtures';
-import { aiEnabled, suggestAltTextFor, suggestBrandFixFor, suggestPostFieldFor } from './ai';
-import { getAiClient } from './ai/client';
-import { loadAltImage } from './ai/alt-image';
-import type { AiClient } from './ai/run';
+import { testDb } from '../../../test/fixtures';
+import { suggestAltTextFor, suggestBrandFixFor, suggestPostFieldFor } from './suggest';
+import { aiEnabled, getAiClient } from './client';
+import { loadAltImage } from './alt-image';
+import type { AiClient } from './run';
 
 const MB = 1024 * 1024;
 

@@ -43,6 +43,9 @@ export const sessionDayOptions = [1, 7, 30] as const;
 /** Placeholders the title pattern may use. */
 export const TITLE_TOKENS = { page: '{page}', site: '{site}' } as const;
 
+/** The most suggestions one person may be allowed a day (Settings, Writing assistant). */
+export const AI_DAILY_LIMIT_MAX = 1000;
+
 export const SITE_SETTINGS_DEFAULTS = {
   siteTitle: 'Living Legacy',
   tagline: '',
@@ -80,6 +83,10 @@ export const SITE_SETTINGS_DEFAULTS = {
   targetRelatedTermUses: 1,
   /** The words the content score flags (Settings, Brand language). Starts as the guide's list. */
   brandRules: [...BRAND_RULES] as BrandRule[],
+  // The writing assistant (Settings, Writing assistant): the Suggest buttons, and how many each
+  // person may ask for in a day.
+  aiEnabled: true,
+  aiDailyLimit: 100,
   // CMS sign-in.
   /** Comma-separated; invites go only to these domains. Empty allows any. */
   allowedEmailDomains: '',
@@ -125,6 +132,13 @@ export function parseSiteSettings(data: unknown): SiteSettings {
   }
   if (!(cmsColours as readonly string[]).includes(settings.cmsColour)) {
     settings.cmsColour = SITE_SETTINGS_DEFAULTS.cmsColour;
+  }
+  if (
+    !Number.isInteger(settings.aiDailyLimit) ||
+    settings.aiDailyLimit < 1 ||
+    settings.aiDailyLimit > AI_DAILY_LIMIT_MAX
+  ) {
+    settings.aiDailyLimit = SITE_SETTINGS_DEFAULTS.aiDailyLimit;
   }
   settings.brandRules = parseBrandRules(stored.brandRules) ?? SITE_SETTINGS_DEFAULTS.brandRules;
   return settings;

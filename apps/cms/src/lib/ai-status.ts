@@ -12,3 +12,8 @@ export async function getCachedAiEnabled(userId: string): Promise<boolean> {
   if (typeof window !== 'undefined') seen = { userId, enabled };
   return enabled;
 }
+
+/** Asks again on the next page change: after an admin turns the assistant on or off in Settings. */
+export function forgetCachedAiEnabled() {
+  seen = undefined;
+}

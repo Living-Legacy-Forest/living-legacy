@@ -65,6 +65,11 @@ export const whatsNew: WhatsNewEntry[] = [
         link: { label: 'Open Media', to: '/media' },
       },
       {
+        title: 'Manage the writing assistant',
+        body: 'Admins can switch the Suggest buttons off and set how many each person can ask for a day in Settings. The System page shows how much it has been used, who used it, and an estimated cost.',
+        link: { label: 'Open System', to: '/system' },
+      },
+      {
         title: 'Suggest a fix for brand problems',
         body: 'Each brand language problem in a post’s content score, and on Content checks, has Suggest a fix, which rewrites that sentence.',
         link: { label: 'Open Content checks', to: '/checks' },

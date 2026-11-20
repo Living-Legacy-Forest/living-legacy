@@ -8,6 +8,7 @@ import { growthOf } from '@/lib/media-growth';
 import { readSiteSettings } from '@/lib/site-settings';
 import { MEDIA_ALLOWANCE_BYTES } from '@/lib/storage-meter';
 import { checkTone, jobTone, summariseTones } from '@/lib/system-status';
+import { loadAssistantSummary } from './ai/summary';
 import { DATABASE_LIMIT_BYTES, healthOptions, runHealthChecks } from './system-health';
 import { loadJobHealth, loadUsage } from './system-store';
 
@@ -17,7 +18,7 @@ export const getSystemStatus = createServerFn({ method: 'GET' })
   .handler(async () => {
     const options = healthOptions(true);
     const { timeZone } = await readSiteSettings();
-    const [jobs, health, usage, size, uploads] = await Promise.all([
+    const [jobs, health, usage, size, uploads, assistant] = await Promise.all([
       loadJobHealth(getDb(), Date.now()),
       runHealthChecks(options),
       loadUsage(getDb()),
@@ -32,10 +33,12 @@ export const getSystemStatus = createServerFn({ method: 'GET' })
         .select({ at: media.createdAt, bytes: media.size })
         .from(media)
         .where(gte(media.createdAt, new Date(Date.now() - 91 * 86_400_000))),
+      loadAssistantSummary(getDb()),
     ]);
     return {
       ...jobs,
       health,
+      assistant,
       usage: {
         ...usage,
         databaseBytes: size,

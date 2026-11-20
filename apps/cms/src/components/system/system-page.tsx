@@ -31,6 +31,9 @@ const LINKS = [
 ];
 
 const JobCharts = lazy(() => import('./system-charts').then((m) => ({ default: m.JobCharts })));
+const AssistantCard = lazy(() =>
+  import('./assistant-card').then((m) => ({ default: m.AssistantCard }))
+);
 const UsageCard = lazy(() => import('./system-charts').then((m) => ({ default: m.UsageCard })));
 
 const JOB_LABEL: Record<JobHealth, string> = {
@@ -75,7 +78,7 @@ function versionLine(timeZone: string) {
  */
 export function SystemPage({ data }: { data: SystemStatus }) {
   const timeZone = useTimeZone();
-  const { schedules, failures, health, history, usage } = data;
+  const { schedules, failures, health, history, usage, assistant } = data;
   const { overall, red, yellow } = summariseTones([
     ...health.map((check) => checkTone[check.status]),
     ...schedules.flatMap((s) => s.jobs.map((job) => jobTone[job.health])),
@@ -160,6 +163,10 @@ export function SystemPage({ data }: { data: SystemStatus }) {
 
       <Suspense fallback={<Skeleton className="h-72 w-full rounded-xl lg:col-span-2" />}>
         <JobCharts history={history} />
+      </Suspense>
+
+      <Suspense fallback={<Skeleton className="h-80 w-full rounded-xl lg:col-span-2" />}>
+        <AssistantCard assistant={assistant} />
       </Suspense>
 
       {schedules.map((schedule) => (

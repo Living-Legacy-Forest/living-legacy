@@ -4,7 +4,8 @@ import { createServerFn } from '@tanstack/react-start';
 import { env } from 'cloudflare:workers';
 import { getDb } from '@/lib/db';
 import { authMiddleware, requirePermission } from '@/lib/session';
-import { aiEnabled, getAiClient } from './ai/client';
+import { getAiClient } from './ai/client';
+import { assistantStatusFor } from './ai/status';
 import { altTextSchema, brandFixSchema, postFieldSchema } from './ai/schemas';
 import {
   suggestAltTextFor,
@@ -45,7 +46,7 @@ export const suggestBrandFix = createServerFn({ method: 'POST' })
   .validator(brandFixSchema)
   .handler(({ data, context }) => suggestBrandFixFor(getDb(), getAiClient(), context.user, data));
 
-/** Whether to show the Suggest buttons to this person. */
+/** Whether to show the Suggest buttons to this person, and why not when they are missing. */
 export const getAiStatus = createServerFn({ method: 'GET' })
   .middleware([authMiddleware])
-  .handler(({ context }) => ({ enabled: aiEnabled(context.user.role) }));
+  .handler(({ context }) => assistantStatusFor(getDb(), context.user.role));

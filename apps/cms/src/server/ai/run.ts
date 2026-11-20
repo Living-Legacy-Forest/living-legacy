@@ -19,7 +19,7 @@ const REFUSED = "The writing assistant couldn't help with this one. Write it you
 const BUSY = 'The writing assistant is busy. Try again in a moment.';
 const DOWN = "The writing assistant isn't answering. Try again soon.";
 
-type Outcome = 'ok' | 'retried' | 'guard_failed' | 'refused' | 'error';
+export type Outcome = 'ok' | 'retried' | 'guard_failed' | 'refused' | 'error';
 
 export type SuggestRequest<T extends z.ZodType> = {
   field: SuggestField;
@@ -34,9 +34,14 @@ export type SuggestRequest<T extends z.ZodType> = {
   allowed?: readonly string[];
   /** Overrides the field's own limit (a brand fix is as long as the sentence it replaces). */
   limit?: number;
+  /**
+   * Called once when the suggestion ends, with what it used (both calls, if it was retried) and how
+   * it ended, so it can be recorded. A failure here is logged and never spoils the suggestion.
+   */
+  onDone?: (result: { usage: Usage; outcome: Outcome }) => void | Promise<void>;
 };
 
-type Usage = {
+export type Usage = {
   input_tokens: number;
   output_tokens: number;
   cache_read_input_tokens: number;
@@ -61,11 +66,17 @@ export async function runSuggestion<T extends z.ZodType>(
   };
   // One usage line per call, so spend is visible in Workers Logs. Field, model, token counts and
   // outcome only: never the post, the image or the suggestion.
-  const log = (outcome: Outcome) =>
+  const finish = async (outcome: Outcome) => {
     // eslint-disable-next-line no-console -- the only info-level line; it carries no content
     console.info(
       JSON.stringify({ event: 'ai_suggest', field: req.field, model: AI_MODEL, ...usage, outcome })
     );
+    try {
+      await req.onDone?.({ usage: { ...usage }, outcome });
+    } catch {
+      console.error(JSON.stringify({ event: 'ai_suggest_record_failed', field: req.field }));
+    }
+  };
 
   let feedback: string | null = null;
   for (let attempt = 0; attempt < 2; attempt += 1) {
@@ -87,7 +98,7 @@ export async function runSuggestion<T extends z.ZodType>(
         output_config: { effort: 'low', format: zodOutputFormat(req.schema) },
       });
     } catch (error) {
-      log('error');
+      await finish('error');
       throw toSuggestError(error);
     }
     usage.input_tokens += response.usage.input_tokens;
@@ -96,7 +107,7 @@ export async function runSuggestion<T extends z.ZodType>(
     usage.cache_creation_input_tokens += response.usage.cache_creation_input_tokens ?? 0;
 
     if (response.stop_reason === 'refusal') {
-      log('refused');
+      await finish('refused');
       throw new SuggestError(REFUSED);
     }
 
@@ -107,12 +118,12 @@ export async function runSuggestion<T extends z.ZodType>(
           .flatMap((text) => guardProblems(text, { limit, rules: req.rules, allowed: req.allowed }))
       : ['The reply was not in the required format.'];
     if (out && problems.length === 0) {
-      log(attempt === 0 ? 'ok' : 'retried');
+      await finish(attempt === 0 ? 'ok' : 'retried');
       return out;
     }
     feedback = `That reply cannot be used:\n- ${problems.join('\n- ')}\nWrite it again, fixing every problem.`;
   }
-  log('guard_failed');
+  await finish('guard_failed');
   throw new SuggestError(GUARD_FAILED);
 }
 

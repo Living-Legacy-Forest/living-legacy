@@ -13,7 +13,7 @@ import { canSuggest } from './client';
 import { guardProblems } from './guard';
 import { type AiClient, SuggestError, runSuggestion } from './run';
 import type { BrandFixInput, PostFieldInput } from './schemas';
-import { reserveSuggestion } from './usage';
+import { recordUsage, reserveSuggestion } from './usage';
 
 /** Who is asking: their role decides what they may do, and their id is what the daily limit counts. */
 export type Actor = { id: string; role: Role };
@@ -72,6 +72,7 @@ export async function suggestPostFieldFor(
     // Tags are picked from the list, not written, so one bad pick is dropped rather than failing
     // (and paying for) the whole reply again.
     const out = await runSuggestion(client, {
+      onDone: (result) => recordUsage(db, actor.id, result),
       field: 'tags',
       brandGuide,
       rules,
@@ -89,6 +90,7 @@ export async function suggestPostFieldFor(
   }
 
   const out = await runSuggestion(client, {
+    onDone: (result) => recordUsage(db, actor.id, result),
     field: input.field,
     brandGuide,
     rules,
@@ -128,6 +130,7 @@ async function suggestImageText(
   const image = await openImage(db, bucket, client, actor, input);
   await reserveSuggestion(db, actor.id);
   const out = await runSuggestion(image.client, {
+    onDone: (result) => recordUsage(db, actor.id, result),
     field,
     brandGuide,
     rules: await brandRules(db),
@@ -181,6 +184,7 @@ export async function suggestMediaTagsFor(
   const used = (await listMediaTags(db)).map((row) => row.tag);
 
   const out = await runSuggestion(image.client, {
+    onDone: (result) => recordUsage(db, actor.id, result),
     field: 'mediaTags',
     brandGuide,
     rules,
@@ -219,6 +223,7 @@ export async function suggestBrandFixFor(
   await reserveSuggestion(db, actor.id);
 
   const out = await runSuggestion(client, {
+    onDone: (result) => recordUsage(db, actor.id, result),
     field: 'brandFix',
     brandGuide,
     rules: await brandRules(db),

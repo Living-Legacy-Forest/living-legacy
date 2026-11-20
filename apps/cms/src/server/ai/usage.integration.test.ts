@@ -3,7 +3,7 @@ import { aiUsage, siteSettings } from '@ll/db/schema';
 import { eq } from 'drizzle-orm';
 import { beforeEach, describe, expect, it } from 'vitest';
 import { addUser, testDb } from '../../../test/fixtures';
-import { DAILY_SUGGESTION_LIMIT, reserveSuggestion, usageDay } from './usage';
+import { recordUsage, reserveSuggestion, usageDay } from './usage';
 
 const at = (iso: string) => new Date(iso);
 const count = async (userId: string, day: string) =>
@@ -94,7 +94,75 @@ describe('reserveSuggestion', () => {
     expect(await count(user, '2026-11-17')).toBe(5);
   });
 
-  it('is 100 a day unless told otherwise', () => {
-    expect(DAILY_SUGGESTION_LIMIT).toBe(100);
+  it('takes the limit from Settings', async () => {
+    const user = await addUser();
+    await testDb()
+      .insert(siteSettings)
+      .values({ id: 'site', data: { aiDailyLimit: 2, timeZone: 'UTC' } });
+    const opts = { now: at('2026-11-20T01:00:00Z') };
+    await reserveSuggestion(testDb(), user, opts);
+    await reserveSuggestion(testDb(), user, opts);
+    await expect(reserveSuggestion(testDb(), user, opts)).rejects.toThrow(
+      "You've used today's 2 suggestions. They start again at midnight."
+    );
+  });
+
+  it('is 100 a day when Settings has not been changed', async () => {
+    const user = await addUser();
+    await testDb().insert(aiUsage).values({ userId: user, day: '2026-11-20', count: 99 });
+    const opts = { timeZone: 'UTC', now: at('2026-11-20T01:00:00Z') };
+    await expect(reserveSuggestion(testDb(), user, opts)).resolves.toBeUndefined();
+    await expect(reserveSuggestion(testDb(), user, opts)).rejects.toThrow(
+      "today's 100 suggestions"
+    );
+  });
+
+  it('refuses while switched off in Settings, and counts nothing', async () => {
+    const user = await addUser();
+    await testDb()
+      .insert(siteSettings)
+      .values({ id: 'site', data: { aiEnabled: false, timeZone: 'UTC' } });
+    await expect(
+      reserveSuggestion(testDb(), user, { now: at('2026-11-20T01:00:00Z') })
+    ).rejects.toThrow(
+      'The writing assistant is switched off. An admin can turn it on in Settings.'
+    );
+    expect(await count(user, '2026-11-20')).toBeUndefined();
+  });
+});
+
+describe('recordUsage', () => {
+  const used = {
+    input_tokens: 300,
+    output_tokens: 40,
+    cache_read_input_tokens: 2700,
+    cache_creation_input_tokens: 0,
+  };
+  const opts = { timeZone: 'UTC', now: at('2026-11-20T01:00:00Z') };
+  const row = async (userId: string) =>
+    (await testDb().select().from(aiUsage).where(eq(aiUsage.userId, userId)))[0];
+
+  it("adds what a suggestion used to the person's day", async () => {
+    const user = await addUser();
+    await reserveSuggestion(testDb(), user, opts);
+    await recordUsage(testDb(), user, { usage: used, outcome: 'ok' }, opts);
+    await recordUsage(testDb(), user, { usage: used, outcome: 'retried' }, opts);
+    expect(await row(user)).toMatchObject({
+      count: 1,
+      inputTokens: 600,
+      outputTokens: 80,
+      cacheReadTokens: 5400,
+      cacheWriteTokens: 0,
+      refused: 0,
+      failed: 0,
+    });
+  });
+
+  it('counts a refusal and a failure on their own', async () => {
+    const user = await addUser();
+    await recordUsage(testDb(), user, { usage: used, outcome: 'refused' }, opts);
+    await recordUsage(testDb(), user, { usage: used, outcome: 'error' }, opts);
+    await recordUsage(testDb(), user, { usage: used, outcome: 'guard_failed' }, opts);
+    expect(await row(user)).toMatchObject({ refused: 1, failed: 2 });
   });
 });

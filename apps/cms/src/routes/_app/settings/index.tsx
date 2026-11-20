@@ -1,6 +1,7 @@
 import { can } from '@ll/content';
 import { createFileRoute, redirect } from '@tanstack/react-router';
 import { SettingsPage } from '@/components/settings/settings-page';
+import { getAiStatus } from '@/server/ai';
 import { listLegalPages } from '@/server/legal-pages';
 import { getSiteSettings } from '@/server/settings';
 
@@ -10,11 +11,12 @@ export const Route = createFileRoute('/_app/settings/')({
     if (!can(context.user.role, 'seo:write')) throw redirect({ to: '/' });
   },
   loader: async ({ context }) => {
-    const [settings, legalPages] = await Promise.all([
+    const [settings, legalPages, assistant] = await Promise.all([
       getSiteSettings(),
       can(context.user.role, 'content:write') ? listLegalPages() : undefined,
+      can(context.user.role, 'settings:write') ? getAiStatus() : undefined,
     ]);
-    return { settings, legalPages };
+    return { settings, legalPages, assistantKeySet: assistant?.keySet };
   },
   head: () => ({ meta: [{ title: 'Settings | Living Legacy CMS' }] }),
   component: SettingsRoute,
@@ -27,6 +29,7 @@ function SettingsRoute() {
     <SettingsPage
       data={data.settings}
       legalPages={data.legalPages}
+      assistantKeySet={data.assistantKeySet}
       seoOnly={!can(user.role, 'settings:write')}
     />
   );

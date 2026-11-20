@@ -17,11 +17,6 @@ export function getAiClient(): AiClient | null {
   return apiKey ? new Anthropic({ apiKey }) : null;
 }
 
-/** Whether to show the Suggest buttons to someone in this role. The key is never sent to the browser. */
-export function aiEnabled(role: Role): boolean {
-  return Boolean(env.ANTHROPIC_API_KEY) && canSuggest(role);
-}
-
 export function canSuggest(role: Role): boolean {
   return SUGGEST_PERMISSIONS.some((permission) => can(role, permission));
 }

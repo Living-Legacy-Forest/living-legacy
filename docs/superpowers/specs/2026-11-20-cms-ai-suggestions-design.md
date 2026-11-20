@@ -34,9 +34,10 @@ connector.
   Worth doing later as a cleanup, once the single-item flow is trusted.
 - No AI on the public website (`apps/web`).
 - No change to the `/mcp` connector.
-- No admin on/off switch in v1 (see Open for later). A daily limit per person was added after the
-  first build: 100 suggestions a day, counted per press, starting again at midnight in the site's
-  time zone (`ai_usage` table, `server/ai/usage.ts`).
+- No admin controls in the first build. Added afterwards: a daily limit per person (100 to start
+  with, counted per press, starting again at midnight in the site's time zone; `ai_usage` table,
+  `server/ai/usage.ts`), an on/off switch and an editable limit in Settings > Writing assistant,
+  and a Writing assistant card on the System page (use, tokens, estimated cost, who used it).
 
 ## Anti-goals (a failure even if it technically works)
 
@@ -176,6 +177,5 @@ These are small calls with a sensible default; none changes what gets built.
 
 ## Open for later (not decided)
 
-- An admin switch in Settings to turn suggestions off.
 - Bulk alt-text for existing images missing it.
 - Applying a brand fix directly inside the rich-text body.

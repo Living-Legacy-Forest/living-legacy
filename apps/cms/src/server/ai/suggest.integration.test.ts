@@ -12,7 +12,7 @@ import {
   suggestMediaTagsFor,
   suggestPostFieldFor,
 } from './suggest';
-import { aiEnabled, getAiClient } from './client';
+import { getAiClient } from './client';
 import { loadAltImage } from './alt-image';
 import type { AiClient } from './run';
 import { usageDay } from './usage';
@@ -83,15 +83,6 @@ describe('the key', () => {
     expect(getAiClient()).toBeNull();
     (env as { ANTHROPIC_API_KEY?: string }).ANTHROPIC_API_KEY = 'test-key';
     expect(getAiClient()).not.toBeNull();
-  });
-
-  it('is enabled only with a key and a role that can edit something', () => {
-    expect(aiEnabled('admin')).toBe(false);
-    (env as { ANTHROPIC_API_KEY?: string }).ANTHROPIC_API_KEY = 'test-key';
-    expect(aiEnabled('admin')).toBe(true);
-    expect(aiEnabled('author')).toBe(true);
-    expect(aiEnabled('seo')).toBe(true);
-    expect(aiEnabled('viewer')).toBe(false);
   });
 });
 
@@ -305,6 +296,38 @@ describe('suggestBrandFixFor', () => {
         limit: 60,
       })
     ).rejects.toThrow("The writing assistant isn't set up.");
+  });
+});
+
+describe('recording use', () => {
+  const post = { title: 'A walk', excerpt: '', bodyMarkdown: 'We walked.', tagNames: [] };
+  const mine = async () => (await testDb().select().from(aiUsage))[0];
+
+  it("adds a suggestion's tokens to the person's day", async () => {
+    const { client } = fakeClient('A quiet walk among the trees.');
+    await suggestPostFieldFor(testDb(), client, actor(), { ...post, field: 'excerpt' });
+    expect(await mine()).toMatchObject({ count: 1, inputTokens: 10, outputTokens: 5, failed: 0 });
+  });
+
+  it('adds both calls when the reply is retried', async () => {
+    const { client, create } = fakeClient();
+    create.mockResolvedValueOnce(answer({ text: 'Choose a plot today.' }));
+    create.mockResolvedValueOnce(answer({ text: 'Choose a tree today.' }));
+    await suggestBrandFixFor(testDb(), client, actor(), {
+      text: 'Choose a plot today.',
+      found: 'plot',
+      limit: 60,
+    });
+    expect(await mine()).toMatchObject({ count: 1, inputTokens: 20, outputTokens: 10 });
+  });
+
+  it('counts a failure', async () => {
+    const { client, create } = fakeClient();
+    create.mockResolvedValue(answer({ text: 'A plot for you.' }));
+    await expect(
+      suggestPostFieldFor(testDb(), client, actor(), { ...post, field: 'excerpt' })
+    ).rejects.toThrow('follows the brand guide');
+    expect(await mine()).toMatchObject({ count: 1, failed: 1 });
   });
 });
 

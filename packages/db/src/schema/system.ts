@@ -189,6 +189,14 @@ export const aiUsage = sqliteTable(
     /** The calendar day in the site's time zone, YYYY-MM-DD. */
     day: text('day').notNull(),
     count: integer('count').notNull().default(0),
+    // What those suggestions used, for the System page: tokens as the API reports them, and how
+    // many were refused by the model or failed (an error, or a reply the brand guide rejected twice).
+    inputTokens: integer('input_tokens').notNull().default(0),
+    outputTokens: integer('output_tokens').notNull().default(0),
+    cacheReadTokens: integer('cache_read_tokens').notNull().default(0),
+    cacheWriteTokens: integer('cache_write_tokens').notNull().default(0),
+    refused: integer('refused').notNull().default(0),
+    failed: integer('failed').notNull().default(0),
   },
   (t) => [primaryKey({ columns: [t.userId, t.day] })]
 );

@@ -202,4 +202,53 @@ describe('runSuggestion', () => {
     expect(JSON.parse(line)).toMatchObject({ input_tokens: 300, cache_read_input_tokens: 2700 });
     info.mockRestore();
   });
+
+  it('reports what a suggestion used and how it ended', async () => {
+    const done = vi.fn();
+    const { client } = fakeClient(reply('A calm place to walk.'));
+    await runSuggestion(client, { ...request, onDone: done });
+    expect(done).toHaveBeenCalledTimes(1);
+    expect(done).toHaveBeenCalledWith({
+      outcome: 'ok',
+      usage: {
+        input_tokens: 100,
+        output_tokens: 20,
+        cache_read_input_tokens: 0,
+        cache_creation_input_tokens: 0,
+      },
+    });
+  });
+
+  it('adds up both calls when a reply is retried', async () => {
+    const done = vi.fn();
+    const { client } = fakeClient(reply('A plot for you.'), reply('A place for you.'));
+    await runSuggestion(client, { ...request, onDone: done });
+    expect(done.mock.calls[0]![0]).toMatchObject({
+      outcome: 'retried',
+      usage: { input_tokens: 200, output_tokens: 40 },
+    });
+  });
+
+  it('reports a refusal and an error', async () => {
+    const done = vi.fn();
+    await runSuggestion(fakeClient(raw('', 'refusal')).client, {
+      ...request,
+      onDone: done,
+    }).catch(() => {});
+    await runSuggestion(fakeClient(new Anthropic.AnthropicError('x')).client, {
+      ...request,
+      onDone: done,
+    }).catch(() => {});
+    expect(done.mock.calls.map(([r]) => r.outcome)).toEqual(['refused', 'error']);
+  });
+
+  it('never lets a failure to record spoil the suggestion', async () => {
+    const error = vi.spyOn(console, 'error').mockImplementation(() => {});
+    const { client } = fakeClient(reply('A calm place to walk.'));
+    const failing = vi.fn().mockRejectedValue(new Error('database is down'));
+    await expect(runSuggestion(client, { ...request, onDone: failing })).resolves.toEqual({
+      text: 'A calm place to walk.',
+    });
+    error.mockRestore();
+  });
 });

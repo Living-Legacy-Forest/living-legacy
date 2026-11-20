@@ -11,6 +11,7 @@ import {
   can,
   cmsColours,
   cmsFonts,
+  AI_DAILY_LIMIT_MAX,
   brandRulesSchema,
   contentTargetProblem,
   formatAbn,
@@ -129,6 +130,12 @@ const settingsSchema = z
         'Enter domains such as example.com.au, separated by commas.'
       )
       .transform((v) => parseEmailDomains(v).join(', ')),
+    aiEnabled: z.boolean(),
+    aiDailyLimit: z
+      .number()
+      .int(`Enter a whole number from 1 to ${AI_DAILY_LIMIT_MAX}.`)
+      .min(1, `Enter a whole number from 1 to ${AI_DAILY_LIMIT_MAX}.`)
+      .max(AI_DAILY_LIMIT_MAX, `Enter a whole number from 1 to ${AI_DAILY_LIMIT_MAX}.`),
     googleSignIn: z.boolean(),
     sessionDays: z
       .number()

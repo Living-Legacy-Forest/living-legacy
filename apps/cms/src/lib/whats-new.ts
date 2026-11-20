@@ -51,6 +51,23 @@ export type WhatsNewEntry = {
 
 export const whatsNew: WhatsNewEntry[] = [
   {
+    id: '2026-11-20',
+    kind: 'new',
+    title: 'Duplicate an event',
+    items: [
+      {
+        title: 'Duplicate, and more, on each event',
+        body: 'Right-click an event (or press and hold on a phone, or use the ⋯ on a card) to Duplicate it, jump to its Guest list or Dashboard, or Cancel it. A duplicate is a draft with all the same dates, details and photos, but no bookings and a new web address. Change its title and dates, then publish.',
+        link: { label: 'Open Events', to: '/events' },
+      },
+      {
+        title: 'Read a PDF like a book',
+        body: 'When you open a PDF in Media, choose 1 page or 2 pages at the top right of the preview. Pages turn over like paper, with the arrows, a swipe or the arrow keys. In 2 pages the cover sits alone, then pages 2 and 3, 4 and 5, and so on.',
+        link: { label: 'Open Media', to: '/media' },
+      },
+    ],
+  },
+  {
     id: '2026-11-19-9',
     kind: 'new',
     title: 'A waiting list for full events',

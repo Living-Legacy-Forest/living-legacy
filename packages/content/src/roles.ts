@@ -150,6 +150,11 @@ export function normaliseEmail(email: string): string {
   return email.trim().toLowerCase();
 }
 
+/** The addresses in BOOTSTRAP_ADMIN_EMAILS: comma separated, lower-cased, blanks skipped. */
+export function parseBootstrapEmails(raw: string | null | undefined): string[] {
+  return (raw ?? '').split(',').map(normaliseEmail).filter(Boolean);
+}
+
 /**
  * Decides whether a first-time Google sign-in may create an account, and with
  * which role. Bootstrap admins (from env) always win over an invitation so the
@@ -159,12 +164,36 @@ export function resolveSignupRole(
   email: string,
   options: { bootstrapAdminEmails?: string; invitedRole?: Role | null }
 ): Role | null {
-  const bootstrap = (options.bootstrapAdminEmails ?? '')
-    .split(',')
-    .map(normaliseEmail)
-    .filter(Boolean);
-  if (bootstrap.includes(normaliseEmail(email))) return 'admin';
+  if (parseBootstrapEmails(options.bootstrapAdminEmails).includes(normaliseEmail(email))) {
+    return 'admin';
+  }
   return options.invitedRole ?? null;
+}
+
+/**
+ * A super admin is an admin whose address is in BOOTSTRAP_ADMIN_EMAILS. It is read from the
+ * environment each time rather than stored, so it cannot be granted from inside the CMS and taking
+ * the address out of the setting ends it. Only they can remove people, clear the activity log and
+ * reset the writing assistant.
+ */
+export function isSuperAdmin(
+  person: { email: string; role: string },
+  bootstrapAdminEmails?: string | null
+): boolean {
+  return (
+    person.role === 'admin' &&
+    parseBootstrapEmails(bootstrapAdminEmails).includes(normaliseEmail(person.email))
+  );
+}
+
+/** An ordinary admin cannot change a super admin, or the tier would mean nothing. */
+export function guardSuperAdminChange(opts: {
+  targetIsSuperAdmin: boolean;
+  actorIsSuperAdmin: boolean;
+}): string | null {
+  return opts.targetIsSuperAdmin && !opts.actorIsSuperAdmin
+    ? 'Only a super admin can change a super admin.'
+    : null;
 }
 
 /**

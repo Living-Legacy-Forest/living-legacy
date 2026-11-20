@@ -5,6 +5,9 @@ import {
   guardExtraPermissionsChange,
   guardRemoval,
   guardRoleChange,
+  guardSuperAdminChange,
+  isSuperAdmin,
+  parseBootstrapEmails,
   resolveSignupRole,
   extraPermissionsSchema,
   grantablePermissions,
@@ -332,5 +335,58 @@ describe('permissionsFor', () => {
       expect(list.filter((p) => p === permission)).toHaveLength(1);
     }
     expect(list).toHaveLength(3);
+  });
+});
+
+describe('parseBootstrapEmails', () => {
+  it('splits, trims and lower-cases the list, skipping blanks', () => {
+    expect(parseBootstrapEmails(' Boss@Example.com, ,second@example.com ,')).toEqual([
+      'boss@example.com',
+      'second@example.com',
+    ]);
+  });
+
+  it('is empty when nothing is set', () => {
+    expect(parseBootstrapEmails(undefined)).toEqual([]);
+    expect(parseBootstrapEmails(null)).toEqual([]);
+    expect(parseBootstrapEmails('')).toEqual([]);
+  });
+});
+
+describe('isSuperAdmin', () => {
+  const env = 'boss@example.com, second@example.com';
+
+  it('is an admin whose email is in the bootstrap list, whatever its case', () => {
+    expect(isSuperAdmin({ email: 'Boss@Example.com', role: 'admin' }, env)).toBe(true);
+    expect(isSuperAdmin({ email: 'second@example.com', role: 'admin' }, env)).toBe(true);
+  });
+
+  it('is not an ordinary admin', () => {
+    expect(isSuperAdmin({ email: 'other@example.com', role: 'admin' }, env)).toBe(false);
+  });
+
+  it('needs the admin role as well as the email', () => {
+    expect(isSuperAdmin({ email: 'boss@example.com', role: 'editor' }, env)).toBe(false);
+    expect(isSuperAdmin({ email: 'boss@example.com', role: 'wizard' }, env)).toBe(false);
+  });
+
+  it('is nobody when the list is empty or unset', () => {
+    expect(isSuperAdmin({ email: 'boss@example.com', role: 'admin' }, '')).toBe(false);
+    expect(isSuperAdmin({ email: 'boss@example.com', role: 'admin' }, undefined)).toBe(false);
+  });
+});
+
+describe('guardSuperAdminChange', () => {
+  it('stops an ordinary admin changing a super admin', () => {
+    expect(guardSuperAdminChange({ targetIsSuperAdmin: true, actorIsSuperAdmin: false })).toBe(
+      'Only a super admin can change a super admin.'
+    );
+  });
+
+  it('lets a super admin change another, and anyone change an ordinary person', () => {
+    expect(guardSuperAdminChange({ targetIsSuperAdmin: true, actorIsSuperAdmin: true })).toBeNull();
+    expect(
+      guardSuperAdminChange({ targetIsSuperAdmin: false, actorIsSuperAdmin: false })
+    ).toBeNull();
   });
 });

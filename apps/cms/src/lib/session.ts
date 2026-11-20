@@ -15,7 +15,7 @@ async function loadUser({ fresh = false } = {}): Promise<SessionUser | null> {
     query: { disableCookieCache: fresh },
   });
   if (!session) return null;
-  return toSessionUser(session.user);
+  return toSessionUser(session.user, env.BOOTSTRAP_ADMIN_EMAILS);
 }
 
 export const getCurrentUser = createServerFn({ method: 'GET' }).handler(() =>
@@ -57,6 +57,14 @@ export const authMiddleware = createMiddleware({ type: 'function' }).server(asyn
 });
 
 /** Server-side role check. The UI hiding a control is never the only guard. */
+/** For what even an admin may not do: removing people, clearing the log, resetting the assistant. */
+export const requireSuperAdmin = createMiddleware({ type: 'function' })
+  .middleware([authMiddleware])
+  .server(({ next, context }) => {
+    if (!context.user.isSuperAdmin) throw new Error('Only a super admin can do that.');
+    return next();
+  });
+
 export function requirePermission(permission: Permission) {
   return createMiddleware({ type: 'function' })
     .middleware([authMiddleware])

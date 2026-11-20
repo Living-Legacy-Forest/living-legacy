@@ -9,7 +9,10 @@ import {
   UserCog,
   type LucideIcon,
 } from '@/components/icons';
+import { SuperAdminAction } from '@/components/super-admin-action';
 import { Button } from '@/components/ui/button';
+import { useAction } from '@/lib/use-action';
+import { clearActivityLog } from '@/server/super-admin';
 import { ActivityCalendar } from './activity-calendar';
 import {
   Empty,
@@ -63,7 +66,17 @@ function iconFor(action: ActivityLogEntry['action']): LucideIcon {
   return kinds[action.split('.')[0] as ActivityKind]?.icon ?? ActivityIcon;
 }
 
-export function ActivityPage({ data, search }: { data: ActivityLogData; search: ActivitySearch }) {
+export function ActivityPage({
+  data,
+  search,
+  canClearLog = false,
+}: {
+  data: ActivityLogData;
+  search: ActivitySearch;
+  /** Only a super admin may clear the log. */
+  canClearLog?: boolean;
+}) {
+  const { run, pending } = useAction();
   const timeZone = useTimeZone();
   const navigate = useNavigate({ from: '/activity/' });
   const filtered = Boolean(search.kind || search.who || search.day);
@@ -151,6 +164,28 @@ export function ActivityPage({ data, search }: { data: ActivityLogData; search: 
           >
             Clear
           </Button>
+        )}
+        {canClearLog && (
+          <SuperAdminAction
+            className="ml-auto"
+            label="Clear log"
+            title="Clear the whole activity log?"
+            description="Every entry is removed for everyone, and this cannot be undone. One entry is left saying that you cleared it."
+            confirmLabel="Clear log"
+            pending={pending}
+            onConfirm={() =>
+              run(() => clearActivityLog(), {
+                success: (result) => ({
+                  title: 'Activity log cleared',
+                  description:
+                    result.cleared === 1
+                      ? '1 entry was removed.'
+                      : `${result.cleared} entries were removed.`,
+                }),
+                error: 'Could not clear the log',
+              })
+            }
+          />
         )}
       </div>
 

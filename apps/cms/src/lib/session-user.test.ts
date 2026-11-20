@@ -57,4 +57,16 @@ describe('toSessionUser', () => {
       avatarSeed: null,
     });
   });
+
+  it('marks an admin whose address is in the bootstrap list as a super admin', () => {
+    const boss = { ...raw, email: 'Boss@Example.test', role: 'admin' };
+    expect(toSessionUser(boss, 'boss@example.test').isSuperAdmin).toBe(true);
+    expect(toSessionUser(boss, 'someone@example.test').isSuperAdmin).toBe(false);
+    expect(toSessionUser(boss).isSuperAdmin).toBe(false);
+  });
+
+  it('does not make an editor a super admin, even on the list', () => {
+    const editor = { ...raw, email: 'boss@example.test', role: 'editor' };
+    expect(toSessionUser(editor, 'boss@example.test').isSuperAdmin).toBe(false);
+  });
 });

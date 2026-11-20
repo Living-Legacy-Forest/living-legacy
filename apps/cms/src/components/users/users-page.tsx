@@ -175,12 +175,21 @@ function UsersTable({ data }: { data: TeamData }) {
             const isLastAdmin = u.role === 'admin' && data.adminCount === 1;
             // You can't demote or remove yourself, or the only admin; show the
             // role as text rather than a control that does nothing.
-            const locked = isSelf || isLastAdmin;
+            // Only a super admin can change another super admin, or remove anyone.
+            const protectedSuperAdmin = u.isSuperAdmin && !data.viewerIsSuperAdmin;
+            const locked = isSelf || isLastAdmin || protectedSuperAdmin;
+            const canRemove = data.viewerIsSuperAdmin && !isSelf && !isLastAdmin;
             const role = (
               <RoleControl
                 user={u}
                 locked={locked}
-                note={isLastAdmin && !isSelf ? 'Only admin' : undefined}
+                note={
+                  protectedSuperAdmin && !isSelf
+                    ? 'Super admin'
+                    : isLastAdmin && !isSelf
+                      ? 'Only admin'
+                      : undefined
+                }
                 disabled={pending}
                 onChange={(value) => changeRole(u, value)}
               />
@@ -194,6 +203,7 @@ function UsersTable({ data }: { data: TeamData }) {
                       <div className="flex items-center gap-2 font-medium">
                         <span className="truncate">{u.name || u.email}</span>
                         {isSelf && <Badge variant="secondary">You</Badge>}
+                        {u.isSuperAdmin && <Badge variant="outline">Super admin</Badge>}
                       </div>
                       <div className="text-muted-foreground truncate text-xs">{u.email}</div>
                       {extrasLine(u.role, u.extraPermissions) && (
@@ -224,7 +234,7 @@ function UsersTable({ data }: { data: TeamData }) {
                     >
                       Access
                     </Button>
-                    {!locked && (
+                    {canRemove && (
                       <RemoveUser
                         user={u}
                         onConfirm={() =>

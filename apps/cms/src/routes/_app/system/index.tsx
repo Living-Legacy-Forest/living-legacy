@@ -13,5 +13,6 @@ export const Route = createFileRoute('/_app/system/')({
 });
 
 function SystemRoute() {
-  return <SystemPage data={Route.useLoaderData()} />;
+  const { user } = Route.useRouteContext();
+  return <SystemPage data={Route.useLoaderData()} canResetAssistant={user.isSuperAdmin} />;
 }

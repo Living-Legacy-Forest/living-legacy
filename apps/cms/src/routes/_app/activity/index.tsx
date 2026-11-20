@@ -35,5 +35,6 @@ export const Route = createFileRoute('/_app/activity/')({
 function ActivityRoute() {
   const data = Route.useLoaderData();
   const search = Route.useSearch();
-  return <ActivityPage data={data} search={search} />;
+  const { user } = Route.useRouteContext();
+  return <ActivityPage data={data} search={search} canClearLog={user.isSuperAdmin} />;
 }

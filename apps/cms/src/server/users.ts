@@ -4,7 +4,9 @@ import {
   guardExtraPermissionsChange,
   guardRemoval,
   guardRoleChange,
+  guardSuperAdminChange,
   isEmailDomainAllowed,
+  isSuperAdmin,
   normaliseEmail,
   parseEmailDomains,
   roleSchema,
@@ -18,7 +20,7 @@ import { deleteOwnAvatar } from '@/lib/avatars';
 import { getDb } from '@/lib/db';
 import { sendInviteEmail } from '@/lib/email';
 import { readSiteSettings } from '@/lib/site-settings';
-import { requirePermission } from '@/lib/session';
+import { requirePermission, requireSuperAdmin } from '@/lib/session';
 import { logActivity } from './activity-log';
 import {
   describePermissions,
@@ -38,8 +40,13 @@ export const listUsers = createServerFn({ method: 'GET' })
     const { users, invitations } = await listTeamRows(getDb());
     return {
       currentUserId: context.user.id,
+      /** Whether the viewer may remove people and change a super admin. */
+      viewerIsSuperAdmin: context.user.isSuperAdmin,
       adminCount: users.filter((u) => u.role === 'admin').length,
-      users,
+      users: users.map((u) => ({
+        ...u,
+        isSuperAdmin: isSuperAdmin(u, env.BOOTSTRAP_ADMIN_EMAILS),
+      })),
       invitations,
     };
   });
@@ -112,6 +119,12 @@ export const changeUserRole = createServerFn({ method: 'POST' })
     const db = getDb();
     const target = await db.query.user.findFirst({ where: eq(user.id, data.userId) });
     if (!target) throw new Error('That user no longer exists.');
+
+    const superAdminError = guardSuperAdminChange({
+      targetIsSuperAdmin: isSuperAdmin(target, env.BOOTSTRAP_ADMIN_EMAILS),
+      actorIsSuperAdmin: context.user.isSuperAdmin,
+    });
+    if (superAdminError) throw new Error(superAdminError);
 
     const error = guardRoleChange({
       isSelf: target.id === context.user.id,
@@ -191,8 +204,9 @@ export const updateUserPhoto = createServerFn({ method: 'POST' })
     }
   });
 
+// Removing someone is for super admins only: an ordinary admin can invite and change roles, not delete.
 export const removeUser = createServerFn({ method: 'POST' })
-  .middleware([requirePermission('users:manage')])
+  .middleware([requirePermission('users:manage'), requireSuperAdmin])
   .validator(z.object({ userId: z.string() }))
   .handler(async ({ data, context }) => {
     const db = getDb();

@@ -1,6 +1,12 @@
 // Turns the session's raw user into what the CMS passes around. Kept apart from session.ts,
 // which pulls in the Workers runtime, so it runs under plain Node tests.
-import { type Permission, type Role, parseExtraPermissions, toAccess } from '@ll/content';
+import {
+  type Permission,
+  type Role,
+  isSuperAdmin,
+  parseExtraPermissions,
+  toAccess,
+} from '@ll/content';
 
 export type SessionUser = {
   id: string;
@@ -14,6 +20,8 @@ export type SessionUser = {
   role: Role;
   /** Permissions an admin gave this person on top of their role. */
   extraPermissions: Permission[];
+  /** An admin on the BOOTSTRAP_ADMIN_EMAILS list: the only people who may remove users, clear the log or reset the assistant. */
+  isSuperAdmin: boolean;
   /** When the account was made, so What's new skips what came before. */
   createdAt: number;
 };
@@ -34,7 +42,7 @@ export type RawSessionUser = {
 
 const text = (value: unknown) => (typeof value === 'string' ? value : null);
 
-export function toSessionUser(raw: RawSessionUser): SessionUser {
+export function toSessionUser(raw: RawSessionUser, bootstrapAdminEmails?: string): SessionUser {
   // An unknown role is a viewer and malformed extras are none: neither may lock anyone out.
   const { role } = toAccess({ role: text(raw.role) });
   return {
@@ -47,6 +55,7 @@ export function toSessionUser(raw: RawSessionUser): SessionUser {
     avatarSeed: text(raw.avatarSeed),
     role,
     extraPermissions: parseExtraPermissions(raw.extraPermissions),
+    isSuperAdmin: isSuperAdmin({ email: raw.email, role }, bootstrapAdminEmails),
     createdAt: new Date(raw.createdAt).getTime(),
   };
 }

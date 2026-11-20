@@ -28,6 +28,8 @@ import { Spinner } from '@/components/ui/spinner';
 import { notify } from '@/lib/notify';
 import { cn } from '@/lib/utils';
 import { useLoadMore } from '@/hooks/use-load-more';
+import { SuggestButton } from '@/components/ai/suggest-button';
+import { suggestAltText } from '@/server/ai';
 import { type MediaItem, getMediaItems, listMedia, updateMedia } from '@/server/media';
 import { isEnterKey } from '@/lib/keyboard';
 
@@ -230,15 +232,22 @@ export function AltText({
 }) {
   const [alt, setAlt] = useState(item.alt);
   const [saving, setSaving] = useState(false);
+  // What is stored now. A Suggest button's Undo can run after this render has gone, so saving
+  // compares with this rather than with the `item` it was created with.
+  const stored = useRef(item.alt);
 
-  useEffect(() => setAlt(item.alt), [item.id, item.alt]);
+  useEffect(() => {
+    stored.current = item.alt;
+    setAlt(item.alt);
+  }, [item.id, item.alt]);
 
-  async function save() {
-    const next = alt.trim();
-    if (next === item.alt) return;
+  async function save(value = alt) {
+    const next = value.trim();
+    if (next === stored.current) return;
     setSaving(true);
     try {
       await updateMedia({ data: { id: item.id, alt: next } });
+      stored.current = next;
       onSaved({ ...item, alt: next });
       notify.success({
         title: 'Alt text saved',
@@ -246,7 +255,7 @@ export function AltText({
       });
     } catch (error) {
       notify.error('Could not save the alt text', error);
-      setAlt(item.alt);
+      setAlt(stored.current);
     } finally {
       setSaving(false);
     }
@@ -261,7 +270,7 @@ export function AltText({
           maxLength={300}
           value={alt}
           onChange={(e) => setAlt(e.target.value)}
-          onBlur={save}
+          onBlur={() => void save()}
           onKeyDown={(e) => {
             if (isEnterKey(e)) {
               e.preventDefault();
@@ -275,9 +284,19 @@ export function AltText({
           <Spinner className="text-muted-foreground absolute top-1/2 right-2.5 size-3.5 -translate-y-1/2" />
         )}
       </div>
-      <p className="text-muted-foreground text-xs">
-        {item.alt ? 'Saved with the image in Media.' : 'Needed for screen readers and search.'}
-      </p>
+      <div className="flex items-center justify-between gap-2">
+        <p className="text-muted-foreground text-xs">
+          {item.alt ? 'Saved with the image in Media.' : 'Needed for screen readers and search.'}
+        </p>
+        <SuggestButton
+          value={alt}
+          request={() => suggestAltText({ data: { mediaId: item.id } }).then((r) => r.text)}
+          onApply={(next) => {
+            setAlt(next);
+            void save(next);
+          }}
+        />
+      </div>
     </div>
   );
 }

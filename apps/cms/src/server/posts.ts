@@ -57,8 +57,6 @@ function assertCanEdit(row: PostRow, actor: SessionUser) {
   }
 }
 
-/** Roles that may publish, i.e. who is eligible to review a post. */
-
 /** Posts per page, and the other sizes the list offers. */
 export const POSTS_PAGE_SIZES = [10, 20, 50, 100] as const;
 export const POSTS_PAGE_SIZE = 20;

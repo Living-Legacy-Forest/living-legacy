@@ -12,10 +12,14 @@ export function hasPermissionSql(permission: Permission): SQL {
   const byRole = inArray(user.role, rolesGranting(permission));
   if (!(grantablePermissions as readonly Permission[]).includes(permission)) return byRole;
 
-  // CASE rather than AND: SQLite may evaluate both sides, and json_each throws
-  // on malformed JSON, which would fail the query for every row.
+  // Nested CASEs rather than AND: SQLite may evaluate both sides, and json_type
+  // and json_each throw on malformed JSON, which would fail the query for every
+  // row. Only an array counts, as parseExtraPermissions treats anything else as
+  // empty; json_each would otherwise match a bare string or an object's values.
   const byExtra = sql`CASE WHEN json_valid(${user.extraPermissions})
-    THEN EXISTS (SELECT 1 FROM json_each(${user.extraPermissions}) WHERE value = ${permission})
+    THEN (CASE WHEN json_type(${user.extraPermissions}) = 'array'
+      THEN EXISTS (SELECT 1 FROM json_each(${user.extraPermissions}) WHERE value = ${permission})
+      ELSE 0 END)
     ELSE 0 END`;
   return or(byRole, byExtra)!;
 }

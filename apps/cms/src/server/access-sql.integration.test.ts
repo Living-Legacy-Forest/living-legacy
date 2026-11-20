@@ -25,6 +25,11 @@ describe('hasPermissionSql', () => {
     await addUser('viewer');
     const malformed = await addUser('author', 'Broken');
     await testDb().update(user).set({ extraPermissions: 'not json' }).where(eq(user.id, malformed));
+    // Valid JSON that is not an array must not match either, as `can` denies it.
+    for (const stored of ['"posts:publish"', '{"a":"posts:publish"}']) {
+      const odd = await addUser('author', 'Odd');
+      await testDb().update(user).set({ extraPermissions: stored }).where(eq(user.id, odd));
+    }
 
     expect(await idsWith('posts:publish')).toEqual([admin, editor, withExtra].sort());
   });

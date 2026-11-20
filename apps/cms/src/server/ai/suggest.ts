@@ -2,7 +2,7 @@
 // one only suggests; the editor accepts it in the form and saves as usual. Nothing here writes.
 // Server only. src/server/ai.ts holds the server functions that call these; the logic lives here
 // so the browser build never has to resolve what it imports.
-import { BRAND_RULES, type BrandRule, type Role, can, toTags } from '@ll/content';
+import { BRAND_RULES, type Access, type BrandRule, can, toTags } from '@ll/content';
 import type { Db } from '@ll/db';
 import { z } from 'zod';
 import brandGuide from '../../../../../docs/brand-language.md?raw';
@@ -15,8 +15,8 @@ import { type AiClient, SuggestError, runSuggestion } from './run';
 import type { BrandFixInput, PostFieldInput } from './schemas';
 import { recordUsage, reserveSuggestion } from './usage';
 
-/** Who is asking: their role decides what they may do, and their id is what the daily limit counts. */
-export type Actor = { id: string; role: Role };
+/** Who is asking: their access decides what they may do, and their id is what the daily limit counts. */
+export type Actor = { id: string } & Access;
 
 const NOT_ALLOWED = 'You do not have permission to do that.';
 const NOT_SET_UP = "The writing assistant isn't set up.";
@@ -48,7 +48,7 @@ export async function suggestPostFieldFor(
   actor: Actor,
   input: PostFieldInput
 ): Promise<{ text: string } | { tags: string[] }> {
-  if (!canSuggest(actor.role)) throw new SuggestError(NOT_ALLOWED);
+  if (!canSuggest(actor)) throw new SuggestError(NOT_ALLOWED);
   if (!client) throw new SuggestError(NOT_SET_UP);
   if (![input.title, input.excerpt, input.bodyMarkdown].some((part) => part.trim())) {
     throw new SuggestError('Write some of the post first.');
@@ -114,7 +114,7 @@ async function openImage(
   actor: Actor,
   input: MediaInput
 ) {
-  if (!can(actor.role, 'media:write')) throw new SuggestError(NOT_ALLOWED);
+  if (!can(actor, 'media:write')) throw new SuggestError(NOT_ALLOWED);
   if (!client) throw new SuggestError(NOT_SET_UP);
   return { client, ...(await loadAltImage(db, bucket, input.mediaId)) };
 }
@@ -218,7 +218,7 @@ export async function suggestBrandFixFor(
   actor: Actor,
   input: BrandFixInput
 ): Promise<{ text: string }> {
-  if (!canSuggest(actor.role)) throw new SuggestError(NOT_ALLOWED);
+  if (!canSuggest(actor)) throw new SuggestError(NOT_ALLOWED);
   if (!client) throw new SuggestError(NOT_SET_UP);
   await reserveSuggestion(db, actor.id);
 

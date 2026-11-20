@@ -18,11 +18,11 @@ const BOOKING_DAYS = 14;
 export const getNotifications = createServerFn({ method: 'GET' })
   .middleware([authMiddleware])
   .handler(async ({ context }) => {
-    const { id: userId, role } = context.user;
+    const { user } = context;
     const db = getDb();
 
     const [reviews, bookings, legalReviews] = await Promise.all([
-      can(role, 'posts:publish')
+      can(user, 'posts:publish')
         ? db
             .select({ id: posts.id, title: posts.title, at: posts.reviewRequestedAt })
             .from(posts)
@@ -30,13 +30,13 @@ export const getNotifications = createServerFn({ method: 'GET' })
               and(
                 isNull(posts.deletedAt),
                 isNotNull(posts.reviewRequestedAt),
-                or(isNull(posts.reviewerId), eq(posts.reviewerId, userId))
+                or(isNull(posts.reviewerId), eq(posts.reviewerId, user.id))
               )
             )
             .orderBy(desc(posts.reviewRequestedAt))
             .limit(10)
         : [],
-      can(role, 'events:manage')
+      can(user, 'events:manage')
         ? db
             .select({
               id: eventBookings.id,
@@ -57,7 +57,7 @@ export const getNotifications = createServerFn({ method: 'GET' })
             .orderBy(desc(eventBookings.createdAt))
             .limit(10)
         : [],
-      can(role, 'legal:publish') ? listLegalReviewRequests(db) : [],
+      can(user, 'legal:publish') ? listLegalReviewRequests(db) : [],
     ]);
 
     return [

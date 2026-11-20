@@ -16,48 +16,48 @@ import {
 
 describe('can', () => {
   it('lets admins and editors manage events and their guests', () => {
-    expect(can('admin', 'events:manage')).toBe(true);
-    expect(can('editor', 'events:manage')).toBe(true);
-    expect(can('author', 'events:manage')).toBe(false);
-    expect(can('seo', 'events:manage')).toBe(false);
-    expect(can('viewer', 'events:manage')).toBe(false);
+    expect(can({ role: 'admin' }, 'events:manage')).toBe(true);
+    expect(can({ role: 'editor' }, 'events:manage')).toBe(true);
+    expect(can({ role: 'author' }, 'events:manage')).toBe(false);
+    expect(can({ role: 'seo' }, 'events:manage')).toBe(false);
+    expect(can({ role: 'viewer' }, 'events:manage')).toBe(false);
   });
 
   it('lets only admins publish legal pages', () => {
-    expect(can('admin', 'legal:publish')).toBe(true);
+    expect(can({ role: 'admin' }, 'legal:publish')).toBe(true);
     for (const role of ['editor', 'author', 'seo', 'viewer'] as const) {
-      expect(can(role, 'legal:publish')).toBe(false);
+      expect(can({ role }, 'legal:publish')).toBe(false);
     }
-    expect(can('editor', 'content:write')).toBe(true);
+    expect(can({ role: 'editor' }, 'content:write')).toBe(true);
   });
 
   it('lets admins do everything', () => {
-    expect(can('admin', 'users:manage')).toBe(true);
-    expect(can('admin', 'content:purge')).toBe(true);
+    expect(can({ role: 'admin' }, 'users:manage')).toBe(true);
+    expect(can({ role: 'admin' }, 'content:purge')).toBe(true);
   });
 
   it('limits editors to content and media', () => {
-    expect(can('editor', 'content:write')).toBe(true);
-    expect(can('editor', 'posts:publish')).toBe(true);
-    expect(can('editor', 'media:write')).toBe(true);
-    expect(can('editor', 'content:purge')).toBe(false);
-    expect(can('editor', 'settings:write')).toBe(false);
-    expect(can('editor', 'redirects:write')).toBe(false);
-    expect(can('editor', 'users:manage')).toBe(false);
+    expect(can({ role: 'editor' }, 'content:write')).toBe(true);
+    expect(can({ role: 'editor' }, 'posts:publish')).toBe(true);
+    expect(can({ role: 'editor' }, 'media:write')).toBe(true);
+    expect(can({ role: 'editor' }, 'content:purge')).toBe(false);
+    expect(can({ role: 'editor' }, 'settings:write')).toBe(false);
+    expect(can({ role: 'editor' }, 'redirects:write')).toBe(false);
+    expect(can({ role: 'editor' }, 'users:manage')).toBe(false);
   });
 
   it('lets authors write posts but not publish them', () => {
-    expect(can('author', 'posts:write')).toBe(true);
-    expect(can('author', 'media:write')).toBe(true);
-    expect(can('author', 'posts:publish')).toBe(false);
-    expect(can('author', 'content:write')).toBe(false);
+    expect(can({ role: 'author' }, 'posts:write')).toBe(true);
+    expect(can({ role: 'author' }, 'media:write')).toBe(true);
+    expect(can({ role: 'author' }, 'posts:publish')).toBe(false);
+    expect(can({ role: 'author' }, 'content:write')).toBe(false);
   });
 
   it('limits SEO to search fields and redirects', () => {
-    expect(can('seo', 'seo:write')).toBe(true);
-    expect(can('seo', 'redirects:write')).toBe(true);
-    expect(can('seo', 'posts:write')).toBe(false);
-    expect(can('seo', 'settings:write')).toBe(false);
+    expect(can({ role: 'seo' }, 'seo:write')).toBe(true);
+    expect(can({ role: 'seo' }, 'redirects:write')).toBe(true);
+    expect(can({ role: 'seo' }, 'posts:write')).toBe(false);
+    expect(can({ role: 'seo' }, 'settings:write')).toBe(false);
   });
 
   it('gives viewers no write access at all', () => {
@@ -67,7 +67,7 @@ describe('can', () => {
       'content:write',
       'media:write',
     ] as const) {
-      expect(can('viewer', permission)).toBe(false);
+      expect(can({ role: 'viewer' }, permission)).toBe(false);
     }
   });
 });
@@ -153,8 +153,8 @@ describe('extra permissions', () => {
     expect(can({ role: 'viewer', extraPermissions: ['posts:write'] }, 'posts:write')).toBe(true);
   });
 
-  it('still accepts a bare role', () => {
-    expect(can('author', 'redirects:write')).toBe(false);
+  it('gives a role with no extras only its own permissions', () => {
+    expect(can({ role: 'author' }, 'redirects:write')).toBe(false);
   });
 
   it('never lets a hand-built access grant user management', () => {

@@ -12,5 +12,5 @@ export const Route = createFileRoute('/_app/posts/categories/')({
 function CategoriesRoute() {
   const data = Route.useLoaderData();
   const { user } = Route.useRouteContext();
-  return <TermsPage type="category" data={data} canWrite={can(user.role, 'content:write')} />;
+  return <TermsPage type="category" data={data} canWrite={can(user, 'content:write')} />;
 }

@@ -17,7 +17,7 @@ export const Route = createFileRoute('/_app/redirects/')({
     sort: z.string().max(30).optional().catch(undefined),
   }),
   beforeLoad: ({ context }) => {
-    if (!can(context.user.role, 'redirects:write')) throw redirect({ to: '/' });
+    if (!can(context.user, 'redirects:write')) throw redirect({ to: '/' });
   },
   loader: async () => {
     const [redirects, missing] = await Promise.all([listRedirects(), listMissingPages()]);

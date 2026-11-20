@@ -12,5 +12,5 @@ export const Route = createFileRoute('/_app/team/')({
 function TeamRoute() {
   const data = Route.useLoaderData();
   const { user } = Route.useRouteContext();
-  return <TeamPage data={data} canWrite={can(user.role, 'content:write')} />;
+  return <TeamPage data={data} canWrite={can(user, 'content:write')} />;
 }

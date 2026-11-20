@@ -52,7 +52,7 @@ import {
 
 /** Authors may only change posts they started; publishers may change any. */
 function assertCanEdit(row: PostRow, actor: SessionUser) {
-  if (!can(actor.role, 'posts:publish') && row.createdBy !== actor.id) {
+  if (!can(actor, 'posts:publish') && row.createdBy !== actor.id) {
     throw new Error('You can only edit posts you wrote.');
   }
 }
@@ -352,7 +352,7 @@ export const savePost = createServerFn({ method: 'POST' })
     // A scheduled post's content is what the publisher approved, and the cron
     // job publishes it as is. Letting an author change it would put unreviewed
     // content live.
-    if (row.scheduledAt && !can(context.user.role, 'posts:publish')) {
+    if (row.scheduledAt && !can(context.user, 'posts:publish')) {
       throw new Error(
         'This post is scheduled. Ask an editor to unschedule it before you change it.'
       );

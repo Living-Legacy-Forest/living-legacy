@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { generateApiKey, hashApiKey } from './api-keys';
+import { canWrite, generateApiKey, hashApiKey } from './api-keys';
 
 describe('generateApiKey', () => {
   it('makes an llk_ key from 32 random bytes, URL-safe', () => {
@@ -11,6 +11,22 @@ describe('generateApiKey', () => {
   it('never repeats', () => {
     const keys = new Set(Array.from({ length: 50 }, () => generateApiKey().key));
     expect(keys.size).toBe(50);
+  });
+});
+
+describe('canWrite', () => {
+  it('lets a write key held by someone given posts:write create drafts', () => {
+    expect(canWrite({ scope: 'write', role: 'viewer', extraPermissions: ['posts:write'] })).toBe(
+      true
+    );
+  });
+
+  it('refuses a write key held by someone who cannot write posts', () => {
+    expect(canWrite({ scope: 'write', role: 'viewer' })).toBe(false);
+  });
+
+  it('refuses a read key whatever its holder can do', () => {
+    expect(canWrite({ scope: 'read', role: 'admin' })).toBe(false);
   });
 });
 

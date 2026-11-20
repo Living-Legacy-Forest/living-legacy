@@ -1,4 +1,4 @@
-import type { Role } from '@ll/content';
+import type { Access } from '@ll/content';
 import { describe, expect, it } from 'vitest';
 import {
   editorBack,
@@ -7,19 +7,20 @@ import {
   isNavItemAllowed,
   isTabActive,
   navGroups,
+  sidebarSections,
 } from './nav';
 
 const items = navGroups.flatMap((g) => g.items);
-const visibleTo = (role: Role) =>
-  items.filter((item) => isNavItemAllowed(item, role)).map((item) => item.title);
+const visibleTo = (access: Access) =>
+  items.filter((item) => isNavItemAllowed(item, access)).map((item) => item.title);
 
 describe('isNavItemAllowed', () => {
   it('shows admins everything', () => {
-    expect(visibleTo('admin')).toEqual(items.map((item) => item.title));
+    expect(visibleTo({ role: 'admin' })).toEqual(items.map((item) => item.title));
   });
 
   it('hides management pages from viewers', () => {
-    const viewer = visibleTo('viewer');
+    const viewer = visibleTo({ role: 'viewer' });
     expect(viewer).toContain('Posts');
     for (const hidden of ['Media', 'Users', 'Integrations', 'Redirects', 'Settings', 'Activity']) {
       expect(viewer).not.toContain(hidden);
@@ -28,8 +29,37 @@ describe('isNavItemAllowed', () => {
 
   it('shows an item when the role has any one of its permissions', () => {
     // Settings needs settings:write or seo:write; the SEO role has only the second.
-    expect(visibleTo('seo')).toContain('Settings');
-    expect(visibleTo('seo')).not.toContain('Users');
+    expect(visibleTo({ role: 'seo' })).toContain('Settings');
+    expect(visibleTo({ role: 'seo' })).not.toContain('Users');
+  });
+
+  describe('with extra permissions', () => {
+    const redirects = items.find((item) => item.to === '/redirects')!;
+
+    it('hides Redirects from an author', () => {
+      expect(isNavItemAllowed(redirects, { role: 'author' })).toBe(false);
+    });
+
+    it('shows Redirects to an author who was given redirects:write', () => {
+      expect(
+        isNavItemAllowed(redirects, { role: 'author', extraPermissions: ['redirects:write'] })
+      ).toBe(true);
+    });
+  });
+});
+
+describe('sidebarSections', () => {
+  const pagesFor = (access: Access) =>
+    sidebarSections(access).flatMap((section) => section.pages.map((page) => page.to));
+
+  it('leaves Redirects out for an author', () => {
+    expect(pagesFor({ role: 'author' })).not.toContain('/redirects');
+  });
+
+  it('lists Redirects for an author who was given redirects:write', () => {
+    expect(pagesFor({ role: 'author', extraPermissions: ['redirects:write'] })).toContain(
+      '/redirects'
+    );
   });
 });
 

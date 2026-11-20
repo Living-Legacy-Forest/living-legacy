@@ -4,7 +4,7 @@
  * the shared Media library. An admin may send a `userId` to set someone
  * else's. A raw handler, since multipart can't go through createServerFn.
  */
-import { type Role, can, imageExtension, imageSize } from '@ll/content';
+import { can, imageExtension, imageSize, toAccess } from '@ll/content';
 import { schema } from '@ll/db';
 import { createFileRoute } from '@tanstack/react-router';
 import { env } from 'cloudflare:workers';
@@ -29,7 +29,10 @@ export const Route = createFileRoute('/api/avatar/')({
         const form = await request.formData();
         const forUserId = form.get('userId');
         const isSelf = typeof forUserId !== 'string' || forUserId === session.user.id;
-        if (!isSelf && !can(session.user.role as Role, 'users:manage')) {
+        if (
+          !isSelf &&
+          !can(toAccess({ ...session.user, role: session.user.role ?? 'viewer' }), 'users:manage')
+        ) {
           return new Response('Forbidden', { status: 403 });
         }
         const db = getDb();

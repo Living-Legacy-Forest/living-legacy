@@ -5,8 +5,8 @@ import { getContentChecks } from '@/server/content-checks';
 
 export const Route = createFileRoute('/_app/checks/')({
   beforeLoad: ({ context }) => {
-    const { role } = context.user;
-    if (!can(role, 'posts:publish') && !can(role, 'seo:write')) throw redirect({ to: '/' });
+    const { user } = context;
+    if (!can(user, 'posts:publish') && !can(user, 'seo:write')) throw redirect({ to: '/' });
   },
   loader: () => getContentChecks(),
   head: () => ({ meta: [{ title: 'Content checks | Living Legacy CMS' }] }),
@@ -19,15 +19,15 @@ function ChecksRoute() {
   return (
     <ContentChecksPage
       data={data}
-      canEditMedia={can(user.role, 'media:write')}
+      canEditMedia={can(user, 'media:write')}
       // The check is open to people who only look after SEO, who cannot open most of these.
       canFix={{
-        post: can(user.role, 'posts:write') || can(user.role, 'posts:publish'),
-        faq: can(user.role, 'content:write'),
-        event: can(user.role, 'events:manage'),
-        location: can(user.role, 'content:write'),
-        legal: can(user.role, 'content:write'),
-        announcement: can(user.role, 'content:write'),
+        post: can(user, 'posts:write') || can(user, 'posts:publish'),
+        faq: can(user, 'content:write'),
+        event: can(user, 'events:manage'),
+        location: can(user, 'content:write'),
+        legal: can(user, 'content:write'),
+        announcement: can(user, 'content:write'),
       }}
     />
   );

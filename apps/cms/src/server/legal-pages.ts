@@ -53,7 +53,7 @@ export const saveLegalPage = createServerFn({ method: 'POST' })
       data.values,
       data.expectedUpdatedAt,
       actorOf(context.user),
-      can(context.user.role, 'legal:publish')
+      can(context.user, 'legal:publish')
     )
   );
 
@@ -86,7 +86,7 @@ export const restoreLegalVersion = createServerFn({ method: 'POST' })
       data.revisionId,
       data.expectedUpdatedAt,
       actorOf(context.user),
-      can(context.user.role, 'legal:publish')
+      can(context.user, 'legal:publish')
     )
   );
 

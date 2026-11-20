@@ -5,7 +5,7 @@ import { getUptime } from '@/server/uptime';
 
 export const Route = createFileRoute('/_app/uptime/')({
   beforeLoad: ({ context }) => {
-    if (!can(context.user.role, 'settings:write')) throw redirect({ to: '/' });
+    if (!can(context.user, 'settings:write')) throw redirect({ to: '/' });
   },
   loader: () => getUptime(),
   head: () => ({ meta: [{ title: 'Uptime | Living Legacy CMS' }] }),

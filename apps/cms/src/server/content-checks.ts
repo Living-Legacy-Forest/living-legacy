@@ -45,8 +45,8 @@ const blank = (column: unknown) => sql`coalesce(trim(${column}), '') = ''`;
 export const getContentChecks = createServerFn({ method: 'GET' })
   .middleware([authMiddleware])
   .handler(async ({ context }) => {
-    const { role } = context.user;
-    if (!can(role, 'posts:publish') && !can(role, 'seo:write')) {
+    const { user } = context;
+    if (!can(user, 'posts:publish') && !can(user, 'seo:write')) {
       throw new Error('Content checks are for people who publish or look after SEO.');
     }
     return loadContentChecks(getDb());

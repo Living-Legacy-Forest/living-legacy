@@ -33,7 +33,7 @@ function describe(summary: SystemSummary) {
  * tab regains focus, as the bell is.
  */
 export function SystemStatus({ user }: { user: SessionUser }) {
-  const allowed = can(user.role, 'settings:write');
+  const allowed = can(user, 'settings:write');
   // null until the first answer; 'unknown' if the check itself failed.
   const [summary, setSummary] = useState<SystemSummary | 'unknown' | null>(null);
 

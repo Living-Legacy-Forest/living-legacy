@@ -82,7 +82,7 @@ export function AppSidebar({
 }) {
   const { pathname } = useLocation();
   const { unseen } = useUpdates();
-  const sections = sidebarSections(user.role);
+  const sections = sidebarSections(user);
   const current = sectionFor(pathname, sections);
   // The pages are flattened copies, so the current one is matched by its address.
   const currentTo = findNavItem(pathname)?.to;

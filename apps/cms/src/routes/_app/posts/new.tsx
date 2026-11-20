@@ -7,7 +7,7 @@ import { getPostEditorData } from '@/server/posts';
 
 export const Route = createFileRoute('/_app/posts/new')({
   beforeLoad: ({ context }) => {
-    if (!can(context.user.role, 'posts:write')) throw redirect({ to: '/posts' });
+    if (!can(context.user, 'posts:write')) throw redirect({ to: '/posts' });
   },
   loader: () => getPostEditorData({ data: {} }),
   head: () => ({ meta: [{ title: 'New post | Living Legacy CMS' }] }),

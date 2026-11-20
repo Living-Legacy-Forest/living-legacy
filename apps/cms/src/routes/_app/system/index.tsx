@@ -5,7 +5,7 @@ import { getSystemStatus } from '@/server/system';
 
 export const Route = createFileRoute('/_app/system/')({
   beforeLoad: ({ context }) => {
-    if (!can(context.user.role, 'settings:write')) throw redirect({ to: '/' });
+    if (!can(context.user, 'settings:write')) throw redirect({ to: '/' });
   },
   loader: () => getSystemStatus(),
   head: () => ({ meta: [{ title: 'System | Living Legacy CMS' }] }),

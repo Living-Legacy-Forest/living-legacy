@@ -90,9 +90,7 @@ export function toAccess(row: { role: string; extraPermissions?: string | null }
   };
 }
 
-/** @deprecated Pass an `Access` so a person's extra permissions count. Removed once callers move over. */
-export function can(access: Access | Role, permission: Permission): boolean {
-  if (typeof access === 'string') return grants[access].includes(permission);
+export function can(access: Access, permission: Permission): boolean {
   if (grants[access.role].includes(permission)) return true;
   // Re-filtered so a hand-built Access cannot grant users:manage.
   return isGrantable(permission) && (access.extraPermissions ?? []).includes(permission);

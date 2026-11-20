@@ -7,7 +7,7 @@ import { listLocations } from '@/server/locations';
 
 export const Route = createFileRoute('/_app/locations/new')({
   beforeLoad: ({ context }) => {
-    if (!can(context.user.role, 'content:write')) throw redirect({ to: '/locations' });
+    if (!can(context.user, 'content:write')) throw redirect({ to: '/locations' });
   },
   loader: async () => ({ nextOrder: nextSortOrder(await listLocations()) }),
   head: () => ({ meta: [{ title: 'Add location | Living Legacy CMS' }] }),

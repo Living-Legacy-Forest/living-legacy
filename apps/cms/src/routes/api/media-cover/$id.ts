@@ -2,7 +2,7 @@
  * Gives a PDF in the library its first-page thumbnail (`cover`, a JPEG made in the browser). A raw
  * handler, like /api/media, since it receives multipart form data.
  */
-import { type Role, can } from '@ll/content';
+import { can, toAccess } from '@ll/content';
 import { createFileRoute } from '@tanstack/react-router';
 import { getAuth } from '@/lib/auth';
 import { getDb } from '@/lib/db';
@@ -14,7 +14,9 @@ export const Route = createFileRoute('/api/media-cover/$id')({
       POST: async ({ request, params }) => {
         const session = await getAuth().api.getSession({ headers: request.headers });
         if (!session) return new Response('Unauthorized', { status: 401 });
-        if (!can(session.user.role as Role, 'media:write')) {
+        if (
+          !can(toAccess({ ...session.user, role: session.user.role ?? 'viewer' }), 'media:write')
+        ) {
           return new Response('Forbidden', { status: 403 });
         }
 

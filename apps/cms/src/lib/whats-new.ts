@@ -51,6 +51,27 @@ export type WhatsNewEntry = {
 
 export const whatsNew: WhatsNewEntry[] = [
   {
+    id: '2026-11-20-3',
+    kind: 'new',
+    title: 'Suggestions as you write',
+    items: [
+      {
+        title: 'Suggest search text, a summary and tags',
+        body: 'In a post, the Suggest button beside Title, Description, Focus keyword, Summary and Tags writes one for you, following the brand guide. Check it, then save as usual. Undo puts back what was there.',
+      },
+      {
+        title: 'Suggest alt text',
+        body: 'Beside alt text in Media and in image pickers, Suggest looks at the image and describes it for screen readers.',
+        link: { label: 'Open Media', to: '/media' },
+      },
+      {
+        title: 'Suggest a fix for brand problems',
+        body: 'Each brand language problem in a post’s content score, and on Content checks, has Suggest a fix, which rewrites that sentence.',
+        link: { label: 'Open Content checks', to: '/checks' },
+      },
+    ],
+  },
+  {
     id: '2026-11-20-2',
     kind: 'improved',
     title: 'Smaller headings and a smoother post editor',

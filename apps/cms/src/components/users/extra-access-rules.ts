@@ -4,6 +4,7 @@
 import {
   can,
   grantablePermissions,
+  permissionLabels,
   permissionRequires,
   withRequiredPermissions,
   type Permission,
@@ -20,20 +21,21 @@ export const roleLabels: Record<Role, string> = {
 
 type Item = { permission: Permission; label: string; hint?: string };
 
-// Labels are the comments beside each permission in roles.ts, as short plain sentences.
+// Labels come from @ll/content, so the activity log says the same things. Hints say what else
+// a permission opens up.
 export const extraAccessGroups: readonly { heading: string; items: readonly Item[] }[] = [
   {
     heading: 'Posts',
     items: [
       {
         permission: 'posts:write',
-        label: 'Write and edit posts',
+        label: permissionLabels['posts:write'],
         hint: 'Saved as drafts. Authors can only change their own.',
       },
       {
         permission: 'posts:publish',
-        label: 'Publish and manage posts',
-        hint: 'Publish, schedule, unpublish, trash and restore posts, and edit anyone’s.',
+        label: permissionLabels['posts:publish'],
+        hint: 'Publish, schedule, unpublish, trash and restore posts, and edit anyone’s. Also opens Analytics, Activity and Content checks.',
       },
     ],
   },
@@ -42,10 +44,10 @@ export const extraAccessGroups: readonly { heading: string; items: readonly Item
     items: [
       {
         permission: 'seo:write',
-        label: 'Edit SEO fields',
+        label: permissionLabels['seo:write'],
         hint: 'A post’s SEO fields and the search and sharing settings.',
       },
-      { permission: 'redirects:write', label: 'Edit redirects' },
+      { permission: 'redirects:write', label: permissionLabels['redirects:write'] },
     ],
   },
   {
@@ -53,17 +55,17 @@ export const extraAccessGroups: readonly { heading: string; items: readonly Item
     items: [
       {
         permission: 'content:write',
-        label: 'Edit FAQs, testimonials, team and announcements',
-        hint: 'Also post categories.',
+        label: permissionLabels['content:write'],
+        hint: 'Also post categories, locations and legal page drafts.',
       },
       {
         permission: 'content:purge',
-        label: 'Delete content for good',
+        label: permissionLabels['content:purge'],
         hint: 'From the trash, and media.',
       },
       {
         permission: 'content:replace',
-        label: 'Search and replace across all content',
+        label: permissionLabels['content:replace'],
         hint: 'Changes many pages at once.',
       },
     ],
@@ -73,24 +75,23 @@ export const extraAccessGroups: readonly { heading: string; items: readonly Item
     items: [
       {
         permission: 'events:manage',
-        label: 'Manage events and guest lists',
+        label: permissionLabels['events:manage'],
         hint: 'Guest lists hold names, emails and phone numbers.',
       },
     ],
   },
-  { heading: 'Media', items: [{ permission: 'media:write', label: 'Upload and edit media' }] },
+  {
+    heading: 'Media',
+    items: [{ permission: 'media:write', label: permissionLabels['media:write'] }],
+  },
   {
     heading: 'Other',
     items: [
-      { permission: 'settings:write', label: 'Change settings' },
-      { permission: 'legal:publish', label: 'Publish legal pages' },
+      { permission: 'settings:write', label: permissionLabels['settings:write'] },
+      { permission: 'legal:publish', label: permissionLabels['legal:publish'] },
     ],
   },
 ];
-
-const labelOf = new Map<Permission, string>(
-  extraAccessGroups.flatMap((group) => group.items.map((i) => [i.permission, i.label] as const))
-);
 
 const grantable = new Set<Permission>(grantablePermissions);
 
@@ -170,7 +171,7 @@ export function normaliseExtras(role: Role, selected: readonly Permission[]): Pe
 
 /** The extras as a short line for a list row. */
 export function describeExtras(extras: readonly Permission[]): string {
-  return extras.map((permission) => labelOf.get(permission) ?? permission).join(', ');
+  return extras.map((permission) => permissionLabels[permission]).join(', ');
 }
 
 /** What a row says a person has beyond their role, or empty when there is nothing to say. */

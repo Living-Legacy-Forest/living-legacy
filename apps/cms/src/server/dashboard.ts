@@ -191,8 +191,8 @@ export type DashboardData = Awaited<ReturnType<typeof getDashboardData>>;
 const UPCOMING_DAYS = 14;
 
 /**
- * What needs someone's attention, limited to what their role lets them act on.
- * Each part is null when the role cannot see it, so the card leaves it out.
+ * What needs someone's attention, limited to what their access lets them act on.
+ * Each part is null when they cannot see it, so the card leaves it out.
  */
 async function loadAttention(
   db: ReturnType<typeof getDb>,

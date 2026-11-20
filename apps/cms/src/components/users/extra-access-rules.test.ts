@@ -1,4 +1,4 @@
-import { grantablePermissions, type Permission } from '@ll/content';
+import { grantablePermissions, permissionLabels, type Permission } from '@ll/content';
 import { describe, expect, it } from 'vitest';
 import {
   applyExtraChange,
@@ -56,6 +56,26 @@ describe('extraAccessGroups', () => {
   it('labels redirects in plain words', () => {
     const items = extraAccessGroups.flatMap((g) => g.items);
     expect(items.find((i) => i.permission === 'redirects:write')?.label).toBe('Edit redirects');
+  });
+});
+
+describe('hints', () => {
+  const hint = (permission: Permission) =>
+    extraAccessGroups.flatMap((g) => g.items).find((i) => i.permission === permission)?.hint;
+
+  it('says content also opens locations and legal page drafts', () => {
+    expect(hint('content:write')).toMatch(/locations/);
+    expect(hint('content:write')).toMatch(/legal page drafts/);
+  });
+
+  it('says publishing also opens Analytics, Activity and Content checks', () => {
+    expect(hint('posts:publish')).toMatch(/Analytics, Activity and Content checks/);
+  });
+
+  it('uses the shared labels', () => {
+    for (const item of extraAccessGroups.flatMap((g) => g.items)) {
+      expect(item.label).toBe(permissionLabels[item.permission]);
+    }
   });
 });
 

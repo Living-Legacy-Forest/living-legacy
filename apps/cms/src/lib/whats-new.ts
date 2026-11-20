@@ -58,7 +58,7 @@ export const whatsNew: WhatsNewEntry[] = [
     items: [
       {
         title: 'Give someone a little more than their role',
-        body: 'Admins can give a person one extra permission, such as managing redirects, without changing their role. On Users, choose Access beside their name and tick what they need, or tick it when you invite them. Their role stays the same.',
+        body: 'Admins can give a person extra permissions, such as managing redirects, on top of their role. On Users, choose Access beside their name, or tick them when you invite someone.',
         link: { label: 'Open Users', to: '/users' },
       },
     ],

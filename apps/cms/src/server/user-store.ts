@@ -1,6 +1,6 @@
 // Database work for people and invitations, shared by the server functions and the
 // integration tests.
-import { type Permission, type Role, parseExtraPermissions } from '@ll/content';
+import { type Permission, type Role, parseExtraPermissions, permissionLabels } from '@ll/content';
 import type { Db } from '@ll/db';
 import { invitation, session, user } from '@ll/db/schema';
 import { desc, eq, max } from 'drizzle-orm';
@@ -8,9 +8,9 @@ import { logActivity } from './activity-log';
 
 export type Actor = { id: string; name: string };
 
-/** Permission names for an activity summary; an empty list reads as "none". */
+/** Plain permission names for an activity summary; an empty list reads as "none". */
 export const describePermissions = (list: readonly Permission[]) =>
-  list.length ? list.join(', ') : 'none';
+  list.length ? list.map((permission) => permissionLabels[permission]).join(', ') : 'none';
 
 export async function listTeamRows(db: Db) {
   const [users, invitations, activity] = await db.batch([

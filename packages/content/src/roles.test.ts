@@ -9,6 +9,7 @@ import {
   extraPermissionsSchema,
   grantablePermissions,
   parseExtraPermissions,
+  permissionLabels,
   permissionRequires,
   permissions,
   permissionsFor,
@@ -237,6 +238,20 @@ describe('extraPermissionsSchema', () => {
 
   it('still rejects user management alongside a dependent permission', () => {
     expect(extraPermissionsSchema.safeParse(['posts:publish', 'users:manage']).success).toBe(false);
+  });
+});
+
+describe('permissionLabels', () => {
+  it('has a plain label for every permission', () => {
+    for (const permission of permissions) {
+      expect(permissionLabels[permission]).toMatch(/^[A-Z][a-z]/);
+      expect(permissionLabels[permission]).not.toContain(':');
+    }
+  });
+
+  it('says redirects and settings in plain words', () => {
+    expect(permissionLabels['redirects:write']).toBe('Edit redirects');
+    expect(permissionLabels['settings:write']).toBe('Change settings');
   });
 });
 

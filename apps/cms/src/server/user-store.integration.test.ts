@@ -26,7 +26,7 @@ describe('extra permissions', () => {
     expect(rows[0]).toMatchObject({
       actorId: actor.id,
       action: 'user.permissions_changed',
-      summary: "Changed Alex Author's extra access from none to redirects:write",
+      summary: "Changed Alex Author's extra access from none to Edit redirects",
     });
   });
 
@@ -37,7 +37,7 @@ describe('extra permissions', () => {
     expect(await stored(id)).toBe('[]');
     const [row] = await testDb().select().from(activityLog);
     expect(row!.summary).toBe(
-      "Changed Alex Author's extra access from redirects:write, content:write to none"
+      "Changed Alex Author's extra access from Edit redirects, Edit FAQs, testimonials, team and announcements to none"
     );
   });
 

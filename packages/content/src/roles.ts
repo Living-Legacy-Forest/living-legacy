@@ -43,6 +43,22 @@ const grants: Record<Role, readonly Permission[]> = {
   viewer: [],
 };
 
+/** Plain names for the permissions, for screens and the activity log. */
+export const permissionLabels: Record<Permission, string> = {
+  'posts:write': 'Write and edit posts',
+  'posts:publish': 'Publish and manage posts',
+  'seo:write': 'Edit SEO fields',
+  'content:write': 'Edit FAQs, testimonials, team and announcements',
+  'events:manage': 'Manage events and guest lists',
+  'media:write': 'Upload and edit media',
+  'content:purge': 'Delete content for good',
+  'redirects:write': 'Edit redirects',
+  'settings:write': 'Change settings',
+  'users:manage': 'Manage users',
+  'legal:publish': 'Publish legal pages',
+  'content:replace': 'Search and replace across all content',
+};
+
 /** What a person may do: their role, plus anything an admin added for them alone. */
 export type Access = { role: Role; extraPermissions?: readonly Permission[] };
 

@@ -357,7 +357,8 @@ function AccessForm({
       {
         success: {
           title: 'Access saved',
-          description: 'It can take up to five minutes to reach someone who is signed in.',
+          description:
+            'It can take up to five minutes to reach someone who is signed in. They may need to reload the CMS to see new pages.',
         },
         error: 'Could not save access',
         afterAction: onDone,

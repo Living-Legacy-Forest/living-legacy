@@ -1,6 +1,6 @@
 import { useRouteContext } from '@tanstack/react-router';
 import { useState } from 'react';
-import { GridIcon, List as ListIcon } from '@/components/icons';
+import { GridIcon, ListViewIcon as ListIcon } from '@/components/icons';
 import { Button } from '@/components/ui/button';
 import { type ListView, rememberListView } from '@/lib/list-view';
 import { cn } from '@/lib/utils';

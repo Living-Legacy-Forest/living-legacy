@@ -64,6 +64,8 @@ import { ArrowUpRight01Icon as AnimatedArrowUpRight01Icon } from '@animateicons/
 import { ChartLineIcon as AnimatedChartLineIcon } from '@animateicons/react/huge/chart-line-icon';
 import { CheckListIcon as AnimatedCheckListIcon } from '@animateicons/react/huge/check-list-icon';
 import { CheckmarkCircle01Icon as AnimatedCheckmarkCircle01Icon } from '@animateicons/react/huge/checkmark-circle-0-1-icon';
+import { Moon01Icon as AnimatedMoon01Icon } from '@animateicons/react/huge/moon-0-1-icon';
+import { Sun01Icon as AnimatedSun01Icon } from '@animateicons/react/huge/sun-0-1-icon';
 import { CodeXmlIcon as AnimatedCodeXmlIcon } from '@animateicons/react/huge/code-xml-icon';
 import { DeliveryBox01Icon as AnimatedDeliveryBox01Icon } from '@animateicons/react/huge/delivery-box-0-1-icon';
 import { Edit02Icon as AnimatedEdit02Icon } from '@animateicons/react/huge/edit-0-2-icon';
@@ -243,8 +245,8 @@ export const Bold = animated(AnimatedTextBoldIcon);
 export const Code = animated(AnimatedCodeIcon);
 export const CropIcon = make(H.CropIcon);
 export const LaptopIcon = make(H.LaptopIcon);
-export const SunIcon = make(H.Sun03Icon);
-export const MoonIcon = make(H.Moon02Icon);
+export const SunIcon = animated(AnimatedSun01Icon);
+export const MoonIcon = animated(AnimatedMoon01Icon);
 export const MonitorIcon = make(H.ComputerIcon);
 export const SunMoonIcon = make(H.SunMoonIcon);
 // File types and actions for the file dropzone's rows.
@@ -346,6 +348,8 @@ export const ExternalLinkIcon = animated(AnimatedArrowUpRight01Icon);
 export const MoreHorizontalIcon = make(H.MoreHorizontalIcon);
 export const PanelRightIcon = animated(AnimatedSidebarRightIcon);
 export const GridIcon = make(H.GridViewIcon);
+/** The list half of the list/grid switch: static, like the grid, so the pair matches. */
+export const ListViewIcon = make(H.LeftToRightListBulletIcon);
 export const FilterIcon = make(H.FilterIcon);
 export const PencilIcon = animated(AnimatedEdit02Icon);
 export const RotateCcwIcon = animated(AnimatedUndoIcon);

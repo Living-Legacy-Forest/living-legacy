@@ -26,6 +26,16 @@ import {
 import { UserPhotoDialog } from '@/components/users/user-photo-dialog';
 import { FormCell, FormSection, groupBoxClass, groupHeadingClass } from '@/components/form-cells';
 import { DialogActions, ListDialog } from '@/components/list/list-page';
+import {
+  Sheet,
+  SheetClose,
+  SheetContent,
+  SheetDescription,
+  SheetFooter,
+  SheetHeader,
+  SheetTitle,
+} from '@/components/ui/sheet';
+import { useIsMobile } from '@/hooks/use-mobile';
 import { PageActions } from '@/components/shell/page-actions';
 import { Label } from '@/components/ui/label';
 import {
@@ -145,7 +155,16 @@ export function UsersPage({ data }: { data: TeamData }) {
 
 function UsersTable({ data }: { data: TeamData }) {
   const { run, pending } = useAction();
+  // The person stays set after the sheet closes so it slides away with its content; the key gives
+  // each opening a fresh form, so edits that were not saved do not come back.
   const [accessFor, setAccessFor] = useState<TeamUser | null>(null);
+  const [accessOpen, setAccessOpen] = useState(false);
+  const [accessKey, setAccessKey] = useState(0);
+  function openAccess(u: TeamUser) {
+    setAccessFor(u);
+    setAccessKey((k) => k + 1);
+    setAccessOpen(true);
+  }
 
   function changeRole(u: TeamUser, value: string) {
     if (value === u.role) return;
@@ -232,7 +251,7 @@ function UsersTable({ data }: { data: TeamData }) {
                       size="sm"
                       className="touch:min-h-11"
                       aria-label={`Access for ${u.name || u.email}`}
-                      onClick={() => setAccessFor(u)}
+                      onClick={() => openAccess(u)}
                     >
                       Access
                     </Button>
@@ -263,8 +282,10 @@ function UsersTable({ data }: { data: TeamData }) {
       </Table>
       <AccessDialog
         user={accessFor}
+        open={accessOpen}
+        formKey={accessKey}
         isSelf={accessFor?.id === data.currentUserId}
-        onClose={() => setAccessFor(null)}
+        onClose={() => setAccessOpen(false)}
       />
     </>
   );
@@ -320,41 +341,71 @@ function RoleControl({
   );
 }
 
-/** A person's extra access, on top of their role. Your own is read-only. */
+/**
+ * A person's extra access, on top of their role. Your own is read-only. A sheet from the right on
+ * wider screens, so the list of people stays beside it; phones get the usual bottom sheet.
+ */
 function AccessDialog({
   user,
+  open,
+  formKey,
   isSelf,
   onClose,
 }: {
   user: TeamUser | null;
+  open: boolean;
+  /** Changes with each opening, so the form starts again from what is saved. */
+  formKey: number;
   isSelf: boolean;
   onClose: () => void;
 }) {
+  const isPhone = useIsMobile();
+  const description = user
+    ? user.role === 'admin'
+      ? `${user.name || user.email} is ${roleLabel(user.role)}.`
+      : `${user.name || user.email} is ${roleLabel(user.role)}. Anything you add here is on top of that.`
+    : undefined;
+
+  if (isPhone) {
+    return (
+      <ListDialog
+        open={open && user !== null}
+        onClose={onClose}
+        title="Access"
+        description={description}
+      >
+        {user && (
+          <AccessForm key={formKey} user={user} isSelf={isSelf} layout="phone" onDone={onClose} />
+        )}
+      </ListDialog>
+    );
+  }
+
   return (
-    <ListDialog
-      open={user !== null}
-      onClose={onClose}
-      title="Access"
-      description={
-        user
-          ? user.role === 'admin'
-            ? `${user.name || user.email} is ${roleLabel(user.role)}.`
-            : `${user.name || user.email} is ${roleLabel(user.role)}. Anything you add here is on top of that.`
-          : undefined
-      }
-    >
-      {user && <AccessForm user={user} isSelf={isSelf} onDone={onClose} />}
-    </ListDialog>
+    <Sheet open={open && user !== null} onOpenChange={(isOpen) => !isOpen && onClose()}>
+      <SheetContent className="gap-0 data-[side=right]:sm:max-w-md">
+        <SheetHeader className="border-b pr-12">
+          <SheetTitle className="text-lg">Access</SheetTitle>
+          <SheetDescription>{description}</SheetDescription>
+        </SheetHeader>
+        {user && (
+          <AccessForm key={formKey} user={user} isSelf={isSelf} layout="sheet" onDone={onClose} />
+        )}
+      </SheetContent>
+    </Sheet>
   );
 }
 
 function AccessForm({
   user,
   isSelf,
+  layout,
   onDone,
 }: {
   user: TeamUser;
   isSelf: boolean;
+  /** The sheet pins Cancel and Save under a scrolling list; a phone's bar holds Save. */
+  layout: 'sheet' | 'phone';
   onDone: () => void;
 }) {
   const [extras, setExtras] = useState<Permission[]>(user.extraPermissions);
@@ -382,8 +433,20 @@ function AccessForm({
     );
   }
 
-  return (
-    <form noValidate onSubmit={submit} className="space-y-5 max-md:space-y-7">
+  const saveButton = (
+    <Button type="submit" disabled={pending}>
+      {pending ? (
+        <>
+          <Spinner />
+          Saving…
+        </>
+      ) : (
+        'Save access'
+      )}
+    </Button>
+  );
+  const fields = (
+    <>
       {isSelf && user.role !== 'admin' && (
         <p className="text-muted-foreground text-sm">You cannot change your own access.</p>
       )}
@@ -393,20 +456,28 @@ function AccessForm({
         onChange={setExtras}
         disabled={readOnly || pending}
       />
-      {!readOnly && (
-        <DialogActions>
-          <Button type="submit" disabled={pending}>
-            {pending ? (
-              <>
-                <Spinner />
-                Saving…
-              </>
-            ) : (
-              'Save access'
-            )}
-          </Button>
-        </DialogActions>
-      )}
+    </>
+  );
+
+  if (layout === 'sheet') {
+    // The list scrolls and the buttons stay in view under it, so a long list never hides Save.
+    return (
+      <form noValidate onSubmit={submit} className="flex min-h-0 flex-1 flex-col">
+        <div className="min-h-0 flex-1 space-y-5 overflow-y-auto p-4">{fields}</div>
+        <SheetFooter className="mt-0 flex-row items-center justify-end border-t">
+          <SheetClose render={<Button type="button" variant="outline" />}>
+            {readOnly ? 'Close' : 'Cancel'}
+          </SheetClose>
+          {!readOnly && saveButton}
+        </SheetFooter>
+      </form>
+    );
+  }
+
+  return (
+    <form noValidate onSubmit={submit} className="space-y-5 max-md:space-y-7">
+      {fields}
+      {!readOnly && <DialogActions>{saveButton}</DialogActions>}
     </form>
   );
 }

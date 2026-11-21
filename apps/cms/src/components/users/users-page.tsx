@@ -193,22 +193,16 @@ function UsersTable({ data }: { data: TeamData }) {
             const isSelf = u.id === data.currentUserId;
             const isLastAdmin = u.role === 'admin' && data.adminCount === 1;
             // You can't demote or remove yourself, or the only admin; show the
-            // role as text rather than a control that does nothing.
-            // Only a super admin can change another super admin, or remove anyone.
-            const protectedSuperAdmin = u.isSuperAdmin && !data.viewerIsSuperAdmin;
-            const locked = isSelf || isLastAdmin || protectedSuperAdmin;
+            // role as text rather than a control that does nothing. A super admin is shown as
+            // one and left as text too: it comes from BOOTSTRAP_ADMIN_EMAILS, not from the role.
+            const locked = isSelf || isLastAdmin || u.isSuperAdmin;
+            // Only a super admin can remove anyone.
             const canRemove = data.viewerIsSuperAdmin && !isSelf && !isLastAdmin;
             const role = (
               <RoleControl
                 user={u}
                 locked={locked}
-                note={
-                  protectedSuperAdmin && !isSelf
-                    ? 'Super admin'
-                    : isLastAdmin && !isSelf
-                      ? 'Only admin'
-                      : undefined
-                }
+                note={isLastAdmin && !isSelf && !u.isSuperAdmin ? 'Only admin' : undefined}
                 disabled={pending}
                 onChange={(value) => changeRole(u, value)}
               />
@@ -223,15 +217,8 @@ function UsersTable({ data }: { data: TeamData }) {
                       <div className="flex flex-wrap items-center gap-x-2 gap-y-1 font-medium">
                         <span className="max-w-full truncate">{u.name || u.email}</span>
                         {isSelf && <Badge variant="secondary">You</Badge>}
-                        {u.isSuperAdmin && <Badge variant="outline">Super admin</Badge>}
                       </div>
                       <div className="text-muted-foreground truncate text-xs">{u.email}</div>
-                      {extrasLine(u.role, u.extraPermissions) && (
-                        // Table cells do not wrap by default, so this would run under the Role column.
-                        <div className="text-muted-foreground mt-0.5 text-xs whitespace-normal">
-                          Extra access: {extrasLine(u.role, u.extraPermissions)}
-                        </div>
-                      )}
                       {/* Phones have no room for the role and activity columns. */}
                       <div className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1 sm:hidden">
                         {role}
@@ -295,6 +282,11 @@ function roleLabel(value: string) {
   return roleItems.find((r) => r.value === value)?.label ?? value;
 }
 
+/** What to call a person's role: a super admin is named as one, not as a plain Admin. */
+function roleName(user: { role: string; isSuperAdmin: boolean }) {
+  return user.isSuperAdmin ? 'Super admin' : roleLabel(user.role);
+}
+
 /** The role picker, with what each role can do; plain text where it can't change. */
 function RoleControl({
   user,
@@ -312,7 +304,7 @@ function RoleControl({
   if (locked) {
     return (
       <span className="inline-flex items-baseline gap-1.5 text-sm">
-        {roleLabel(user.role)}
+        {roleName(user)}
         {note && <span className="text-muted-foreground text-xs">{note}</span>}
       </span>
     );
@@ -362,8 +354,8 @@ function AccessDialog({
   const isPhone = useIsMobile();
   const description = user
     ? user.role === 'admin'
-      ? `${user.name || user.email} is ${roleLabel(user.role)}.`
-      : `${user.name || user.email} is ${roleLabel(user.role)}. Anything you add here is on top of that.`
+      ? `${user.name || user.email} is ${roleName(user)}.`
+      : `${user.name || user.email} is ${roleName(user)}. Anything you add here is on top of that.`
     : undefined;
 
   if (isPhone) {

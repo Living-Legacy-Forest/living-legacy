@@ -200,14 +200,16 @@ function UsersTable({ data }: { data: TeamData }) {
                   <div className="flex items-center gap-3 max-sm:items-start">
                     <UserAvatar user={u} isSelf={isSelf} />
                     <div className="min-w-0 flex-1">
-                      <div className="flex items-center gap-2 font-medium">
-                        <span className="truncate">{u.name || u.email}</span>
+                      {/* Wraps so the badges drop under a long name instead of squeezing it. */}
+                      <div className="flex flex-wrap items-center gap-x-2 gap-y-1 font-medium">
+                        <span className="max-w-full truncate">{u.name || u.email}</span>
                         {isSelf && <Badge variant="secondary">You</Badge>}
                         {u.isSuperAdmin && <Badge variant="outline">Super admin</Badge>}
                       </div>
                       <div className="text-muted-foreground truncate text-xs">{u.email}</div>
                       {extrasLine(u.role, u.extraPermissions) && (
-                        <div className="text-muted-foreground mt-0.5 text-xs">
+                        // Table cells do not wrap by default, so this would run under the Role column.
+                        <div className="text-muted-foreground mt-0.5 text-xs whitespace-normal">
                           Extra access: {extrasLine(u.role, u.extraPermissions)}
                         </div>
                       )}
@@ -234,6 +236,10 @@ function UsersTable({ data }: { data: TeamData }) {
                     >
                       Access
                     </Button>
+                    {/* Keeps Access in line on rows that cannot be removed. */}
+                    {!canRemove && data.viewerIsSuperAdmin && (
+                      <span aria-hidden className="touch:size-9 size-8 shrink-0" />
+                    )}
                     {canRemove && (
                       <RemoveUser
                         user={u}

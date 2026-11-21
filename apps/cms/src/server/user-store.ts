@@ -105,7 +105,7 @@ export async function setUserExtraPermissions(
       actorId: actor.id,
       actorName: actor.name,
       action: 'user.permissions_changed',
-      summary: `Changed ${target.name}'s extra access from ${describePermissions(before)} to ${describePermissions(extraPermissions)}`,
+      summary: `Changed ${target.name || target.email}'s extra access from ${describePermissions(before)} to ${describePermissions(extraPermissions)}`,
     }),
   ]);
 }

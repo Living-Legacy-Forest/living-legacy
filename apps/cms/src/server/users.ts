@@ -141,7 +141,7 @@ export const changeUserRole = createServerFn({ method: 'POST' })
       actorId: context.user.id,
       actorName: context.user.name,
       action: 'user.role_changed',
-      summary: `Changed ${target.name}'s role from ${target.role} to ${data.role}`,
+      summary: `Changed ${target.name || target.email}'s role from ${target.role} to ${data.role}`,
     });
   });
 

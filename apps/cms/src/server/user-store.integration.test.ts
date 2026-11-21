@@ -30,6 +30,16 @@ describe('extra permissions', () => {
     });
   });
 
+  it('names a person with no name by their email address', async () => {
+    // People who sign in by emailed link can have an empty name.
+    const id = await addUser('author', '');
+    const [row] = await testDb().select().from(user).where(eq(user.id, id));
+    await setUserExtraPermissions(testDb(), id, ['redirects:write'], actor);
+
+    const [log] = await testDb().select().from(activityLog);
+    expect(log!.summary).toBe(`Changed ${row!.email}'s extra access from none to Edit redirects`);
+  });
+
   it('clears the extras and names what was removed', async () => {
     const id = await addUser('author', 'Alex Author', ['redirects:write', 'content:write']);
     await setUserExtraPermissions(testDb(), id, [], actor);

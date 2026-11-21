@@ -250,7 +250,7 @@ export function ActivityPage({
                 </span>
                 <div className="min-w-0 flex-1">
                   <p className="text-ui">
-                    <span className="font-medium">{entry.actorName}</span>{' '}
+                    <span className="font-medium">{entry.actorName || 'Someone'}</span>{' '}
                     <span className="text-muted-foreground">
                       {entry.summary.charAt(0).toLowerCase() + entry.summary.slice(1)}
                     </span>

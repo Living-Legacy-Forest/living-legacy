@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.4.0](https://github.com/Living-Legacy-Forest/living-legacy/compare/cms-v1.3.0...cms-v1.4.0) (2026-11-21)
+
+
+### Features
+
+* **cms:** extra permissions per person and super admins ([#260](https://github.com/Living-Legacy-Forest/living-legacy/issues/260)) ([d9b738f](https://github.com/Living-Legacy-Forest/living-legacy/commit/d9b738f4f4161c2aa17650244ffd40592cec4300))
+
 ## [1.3.0](https://github.com/Living-Legacy-Forest/living-legacy/compare/cms-v1.2.0...cms-v1.3.0) (2026-11-20)
 
 

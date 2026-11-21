@@ -31,15 +31,22 @@ export async function loadAssistantSettings(db: Db) {
  * Takes one of the person's suggestions for today, or throws that the assistant is switched off
  * or the day is used up. One statement does the checking and the counting, so many presses at once
  * cannot slip past the limit. Call it after everything that can fail without reaching the model,
- * so those do not use one up.
+ * so those do not use one up. A super admin's use is `unrecorded`: it still stops when the
+ * assistant is switched off, but is not counted, so it has no daily limit.
  */
 export async function reserveSuggestion(
   db: Db,
   userId: string,
-  { limit, now = new Date(), timeZone }: { limit?: number; now?: Date; timeZone?: string } = {}
+  {
+    limit,
+    now = new Date(),
+    timeZone,
+    unrecorded = false,
+  }: { limit?: number; now?: Date; timeZone?: string; unrecorded?: boolean } = {}
 ): Promise<void> {
   const settings = await loadAssistantSettings(db);
   if (!settings.enabled) throw new SuggestError(OFF);
+  if (unrecorded) return;
   const max = limit ?? settings.dailyLimit;
   const zone = timeZone ?? settings.timeZone;
   const day = usageDay(now, zone);
@@ -69,8 +76,13 @@ export async function recordUsage(
   db: Db,
   userId: string,
   { usage, outcome }: { usage: Usage; outcome: Outcome },
-  { now = new Date(), timeZone }: { now?: Date; timeZone?: string } = {}
+  {
+    now = new Date(),
+    timeZone,
+    unrecorded = false,
+  }: { now?: Date; timeZone?: string; unrecorded?: boolean } = {}
 ): Promise<void> {
+  if (unrecorded) return;
   const day = usageDay(now, timeZone ?? (await loadAssistantSettings(db)).timeZone);
   const refused = outcome === 'refused' ? 1 : 0;
   const failed = outcome === 'error' || outcome === 'guard_failed' ? 1 : 0;

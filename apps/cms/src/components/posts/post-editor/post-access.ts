@@ -1,4 +1,4 @@
-import { type Role, can } from '@ll/content';
+import { type Access, can } from '@ll/content';
 
 /**
  * What the signed-in person may do here. `full` edits and publishes; `author`
@@ -12,17 +12,13 @@ export type PostAccess = 'full' | 'author' | 'seo' | 'readonly';
  * cannot change a scheduled post: it goes live as the publisher approved it.
  */
 export function postAccessFor(
-  user: { id: string; role: Role },
+  user: { id: string } & Access,
   createdBy: string | null,
   scheduled = false
 ): PostAccess {
-  if (can(user.role, 'posts:publish')) return 'full';
-  if (
-    can(user.role, 'posts:write') &&
-    !scheduled &&
-    (createdBy === null || createdBy === user.id)
-  ) {
+  if (can(user, 'posts:publish')) return 'full';
+  if (can(user, 'posts:write') && !scheduled && (createdBy === null || createdBy === user.id)) {
     return 'author';
   }
-  return can(user.role, 'seo:write') ? 'seo' : 'readonly';
+  return can(user, 'seo:write') ? 'seo' : 'readonly';
 }

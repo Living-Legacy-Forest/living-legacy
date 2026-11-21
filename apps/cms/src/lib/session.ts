@@ -1,23 +1,12 @@
-import { type Permission, type Role, can } from '@ll/content';
+import { type Permission, can } from '@ll/content';
 import { createMiddleware, createServerFn } from '@tanstack/react-start';
 import { getRequest } from '@tanstack/react-start/server';
 import { env } from 'cloudflare:workers';
 import { getAuth } from './auth';
+import { type SessionUser, toSessionUser } from './session-user';
 import { readSiteSettings } from './site-settings';
 
-export type SessionUser = {
-  id: string;
-  name: string;
-  email: string;
-  image: string | null;
-  imageAlt: string | null;
-  bio: string | null;
-  /** A chosen drawn avatar, shown when there is no photo. */
-  avatarSeed: string | null;
-  role: Role;
-  /** When the account was made, so What's new skips what came before. */
-  createdAt: number;
-};
+export type { SessionUser } from './session-user';
 
 /** `fresh` skips the session cookie cache, for when stale details would show. */
 async function loadUser({ fresh = false } = {}): Promise<SessionUser | null> {
@@ -26,18 +15,7 @@ async function loadUser({ fresh = false } = {}): Promise<SessionUser | null> {
     query: { disableCookieCache: fresh },
   });
   if (!session) return null;
-  const { id, name, email, image, imageAlt, bio, role, createdAt, avatarSeed } = session.user;
-  return {
-    id,
-    name,
-    email,
-    image: image ?? null,
-    imageAlt: (imageAlt as string | null) ?? null,
-    bio: (bio as string | null) ?? null,
-    avatarSeed: (avatarSeed as string | null) ?? null,
-    role: role as Role,
-    createdAt: new Date(createdAt).getTime(),
-  };
+  return toSessionUser(session.user, env.BOOTSTRAP_ADMIN_EMAILS);
 }
 
 export const getCurrentUser = createServerFn({ method: 'GET' }).handler(() =>
@@ -79,11 +57,19 @@ export const authMiddleware = createMiddleware({ type: 'function' }).server(asyn
 });
 
 /** Server-side role check. The UI hiding a control is never the only guard. */
+/** For what even an admin may not do: removing people, clearing the log, resetting the assistant. */
+export const requireSuperAdmin = createMiddleware({ type: 'function' })
+  .middleware([authMiddleware])
+  .server(({ next, context }) => {
+    if (!context.user.isSuperAdmin) throw new Error('Only a super admin can do that.');
+    return next();
+  });
+
 export function requirePermission(permission: Permission) {
   return createMiddleware({ type: 'function' })
     .middleware([authMiddleware])
     .server(({ next, context }) => {
-      if (!can(context.user.role, permission)) {
+      if (!can(context.user, permission)) {
         throw new Error('You do not have permission to do that.');
       }
       return next();

@@ -1,9 +1,9 @@
 import Anthropic from '@anthropic-ai/sdk';
-import { type Permission, type Role, can } from '@ll/content';
+import { type Access, type Permission, can } from '@ll/content';
 import { env } from 'cloudflare:workers';
 import type { AiClient } from './run';
 
-/** The permissions that let someone edit something the assistant writes for. Everyone but a viewer. */
+/** The permissions that let someone edit something the assistant writes for. Anyone with one of these can use it. */
 export const SUGGEST_PERMISSIONS: readonly Permission[] = [
   'posts:write',
   'seo:write',
@@ -17,6 +17,6 @@ export function getAiClient(): AiClient | null {
   return apiKey ? new Anthropic({ apiKey }) : null;
 }
 
-export function canSuggest(role: Role): boolean {
-  return SUGGEST_PERMISSIONS.some((permission) => can(role, permission));
+export function canSuggest(access: Access): boolean {
+  return SUGGEST_PERMISSIONS.some((permission) => can(access, permission));
 }

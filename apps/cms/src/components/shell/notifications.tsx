@@ -659,7 +659,7 @@ export function Notifications({ user }: { user: SessionUser }) {
   );
 
   // Team history is on its own page; the bell only points there.
-  const history = can(user.role, 'posts:publish') && (
+  const history = can(user, 'posts:publish') && (
     <Link
       to="/activity"
       onClick={close}

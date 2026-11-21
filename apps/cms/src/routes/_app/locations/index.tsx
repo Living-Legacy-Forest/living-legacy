@@ -18,5 +18,5 @@ function LocationsRoute() {
   const data = Route.useLoaderData();
   const search = Route.useSearch();
   const { user } = Route.useRouteContext();
-  return <LocationsPage data={data} search={search} canWrite={can(user.role, 'content:write')} />;
+  return <LocationsPage data={data} search={search} canWrite={can(user, 'content:write')} />;
 }

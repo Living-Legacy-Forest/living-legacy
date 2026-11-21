@@ -9,7 +9,10 @@ import {
   CardHeader,
   CardTitle,
 } from '@/components/ui/card';
+import { SuperAdminAction } from '@/components/super-admin-action';
 import { formatCompact, formatInteger } from '@/lib/format';
+import { useAction } from '@/lib/use-action';
+import { resetAssistantUsage } from '@/server/super-admin';
 import { cn } from '@/lib/utils';
 import type { SystemStatus } from '@/server/system';
 import { StatusPulse } from './status-pulse';
@@ -59,7 +62,14 @@ function trouble(totals: Totals) {
 }
 
 /** The writing assistant: whether it is on, what it has done today and this week, and who used it. */
-export function AssistantCard({ assistant }: { assistant: Assistant }) {
+export function AssistantCard({
+  assistant,
+  canReset = false,
+}: {
+  assistant: Assistant;
+  canReset?: boolean;
+}) {
+  const { run, pending } = useAction();
   const { keySet, switchedOn, dailyLimit, today, week, days, top } = assistant;
   const tone = !keySet || !switchedOn ? 'yellow' : 'green';
   const state = !keySet ? 'Not set up' : !switchedOn ? 'Switched off' : 'Working';
@@ -87,6 +97,24 @@ export function AssistantCard({ assistant }: { assistant: Assistant }) {
         <CardDescription>{description}</CardDescription>
         <CardAction className="flex items-center gap-3">
           <StatusPulse tone={tone} label={state} />
+          {canReset && (
+            <SuperAdminAction
+              label="Reset usage"
+              title="Reset the writing assistant's usage?"
+              description="Everyone's counts and the usage history on this page are erased, and today's daily limit starts again for everyone. This cannot be undone."
+              confirmLabel="Reset usage"
+              pending={pending}
+              onConfirm={() =>
+                run(() => resetAssistantUsage(), {
+                  success: {
+                    title: 'Usage reset',
+                    description: "The writing assistant's counts and history were cleared.",
+                  },
+                  error: 'Could not reset the usage',
+                })
+              }
+            />
+          )}
           <Link
             to="/settings"
             hash="writing-assistant"

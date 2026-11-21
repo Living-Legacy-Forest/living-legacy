@@ -76,7 +76,14 @@ function versionLine(timeZone: string) {
  * Admins' view of the services the CMS depends on and the jobs it runs on a
  * timer. Better Stack and Sentry have the history and send the alerts.
  */
-export function SystemPage({ data }: { data: SystemStatus }) {
+export function SystemPage({
+  data,
+  canResetAssistant = false,
+}: {
+  data: SystemStatus;
+  /** Only a super admin may reset the writing assistant's usage. */
+  canResetAssistant?: boolean;
+}) {
   const timeZone = useTimeZone();
   const { schedules, failures, health, history, usage, assistant } = data;
   const { overall, red, yellow } = summariseTones([
@@ -166,7 +173,7 @@ export function SystemPage({ data }: { data: SystemStatus }) {
       </Suspense>
 
       <Suspense fallback={<Skeleton className="h-80 w-full rounded-xl lg:col-span-2" />}>
-        <AssistantCard assistant={assistant} />
+        <AssistantCard assistant={assistant} canReset={canResetAssistant} />
       </Suspense>
 
       {schedules.map((schedule) => (

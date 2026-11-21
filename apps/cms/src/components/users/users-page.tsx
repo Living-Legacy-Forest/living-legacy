@@ -1,4 +1,4 @@
-import { type Role } from '@ll/content';
+import { type Permission, type Role } from '@ll/content';
 import { CameraIcon, Trash2Icon, UserPlusIcon } from '@/components/icons';
 import { useState } from 'react';
 import {
@@ -16,9 +16,26 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { ExtraAccess } from '@/components/users/extra-access';
+import {
+  extrasLine,
+  invitePayload,
+  normaliseExtras,
+  resendPayload,
+} from '@/components/users/extra-access-rules';
 import { UserPhotoDialog } from '@/components/users/user-photo-dialog';
 import { FormCell, FormSection, groupBoxClass, groupHeadingClass } from '@/components/form-cells';
 import { DialogActions, ListDialog } from '@/components/list/list-page';
+import {
+  Sheet,
+  SheetClose,
+  SheetContent,
+  SheetDescription,
+  SheetFooter,
+  SheetHeader,
+  SheetTitle,
+} from '@/components/ui/sheet';
+import { useIsMobile } from '@/hooks/use-mobile';
 import { PageActions } from '@/components/shell/page-actions';
 import { Label } from '@/components/ui/label';
 import {
@@ -47,6 +64,7 @@ import {
   inviteUser,
   removeUser,
   revokeInvitation,
+  setExtraPermissions,
 } from '@/server/users';
 import { avatarSrc } from '@/lib/avatar';
 import { useRevealOnce } from '@/lib/use-reveal-once';
@@ -137,6 +155,16 @@ export function UsersPage({ data }: { data: TeamData }) {
 
 function UsersTable({ data }: { data: TeamData }) {
   const { run, pending } = useAction();
+  // The person stays set after the sheet closes so it slides away with its content; the key gives
+  // each opening a fresh form, so edits that were not saved do not come back.
+  const [accessFor, setAccessFor] = useState<TeamUser | null>(null);
+  const [accessOpen, setAccessOpen] = useState(false);
+  const [accessKey, setAccessKey] = useState(0);
+  function openAccess(u: TeamUser) {
+    setAccessFor(u);
+    setAccessKey((k) => k + 1);
+    setAccessOpen(true);
+  }
 
   function changeRole(u: TeamUser, value: string) {
     if (value === u.role) return;
@@ -150,80 +178,113 @@ function UsersTable({ data }: { data: TeamData }) {
   }
 
   return (
-    <Table className={tableCellPadding}>
-      <TableHeader className="max-sm:hidden">
-        <TableRow className="hover:bg-transparent">
-          <TableHead>Name</TableHead>
-          <TableHead className="w-36 max-sm:hidden">Role</TableHead>
-          <TableHead className="w-32 max-md:hidden">Last active</TableHead>
-          <TableHead className="w-0" />
-        </TableRow>
-      </TableHeader>
-      <TableBody>
-        {data.users.map((u) => {
-          const isSelf = u.id === data.currentUserId;
-          const isLastAdmin = u.role === 'admin' && data.adminCount === 1;
-          // You can't demote or remove yourself, or the only admin; show the
-          // role as text rather than a control that does nothing.
-          const locked = isSelf || isLastAdmin;
-          const role = (
-            <RoleControl
-              user={u}
-              locked={locked}
-              note={isLastAdmin && !isSelf ? 'Only admin' : undefined}
-              disabled={pending}
-              onChange={(value) => changeRole(u, value)}
-            />
-          );
-          return (
-            <TableRow key={u.id}>
-              <TableCell className="w-full max-w-0 py-3">
-                <div className="flex items-center gap-3 max-sm:items-start">
-                  <UserAvatar user={u} isSelf={isSelf} />
-                  <div className="min-w-0 flex-1">
-                    <div className="flex items-center gap-2 font-medium">
-                      <span className="truncate">{u.name || u.email}</span>
-                      {isSelf && <Badge variant="secondary">You</Badge>}
-                    </div>
-                    <div className="text-muted-foreground truncate text-xs">{u.email}</div>
-                    {/* Phones have no room for the role and activity columns. */}
-                    <div className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1 sm:hidden">
-                      {role}
-                      <LastActive at={u.lastActiveAt} className="text-xs" />
+    <>
+      <Table className={tableCellPadding}>
+        <TableHeader className="max-sm:hidden">
+          <TableRow className="hover:bg-transparent">
+            <TableHead>Name</TableHead>
+            <TableHead className="w-36 max-sm:hidden">Role</TableHead>
+            <TableHead className="w-32 max-md:hidden">Last active</TableHead>
+            <TableHead className="w-0" />
+          </TableRow>
+        </TableHeader>
+        <TableBody>
+          {data.users.map((u) => {
+            const isSelf = u.id === data.currentUserId;
+            const isLastAdmin = u.role === 'admin' && data.adminCount === 1;
+            // You can't demote or remove yourself, or the only admin; show the
+            // role as text rather than a control that does nothing. A super admin is shown as
+            // one and left as text too: it comes from BOOTSTRAP_ADMIN_EMAILS, not from the role.
+            const locked = isSelf || isLastAdmin || u.isSuperAdmin;
+            // Only a super admin can remove anyone.
+            const canRemove = data.viewerIsSuperAdmin && !isSelf && !isLastAdmin;
+            const role = (
+              <RoleControl
+                user={u}
+                locked={locked}
+                note={isLastAdmin && !isSelf && !u.isSuperAdmin ? 'Only admin' : undefined}
+                disabled={pending}
+                onChange={(value) => changeRole(u, value)}
+              />
+            );
+            return (
+              <TableRow key={u.id}>
+                <TableCell className="w-full max-w-0 py-3">
+                  <div className="flex items-center gap-3 max-sm:items-start">
+                    <UserAvatar user={u} isSelf={isSelf} />
+                    <div className="min-w-0 flex-1">
+                      {/* Wraps so the badges drop under a long name instead of squeezing it. */}
+                      <div className="flex flex-wrap items-center gap-x-2 gap-y-1 font-medium">
+                        <span className="max-w-full truncate">{u.name || u.email}</span>
+                        {isSelf && <Badge variant="secondary">You</Badge>}
+                      </div>
+                      <div className="text-muted-foreground truncate text-xs">{u.email}</div>
+                      {/* Phones have no room for the role and activity columns. */}
+                      <div className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1 sm:hidden">
+                        {role}
+                        <LastActive at={u.lastActiveAt} className="text-xs" />
+                      </div>
                     </div>
                   </div>
-                </div>
-              </TableCell>
-              <TableCell className="max-sm:hidden">{role}</TableCell>
-              <TableCell className="max-md:hidden">
-                <LastActive at={u.lastActiveAt} className="text-sm" />
-              </TableCell>
-              <TableCell>
-                {!locked && (
-                  <RemoveUser
-                    user={u}
-                    onConfirm={() =>
-                      run(() => removeUser({ data: { userId: u.id } }), {
-                        success: {
-                          title: 'User removed',
-                          description: `${u.name || u.email} is signed out and can no longer sign in.`,
-                        },
-                        error: 'Could not remove the user',
-                      })
-                    }
-                  />
-                )}
-              </TableCell>
-            </TableRow>
-          );
-        })}
-      </TableBody>
-    </Table>
+                </TableCell>
+                <TableCell className="max-sm:hidden">{role}</TableCell>
+                <TableCell className="max-md:hidden">
+                  <LastActive at={u.lastActiveAt} className="text-sm" />
+                </TableCell>
+                <TableCell>
+                  <div className="flex items-center justify-end gap-1">
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="touch:min-h-11"
+                      aria-label={`Access for ${u.name || u.email}`}
+                      onClick={() => openAccess(u)}
+                    >
+                      Access
+                    </Button>
+                    {/* Keeps Access in line on rows that cannot be removed. */}
+                    {!canRemove && data.viewerIsSuperAdmin && (
+                      <span aria-hidden className="touch:size-9 size-8 shrink-0" />
+                    )}
+                    {canRemove && (
+                      <RemoveUser
+                        user={u}
+                        onConfirm={() =>
+                          run(() => removeUser({ data: { userId: u.id } }), {
+                            success: {
+                              title: 'User removed',
+                              description: `${u.name || u.email} is signed out and can no longer sign in.`,
+                            },
+                            error: 'Could not remove the user',
+                          })
+                        }
+                      />
+                    )}
+                  </div>
+                </TableCell>
+              </TableRow>
+            );
+          })}
+        </TableBody>
+      </Table>
+      <AccessDialog
+        user={accessFor}
+        open={accessOpen}
+        formKey={accessKey}
+        isSelf={accessFor?.id === data.currentUserId}
+        onClose={() => setAccessOpen(false)}
+      />
+    </>
   );
 }
 
 function roleLabel(value: string) {
   return roleItems.find((r) => r.value === value)?.label ?? value;
+}
+
+/** What to call a person's role: a super admin is named as one, not as a plain Admin. */
+function roleName(user: { role: string; isSuperAdmin: boolean }) {
+  return user.isSuperAdmin ? 'Super admin' : roleLabel(user.role);
 }
 
 /** The role picker, with what each role can do; plain text where it can't change. */
@@ -243,7 +304,7 @@ function RoleControl({
   if (locked) {
     return (
       <span className="inline-flex items-baseline gap-1.5 text-sm">
-        {roleLabel(user.role)}
+        {roleName(user)}
         {note && <span className="text-muted-foreground text-xs">{note}</span>}
       </span>
     );
@@ -269,6 +330,147 @@ function RoleControl({
         ))}
       </SelectContent>
     </Select>
+  );
+}
+
+/**
+ * A person's extra access, on top of their role. Your own is read-only. A sheet from the right on
+ * wider screens, so the list of people stays beside it; phones get the usual bottom sheet.
+ */
+function AccessDialog({
+  user,
+  open,
+  formKey,
+  isSelf,
+  onClose,
+}: {
+  user: TeamUser | null;
+  open: boolean;
+  /** Changes with each opening, so the form starts again from what is saved. */
+  formKey: number;
+  isSelf: boolean;
+  onClose: () => void;
+}) {
+  const isPhone = useIsMobile();
+  const description = user
+    ? user.role === 'admin'
+      ? `${user.name || user.email} is ${roleName(user)}.`
+      : `${user.name || user.email} is ${roleName(user)}. Anything you add here is on top of that.`
+    : undefined;
+
+  if (isPhone) {
+    return (
+      <ListDialog
+        open={open && user !== null}
+        onClose={onClose}
+        title="Access"
+        description={description}
+      >
+        {user && (
+          <AccessForm key={formKey} user={user} isSelf={isSelf} layout="phone" onDone={onClose} />
+        )}
+      </ListDialog>
+    );
+  }
+
+  return (
+    <Sheet open={open && user !== null} onOpenChange={(isOpen) => !isOpen && onClose()}>
+      <SheetContent className="gap-0 data-[side=right]:sm:max-w-md">
+        <SheetHeader className="border-b pr-12">
+          <SheetTitle className="text-lg">Access</SheetTitle>
+          <SheetDescription>{description}</SheetDescription>
+        </SheetHeader>
+        {user && (
+          <AccessForm key={formKey} user={user} isSelf={isSelf} layout="sheet" onDone={onClose} />
+        )}
+      </SheetContent>
+    </Sheet>
+  );
+}
+
+function AccessForm({
+  user,
+  isSelf,
+  layout,
+  onDone,
+}: {
+  user: TeamUser;
+  isSelf: boolean;
+  /** The sheet pins Cancel and Save under a scrolling list; a phone's bar holds Save. */
+  layout: 'sheet' | 'phone';
+  onDone: () => void;
+}) {
+  const [extras, setExtras] = useState<Permission[]>(user.extraPermissions);
+  const { run, pending } = useAction();
+  const readOnly = isSelf || user.role === 'admin';
+
+  async function submit(e: React.FormEvent) {
+    e.preventDefault();
+    // Closes only when the save worked: the function returns nothing, so `run`'s result
+    // cannot tell success from failure.
+    await run(
+      () =>
+        setExtraPermissions({
+          data: { userId: user.id, extraPermissions: normaliseExtras(user.role, extras) },
+        }),
+      {
+        success: {
+          title: 'Access saved',
+          description:
+            'It can take up to five minutes to reach someone who is signed in. They may need to reload the CMS to see new pages.',
+        },
+        error: 'Could not save access',
+        afterAction: onDone,
+      }
+    );
+  }
+
+  const saveButton = (
+    <Button type="submit" disabled={pending}>
+      {pending ? (
+        <>
+          <Spinner />
+          Saving…
+        </>
+      ) : (
+        'Save access'
+      )}
+    </Button>
+  );
+  const fields = (
+    <>
+      {isSelf && user.role !== 'admin' && (
+        <p className="text-muted-foreground text-sm">You cannot change your own access.</p>
+      )}
+      <ExtraAccess
+        role={user.role}
+        value={extras}
+        onChange={setExtras}
+        disabled={readOnly || pending}
+      />
+    </>
+  );
+
+  if (layout === 'sheet') {
+    // The list scrolls and the buttons stay in view under it, so a long list never hides Save.
+    return (
+      <form noValidate onSubmit={submit} className="flex min-h-0 flex-1 flex-col">
+        <div className="min-h-0 flex-1 space-y-5 overflow-y-auto p-4">{fields}</div>
+        <SheetFooter className="mt-0 flex-row items-center justify-end border-t">
+          <SheetClose render={<Button type="button" variant="outline" />}>
+            {readOnly ? 'Close' : 'Cancel'}
+          </SheetClose>
+          {!readOnly && saveButton}
+        </SheetFooter>
+      </form>
+    );
+  }
+
+  return (
+    <form noValidate onSubmit={submit} className="space-y-5 max-md:space-y-7">
+      {fields}
+      {!readOnly && <DialogActions>{saveButton}</DialogActions>}
+    </form>
   );
 }
 
@@ -357,12 +559,13 @@ function InviteDialog({
 }) {
   const [email, setEmail] = useState('');
   const [role, setRole] = useState<Role>('editor');
+  const [extras, setExtras] = useState<Permission[]>([]);
   const { run, pending } = useAction();
 
   async function submit(e: React.FormEvent) {
     e.preventDefault();
     if (!reportInvalid(e.currentTarget)) return;
-    const result = await run(() => inviteUser({ data: { email, role } }), {
+    const result = await run(() => inviteUser({ data: invitePayload(email, role, extras) }), {
       success: (r) =>
         r.emailed
           ? { title: 'Invite sent', description: `${r.email} can sign in from the email.` }
@@ -376,6 +579,7 @@ function InviteDialog({
       setOpen(false);
       setEmail('');
       setRole('editor');
+      setExtras([]);
     }
   }
 
@@ -384,7 +588,7 @@ function InviteDialog({
       open={open}
       onClose={() => setOpen(false)}
       title="Invite someone"
-      description="They get an email with a link to sign in. You can change their role later."
+      description="They get an email with a link to sign in. You can change their role and access later."
       icon={
         <span className="bg-muted text-foreground mb-1 flex size-10 items-center justify-center rounded-lg">
           <UserPlusIcon aria-hidden className="size-5" />
@@ -416,7 +620,11 @@ function InviteDialog({
                     key={item.value}
                     type="button"
                     aria-pressed={selected}
-                    onClick={() => setRole(item.value as Role)}
+                    onClick={() => {
+                      // Extras are picked against a role, so a new role starts with none.
+                      if (item.value !== role) setExtras([]);
+                      setRole(item.value as Role);
+                    }}
                     className={cn(
                       'focus-visible:ring-ring rounded-lg border p-3 text-left transition-colors outline-none focus-visible:ring-2',
                       selected ? 'border-foreground bg-muted/50' : 'border-border hover:bg-muted/40'
@@ -429,6 +637,10 @@ function InviteDialog({
               })}
             </div>
           </FormSection>
+        </div>
+        <div className="space-y-3 max-md:space-y-2">
+          <Label className={groupHeadingClass}>Extra access</Label>
+          <ExtraAccess role={role} value={extras} onChange={setExtras} disabled={pending} />
         </div>
         <DialogActions>
           <Button type="submit" disabled={pending}>
@@ -451,7 +663,7 @@ function InvitationsTable({ invitations }: { invitations: TeamData['invitations'
   const { run, pending } = useAction();
 
   const resend = (invite: TeamData['invitations'][number]) =>
-    run(() => inviteUser({ data: { email: invite.email, role: invite.role } }), {
+    run(() => inviteUser({ data: resendPayload(invite) }), {
       success: (r) =>
         r.emailed
           ? { title: 'Invite sent again', description: `A new email is on its way to ${r.email}.` }
@@ -486,6 +698,11 @@ function InvitationsTable({ invitations }: { invitations: TeamData['invitations'
           <TableRow key={invite.email}>
             <TableCell className="w-full max-w-0 py-3">
               <div className="truncate">{invite.email}</div>
+              {extrasLine(invite.role, invite.extraPermissions) && (
+                <div className="text-muted-foreground text-xs">
+                  Extra access: {extrasLine(invite.role, invite.extraPermissions)}
+                </div>
+              )}
               <div className="text-muted-foreground text-xs sm:hidden">
                 {roleLabel(invite.role)} · invited {formatRelative(invite.createdAt)}
               </div>

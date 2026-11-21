@@ -135,9 +135,9 @@ export function PostsList({
     setPreviewPref(open);
     document.cookie = `posts_preview=${open ? 'open' : 'closed'}; path=/; max-age=31536000; samesite=lax`;
   };
-  const canPurge = can(user.role, 'content:purge');
-  const canWrite = can(user.role, 'posts:write');
-  const canPublish = can(user.role, 'posts:publish');
+  const canPurge = can(user, 'content:purge');
+  const canWrite = can(user, 'posts:write');
+  const canPublish = can(user, 'posts:publish');
 
   // The previewed post: the one in the URL, else the first row.
   const selectedId =

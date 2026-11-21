@@ -24,7 +24,7 @@ function FaqsRoute() {
   return (
     <FaqsPage
       data={data}
-      canWrite={can(user.role, 'content:write')}
+      canWrite={can(user, 'content:write')}
       initialEdit={edit}
       // Once it is open, `edit` leaves the address so a reload does not reopen it; the sort stays.
       onOpenedInitial={() =>

@@ -18,7 +18,5 @@ function TestimonialsRoute() {
   const data = Route.useLoaderData();
   const search = Route.useSearch();
   const { user } = Route.useRouteContext();
-  return (
-    <TestimonialsPage data={data} search={search} canWrite={can(user.role, 'content:write')} />
-  );
+  return <TestimonialsPage data={data} search={search} canWrite={can(user, 'content:write')} />;
 }

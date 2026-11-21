@@ -17,7 +17,7 @@ import { listLocations } from '@/server/locations';
 
 export const Route = createFileRoute('/_app/locations/$locationId')({
   beforeLoad: ({ context }) => {
-    if (!can(context.user.role, 'content:write')) throw redirect({ to: '/locations' });
+    if (!can(context.user, 'content:write')) throw redirect({ to: '/locations' });
   },
   loader: async ({ params }) => {
     const all = await listLocations();

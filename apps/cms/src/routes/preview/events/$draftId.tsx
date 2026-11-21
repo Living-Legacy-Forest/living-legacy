@@ -12,7 +12,7 @@ export const Route = createFileRoute('/preview/events/$draftId')({
   beforeLoad: async () => {
     const user = await getCurrentUser();
     if (!user) throw redirect({ to: '/login' });
-    if (!can(user.role, 'events:manage')) throw redirect({ to: '/' });
+    if (!can(user, 'events:manage')) throw redirect({ to: '/' });
   },
   head: () => ({ meta: [{ title: 'Event preview | Living Legacy CMS' }] }),
   component: PreviewPage,

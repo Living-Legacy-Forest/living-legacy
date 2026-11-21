@@ -1,4 +1,4 @@
-import { type Permission, type Role, can } from '@ll/content';
+import { type Access, type Permission, can } from '@ll/content';
 import {
   ActivityIcon,
   AdminIcon,
@@ -218,9 +218,9 @@ export const navGroups: NavGroup[] = [
   },
 ];
 
-/** Whether someone with `role` sees this item. */
-export function isNavItemAllowed(item: NavItem, role: Role) {
-  return !item.permission || [item.permission].flat().some((p) => can(role, p));
+/** Whether this person sees the item, counting any extra permissions they were given. */
+export function isNavItemAllowed(item: NavItem, access: Access) {
+  return !item.permission || [item.permission].flat().some((p) => can(access, p));
 }
 
 /** The phone tab bar, in place of the sidebar. Every other page is under More. */
@@ -296,12 +296,12 @@ export type SidebarPage = NavItem & { to: NonNullable<NavItem['to']>; icon: Luci
 export type SidebarSection = { title: string; icon: LucideIcon; pages: SidebarPage[] };
 
 /**
- * The sidebar's sections, as `role` sees them: each group, with its pages in one flat list (a
+ * The sidebar's sections, as this person sees them: each group, with its pages in one flat list (a
  * page with sub-pages, such as Posts, gives way to them, named so they read on their own).
  * Sections with nothing to open are left out.
  */
-export function sidebarSections(role: Role): SidebarSection[] {
-  const allowed = (item: NavItem) => isNavItemAllowed(item, role);
+export function sidebarSections(access: Access): SidebarSection[] {
+  const allowed = (item: NavItem) => isNavItemAllowed(item, access);
   return navGroups
     .map((group) => ({
       title: group.title,

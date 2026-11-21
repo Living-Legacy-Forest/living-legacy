@@ -24,7 +24,7 @@ const searchSchema = z.object({
 export const Route = createFileRoute('/_app/activity/')({
   validateSearch: searchSchema,
   beforeLoad: ({ context }) => {
-    if (!can(context.user.role, 'posts:publish')) throw redirect({ to: '/' });
+    if (!can(context.user, 'posts:publish')) throw redirect({ to: '/' });
   },
   loaderDeps: ({ search }) => search,
   loader: ({ deps }) => listActivity({ data: { ...deps, page: deps.page ?? 1 } }),
@@ -35,5 +35,6 @@ export const Route = createFileRoute('/_app/activity/')({
 function ActivityRoute() {
   const data = Route.useLoaderData();
   const search = Route.useSearch();
-  return <ActivityPage data={data} search={search} />;
+  const { user } = Route.useRouteContext();
+  return <ActivityPage data={data} search={search} canClearLog={user.isSuperAdmin} />;
 }

@@ -12,5 +12,5 @@ export const Route = createFileRoute('/_app/posts/tags/')({
 function TagsRoute() {
   const data = Route.useLoaderData();
   const { user } = Route.useRouteContext();
-  return <TermsPage type="tag" data={data} canWrite={can(user.role, 'content:write')} />;
+  return <TermsPage type="tag" data={data} canWrite={can(user, 'content:write')} />;
 }

@@ -37,7 +37,10 @@ bun run dev:cms            # http://localhost:3100
 ```
 
 Sign-in is invite-only, by emailed link or, when it is set up, Google. Put your own email in
-`BOOTSTRAP_ADMIN_EMAILS` to get in as the first Admin.
+`BOOTSTRAP_ADMIN_EMAILS` to get in as the first Admin. Everyone on that list is also a super
+admin: only they can remove people, clear the activity log and reset the writing assistant's
+usage, and their own use of the assistant is not counted or limited. Take an address off the list
+to end that.
 
 ### Google sign-in
 

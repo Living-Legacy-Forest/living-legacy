@@ -3,7 +3,7 @@
  * handler rather than a server function, since a server function's validator
  * expects JSON and this receives multipart form data.
  */
-import { type Role, can, isDocumentMime } from '@ll/content';
+import { can, isDocumentMime, toAccess } from '@ll/content';
 import { schema } from '@ll/db';
 import { createFileRoute } from '@tanstack/react-router';
 import { env } from 'cloudflare:workers';
@@ -19,7 +19,7 @@ export const Route = createFileRoute('/api/media/')({
       POST: async ({ request }) => {
         const session = await getAuth().api.getSession({ headers: request.headers });
         if (!session) return new Response('Unauthorized', { status: 401 });
-        if (!can(session.user.role as Role, 'media:write')) {
+        if (!can(toAccess(session.user), 'media:write')) {
           return new Response('Forbidden', { status: 403 });
         }
 

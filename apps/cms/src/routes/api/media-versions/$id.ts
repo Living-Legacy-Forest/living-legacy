@@ -3,7 +3,7 @@
  * /api/media/:id this is not public: an old file was replaced on purpose and must not stay
  * reachable by anyone with its address. Always sent as a download, never cached.
  */
-import { type Role, can, contentDisposition } from '@ll/content';
+import { can, contentDisposition, toAccess } from '@ll/content';
 import { mediaVersions } from '@ll/db/schema';
 import { createFileRoute } from '@tanstack/react-router';
 import { env } from 'cloudflare:workers';
@@ -19,7 +19,7 @@ export const Route = createFileRoute('/api/media-versions/$id')({
       GET: async ({ request, params }) => {
         const session = await getAuth().api.getSession({ headers: request.headers });
         if (!session) return new Response('Unauthorized', { status: 401 });
-        if (!can(session.user.role as Role, 'media:write')) {
+        if (!can(toAccess(session.user), 'media:write')) {
           return new Response('Forbidden', { status: 403 });
         }
 

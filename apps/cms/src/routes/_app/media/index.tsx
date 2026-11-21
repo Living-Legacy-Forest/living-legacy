@@ -31,7 +31,7 @@ const searchSchema = z.object({
 export const Route = createFileRoute('/_app/media/')({
   validateSearch: searchSchema,
   beforeLoad: ({ context, search }) => {
-    if (!can(context.user.role, 'media:write')) throw redirect({ to: '/' });
+    if (!can(context.user, 'media:write')) throw redirect({ to: '/' });
     // Old links opened a file in a side panel; a file now has its own page.
     if (search.selected)
       throw redirect({ to: '/media/$mediaId', params: { mediaId: search.selected } });
@@ -70,7 +70,7 @@ function MediaRoute() {
       tags={tags}
       extensions={extensions}
       search={search}
-      canDelete={can(user.role, 'content:purge')}
+      canDelete={can(user, 'content:purge')}
     />
   );
 }

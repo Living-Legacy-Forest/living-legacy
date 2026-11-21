@@ -1,4 +1,4 @@
-import type { Role } from '@ll/content';
+import type { Permission, Role } from '@ll/content';
 import { createDb } from '@ll/db';
 import { user } from '@ll/db/schema';
 import { env } from 'cloudflare:workers';
@@ -7,12 +7,24 @@ import { env } from 'cloudflare:workers';
 export const testDb = () => createDb(env.DB);
 
 /** A CMS user; returns their id. */
-export async function addUser(role: Role = 'admin', name = 'Sam Tester') {
+export async function addUser(
+  role: Role = 'admin',
+  name = 'Sam Tester',
+  extraPermissions: Permission[] = []
+) {
   const id = crypto.randomUUID();
   const now = new Date();
   await testDb()
     .insert(user)
-    .values({ id, name, email: `${id}@example.test`, role, createdAt: now, updatedAt: now });
+    .values({
+      id,
+      name,
+      email: `${id}@example.test`,
+      role,
+      extraPermissions: JSON.stringify(extraPermissions),
+      createdAt: now,
+      updatedAt: now,
+    });
   return id;
 }
 

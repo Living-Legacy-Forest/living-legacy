@@ -167,7 +167,7 @@ export const saveSiteSettings = createServerFn({ method: 'POST' })
   .validator(settingsSchema)
   .handler(async ({ data, context }) => {
     // Without full settings access, only the search fields change.
-    const value: SiteSettings = can(context.user.role, 'settings:write')
+    const value: SiteSettings = can(context.user, 'settings:write')
       ? data
       : {
           ...(await readSiteSettings()),

@@ -29,7 +29,8 @@ export type WhatsNewItem = {
       | '/analytics/audience'
       | '/activity'
       | '/checks'
-      | '/calendar';
+      | '/calendar'
+      | '/users';
     hash?: string;
   };
 };
@@ -50,6 +51,18 @@ export type WhatsNewEntry = {
 };
 
 export const whatsNew: WhatsNewEntry[] = [
+  {
+    id: '2026-11-20-6',
+    kind: 'new',
+    title: 'Extra access for one person',
+    items: [
+      {
+        title: 'Give someone a little more than their role',
+        body: 'Admins can give a person extra permissions, such as managing redirects, on top of their role. On Users, choose Access beside their name, or tick them when you invite someone.',
+        link: { label: 'Open Users', to: '/users' },
+      },
+    ],
+  },
   {
     id: '2026-11-20-5',
     kind: 'new',

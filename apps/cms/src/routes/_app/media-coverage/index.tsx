@@ -18,7 +18,5 @@ function MediaCoverageRoute() {
   const data = Route.useLoaderData();
   const search = Route.useSearch();
   const { user } = Route.useRouteContext();
-  return (
-    <MediaCoveragePage data={data} search={search} canWrite={can(user.role, 'content:write')} />
-  );
+  return <MediaCoveragePage data={data} search={search} canWrite={can(user, 'content:write')} />;
 }

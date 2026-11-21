@@ -166,3 +166,44 @@ describe('recordUsage', () => {
     expect(await row(user)).toMatchObject({ refused: 1, failed: 2 });
   });
 });
+
+describe('unrecorded use (a super admin)', () => {
+  const used = {
+    input_tokens: 300,
+    output_tokens: 40,
+    cache_read_input_tokens: 0,
+    cache_creation_input_tokens: 0,
+  };
+  const day = { timeZone: 'UTC', now: at('2026-11-20T01:00:00Z') };
+  const rows = async (userId: string) =>
+    testDb().select().from(aiUsage).where(eq(aiUsage.userId, userId));
+
+  it('is not counted, so there is no daily limit either', async () => {
+    const user = await addUser();
+    const opts = { ...day, limit: 1, unrecorded: true };
+    for (let i = 0; i < 4; i += 1) await reserveSuggestion(testDb(), user, opts);
+    expect(await rows(user)).toHaveLength(0);
+  });
+
+  it('still refuses while switched off in Settings', async () => {
+    const user = await addUser();
+    await testDb()
+      .insert(siteSettings)
+      .values({ id: 'site', data: { aiEnabled: false, timeZone: 'UTC' } });
+    await expect(reserveSuggestion(testDb(), user, { ...day, unrecorded: true })).rejects.toThrow(
+      'switched off'
+    );
+  });
+
+  it('records no tokens or outcomes', async () => {
+    const user = await addUser();
+    await recordUsage(testDb(), user, { usage: used, outcome: 'ok' }, { ...day, unrecorded: true });
+    await recordUsage(
+      testDb(),
+      user,
+      { usage: used, outcome: 'error' },
+      { ...day, unrecorded: true }
+    );
+    expect(await rows(user)).toHaveLength(0);
+  });
+});

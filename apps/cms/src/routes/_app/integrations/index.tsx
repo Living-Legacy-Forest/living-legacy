@@ -5,7 +5,7 @@ import { getCmsOrigin, listApiKeys } from '@/server/api-keys';
 
 export const Route = createFileRoute('/_app/integrations/')({
   beforeLoad: ({ context }) => {
-    if (!can(context.user.role, 'settings:write')) throw redirect({ to: '/' });
+    if (!can(context.user, 'settings:write')) throw redirect({ to: '/' });
   },
   loader: async () => {
     const [keys, origin] = await Promise.all([listApiKeys(), getCmsOrigin()]);

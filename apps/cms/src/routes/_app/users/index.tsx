@@ -5,7 +5,7 @@ import { listUsers } from '@/server/users';
 
 export const Route = createFileRoute('/_app/users/')({
   beforeLoad: ({ context }) => {
-    if (!can(context.user.role, 'users:manage')) throw redirect({ to: '/' });
+    if (!can(context.user, 'users:manage')) throw redirect({ to: '/' });
   },
   loader: () => listUsers(),
   head: () => ({ meta: [{ title: 'Users | Living Legacy CMS' }] }),

@@ -1,23 +1,33 @@
 import {
   emailSchema,
+  extraPermissionsSchema,
+  guardExtraPermissionsChange,
   guardRemoval,
   guardRoleChange,
+  guardSuperAdminChange,
   isEmailDomainAllowed,
+  isSuperAdmin,
   normaliseEmail,
   parseEmailDomains,
   roleSchema,
 } from '@ll/content';
-import { invitation, session, user } from '@ll/db/schema';
+import { invitation, user } from '@ll/db/schema';
 import { createServerFn } from '@tanstack/react-start';
 import { env } from 'cloudflare:workers';
-import { count, desc, eq, max } from 'drizzle-orm';
+import { count, eq } from 'drizzle-orm';
 import { z } from 'zod';
 import { deleteOwnAvatar } from '@/lib/avatars';
 import { getDb } from '@/lib/db';
 import { sendInviteEmail } from '@/lib/email';
 import { readSiteSettings } from '@/lib/site-settings';
-import { requirePermission } from '@/lib/session';
+import { requirePermission, requireSuperAdmin } from '@/lib/session';
 import { logActivity } from './activity-log';
+import {
+  describePermissions,
+  listTeamRows,
+  saveInvitation,
+  setUserExtraPermissions,
+} from './user-store';
 
 async function adminCount(db: ReturnType<typeof getDb>): Promise<number> {
   const [row] = await db.select({ n: count() }).from(user).where(eq(user.role, 'admin'));
@@ -27,46 +37,17 @@ async function adminCount(db: ReturnType<typeof getDb>): Promise<number> {
 export const listUsers = createServerFn({ method: 'GET' })
   .middleware([requirePermission('users:manage')])
   .handler(async ({ context }) => {
-    const db = getDb();
-    const [users, invitations, activity] = await db.batch([
-      db
-        .select({
-          id: user.id,
-          name: user.name,
-          email: user.email,
-          image: user.image,
-          imageAlt: user.imageAlt,
-          avatarSeed: user.avatarSeed,
-          role: user.role,
-          createdAt: user.createdAt,
-        })
-        .from(user)
-        .orderBy(desc(user.createdAt)),
-      db
-        .select({ email: invitation.email, role: invitation.role, createdAt: invitation.createdAt })
-        .from(invitation)
-        .orderBy(desc(invitation.createdAt)),
-      // A session's updated_at moves when Better Auth refreshes it (about once
-      // a day of use), so this is when someone was last around, to the day.
-      // Expired sessions can be cleared, so no row means no recent sign-in.
-      db
-        .select({ userId: session.userId, at: max(session.updatedAt) })
-        .from(session)
-        .groupBy(session.userId),
-    ]);
-    const lastActive = new Map(
-      activity.map((a) => [a.userId, a.at ? new Date(a.at).getTime() : null])
-    );
-
+    const { users, invitations } = await listTeamRows(getDb());
     return {
       currentUserId: context.user.id,
+      /** Whether the viewer may remove people and change a super admin. */
+      viewerIsSuperAdmin: context.user.isSuperAdmin,
       adminCount: users.filter((u) => u.role === 'admin').length,
       users: users.map((u) => ({
         ...u,
-        createdAt: u.createdAt.getTime(),
-        lastActiveAt: lastActive.get(u.id) ?? null,
+        isSuperAdmin: isSuperAdmin(u, env.BOOTSTRAP_ADMIN_EMAILS),
       })),
-      invitations: invitations.map((i) => ({ ...i, createdAt: i.createdAt.getTime() })),
+      invitations,
     };
   });
 
@@ -74,7 +55,13 @@ export type TeamData = Awaited<ReturnType<typeof listUsers>>;
 
 export const inviteUser = createServerFn({ method: 'POST' })
   .middleware([requirePermission('users:manage')])
-  .validator(z.object({ email: emailSchema(), role: roleSchema }))
+  .validator(
+    z.object({
+      email: emailSchema(),
+      role: roleSchema,
+      extraPermissions: extraPermissionsSchema.default([]),
+    })
+  )
   .handler(async ({ data, context }) => {
     const db = getDb();
     const email = normaliseEmail(data.email);
@@ -88,13 +75,12 @@ export const inviteUser = createServerFn({ method: 'POST' })
       throw new Error(`Invites can only go to ${domains} addresses. Change this in Settings.`);
     }
 
-    await db
-      .insert(invitation)
-      .values({ email, role: data.role, invitedBy: context.user.id, createdAt: new Date() })
-      .onConflictDoUpdate({
-        target: invitation.email,
-        set: { role: data.role, invitedBy: context.user.id },
-      });
+    await saveInvitation(db, {
+      email,
+      role: data.role,
+      extraPermissions: data.extraPermissions,
+      invitedBy: context.user.id,
+    });
 
     // A failed email must not lose the invitation; the admin can resend it.
     let emailed = true;
@@ -107,9 +93,23 @@ export const inviteUser = createServerFn({ method: 'POST' })
       actorId: context.user.id,
       actorName: context.user.name,
       action: 'user.invited',
-      summary: `Invited ${email} as ${data.role}`,
+      summary: `Invited ${email} as ${data.role}${
+        data.extraPermissions.length
+          ? ` with extra access to ${describePermissions(data.extraPermissions)}`
+          : ''
+      }`,
     });
     return { email, emailed };
+  });
+
+export const setExtraPermissions = createServerFn({ method: 'POST' })
+  .middleware([requirePermission('users:manage')])
+  .validator(z.object({ userId: z.string(), extraPermissions: extraPermissionsSchema }))
+  .handler(async ({ data, context }) => {
+    // The Users screen hides this for yourself, but the server decides.
+    const error = guardExtraPermissionsChange({ isSelf: data.userId === context.user.id });
+    if (error) throw new Error(error);
+    await setUserExtraPermissions(getDb(), data.userId, data.extraPermissions, context.user);
   });
 
 export const changeUserRole = createServerFn({ method: 'POST' })
@@ -119,6 +119,12 @@ export const changeUserRole = createServerFn({ method: 'POST' })
     const db = getDb();
     const target = await db.query.user.findFirst({ where: eq(user.id, data.userId) });
     if (!target) throw new Error('That user no longer exists.');
+
+    const superAdminError = guardSuperAdminChange({
+      targetIsSuperAdmin: isSuperAdmin(target, env.BOOTSTRAP_ADMIN_EMAILS),
+      actorIsSuperAdmin: context.user.isSuperAdmin,
+    });
+    if (superAdminError) throw new Error(superAdminError);
 
     const error = guardRoleChange({
       isSelf: target.id === context.user.id,
@@ -135,7 +141,7 @@ export const changeUserRole = createServerFn({ method: 'POST' })
       actorId: context.user.id,
       actorName: context.user.name,
       action: 'user.role_changed',
-      summary: `Changed ${target.name}'s role from ${target.role} to ${data.role}`,
+      summary: `Changed ${target.name || target.email}'s role from ${target.role} to ${data.role}`,
     });
   });
 
@@ -198,8 +204,9 @@ export const updateUserPhoto = createServerFn({ method: 'POST' })
     }
   });
 
+// Removing someone is for super admins only: an ordinary admin can invite and change roles, not delete.
 export const removeUser = createServerFn({ method: 'POST' })
-  .middleware([requirePermission('users:manage')])
+  .middleware([requirePermission('users:manage'), requireSuperAdmin])
   .validator(z.object({ userId: z.string() }))
   .handler(async ({ data, context }) => {
     const db = getDb();

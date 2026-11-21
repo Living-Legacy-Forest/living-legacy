@@ -19,6 +19,8 @@ export const user = sqliteTable('user', {
   role: text('role', { enum: ['admin', 'editor', 'author', 'seo', 'viewer'] })
     .notNull()
     .default('editor'),
+  /** JSON array of permission names on top of the role; read through `parseExtraPermissions`, never directly. */
+  extraPermissions: text('extra_permissions').notNull().default('[]'),
   createdAt: integer('created_at', { mode: 'timestamp_ms' }).notNull(),
   updatedAt: integer('updated_at', { mode: 'timestamp_ms' }).notNull(),
 });
@@ -68,6 +70,8 @@ export const verification = sqliteTable('verification', {
 export const invitation = sqliteTable('invitation', {
   email: text('email').primaryKey(),
   role: text('role', { enum: ['admin', 'editor', 'author', 'seo', 'viewer'] }).notNull(),
+  /** Same shape as `user.extraPermissions`; copied onto the user when they accept. */
+  extraPermissions: text('extra_permissions').notNull().default('[]'),
   invitedBy: text('invited_by').references(() => user.id, { onDelete: 'set null' }),
   createdAt: integer('created_at', { mode: 'timestamp_ms' }).notNull(),
 });

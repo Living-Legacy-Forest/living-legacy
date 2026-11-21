@@ -6,7 +6,7 @@ import { getEventLocations } from '@/server/events';
 
 export const Route = createFileRoute('/_app/events/new')({
   beforeLoad: ({ context }) => {
-    if (!can(context.user.role, 'events:manage')) throw redirect({ to: '/events' });
+    if (!can(context.user, 'events:manage')) throw redirect({ to: '/events' });
   },
   loader: async () => ({ locations: await getEventLocations() }),
   head: () => ({ meta: [{ title: 'New event | Living Legacy CMS' }] }),

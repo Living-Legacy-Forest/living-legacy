@@ -5,7 +5,8 @@
 BETTER_AUTH_SECRET=
 
 # Comma-separated emails that are always allowed in as Admin, so the first
-# admin can sign in before anyone has been invited.
+# admin can sign in before anyone has been invited. They are also super admins:
+# only they can remove people, clear the activity log and reset the writing assistant.
 BOOTSTRAP_ADMIN_EMAILS=
 
 # Resend API key for sending magic-link emails (https://resend.com/api-keys).

@@ -1,4 +1,4 @@
-import { type Role, can } from '@ll/content';
+import { type Access, can } from '@ll/content';
 import { eventBookings, events, locations, media, posts } from '@ll/db/schema';
 import { createServerFn } from '@tanstack/react-start';
 import { and, asc, count, desc, eq, gte, isNotNull, isNull, lt, sql, sum } from 'drizzle-orm';
@@ -34,9 +34,9 @@ export const getDashboardData = createServerFn({ method: 'GET' })
     const now = Date.now();
     const attention = loadAttention(db, context.user, now);
     // Scores are for the people who can act on them, like the content checks.
-    const { role } = context.user;
+    const { user } = context;
     const scores =
-      can(role, 'posts:publish') || can(role, 'seo:write') ? loadScoreSummary(db) : null;
+      can(user, 'posts:publish') || can(user, 'seo:write') ? loadScoreSummary(db) : null;
     // The cards' counts per calendar day in the site's zone, ending today.
     const { timeZone } = await readSiteSettings();
     const dayList = dayKeys(TREND_DAYS, timeZone, now);
@@ -172,7 +172,7 @@ export const getDashboardData = createServerFn({ method: 'GET' })
           : null,
         bookedDaily: perDay(bookedRows),
         /** Whether the card may lead to the events overview. */
-        canManage: can(role, 'events:manage'),
+        canManage: can(user, 'events:manage'),
       },
       locations: locationRows,
       /** The days the cards' daily counts cover, oldest first, ending today: "2026-11-14". */
@@ -191,19 +191,19 @@ export type DashboardData = Awaited<ReturnType<typeof getDashboardData>>;
 const UPCOMING_DAYS = 14;
 
 /**
- * What needs someone's attention, limited to what their role lets them act on.
- * Each part is null when the role cannot see it, so the card leaves it out.
+ * What needs someone's attention, limited to what their access lets them act on.
+ * Each part is null when they cannot see it, so the card leaves it out.
  */
 async function loadAttention(
   db: ReturnType<typeof getDb>,
-  user: { id: string; role: Role },
+  user: { id: string } & Access,
   now: number
 ) {
-  const canPublish = can(user.role, 'posts:publish');
-  const canCheck = canPublish || can(user.role, 'seo:write');
-  const canRedirect = can(user.role, 'redirects:write');
-  const canEvents = can(user.role, 'events:manage');
-  const canSeeSystem = can(user.role, 'settings:write');
+  const canPublish = can(user, 'posts:publish');
+  const canCheck = canPublish || can(user, 'seo:write');
+  const canRedirect = can(user, 'redirects:write');
+  const canEvents = can(user, 'events:manage');
+  const canSeeSystem = can(user, 'settings:write');
   const inReview = and(isNull(posts.deletedAt), isNotNull(posts.reviewRequestedAt));
 
   const [reviews, scheduled, checks, missing, upcoming, jobs, health] = await Promise.all([

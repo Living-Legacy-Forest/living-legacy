@@ -7,7 +7,7 @@
  * that person is removed, or when they can no longer do what the key's scope
  * allows (read needs any role; write needs posts:write).
  */
-import { type Role, can } from '@ll/content';
+import { type Access, type Permission, can, toAccess } from '@ll/content';
 import type { ApiKeyScope } from '@ll/db/enums';
 import { apiKeys, user } from '@ll/db/schema';
 import { and, eq, isNull } from 'drizzle-orm';
@@ -42,12 +42,13 @@ export type ApiActor = {
   scope: ApiKeyScope;
   userId: string;
   userName: string;
-  role: Role;
+  role: Access['role'];
+  extraPermissions: Permission[];
 };
 
 /** Whether a key may create and edit drafts: a write key, held by someone who can still write posts. */
-export const canWrite = (actor: Pick<ApiActor, 'scope' | 'role'>) =>
-  actor.scope === 'write' && can(actor.role, 'posts:write');
+export const canWrite = (actor: { scope: ApiKeyScope } & Access) =>
+  actor.scope === 'write' && can(actor, 'posts:write');
 
 /** A JSON error in the API's one shape: `{ "error": "…" }`. */
 export function apiError(status: number, message: string): Response {
@@ -78,6 +79,7 @@ export async function authenticateApiRequest(
       userId: user.id,
       userName: user.name,
       role: user.role,
+      extraPermissions: user.extraPermissions,
     })
     .from(apiKeys)
     .innerJoin(user, eq(user.id, apiKeys.createdBy))
@@ -85,8 +87,10 @@ export async function authenticateApiRequest(
     .limit(1);
   if (!row) return apiError(401, 'That API key is not valid, or has been revoked.');
 
-  const role = row.role as Role;
-  if (needs === 'write' && !canWrite({ scope: row.scope, role })) {
+  const access = toAccess(row);
+  const { role } = access;
+  const extraPermissions = [...(access.extraPermissions ?? [])];
+  if (needs === 'write' && !canWrite({ scope: row.scope, role, extraPermissions })) {
     return apiError(403, 'This API key can only read. Create a key with write access.');
   }
 
@@ -101,6 +105,7 @@ export async function authenticateApiRequest(
     userId: row.userId,
     userName: row.userName,
     role,
+    extraPermissions,
   };
 }
 

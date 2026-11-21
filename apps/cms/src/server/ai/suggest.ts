@@ -2,7 +2,7 @@
 // one only suggests; the editor accepts it in the form and saves as usual. Nothing here writes.
 // Server only. src/server/ai.ts holds the server functions that call these; the logic lives here
 // so the browser build never has to resolve what it imports.
-import { BRAND_RULES, type BrandRule, type Role, can, toTags } from '@ll/content';
+import { BRAND_RULES, type Access, type BrandRule, can, toTags } from '@ll/content';
 import type { Db } from '@ll/db';
 import { z } from 'zod';
 import brandGuide from '../../../../../docs/brand-language.md?raw';
@@ -15,8 +15,14 @@ import { type AiClient, SuggestError, runSuggestion } from './run';
 import type { BrandFixInput, PostFieldInput } from './schemas';
 import { recordUsage, reserveSuggestion } from './usage';
 
-/** Who is asking: their role decides what they may do, and their id is what the daily limit counts. */
-export type Actor = { id: string; role: Role };
+/** Who is asking: their access decides what they may do, and their id is what the daily limit counts. */
+export type Actor = { id: string; isSuperAdmin?: boolean } & Access;
+
+/** A super admin's use is not counted or recorded, so it has no limit and is not on the System page. */
+const reserve = (db: Db, actor: Actor) =>
+  reserveSuggestion(db, actor.id, { unrecorded: actor.isSuperAdmin });
+const record = (db: Db, actor: Actor) => (result: Parameters<typeof recordUsage>[2]) =>
+  recordUsage(db, actor.id, result, { unrecorded: actor.isSuperAdmin });
 
 const NOT_ALLOWED = 'You do not have permission to do that.';
 const NOT_SET_UP = "The writing assistant isn't set up.";
@@ -48,7 +54,7 @@ export async function suggestPostFieldFor(
   actor: Actor,
   input: PostFieldInput
 ): Promise<{ text: string } | { tags: string[] }> {
-  if (!canSuggest(actor.role)) throw new SuggestError(NOT_ALLOWED);
+  if (!canSuggest(actor)) throw new SuggestError(NOT_ALLOWED);
   if (!client) throw new SuggestError(NOT_SET_UP);
   if (![input.title, input.excerpt, input.bodyMarkdown].some((part) => part.trim())) {
     throw new SuggestError('Write some of the post first.');
@@ -66,13 +72,13 @@ export async function suggestPostFieldFor(
   if (input.field === 'tags') lines.push('', `Existing tags: ${input.tagNames.join(', ')}`);
   const content = [{ type: 'text' as const, text: lines.join('\n') }];
   const rules = await brandRules(db);
-  await reserveSuggestion(db, actor.id);
+  await reserve(db, actor);
 
   if (input.field === 'tags') {
     // Tags are picked from the list, not written, so one bad pick is dropped rather than failing
     // (and paying for) the whole reply again.
     const out = await runSuggestion(client, {
-      onDone: (result) => recordUsage(db, actor.id, result),
+      onDone: record(db, actor),
       field: 'tags',
       brandGuide,
       rules,
@@ -90,7 +96,7 @@ export async function suggestPostFieldFor(
   }
 
   const out = await runSuggestion(client, {
-    onDone: (result) => recordUsage(db, actor.id, result),
+    onDone: record(db, actor),
     field: input.field,
     brandGuide,
     rules,
@@ -114,7 +120,7 @@ async function openImage(
   actor: Actor,
   input: MediaInput
 ) {
-  if (!can(actor.role, 'media:write')) throw new SuggestError(NOT_ALLOWED);
+  if (!can(actor, 'media:write')) throw new SuggestError(NOT_ALLOWED);
   if (!client) throw new SuggestError(NOT_SET_UP);
   return { client, ...(await loadAltImage(db, bucket, input.mediaId)) };
 }
@@ -128,9 +134,9 @@ async function suggestImageText(
   input: MediaInput
 ): Promise<{ text: string }> {
   const image = await openImage(db, bucket, client, actor, input);
-  await reserveSuggestion(db, actor.id);
+  await reserve(db, actor);
   const out = await runSuggestion(image.client, {
-    onDone: (result) => recordUsage(db, actor.id, result),
+    onDone: record(db, actor),
     field,
     brandGuide,
     rules: await brandRules(db),
@@ -179,12 +185,12 @@ export async function suggestMediaTagsFor(
   input: MediaInput
 ): Promise<{ tags: string[] }> {
   const image = await openImage(db, bucket, client, actor, input);
-  await reserveSuggestion(db, actor.id);
+  await reserve(db, actor);
   const rules = await brandRules(db);
   const used = (await listMediaTags(db)).map((row) => row.tag);
 
   const out = await runSuggestion(image.client, {
-    onDone: (result) => recordUsage(db, actor.id, result),
+    onDone: record(db, actor),
     field: 'mediaTags',
     brandGuide,
     rules,
@@ -218,12 +224,12 @@ export async function suggestBrandFixFor(
   actor: Actor,
   input: BrandFixInput
 ): Promise<{ text: string }> {
-  if (!canSuggest(actor.role)) throw new SuggestError(NOT_ALLOWED);
+  if (!canSuggest(actor)) throw new SuggestError(NOT_ALLOWED);
   if (!client) throw new SuggestError(NOT_SET_UP);
-  await reserveSuggestion(db, actor.id);
+  await reserve(db, actor);
 
   const out = await runSuggestion(client, {
-    onDone: (result) => recordUsage(db, actor.id, result),
+    onDone: record(db, actor),
     field: 'brandFix',
     brandGuide,
     rules: await brandRules(db),

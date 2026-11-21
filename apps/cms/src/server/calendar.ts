@@ -168,7 +168,7 @@ export const getCalendar = createServerFn({ method: 'GET' })
     // "This month" is the site's, which at a month's edge differs from the server's.
     const now = toZoned(Date.now(), timeZone);
     const month = parseMonthKey(data.month) ?? { year: now.year, month: now.month };
-    const includeEvents = can(context.user.role, 'events:manage');
+    const includeEvents = can(context.user, 'events:manage');
     return {
       month: monthKey(month),
       includeEvents,

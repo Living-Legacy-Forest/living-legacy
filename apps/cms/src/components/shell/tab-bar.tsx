@@ -39,7 +39,7 @@ export function TabBar({ user }: { user: SessionUser }) {
   // The editor gets the whole screen, like a page pushed onto an iOS stack.
   if (isEditorPath(pathname)) return null;
 
-  const tabs = phoneTabs.filter((tab) => isNavItemAllowed(tab, user.role));
+  const tabs = phoneTabs.filter((tab) => isNavItemAllowed(tab, user));
   const moreActive = !tabs.some((tab) => isTabActive(tab.to, pathname));
 
   return (
@@ -137,10 +137,10 @@ function MoreSheet({
   const sections: { label: string; rows: Row[] }[] = [];
   for (const group of navGroups) {
     const rows: Row[] = [];
-    for (const item of group.items.filter((i) => isNavItemAllowed(i, user.role))) {
+    for (const item of group.items.filter((i) => isNavItemAllowed(i, user))) {
       if (item.items) {
         const children = item.items.filter(
-          (c) => c.to && !tabs.includes(c.to) && isNavItemAllowed(c, user.role)
+          (c) => c.to && !tabs.includes(c.to) && isNavItemAllowed(c, user)
         );
         const rows = children.map((c) => ({ ...c, icon: c.icon ?? (c.to && childIcons[c.to]) }));
         if (rows.length) sections.push({ label: item.title, rows });

@@ -49,4 +49,4 @@ export const suggestBrandFix = createServerFn({ method: 'POST' })
 /** Whether to show the Suggest buttons to this person, and why not when they are missing. */
 export const getAiStatus = createServerFn({ method: 'GET' })
   .middleware([authMiddleware])
-  .handler(({ context }) => assistantStatusFor(getDb(), context.user.role));
+  .handler(({ context }) => assistantStatusFor(getDb(), context.user));

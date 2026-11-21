@@ -15,7 +15,7 @@ import { getMediaDetail } from '@/server/media';
 
 export const Route = createFileRoute('/_app/media/$mediaId')({
   beforeLoad: ({ context }) => {
-    if (!can(context.user.role, 'media:write')) throw redirect({ to: '/' });
+    if (!can(context.user, 'media:write')) throw redirect({ to: '/' });
   },
   loader: async ({ params }) => {
     const detail = await getMediaDetail({ data: { id: params.mediaId } });
@@ -53,6 +53,6 @@ function MediaFilePage() {
   }
 
   return (
-    <MediaDetail key={detail.item.id} detail={detail} canDelete={can(user.role, 'content:purge')} />
+    <MediaDetail key={detail.item.id} detail={detail} canDelete={can(user, 'content:purge')} />
   );
 }

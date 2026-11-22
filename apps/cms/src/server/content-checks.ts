@@ -2,10 +2,13 @@ import {
   type BrandScanPart,
   type BrokenLink,
   type RichTextDoc,
+  blogPath,
   brokenLinks,
   can,
+  duplicateSearchText,
   liveSitePaths,
   outlineRichText,
+  redirectedPages,
   scanBrand,
   storedToRichText,
 } from '@ll/content';
@@ -39,6 +42,8 @@ const blank = (column: unknown) => sql`coalesce(trim(${column}), '') = ''`;
  * - images in use with no alt text (images placed in rich text carry their
  *   own alt text, so these are the image fields);
  * - upcoming published events with no cover photo or no summary;
+ * - posts that may be indexed but share a search title or description with another post;
+ * - published posts that an enabled redirect answers instead, so nobody reaches them;
  * - published content that uses a word the brand language guide rules out (posts, FAQs,
  *   upcoming events, locations, the legal pages and announcement bars).
  */
@@ -62,7 +67,7 @@ export async function loadContentChecks(
 ) {
   const livePost = and(eq(posts.status, 'published'), isNull(posts.deletedAt));
 
-  const [noDescription, noImage, noAlt, eventRows] = await db.batch([
+  const [noDescription, noImage, noAlt, eventRows, postRows, ruleRows] = await db.batch([
     db
       .select({ id: posts.id, title: posts.title })
       .from(posts)
@@ -117,7 +122,49 @@ export async function loadContentChecks(
         )
       )
       .orderBy(asc(events.startsAt)),
+    db
+      .select({
+        id: posts.id,
+        title: posts.title,
+        slug: posts.slug,
+        seoTitle: posts.seoTitle,
+        seoDescription: posts.seoDescription,
+        excerpt: posts.excerpt,
+        noindex: posts.noindex,
+        canonicalUrl: posts.canonicalUrl,
+      })
+      .from(posts)
+      .where(livePost)
+      .orderBy(asc(posts.title)),
+    db
+      .select({
+        id: redirects.id,
+        fromPath: redirects.fromPath,
+        toPath: redirects.toPath,
+        statusCode: redirects.statusCode,
+        keepQuery: redirects.keepQuery,
+      })
+      .from(redirects)
+      .where(eq(redirects.enabled, true)),
   ]);
+
+  // Posts hidden from search, or credited to another page, are not in the sitemap, so what
+  // they share with other posts does not matter.
+  const duplicates = duplicateSearchText(
+    postRows
+      .filter((p) => !p.noindex && !p.canonicalUrl)
+      .map((p) => ({
+        id: p.id,
+        title: p.title,
+        seoTitle: p.seoTitle ?? '',
+        seoDescription: p.seoDescription ?? '',
+        excerpt: p.excerpt ?? '',
+      }))
+  );
+  const redirected = redirectedPages(
+    postRows.map((p) => ({ id: p.id, title: p.title, path: blogPath(p.slug) })),
+    ruleRows
+  );
 
   // A repeating event is one row per date: list it once, at its next date.
   const seen = new Set<string>();
@@ -143,6 +190,8 @@ export async function loadContentChecks(
     noImage: capped(noImage),
     noAlt: capped(noAlt),
     events: capped(eventsMissing),
+    duplicates: capped(duplicates),
+    redirected: capped(redirected),
     brand: capped(scanned.brand),
     links: capped(scanned.links),
   };

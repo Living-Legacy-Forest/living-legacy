@@ -277,6 +277,8 @@ async function loadAttention(
         checks.noImage.total +
         checks.noAlt.total +
         checks.events.total +
+        checks.duplicates.total +
+        checks.redirected.total +
         checks.brand.total +
         checks.links.total,
     missingPages: missing && {

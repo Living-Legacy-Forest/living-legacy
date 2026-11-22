@@ -393,3 +393,111 @@ describe('broken link check', () => {
     expect((await links()).rows.map((r) => r.title)).toEqual(['Three', 'One']);
   });
 });
+
+describe('duplicate search text check', () => {
+  const duplicates = async () => (await loadContentChecks(testDb())).duplicates;
+
+  it('lists posts that share a search title, using the post title when none is set', async () => {
+    await testDb()
+      .insert(posts)
+      .values([
+        { title: 'Memorial trees', slug: 'one', status: 'published' },
+        { title: 'Something else', slug: 'two', status: 'published', seoTitle: 'memorial  TREES' },
+        { title: 'Unrelated', slug: 'three', status: 'published' },
+      ]);
+    const { total, rows } = await duplicates();
+    expect(total).toBe(1);
+    expect(rows[0]).toMatchObject({ kind: 'title', text: 'Memorial trees' });
+    expect(rows[0]?.posts.map((p) => p.title).sort()).toEqual(['Memorial trees', 'Something else']);
+  });
+
+  it('lists a shared description, falling back to the excerpt', async () => {
+    await testDb()
+      .insert(posts)
+      .values([
+        { title: 'A', slug: 'a', status: 'published', excerpt: 'Same words.' },
+        { title: 'B', slug: 'b', status: 'published', seoDescription: 'Same words.' },
+      ]);
+    expect((await duplicates()).rows).toEqual([
+      expect.objectContaining({ kind: 'description', text: 'Same words.' }),
+    ]);
+  });
+
+  it('leaves out drafts, trashed posts, hidden posts and posts credited elsewhere', async () => {
+    await testDb()
+      .insert(posts)
+      .values([
+        { title: 'Same', slug: 'live', status: 'published' },
+        { title: 'Same', slug: 'draft', status: 'draft' },
+        { title: 'Same', slug: 'trashed', status: 'published', deletedAt: new Date() },
+        { title: 'Same', slug: 'hidden', status: 'published', noindex: true },
+        {
+          title: 'Same',
+          slug: 'credited',
+          status: 'published',
+          canonicalUrl: 'https://example.com/original',
+        },
+      ]);
+    expect((await duplicates()).total).toBe(0);
+  });
+
+  it('is clear when every post reads differently, and for posts with no text at all', async () => {
+    await testDb()
+      .insert(posts)
+      .values([
+        { title: 'One', slug: 'one', status: 'published' },
+        { title: 'Two', slug: 'two', status: 'published' },
+      ]);
+    expect((await duplicates()).total).toBe(0);
+  });
+});
+
+describe('redirected posts check', () => {
+  const redirected = async () => (await loadContentChecks(testDb())).redirected;
+
+  it('lists a published post that an enabled redirect answers, and where it goes', async () => {
+    const db = testDb();
+    await db.insert(posts).values({ title: 'Moved', slug: 'moved', status: 'published' });
+    await db
+      .insert(redirects)
+      .values({ fromPath: '/blog/moved', toPath: '/news', statusCode: 301 });
+    expect((await redirected()).rows).toEqual([
+      expect.objectContaining({ title: 'Moved', path: '/blog/moved', to: '/news', gone: false }),
+    ]);
+  });
+
+  it('reports a post marked as removed (410) and matches by wildcard', async () => {
+    const db = testDb();
+    await db.insert(posts).values([
+      { title: 'Gone', slug: 'gone', status: 'published' },
+      { title: 'Old', slug: 'old/one', status: 'published' },
+    ]);
+    await db.insert(redirects).values([
+      { fromPath: '/blog/gone', toPath: '', statusCode: 410 },
+      { fromPath: '/blog/old/*', toPath: '/news/*', statusCode: 301 },
+    ]);
+    const { rows } = await redirected();
+    expect(rows.map((r) => [r.title, r.gone])).toEqual(
+      expect.arrayContaining([
+        ['Gone', true],
+        ['Old', false],
+      ])
+    );
+    expect(rows).toHaveLength(2);
+  });
+
+  it('ignores switched-off redirects, drafts and trashed posts', async () => {
+    const db = testDb();
+    await db.insert(posts).values([
+      { title: 'Off', slug: 'off', status: 'published' },
+      { title: 'Draft', slug: 'draft', status: 'draft' },
+      { title: 'Trashed', slug: 'trashed', status: 'published', deletedAt: new Date() },
+    ]);
+    await db.insert(redirects).values([
+      { fromPath: '/blog/off', toPath: '/x', statusCode: 301, enabled: false },
+      { fromPath: '/blog/draft', toPath: '/x', statusCode: 301 },
+      { fromPath: '/blog/trashed', toPath: '/x', statusCode: 301 },
+    ]);
+    expect((await redirected()).total).toBe(0);
+  });
+});

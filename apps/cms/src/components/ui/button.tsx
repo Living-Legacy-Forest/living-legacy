@@ -2,7 +2,6 @@ import { Button as ButtonPrimitive } from '@base-ui/react/button';
 import { cva, type VariantProps } from 'class-variance-authority';
 import { isValidElement, useLayoutEffect, useRef, type ReactNode } from 'react';
 import { Spinner } from '@/components/ui/spinner';
-import { play } from '@/lib/sound';
 import { cn } from '@/lib/utils';
 
 const buttonVariants = cva(
@@ -142,7 +141,6 @@ function Button({
   disabled,
   focusableWhenDisabled,
   children,
-  onClick,
   ref,
   ...props
 }: ButtonProps) {
@@ -162,11 +160,6 @@ function Button({
       focusableWhenDisabled={focusableWhenDisabled || loading}
       aria-busy={loading || undefined}
       ref={setRef}
-      onClick={(event) => {
-        // A button that opens a menu or dialog is answered by that opening, not a tap on top.
-        if (!event.currentTarget.hasAttribute('aria-haspopup')) play('tap');
-        onClick?.(event);
-      }}
       {...props}
     >
       {loading ? (

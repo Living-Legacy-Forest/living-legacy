@@ -1,6 +1,6 @@
 import { FileQuestionIcon } from '@/components/icons';
 import { HeadContent, Link, Scripts, createRootRoute } from '@tanstack/react-router';
-import type { ReactNode } from 'react';
+import { type ReactNode, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import {
   Empty,
@@ -12,6 +12,7 @@ import {
 } from '@/components/ui/empty';
 import { Toaster } from '@/components/ui/sonner';
 import { TooltipProvider } from '@/components/ui/tooltip';
+import { listenForTaps } from '@/lib/sound';
 import { useThemeSync } from '@/lib/use-theme-sync';
 import { type Theme, getRootSettings } from '@/server/settings';
 import styles from '../styles.css?url';
@@ -75,6 +76,7 @@ export const Route = createRootRoute({
 function RootDocument({ children }: { children: ReactNode }) {
   const { theme, cmsFont, cmsColour } = Route.useLoaderData();
   useThemeSync(theme);
+  useEffect(() => listenForTaps(), []);
 
   return (
     <html

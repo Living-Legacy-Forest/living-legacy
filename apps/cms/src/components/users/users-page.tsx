@@ -561,6 +561,7 @@ function InviteDialog({
   const [role, setRole] = useState<Role>('editor');
   const [extras, setExtras] = useState<Permission[]>([]);
   const { run, pending } = useAction();
+  const isPhone = useIsMobile();
 
   async function submit(e: React.FormEvent) {
     e.preventDefault();
@@ -583,79 +584,111 @@ function InviteDialog({
     }
   }
 
-  return (
-    <ListDialog
-      open={open}
-      onClose={() => setOpen(false)}
-      title="Invite someone"
-      description="They get an email with a link to sign in. You can change their role and access later."
-      icon={
-        <span className="bg-muted text-foreground mb-1 flex size-10 items-center justify-center rounded-lg">
-          <UserPlusIcon aria-hidden className="size-5" />
-        </span>
-      }
-    >
-      <form noValidate onSubmit={submit} className="space-y-5 max-md:space-y-7">
+  const description =
+    'They get an email with a link to sign in. You can change their role and access later.';
+
+  const sendButton = (
+    <Button type="submit" disabled={pending}>
+      {pending ? (
+        <>
+          <Spinner />
+          Sending…
+        </>
+      ) : (
+        'Send invite'
+      )}
+    </Button>
+  );
+  const fields = (
+    <>
+      <FormSection>
+        <FormCell label="Email" htmlFor="invite-email">
+          <Input
+            id="invite-email"
+            type="email"
+            maxLength={254}
+            required
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            placeholder="name@example.com"
+          />
+        </FormCell>
+      </FormSection>
+      <div className="space-y-2 max-md:space-y-1.5">
+        <Label className={groupHeadingClass}>Role</Label>
         <FormSection>
-          <FormCell label="Email" htmlFor="invite-email">
-            <Input
-              id="invite-email"
-              type="email"
-              maxLength={254}
-              required
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              placeholder="name@example.com"
-            />
-          </FormCell>
+          <div className="grid grid-cols-2 gap-2">
+            {roleItems.map((item) => {
+              const selected = role === item.value;
+              return (
+                <button
+                  key={item.value}
+                  type="button"
+                  aria-pressed={selected}
+                  onClick={() => {
+                    // Extras are picked against a role, so a new role starts with none.
+                    if (item.value !== role) setExtras([]);
+                    setRole(item.value as Role);
+                  }}
+                  className={cn(
+                    'focus-visible:ring-ring rounded-lg border p-3 text-left transition-colors outline-none focus-visible:ring-2',
+                    selected ? 'border-foreground bg-muted/50' : 'border-border hover:bg-muted/40'
+                  )}
+                >
+                  <div className="text-sm font-medium">{item.label}</div>
+                  <div className="text-muted-foreground mt-0.5 text-xs">{item.description}</div>
+                </button>
+              );
+            })}
+          </div>
         </FormSection>
-        <div className="space-y-2 max-md:space-y-1.5">
-          <Label className={groupHeadingClass}>Role</Label>
-          <FormSection>
-            <div className="grid grid-cols-2 gap-2">
-              {roleItems.map((item) => {
-                const selected = role === item.value;
-                return (
-                  <button
-                    key={item.value}
-                    type="button"
-                    aria-pressed={selected}
-                    onClick={() => {
-                      // Extras are picked against a role, so a new role starts with none.
-                      if (item.value !== role) setExtras([]);
-                      setRole(item.value as Role);
-                    }}
-                    className={cn(
-                      'focus-visible:ring-ring rounded-lg border p-3 text-left transition-colors outline-none focus-visible:ring-2',
-                      selected ? 'border-foreground bg-muted/50' : 'border-border hover:bg-muted/40'
-                    )}
-                  >
-                    <div className="text-sm font-medium">{item.label}</div>
-                    <div className="text-muted-foreground mt-0.5 text-xs">{item.description}</div>
-                  </button>
-                );
-              })}
-            </div>
-          </FormSection>
-        </div>
-        <div className="space-y-3 max-md:space-y-2">
-          <Label className={groupHeadingClass}>Extra access</Label>
-          <ExtraAccess role={role} value={extras} onChange={setExtras} disabled={pending} />
-        </div>
-        <DialogActions>
-          <Button type="submit" disabled={pending}>
-            {pending ? (
-              <>
-                <Spinner />
-                Sending…
-              </>
-            ) : (
-              'Send invite'
-            )}
-          </Button>
-        </DialogActions>
-      </form>
-    </ListDialog>
+      </div>
+      <div className="space-y-3 max-md:space-y-2">
+        <Label className={groupHeadingClass}>Extra access</Label>
+        <ExtraAccess role={role} value={extras} onChange={setExtras} disabled={pending} />
+      </div>
+    </>
+  );
+
+  if (isPhone) {
+    return (
+      <ListDialog
+        open={open}
+        onClose={() => setOpen(false)}
+        title="Invite someone"
+        description={description}
+        icon={
+          <span className="bg-muted text-foreground mb-1 flex size-10 items-center justify-center rounded-lg">
+            <UserPlusIcon aria-hidden className="size-5" />
+          </span>
+        }
+      >
+        <form noValidate onSubmit={submit} className="space-y-5 max-md:space-y-7">
+          {fields}
+          <DialogActions>{sendButton}</DialogActions>
+        </form>
+      </ListDialog>
+    );
+  }
+
+  // A sheet from the right on wider screens, like Access: the list of people stays beside it, and
+  // the buttons stay in view under a scrolling form.
+  return (
+    <Sheet open={open} onOpenChange={setOpen}>
+      <SheetContent className="gap-0 data-[side=right]:sm:max-w-md">
+        <SheetHeader className="border-b pr-12">
+          <SheetTitle className="text-lg">Invite someone</SheetTitle>
+          <SheetDescription>{description}</SheetDescription>
+        </SheetHeader>
+        <form noValidate onSubmit={submit} className="flex min-h-0 flex-1 flex-col">
+          <div className="min-h-0 flex-1 space-y-5 overflow-y-auto p-4">{fields}</div>
+          <SheetFooter className="mt-0 flex-row items-center justify-end border-t">
+            <SheetClose render={<Button type="button" variant="outline" />}>Cancel</SheetClose>
+            {sendButton}
+          </SheetFooter>
+        </form>
+      </SheetContent>
+    </Sheet>
   );
 }
 

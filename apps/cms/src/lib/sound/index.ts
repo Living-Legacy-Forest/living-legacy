@@ -98,6 +98,28 @@ function start(name: SoundName, ctx: AudioContext) {
 /** For an `onOpenChange`: the sound of a dialog or sheet opening or closing. */
 export const playOpen = (open: boolean) => play(open ? 'open' : 'close');
 
+/** What a press can land on: native controls, and the roles that stand in for them. */
+const TAPPABLE =
+  'button, a[href], summary, [role="button"], [role="link"], [role="tab"], [role="menuitem"], [role="option"]';
+
+/**
+ * Plays a tap for a click on any button or link, so plain elements outside the shared
+ * components answer too. It runs before the component's own handler, which is how a switch,
+ * menu item or dialog replaces the tap with its own sound. A control that opens something is
+ * left to that opening, and a disabled one stays quiet.
+ *
+ * Returns the function that removes the listener.
+ */
+export function listenForTaps(): () => void {
+  const onClick = (event: MouseEvent) => {
+    const target = event.target instanceof Element ? event.target.closest(TAPPABLE) : null;
+    if (!target || target.matches(':disabled, [aria-disabled="true"], [aria-haspopup]')) return;
+    play('tap');
+  };
+  document.addEventListener('click', onClick, true);
+  return () => document.removeEventListener('click', onClick, true);
+}
+
 let pendingTap: ReturnType<typeof setTimeout> | undefined;
 
 /**

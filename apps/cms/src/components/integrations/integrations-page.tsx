@@ -1,10 +1,13 @@
-import { useEffect, useState } from 'react';
+import { type ReactNode, useEffect, useState } from 'react';
+import { BrandMark } from '@/components/brand-logos';
 import {
   CheckIcon,
   ChevronRightIcon,
+  Code2,
   CopyIcon,
   KeyIcon,
   PlusIcon,
+  SparklesIcon,
   Trash2Icon,
 } from '@/components/icons';
 import {
@@ -96,7 +99,7 @@ export function IntegrationsPage({ keys, origin }: { keys: ApiKeyRow[]; origin: 
       <div className="flex items-start justify-between gap-4">
         <div className="space-y-1">
           <h1 data-slot="page-title" className="text-xl font-semibold tracking-tight">
-            <RevealWords text="Integrations" />
+            <RevealWords text="API keys" />
           </h1>
           <p className="text-muted-foreground text-sm">
             Connect AI tools such as Claude, and your own scripts, to read posts and write drafts.
@@ -457,10 +460,11 @@ function CopyableKey({ value }: { value: string }) {
 
 type Method = 'claude' | 'mcp' | 'api';
 
-const methods: { value: Method; label: string }[] = [
-  { value: 'claude', label: 'Claude Code' },
-  { value: 'mcp', label: 'Other AI apps' },
-  { value: 'api', label: 'REST API' },
+// Claude has its own mark; the other two are not one brand, so they get a plain icon.
+const methods: { value: Method; label: string; icon: ReactNode }[] = [
+  { value: 'claude', label: 'Claude Code', icon: <BrandMark brand="claudecode" /> },
+  { value: 'mcp', label: 'Other AI apps', icon: <SparklesIcon aria-hidden className="size-4" /> },
+  { value: 'api', label: 'REST API', icon: <Code2 aria-hidden className="size-4" /> },
 ];
 
 const PLACEHOLDER_KEY = 'llk_…';

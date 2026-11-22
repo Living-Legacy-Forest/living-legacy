@@ -15,6 +15,7 @@ import {
   ArrowRightLeft,
   CalendarClockIcon,
   IntegrationsIcon,
+  KeyIcon,
   CircleHelp,
   ExternalLink,
   FileText,
@@ -56,6 +57,7 @@ export type NavItem = {
     | '/analytics/traffic'
     | '/analytics/visitors'
     | '/integrations'
+    | '/integrations/apps'
     | '/checks'
     | '/calendar'
     | '/announcements'
@@ -203,8 +205,16 @@ export const navGroups: NavGroup[] = [
       {
         title: 'Integrations',
         icon: IntegrationsIcon,
-        to: '/integrations',
         permission: 'settings:write',
+        items: [
+          { title: 'API keys', icon: KeyIcon, to: '/integrations', permission: 'settings:write' },
+          {
+            title: 'Apps',
+            icon: IntegrationsIcon,
+            to: '/integrations/apps',
+            permission: 'settings:write',
+          },
+        ],
       },
       { title: 'System', icon: SystemIcon, to: '/system', permission: 'settings:write' },
       { title: 'Uptime', icon: UptimeIcon, to: '/uptime', permission: 'settings:write' },

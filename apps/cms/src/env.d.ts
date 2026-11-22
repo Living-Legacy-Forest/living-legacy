@@ -14,6 +14,8 @@ declare namespace Cloudflare {
     // Better Stack heartbeat addresses, one JSON object for all of them: keys are
     // schedules or jobs (server/cron-jobs.ts). Unset locally, where nothing is pinged.
     HEARTBEAT_URLS?: string;
+    // Better Stack Uptime API token (read-only), for the Uptime page (server/uptime.ts).
+    BETTERSTACK_API_TOKEN?: string;
   }
 }
 

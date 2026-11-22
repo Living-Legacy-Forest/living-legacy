@@ -25,6 +25,11 @@ function heartbeatUrls(env: Cloudflare.Env): Record<string, string> {
   }
 }
 
+/** How many heartbeat addresses are set up, for the Apps page. The addresses stay private. */
+export function heartbeatCount(env: Cloudflare.Env): number {
+  return Object.keys(heartbeatUrls(env)).length;
+}
+
 /** The heartbeat a schedule pings after each run, if it has one. */
 export function heartbeatFor(schedule: CronSchedule, env: Cloudflare.Env): string | undefined {
   return heartbeatUrls(env)[schedule];

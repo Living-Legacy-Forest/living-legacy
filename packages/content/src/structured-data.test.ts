@@ -3,6 +3,7 @@ import {
   blogPostingJsonLd,
   breadcrumbJsonLd,
   organizationJsonLd,
+  placeJsonLd,
   serializeJsonLd,
   websiteJsonLd,
 } from './structured-data';
@@ -72,5 +73,49 @@ describe('blogPostingJsonLd', () => {
 describe('serializeJsonLd', () => {
   it('cannot close the script tag it sits in', () => {
     expect(serializeJsonLd({ name: '</script><b>' })).not.toContain('</script>');
+  });
+});
+
+describe('placeJsonLd', () => {
+  const base = {
+    siteUrl,
+    url: 'https://livinglegacy.com.au/locations/mornington/',
+    name: 'Living Legacy Mornington',
+  };
+
+  it('links the page to the website and leaves out what it was not given', () => {
+    expect(placeJsonLd(base)).toEqual({
+      '@context': 'https://schema.org',
+      '@type': 'Place',
+      name: 'Living Legacy Mornington',
+      url: base.url,
+      mainEntityOfPage: {
+        '@type': 'WebPage',
+        '@id': base.url,
+        isPartOf: { '@id': 'https://livinglegacy.com.au/#website' },
+      },
+    });
+  });
+
+  it('adds the address with its state, and the pin when both coordinates are set', () => {
+    const place = placeJsonLd({
+      ...base,
+      address: '1 Forest Rd, Mornington',
+      region: 'Victoria',
+      latitude: -38.2,
+      longitude: 145.0,
+    });
+    expect(place.address).toEqual({
+      '@type': 'PostalAddress',
+      streetAddress: '1 Forest Rd, Mornington',
+      addressRegion: 'Victoria',
+      addressCountry: 'AU',
+    });
+    expect(place.geo).toEqual({ '@type': 'GeoCoordinates', latitude: -38.2, longitude: 145.0 });
+  });
+
+  it('keeps a pin at zero, and drops a half-set one', () => {
+    expect(placeJsonLd({ ...base, latitude: 0, longitude: 0 }).geo).toBeDefined();
+    expect(placeJsonLd({ ...base, latitude: -38.2, longitude: null }).geo).toBeUndefined();
   });
 });

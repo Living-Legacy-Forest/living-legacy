@@ -30,6 +30,10 @@ const item: LocationItem = {
   phone: null,
   email: null,
   hubspotFormId: null,
+  seoTitle: null,
+  seoDescription: null,
+  ogMediaId: null,
+  noindex: false,
   sortOrder: 3,
   status: 'draft',
 };

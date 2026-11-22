@@ -91,7 +91,7 @@ export async function loadContentChecks(
               and t.photo_media_id = ${media.id})
             or exists (select 1 from media_coverage c where c.image_media_id = ${media.id})
             or exists (select 1 from locations l where l.deleted_at is null
-              and l.hero_media_id = ${media.id})
+              and ${media.id} in (l.hero_media_id, l.og_media_id))
             or exists (select 1 from events e where e.status != 'cancelled'
               and (e.hero_media_id = ${media.id}
                 or exists (select 1 from json_each(e.gallery_media_ids) g where g.value = ${media.id})))

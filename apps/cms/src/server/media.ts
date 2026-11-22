@@ -134,7 +134,7 @@ const usageSources = [
     table: locations,
     id: locations.id,
     label: locations.name,
-    text: [locations.heroMediaId, locations.about, locations.draft],
+    text: [locations.heroMediaId, locations.ogMediaId, locations.about, locations.draft],
   },
   {
     kind: 'event',

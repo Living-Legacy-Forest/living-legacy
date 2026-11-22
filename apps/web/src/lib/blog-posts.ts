@@ -8,6 +8,7 @@
  * works on the merged list in memory. Each source caches and soft-fails on
  * its own (src/lib/blog-cms.ts, src/lib/blog-wordpress.ts).
  */
+import type { SitemapEntry } from '@ll/content';
 import { type BlogAuthor, type BlogPage, type BlogPost, type BlogTerm } from '@/lib/blog';
 import { getCmsPosts } from '@/lib/blog-cms';
 import { getWordPressPosts } from '@/lib/blog-wordpress';
@@ -180,11 +181,6 @@ export async function searchBlogPosts({
 }
 
 // --- Feed + sitemap -------------------------------------------------------
-
-export interface SitemapEntry {
-  path: string;
-  lastmod?: string;
-}
 
 /**
  * Every blog URL for the on-demand sitemap: the blog index, posts that may be indexed, plus

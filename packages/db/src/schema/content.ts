@@ -271,6 +271,12 @@ export const locations = sqliteTable(
     email: text('email'),
     /** The HubSpot form its enquiries and tour bookings go to. */
     hubspotFormId: text('hubspot_form_id'),
+    /** Search listing and share card; each falls back to the name, intro and hero photo. */
+    seoTitle: text('seo_title'),
+    seoDescription: text('seo_description'),
+    ogMediaId: text('og_media_id').references(() => media.id, { onDelete: 'set null' }),
+    /** Keeps a live location's page out of search results and the sitemap. */
+    noindex: integer('noindex', { mode: 'boolean' }).notNull().default(false),
     sortOrder: integer('sort_order').notNull().default(0),
     ...lifecycle(),
   },

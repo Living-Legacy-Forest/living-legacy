@@ -52,6 +52,18 @@ export type WhatsNewEntry = {
 
 export const whatsNew: WhatsNewEntry[] = [
   {
+    id: '2026-11-22-3',
+    kind: 'new',
+    title: 'Search and sharing for locations',
+    items: [
+      {
+        title: 'Get a location ready for search and sharing',
+        body: 'Each location now has a Search and sharing section with its own title, description and share image, a preview of the search result, and a switch to hide it from search engines. Anything left empty uses the name, introduction and hero photo. These take effect when location pages launch on the website.',
+        link: { label: 'Open Locations', to: '/locations' },
+      },
+    ],
+  },
+  {
     id: '2026-11-22-2',
     kind: 'improved',
     title: 'Invite from the side',

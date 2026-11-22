@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { richTextToStored, storedToRichText } from './locations';
+import { isSitemapLocation, locationPath, richTextToStored, storedToRichText } from './locations';
 import type { RichTextDoc } from './posts';
 
 describe('a location about, as stored', () => {
@@ -38,5 +38,29 @@ describe('a location about, as stored', () => {
     const read = storedToRichText('{"type":"script","content":[]}');
     expect(read?.type).toBe('doc');
     expect(JSON.stringify(read?.content)).not.toContain('"type":"script"');
+  });
+});
+
+describe('isSitemapLocation', () => {
+  const live = { stage: 'live', status: 'published', noindex: false } as const;
+
+  it('lists a published live location', () => {
+    expect(isSitemapLocation(live)).toBe(true);
+  });
+
+  it.each([
+    ['on its own website', { ...live, stage: 'external' as const }],
+    ['coming soon', { ...live, stage: 'coming_soon' as const }],
+    ['a draft', { ...live, status: 'draft' as const }],
+    ['hidden from search engines', { ...live, noindex: true }],
+    ['removed', { ...live, deletedAt: new Date() }],
+  ])('leaves out one that is %s', (_, location) => {
+    expect(isSitemapLocation(location)).toBe(false);
+  });
+});
+
+describe('locationPath', () => {
+  it('ends with a slash, like every canonical URL', () => {
+    expect(locationPath('mornington')).toBe('/locations/mornington/');
   });
 });

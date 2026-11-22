@@ -17,7 +17,6 @@ import {
 } from '@/components/icons';
 import { SuggestButton, SuggestTagsButton } from '@/components/ai/suggest-button';
 import { TagInput } from '@/components/arc/tag-input/tag-input';
-import { ConfirmBulkDelete } from '@/components/list/list-tools';
 import { DocumentThumb } from '@/components/media/document-card';
 import { FocalPicker, type Focal } from '@/components/media/focal-point';
 import { ImageCropDialog } from '@/components/media/image-crop-dialog';
@@ -47,16 +46,19 @@ import { formatDateTime } from '@/lib/format';
 import { motionTokens } from '@/components/arc/lib/motion-tokens';
 import { UnsavedLabel } from '@/components/unsaved-label';
 import { recallMediaSearch, setMediaDirection, takeMediaDirection } from '@/lib/media-return';
-import { notify, removedNotice } from '@/lib/notify';
+import { notify, trashedNotice } from '@/lib/notify';
 import { addPdfCover } from '@/lib/pdf-cover';
 import { canCrop } from '@/lib/prepare-image';
 import { IMAGE_ACCEPT, mediaSrc, uploadMedia } from '@/lib/upload-media';
 import { useAction } from '@/lib/use-action';
 import { useTimeZone } from '@/lib/use-time-zone';
 import { suggestAltText, suggestMediaCaption, suggestMediaTags } from '@/server/ai';
-import { type MediaDetail as Detail, deleteMedia, updateMedia } from '@/server/media';
-
-const NOUN: [string, string] = ['file', 'files'];
+import {
+  type MediaDetail as Detail,
+  moveMediaToTrash,
+  restoreMediaFromTrash,
+  updateMedia,
+} from '@/server/media';
 
 const escapeHtml = (text: string) =>
   text.replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
@@ -90,7 +92,6 @@ export function MediaDetail({ detail, canDelete }: { detail: Detail; canDelete: 
   // The file being cropped, fetched back from the library.
   const [cropping, setCropping] = useState<File | null>(null);
   const [loadingCrop, setLoadingCrop] = useState(false);
-  const [confirmingDelete, setConfirmingDelete] = useState(false);
   // The file picked to go behind this one, waiting for a yes.
   const [replacement, setReplacement] = useState<File | null>(null);
   const replaceInput = useRef<HTMLInputElement>(null);
@@ -214,10 +215,15 @@ export function MediaDetail({ detail, canDelete }: { detail: Detail; canDelete: 
     }
   }
 
-  async function remove() {
-    await run(() => deleteMedia({ data: { ids: [item.id] } }), {
-      success: removedNotice(1, NOUN),
-      error: 'Could not remove the file',
+  async function trash() {
+    await run(() => moveMediaToTrash({ data: { ids: [item.id] } }), {
+      success: trashedNotice(1, () =>
+        run(() => restoreMediaFromTrash({ data: { ids: [item.id] } }), {
+          success: { title: 'File restored', description: 'It is back in the library.' },
+          error: 'Could not restore the file',
+        })
+      ),
+      error: 'Could not move the file to the trash',
       // Leaves before the data refreshes, so the page never flashes "gone".
       afterAction: () => navigate({ to: '/media' }),
     });
@@ -419,10 +425,10 @@ export function MediaDetail({ detail, canDelete }: { detail: Detail; canDelete: 
                 size="sm"
                 className="text-muted-foreground hover:text-destructive touch:min-h-11 touch:min-w-11"
                 disabled={pending}
-                onClick={() => setConfirmingDelete(true)}
+                onClick={() => void trash()}
               >
                 <Trash2Icon aria-hidden data-icon="inline-start" className="touch:size-5 size-4" />
-                <span className="max-sm:sr-only">Delete</span>
+                <span className="max-sm:sr-only">Move to trash</span>
               </Button>
             )}
             <Button type="submit" size="sm" className="touch:min-h-11" disabled={pending || !dirty}>
@@ -626,14 +632,6 @@ export function MediaDetail({ detail, canDelete }: { detail: Detail; canDelete: 
         </motion.div>
       </form>
 
-      <ConfirmBulkDelete
-        open={confirmingDelete}
-        onOpenChange={setConfirmingDelete}
-        count={1}
-        noun={NOUN}
-        description="It is removed for good, with its earlier versions. Anything using it, like a post or a team member, loses that file."
-        onConfirm={remove}
-      />
       <ImageCropDialog file={cropping} onCancel={() => setCropping(null)} onDone={saveCopy} />
     </>
   );

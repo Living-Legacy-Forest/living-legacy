@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { type ReactNode, useState } from 'react';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { SearchIcon, XIcon } from '@/components/icons';
 import {
@@ -108,6 +108,7 @@ export function SelectionBar({
   total,
   pending,
   onDelete,
+  actions,
   editInTopBar = true,
 }: {
   selection: Selection;
@@ -119,6 +120,8 @@ export function SelectionBar({
   total: number;
   pending: boolean;
   onDelete?: () => void;
+  /** Buttons for the ticked rows in place of Delete, such as Restore in a trash. */
+  actions?: ReactNode;
   /** Phones: Edit is in the top bar (PageActions), so the bar does not show its own. */
   editInTopBar?: boolean;
 }) {
@@ -130,7 +133,7 @@ export function SelectionBar({
   const allChecked = scope.length > 0 && scope.every(selection.isChecked);
   const filtered = visibleIds.length !== total;
 
-  if (!onDelete) {
+  if (!onDelete && !actions) {
     return (
       <div className={cn('flex h-11 shrink-0 items-center gap-2 border-b px-3', phoneHeading)}>
         <span className="text-ui font-medium">{filtered ? 'Shown' : title}</span>
@@ -161,15 +164,17 @@ export function SelectionBar({
       {count > 0 ? (
         <>
           <span className="text-ui mr-auto">{count} selected</span>
-          <Button
-            variant="ghost"
-            size="sm"
-            className="text-destructive hover:text-destructive"
-            disabled={pending}
-            onClick={onDelete}
-          >
-            Delete
-          </Button>
+          {actions ?? (
+            <Button
+              variant="ghost"
+              size="sm"
+              className="text-destructive hover:text-destructive"
+              disabled={pending}
+              onClick={onDelete}
+            >
+              Delete
+            </Button>
+          )}
           <Button
             variant="ghost"
             size="icon-sm"

@@ -1,3 +1,4 @@
+import { MEDIA_TRASH_DAYS } from '@ll/content';
 import { toast } from 'sonner';
 import { readableError } from './errors';
 import { play } from './sound';
@@ -49,6 +50,15 @@ export function removedNotice(count: number, [one, many]: readonly [string, stri
         ? `${one.charAt(0).toUpperCase()}${one.slice(1)} removed`
         : `${count} ${many} removed`,
     description: `${count === 1 ? 'It is' : 'They are'} gone from the CMS and the website.`,
+  };
+}
+
+/** The toast after moving media to the trash, with Undo to bring it straight back. */
+export function trashedNotice(count: number, undo: () => unknown): Notice {
+  return {
+    title: count === 1 ? 'Moved to the trash' : `${count} files moved to the trash`,
+    description: `${count === 1 ? 'It is' : 'They are'} off the website, and deleted for good after ${MEDIA_TRASH_DAYS} days.`,
+    action: { label: 'Undo', onClick: () => void undo() },
   };
 }
 

@@ -9,6 +9,8 @@ export type MediaLibrarySearch = {
   exts?: string[];
   /** How many files were loaded, so the same ones are back. */
   show?: number;
+  /** The trash instead of the library. Never remembered: a file's page is never in the trash. */
+  trash?: boolean;
 };
 
 let last: MediaLibrarySearch = {};

@@ -26,6 +26,8 @@ const searchSchema = z.object({
     .catch(undefined),
   /** How many files are loaded: grows a page at a time as the grid scrolls. */
   show: z.number().int().min(MEDIA_PAGE_SIZE).max(MEDIA_MAX_SHOWN).optional().catch(undefined),
+  /** The trash instead of the library. */
+  trash: z.boolean().optional().catch(undefined),
 });
 
 export const Route = createFileRoute('/_app/media/')({
@@ -49,6 +51,7 @@ export const Route = createFileRoute('/_app/media/')({
             t === 'images' ? ('image' as const) : ('document' as const)
           ),
           limit: deps.show ?? MEDIA_PAGE_SIZE,
+          trash: deps.trash,
         },
       }),
       listMediaTags(),

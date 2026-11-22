@@ -52,6 +52,7 @@ export async function jobsFor(
   if (schedule === 'daily') {
     const [
       { sweepOrphanedMedia },
+      { purgeTrashedMedia },
       { purgeOldBookings },
       { pruneMissingPages },
       { rescorePosts },
@@ -59,6 +60,7 @@ export async function jobsFor(
       { pruneAnalyticsCache },
     ] = await Promise.all([
       import('./media-sweep'),
+      import('./media-trash'),
       import('./event-jobs'),
       import('./not-found'),
       import('./post-score'),
@@ -71,6 +73,15 @@ export async function jobsFor(
         if (refused) {
           throw new Error('Stopped without deleting: most stored files looked unused.');
         }
+      },
+      'purge-media-trash': async () => {
+        const { failed } = await purgeTrashedMedia(
+          env.DB,
+          now,
+          new URL(env.BETTER_AUTH_URL).origin
+        );
+        // The rest went; these stay in the trash and are tried again tomorrow.
+        if (failed) throw new Error(`${failed} files in the trash could not be deleted.`);
       },
       'purge-old-bookings': () => purgeOldBookings(env.DB, now),
       'prune-missing-pages': () => pruneMissingPages(env.DB, now),

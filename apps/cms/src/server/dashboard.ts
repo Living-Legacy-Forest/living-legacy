@@ -77,7 +77,9 @@ export const getDashboardData = createServerFn({ method: 'GET' })
           bytes: sum(media.size),
           missingAlt: sql<number>`coalesce(sum(${media.alt} is null or trim(${media.alt}) = ''), 0)`,
         })
-        .from(media),
+        .from(media)
+        // The library, without the trash.
+        .where(isNull(media.deletedAt)),
       db
         .select({
           id: locations.id,
@@ -122,6 +124,7 @@ export const getDashboardData = createServerFn({ method: 'GET' })
       db
         .select({ kind: fileKind, files: count(), bytes: sum(media.size) })
         .from(media)
+        .where(isNull(media.deletedAt))
         .groupBy(fileKind),
       // Each upload's day and size, for what the span brought into the library.
       db

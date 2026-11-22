@@ -52,6 +52,18 @@ export type WhatsNewEntry = {
 
 export const whatsNew: WhatsNewEntry[] = [
   {
+    id: '2026-11-22-5',
+    kind: 'new',
+    title: 'A trash for media',
+    items: [
+      {
+        title: 'Deleted files wait in the trash',
+        body: 'Deleting a file from Media now moves it to the trash instead of removing it at once. It comes off the website straight away, and Undo or Restore brings it back. Files are deleted for good after 30 days, or sooner if you choose Delete permanently in the trash.',
+        link: { label: 'Open Media', to: '/media' },
+      },
+    ],
+  },
+  {
     id: '2026-11-22-3',
     kind: 'new',
     title: 'Search and sharing for locations',

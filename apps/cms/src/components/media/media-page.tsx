@@ -15,6 +15,7 @@ import {
   LinkIcon,
   MediaIcon,
   PanelRightIcon,
+  RotateCcwIcon,
   Trash2Icon,
   UploadIcon,
 } from '@/components/icons';
@@ -46,15 +47,21 @@ import { useLoadMore } from '@/hooks/use-load-more';
 import { MEDIA_MAX_SHOWN, MEDIA_PAGE_SIZE } from '@/lib/media-paging';
 import { formatDate } from '@/lib/format';
 import { type MediaLibrarySearch, rememberMediaSearch } from '@/lib/media-return';
-import { notify, removedNotice } from '@/lib/notify';
+import { notify, removedNotice, trashedNotice } from '@/lib/notify';
 import { addPdfCover } from '@/lib/pdf-cover';
 import { useSortLayout } from '@/lib/sort-motion';
 import { useTimeZone } from '@/lib/use-time-zone';
 import { mediaSrc } from '@/lib/upload-media';
-import { isDocumentMime, mediaSorts } from '@ll/content';
+import { MEDIA_TRASH_DAYS, daysLeftInTrash, isDocumentMime, mediaSorts } from '@ll/content';
 import { useAction } from '@/lib/use-action';
 import { cn } from '@/lib/utils';
-import { type MediaItem, type MediaListData, deleteMedia } from '@/server/media';
+import {
+  type MediaItem,
+  type MediaListData,
+  deleteMediaForGood,
+  moveMediaToTrash,
+  restoreMediaFromTrash,
+} from '@/server/media';
 import { useRevealOnce } from '@/lib/use-reveal-once';
 import { RevealWords } from '@/components/dashboard/reveal-words';
 
@@ -109,7 +116,9 @@ export function MediaPage({
   const zone = useTimeZone();
   const [query, setQuery] = useState(search.q ?? '');
   const navigate = useNavigate({ from: '/media/' });
-  // Ticked files, or the one a context menu deletes; null when nothing is waiting.
+  // The trash instead of the library: its files can be restored or deleted for good.
+  const inTrash = search.trash === true;
+  // Ticked files in the trash, or the one a context menu deletes for good; null when none wait.
   const [toDelete, setToDelete] = useState<string[] | null>(null);
   const [dragOver, setDragOver] = useState(false);
   const [uploading, setUploading] = useState(false);
@@ -148,16 +157,20 @@ export function MediaPage({
     });
   const sentinel = useLoadMore<HTMLDivElement>(showMore, hasMore && !loading);
   // So a file's page can come back to this view.
-  useEffect(() => rememberMediaSearch(search), [search]);
+  useEffect(() => {
+    if (!inTrash) rememberMediaSearch(search);
+  }, [search, inTrash]);
   const chosenTypes = search.types ?? [];
   const chosenTags = search.tags ?? [];
   const chosenExts = search.exts ?? [];
   const filtered = chosenTypes.length > 0 || chosenTags.length > 0 || chosenExts.length > 0;
-  const libraryEmpty = data.total === 0 && !search.q && !filtered;
+  const libraryEmpty = !inTrash && data.total === 0 && !search.q && !filtered;
+  const trashEmpty = inTrash && data.total === 0 && !search.q && !filtered;
   // What the count above the files describes: one filter by name, several as "Filtered".
   const kindsOfFilter = [chosenTypes.length, chosenTags.length, chosenExts.length].filter(Boolean);
-  const filterTitle =
-    kindsOfFilter.length > 1
+  const filterTitle = inTrash
+    ? 'Trash'
+    : kindsOfFilter.length > 1
       ? 'Filtered'
       : chosenTags.length
         ? chosenTags.map((t) => `#${t}`).join(' ')
@@ -196,14 +209,35 @@ export function MediaPage({
       replace: true,
     });
 
-  async function remove(ids: string[]) {
-    const result = await run(() => deleteMedia({ data: { ids } }), {
-      success: (r) => removedNotice(r.removed, NOUN),
-      error: 'Could not remove',
+  // Like posts: the trash is the undo, so moving there needs no confirming. Deleting for good does.
+  async function restore(ids: string[]) {
+    const result = await run(() => restoreMediaFromTrash({ data: { ids } }), {
+      success: (r) => ({
+        title: r.restored === 1 ? 'File restored' : `${r.restored} files restored`,
+        description: `${r.restored === 1 ? 'It is' : 'They are'} back in the library and on the website wherever used.`,
+      }),
+      error: 'Could not restore',
     });
-    if (!result) return;
-    selection.clear();
+    if (result) selection.clear();
   }
+  async function trash(ids: string[]) {
+    const result = await run(() => moveMediaToTrash({ data: { ids } }), {
+      success: (r) => trashedNotice(r.moved, () => restore(ids)),
+      error: 'Could not move to the trash',
+    });
+    if (result) selection.clear();
+  }
+  async function purge(ids: string[]) {
+    const result = await run(() => deleteMediaForGood({ data: { ids } }), {
+      success: (r) => removedNotice(r.removed, NOUN),
+      error: 'Could not delete',
+    });
+    if (result) selection.clear();
+  }
+  const toTrash = (open: boolean) =>
+    void navigate({
+      search: (prev) => ({ ...prev, trash: open || undefined, show: undefined }),
+    });
 
   const revealing = useRevealOnce();
 
@@ -231,9 +265,21 @@ export function MediaPage({
     >
       <div className="flex flex-wrap items-center gap-3">
         <h1 data-slot="page-title" className="mr-auto text-xl">
-          <RevealWords text="Media" />
+          <RevealWords text={inTrash ? 'Media trash' : 'Media'} />
         </h1>
-        {!libraryEmpty && (
+        {inTrash ? (
+          <Button variant="outline" size="sm" onClick={() => toTrash(false)}>
+            Back to the library
+          </Button>
+        ) : (
+          data.trashTotal > 0 && (
+            <Button variant="ghost" size="sm" onClick={() => toTrash(true)}>
+              <Trash2Icon aria-hidden data-icon="inline-start" />
+              Trash ({data.trashTotal})
+            </Button>
+          )
+        )}
+        {!libraryEmpty && !trashEmpty && (
           <SearchInput
             label="Search media"
             placeholder="Search filenames and captions"
@@ -241,7 +287,7 @@ export function MediaPage({
             onChange={setQuery}
           />
         )}
-        {!libraryEmpty && (
+        {!libraryEmpty && !trashEmpty && (
           <>
             <ListFilter
               groups={[
@@ -272,7 +318,7 @@ export function MediaPage({
               onClear={clearFilters}
             />
             <ListSort options={mediaSorts} value={sort} onChange={setSort} />
-            {missingCovers.length > 0 && (
+            {!inTrash && missingCovers.length > 0 && (
               <Button
                 variant="outline"
                 size="sm"
@@ -288,27 +334,56 @@ export function MediaPage({
             <ViewSwitch value={view} onChange={setView} />
           </>
         )}
-        <Button size="sm" className="max-md:hidden" onClick={() => setUploading(true)}>
-          <UploadIcon aria-hidden data-icon="inline-start" />
-          Upload
-        </Button>
+        {!inTrash && (
+          <Button size="sm" className="max-md:hidden" onClick={() => setUploading(true)}>
+            <UploadIcon aria-hidden data-icon="inline-start" />
+            Upload
+          </Button>
+        )}
         <PageActions
           edit={
-            canDelete
+            // Anyone here can restore from the trash; moving to it needs content:purge.
+            canDelete || inTrash
               ? {
                   editing: selection.selecting,
                   onToggle: selection.selecting ? selection.clear : selection.startEditing,
                 }
               : undefined
           }
-          add={{
-            label: 'Upload files',
-            onClick: () => setUploading(true),
-          }}
+          add={
+            inTrash
+              ? undefined
+              : {
+                  label: 'Upload files',
+                  onClick: () => setUploading(true),
+                }
+          }
         />
       </div>
 
-      {libraryEmpty ? (
+      {inTrash && (
+        <p className="text-muted-foreground -mt-2 text-sm">
+          Files here are off the website. Each is deleted for good {MEDIA_TRASH_DAYS} days after it
+          was moved here.
+        </p>
+      )}
+
+      {trashEmpty ? (
+        <Empty className="flex-1 rounded-lg border">
+          <EmptyHeader>
+            <EmptyMedia variant="icon">
+              <Trash2Icon aria-hidden />
+            </EmptyMedia>
+            <EmptyTitle>The trash is empty</EmptyTitle>
+            <EmptyDescription>Files you delete from the library wait here first.</EmptyDescription>
+          </EmptyHeader>
+          <EmptyContent>
+            <Button size="sm" variant="outline" onClick={() => toTrash(false)}>
+              Back to the library
+            </Button>
+          </EmptyContent>
+        </Empty>
+      ) : libraryEmpty ? (
         <Empty className={cn('flex-1 rounded-lg border', dragOver && 'border-ring bg-accent/40')}>
           <EmptyHeader>
             <EmptyMedia variant="icon">
@@ -342,7 +417,32 @@ export function MediaPage({
             title={filterTitle}
             total={data.total}
             pending={pending}
-            onDelete={canDelete ? () => setToDelete(selection.checkedIds) : undefined}
+            onDelete={!inTrash && canDelete ? () => void trash(selection.checkedIds) : undefined}
+            actions={
+              inTrash ? (
+                <>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    disabled={pending}
+                    onClick={() => void restore(selection.checkedIds)}
+                  >
+                    Restore
+                  </Button>
+                  {canDelete && (
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="text-destructive hover:text-destructive"
+                      disabled={pending}
+                      onClick={() => setToDelete(selection.checkedIds)}
+                    >
+                      Delete permanently
+                    </Button>
+                  )}
+                </>
+              ) : undefined
+            }
           />
           {items.length === 0 ? (
             <div className="text-muted-foreground flex flex-1 flex-col items-center justify-center gap-2 p-6 text-center text-sm">
@@ -385,9 +485,17 @@ export function MediaPage({
                       selecting={selection.selecting || selection.checkedIds.length > 0}
                       onToggle={() => selection.toggle(m.id)}
                       // In Edit mode a tap ticks the tile, as in Photos.
-                      onOpen={() => (selection.selecting ? selection.toggle(m.id) : open(m.id))}
+                      // The trash has no file pages, so a tap there ticks.
+                      onOpen={() =>
+                        selection.selecting || inTrash ? selection.toggle(m.id) : open(m.id)
+                      }
                       onEdit={() => open(m.id)}
-                      onDelete={canDelete ? () => setToDelete([m.id]) : undefined}
+                      onDelete={
+                        canDelete
+                          ? () => (inTrash ? setToDelete([m.id]) : void trash([m.id]))
+                          : undefined
+                      }
+                      onRestore={inTrash ? () => void restore([m.id]) : undefined}
                     />
                   ))}
                 </div>
@@ -402,9 +510,17 @@ export function MediaPage({
                       checked={selection.isChecked(m.id)}
                       selecting={selection.selecting || selection.checkedIds.length > 0}
                       onToggle={() => selection.toggle(m.id)}
-                      onOpen={() => (selection.selecting ? selection.toggle(m.id) : open(m.id))}
+                      // The trash has no file pages, so a tap there ticks.
+                      onOpen={() =>
+                        selection.selecting || inTrash ? selection.toggle(m.id) : open(m.id)
+                      }
                       onEdit={() => open(m.id)}
-                      onDelete={canDelete ? () => setToDelete([m.id]) : undefined}
+                      onDelete={
+                        canDelete
+                          ? () => (inTrash ? setToDelete([m.id]) : void trash([m.id]))
+                          : undefined
+                      }
+                      onRestore={inTrash ? () => void restore([m.id]) : undefined}
                     />
                   ))}
                 </ul>
@@ -434,8 +550,8 @@ export function MediaPage({
         onOpenChange={(open) => !open && setToDelete(null)}
         count={toDelete?.length ?? 0}
         noun={NOUN}
-        description="They are removed for good. Anything using one, like a post or a team member, loses that file."
-        onConfirm={() => toDelete && remove(toDelete)}
+        description="They are deleted for good, with their earlier versions. This cannot be undone."
+        onConfirm={() => toDelete && purge(toDelete)}
       />
     </div>
   );
@@ -449,6 +565,7 @@ function MediaTile({
   onOpen,
   onEdit,
   onDelete,
+  onRestore,
   animate,
 }: {
   item: MediaItem;
@@ -460,8 +577,10 @@ function MediaTile({
   animate: boolean;
   /** Opens the details panel, even in Edit mode. */
   onEdit: () => void;
-  /** Absent for people who cannot delete files. */
+  /** Absent for people who cannot delete files. In the trash, deletes for good. */
   onDelete?: () => void;
+  /** Set in the trash. */
+  onRestore?: () => void;
 }) {
   const anchor = useRef<HTMLDivElement>(null);
   const sortLayout = useSortLayout(animate);
@@ -517,7 +636,7 @@ function MediaTile({
   // In Edit mode a tap ticks; the menu would only get in the way, as in the lists.
   if (selecting) return tile;
 
-  const { actions, destructive } = mediaMenu(item, { onToggle, onEdit, onDelete });
+  const { actions, destructive } = mediaMenu(item, { onToggle, onEdit, onDelete, onRestore });
 
   return (
     <RowMenu
@@ -559,8 +678,21 @@ function mediaMenu(
     onToggle,
     onEdit,
     onDelete,
-  }: { onToggle: () => void; onEdit: () => void; onDelete?: () => void }
+    onRestore,
+  }: { onToggle: () => void; onEdit: () => void; onDelete?: () => void; onRestore?: () => void }
 ) {
+  // The trash: a file there has no page or public address, so only these make sense.
+  if (onRestore) {
+    return {
+      actions: [
+        { label: 'Restore', icon: <RotateCcwIcon aria-hidden />, onSelect: onRestore },
+        { label: 'Select', icon: <CircleCheckIcon aria-hidden />, onSelect: onToggle },
+      ] satisfies RowMenuItem[],
+      destructive: (onDelete
+        ? [{ label: 'Delete permanently', icon: <Trash2Icon aria-hidden />, onSelect: onDelete }]
+        : []) satisfies RowMenuItem[],
+    };
+  }
   const actions: RowMenuItem[] = [
     { label: 'Open', icon: <PanelRightIcon aria-hidden />, onSelect: onEdit },
     { label: 'Select', icon: <CircleCheckIcon aria-hidden />, onSelect: onToggle },
@@ -568,9 +700,17 @@ function mediaMenu(
     { label: 'Download', icon: <DownloadIcon aria-hidden />, onSelect: () => download(item) },
   ];
   const destructive: RowMenuItem[] = onDelete
-    ? [{ label: 'Delete', icon: <Trash2Icon aria-hidden />, onSelect: onDelete }]
+    ? [{ label: 'Move to trash', icon: <Trash2Icon aria-hidden />, onSelect: onDelete }]
     : [];
   return { actions, destructive };
+}
+
+/** "Deleted for good in 12 days", for a file in the trash. */
+function deletedForGoodIn(trashedAt: number) {
+  const days = daysLeftInTrash(trashedAt, new Date());
+  return days === 0
+    ? 'Deleted for good within a day'
+    : `Deleted for good in ${days} ${days === 1 ? 'day' : 'days'}`;
 }
 
 /** A file as a row: a small picture, its name and facts, then its type, size and date. */
@@ -583,6 +723,7 @@ function MediaRow({
   onOpen,
   onEdit,
   onDelete,
+  onRestore,
   animate,
 }: {
   item: MediaItem;
@@ -594,6 +735,8 @@ function MediaRow({
   onOpen: () => void;
   onEdit: () => void;
   onDelete?: () => void;
+  /** Set in the trash. */
+  onRestore?: () => void;
 }) {
   const anchor = useRef<HTMLDivElement>(null);
   const sortLayout = useSortLayout(animate);
@@ -652,14 +795,16 @@ function MediaRow({
         {fileFacts(item)}
       </span>
       <span className="text-muted-foreground w-28 shrink-0 text-xs max-lg:hidden">
-        {formatDate(item.createdAt, zone)}
+        {item.trashedAt !== null
+          ? deletedForGoodIn(item.trashedAt)
+          : formatDate(item.createdAt, zone)}
       </span>
     </div>
   );
 
   if (selecting) return <motion.li {...sortLayout}>{row}</motion.li>;
 
-  const { actions, destructive } = mediaMenu(item, { onToggle, onEdit, onDelete });
+  const { actions, destructive } = mediaMenu(item, { onToggle, onEdit, onDelete, onRestore });
   return (
     <motion.li {...sortLayout}>
       <RowMenu

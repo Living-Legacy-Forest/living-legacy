@@ -32,14 +32,17 @@ export function mediaIdFromPath(pathname: string): string | null {
 }
 
 /** The copy width a requested `?w=` maps to, or null for the original. */
-function widthBucket(requested: string | null): number | null {
+export function widthBucket(requested: string | null): number | null {
   const w = Number(requested);
   if (!requested || !Number.isFinite(w) || w <= 0) return null;
   return mediaVariantWidths.find((v) => w <= v) ?? null;
 }
 
 /** The smallest stored copy at least `bucket` wide, if any. */
-function pickVariant(variants: MediaVariant[] | null, bucket: number | null): MediaVariant | null {
+export function pickVariant(
+  variants: MediaVariant[] | null,
+  bucket: number | null
+): MediaVariant | null {
   if (bucket === null || !variants) return null;
   return variants.filter((v) => v.width >= bucket).sort((a, b) => a.width - b.width)[0] ?? null;
 }
@@ -67,7 +70,8 @@ export async function serveMedia(
   if (hit) return withBrowserCache(hit, request);
 
   const row = await getDb().query.media.findFirst({ where: eq(media.id, id) });
-  if (!row) return new Response('Not found', { status: 404 });
+  // A file in the trash answers as if it were gone; restoring it brings the address back.
+  if (!row || row.deletedAt) return new Response('Not found', { status: 404 });
   const variant = pickVariant(row.variants, widthBucket(url.searchParams.get('w')));
   const object = await env.MEDIA.get(variant?.key ?? row.r2Key);
   if (!object) return new Response('Not found', { status: 404 });

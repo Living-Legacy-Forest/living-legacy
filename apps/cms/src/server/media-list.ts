@@ -3,7 +3,21 @@
 import type { Db } from '@ll/db';
 import { DOCUMENT_TYPES, type MediaSort, isDocumentMime, mediaSorts } from '@ll/content';
 import { media } from '@ll/db/schema';
-import { type SQL, and, asc, count, desc, eq, inArray, like, lt, or, sql } from 'drizzle-orm';
+import {
+  type SQL,
+  and,
+  asc,
+  count,
+  desc,
+  eq,
+  inArray,
+  isNotNull,
+  isNull,
+  like,
+  lt,
+  or,
+  sql,
+} from 'drizzle-orm';
 import { z } from 'zod';
 import { MEDIA_MAX_SHOWN, MEDIA_PAGE_SIZE } from '@/lib/media-paging';
 
@@ -63,7 +77,10 @@ export function toItem(r: typeof media.$inferSelect) {
     tags: r.tags ?? [],
     /** Where to keep in view when the image is cropped, 0 to 1 across and down; null is the centre. */
     focal: r.focalX !== null && r.focalY !== null ? { x: r.focalX, y: r.focalY } : null,
-    url: `/api/media/${r.id}`,
+    // A file in the trash is not public: its previews come from a route that needs a session.
+    url: r.deletedAt ? `/api/media-trash/${r.id}` : `/api/media/${r.id}`,
+    /** When it was moved to the trash, or null while it is in the library. */
+    trashedAt: r.deletedAt?.getTime() ?? null,
     /** A document with a thumbnail of its first page (PDFs uploaded since they were made). */
     hasCover: isDocumentMime(r.mime) && !!r.variants?.length,
     createdAt: r.createdAt.getTime(),
@@ -100,10 +117,17 @@ export const listMediaSchema = z.object({
   cursor: z.string().max(100).optional(),
   /** A file to return as well, even if it is not on this page: one linked to directly. */
   include: z.string().max(100).optional(),
+  /** The trash instead of the library. */
+  trash: z.boolean().optional(),
 });
+
+/** The library leaves out the trash; the trash shows nothing else. */
+const inView = (trash: boolean | undefined) =>
+  trash ? isNotNull(media.deletedAt) : isNull(media.deletedAt);
 
 export async function listMediaPage(db: Db, data: z.infer<typeof listMediaSchema>) {
   const filter = and(
+    inView(data.trash),
     searchWhere(data.q),
     // Both kinds, or neither, is no narrowing at all.
     data.imagesOnly || (data.kinds?.length === 1 && data.kinds[0] === 'image')
@@ -126,7 +150,7 @@ export async function listMediaPage(db: Db, data: z.infer<typeof listMediaSchema
   const where = and(filter, data.cursor ? afterCursor(data.cursor) : undefined);
 
   // One extra row says whether there is another page.
-  const [rows, [total], included] = await Promise.all([
+  const [rows, [total], included, [trashed]] = await Promise.all([
     db
       .select()
       .from(media)
@@ -135,8 +159,10 @@ export async function listMediaPage(db: Db, data: z.infer<typeof listMediaSchema
       .limit(data.limit + 1),
     db.select({ value: count() }).from(media).where(filter),
     data.include
-      ? db.query.media.findFirst({ where: eq(media.id, data.include) })
+      ? db.query.media.findFirst({ where: and(eq(media.id, data.include), inView(data.trash)) })
       : Promise.resolve(undefined),
+    // For the library's way into the trash.
+    db.select({ value: count() }).from(media).where(isNotNull(media.deletedAt)),
   ]);
   const page = rows.slice(0, data.limit);
   const last = page.at(-1);
@@ -145,13 +171,14 @@ export async function listMediaPage(db: Db, data: z.infer<typeof listMediaSchema
     total: total?.value ?? 0,
     nextCursor: rows.length > data.limit && last ? cursorOf(last) : null,
     included: included && !page.some((r) => r.id === included.id) ? toItem(included) : null,
+    trashTotal: trashed?.value ?? 0,
   };
 }
 
 /** Every tag in use with how many files carry it, most used first, for the library's filter. */
 export async function listMediaTags(db: Db) {
   const rows = await db.all<{ tag: string; n: number }>(
-    sql`select value as tag, count(*) as n from media, json_each(coalesce(media.tags, '[]')) group by value order by n desc, value limit 100`
+    sql`select value as tag, count(*) as n from media, json_each(coalesce(media.tags, '[]')) where media.deleted_at is null group by value order by n desc, value limit 100`
   );
   return rows.map((r) => ({ tag: r.tag, count: Number(r.n) }));
 }
@@ -161,6 +188,7 @@ export async function listMediaExtensions(db: Db) {
   const rows = await db
     .select({ ext: extensionOf, n: count() })
     .from(media)
+    .where(isNull(media.deletedAt))
     .groupBy(extensionOf)
     .orderBy(desc(count()));
   return rows.filter((r) => r.ext).map((r) => ({ ext: r.ext, count: r.n }));

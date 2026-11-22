@@ -51,6 +51,9 @@
     // Sign-in links and Google's callback are built from this, so it must be
     // the address people use; the workers.dev one redirects here (src/server.ts).
     "BETTER_AUTH_URL": "https://cms.livinglegacy.com.au",
+    // Comma-separated. Each address can sign in as an Admin without an invite and is a super
+    // admin (removes people, clears the activity log). Local dev reads its own from .dev.vars.
+    "BOOTSTRAP_ADMIN_EMAILS": "gede@sistercreatives.co",
     // Sender for every CMS email (sign-in links, invites, review requests).
     // notify.livinglegacy.com.au is verified in Resend and kept apart from
     // the marketing mail sent from the root domain.

@@ -60,6 +60,7 @@ import { Route as ApiAvatarIndexRouteImport } from './routes/api/avatar/index'
 import { Route as ApiAvatarKeyRouteImport } from './routes/api/avatar/$key'
 import { Route as ApiAvatarsIdRouteImport } from './routes/api/avatars/$id'
 import { Route as ApiMediaCoverIdRouteImport } from './routes/api/media-cover/$id'
+import { Route as ApiMediaTrashIdRouteImport } from './routes/api/media-trash/$id'
 import { Route as ApiMediaVersionsIdRouteImport } from './routes/api/media-versions/$id'
 import { Route as ApiMediaIndexRouteImport } from './routes/api/media/index'
 import { Route as ApiV1TermsRouteImport } from './routes/api/v1/terms'
@@ -327,6 +328,11 @@ const ApiMediaCoverIdRoute = ApiMediaCoverIdRouteImport.update({
   path: '/api/media-cover/$id',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ApiMediaTrashIdRoute = ApiMediaTrashIdRouteImport.update({
+  id: '/api/media-trash/$id',
+  path: '/api/media-trash/$id',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ApiMediaVersionsIdRoute = ApiMediaVersionsIdRouteImport.update({
   id: '/api/media-versions/$id',
   path: '/api/media-versions/$id',
@@ -413,6 +419,7 @@ export interface FileRoutesByFullPath {
   '/api/avatar/$key': typeof ApiAvatarKeyRoute
   '/api/avatars/$id': typeof ApiAvatarsIdRoute
   '/api/media-cover/$id': typeof ApiMediaCoverIdRoute
+  '/api/media-trash/$id': typeof ApiMediaTrashIdRoute
   '/api/media-versions/$id': typeof ApiMediaVersionsIdRoute
   '/api/v1/terms': typeof ApiV1TermsRoute
   '/preview/events/$draftId': typeof PreviewEventsDraftIdRoute
@@ -476,6 +483,7 @@ export interface FileRoutesByTo {
   '/api/avatar/$key': typeof ApiAvatarKeyRoute
   '/api/avatars/$id': typeof ApiAvatarsIdRoute
   '/api/media-cover/$id': typeof ApiMediaCoverIdRoute
+  '/api/media-trash/$id': typeof ApiMediaTrashIdRoute
   '/api/media-versions/$id': typeof ApiMediaVersionsIdRoute
   '/api/v1/terms': typeof ApiV1TermsRoute
   '/preview/events/$draftId': typeof PreviewEventsDraftIdRoute
@@ -542,6 +550,7 @@ export interface FileRoutesById {
   '/api/avatar/$key': typeof ApiAvatarKeyRoute
   '/api/avatars/$id': typeof ApiAvatarsIdRoute
   '/api/media-cover/$id': typeof ApiMediaCoverIdRoute
+  '/api/media-trash/$id': typeof ApiMediaTrashIdRoute
   '/api/media-versions/$id': typeof ApiMediaVersionsIdRoute
   '/api/v1/terms': typeof ApiV1TermsRoute
   '/preview/events/$draftId': typeof PreviewEventsDraftIdRoute
@@ -608,6 +617,7 @@ export interface FileRouteTypes {
     | '/api/avatar/$key'
     | '/api/avatars/$id'
     | '/api/media-cover/$id'
+    | '/api/media-trash/$id'
     | '/api/media-versions/$id'
     | '/api/v1/terms'
     | '/preview/events/$draftId'
@@ -671,6 +681,7 @@ export interface FileRouteTypes {
     | '/api/avatar/$key'
     | '/api/avatars/$id'
     | '/api/media-cover/$id'
+    | '/api/media-trash/$id'
     | '/api/media-versions/$id'
     | '/api/v1/terms'
     | '/preview/events/$draftId'
@@ -736,6 +747,7 @@ export interface FileRouteTypes {
     | '/api/avatar/$key'
     | '/api/avatars/$id'
     | '/api/media-cover/$id'
+    | '/api/media-trash/$id'
     | '/api/media-versions/$id'
     | '/api/v1/terms'
     | '/preview/events/$draftId'
@@ -786,6 +798,7 @@ export interface RootRouteChildren {
   ApiAvatarKeyRoute: typeof ApiAvatarKeyRoute
   ApiAvatarsIdRoute: typeof ApiAvatarsIdRoute
   ApiMediaCoverIdRoute: typeof ApiMediaCoverIdRoute
+  ApiMediaTrashIdRoute: typeof ApiMediaTrashIdRoute
   ApiMediaVersionsIdRoute: typeof ApiMediaVersionsIdRoute
   ApiV1TermsRoute: typeof ApiV1TermsRoute
   PreviewEventsDraftIdRoute: typeof PreviewEventsDraftIdRoute
@@ -1158,6 +1171,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiMediaCoverIdRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/media-trash/$id': {
+      id: '/api/media-trash/$id'
+      path: '/api/media-trash/$id'
+      fullPath: '/api/media-trash/$id'
+      preLoaderRoute: typeof ApiMediaTrashIdRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/api/media-versions/$id': {
       id: '/api/media-versions/$id'
       path: '/api/media-versions/$id'
@@ -1359,6 +1379,7 @@ const rootRouteChildren: RootRouteChildren = {
   ApiAvatarKeyRoute: ApiAvatarKeyRoute,
   ApiAvatarsIdRoute: ApiAvatarsIdRoute,
   ApiMediaCoverIdRoute: ApiMediaCoverIdRoute,
+  ApiMediaTrashIdRoute: ApiMediaTrashIdRoute,
   ApiMediaVersionsIdRoute: ApiMediaVersionsIdRoute,
   ApiV1TermsRoute: ApiV1TermsRoute,
   PreviewEventsDraftIdRoute: PreviewEventsDraftIdRoute,

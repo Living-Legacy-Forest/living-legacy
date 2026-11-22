@@ -18,6 +18,7 @@ export * from './validation';
 export * from './list-sorts';
 export * from './focal-point';
 export * from './media-sweep';
+export * from './media-trash';
 export * from './events';
 export * from './phone';
 export * from './event-crm';

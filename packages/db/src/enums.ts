@@ -45,6 +45,9 @@ export const activityActions = [
   'event.waitlist_removed',
   'media.replaced',
   'media.restored',
+  'media.trashed',
+  'media.untrashed',
+  'media.deleted',
   'legal_page.published',
   'legal_page.review_requested',
 ] as const;

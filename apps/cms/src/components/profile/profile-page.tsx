@@ -202,7 +202,10 @@ export function ProfilePage({
           <ProfileBanner banner={user.banner} seed={user.id} onChanged={refresh} />
           <div className="-mt-12 flex flex-col gap-3 px-4 max-md:items-center max-md:text-center">
             <div className="group relative shrink-0 self-start max-md:self-center">
-              <Avatar size="lg" className="ring-background ring-4 data-[size=lg]:size-24">
+              <Avatar
+                size="lg"
+                className="ring-background ring-4 after:hidden data-[size=lg]:size-24"
+              >
                 {avatarSrc(user) && <AvatarImage src={avatarSrc(user)} alt={user.imageAlt ?? ''} />}
                 <AvatarFallback className="text-lg">{initials}</AvatarFallback>
               </Avatar>
@@ -210,7 +213,7 @@ export function ProfilePage({
                 <DropdownMenuTrigger
                   aria-label="Change picture"
                   disabled={avatarUploading}
-                  className="bg-background focus-visible:ring-ring touch:items-end touch:justify-end touch:bg-transparent touch:opacity-100 touch:ring-0 absolute inset-0 flex items-center justify-center rounded-full opacity-0 ring-1 ring-black/10 transition-opacity outline-none group-hover:opacity-90 focus-visible:opacity-90 focus-visible:ring-2 disabled:opacity-90 data-popup-open:opacity-90"
+                  className="focus-visible:ring-ring touch:items-end touch:justify-end touch:bg-transparent touch:text-foreground touch:opacity-100 absolute inset-0 flex items-center justify-center rounded-full bg-black/50 text-white opacity-0 transition-opacity outline-none group-hover:opacity-100 focus-visible:opacity-100 focus-visible:ring-2 disabled:opacity-100 data-popup-open:opacity-100"
                 >
                   {/* Touch screens have no hover to reveal the overlay, so the camera sits on a badge. */}
                   <span className="touch:bg-background touch:ring-foreground/10 touch:flex touch:size-7 touch:items-center touch:justify-center touch:rounded-full touch:shadow-sm touch:ring-1 contents">

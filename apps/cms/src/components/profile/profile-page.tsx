@@ -201,7 +201,7 @@ export function ProfilePage({
         <div>
           <ProfileBanner banner={user.banner} seed={user.id} onChanged={refresh} />
           <div className="-mt-12 flex flex-col gap-3 px-4 max-md:items-center max-md:text-center">
-            <div className="group relative shrink-0">
+            <div className="group relative shrink-0 self-start max-md:self-center">
               <Avatar size="lg" className="ring-background ring-4 data-[size=lg]:size-24">
                 {avatarSrc(user) && <AvatarImage src={avatarSrc(user)} alt={user.imageAlt ?? ''} />}
                 <AvatarFallback className="text-lg">{initials}</AvatarFallback>

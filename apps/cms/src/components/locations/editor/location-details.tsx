@@ -1,10 +1,14 @@
 import {
   type AustralianState,
   type LocationStage,
+  SEO_DESCRIPTION_LIMIT,
+  SEO_TITLE_LIMIT,
   australianStateLabels,
   locationStageLabels,
 } from '@ll/content';
 import { FormCell, FormSwitchCell } from '@/components/form-cells';
+import { ImageField } from '@/components/media/image-field';
+import { CountedField, SITE_HOST } from '@/components/posts/post-editor/seo-fields';
 import { Input } from '@/components/ui/input';
 import { WholeNumberInput } from '@/components/ui/whole-number-input';
 import {
@@ -195,6 +199,55 @@ export function LocationDetails({ editor }: { editor: LocationEditorState }) {
             className="md:text-ui font-mono"
           />
         </FormCell>
+      </Section>
+
+      <Section title="Search and sharing">
+        <div className="space-y-0.5 rounded-md border p-3">
+          <p className="text-muted-foreground truncate text-xs">
+            {SITE_HOST} › locations › {values.slug || '…'}
+          </p>
+          <p className="line-clamp-2 font-medium">
+            {values.seoTitle || values.name || 'Location name'}
+          </p>
+          <p className="text-muted-foreground line-clamp-2 text-xs">
+            {values.seoDescription || values.intro || 'Add an introduction to control this text.'}
+          </p>
+        </div>
+        <CountedField
+          id="loc-seo-title"
+          label="Title"
+          value={values.seoTitle}
+          limit={SEO_TITLE_LIMIT}
+          placeholder={values.name}
+          onChange={(seoTitle) => patch({ seoTitle })}
+        />
+        <CountedField
+          id="loc-seo-description"
+          label="Description"
+          value={values.seoDescription}
+          limit={SEO_DESCRIPTION_LIMIT}
+          placeholder={values.intro || 'Summarise this location in a sentence or two.'}
+          multiline
+          onChange={(seoDescription) => patch({ seoDescription })}
+        />
+        <ImageField
+          id="loc-share-image"
+          aspect={1.91}
+          label="Share image"
+          description="Uses the hero photo if left empty."
+          mediaId={values.ogMediaId}
+          onChange={(ogMediaId) => patch({ ogMediaId })}
+        />
+        <FormSwitchCell
+          id="loc-noindex"
+          label="Hide from search engines"
+          description="Keeps its page out of search results and the sitemap."
+          checked={values.noindex}
+          onCheckedChange={(noindex) => patch({ noindex })}
+        />
+        <p className="text-muted-foreground text-xs">
+          Only locations that are live on this site have a page to describe.
+        </p>
       </Section>
 
       <Section title="Other">

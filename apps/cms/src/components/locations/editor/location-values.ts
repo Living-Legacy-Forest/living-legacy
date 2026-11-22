@@ -21,6 +21,10 @@ export type LocationValues = {
   phone: string;
   email: string;
   hubspotFormId: string;
+  seoTitle: string;
+  seoDescription: string;
+  ogMediaId: string | null;
+  noindex: boolean;
   /** Typed in a number box, so kept as text until it is saved. */
   sortOrder: string;
   published: boolean;
@@ -52,6 +56,10 @@ export function initialLocationValues(
     phone: item?.phone ?? '',
     email: item?.email ?? '',
     hubspotFormId: item?.hubspotFormId ?? '',
+    seoTitle: item?.seoTitle ?? '',
+    seoDescription: item?.seoDescription ?? '',
+    ogMediaId: item?.ogMediaId ?? null,
+    noindex: item?.noindex ?? false,
     sortOrder: String(item?.sortOrder ?? nextOrder),
     published: item ? item.status === 'published' : true,
   };

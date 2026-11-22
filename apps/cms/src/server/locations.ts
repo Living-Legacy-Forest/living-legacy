@@ -1,4 +1,6 @@
 import {
+  SEO_DESCRIPTION_LIMIT,
+  SEO_TITLE_LIMIT,
   australianStates,
   locationStages,
   richTextPlainText,
@@ -41,6 +43,10 @@ export const listLocations = createServerFn({ method: 'GET' })
         phone: locations.phone,
         email: locations.email,
         hubspotFormId: locations.hubspotFormId,
+        seoTitle: locations.seoTitle,
+        seoDescription: locations.seoDescription,
+        ogMediaId: locations.ogMediaId,
+        noindex: locations.noindex,
         sortOrder: locations.sortOrder,
         status: locations.status,
       })
@@ -88,6 +94,10 @@ const locationSchema = z.object({
       .trim()
       .regex(/^[0-9a-f]{8}(-[0-9a-f]{4}){3}-[0-9a-f]{12}$/i, 'Paste the form ID from HubSpot.'),
   ]),
+  seoTitle: z.string().trim().max(SEO_TITLE_LIMIT),
+  seoDescription: z.string().trim().max(SEO_DESCRIPTION_LIMIT),
+  ogMediaId: z.string().nullable(),
+  noindex: z.boolean(),
   sortOrder: wholeNumberSchema('Order', 0, 9999),
   status: z.enum(['draft', 'published']),
 });
@@ -139,6 +149,10 @@ export const saveLocation = createServerFn({ method: 'POST' })
       phone: data.phone || null,
       email: data.email || null,
       hubspotFormId: data.hubspotFormId || null,
+      seoTitle: data.seoTitle || null,
+      seoDescription: data.seoDescription || null,
+      ogMediaId: data.ogMediaId,
+      noindex: data.noindex,
       sortOrder: data.sortOrder,
       status: data.status,
     };

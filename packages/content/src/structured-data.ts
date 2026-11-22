@@ -99,3 +99,52 @@ export function blogPostingJsonLd(post: {
 export function serializeJsonLd(value: JsonLd | JsonLd[]): string {
   return JSON.stringify(value).replace(/</g, '\\u003c');
 }
+
+/**
+ * A forest's own page. It is a Place rather than a LocalBusiness: the page describes somewhere to
+ * visit, and the business behind it is the organisation node the page already carries. Only
+ * details the CMS holds are included, so nothing is invented. A location with no coordinates just
+ * leaves `geo` out. Hours are left out too: they are free text, and schema.org wants a strict
+ * format (Mo-Fr 09:00-17:00) that invalid values would break.
+ */
+export function placeJsonLd(place: {
+  siteUrl: string;
+  url: string;
+  name: string;
+  description?: string;
+  image?: string;
+  address?: string;
+  /** The state's name, e.g. "Victoria". Added to the address as its region. */
+  region?: string;
+  latitude?: number | null;
+  longitude?: number | null;
+  telephone?: string;
+  email?: string;
+}): JsonLd {
+  const hasPin = typeof place.latitude === 'number' && typeof place.longitude === 'number';
+  return {
+    '@context': CONTEXT,
+    '@type': 'Place',
+    name: place.name,
+    url: place.url,
+    mainEntityOfPage: { '@type': 'WebPage', '@id': place.url },
+    isPartOf: { '@id': websiteId(place.siteUrl) },
+    ...(place.description ? { description: place.description } : {}),
+    ...(place.image ? { image: [place.image] } : {}),
+    ...(place.address
+      ? {
+          address: {
+            '@type': 'PostalAddress',
+            streetAddress: place.address,
+            ...(place.region ? { addressRegion: place.region } : {}),
+            addressCountry: 'AU',
+          },
+        }
+      : {}),
+    ...(hasPin
+      ? { geo: { '@type': 'GeoCoordinates', latitude: place.latitude, longitude: place.longitude } }
+      : {}),
+    ...(place.telephone ? { telephone: place.telephone } : {}),
+    ...(place.email ? { email: place.email } : {}),
+  };
+}

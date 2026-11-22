@@ -55,3 +55,19 @@ export function storedToRichText(stored: string | null): RichTextDoc | null {
   }
   return markdownToRichText(text);
 }
+
+/** A location's page path. Only `live` locations have one on this site. */
+export const locationPath = (slug: string) => `/locations/${slug}/`;
+
+/**
+ * Whether a location's page belongs in the sitemap: published, live on this site (not on its
+ * own website, not coming soon), and not hidden from search engines.
+ */
+export function isSitemapLocation(l: {
+  stage: LocationStage;
+  status: 'draft' | 'published';
+  noindex: boolean;
+  deletedAt?: Date | null;
+}): boolean {
+  return l.stage === 'live' && l.status === 'published' && !l.noindex && !l.deletedAt;
+}

@@ -1,0 +1,37 @@
+---
+/**
+ * gtag.js for one consent category. Google Analytics ids wait for analytics and Google Ads ids
+ * wait for marketing (Gtag.astro splits them), so a visitor who says yes to one never sends visits
+ * to the other's destination. Held as `text/plain` until ConsentGate runs it.
+ *
+ * Whichever group runs first loads gtag.js and defines `window.gtag`; the other only adds its
+ * ids with `config`, so the script loads once. `window.gtag` does not exist before either runs,
+ * so the site's own events (src/lib/analytics.ts) simply go to the dataLayer.
+ */
+interface Props {
+  ids: string[];
+  category: 'analytics' | 'marketing';
+}
+
+const { ids, category } = Astro.props;
+---
+
+<script is:inline type="text/plain" data-consent={category} define:vars={{ ids }}>
+  window.dataLayer = window.dataLayer || [];
+  window.gtag =
+    window.gtag ||
+    function () {
+      window.dataLayer.push(arguments);
+    };
+  if (!window.llGtagLoaded) {
+    window.llGtagLoaded = true;
+    window.gtag('js', new Date());
+    const loader = document.createElement('script');
+    loader.async = true;
+    loader.src = 'https://www.googletagmanager.com/gtag/js?id=' + ids[0];
+    document.head.appendChild(loader);
+  }
+  ids.forEach(function (id) {
+    window.gtag('config', id);
+  });
+</script>

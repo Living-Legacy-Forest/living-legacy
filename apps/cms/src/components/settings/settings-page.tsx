@@ -10,6 +10,7 @@ import {
   siteIconProblem,
   AI_DAILY_LIMIT_MAX,
 } from '@ll/content';
+import { CONSENT_MONTHS_OPTIONS } from '@ll/content/consent';
 import { Link, getRouteApi, useBlocker, useRouter } from '@tanstack/react-router';
 import { type ReactNode, useEffect, useRef, useState } from 'react';
 import {
@@ -80,6 +81,7 @@ const sections = [
   { id: 'brand-language', title: 'Brand language' },
   { id: 'writing-assistant', title: 'Writing assistant' },
   { id: 'legal', title: 'Legal' },
+  { id: 'cookies', title: 'Cookies & privacy' },
   { id: 'sign-in', title: 'Sign-in & security' },
   { id: 'appearance', title: 'Language & appearance' },
 ] as const;
@@ -93,6 +95,11 @@ const localeItems: { value: Locale; label: string }[] = [
 const sessionItems = sessionDayOptions.map((days) => ({
   value: String(days),
   label: days === 1 ? 'After 1 day' : `After ${days} days`,
+}));
+
+const consentMonthItems = CONSENT_MONTHS_OPTIONS.map((months) => ({
+  value: String(months),
+  label: `${months} months`,
 }));
 
 const themeLabels: Record<Theme, string> = {
@@ -200,6 +207,15 @@ function problem(v: SiteSettings): { field: string; message: string } | null {
   if (targets) return { field: 'settings-target-words', message: targets };
   const brand = brandRulesProblem(v.brandRules);
   if (brand) return { field: 'brand-language', message: brand };
+  const banner = (
+    [
+      ['settings-cookie-title', v.cookieTitle, 'The cookie banner needs a heading.'],
+      ['settings-cookie-message', v.cookieMessage, 'The cookie banner needs a message.'],
+      ['settings-cookie-analytics', v.cookieAnalyticsText, 'Describe the analytics cookies.'],
+      ['settings-cookie-marketing', v.cookieMarketingText, 'Describe the marketing cookies.'],
+    ] as const
+  ).find(([, value]) => !value.trim());
+  if (banner) return { field: banner[0], message: banner[2] };
   if (
     !Number.isInteger(v.aiDailyLimit) ||
     v.aiDailyLimit < 1 ||
@@ -706,6 +722,88 @@ export function SettingsPage({
           )}
 
           {legalPages && <LegalPagesSection pages={legalPages} />}
+
+          {!seoOnly && (
+            <SettingsSection
+              id="cookies"
+              title="Cookies & privacy"
+              description="The website asks visitors before it loads analytics or marketing tags. These words and this lifetime reach the website within a minute or two. The tags themselves are connected on the Integrations page."
+            >
+              <SettingsRow id="settings-cookie-title" title="Banner heading">
+                <Input
+                  id="settings-cookie-title"
+                  maxLength={80}
+                  value={values.cookieTitle}
+                  onChange={(e) => patch({ cookieTitle: e.target.value })}
+                  className={fieldWidth}
+                />
+              </SettingsRow>
+              <SettingsRow
+                id="settings-cookie-message"
+                title="Banner message"
+                description="A link to the privacy policy follows it."
+                suffix={<Counter value={values.cookieMessage} limit={600} />}
+                stacked
+              >
+                <Textarea
+                  id="settings-cookie-message"
+                  rows={3}
+                  value={values.cookieMessage}
+                  onChange={(e) => patch({ cookieMessage: e.target.value })}
+                />
+              </SettingsRow>
+              <SettingsRow
+                id="settings-cookie-analytics"
+                title="Analytics cookies"
+                description="What visitors read beside the Analytics choice. Name the tools that use them."
+                suffix={<Counter value={values.cookieAnalyticsText} limit={300} />}
+                stacked
+              >
+                <Textarea
+                  id="settings-cookie-analytics"
+                  rows={2}
+                  value={values.cookieAnalyticsText}
+                  onChange={(e) => patch({ cookieAnalyticsText: e.target.value })}
+                />
+              </SettingsRow>
+              <SettingsRow
+                id="settings-cookie-marketing"
+                title="Marketing cookies"
+                description="What visitors read beside the Marketing choice. Name the tools that use them."
+                suffix={<Counter value={values.cookieMarketingText} limit={300} />}
+                stacked
+              >
+                <Textarea
+                  id="settings-cookie-marketing"
+                  rows={2}
+                  value={values.cookieMarketingText}
+                  onChange={(e) => patch({ cookieMarketingText: e.target.value })}
+                />
+              </SettingsRow>
+              <SettingsRow
+                id="settings-consent-months"
+                title="Ask again after"
+                description="How long a visitor's choice is kept before the banner returns. Changing it applies to choices made from now on."
+              >
+                <Select
+                  items={consentMonthItems}
+                  value={String(values.consentMonths)}
+                  onValueChange={(value) => value && patch({ consentMonths: Number(value) })}
+                >
+                  <SelectTrigger id="settings-consent-months" className={fieldWidth}>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {consentMonthItems.map((item) => (
+                      <SelectItem key={item.value} value={item.value}>
+                        {item.label}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </SettingsRow>
+            </SettingsSection>
+          )}
 
           {!seoOnly && (
             <SettingsSection

@@ -2,13 +2,26 @@
 /**
  * PostHog — product analytics + client-side error tracking.
  *
- * The init module is only loaded when PUBLIC_POSTHOG_KEY is set, so local dev
- * and unconfigured preview builds ship no analytics bundle at all.
+ * The key comes from Settings (or PUBLIC_POSTHOG_KEY) and reaches the browser as a <meta> tag.
+ * The init module is only loaded when there is a key, so local dev and unconfigured preview
+ * builds ship no analytics bundle at all. Even then it waits for the visitor to say yes to
+ * analytics: until they do, PostHog is not fetched, sets no cookie and sends nothing.
  */
+import { getSiteSettings } from '@/lib/settings';
+import { trackingConfigFrom } from '@/lib/tracking-config';
+
+const { posthogKey } = trackingConfigFrom(await getSiteSettings());
 ---
 
+{posthogKey && <meta name="ll-posthog-key" content={posthogKey} />}
+
 <script>
-  if (import.meta.env.PUBLIC_POSTHOG_KEY) {
-    import('@/lib/analytics/posthog-client');
+  import { whenAllowed } from '@/lib/consent';
+  import { posthogKey } from '@/lib/tracking-client';
+
+  if (posthogKey()) {
+    whenAllowed('analytics', () => {
+      void import('@/lib/analytics/posthog-client');
+    });
   }
 </script>

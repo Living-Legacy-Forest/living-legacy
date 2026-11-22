@@ -1,9 +1,12 @@
 ---
 import { isIndexableHost } from '@/lib/seo';
+import { getSiteSettings } from '@/lib/settings';
+import { trackingConfigFrom } from '@/lib/tracking-config';
 import Gtm from './tracking/Gtm.astro';
 import PageContext from './tracking/PageContext.astro';
 import MetaPixel from './tracking/MetaPixel.astro';
 import Gtag from './tracking/Gtag.astro';
+import ConsentGate from './tracking/ConsentGate.astro';
 
 /**
  * Marketing tags carried over from the live site: Google Tag Manager, the
@@ -11,6 +14,10 @@ import Gtag from './tracking/Gtag.astro';
  * loader). Each renders only when its id is configured, and none of them
  * render at all unless the request host is the indexable production host, so
  * local dev and preview deploys never pollute live data.
+ *
+ * None of them run until the visitor allows them. Tag Manager and the Meta
+ * pixel need a yes to marketing, gtag.js a yes to analytics; ConsentGate
+ * starts each when its category is allowed (PostHog waits in PostHog.astro).
  *
  * PageContext goes first, so the page's context is on the dataLayer before
  * any tag reads it.
@@ -21,12 +28,7 @@ import Gtag from './tracking/Gtag.astro';
  * each tag is its own always-rendered component and the conditionals below
  * only ever wrap a component tag, never raw script text.
  */
-const gtmId = import.meta.env.PUBLIC_GTM_ID;
-const metaPixelId = import.meta.env.PUBLIC_META_PIXEL_ID;
-const gaIds = (import.meta.env.PUBLIC_GA_MEASUREMENT_ID ?? '')
-  .split(',')
-  .map((id: string) => id.trim())
-  .filter(Boolean);
+const { gtmId, metaPixelId, gaIds } = trackingConfigFrom(await getSiteSettings());
 
 const enabled = isIndexableHost(Astro.url.host);
 ---
@@ -35,3 +37,4 @@ const enabled = isIndexableHost(Astro.url.host);
 {enabled && gtmId && <Gtm gtmId={gtmId} />}
 {enabled && metaPixelId && <MetaPixel pixelId={metaPixelId} />}
 {enabled && gaIds.length > 0 && <Gtag ids={gaIds} />}
+{enabled && <ConsentGate />}

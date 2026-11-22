@@ -11,7 +11,7 @@ export const Route = createFileRoute('/_app/integrations/')({
     const [keys, origin] = await Promise.all([listApiKeys(), getCmsOrigin()]);
     return { keys, origin };
   },
-  head: () => ({ meta: [{ title: 'Integrations | Living Legacy CMS' }] }),
+  head: () => ({ meta: [{ title: 'API keys | Living Legacy CMS' }] }),
   component: IntegrationsRoute,
 });
 

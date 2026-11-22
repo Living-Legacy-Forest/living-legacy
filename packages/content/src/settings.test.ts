@@ -183,3 +183,25 @@ describe('brand rules in settings', () => {
     expect(targets.brandRules).toEqual(edited);
   });
 });
+
+describe('cookie settings', () => {
+  it('start with the built-in banner words, no tag ids and a year', () => {
+    const s = parseSiteSettings({});
+    expect(s.cookieTitle).toBe('Your cookie choices');
+    expect(s.cookieMessage).toMatch(/Essential cookies are always on/);
+    expect([s.gtmId, s.metaPixelId, s.gaMeasurementIds, s.posthogKey]).toEqual(['', '', '', '']);
+    expect(s.consentMonths).toBe(12);
+  });
+
+  it('keep what an editor wrote', () => {
+    const s = parseSiteSettings({ cookieTitle: 'Cookies', gtmId: 'GTM-ABC1234', consentMonths: 6 });
+    expect(s).toMatchObject({ cookieTitle: 'Cookies', gtmId: 'GTM-ABC1234', consentMonths: 6 });
+  });
+
+  it('never leave the banner blank, and ignore a lifetime that is not offered', () => {
+    const s = parseSiteSettings({ cookieTitle: '  ', cookieMessage: '', consentMonths: 60 });
+    expect(s.cookieTitle).toBe('Your cookie choices');
+    expect(s.cookieMessage).toMatch(/Essential cookies are always on/);
+    expect(s.consentMonths).toBe(12);
+  });
+});

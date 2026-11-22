@@ -3,6 +3,7 @@
 // track with the chosen option raised on it. Longer choices stay a picker.
 import { Toggle } from '@base-ui/react/toggle';
 import { ToggleGroup } from '@base-ui/react/toggle-group';
+import type { ReactNode } from 'react';
 import { PillGlide, pillItemClass, pillTrackClass } from '@/components/ui/pill-track';
 import { cn } from '@/lib/utils';
 
@@ -17,7 +18,7 @@ export function SegmentedControl<T extends string>({
   value: T;
   onValueChange: (value: T) => void;
   /** Two to four options. */
-  options: { value: T; label: string }[];
+  options: { value: T; label: string; /** A small icon before the label. */ icon?: ReactNode }[];
   className?: string;
 }) {
   return (
@@ -49,7 +50,14 @@ export function SegmentedControl<T extends string>({
             'max-md:text-foreground max-md:h-8 max-md:min-h-8! max-md:flex-1 max-md:rounded-[7px] max-md:border-0 max-md:text-[0.8125rem] max-md:after:absolute max-md:after:inset-x-0 max-md:after:-inset-y-1.5 max-md:aria-pressed:font-semibold'
           )}
         >
-          {option.label}
+          {option.icon ? (
+            <span className="inline-flex items-center gap-2 [&_svg]:shrink-0">
+              {option.icon}
+              {option.label}
+            </span>
+          ) : (
+            option.label
+          )}
         </Toggle>
       ))}
     </ToggleGroup>

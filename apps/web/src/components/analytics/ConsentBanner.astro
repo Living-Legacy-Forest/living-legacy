@@ -1,0 +1,180 @@
+---
+/**
+ * Asks which optional cookies the visitor allows. Shown until they choose, and again from the
+ * footer's "Cookie settings" link or once the lifetime set in the CMS (3, 6 or 12 months) has passed.
+ * The words, the lifetime and the tag ids are edited in the CMS: Settings, Cookies & privacy.
+ *
+ * It starts hidden and the script shows it, because pages are cached and shared: the server
+ * cannot know who has chosen. Placed early in the page so keyboard users meet it before the
+ * long page behind it, though it is drawn at the bottom of the screen.
+ *
+ * "Accept all" and "Reject non-essential" are the same size and weight on purpose. A choice
+ * that is easier one way is not a free choice.
+ */
+import { buttonVariants } from '@/components/ui/button';
+import { getSiteSettings } from '@/lib/settings';
+import { trackingConfigFrom } from '@/lib/tracking-config';
+
+const settings = await getSiteSettings();
+const { asksConsent, consentMonths } = trackingConfigFrom(settings);
+const button = buttonVariants({ size: 'sm' });
+const buttonQuiet = buttonVariants({ variant: 'outline', size: 'sm' });
+const row = 'flex min-h-11 items-start gap-3 py-1.5';
+---
+
+{
+  asksConsent && (
+    <>
+      <meta name="ll-consent-months" content={String(consentMonths)} />
+      <section
+        data-consent-banner
+        role="dialog"
+        aria-modal="false"
+        aria-labelledby="consent-title"
+        class="border-bark/20 bg-paper text-ink fixed inset-x-3 bottom-3 z-50 mx-auto max-h-[calc(100dvh-1.5rem)] max-w-2xl overflow-y-auto rounded-2xl border p-5 shadow-lg sm:p-6"
+        hidden
+      >
+        <h2 id="consent-title" tabindex="-1" class="font-display text-xl outline-none">
+          {settings.cookieTitle}
+        </h2>
+        <p class="text-ink-soft mt-2 text-base">
+          {settings.cookieMessage}{' '}
+          <a href="/privacy/#cookies" class="underline underline-offset-4">
+            Read our privacy policy
+          </a>
+          .
+        </p>
+
+        <fieldset data-consent-options class="mt-4" hidden>
+          <legend class="sr-only">Cookies we use</legend>
+          <label class={row}>
+            <input type="checkbox" checked disabled class="accent-moss mt-1 size-5 shrink-0" />
+            <span>
+              <span class="block font-medium">Essential</span>
+              <span class="text-ink-soft block text-sm">
+                Keeps the site working and remembers this choice. Always on.
+              </span>
+            </span>
+          </label>
+          <label class={row}>
+            <input type="checkbox" name="analytics" class="accent-moss mt-1 size-5 shrink-0" />
+            <span>
+              <span class="block font-medium">Analytics</span>
+              <span class="text-ink-soft block text-sm">{settings.cookieAnalyticsText}</span>
+            </span>
+          </label>
+          <label class={row}>
+            <input type="checkbox" name="marketing" class="accent-moss mt-1 size-5 shrink-0" />
+            <span>
+              <span class="block font-medium">Marketing</span>
+              <span class="text-ink-soft block text-sm">{settings.cookieMarketingText}</span>
+            </span>
+          </label>
+        </fieldset>
+
+        <div class="mt-5 flex flex-wrap gap-3">
+          <button type="button" data-consent-action="accept" class={button}>
+            Accept all
+          </button>
+          <button type="button" data-consent-action="reject" class={button}>
+            Reject non-essential
+          </button>
+          <button
+            type="button"
+            data-consent-action="choose"
+            aria-expanded="false"
+            class={buttonQuiet}
+          >
+            Choose
+          </button>
+          <button type="button" data-consent-action="save" class={button} hidden>
+            Save choices
+          </button>
+        </div>
+      </section>
+    </>
+  )
+}
+
+<script>
+  import { ACCEPT_ALL, CONSENT_CATEGORIES, REJECT_ALL } from '@ll/content/consent';
+  import {
+    clearTrackingData,
+    getConsent,
+    hasConsent,
+    reloadIfWithdrawn,
+    saveConsent,
+  } from '@/lib/consent';
+
+  const banner = document.querySelector<HTMLElement>('[data-consent-banner]');
+
+  if (banner) {
+    // Delete what a category's tags stored if it is not allowed. After a withdrawal PostHog writes
+    // its state again as the page unloads, so the clean-up has to run on the next page too. This
+    // lives here, not with the tags, because PostHog loads on every host.
+    clearTrackingData(CONSENT_CATEGORIES.filter((category) => !hasConsent(category)));
+
+    const options = banner.querySelector<HTMLElement>('[data-consent-options]')!;
+    const title = banner.querySelector<HTMLElement>('#consent-title')!;
+    const choose = banner.querySelector<HTMLButtonElement>('[data-consent-action="choose"]')!;
+    const save = banner.querySelector<HTMLButtonElement>('[data-consent-action="save"]')!;
+    const analytics = banner.querySelector<HTMLInputElement>('input[name="analytics"]')!;
+    const marketing = banner.querySelector<HTMLInputElement>('input[name="marketing"]')!;
+    let opener: HTMLElement | null = null;
+
+    const showOptions = (open: boolean) => {
+      options.hidden = !open;
+      save.hidden = !open;
+      choose.hidden = open;
+      choose.setAttribute('aria-expanded', String(open));
+    };
+
+    const open = (fromUser: boolean) => {
+      const current = getConsent();
+      analytics.checked = current?.analytics ?? false;
+      marketing.checked = current?.marketing ?? false;
+      // Someone changing an earlier choice wants the choices in front of them; a first-time
+      // visitor gets the short version.
+      showOptions(Boolean(current));
+      banner.hidden = false;
+      // Move focus only when asked for: stealing it on arrival would pull a visitor out of
+      // whatever they came to read.
+      if (fromUser) title.focus();
+    };
+
+    const close = () => {
+      banner.hidden = true;
+      opener?.focus();
+      opener = null;
+    };
+
+    banner.addEventListener('click', (event) => {
+      const action = (event.target as Element).closest<HTMLElement>('[data-consent-action]')
+        ?.dataset.consentAction;
+      if (action === 'accept') saveConsent(ACCEPT_ALL);
+      else if (action === 'reject') saveConsent(REJECT_ALL);
+      else if (action === 'save') {
+        saveConsent({ analytics: analytics.checked, marketing: marketing.checked });
+      } else if (action === 'choose') {
+        showOptions(true);
+        analytics.focus();
+        return;
+      } else return;
+      close();
+    });
+
+    document.addEventListener('click', (event) => {
+      const trigger = (event.target as Element).closest<HTMLElement>('[data-consent-open]');
+      if (!trigger) return;
+      opener = trigger;
+      open(true);
+    });
+
+    // Another tab may have taken a yes back while this one was hidden; its tags are still running.
+    document.addEventListener('visibilitychange', () => {
+      if (document.visibilityState === 'visible') reloadIfWithdrawn();
+    });
+
+    if (!getConsent()) open(false);
+  }
+</script>

@@ -32,6 +32,7 @@ import { Route as AppEventsNewRouteImport } from './routes/_app/events/new'
 import { Route as AppEventsOverviewRouteImport } from './routes/_app/events/overview'
 import { Route as AppFaqsIndexRouteImport } from './routes/_app/faqs/index'
 import { Route as AppIntegrationsIndexRouteImport } from './routes/_app/integrations/index'
+import { Route as AppIntegrationsAppsRouteImport } from './routes/_app/integrations/apps'
 import { Route as AppLegalIndexRouteImport } from './routes/_app/legal/index'
 import { Route as AppLegalSlugRouteImport } from './routes/_app/legal/$slug'
 import { Route as AppLocationsIndexRouteImport } from './routes/_app/locations/index'
@@ -186,6 +187,11 @@ const AppFaqsIndexRoute = AppFaqsIndexRouteImport.update({
 const AppIntegrationsIndexRoute = AppIntegrationsIndexRouteImport.update({
   id: '/integrations/',
   path: '/integrations/',
+  getParentRoute: () => AppRoute,
+} as any)
+const AppIntegrationsAppsRoute = AppIntegrationsAppsRouteImport.update({
+  id: '/integrations/apps',
+  path: '/integrations/apps',
   getParentRoute: () => AppRoute,
 } as any)
 const AppLegalIndexRoute = AppLegalIndexRouteImport.update({
@@ -409,6 +415,7 @@ export interface FileRoutesByFullPath {
   '/events/$eventId': typeof AppEventsEventIdRoute
   '/events/new': typeof AppEventsNewRoute
   '/events/overview': typeof AppEventsOverviewRoute
+  '/integrations/apps': typeof AppIntegrationsAppsRoute
   '/legal/$slug': typeof AppLegalSlugRoute
   '/locations/$locationId': typeof AppLocationsLocationIdRoute
   '/locations/new': typeof AppLocationsNewRoute
@@ -473,6 +480,7 @@ export interface FileRoutesByTo {
   '/events/$eventId': typeof AppEventsEventIdRoute
   '/events/new': typeof AppEventsNewRoute
   '/events/overview': typeof AppEventsOverviewRoute
+  '/integrations/apps': typeof AppIntegrationsAppsRoute
   '/legal/$slug': typeof AppLegalSlugRoute
   '/locations/$locationId': typeof AppLocationsLocationIdRoute
   '/locations/new': typeof AppLocationsNewRoute
@@ -540,6 +548,7 @@ export interface FileRoutesById {
   '/_app/events/$eventId': typeof AppEventsEventIdRoute
   '/_app/events/new': typeof AppEventsNewRoute
   '/_app/events/overview': typeof AppEventsOverviewRoute
+  '/_app/integrations/apps': typeof AppIntegrationsAppsRoute
   '/_app/legal/$slug': typeof AppLegalSlugRoute
   '/_app/locations/$locationId': typeof AppLocationsLocationIdRoute
   '/_app/locations/new': typeof AppLocationsNewRoute
@@ -607,6 +616,7 @@ export interface FileRouteTypes {
     | '/events/$eventId'
     | '/events/new'
     | '/events/overview'
+    | '/integrations/apps'
     | '/legal/$slug'
     | '/locations/$locationId'
     | '/locations/new'
@@ -671,6 +681,7 @@ export interface FileRouteTypes {
     | '/events/$eventId'
     | '/events/new'
     | '/events/overview'
+    | '/integrations/apps'
     | '/legal/$slug'
     | '/locations/$locationId'
     | '/locations/new'
@@ -737,6 +748,7 @@ export interface FileRouteTypes {
     | '/_app/events/$eventId'
     | '/_app/events/new'
     | '/_app/events/overview'
+    | '/_app/integrations/apps'
     | '/_app/legal/$slug'
     | '/_app/locations/$locationId'
     | '/_app/locations/new'
@@ -973,6 +985,13 @@ declare module '@tanstack/react-router' {
       path: '/integrations'
       fullPath: '/integrations/'
       preLoaderRoute: typeof AppIntegrationsIndexRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/_app/integrations/apps': {
+      id: '/_app/integrations/apps'
+      path: '/integrations/apps'
+      fullPath: '/integrations/apps'
+      preLoaderRoute: typeof AppIntegrationsAppsRouteImport
       parentRoute: typeof AppRoute
     }
     '/_app/legal/': {
@@ -1292,6 +1311,7 @@ interface AppRouteChildren {
   AppEventsEventIdRoute: typeof AppEventsEventIdRoute
   AppEventsNewRoute: typeof AppEventsNewRoute
   AppEventsOverviewRoute: typeof AppEventsOverviewRoute
+  AppIntegrationsAppsRoute: typeof AppIntegrationsAppsRoute
   AppLegalSlugRoute: typeof AppLegalSlugRoute
   AppLocationsLocationIdRoute: typeof AppLocationsLocationIdRoute
   AppLocationsNewRoute: typeof AppLocationsNewRoute
@@ -1333,6 +1353,7 @@ const AppRouteChildren: AppRouteChildren = {
   AppEventsEventIdRoute: AppEventsEventIdRoute,
   AppEventsNewRoute: AppEventsNewRoute,
   AppEventsOverviewRoute: AppEventsOverviewRoute,
+  AppIntegrationsAppsRoute: AppIntegrationsAppsRoute,
   AppLegalSlugRoute: AppLegalSlugRoute,
   AppLocationsLocationIdRoute: AppLocationsLocationIdRoute,
   AppLocationsNewRoute: AppLocationsNewRoute,

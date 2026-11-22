@@ -70,3 +70,16 @@ describe('toSessionUser', () => {
     expect(toSessionUser(editor, 'boss@example.test').isSuperAdmin).toBe(false);
   });
 });
+
+describe('banner', () => {
+  it('reads the banner url', () => {
+    expect(toSessionUser({ ...raw, banner: '/api/banner/banner-a.png' }).banner).toBe(
+      '/api/banner/banner-a.png'
+    );
+  });
+
+  it('is null when missing or not text', () => {
+    expect(toSessionUser(raw).banner).toBeNull();
+    expect(toSessionUser({ ...raw, banner: 5 }).banner).toBeNull();
+  });
+});

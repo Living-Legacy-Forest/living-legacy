@@ -12,6 +12,7 @@ import BrandImage from '@/components/ui/BrandImage.astro';
 import PatentsDialog from '@/components/layout/PatentsDialog';
 import { Separator } from '@/components/ui/separator';
 import { buttonVariants } from '@/components/ui/button';
+import { trackingConfigFrom } from '@/lib/tracking-config';
 import logoWordmark from '@/assets/brand/logo-wordmark.png';
 import { type SocialKey, getSiteSettings, socialLinks } from '@/lib/settings';
 
@@ -53,6 +54,7 @@ const legalLinks = [
 ];
 
 const year = new Date().getFullYear();
+const { asksConsent } = trackingConfigFrom(settings);
 ---
 
 <footer class="border-bark/20 border-t">
@@ -160,6 +162,19 @@ const year = new Date().getFullYear();
               </a>
             </li>
           ))
+        }
+        {
+          asksConsent && (
+            <li>
+              <button
+                type="button"
+                data-consent-open
+                class="hover:text-moss-deep transition-colors duration-300"
+              >
+                Cookie settings
+              </button>
+            </li>
+          )
         }
       </ul>
     </div>

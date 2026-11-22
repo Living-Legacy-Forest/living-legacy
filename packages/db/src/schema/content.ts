@@ -35,6 +35,11 @@ export const media = sqliteTable(
     // Free-form labels for finding files, lower case.
     tags: text('tags', { mode: 'json' }).$type<string[]>(),
     uploadedBy: text('uploaded_by').references(() => user.id, { onDelete: 'set null' }),
+    // Set while the file is in the trash: hidden from the library and the website, its stored
+    // objects kept so it can be restored. A daily job deletes it for good after a while
+    // (MEDIA_TRASH_DAYS in @ll/content).
+    deletedAt: integer('deleted_at', { mode: 'timestamp_ms' }),
+    deletedBy: text('deleted_by').references(() => user.id, { onDelete: 'set null' }),
     ...timestamps(),
   },
   // The library and the image picker page through files newest first.

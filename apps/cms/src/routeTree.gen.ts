@@ -32,6 +32,7 @@ import { Route as AppEventsNewRouteImport } from './routes/_app/events/new'
 import { Route as AppEventsOverviewRouteImport } from './routes/_app/events/overview'
 import { Route as AppFaqsIndexRouteImport } from './routes/_app/faqs/index'
 import { Route as AppIntegrationsIndexRouteImport } from './routes/_app/integrations/index'
+import { Route as AppIntegrationsAppsRouteImport } from './routes/_app/integrations/apps'
 import { Route as AppLegalIndexRouteImport } from './routes/_app/legal/index'
 import { Route as AppLegalSlugRouteImport } from './routes/_app/legal/$slug'
 import { Route as AppLocationsIndexRouteImport } from './routes/_app/locations/index'
@@ -59,7 +60,10 @@ import { Route as ApiAuthSplatRouteImport } from './routes/api/auth/$'
 import { Route as ApiAvatarIndexRouteImport } from './routes/api/avatar/index'
 import { Route as ApiAvatarKeyRouteImport } from './routes/api/avatar/$key'
 import { Route as ApiAvatarsIdRouteImport } from './routes/api/avatars/$id'
+import { Route as ApiBannerIndexRouteImport } from './routes/api/banner/index'
+import { Route as ApiBannerKeyRouteImport } from './routes/api/banner/$key'
 import { Route as ApiMediaCoverIdRouteImport } from './routes/api/media-cover/$id'
+import { Route as ApiMediaTrashIdRouteImport } from './routes/api/media-trash/$id'
 import { Route as ApiMediaVersionsIdRouteImport } from './routes/api/media-versions/$id'
 import { Route as ApiMediaIndexRouteImport } from './routes/api/media/index'
 import { Route as ApiV1TermsRouteImport } from './routes/api/v1/terms'
@@ -185,6 +189,11 @@ const AppFaqsIndexRoute = AppFaqsIndexRouteImport.update({
 const AppIntegrationsIndexRoute = AppIntegrationsIndexRouteImport.update({
   id: '/integrations/',
   path: '/integrations/',
+  getParentRoute: () => AppRoute,
+} as any)
+const AppIntegrationsAppsRoute = AppIntegrationsAppsRouteImport.update({
+  id: '/integrations/apps',
+  path: '/integrations/apps',
   getParentRoute: () => AppRoute,
 } as any)
 const AppLegalIndexRoute = AppLegalIndexRouteImport.update({
@@ -322,9 +331,24 @@ const ApiAvatarsIdRoute = ApiAvatarsIdRouteImport.update({
   path: '/api/avatars/$id',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ApiBannerIndexRoute = ApiBannerIndexRouteImport.update({
+  id: '/api/banner/',
+  path: '/api/banner/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiBannerKeyRoute = ApiBannerKeyRouteImport.update({
+  id: '/api/banner/$key',
+  path: '/api/banner/$key',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ApiMediaCoverIdRoute = ApiMediaCoverIdRouteImport.update({
   id: '/api/media-cover/$id',
   path: '/api/media-cover/$id',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiMediaTrashIdRoute = ApiMediaTrashIdRouteImport.update({
+  id: '/api/media-trash/$id',
+  path: '/api/media-trash/$id',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ApiMediaVersionsIdRoute = ApiMediaVersionsIdRouteImport.update({
@@ -403,6 +427,7 @@ export interface FileRoutesByFullPath {
   '/events/$eventId': typeof AppEventsEventIdRoute
   '/events/new': typeof AppEventsNewRoute
   '/events/overview': typeof AppEventsOverviewRoute
+  '/integrations/apps': typeof AppIntegrationsAppsRoute
   '/legal/$slug': typeof AppLegalSlugRoute
   '/locations/$locationId': typeof AppLocationsLocationIdRoute
   '/locations/new': typeof AppLocationsNewRoute
@@ -412,7 +437,9 @@ export interface FileRoutesByFullPath {
   '/api/auth/$': typeof ApiAuthSplatRoute
   '/api/avatar/$key': typeof ApiAvatarKeyRoute
   '/api/avatars/$id': typeof ApiAvatarsIdRoute
+  '/api/banner/$key': typeof ApiBannerKeyRoute
   '/api/media-cover/$id': typeof ApiMediaCoverIdRoute
+  '/api/media-trash/$id': typeof ApiMediaTrashIdRoute
   '/api/media-versions/$id': typeof ApiMediaVersionsIdRoute
   '/api/v1/terms': typeof ApiV1TermsRoute
   '/preview/events/$draftId': typeof PreviewEventsDraftIdRoute
@@ -445,6 +472,7 @@ export interface FileRoutesByFullPath {
   '/visitors/': typeof AppVisitorsIndexRoute
   '/whats-new/': typeof AppWhatsNewIndexRoute
   '/api/avatar/': typeof ApiAvatarIndexRoute
+  '/api/banner/': typeof ApiBannerIndexRoute
   '/api/media/': typeof ApiMediaIndexRoute
   '/api/tickets/$reference/calendar': typeof ApiTicketsReferenceCalendarRoute
   '/api/tickets/$reference/qr': typeof ApiTicketsReferenceQrRoute
@@ -466,6 +494,7 @@ export interface FileRoutesByTo {
   '/events/$eventId': typeof AppEventsEventIdRoute
   '/events/new': typeof AppEventsNewRoute
   '/events/overview': typeof AppEventsOverviewRoute
+  '/integrations/apps': typeof AppIntegrationsAppsRoute
   '/legal/$slug': typeof AppLegalSlugRoute
   '/locations/$locationId': typeof AppLocationsLocationIdRoute
   '/locations/new': typeof AppLocationsNewRoute
@@ -475,7 +504,9 @@ export interface FileRoutesByTo {
   '/api/auth/$': typeof ApiAuthSplatRoute
   '/api/avatar/$key': typeof ApiAvatarKeyRoute
   '/api/avatars/$id': typeof ApiAvatarsIdRoute
+  '/api/banner/$key': typeof ApiBannerKeyRoute
   '/api/media-cover/$id': typeof ApiMediaCoverIdRoute
+  '/api/media-trash/$id': typeof ApiMediaTrashIdRoute
   '/api/media-versions/$id': typeof ApiMediaVersionsIdRoute
   '/api/v1/terms': typeof ApiV1TermsRoute
   '/preview/events/$draftId': typeof PreviewEventsDraftIdRoute
@@ -508,6 +539,7 @@ export interface FileRoutesByTo {
   '/visitors': typeof AppVisitorsIndexRoute
   '/whats-new': typeof AppWhatsNewIndexRoute
   '/api/avatar': typeof ApiAvatarIndexRoute
+  '/api/banner': typeof ApiBannerIndexRoute
   '/api/media': typeof ApiMediaIndexRoute
   '/api/tickets/$reference/calendar': typeof ApiTicketsReferenceCalendarRoute
   '/api/tickets/$reference/qr': typeof ApiTicketsReferenceQrRoute
@@ -532,6 +564,7 @@ export interface FileRoutesById {
   '/_app/events/$eventId': typeof AppEventsEventIdRoute
   '/_app/events/new': typeof AppEventsNewRoute
   '/_app/events/overview': typeof AppEventsOverviewRoute
+  '/_app/integrations/apps': typeof AppIntegrationsAppsRoute
   '/_app/legal/$slug': typeof AppLegalSlugRoute
   '/_app/locations/$locationId': typeof AppLocationsLocationIdRoute
   '/_app/locations/new': typeof AppLocationsNewRoute
@@ -541,7 +574,9 @@ export interface FileRoutesById {
   '/api/auth/$': typeof ApiAuthSplatRoute
   '/api/avatar/$key': typeof ApiAvatarKeyRoute
   '/api/avatars/$id': typeof ApiAvatarsIdRoute
+  '/api/banner/$key': typeof ApiBannerKeyRoute
   '/api/media-cover/$id': typeof ApiMediaCoverIdRoute
+  '/api/media-trash/$id': typeof ApiMediaTrashIdRoute
   '/api/media-versions/$id': typeof ApiMediaVersionsIdRoute
   '/api/v1/terms': typeof ApiV1TermsRoute
   '/preview/events/$draftId': typeof PreviewEventsDraftIdRoute
@@ -574,6 +609,7 @@ export interface FileRoutesById {
   '/_app/visitors/': typeof AppVisitorsIndexRoute
   '/_app/whats-new/': typeof AppWhatsNewIndexRoute
   '/api/avatar/': typeof ApiAvatarIndexRoute
+  '/api/banner/': typeof ApiBannerIndexRoute
   '/api/media/': typeof ApiMediaIndexRoute
   '/api/tickets/$reference/calendar': typeof ApiTicketsReferenceCalendarRoute
   '/api/tickets/$reference/qr': typeof ApiTicketsReferenceQrRoute
@@ -598,6 +634,7 @@ export interface FileRouteTypes {
     | '/events/$eventId'
     | '/events/new'
     | '/events/overview'
+    | '/integrations/apps'
     | '/legal/$slug'
     | '/locations/$locationId'
     | '/locations/new'
@@ -607,7 +644,9 @@ export interface FileRouteTypes {
     | '/api/auth/$'
     | '/api/avatar/$key'
     | '/api/avatars/$id'
+    | '/api/banner/$key'
     | '/api/media-cover/$id'
+    | '/api/media-trash/$id'
     | '/api/media-versions/$id'
     | '/api/v1/terms'
     | '/preview/events/$draftId'
@@ -640,6 +679,7 @@ export interface FileRouteTypes {
     | '/visitors/'
     | '/whats-new/'
     | '/api/avatar/'
+    | '/api/banner/'
     | '/api/media/'
     | '/api/tickets/$reference/calendar'
     | '/api/tickets/$reference/qr'
@@ -661,6 +701,7 @@ export interface FileRouteTypes {
     | '/events/$eventId'
     | '/events/new'
     | '/events/overview'
+    | '/integrations/apps'
     | '/legal/$slug'
     | '/locations/$locationId'
     | '/locations/new'
@@ -670,7 +711,9 @@ export interface FileRouteTypes {
     | '/api/auth/$'
     | '/api/avatar/$key'
     | '/api/avatars/$id'
+    | '/api/banner/$key'
     | '/api/media-cover/$id'
+    | '/api/media-trash/$id'
     | '/api/media-versions/$id'
     | '/api/v1/terms'
     | '/preview/events/$draftId'
@@ -703,6 +746,7 @@ export interface FileRouteTypes {
     | '/visitors'
     | '/whats-new'
     | '/api/avatar'
+    | '/api/banner'
     | '/api/media'
     | '/api/tickets/$reference/calendar'
     | '/api/tickets/$reference/qr'
@@ -726,6 +770,7 @@ export interface FileRouteTypes {
     | '/_app/events/$eventId'
     | '/_app/events/new'
     | '/_app/events/overview'
+    | '/_app/integrations/apps'
     | '/_app/legal/$slug'
     | '/_app/locations/$locationId'
     | '/_app/locations/new'
@@ -735,7 +780,9 @@ export interface FileRouteTypes {
     | '/api/auth/$'
     | '/api/avatar/$key'
     | '/api/avatars/$id'
+    | '/api/banner/$key'
     | '/api/media-cover/$id'
+    | '/api/media-trash/$id'
     | '/api/media-versions/$id'
     | '/api/v1/terms'
     | '/preview/events/$draftId'
@@ -768,6 +815,7 @@ export interface FileRouteTypes {
     | '/_app/visitors/'
     | '/_app/whats-new/'
     | '/api/avatar/'
+    | '/api/banner/'
     | '/api/media/'
     | '/api/tickets/$reference/calendar'
     | '/api/tickets/$reference/qr'
@@ -785,13 +833,16 @@ export interface RootRouteChildren {
   ApiAuthSplatRoute: typeof ApiAuthSplatRoute
   ApiAvatarKeyRoute: typeof ApiAvatarKeyRoute
   ApiAvatarsIdRoute: typeof ApiAvatarsIdRoute
+  ApiBannerKeyRoute: typeof ApiBannerKeyRoute
   ApiMediaCoverIdRoute: typeof ApiMediaCoverIdRoute
+  ApiMediaTrashIdRoute: typeof ApiMediaTrashIdRoute
   ApiMediaVersionsIdRoute: typeof ApiMediaVersionsIdRoute
   ApiV1TermsRoute: typeof ApiV1TermsRoute
   PreviewEventsDraftIdRoute: typeof PreviewEventsDraftIdRoute
   PreviewLegalSlugRoute: typeof PreviewLegalSlugRoute
   PreviewPostsPostIdRoute: typeof PreviewPostsPostIdRoute
   ApiAvatarIndexRoute: typeof ApiAvatarIndexRoute
+  ApiBannerIndexRoute: typeof ApiBannerIndexRoute
   ApiMediaIndexRoute: typeof ApiMediaIndexRoute
   ApiTicketsReferenceCalendarRoute: typeof ApiTicketsReferenceCalendarRoute
   ApiTicketsReferenceQrRoute: typeof ApiTicketsReferenceQrRoute
@@ -960,6 +1011,13 @@ declare module '@tanstack/react-router' {
       path: '/integrations'
       fullPath: '/integrations/'
       preLoaderRoute: typeof AppIntegrationsIndexRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/_app/integrations/apps': {
+      id: '/_app/integrations/apps'
+      path: '/integrations/apps'
+      fullPath: '/integrations/apps'
+      preLoaderRoute: typeof AppIntegrationsAppsRouteImport
       parentRoute: typeof AppRoute
     }
     '/_app/legal/': {
@@ -1151,11 +1209,32 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiAvatarsIdRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/banner/': {
+      id: '/api/banner/'
+      path: '/api/banner'
+      fullPath: '/api/banner/'
+      preLoaderRoute: typeof ApiBannerIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/banner/$key': {
+      id: '/api/banner/$key'
+      path: '/api/banner/$key'
+      fullPath: '/api/banner/$key'
+      preLoaderRoute: typeof ApiBannerKeyRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/api/media-cover/$id': {
       id: '/api/media-cover/$id'
       path: '/api/media-cover/$id'
       fullPath: '/api/media-cover/$id'
       preLoaderRoute: typeof ApiMediaCoverIdRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/media-trash/$id': {
+      id: '/api/media-trash/$id'
+      path: '/api/media-trash/$id'
+      fullPath: '/api/media-trash/$id'
+      preLoaderRoute: typeof ApiMediaTrashIdRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/api/media-versions/$id': {
@@ -1272,6 +1351,7 @@ interface AppRouteChildren {
   AppEventsEventIdRoute: typeof AppEventsEventIdRoute
   AppEventsNewRoute: typeof AppEventsNewRoute
   AppEventsOverviewRoute: typeof AppEventsOverviewRoute
+  AppIntegrationsAppsRoute: typeof AppIntegrationsAppsRoute
   AppLegalSlugRoute: typeof AppLegalSlugRoute
   AppLocationsLocationIdRoute: typeof AppLocationsLocationIdRoute
   AppLocationsNewRoute: typeof AppLocationsNewRoute
@@ -1313,6 +1393,7 @@ const AppRouteChildren: AppRouteChildren = {
   AppEventsEventIdRoute: AppEventsEventIdRoute,
   AppEventsNewRoute: AppEventsNewRoute,
   AppEventsOverviewRoute: AppEventsOverviewRoute,
+  AppIntegrationsAppsRoute: AppIntegrationsAppsRoute,
   AppLegalSlugRoute: AppLegalSlugRoute,
   AppLocationsLocationIdRoute: AppLocationsLocationIdRoute,
   AppLocationsNewRoute: AppLocationsNewRoute,
@@ -1358,13 +1439,16 @@ const rootRouteChildren: RootRouteChildren = {
   ApiAuthSplatRoute: ApiAuthSplatRoute,
   ApiAvatarKeyRoute: ApiAvatarKeyRoute,
   ApiAvatarsIdRoute: ApiAvatarsIdRoute,
+  ApiBannerKeyRoute: ApiBannerKeyRoute,
   ApiMediaCoverIdRoute: ApiMediaCoverIdRoute,
+  ApiMediaTrashIdRoute: ApiMediaTrashIdRoute,
   ApiMediaVersionsIdRoute: ApiMediaVersionsIdRoute,
   ApiV1TermsRoute: ApiV1TermsRoute,
   PreviewEventsDraftIdRoute: PreviewEventsDraftIdRoute,
   PreviewLegalSlugRoute: PreviewLegalSlugRoute,
   PreviewPostsPostIdRoute: PreviewPostsPostIdRoute,
   ApiAvatarIndexRoute: ApiAvatarIndexRoute,
+  ApiBannerIndexRoute: ApiBannerIndexRoute,
   ApiMediaIndexRoute: ApiMediaIndexRoute,
   ApiTicketsReferenceCalendarRoute: ApiTicketsReferenceCalendarRoute,
   ApiTicketsReferenceQrRoute: ApiTicketsReferenceQrRoute,

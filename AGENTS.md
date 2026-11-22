@@ -3,7 +3,8 @@
 A Bun monorepo: a public website and the CMS that edits its content, both on Cloudflare Workers
 and sharing one D1 database. Setup and environment variables are in [`README.md`](README.md);
 the website stack is in [`TECH_SPEC.md`](TECH_SPEC.md); uptime, job heartbeats and error
-tracking are in [`docs/observability.md`](docs/observability.md).
+tracking are in [`docs/observability.md`](docs/observability.md); backups and restoring are in
+[`docs/backups.md`](docs/backups.md).
 
 | Path               | What it is                                                                   |
 | ------------------ | ---------------------------------------------------------------------------- |

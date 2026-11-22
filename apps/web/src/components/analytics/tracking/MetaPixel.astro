@@ -1,8 +1,10 @@
 ---
 /**
- * Meta (Facebook) pixel loader + no-JS fallback. Split out for the same
- * reason as Gtm.astro: this renders unconditionally, and the parent decides
- * whether to include it.
+ * Meta (Facebook) pixel loader. Split out for the same reason as Gtm.astro:
+ * this renders unconditionally, and the parent decides whether to include it.
+ *
+ * Held as `text/plain` until the visitor says yes to marketing (see ConsentGate.astro). There is
+ * no no-JS tracking image: it would load with no way to ask first.
  */
 interface Props {
   pixelId: string;
@@ -11,7 +13,7 @@ interface Props {
 const { pixelId } = Astro.props;
 ---
 
-<script define:vars={{ pixelId }}>
+<script is:inline type="text/plain" data-consent="marketing" define:vars={{ pixelId }}>
   !(function (f, b, e, v, n, t, s) {
     if (f.fbq) return;
     n = f.fbq = function () {
@@ -32,12 +34,3 @@ const { pixelId } = Astro.props;
   fbq('init', pixelId);
   fbq('track', 'PageView');
 </script>
-<noscript>
-  <img
-    height="1"
-    width="1"
-    style="display:none"
-    src={`https://www.facebook.com/tr?id=${pixelId}&ev=PageView&noscript=1`}
-    alt=""
-  />
-</noscript>

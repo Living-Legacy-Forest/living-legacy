@@ -12,14 +12,12 @@ import {
 } from '@ll/db/schema';
 import { createServerFn } from '@tanstack/react-start';
 import { getRequest } from '@tanstack/react-start/server';
-import { env } from 'cloudflare:workers';
-import { and, asc, desc, eq, gt, inArray, lt, or, sql } from 'drizzle-orm';
+import { and, asc, desc, eq, gt, inArray, isNull, lt, or, sql } from 'drizzle-orm';
 import type { SQLiteColumn, SQLiteTable } from 'drizzle-orm/sqlite-core';
 import { z } from 'zod';
 import { getDb } from '@/lib/db';
 import { authMiddleware, requirePermission } from '@/lib/session';
 import { renamedFilename } from '@/lib/filename';
-import { forgetCachedMedia } from './media-delivery';
 import {
   listMediaExtensions as extensionsOf,
   listMediaPage,
@@ -28,6 +26,7 @@ import {
   toItem,
 } from './media-list';
 import { restoreMediaVersion } from './media-store';
+import { deleteTrashedMedia, trashMedia, untrashMedia } from './media-trash';
 
 export type { MediaItem } from './media-list';
 
@@ -205,16 +204,21 @@ export const getMediaUsage = createServerFn({ method: 'GET' })
 
 export type MediaUsage = Awaited<ReturnType<typeof getMediaUsage>>;
 
-// Removing a file is permanent, so it needs content:purge like emptying the
-// trash; media:write only uploads and edits.
-export const deleteMedia = createServerFn({ method: 'POST' })
+const idsSchema = z.object({ ids: z.array(z.string()).min(1).max(100) });
+
+const actorOf = (user: { id: string; name: string }) => ({ id: user.id, name: user.name });
+const requestOrigin = () => new URL(getRequest().url).origin;
+
+// Moving a file to the trash takes it off the website, so it needs content:purge, as deleting
+// did before the trash existed; media:write only uploads and edits.
+export const moveMediaToTrash = createServerFn({ method: 'POST' })
   .middleware([requirePermission('content:purge')])
-  .validator(z.object({ ids: z.array(z.string()).min(1).max(100) }))
-  .handler(async ({ data }) => {
+  .validator(idsSchema)
+  .handler(async ({ data, context }) => {
     const db = getDb();
 
-    // Deleting an image still in use would leave a broken image on the site
-    // (or a draft that can no longer publish), so it is refused instead.
+    // A file still in use would leave a broken image on the site (or a draft that can no longer
+    // publish), so it is refused instead.
     const usage = await findUsage(db, data.ids);
     if (usage.length) {
       const inUse = data.ids.filter((id) => usage.some((u) => u.haystack.includes(id)));
@@ -225,48 +229,43 @@ export const deleteMedia = createServerFn({ method: 'POST' })
           ? `${places.slice(0, 3).join(', ')} and ${places.length - 3} more`
           : places.join(', ');
       throw new Error(
-        `${inUse.length === 1 ? 'An image' : `${inUse.length} images`} you chose ${
+        `${inUse.length === 1 ? 'A file' : `${inUse.length} files`} you chose ${
           inUse.length === 1 ? 'is' : 'are'
         } still used in ${where}. Remove ${inUse.length === 1 ? 'it' : 'them'} there first.`
       );
     }
 
-    const rows = await db
-      .select({ id: media.id, r2Key: media.r2Key, variants: media.variants })
-      .from(media)
-      .where(inArray(media.id, data.ids));
-    // Earlier versions go with the file (their rows follow it), files and all.
-    const older = await db
-      .select({
-        mediaId: mediaVersions.mediaId,
-        r2Key: mediaVersions.r2Key,
-        variants: mediaVersions.variants,
-      })
-      .from(mediaVersions)
-      .where(inArray(mediaVersions.mediaId, data.ids));
-    const keysOf = (id: string) =>
-      older
-        .filter((v) => v.mediaId === id)
-        .flatMap((v) => [v.r2Key, ...(v.variants ?? []).map((x) => x.key)]);
+    const moved = await trashMedia(db, {
+      ids: data.ids,
+      actor: actorOf(context.user),
+      origin: requestOrigin(),
+    });
+    return { moved };
+  });
 
-    // A row goes only once its files have: otherwise the files would stay
-    // stored with nothing pointing at them. Deleting again retries.
-    const results = await Promise.allSettled(
-      rows.map((r) =>
-        env.MEDIA.delete([r.r2Key, ...(r.variants ?? []).map((v) => v.key), ...keysOf(r.id)])
-      )
-    );
-    const removed = rows.filter((_, i) => results[i]!.status === 'fulfilled').map((r) => r.id);
-    if (removed.length) {
-      await db.delete(media).where(inArray(media.id, removed));
-      await forgetCachedMedia(new URL(getRequest().url).origin, removed);
+/** Back into the library. Anyone who can upload can undo a move to the trash. */
+export const restoreMediaFromTrash = createServerFn({ method: 'POST' })
+  .middleware([requirePermission('media:write')])
+  .validator(idsSchema)
+  .handler(async ({ data, context }) => {
+    const restored = await untrashMedia(getDb(), { ids: data.ids, actor: actorOf(context.user) });
+    return { restored };
+  });
+
+/** Deletes trashed files for good, like emptying the trash, so it needs content:purge. */
+export const deleteMediaForGood = createServerFn({ method: 'POST' })
+  .middleware([requirePermission('content:purge')])
+  .validator(idsSchema)
+  .handler(async ({ data, context }) => {
+    const { removed, failed } = await deleteTrashedMedia(getDb(), {
+      ids: data.ids,
+      actor: actorOf(context.user),
+      origin: requestOrigin(),
+    });
+    if (failed > 0) {
+      throw new Error(`${failed} of the files could not be deleted. Try again.`);
     }
-    if (removed.length < rows.length) {
-      throw new Error(
-        `${rows.length - removed.length} of the images could not be deleted. Try again.`
-      );
-    }
-    return { removed: removed.length };
+    return { removed };
   });
 
 /** Every extension in use with its count, for the library's format filter. */
@@ -288,7 +287,10 @@ export const getMediaDetail = createServerFn({ method: 'GET' })
   .validator(z.object({ id: z.string().max(64) }))
   .handler(async ({ data }) => {
     const db = getDb();
-    const row = await db.query.media.findFirst({ where: eq(media.id, data.id) });
+    // A file in the trash has no page; it is restored or deleted from the trash.
+    const row = await db.query.media.findFirst({
+      where: and(eq(media.id, data.id), isNull(media.deletedAt)),
+    });
     if (!row) return null;
 
     const [uploader, newer, older, versions] = await Promise.all([
@@ -300,9 +302,12 @@ export const getMediaDetail = createServerFn({ method: 'GET' })
         .select({ id: media.id })
         .from(media)
         .where(
-          or(
-            gt(media.createdAt, row.createdAt),
-            and(eq(media.createdAt, row.createdAt), gt(media.id, row.id))
+          and(
+            isNull(media.deletedAt),
+            or(
+              gt(media.createdAt, row.createdAt),
+              and(eq(media.createdAt, row.createdAt), gt(media.id, row.id))
+            )
           )
         )
         .orderBy(asc(media.createdAt), asc(media.id))
@@ -311,9 +316,12 @@ export const getMediaDetail = createServerFn({ method: 'GET' })
         .select({ id: media.id })
         .from(media)
         .where(
-          or(
-            lt(media.createdAt, row.createdAt),
-            and(eq(media.createdAt, row.createdAt), lt(media.id, row.id))
+          and(
+            isNull(media.deletedAt),
+            or(
+              lt(media.createdAt, row.createdAt),
+              and(eq(media.createdAt, row.createdAt), lt(media.id, row.id))
+            )
           )
         )
         .orderBy(desc(media.createdAt), desc(media.id))

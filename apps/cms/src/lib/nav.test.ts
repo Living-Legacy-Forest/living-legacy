@@ -63,6 +63,28 @@ describe('sidebarSections', () => {
   });
 });
 
+describe('Integrations', () => {
+  const pagesFor = (access: Access) =>
+    sidebarSections(access).flatMap((section) => section.pages.map((page) => page.to));
+
+  it('has API keys and Apps as separate pages for an admin', () => {
+    const pages = pagesFor({ role: 'admin' });
+    expect(pages).toContain('/integrations');
+    expect(pages).toContain('/integrations/apps');
+  });
+
+  it('is left out for people without settings access', () => {
+    const pages = pagesFor({ role: 'viewer' });
+    expect(pages).not.toContain('/integrations');
+    expect(pages).not.toContain('/integrations/apps');
+  });
+
+  it('names each page in the header', () => {
+    expect(findNavItem('/integrations')?.title).toBe('API keys');
+    expect(findNavItem('/integrations/apps')?.title).toBe('Apps');
+  });
+});
+
 describe('findNavItem', () => {
   it('matches a page exactly', () => {
     expect(findNavItem('/posts/categories')?.title).toBe('Categories');

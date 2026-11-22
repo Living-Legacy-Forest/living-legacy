@@ -1,0 +1,29 @@
+---
+/**
+ * Releases the tag loaders once the visitor allows them. Each loader is a `text/plain` script
+ * marked with the category it needs (`data-consent="analytics"` or `"marketing"`), which the
+ * browser does not run. When a category is allowed, now or after the visitor chooses, each script
+ * in it is swapped for a live copy, in page order.
+ */
+---
+
+<script>
+  import { CONSENT_CATEGORIES } from '@ll/content/consent';
+  import { whenAllowed } from '@/lib/consent';
+
+  for (const category of CONSENT_CATEGORIES) {
+    whenAllowed(category, () => {
+      const held = document.querySelectorAll<HTMLScriptElement>(
+        `script[type="text/plain"][data-consent="${category}"]`
+      );
+      for (const script of held) {
+        const live = document.createElement('script');
+        for (const { name, value } of Array.from(script.attributes)) {
+          if (name !== 'type' && name !== 'data-consent') live.setAttribute(name, value);
+        }
+        live.text = script.text;
+        script.replaceWith(live);
+      }
+    });
+  }
+</script>

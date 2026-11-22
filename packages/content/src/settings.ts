@@ -3,6 +3,7 @@
 // Stored as one JSON row in `site_settings`; these defaults fill any key the
 // row lacks, so a field added later never reads as undefined.
 import { BRAND_RULES, type BrandRule, parseBrandRules } from './brand-language';
+import { CONSENT_COPY_DEFAULTS, CONSENT_MONTHS_OPTIONS, DEFAULT_CONSENT_MONTHS } from './consent';
 
 export const themes = ['system', 'light', 'dark'] as const;
 export type Theme = (typeof themes)[number];
@@ -87,6 +88,16 @@ export const SITE_SETTINGS_DEFAULTS = {
   // person may ask for in a day.
   aiEnabled: true,
   aiDailyLimit: 100,
+  // Cookies & privacy: which tags the website loads, and the banner that asks first. A tag id left
+  // empty falls back to the one the site was built with.
+  gtmId: '',
+  metaPixelId: '',
+  /** Comma-separated: Google Analytics and Google Ads share one loader. */
+  gaMeasurementIds: '',
+  posthogKey: '',
+  /** Months a visitor's cookie choice lasts; one of CONSENT_MONTHS_OPTIONS. */
+  consentMonths: DEFAULT_CONSENT_MONTHS as number,
+  ...CONSENT_COPY_DEFAULTS,
   // CMS sign-in.
   /** Comma-separated; invites go only to these domains. Empty allows any. */
   allowedEmailDomains: '',
@@ -139,6 +150,13 @@ export function parseSiteSettings(data: unknown): SiteSettings {
     settings.aiDailyLimit > AI_DAILY_LIMIT_MAX
   ) {
     settings.aiDailyLimit = SITE_SETTINGS_DEFAULTS.aiDailyLimit;
+  }
+  if (!(CONSENT_MONTHS_OPTIONS as readonly number[]).includes(settings.consentMonths)) {
+    settings.consentMonths = SITE_SETTINGS_DEFAULTS.consentMonths;
+  }
+  // Banner words are never blank: a banner with no message asks nothing.
+  for (const key of Object.keys(CONSENT_COPY_DEFAULTS) as (keyof typeof CONSENT_COPY_DEFAULTS)[]) {
+    if (!settings[key].trim()) settings[key] = CONSENT_COPY_DEFAULTS[key];
   }
   settings.brandRules = parseBrandRules(stored.brandRules) ?? SITE_SETTINGS_DEFAULTS.brandRules;
   return settings;

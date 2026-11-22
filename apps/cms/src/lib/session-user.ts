@@ -17,6 +17,8 @@ export type SessionUser = {
   bio: string | null;
   /** A chosen drawn avatar, shown when there is no photo. */
   avatarSeed: string | null;
+  /** The profile banner's URL; null shows the default gradient. */
+  banner: string | null;
   role: Role;
   /** Permissions an admin gave this person on top of their role. */
   extraPermissions: Permission[];
@@ -35,6 +37,7 @@ export type RawSessionUser = {
   imageAlt?: unknown;
   bio?: unknown;
   avatarSeed?: unknown;
+  banner?: unknown;
   role?: unknown;
   extraPermissions?: unknown;
   createdAt: Date | string | number;
@@ -53,6 +56,7 @@ export function toSessionUser(raw: RawSessionUser, bootstrapAdminEmails?: string
     imageAlt: text(raw.imageAlt),
     bio: text(raw.bio),
     avatarSeed: text(raw.avatarSeed),
+    banner: text(raw.banner),
     role,
     extraPermissions: parseExtraPermissions(raw.extraPermissions),
     isSuperAdmin: isSuperAdmin({ email: raw.email, role }, bootstrapAdminEmails),

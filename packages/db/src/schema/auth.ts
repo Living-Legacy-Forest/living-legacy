@@ -14,6 +14,8 @@ export const user = sqliteTable('user', {
   bio: text('bio'),
   /** A chosen drawn avatar (DiceBear seed), shown when there is no photo. */
   avatarSeed: text('avatar_seed'),
+  /** The wide image across the top of this person's profile (/api/banner/...); null shows a gradient. */
+  banner: text('banner'),
   /** This person's light or dark choice; null follows the site setting. */
   theme: text('theme', { enum: ['system', 'light', 'dark'] }),
   role: text('role', { enum: ['admin', 'editor', 'author', 'seo', 'viewer'] })

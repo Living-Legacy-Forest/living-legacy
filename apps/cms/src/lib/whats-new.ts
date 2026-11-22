@@ -20,6 +20,8 @@ export type WhatsNewItem = {
       | '/locations'
       | '/search-replace'
       | '/system'
+      | '/integrations'
+      | '/integrations/apps'
       | '/redirects'
       | '/uptime'
       | '/analytics'
@@ -51,6 +53,47 @@ export type WhatsNewEntry = {
 };
 
 export const whatsNew: WhatsNewEntry[] = [
+  {
+    id: '2026-11-22-7',
+    kind: 'new',
+    title: 'A banner for your profile',
+    items: [
+      {
+        title: 'Add a banner across the top of your profile',
+        body: 'Your profile now has a wide banner with your avatar on top of it, like on X. Upload an image and crop it, or leave it and keep the soft gradient in the colour you chose for the CMS. Use the camera on the banner to change or remove it.',
+        link: { label: 'Open your profile', to: '/profile' },
+      },
+    ],
+  },
+  {
+    id: '2026-11-22-6',
+    kind: 'new',
+    title: 'Cookie choices on the website',
+    items: [
+      {
+        title: 'Visitors are asked before tracking starts',
+        body: 'The website now shows a cookie banner. Google Analytics and PostHog wait for a yes to analytics, and Tag Manager and the Meta pixel wait for a yes to marketing. A Cookie settings link in the footer lets visitors change their mind. In Settings, under Cookies and privacy, you can change the banner words and how long a choice is kept. The tag ids for Google Analytics, PostHog, Tag Manager and Meta are in Integrations, under Apps.',
+        link: { label: 'Open Apps', to: '/integrations/apps' },
+      },
+      {
+        title: 'See which services are connected',
+        body: 'The Apps page now lists HubSpot, Resend, Google sign-in, the writing assistant, PostHog reports, Better Stack and Sentry, and shows whether each one is connected. If one is missing, it says what an admin needs to set up.',
+        link: { label: 'Open Apps', to: '/integrations/apps' },
+      },
+    ],
+  },
+  {
+    id: '2026-11-22-5',
+    kind: 'new',
+    title: 'A trash for media',
+    items: [
+      {
+        title: 'Deleted files wait in the trash',
+        body: 'Deleting a file from Media now moves it to the trash instead of removing it at once. It comes off the website straight away, and Undo or Restore brings it back. Files are deleted for good after 30 days, or sooner if you choose Delete permanently in the trash.',
+        link: { label: 'Open Media', to: '/media' },
+      },
+    ],
+  },
   {
     id: '2026-11-22-4',
     kind: 'new',

@@ -22,12 +22,14 @@ import {
   optionalPhoneSchema,
   optionalWebUrlSchema,
   parseEmailDomains,
+  pickTrackingIds,
   sessionDayOptions,
   themes,
   timeZones,
   siteIconProblem,
 } from '@ll/content';
-import { media, siteSettings } from '@ll/db/schema';
+import { CONSENT_MONTHS_OPTIONS } from '@ll/content/consent';
+import { media } from '@ll/db/schema';
 import { createServerFn } from '@tanstack/react-start';
 import { getRequest } from '@tanstack/react-start/server';
 import { eq } from 'drizzle-orm';
@@ -35,7 +37,7 @@ import { z } from 'zod';
 import { getAuth } from '@/lib/auth';
 import { getDb } from '@/lib/db';
 import { authMiddleware, requirePermission } from '@/lib/session';
-import { readSiteSettings } from '@/lib/site-settings';
+import { readSiteSettings, writeSiteSettings } from '@/lib/site-settings';
 import { logActivity } from './activity-log';
 
 export { TITLE_TOKENS, cmsColours, cmsFonts, timeZones };
@@ -136,6 +138,16 @@ const settingsSchema = z
       .int(`Enter a whole number from 1 to ${AI_DAILY_LIMIT_MAX}.`)
       .min(1, `Enter a whole number from 1 to ${AI_DAILY_LIMIT_MAX}.`)
       .max(AI_DAILY_LIMIT_MAX, `Enter a whole number from 1 to ${AI_DAILY_LIMIT_MAX}.`),
+    consentMonths: z
+      .number()
+      .refine(
+        (n) => (CONSENT_MONTHS_OPTIONS as readonly number[]).includes(n),
+        'Pick 3, 6 or 12 months.'
+      ),
+    cookieTitle: z.string().trim().min(1, 'The cookie banner needs a heading.').max(80),
+    cookieMessage: z.string().trim().min(1, 'The cookie banner needs a message.').max(600),
+    cookieAnalyticsText: z.string().trim().min(1, 'Describe the analytics cookies.').max(300),
+    cookieMarketingText: z.string().trim().min(1, 'Describe the marketing cookies.').max(300),
     googleSignIn: z.boolean(),
     sessionDays: z
       .number()
@@ -166,11 +178,13 @@ export const saveSiteSettings = createServerFn({ method: 'POST' })
   .middleware([requirePermission('seo:write')])
   .validator(settingsSchema)
   .handler(async ({ data, context }) => {
-    // Without full settings access, only the search fields change.
+    // Without full settings access, only the search fields change. The tag ids are edited on the
+    // Integrations page, so whatever this form held for them (it may be a stale copy) is ignored.
+    const existing = await readSiteSettings();
     const value: SiteSettings = can(context.user, 'settings:write')
-      ? data
+      ? { ...data, ...pickTrackingIds(existing) }
       : {
-          ...(await readSiteSettings()),
+          ...existing,
           ...Object.fromEntries(SEO_KEYS.map((key) => [key, data[key]])),
         };
     const db = getDb();
@@ -180,13 +194,7 @@ export const saveSiteSettings = createServerFn({ method: 'POST' })
       const problem = siteIconProblem(icon);
       if (problem) throw new Error(problem);
     }
-    await db
-      .insert(siteSettings)
-      .values({ id: 'site', data: value, updatedBy: context.user.id })
-      .onConflictDoUpdate({
-        target: siteSettings.id,
-        set: { data: value, updatedBy: context.user.id, updatedAt: new Date() },
-      });
+    await writeSiteSettings(db, value, context.user.id);
     await logActivity(db, {
       actorId: context.user.id,
       actorName: context.user.name,

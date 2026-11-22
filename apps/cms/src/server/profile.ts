@@ -7,6 +7,7 @@ import { eq } from 'drizzle-orm';
 import { deleteOwnAvatar } from '@/lib/avatars';
 import { getDb } from '@/lib/db';
 import { authMiddleware } from '@/lib/session';
+import { adoptBanner, removeBanner } from './banner-store';
 import { listUserSessions, signOutUserSessions } from './session-store';
 
 /** The session making this request, which the Devices list marks as this device. */
@@ -59,3 +60,16 @@ export const clearMyPicture = createServerFn({ method: 'POST' })
       .set({ image: null, imageAlt: null, avatarSeed: null, updatedAt: new Date() })
       .where(eq(user.id, context.user.id));
   });
+
+/** Makes an uploaded file this person's banner; it must be one they just uploaded. */
+export const setMyBanner = createServerFn({ method: 'POST' })
+  .middleware([authMiddleware])
+  .validator(z.object({ url: z.string().max(200) }))
+  .handler(({ data, context }) =>
+    adoptBanner(getDb(), context.user.id, context.user.banner, data.url)
+  );
+
+/** Back to the default gradient. */
+export const clearMyBanner = createServerFn({ method: 'POST' })
+  .middleware([authMiddleware])
+  .handler(({ context }) => removeBanner(getDb(), context.user.id, context.user.banner));

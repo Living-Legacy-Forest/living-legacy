@@ -13,6 +13,15 @@ export function bannerKey(url: string | null | undefined): string | null {
 }
 
 /**
+ * Whether an <img> has already failed. The profile is rendered on the server, so a file that is
+ * gone can answer 404 before React attaches `onError`, and React does not replay that event; the
+ * image is checked once it is on the page instead.
+ */
+export function imageFailed(img: { complete: boolean; naturalWidth: number }): boolean {
+  return img.complete && img.naturalWidth === 0;
+}
+
+/**
  * How far this person's default gradient turns from the palette's own hue (0 to 40 degrees), so
  * two people on the same palette do not look identical. Stable for a seed, such as a user id.
  */

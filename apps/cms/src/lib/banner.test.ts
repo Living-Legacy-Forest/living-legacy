@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { BANNER_ASPECT, bannerHueShift, bannerKey, bannerUrl } from './banner';
+import { BANNER_ASPECT, bannerHueShift, bannerKey, bannerUrl, imageFailed } from './banner';
 
 describe('bannerKey', () => {
   it('reads the storage key from a banner url', () => {
@@ -47,4 +47,15 @@ describe('bannerHueShift', () => {
 
 it('crops banners wide', () => {
   expect(BANNER_ASPECT).toBe(3);
+});
+
+describe('imageFailed', () => {
+  it('spots an image that failed before the page could listen', () => {
+    expect(imageFailed({ complete: true, naturalWidth: 0 })).toBe(true);
+  });
+
+  it('leaves loaded and still-loading images alone', () => {
+    expect(imageFailed({ complete: true, naturalWidth: 1500 })).toBe(false);
+    expect(imageFailed({ complete: false, naturalWidth: 0 })).toBe(false);
+  });
 });

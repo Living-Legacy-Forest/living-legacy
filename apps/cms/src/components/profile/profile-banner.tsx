@@ -9,7 +9,7 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { Spinner } from '@/components/ui/spinner';
-import { BANNER_ASPECT, bannerHueShift } from '@/lib/banner';
+import { BANNER_ASPECT, bannerHueShift, imageFailed } from '@/lib/banner';
 import { notify } from '@/lib/notify';
 import { clearMyBanner, setMyBanner } from '@/server/profile';
 
@@ -88,6 +88,9 @@ export function ProfileBanner({
           src={banner}
           alt=""
           aria-hidden
+          ref={(img) => {
+            if (img && imageFailed(img)) setBroken(true);
+          }}
           onError={() => setBroken(true)}
           className="size-full object-cover"
         />

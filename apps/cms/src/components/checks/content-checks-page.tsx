@@ -1,9 +1,11 @@
 import { Link, type LinkProps } from '@tanstack/react-router';
 import { type ReactElement, useState } from 'react';
 import {
+  ArrowRightLeft,
   CalendarClockIcon,
   CircleAlertIcon,
   CircleCheckIcon,
+  CopyIcon,
   LinkIcon,
   Link2Off,
   ImageIcon,
@@ -26,7 +28,15 @@ import { updateMedia } from '@/server/media';
 import { useRevealOnce } from '@/lib/use-reveal-once';
 import { RevealWords } from '@/components/dashboard/reveal-words';
 
-type CheckKey = 'noDescription' | 'noImage' | 'noAlt' | 'events' | 'brand' | 'links';
+type CheckKey =
+  | 'noDescription'
+  | 'noImage'
+  | 'noAlt'
+  | 'events'
+  | 'duplicates'
+  | 'redirected'
+  | 'brand'
+  | 'links';
 
 /** Every check, passing or not, so the page shows what is looked at as well as what failed. */
 const CHECKS: { key: CheckKey; icon: LucideIcon; title: string; passing: string; why: string }[] = [
@@ -59,6 +69,20 @@ const CHECKS: { key: CheckKey; icon: LucideIcon; title: string; passing: string;
     why: 'Event lists on the website show the cover photo and summary.',
   },
   {
+    key: 'duplicates',
+    icon: CopyIcon,
+    title: 'Duplicate search text',
+    passing: 'No two posts share a search title or description.',
+    why: 'Posts that read the same in search results are hard to tell apart, and search engines may pick one over the other. Give each its own wording. Posts hidden from search engines are not checked.',
+  },
+  {
+    key: 'redirected',
+    icon: ArrowRightLeft,
+    title: 'Posts that redirect away',
+    passing: 'Every published post can be reached at its own address.',
+    why: 'A redirect answers these addresses instead of the post, so visitors and search engines never see it. Edit or turn off the redirect, or unpublish the post if it is meant to be gone.',
+  },
+  {
     key: 'brand',
     icon: PencilLineIcon,
     title: 'Brand language',
@@ -80,6 +104,8 @@ const NOUNS: Record<CheckKey, string> = {
   noImage: 'posts',
   noAlt: 'images',
   events: 'events',
+  duplicates: 'groups',
+  redirected: 'posts',
   brand: 'items',
   links: 'items',
 };
@@ -411,6 +437,46 @@ function useCheckRows(
             <span className="text-muted-foreground block text-xs break-all">{linkDetail(b)}</span>
           </span>
           {canFix[b.kind] && itemFix(b)}
+        </Row>
+      ));
+    case 'duplicates':
+      return data.duplicates.rows.map((d) => (
+        <Row key={`${d.kind}-${d.text}`}>
+          <span className="min-w-0 flex-1">
+            <span className="text-ui line-clamp-2">“{d.text}”</span>
+            <span className="text-muted-foreground block text-xs">
+              Search {d.kind} of {d.posts.length} posts
+            </span>
+          </span>
+          <span className="flex flex-wrap gap-1.5">
+            {d.posts.slice(0, 3).map((p) => (
+              <FixLink
+                key={p.id}
+                label={p.title || 'Untitled'}
+                to="/posts/$postId"
+                params={{ postId: p.id }}
+                search={{ focus: 'seo' }}
+              />
+            ))}
+            {d.posts.length > 3 && (
+              <span className="text-muted-foreground self-center text-xs">
+                and {d.posts.length - 3} more
+              </span>
+            )}
+          </span>
+        </Row>
+      ));
+    case 'redirected':
+      return data.redirected.rows.map((p) => (
+        <Row key={p.id}>
+          <span className="min-w-0 flex-1">
+            <span className="text-ui line-clamp-2">{p.title || 'Untitled'}</span>
+            <span className="text-muted-foreground block text-xs break-all">
+              {p.path} {p.gone ? 'is marked as removed' : `redirects to ${p.to}`}
+            </span>
+          </span>
+          <FixLink label="Open the post" to="/posts/$postId" params={{ postId: p.id }} />
+          <FixLink label="See redirects" to="/redirects" />
         </Row>
       ));
     case 'events':

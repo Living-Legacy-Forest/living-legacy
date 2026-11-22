@@ -52,6 +52,23 @@ export type WhatsNewEntry = {
 
 export const whatsNew: WhatsNewEntry[] = [
   {
+    id: '2026-11-22-4',
+    kind: 'new',
+    title: 'Two new content checks',
+    items: [
+      {
+        title: 'Spot posts that read the same in search',
+        body: 'Content checks now lists posts that share a search title or description, so each one can have its own wording. Posts hidden from search engines are left out.',
+        link: { label: 'Open Content checks', to: '/checks' },
+      },
+      {
+        title: 'Find posts that a redirect hides',
+        body: 'If a redirect answers a published post’s address, visitors and search engines never reach the post. Content checks now lists these, with where each one goes and a link to the redirects.',
+        link: { label: 'Open Content checks', to: '/checks' },
+      },
+    ],
+  },
+  {
     id: '2026-11-22-3',
     kind: 'new',
     title: 'Search and sharing for locations',

@@ -63,6 +63,8 @@ function createAuth() {
         imageAlt: { type: 'string', required: false },
         theme: { type: 'string', required: false },
         avatarSeed: { type: 'string', required: false },
+        // Set only by the server functions that check the file is the caller's own.
+        banner: { type: 'string', required: false, input: false },
       },
       // The new address must be confirmed before it takes effect: there is no
       // password, so the magic-link email itself is how identity is proven.

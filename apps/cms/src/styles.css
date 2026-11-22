@@ -1802,3 +1802,32 @@
     }
   }
 }
+
+/* The profile banner until someone uploads one: a soft diagonal blend of the CMS colour, turned a
+   little further for each person (--banner-shift, set inline from their id). No text sits on it. */
+.profile-banner-default {
+  background:
+    radial-gradient(
+      120% 140% at 85% 0%,
+      oklch(0.97 calc(var(--tint-c) * 0.5) var(--tint-h) / 0.7),
+      transparent 60%
+    ),
+    linear-gradient(
+      120deg,
+      oklch(0.9 calc(var(--tint-c) * 0.9) var(--tint-h)),
+      oklch(0.82 calc(var(--tint-c) * 1.1) calc(var(--tint-h) + var(--banner-shift, 0)))
+    );
+}
+.dark .profile-banner-default {
+  background:
+    radial-gradient(
+      120% 140% at 85% 0%,
+      oklch(0.42 calc(var(--tint-c) * 0.7) var(--tint-h) / 0.6),
+      transparent 60%
+    ),
+    linear-gradient(
+      120deg,
+      oklch(0.28 calc(var(--tint-c) * 0.6) var(--tint-h)),
+      oklch(0.36 calc(var(--tint-c) * 0.7) calc(var(--tint-h) + var(--banner-shift, 0)))
+    );
+}

@@ -30,6 +30,7 @@ import { clearMyPicture, setMyAvatar } from '@/server/profile';
 import { ActivityCalendar } from '@/components/activity/activity-calendar';
 import type { ActivityDay } from '@/server/activity-log';
 import { AppearanceSection } from './appearance-section';
+import { ProfileBanner } from './profile-banner';
 import { DevicesSection } from './devices-section';
 import { useRevealOnce } from '@/lib/use-reveal-once';
 import { RevealWords } from '@/components/dashboard/reveal-words';
@@ -195,94 +196,99 @@ export function ProfilePage({
       />
 
       <div className="space-y-10">
-        {/* Who you are at a glance. Phones: centred, as iOS's account page. */}
-        <div className="flex items-center gap-5 max-md:flex-col max-md:gap-3 max-md:text-center">
-          <div className="group relative shrink-0">
-            <Avatar size="lg" className="data-[size=lg]:size-20">
-              {avatarSrc(user) && <AvatarImage src={avatarSrc(user)} alt={user.imageAlt ?? ''} />}
-              <AvatarFallback className="text-lg">{initials}</AvatarFallback>
-            </Avatar>
-            <DropdownMenu>
-              <DropdownMenuTrigger
-                aria-label="Change picture"
-                disabled={avatarUploading}
-                className="bg-background focus-visible:ring-ring touch:items-end touch:justify-end touch:bg-transparent touch:opacity-100 touch:ring-0 absolute inset-0 flex items-center justify-center rounded-full opacity-0 ring-1 ring-black/10 transition-opacity outline-none group-hover:opacity-90 focus-visible:opacity-90 focus-visible:ring-2 disabled:opacity-90 data-popup-open:opacity-90"
-              >
-                {/* Touch screens have no hover to reveal the overlay, so the camera sits on a badge. */}
-                <span className="touch:bg-background touch:ring-foreground/10 touch:flex touch:size-7 touch:items-center touch:justify-center touch:rounded-full touch:shadow-sm touch:ring-1 contents">
-                  {avatarUploading ? (
-                    <Spinner />
-                  ) : (
-                    <CameraIcon aria-hidden className="touch:size-4 size-5" />
+        {/* Who you are at a glance: the banner, with the avatar overlapping its lower edge, as on X.
+            Phones: centred, as iOS's account page. */}
+        <div>
+          <ProfileBanner banner={user.banner} seed={user.id} onChanged={refresh} />
+          <div className="-mt-12 flex flex-col gap-3 px-4 max-md:items-center max-md:text-center">
+            <div className="group relative shrink-0">
+              <Avatar size="lg" className="ring-background ring-4 data-[size=lg]:size-24">
+                {avatarSrc(user) && <AvatarImage src={avatarSrc(user)} alt={user.imageAlt ?? ''} />}
+                <AvatarFallback className="text-lg">{initials}</AvatarFallback>
+              </Avatar>
+              <DropdownMenu>
+                <DropdownMenuTrigger
+                  aria-label="Change picture"
+                  disabled={avatarUploading}
+                  className="bg-background focus-visible:ring-ring touch:items-end touch:justify-end touch:bg-transparent touch:opacity-100 touch:ring-0 absolute inset-0 flex items-center justify-center rounded-full opacity-0 ring-1 ring-black/10 transition-opacity outline-none group-hover:opacity-90 focus-visible:opacity-90 focus-visible:ring-2 disabled:opacity-90 data-popup-open:opacity-90"
+                >
+                  {/* Touch screens have no hover to reveal the overlay, so the camera sits on a badge. */}
+                  <span className="touch:bg-background touch:ring-foreground/10 touch:flex touch:size-7 touch:items-center touch:justify-center touch:rounded-full touch:shadow-sm touch:ring-1 contents">
+                    {avatarUploading ? (
+                      <Spinner />
+                    ) : (
+                      <CameraIcon aria-hidden className="touch:size-4 size-5" />
+                    )}
+                  </span>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="start" className="min-w-48">
+                  <DropdownMenuItem onClick={() => fileInput.current?.click()}>
+                    Upload a photo
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => setPicking(true)}>
+                    Choose an avatar
+                  </DropdownMenuItem>
+                  {hasPicture && (
+                    <>
+                      <DropdownMenuSeparator />
+                      <DropdownMenuItem variant="destructive" onClick={removePicture}>
+                        Remove picture
+                      </DropdownMenuItem>
+                    </>
                   )}
-                </span>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="start" className="min-w-48">
-                <DropdownMenuItem onClick={() => fileInput.current?.click()}>
-                  Upload a photo
-                </DropdownMenuItem>
-                <DropdownMenuItem onClick={() => setPicking(true)}>
-                  Choose an avatar
-                </DropdownMenuItem>
-                {hasPicture && (
-                  <>
-                    <DropdownMenuSeparator />
-                    <DropdownMenuItem variant="destructive" onClick={removePicture}>
-                      Remove picture
-                    </DropdownMenuItem>
-                  </>
-                )}
-              </DropdownMenuContent>
-            </DropdownMenu>
-            <AvatarPicker
-              open={picking}
-              onOpenChange={setPicking}
-              current={user.avatarSeed}
-              onPick={chooseAvatar}
-            />
-            {/* Touch screens have no hover to reveal the camera: show it as a badge. */}
-            <span
-              aria-hidden
-              className="bg-background text-foreground touch:flex pointer-events-none absolute right-0 bottom-0 hidden size-7 items-center justify-center rounded-full border shadow-sm"
-            >
-              <CameraIcon className="size-3.5" />
-            </span>
-            <input
-              ref={fileInput}
-              type="file"
-              accept="image/jpeg,image/png,image/webp,image/avif,image/gif"
-              className="hidden"
-              onChange={(e) => {
-                const file = e.target.files?.[0];
-                if (file) crop.start(file);
-                e.target.value = '';
-              }}
-            />
-            {crop.dialog}
-          </div>
-          <div className="min-w-0 space-y-1.5">
-            <div>
-              <p className="truncate text-base font-semibold">{user.name}</p>
-              <p className="text-muted-foreground truncate text-sm">{user.email}</p>
-            </div>
-            <p className="text-muted-foreground flex flex-wrap items-center gap-2 text-xs max-md:justify-center">
-              <Badge variant="secondary" className="capitalize">
-                {user.role}
-              </Badge>
-              Member since {memberSince}
-            </p>
-            {/* Nobody is given a face: until they choose, they see this prompt. */}
-            {!hasPicture && (
-              <Button
-                type="button"
-                variant="outline"
-                size="sm"
-                className="mt-1"
-                onClick={() => setPicking(true)}
+                </DropdownMenuContent>
+              </DropdownMenu>
+              <AvatarPicker
+                open={picking}
+                onOpenChange={setPicking}
+                current={user.avatarSeed}
+                onPick={chooseAvatar}
+              />
+              {/* Touch screens have no hover to reveal the camera: show it as a badge. */}
+              <span
+                aria-hidden
+                className="bg-background text-foreground touch:flex pointer-events-none absolute right-0 bottom-0 hidden size-7 items-center justify-center rounded-full border shadow-sm"
               >
-                Choose an avatar
-              </Button>
-            )}
+                <CameraIcon className="size-3.5" />
+              </span>
+              <input
+                ref={fileInput}
+                type="file"
+                accept="image/jpeg,image/png,image/webp,image/avif,image/gif"
+                className="hidden"
+                onChange={(e) => {
+                  const file = e.target.files?.[0];
+                  if (file) crop.start(file);
+                  e.target.value = '';
+                }}
+              />
+              {crop.dialog}
+            </div>
+            <div className="min-w-0 space-y-1.5">
+              <div>
+                <p className="truncate text-base font-semibold">{user.name}</p>
+                <p className="text-muted-foreground truncate text-sm">{user.email}</p>
+              </div>
+              <p className="text-muted-foreground flex flex-wrap items-center gap-2 text-xs max-md:justify-center">
+                <Badge variant="secondary" className="capitalize">
+                  {user.role}
+                </Badge>
+                Member since {memberSince}
+              </p>
+              {user.bio && <p className="max-w-prose text-sm">{user.bio}</p>}
+              {/* Nobody is given a face: until they choose, they see this prompt. */}
+              {!hasPicture && (
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  className="mt-1"
+                  onClick={() => setPicking(true)}
+                >
+                  Choose an avatar
+                </Button>
+              )}
+            </div>
           </div>
         </div>
 

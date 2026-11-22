@@ -158,6 +158,25 @@ describe('sweepOrphanedMedia', () => {
     expect(keys).toEqual(['avatar-1.webp', 'other.webp', 'photo-640.webp', 'photo.webp']);
   });
 
+  it('keeps a banner a user points at', async () => {
+    vi.spyOn(console, 'warn').mockImplementation(() => {});
+    const userId = await addUser();
+    await testDb()
+      .update(user)
+      .set({ banner: '/api/banner/banner-1.webp' })
+      .where(eq(user.id, userId));
+    await addMedia('photo.webp');
+    await addMedia('other.webp');
+    await store('photo.webp', 'other.webp', 'banner-1.webp', 'lost.webp');
+
+    expect(await sweepOrphanedMedia(env.DB, env.MEDIA, later())).toEqual({
+      deleted: 1,
+      refused: false,
+    });
+    const keys = (await env.MEDIA.list()).objects.map((o) => o.key).sort();
+    expect(keys).toEqual(['banner-1.webp', 'other.webp', 'photo.webp']);
+  });
+
   it('keeps files still within the upload grace period', async () => {
     await addMedia('kept.webp');
     await store('kept.webp', 'uploading.webp', 'also-kept.webp');

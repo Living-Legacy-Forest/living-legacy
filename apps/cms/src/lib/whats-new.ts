@@ -54,6 +54,18 @@ export type WhatsNewEntry = {
 
 export const whatsNew: WhatsNewEntry[] = [
   {
+    id: '2026-11-22-7',
+    kind: 'new',
+    title: 'A banner for your profile',
+    items: [
+      {
+        title: 'Add a banner across the top of your profile',
+        body: 'Your profile now has a wide banner with your avatar on top of it, like on X. Upload an image and crop it, or leave it and keep the soft gradient in the colour you chose for the CMS. Use the camera on the banner to change or remove it.',
+        link: { label: 'Open your profile', to: '/profile' },
+      },
+    ],
+  },
+  {
     id: '2026-11-22-6',
     kind: 'new',
     title: 'Cookie choices on the website',

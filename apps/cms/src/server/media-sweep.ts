@@ -2,9 +2,10 @@ import { findOrphans } from '@ll/content';
 import { createDb } from '@ll/db';
 import { media, mediaVersions, user } from '@ll/db/schema';
 import { avatarKey } from '@/lib/avatars';
+import { bannerKey } from '@/lib/banner';
 
 /**
- * Deletes stored files that no media row or avatar points at. Uploads and
+ * Deletes stored files that no media row, avatar or banner points at. Uploads and
  * deletes clean up after themselves, but a request that dies part way (or a
  * storage call that fails) can still leave files behind. Run daily by cron.
  */
@@ -13,12 +14,12 @@ export async function sweepOrphanedMedia(d1: D1Database, bucket: R2Bucket, now: 
   const [rows, versions, users] = await Promise.all([
     db.select({ r2Key: media.r2Key, variants: media.variants }).from(media),
     db.select({ r2Key: mediaVersions.r2Key, variants: mediaVersions.variants }).from(mediaVersions),
-    db.select({ image: user.image }).from(user),
+    db.select({ image: user.image, banner: user.banner }).from(user),
   ]);
   const referenced = new Set<string>([
     // Earlier versions are kept on purpose, so their files are not unused.
     ...[...rows, ...versions].flatMap((r) => [r.r2Key, ...(r.variants ?? []).map((v) => v.key)]),
-    ...users.flatMap((u) => avatarKey(u.image) ?? []),
+    ...users.flatMap((u) => [avatarKey(u.image) ?? [], bannerKey(u.banner) ?? []].flat()),
   ]);
 
   const objects: { key: string; uploaded: Date }[] = [];

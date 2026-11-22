@@ -1802,3 +1802,33 @@
     }
   }
 }
+
+/* The profile banner until someone uploads one: a soft diagonal blend of the CMS colour. Each
+   person's own number (--banner-shift, set inline from their id) turns the angle and the hue, so
+   two people differ even on the neutral palette, which has no colour to shift. No text sits on it. */
+.profile-banner-default {
+  background:
+    radial-gradient(
+      120% 140% at 85% 0%,
+      oklch(0.98 calc(var(--tint-c) * 0.5) var(--tint-h) / 0.75),
+      transparent 60%
+    ),
+    linear-gradient(
+      calc(100deg + var(--banner-shift, 0) * 2deg),
+      oklch(0.93 calc(var(--tint-c) * 0.9) var(--tint-h)),
+      oklch(0.78 calc(var(--tint-c) * 1.1) calc(var(--tint-h) + var(--banner-shift, 0)))
+    );
+}
+.dark .profile-banner-default {
+  background:
+    radial-gradient(
+      120% 140% at 85% 0%,
+      oklch(0.5 calc(var(--tint-c) * 0.7) var(--tint-h) / 0.6),
+      transparent 60%
+    ),
+    linear-gradient(
+      calc(100deg + var(--banner-shift, 0) * 2deg),
+      oklch(0.24 calc(var(--tint-c) * 0.6) var(--tint-h)),
+      oklch(0.4 calc(var(--tint-c) * 0.7) calc(var(--tint-h) + var(--banner-shift, 0)))
+    );
+}

@@ -1,5 +1,6 @@
 import * as React from 'react';
 import { AlertDialog as AlertDialogPrimitive } from '@base-ui/react/alert-dialog';
+import { playOpen } from '@/lib/sound';
 import { cn } from '@/lib/utils';
 
 import { Button } from '@/components/ui/button';
@@ -16,14 +17,24 @@ import { useIsMobile } from '@/hooks/use-mobile';
 
 /** A centred alert, or a bottom sheet on phones, where Cancel sits nearest the thumb. */
 function AlertDialog({
+  onOpenChange,
   ...props
 }: Omit<AlertDialogPrimitive.Root.Props, 'children' | 'handle'> & {
   children?: React.ReactNode;
 }) {
   const isPhone = useIsMobile();
   // Drawer is a Dialog with swipe gestures; its props only add to the Dialog's.
-  if (isPhone) return <Drawer {...(props as DrawerProps)} />;
-  return <AlertDialogPrimitive.Root data-slot="alert-dialog" {...props} />;
+  if (isPhone) return <Drawer {...({ ...props, onOpenChange } as DrawerProps)} />;
+  return (
+    <AlertDialogPrimitive.Root
+      data-slot="alert-dialog"
+      onOpenChange={(open, details) => {
+        playOpen(open);
+        onOpenChange?.(open, details);
+      }}
+      {...props}
+    />
+  );
 }
 
 function AlertDialogTrigger({ ...props }: AlertDialogPrimitive.Trigger.Props) {

@@ -2,12 +2,22 @@ import * as React from 'react';
 import { Tabs as TabsPrimitive } from '@base-ui/react/tabs';
 import { cva, type VariantProps } from 'class-variance-authority';
 import { cn } from 'cn';
+import { play } from '@/lib/sound';
 import { ChevronLeftIcon, ChevronRightIcon } from '@/components/icons';
 
-function Tabs({ className, orientation = 'horizontal', ...props }: TabsPrimitive.Root.Props) {
+function Tabs({
+  className,
+  orientation = 'horizontal',
+  onValueChange,
+  ...props
+}: TabsPrimitive.Root.Props) {
   return (
     <TabsPrimitive.Root
       data-slot="tabs"
+      onValueChange={(value, details) => {
+        play('select');
+        onValueChange?.(value, details);
+      }}
       data-orientation={orientation}
       className={cn(
         'group/tabs flex min-w-0 gap-2 data-horizontal:max-w-full data-horizontal:flex-col',

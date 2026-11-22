@@ -52,6 +52,18 @@ export type WhatsNewEntry = {
 
 export const whatsNew: WhatsNewEntry[] = [
   {
+    id: '2026-11-22-2',
+    kind: 'improved',
+    title: 'Invite from the side',
+    items: [
+      {
+        title: 'Invite someone beside the list',
+        body: 'Invite now opens from the right, the same as Access, so you can still see who is on the team while you fill it in. Phones keep the sheet from the bottom.',
+        link: { label: 'Open Users', to: '/users' },
+      },
+    ],
+  },
+  {
     id: '2026-11-22',
     kind: 'new',
     title: 'Sounds',

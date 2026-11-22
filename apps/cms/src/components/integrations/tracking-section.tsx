@@ -50,7 +50,7 @@ const groups: { title: string; note: string; apps: App[] }[] = [
         name: 'Google Analytics and Ads',
         does: 'Counts visits and shows where they come from.',
         where:
-          'In Google Analytics: Admin, then Data streams. Separate several ids with commas, such as G-ABC123XYZ, AW-123456789.',
+          'In Google Analytics: Admin, then Data streams. Separate several ids with commas, such as G-ABC123XYZ, AW-123456789. Ids starting AW- are Google Ads and load only once a visitor accepts marketing cookies.',
         placeholder: 'G-ABC123XYZ',
       },
       {
@@ -142,6 +142,7 @@ export function TrackingSection({ saved }: { saved: TrackingIds }) {
                   app={app}
                   value={values[app.key]}
                   connected={base[app.key].trim() !== ''}
+                  disabled={pending}
                   onChange={(value) => patch({ [app.key]: value })}
                 />
               ))}
@@ -211,12 +212,15 @@ function AppRow({
   app,
   value,
   connected,
+  disabled,
   onChange,
 }: {
   app: App;
   value: string;
   /** Whether an id is saved, which is what the website uses; unsaved typing does not count. */
   connected: boolean;
+  /** True while a save is under way, so an edit cannot be lost to the saved result. */
+  disabled: boolean;
   onChange: (value: string) => void;
 }) {
   const id = `tracking-${app.key}`;
@@ -243,6 +247,7 @@ function AppRow({
         value={value}
         inputMode={app.inputMode}
         placeholder={app.placeholder}
+        disabled={disabled}
         autoComplete="off"
         spellCheck={false}
         onChange={(e) => onChange(e.target.value)}

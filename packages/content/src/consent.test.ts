@@ -10,6 +10,7 @@ import {
   parseConsent,
   serialiseConsent,
   trackingCookiesToClear,
+  lapsedCategories,
   withdrawnCategories,
   withdrawsConsent,
 } from './consent';
@@ -176,5 +177,41 @@ describe('consent lifetime', () => {
     const saved = cookieFor(serialiseConsent(ACCEPT_ALL, NOW - 200 * DAY));
     expect(parseConsent(saved, NOW, 6)).toBeNull();
     expect(parseConsent(saved, NOW, 12)).not.toBeNull();
+  });
+});
+
+describe('tags already running in a page', () => {
+  const none = { v: 1, ...REJECT_ALL, at: NOW };
+
+  it('still count as withdrawn when another tab already took the yes back', () => {
+    // Tab B rejected, so the cookie tab A reads already says no; tab A's tags are still running.
+    expect(withdrawnCategories(none, REJECT_ALL, ['analytics'])).toEqual(['analytics']);
+    expect(withdrawnCategories(null, REJECT_ALL, ['analytics', 'marketing'])).toEqual([
+      'analytics',
+      'marketing',
+    ]);
+  });
+
+  it('are not withdrawn while the choice still says yes', () => {
+    expect(withdrawnCategories(none, ACCEPT_ALL, ['analytics'])).toEqual([]);
+    expect(withdrawnCategories(none, { analytics: true, marketing: false }, ['analytics'])).toEqual(
+      []
+    );
+  });
+
+  it('are named once, even when the old choice and the running tags both point at them', () => {
+    const granted = { v: 1, ...ACCEPT_ALL, at: NOW };
+    expect(withdrawnCategories(granted, REJECT_ALL, ['analytics'])).toEqual([
+      'analytics',
+      'marketing',
+    ]);
+  });
+
+  it('lapse when the saved choice no longer allows them', () => {
+    const analyticsOnly = { v: 1, analytics: true, marketing: false, at: NOW };
+    expect(lapsedCategories(['analytics', 'marketing'], analyticsOnly)).toEqual(['marketing']);
+    expect(lapsedCategories(['analytics'], null)).toEqual(['analytics']);
+    expect(lapsedCategories(['analytics'], { v: 1, ...ACCEPT_ALL, at: NOW })).toEqual([]);
+    expect(lapsedCategories([], null)).toEqual([]);
   });
 });

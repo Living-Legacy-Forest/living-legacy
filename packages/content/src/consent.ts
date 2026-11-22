@@ -28,7 +28,7 @@ export const CONSENT_COPY_DEFAULTS = {
   cookieAnalyticsText:
     'Shows us which pages help and where things go wrong. Google Analytics and PostHog.',
   cookieMarketingText:
-    'Measures our advertising and lets us show our ads to people who have visited. Google Tag Manager and Meta.',
+    'Measures our advertising and lets us show our ads to people who have visited. Google Ads, Google Tag Manager and Meta.',
 };
 
 /** Essential cookies are always on and not a choice, so they have no category. */
@@ -113,12 +113,28 @@ export function allows(record: ConsentRecord | null, category: ConsentCategory):
   return record?.[category] === true;
 }
 
-/** The categories a change takes back a yes from, so what they already set must go. */
+/**
+ * The categories a change takes back a yes from, so what they already set must go. `activated`
+ * are the categories whose tags this page has started. They count even when `before` says no:
+ * with two tabs open, the other tab may already have rejected, and this page's tags are still
+ * running.
+ */
 export function withdrawnCategories(
   before: ConsentRecord | null,
-  after: ConsentChoice
+  after: ConsentChoice,
+  activated: readonly ConsentCategory[] = []
 ): ConsentCategory[] {
-  return CONSENT_CATEGORIES.filter((category) => allows(before, category) && !after[category]);
+  return CONSENT_CATEGORIES.filter(
+    (category) => (allows(before, category) || activated.includes(category)) && !after[category]
+  );
+}
+
+/** The started categories the saved choice no longer allows, for a page that missed the change. */
+export function lapsedCategories(
+  activated: readonly ConsentCategory[],
+  current: ConsentRecord | null
+): ConsentCategory[] {
+  return activated.filter((category) => !allows(current, category));
 }
 
 /** Whether going from `before` to `after` takes back any yes. */

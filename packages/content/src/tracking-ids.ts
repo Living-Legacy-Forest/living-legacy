@@ -43,6 +43,17 @@ export function trackingIdsProblem(ids: {
   return null;
 }
 
+/**
+ * Google Analytics and Google Ads share one loader, but not one consent: an Ads id (AW-) sends
+ * visits to an advertising destination, so it waits for marketing, while the rest wait for analytics.
+ */
+export function splitGaIds(ids: readonly string[]): { analytics: string[]; marketing: string[] } {
+  return {
+    analytics: ids.filter((id) => !id.startsWith('AW-')),
+    marketing: ids.filter((id) => id.startsWith('AW-')),
+  };
+}
+
 /** The settings keys the Integrations page owns. Saving Settings leaves them as they are. */
 export const TRACKING_ID_KEYS = ['gtmId', 'metaPixelId', 'gaMeasurementIds', 'posthogKey'] as const;
 

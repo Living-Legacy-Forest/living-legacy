@@ -1,36 +1,22 @@
 ---
 /**
- * gtag.js loader, shared by Google Analytics and Google Ads (one script tag,
- * one `dataLayer`, a `config` call per id). Split out for the same reason as
- * Gtm.astro: this renders unconditionally, and the parent decides whether to
- * include it. Both scripts are held as `text/plain` until the visitor says yes to analytics
- * (see ConsentGate.astro); `window.gtag` does not exist before then, so the site's own events
- * simply go to the dataLayer.
+ * gtag.js, shared by Google Analytics and Google Ads (one loader, one `dataLayer`, a `config`
+ * call per id). The ids are split by what a visitor agrees to: Analytics ids (G-, UA-) wait for
+ * analytics, Ads ids (AW-) wait for marketing. See GtagGroup.astro.
+ *
+ * Split out for the same reason as Gtm.astro: this renders unconditionally, and the parent decides
+ * whether to include it. The conditionals below only ever wrap a component tag, because
+ * prettier-plugin-astro cannot format a <script> nested in one.
  */
+import { splitGaIds } from '@ll/content';
+import GtagGroup from './GtagGroup.astro';
+
 interface Props {
   ids: string[];
 }
 
-const { ids } = Astro.props;
-const firstId = ids[0];
+const { analytics, marketing } = splitGaIds(Astro.props.ids);
 ---
 
-<script
-  is:inline
-  async
-  type="text/plain"
-  data-consent="analytics"
-  src={`https://www.googletagmanager.com/gtag/js?id=${firstId}`}></script>
-<script is:inline type="text/plain" data-consent="analytics" define:vars={{ ids }}>
-  window.dataLayer = window.dataLayer || [];
-  // define:vars wraps this script in a function, so gtag goes on window for
-  // the site's own events (src/lib/analytics.ts) to reach it.
-  function gtag() {
-    dataLayer.push(arguments);
-  }
-  window.gtag = gtag;
-  gtag('js', new Date());
-  ids.forEach(function (id) {
-    gtag('config', id);
-  });
-</script>
+{analytics.length > 0 && <GtagGroup ids={analytics} category="analytics" />}
+{marketing.length > 0 && <GtagGroup ids={marketing} category="marketing" />}

@@ -10,6 +10,7 @@ import {
   allows,
   consentCookie,
   isTrackingName,
+  lapsedCategories,
   parseConsent,
   trackingCookiesToClear,
   withdrawnCategories,
@@ -47,9 +48,15 @@ export function clearTrackingData(categories: readonly ConsentCategory[]): void 
       document.cookie = `${name}=; Path=/; Max-Age=0${domain ? `; Domain=${domain}` : ''}`;
     }
   }
-  for (const store of [localStorage, sessionStorage]) {
-    for (const key of Object.keys(store)) {
-      if (isTrackingName(key, categories)) store.removeItem(key);
+  // A browser policy can make reading local or session storage throw; cookies are already gone.
+  for (const area of ['localStorage', 'sessionStorage'] as const) {
+    try {
+      const store = window[area];
+      for (const key of Object.keys(store)) {
+        if (isTrackingName(key, categories)) store.removeItem(key);
+      }
+    } catch {
+      // Storage is blocked here, so a tag has nothing stored in it either.
     }
   }
 }
@@ -64,7 +71,7 @@ export function saveConsent(choice: ConsentChoice): void {
   const now = Date.now();
   document.cookie = consentCookie(choice, now, location.protocol === 'https:', consentMonths());
 
-  const withdrawn = withdrawnCategories(before, choice);
+  const withdrawn = withdrawnCategories(before, choice, [...activated]);
   if (withdrawn.length > 0) {
     clearTrackingData(withdrawn);
     location.reload();
@@ -74,16 +81,34 @@ export function saveConsent(choice: ConsentChoice): void {
   window.dispatchEvent(new CustomEvent<ConsentRecord>(CONSENT_EVENT, { detail: record }));
 }
 
+/** The categories whose tags this page has started. A page can only stop what it started. */
+const activated = new Set<ConsentCategory>();
+
+/**
+ * Takes back, on a page that missed it, a yes that was withdrawn in another tab: its tags are
+ * still running, so their data is cleared and the page reloads. Called when the tab is shown again.
+ */
+export function reloadIfWithdrawn(): void {
+  const lapsed = lapsedCategories([...activated], getConsent());
+  if (lapsed.length === 0) return;
+  clearTrackingData(lapsed);
+  location.reload();
+}
+
 /** Runs `run` once, as soon as this category is allowed: now if it already is, otherwise later. */
 export function whenAllowed(category: ConsentCategory, run: () => void): void {
-  if (hasConsent(category)) {
+  const start = () => {
+    activated.add(category);
     run();
+  };
+  if (hasConsent(category)) {
+    start();
     return;
   }
   const listener = (event: Event) => {
     if (!allows((event as CustomEvent<ConsentRecord>).detail, category)) return;
     window.removeEventListener(CONSENT_EVENT, listener);
-    run();
+    start();
   };
   window.addEventListener(CONSENT_EVENT, listener);
 }

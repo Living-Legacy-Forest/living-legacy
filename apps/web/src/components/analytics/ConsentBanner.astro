@@ -98,7 +98,13 @@ const row = 'flex min-h-11 items-start gap-3 py-1.5';
 
 <script>
   import { ACCEPT_ALL, CONSENT_CATEGORIES, REJECT_ALL } from '@ll/content/consent';
-  import { clearTrackingData, getConsent, hasConsent, saveConsent } from '@/lib/consent';
+  import {
+    clearTrackingData,
+    getConsent,
+    hasConsent,
+    reloadIfWithdrawn,
+    saveConsent,
+  } from '@/lib/consent';
 
   const banner = document.querySelector<HTMLElement>('[data-consent-banner]');
 
@@ -162,6 +168,11 @@ const row = 'flex min-h-11 items-start gap-3 py-1.5';
       if (!trigger) return;
       opener = trigger;
       open(true);
+    });
+
+    // Another tab may have taken a yes back while this one was hidden; its tags are still running.
+    document.addEventListener('visibilitychange', () => {
+      if (document.visibilityState === 'visible') reloadIfWithdrawn();
     });
 
     if (!getConsent()) open(false);

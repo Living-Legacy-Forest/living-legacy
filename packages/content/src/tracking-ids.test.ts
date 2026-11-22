@@ -1,6 +1,12 @@
 import { describe, expect, it } from 'vitest';
 import { SITE_SETTINGS_DEFAULTS } from './settings';
-import { TRACKING_ID_KEYS, parseGaIds, pickTrackingIds, trackingIdsProblem } from './tracking-ids';
+import {
+  TRACKING_ID_KEYS,
+  parseGaIds,
+  pickTrackingIds,
+  splitGaIds,
+  trackingIdsProblem,
+} from './tracking-ids';
 
 const none = { gtmId: '', metaPixelId: '', gaMeasurementIds: '', posthogKey: '' };
 
@@ -50,5 +56,20 @@ describe('pickTrackingIds', () => {
     const picked = pickTrackingIds({ ...SITE_SETTINGS_DEFAULTS, gtmId: 'GTM-ABC1234' });
     expect(Object.keys(picked).sort()).toEqual([...TRACKING_ID_KEYS].sort());
     expect(picked.gtmId).toBe('GTM-ABC1234');
+  });
+});
+
+describe('splitGaIds', () => {
+  it('keeps Google Ads ids apart, since they need marketing consent', () => {
+    expect(splitGaIds(['G-ABC123XYZ', 'AW-123456789', 'UA-1234567-1'])).toEqual({
+      analytics: ['G-ABC123XYZ', 'UA-1234567-1'],
+      marketing: ['AW-123456789'],
+    });
+  });
+
+  it('handles none, only analytics and only ads', () => {
+    expect(splitGaIds([])).toEqual({ analytics: [], marketing: [] });
+    expect(splitGaIds(['G-ABC123XYZ'])).toEqual({ analytics: ['G-ABC123XYZ'], marketing: [] });
+    expect(splitGaIds(['AW-123456789'])).toEqual({ analytics: [], marketing: ['AW-123456789'] });
   });
 });

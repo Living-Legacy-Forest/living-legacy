@@ -91,7 +91,10 @@ export function track(event: string, params: EventParams = {}): Promise<void> {
 function sendToPostHog(event: string, params: EventParams) {
   if (!posthogKey() || !hasConsent('analytics')) return;
   import('@/lib/analytics/posthog-client')
-    .then(({ default: posthog }) => posthog.capture(event, params, { send_instantly: true }))
+    .then(({ default: posthog }) => {
+      // The visitor may have withdrawn while the module loaded; the page reload comes after.
+      if (hasConsent('analytics')) posthog.capture(event, params, { send_instantly: true });
+    })
     .catch(() => {
       // Blocked or offline: Google Analytics still has it.
     });

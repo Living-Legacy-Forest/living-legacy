@@ -33,6 +33,7 @@ export * from './brand-context';
 export * from './content-score';
 export * from './migration';
 export * from './link-check';
+export * from './sitemap';
 export * from './structured-data';
 export * from './legal-pages';
 export * from './calendar';

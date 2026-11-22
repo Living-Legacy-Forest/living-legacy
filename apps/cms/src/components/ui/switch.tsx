@@ -6,6 +6,7 @@
 import * as React from 'react';
 import { Switch as SwitchPrimitive } from '@base-ui/react/switch';
 import { type VariantProps, cva } from 'class-variance-authority';
+import { play } from '@/lib/sound';
 import { cn } from '@/lib/utils';
 
 const switchVariants = cva(
@@ -150,6 +151,7 @@ function Switch({
   onPointerUp,
   onPointerCancel,
   onClickCapture,
+  onCheckedChange,
   ref,
   ...props
 }: SwitchPrimitive.Root.Props & VariantProps<typeof switchVariants>) {
@@ -193,6 +195,10 @@ function Switch({
       onClickCapture={(event) => {
         onClickCapture?.(event);
         drag.onClickCapture(event);
+      }}
+      onCheckedChange={(checked, details) => {
+        play(checked ? 'on' : 'off');
+        onCheckedChange?.(checked, details);
       }}
       {...props}
     >

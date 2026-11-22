@@ -1,5 +1,6 @@
 import { toast } from 'sonner';
 import { readableError } from './errors';
+import { play } from './sound';
 
 // Every toast has a heading (what happened) and a line under it (what that
 // means, or why it failed). The types make both required, and ESLint keeps
@@ -17,6 +18,8 @@ export type Notice = {
 type Options = Pick<Notice, 'id'>;
 
 function show(kind: 'success' | 'info' | 'warning', { title, ...rest }: Notice) {
+  // Played on the outcome, not the click, so a failed save never sounds like a saved one.
+  if (kind === 'success') play('success');
   return toast[kind](title, rest);
 }
 
@@ -29,11 +32,13 @@ export const notify = {
    * `title` says what failed. `reason` is a sentence, or an error whose
    * message (made readable) becomes the description.
    */
-  error: (title: string, reason: unknown, options?: Options) =>
-    toast.error(title, {
+  error: (title: string, reason: unknown, options?: Options) => {
+    play('error');
+    return toast.error(title, {
       description: typeof reason === 'string' ? reason : readableError(reason),
       ...options,
-    }),
+    });
+  },
 };
 
 /** The toast after deleting one or more things: what went, and that it is gone. */

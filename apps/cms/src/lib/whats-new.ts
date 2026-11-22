@@ -52,6 +52,17 @@ export type WhatsNewEntry = {
 
 export const whatsNew: WhatsNewEntry[] = [
   {
+    id: '2026-11-22',
+    kind: 'new',
+    title: 'Sounds',
+    items: [
+      {
+        title: 'Soft sounds as you work',
+        body: 'Buttons, switches, tick boxes, tabs, menus and dialogs now make a short, quiet sound, and saving or a problem has its own. To turn them off, open the account menu (your picture) and choose Sounds. It is remembered on each device.',
+      },
+    ],
+  },
+  {
     id: '2026-11-20-6',
     kind: 'new',
     title: 'Extra access for one person',

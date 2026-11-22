@@ -2,6 +2,7 @@
 
 import * as React from 'react';
 import { Dialog as DialogPrimitive } from '@base-ui/react/dialog';
+import { playOpen } from '@/lib/sound';
 import { cn } from '@/lib/utils';
 
 import { Button } from '@/components/ui/button';
@@ -19,12 +20,22 @@ import { useIsMobile } from '@/hooks/use-mobile';
 
 /** A centred dialog, or a bottom sheet on phones. Both share the Dialog parts. */
 function Dialog({
+  onOpenChange,
   ...props
 }: Omit<DialogPrimitive.Root.Props, 'children' | 'handle'> & { children?: React.ReactNode }) {
   const isPhone = useIsMobile();
   // Drawer is a Dialog with swipe gestures; its props only add to the Dialog's.
-  if (isPhone) return <Drawer {...(props as DrawerProps)} />;
-  return <DialogPrimitive.Root data-slot="dialog" {...props} />;
+  if (isPhone) return <Drawer {...({ ...props, onOpenChange } as DrawerProps)} />;
+  return (
+    <DialogPrimitive.Root
+      data-slot="dialog"
+      onOpenChange={(open, details) => {
+        playOpen(open);
+        onOpenChange?.(open, details);
+      }}
+      {...props}
+    />
+  );
 }
 
 function DialogTrigger({ ...props }: DialogPrimitive.Trigger.Props) {

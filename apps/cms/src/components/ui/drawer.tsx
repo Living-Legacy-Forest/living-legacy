@@ -5,6 +5,7 @@ import { Drawer as DrawerPrimitive } from '@base-ui/react/drawer';
 import { cn } from '@/lib/utils';
 
 import { Button } from '@/components/ui/button';
+import { playOpen } from '@/lib/sound';
 
 // Dialogs become this sheet on phones; their parts read it to restyle themselves.
 // `dirty` is set once a form in the sheet is edited, so a stray swipe can't lose the edits.
@@ -45,6 +46,7 @@ function Drawer({ children, onOpenChange, actionsRef, ...props }: DrawerProps) {
           setConfirming(true);
           return;
         }
+        playOpen(open);
         onOpenChange?.(open, details);
       }}
       {...props}

@@ -6,6 +6,8 @@ import {
   LogOutIcon,
   MessageCircleQuestionIcon,
   UserIcon,
+  VolumeHighIcon,
+  VolumeOffIcon,
 } from '@/components/icons';
 import { useState } from 'react';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
@@ -23,6 +25,7 @@ import { Spinner } from '@/components/ui/spinner';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { footerLinks } from '@/lib/nav';
 import type { SessionUser } from '@/lib/session';
+import { setSoundEnabled, useSoundEnabled } from '@/lib/sound';
 import { useSignOut } from '@/lib/use-sign-out';
 import { cn } from '@/lib/utils';
 import { ShortcutsDialog } from './shortcuts-dialog';
@@ -48,6 +51,8 @@ export function NavUser({ user }: { user: SessionUser }) {
   const [showShortcuts, setShowShortcuts] = useState(false);
   const [sheetOpen, setSheetOpen] = useState(false);
   const { signingOut, signOut } = useSignOut();
+  const soundOn = useSoundEnabled();
+  const SoundIcon = soundOn ? VolumeHighIcon : VolumeOffIcon;
   // Sentry runs in production only, so the item shows there; read once it has loaded.
   const [canReport] = useState(() => typeof window !== 'undefined' && canReportProblem());
   const initials = user.name
@@ -112,6 +117,17 @@ export function NavUser({ user }: { user: SessionUser }) {
                     </a>
                   </li>
                 )}
+                <li>
+                  <button
+                    type="button"
+                    onClick={() => setSoundEnabled(!soundOn)}
+                    className={sheetRowClass}
+                  >
+                    <SoundIcon aria-hidden className="text-muted-foreground" />
+                    <span className="flex-1 text-left">Sounds</span>
+                    <span className="text-muted-foreground">{soundOn ? 'On' : 'Off'}</span>
+                  </button>
+                </li>
                 {canReport && (
                   <li>
                     <button
@@ -192,6 +208,13 @@ export function NavUser({ user }: { user: SessionUser }) {
             <DropdownMenuItem onClick={() => setShowShortcuts(true)}>
               <KeyboardIcon aria-hidden />
               Keyboard shortcuts
+            </DropdownMenuItem>
+            <DropdownMenuItem closeOnClick={false} onClick={() => setSoundEnabled(!soundOn)}>
+              <SoundIcon aria-hidden />
+              Sounds
+              <span className="text-muted-foreground ml-auto text-xs">
+                {soundOn ? 'On' : 'Off'}
+              </span>
             </DropdownMenuItem>
             {canReport && (
               <DropdownMenuItem onClick={() => void openProblemReport()}>

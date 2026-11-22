@@ -3,6 +3,7 @@
 import * as React from 'react';
 import { Select as SelectPrimitive } from '@base-ui/react/select';
 import { useIsMobile } from '@/hooks/use-mobile';
+import { play } from '@/lib/sound';
 import { cn } from '@/lib/utils';
 import { ChevronDownIcon, CheckIcon, ChevronUpIcon } from '@/components/icons';
 import { GlideHighlight } from '@/components/ui/glide-highlight';
@@ -156,10 +157,14 @@ function SelectLabel({ className, ...props }: SelectPrimitive.GroupLabel.Props) 
   );
 }
 
-function SelectItem({ className, children, ...props }: SelectPrimitive.Item.Props) {
+function SelectItem({ className, children, onClick, ...props }: SelectPrimitive.Item.Props) {
   return (
     <SelectPrimitive.Item
       data-slot="select-item"
+      onClick={(event) => {
+        play('select');
+        onClick?.(event);
+      }}
       className={cn(
         "focus:text-accent-foreground not-data-[variant=destructive]:focus:**:text-accent-foreground text-ui touch:min-h-11 relative flex w-full cursor-default items-center gap-1.5 rounded-md py-1 pr-8 pl-1.5 outline-hidden select-none data-disabled:pointer-events-none data-disabled:opacity-50 max-md:text-[1.0625rem] [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-4 *:[span]:last:flex *:[span]:last:items-center *:[span]:last:gap-2",
         className

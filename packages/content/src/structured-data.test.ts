@@ -89,8 +89,11 @@ describe('placeJsonLd', () => {
       '@type': 'Place',
       name: 'Living Legacy Mornington',
       url: base.url,
-      mainEntityOfPage: { '@type': 'WebPage', '@id': base.url },
-      isPartOf: { '@id': 'https://livinglegacy.com.au/#website' },
+      mainEntityOfPage: {
+        '@type': 'WebPage',
+        '@id': base.url,
+        isPartOf: { '@id': 'https://livinglegacy.com.au/#website' },
+      },
     });
   });
 

@@ -57,8 +57,8 @@ export const whatsNew: WhatsNewEntry[] = [
     title: 'Search and sharing for locations',
     items: [
       {
-        title: 'Choose how a location looks in search and when shared',
-        body: 'Each location now has a Search and sharing section with its own title, description and share image, a preview of the search result, and a switch to hide it from search engines. Anything left empty uses the name, introduction and hero photo.',
+        title: 'Get a location ready for search and sharing',
+        body: 'Each location now has a Search and sharing section with its own title, description and share image, a preview of the search result, and a switch to hide it from search engines. Anything left empty uses the name, introduction and hero photo. These take effect when location pages launch on the website.',
         link: { label: 'Open Locations', to: '/locations' },
       },
     ],

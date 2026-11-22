@@ -19,6 +19,13 @@ interface D1 {
 
 const db = (env as { DB?: D1 }).DB;
 
+/**
+ * Locations stay out of the sitemap until /locations/<slug>/ exists: an editor can mark one live
+ * today, and the sitemap would then list a URL that returns 404. Set this to true in the change
+ * that adds the page.
+ */
+const LOCATION_PAGES_EXIST = false;
+
 type ContentRow = { n: number; lastmod: number | null };
 type LocationRow = {
   slug: string;
@@ -58,10 +65,12 @@ export async function getPageSitemapEntries(): Promise<SitemapEntry[]> {
          FROM media_coverage WHERE status = 'published' AND deleted_at IS NULL`,
       'media coverage'
     ),
-    rows<LocationRow>(
-      `SELECT slug, stage, status, noindex, updated_at FROM locations WHERE deleted_at IS NULL`,
-      'locations'
-    ),
+    LOCATION_PAGES_EXIST
+      ? rows<LocationRow>(
+          `SELECT slug, stage, status, noindex, updated_at FROM locations WHERE deleted_at IS NULL`,
+          'locations'
+        )
+      : [],
     getLegalSitemapEntries(),
   ]);
 

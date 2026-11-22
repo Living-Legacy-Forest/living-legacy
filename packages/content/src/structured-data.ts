@@ -127,8 +127,12 @@ export function placeJsonLd(place: {
     '@type': 'Place',
     name: place.name,
     url: place.url,
-    mainEntityOfPage: { '@type': 'WebPage', '@id': place.url },
-    isPartOf: { '@id': websiteId(place.siteUrl) },
+    // isPartOf is a property of a page, not of a place, so it sits on the WebPage.
+    mainEntityOfPage: {
+      '@type': 'WebPage',
+      '@id': place.url,
+      isPartOf: { '@id': websiteId(place.siteUrl) },
+    },
     ...(place.description ? { description: place.description } : {}),
     ...(place.image ? { image: [place.image] } : {}),
     ...(place.address

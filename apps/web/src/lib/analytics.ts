@@ -10,6 +10,8 @@
  * Note GA4 reserves `page_location` (the full URL), so the location a page is
  * about travels as `location_slug` instead.
  */
+import { hasConsent } from '@/lib/consent';
+import { posthogKey } from '@/lib/tracking-client';
 
 /** What kind of page this is, for the `page_type` parameter. */
 export type PageType = 'national' | 'location' | 'blog';
@@ -83,10 +85,11 @@ export function track(event: string, params: EventParams = {}): Promise<void> {
  * The same event to PostHog, which the CMS's Analytics pages read: enquiries by form and
  * location come from here. Sent straight away rather than batched, as an enquiry is often the
  * last thing before the visitor moves on. PostHog's module is already loaded by the page when
- * it is configured, so this waits for nothing.
+ * it is configured and allowed, so this waits for nothing. Without a yes to analytics the
+ * event is dropped here, so importing the module cannot start PostHog behind the visitor's back.
  */
 function sendToPostHog(event: string, params: EventParams) {
-  if (!import.meta.env.PUBLIC_POSTHOG_KEY) return;
+  if (!posthogKey() || !hasConsent('analytics')) return;
   import('@/lib/analytics/posthog-client')
     .then(({ default: posthog }) => posthog.capture(event, params, { send_instantly: true }))
     .catch(() => {

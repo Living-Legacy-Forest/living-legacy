@@ -102,6 +102,14 @@ step. Always offer "Not sure yet"; it routes to the central team.
 - Count **successful** submissions, confirmed bookings and completed downloads, not just button
   clicks.
 - **Never send names, email addresses or phone numbers to GA4.**
+- **Nothing optional runs until the visitor says yes.** A cookie banner asks on first visit, and
+  "Cookie settings" in the footer reopens it. Analytics (GA4, PostHog) and marketing (Tag Manager,
+  Meta pixel) are separate choices, kept in the `ll_consent` cookie for 3, 6 or 12 months.
+  The banner words and that lifetime are set in the CMS under Settings, Cookies & privacy. The
+  tag ids are on the Integrations page, under Website tracking; an id left blank there falls back
+  to the `PUBLIC_*` variable the site was built with. Taking a yes back
+  deletes that category's cookies and reloads the page. A new tag goes in `TRACKING_COOKIES`
+  (`packages/content/src/consent.ts`) and needs a `data-consent` category.
 
 ## SEO and migration
 

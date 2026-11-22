@@ -38,3 +38,4 @@ export * from './sitemap';
 export * from './structured-data';
 export * from './legal-pages';
 export * from './calendar';
+export * from './tracking-ids';

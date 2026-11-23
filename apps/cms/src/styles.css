@@ -1933,7 +1933,7 @@
   --accent-background: var(--primary);
   --success-color: var(--primary);
   --error-color: var(--destructive);
-  --border: 1px solid var(--sidebar-border);
+  --border: 1px solid var(--input);
   --box-shadow: var(--shadow-lg);
   --outline: 2px solid var(--ring);
   --interactive-filter: brightness(95%);

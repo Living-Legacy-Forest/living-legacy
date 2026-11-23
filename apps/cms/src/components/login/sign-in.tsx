@@ -9,7 +9,7 @@ import {
   type Variants,
 } from 'motion/react';
 import logoMark from '@/assets/brand/logo-mark.webp';
-import { MailCheck } from '@/components/icons';
+import { KeyIcon, MailCheck } from '@/components/icons';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -20,6 +20,7 @@ import { authClient } from '@/lib/auth-client';
 import { motionTokens } from '@/components/arc/motion-tokens';
 import { notify } from '@/lib/notify';
 import { reportInvalid } from '@/lib/form-validation';
+import { isPasskeyCancel, supportsPasskeyAutofill, supportsPasskeys } from '@/lib/passkey-browser';
 
 type Step = 'email' | 'sent';
 type StepCustom = { direction: number; reduce: boolean };
@@ -176,9 +177,12 @@ function useStepHeight(step: Step, reduce: boolean) {
 
 export function SignIn({
   google,
+  passkeys,
   errorMessages,
 }: {
   google: boolean;
+  /** Passkeys are on here (the live CMS only); the browser must support them too. */
+  passkeys: boolean;
   errorMessages: Record<string, string>;
 }) {
   const reduce = !!useReducedMotion();
@@ -186,7 +190,10 @@ export function SignIn({
   const [direction, setDirection] = useState(1);
   const [email, setEmail] = useState('');
   const [sentTo, setSentTo] = useState('');
-  const [busy, setBusy] = useState<null | 'email' | 'google' | 'resend'>(null);
+  const [busy, setBusy] = useState<null | 'email' | 'google' | 'resend' | 'passkey'>(null);
+  // Known only in the browser, so the server render never shows a button that cannot work.
+  const [passkeyReady, setPasskeyReady] = useState(false);
+  const autofillStarted = useRef(false);
   const [resendIn, setResendIn] = useState(0);
   const [suggestionShown, setSuggestionShown] = useState(false);
   const emailRef = useRef<HTMLInputElement>(null);
@@ -200,6 +207,33 @@ export function SignIn({
     const timer = window.setTimeout(() => setResendIn((seconds) => Math.max(0, seconds - 1)), 1000);
     return () => window.clearTimeout(timer);
   }, [step, resendIn]);
+
+  useEffect(() => {
+    if (passkeys) setPasskeyReady(supportsPasskeys());
+  }, [passkeys]);
+
+  async function signInWithPasskey(autoFill: boolean) {
+    if (!autoFill) setBusy('passkey');
+    const { error } = await authClient.signIn.passkey({ autoFill });
+    if (!error) {
+      window.location.assign('/');
+      return;
+    }
+    if (!autoFill) setBusy(null);
+    // Closing the prompt is not a failure; autofill fails quietly, the button can say why.
+    if (autoFill || isPasskeyCancel(error)) return;
+    notify.error('Could not sign in with a passkey', 'Try again or use an email link.');
+  }
+
+  // Saved passkeys appear in the email field's autofill, so signing in can be one tap. Started
+  // once per visit: a second request would cancel the first.
+  useEffect(() => {
+    if (!passkeyReady || autofillStarted.current) return;
+    autofillStarted.current = true;
+    void supportsPasskeyAutofill().then((ok) => {
+      if (ok) void signInWithPasskey(true);
+    });
+  }, [passkeyReady]);
 
   async function sendLink(to: string) {
     const { error } = await authClient.signIn.magicLink({ email: to, callbackURL: '/' });
@@ -291,6 +325,33 @@ export function SignIn({
                   mark
                 />
                 <div className="flex flex-col gap-5">
+                  {passkeyReady && (
+                    <>
+                      <Button
+                        type="button"
+                        onClick={() => void signInWithPasskey(false)}
+                        disabled={busy === 'passkey'}
+                        className="h-11 w-full gap-2.5 rounded-xl"
+                      >
+                        {busy === 'passkey' ? (
+                          <>
+                            <Spinner />
+                            Waiting for your passkey…
+                          </>
+                        ) : (
+                          <>
+                            <KeyIcon aria-hidden />
+                            Sign in with a passkey
+                          </>
+                        )}
+                      </Button>
+                      <div className="flex items-center gap-3">
+                        <span className="bg-border h-px flex-1" />
+                        <span className="text-muted-foreground text-xs">or</span>
+                        <span className="bg-border h-px flex-1" />
+                      </div>
+                    </>
+                  )}
                   <form className="flex flex-col gap-3" onSubmit={submitEmail} noValidate>
                     <div className="flex flex-col gap-1.5">
                       <Label htmlFor="email" className="text-xs">
@@ -302,7 +363,8 @@ export function SignIn({
                         type="email"
                         required
                         inputMode="email"
-                        autoComplete="email"
+                        // "webauthn" lets the browser offer saved passkeys from this field.
+                        autoComplete={passkeyReady ? 'email webauthn' : 'email'}
                         autoCapitalize="none"
                         spellCheck={false}
                         placeholder="you@example.com"
@@ -349,6 +411,7 @@ export function SignIn({
                     </div>
                     <Button
                       type="submit"
+                      variant={passkeyReady ? 'outline' : 'default'}
                       className="mt-1 h-11 w-full rounded-xl"
                       disabled={busy === 'email'}
                     >

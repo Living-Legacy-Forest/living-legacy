@@ -124,7 +124,13 @@ function createAuth() {
         if (!action || ctx.context.returned instanceof Error) return;
         const user = (await getSessionFromCtx(ctx))?.user;
         if (!user) return;
-        await logPasskeyChange(db, { id: user.id, name: user.name }, action);
+        // The add-on has already saved the change by now, so the two writes cannot be batched.
+        // A failed log line must not turn that saved change into an error for the person.
+        try {
+          await logPasskeyChange(db, { id: user.id, name: user.name }, action);
+        } catch (error) {
+          console.error(`[auth] ${action} not written to the activity log`, error);
+        }
       }),
     },
     // A refused sign-in lands back on the login page with ?error=...

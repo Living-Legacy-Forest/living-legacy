@@ -11,10 +11,10 @@ import {
 } from '@/components/ui/dialog';
 import { Spinner } from '@/components/ui/spinner';
 import { authClient } from '@/lib/auth-client';
-import { notify } from '@/lib/notify';
-import { isPasskeyCancel, supportsPasskeys } from '@/lib/passkey-browser';
+import { PASSKEYS_CHANGED, passkeyResult, supportsPasskeys } from '@/lib/passkey-browser';
 import { NUDGE_KEY, defaultPasskeyName, shouldOfferPasskey } from '@/lib/passkeys';
 import { getPasskeysEnabled } from '@/lib/session';
+import { useAction } from '@/lib/use-action';
 
 function dismissedAt(): number | null {
   try {
@@ -39,7 +39,7 @@ function snooze() {
  */
 export function PasskeyNudge() {
   const [open, setOpen] = useState(false);
-  const [adding, setAdding] = useState(false);
+  const { run, pending: adding } = useAction();
 
   useEffect(() => {
     let cancelled = false;
@@ -73,22 +73,26 @@ export function PasskeyNudge() {
   }
 
   async function add() {
-    setAdding(true);
-    const { error } = await authClient.passkey.addPasskey({
-      name: defaultPasskeyName(navigator.userAgent),
-    });
-    setAdding(false);
-    if (error) {
-      if (!isPasskeyCancel(error)) {
-        notify.error('Could not add a passkey', error.message || 'Please try again.');
+    const added = await run(
+      async () =>
+        passkeyResult(
+          await authClient.passkey.addPasskey({ name: defaultPasskeyName(navigator.userAgent) })
+        ),
+      {
+        error: 'Could not add a passkey',
+        success: (result) =>
+          result
+            ? {
+                title: 'Passkey added',
+                description: 'Next time, sign in with it. Manage passkeys on your profile.',
+              }
+            : undefined,
       }
-      return;
-    }
+    );
+    if (!added) return;
     setOpen(false);
-    notify.success({
-      title: 'Passkey added',
-      description: 'Next time, sign in with it. Manage passkeys on your profile.',
-    });
+    // The profile's list, if it is open behind this, shows the new passkey.
+    window.dispatchEvent(new Event(PASSKEYS_CHANGED));
   }
 
   return (

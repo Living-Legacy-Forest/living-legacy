@@ -54,6 +54,18 @@ export type WhatsNewEntry = {
 
 export const whatsNew: WhatsNewEntry[] = [
   {
+    id: '2026-11-23-2',
+    kind: 'new',
+    title: 'Sign in with a passkey',
+    items: [
+      {
+        title: 'Sign in with Face ID, Touch ID or your device’s lock',
+        body: 'You can now sign in with Face ID, Touch ID or your device’s lock instead of waiting for an email. Add a passkey from your profile, or tap Add a passkey when the CMS offers it. Email links still work.',
+        link: { label: 'Open your profile', to: '/profile' },
+      },
+    ],
+  },
+  {
     id: '2026-11-23',
     kind: 'new',
     title: 'Pick your own colours',

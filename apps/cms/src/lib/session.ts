@@ -5,6 +5,7 @@ import { env } from 'cloudflare:workers';
 import { getAuth } from './auth';
 import { type SessionUser, toSessionUser } from './session-user';
 import { readSiteSettings } from './site-settings';
+import { passkeysAllowed } from './passkeys';
 
 export type { SessionUser } from './session-user';
 
@@ -41,8 +42,17 @@ export function forgetCachedUser() {
 }
 
 /** Which sign-in methods the login page should offer. */
+/** Passkeys are on for this request: the live CMS only (lib/passkeys.ts). */
+const passkeysOnHere = () =>
+  passkeysAllowed({
+    dev: import.meta.env.DEV,
+    requestUrl: getRequest().url,
+    authUrl: env.BETTER_AUTH_URL,
+  });
+
 export const getLoginOptions = createServerFn({ method: 'GET' }).handler(async () => ({
   google: Boolean(env.GOOGLE_CLIENT_ID) && (await readSiteSettings()).googleSignIn,
+  passkeys: passkeysOnHere(),
 }));
 
 /** Every CMS server function goes through this: no session, no access. */
@@ -75,3 +85,8 @@ export function requirePermission(permission: Permission) {
       return next();
     });
 }
+
+/** Whether passkeys can be added and used here, for the profile and the add-a-passkey prompt. */
+export const getPasskeysEnabled = createServerFn({ method: 'GET' })
+  .middleware([authMiddleware])
+  .handler(() => passkeysOnHere());

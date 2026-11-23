@@ -1,4 +1,4 @@
-import { integer, sqliteTable, text } from 'drizzle-orm/sqlite-core';
+import { index, integer, sqliteTable, text } from 'drizzle-orm/sqlite-core';
 
 // Better Auth tables. Property names must match Better Auth's field names;
 // column names are snake_case. Better Auth generates its own IDs here.
@@ -68,6 +68,35 @@ export const verification = sqliteTable('verification', {
   createdAt: integer('created_at', { mode: 'timestamp_ms' }),
   updatedAt: integer('updated_at', { mode: 'timestamp_ms' }),
 });
+
+// Passkeys for signing in (the @better-auth/passkey add-on). Property names are the add-on's;
+// a row only ever holds a public key, so a leak of this table cannot sign anyone in.
+export const passkey = sqliteTable(
+  'passkey',
+  {
+    id: text('id').primaryKey(),
+    /** What the owner calls it ("iPhone", "Work Mac"); editable on the profile. */
+    name: text('name'),
+    publicKey: text('public_key').notNull(),
+    userId: text('user_id')
+      .notNull()
+      .references(() => user.id, { onDelete: 'cascade' }),
+    credentialID: text('credential_id').notNull(),
+    counter: integer('counter').notNull(),
+    /** singleDevice or multiDevice; multiDevice passkeys sync, such as through iCloud Keychain. */
+    deviceType: text('device_type').notNull(),
+    backedUp: integer('backed_up', { mode: 'boolean' }).notNull(),
+    /** Comma-separated WebAuthn transports, such as "internal,hybrid". */
+    transports: text('transports'),
+    createdAt: integer('created_at', { mode: 'timestamp_ms' }),
+    /** Identifies the authenticator model (not the device); all zeros on privacy-preserving ones. */
+    aaguid: text('aaguid'),
+  },
+  (table) => [
+    index('passkey_user_id_idx').on(table.userId),
+    index('passkey_credential_id_idx').on(table.credentialID),
+  ]
+);
 
 // Sign-in is invite-only: Better Auth refuses to create a user whose email is
 // not here (or in BOOTSTRAP_ADMIN_EMAILS).

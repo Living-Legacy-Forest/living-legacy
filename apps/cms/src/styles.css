@@ -117,6 +117,8 @@
   --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
   --color-sidebar-border: var(--sidebar-border);
   --color-sidebar-ring: var(--sidebar-ring);
+  --color-sidebar-active: var(--sidebar-active);
+  --color-sidebar-active-foreground: var(--sidebar-active-foreground);
   --color-brand: var(--brand);
   /* Text buttons in bars, sheets and the tab bar: the page's own text colour, so
      they read as part of the interface rather than in the brand green. */
@@ -128,7 +130,6 @@
   --radius-2xl: calc(var(--radius) * 1.8);
   --radius-3xl: calc(var(--radius) * 2.2);
   --radius-4xl: calc(var(--radius) * 2.6);
-  --radius: 0.5rem;
   --shadow-2xl: var(--shadow-2xl);
   --shadow-xl: var(--shadow-xl);
   --shadow-lg: var(--shadow-lg);
@@ -137,13 +138,6 @@
   --shadow-sm: var(--shadow-sm);
   --shadow-xs: var(--shadow-xs);
   --shadow-2xs: var(--shadow-2xs);
-  --spacing: var(--spacing);
-  --shadow-offset-y: var(--shadow-offset-y);
-  --shadow-offset-x: var(--shadow-offset-x);
-  --shadow-spread: var(--shadow-spread);
-  --shadow-blur: var(--shadow-blur);
-  --shadow-opacity: var(--shadow-opacity);
-  --color-shadow-color: var(--shadow-color);
   --color-chart-5: var(--chart-5);
   --color-chart-4: var(--chart-4);
   --color-chart-3: var(--chart-3);
@@ -165,7 +159,7 @@
   --secondary-foreground: oklch(0.2046 0 0);
   --muted: oklch(0.9461 0 0);
   /* Hints, placeholders and secondary text: clearly quieter than body text. */
-  --muted-foreground: oklch(0.54 0.006 160);
+  --muted-foreground: oklch(0.54 0 0);
   --accent: oklch(0.9461 0 0);
   --accent-foreground: oklch(0.2435 0 0);
   --destructive: oklch(0.577 0.245 27.325);
@@ -175,37 +169,32 @@
   /* Every corner follows this: sm, md, lg and up are multiples of it. */
   --radius: 0.5rem;
 
-  /* The sidebar is the app surface; content sits on it as a lighter panel. A faint
-     green in the surface ties it to the primary without competing with content.
-     Hover and the current page are the primary at low alpha, so they read as
-     green in both modes; the current page's text and icon go deeper green. */
+  /* The sidebar is the app surface; content sits on it as a lighter panel, with a
+     faint tint of the primary. Hover (accent) is a quiet grey; only the current
+     page (active) is coloured, derived from --sidebar-primary so a Settings
+     palette (below) retints it along with the surface. */
   --sidebar: oklch(0.968 0.007 155);
-  --sidebar-foreground: oklch(0.29 0.012 160);
+  --sidebar-foreground: oklch(0.28 0 0);
   --sidebar-primary: oklch(0.5568 0.1355 155.812);
   --sidebar-primary-foreground: oklch(1 0 0);
-  --sidebar-accent: oklch(0.5568 0.1355 155.812 / 10%);
-  --sidebar-accent-foreground: oklch(0.37 0.085 156);
-  --sidebar-border: oklch(0.3 0.03 160 / 9%);
-  --sidebar-ring: oklch(0.5568 0.1355 155.812);
+  --sidebar-accent: oklch(0 0 0 / 4.5%);
+  --sidebar-accent-foreground: oklch(0.2 0 0);
+  --sidebar-active: color-mix(in oklch, var(--sidebar-primary) 10%, transparent);
+  --sidebar-active-foreground: color-mix(in oklch, var(--sidebar-primary) 68%, black);
+  --sidebar-border: oklch(0 0 0 / 8%);
+  --sidebar-ring: var(--sidebar-primary);
 
   /* The brand mark's colour; lightened in .dark so it stays visible on a
      near-black sidebar instead of reading as a dark smudge. */
   --brand: #2c4633;
 
-  /* Charts are the only colour, taken from the website's palette. */
+  /* Chart series, each a distinct hue; .dark lifts them for a dark background. */
   --chart-1: oklch(0.8348 0.1302 160.908);
   --chart-2: oklch(0.6231 0.188 259.8145);
   --chart-3: oklch(0.6056 0.2189 292.7172);
   --chart-4: oklch(0.7686 0.1647 70.0804);
   --chart-5: oklch(0.6959 0.1491 162.4796);
   --destructive-foreground: oklch(0.9934 0.0032 17.2118);
-  --shadow-color: #000000;
-  --shadow-opacity: 0.1;
-  --shadow-blur: 5.5px;
-  --shadow-spread: 0px;
-  --shadow-offset-x: 0px;
-  --shadow-offset-y: 1px;
-  --spacing: 0.25rem;
   --shadow-2xs: 0px 1px 5.5px 0px hsl(0 0% 0% / 0.05);
   --shadow-xs: 0px 1px 5.5px 0px hsl(0 0% 0% / 0.05);
   --shadow-sm: 0px 1px 5.5px 0px hsl(0 0% 0% / 0.1), 0px 1px 2px -1px hsl(0 0% 0% / 0.1);
@@ -218,11 +207,11 @@
 
 .dark {
   --background: oklch(0.1822 0 0);
-  --foreground: oklch(0.9288 0.0126 255.5078);
+  --foreground: oklch(0.93 0 0);
   --card: oklch(0.2046 0 0);
-  --card-foreground: oklch(0.9288 0.0126 255.5078);
+  --card-foreground: oklch(0.93 0 0);
   --popover: oklch(0.2603 0 0);
-  --popover-foreground: oklch(0.9288 0.0126 255.5078);
+  --popover-foreground: oklch(0.93 0 0);
   --primary: oklch(0.5568 0.1355 155.812);
   --primary-foreground: oklch(0.9213 0.0135 167.1556);
   --secondary: oklch(0.2603 0 0);
@@ -238,16 +227,18 @@
   --input: oklch(0.2603 0 0);
   --ring: oklch(0.5568 0.1355 155.812);
 
-  /* A step lighter than the content panel, with the same faint green. The
+  /* A step lighter than the content panel, with the same faint tint. The
      primary is lifted here so the current page's icon stays legible. */
   --sidebar: oklch(0.205 0.008 160);
-  --sidebar-foreground: oklch(0.88 0.008 160);
+  --sidebar-foreground: oklch(0.88 0 0);
   --sidebar-primary: oklch(0.7 0.14 156);
-  --sidebar-primary-foreground: oklch(0.18 0.02 160);
-  --sidebar-accent: oklch(0.7 0.14 156 / 14%);
-  --sidebar-accent-foreground: oklch(0.86 0.1 156);
+  --sidebar-primary-foreground: oklch(0.18 0 0);
+  --sidebar-accent: oklch(1 0 0 / 6%);
+  --sidebar-accent-foreground: oklch(0.97 0 0);
+  --sidebar-active: color-mix(in oklch, var(--sidebar-primary) 14%, transparent);
+  --sidebar-active-foreground: color-mix(in oklch, var(--sidebar-primary) 65%, white);
   --sidebar-border: oklch(1 0 0 / 8%);
-  --sidebar-ring: oklch(0.7 0.14 156);
+  --sidebar-ring: var(--sidebar-primary);
 
   --brand: #8fb08c;
   /* The light theme's chart green is too dark to read on a dark background. The two greens
@@ -258,27 +249,11 @@
   --chart-2: oklch(0.7137 0.1434 254.624);
   --chart-3: oklch(0.709 0.1592 293.5412);
   --chart-5: oklch(0.7845 0.1325 181.912);
-  --radius: 0.5rem;
-  --shadow-color: #000000;
-  --shadow-opacity: 0.1;
-  --shadow-blur: 5.5px;
-  --shadow-spread: 0px;
-  --shadow-offset-x: 0px;
-  --shadow-offset-y: 1px;
-  --spacing: 0.25rem;
-  --shadow-2xs: 0px 1px 5.5px 0px hsl(0 0% 0% / 0.05);
-  --shadow-xs: 0px 1px 5.5px 0px hsl(0 0% 0% / 0.05);
-  --shadow-sm: 0px 1px 5.5px 0px hsl(0 0% 0% / 0.1), 0px 1px 2px -1px hsl(0 0% 0% / 0.1);
-  --shadow: 0px 1px 5.5px 0px hsl(0 0% 0% / 0.1), 0px 1px 2px -1px hsl(0 0% 0% / 0.1);
-  --shadow-md: 0px 1px 5.5px 0px hsl(0 0% 0% / 0.1), 0px 2px 4px -1px hsl(0 0% 0% / 0.1);
-  --shadow-lg: 0px 1px 5.5px 0px hsl(0 0% 0% / 0.1), 0px 4px 6px -1px hsl(0 0% 0% / 0.1);
-  --shadow-xl: 0px 1px 5.5px 0px hsl(0 0% 0% / 0.1), 0px 8px 10px -1px hsl(0 0% 0% / 0.1);
-  --shadow-2xl: 0px 1px 5.5px 0px hsl(0 0% 0% / 0.25);
 }
 
 /* The site's CMS colour, set server-side as <html data-colour> (see __root.tsx).
    Each palette is one hue: it tints buttons, focus rings, hovers and the
-   sidebar, in light and dark. Neutral keeps the greys above. The --tint-*
+   sidebar, in light and dark. Neutral keeps the green theme above. The --tint-*
    values also colour the swatches in the Settings picker. */
 [data-colour='neutral'] {
   --tint-h: 0;
@@ -773,6 +748,41 @@
 [data-slot='sidebar-inner'] {
   transition-duration: 220ms;
   transition-timing-function: cubic-bezier(0.25, 1, 0.5, 1);
+}
+
+/* A fine grain on the app surface, so the sidebar reads as material rather than
+   a flat fill. It is grey noise at low alpha, so it darkens a light surface and
+   lifts a dark one, and it follows whatever colour the surface is (palettes
+   included). Painted on every element that fills with --sidebar: the noise has
+   no pattern, so where they meet there is no seam. A person's own grain (the
+   sidebar's Appearance picker) sets --grain-light and --grain-dark on <html>. */
+:root {
+  --sidebar-grain: var(
+    --grain-light,
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='180' height='180'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='3' stitchTiles='stitch'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.11'/%3E%3C/svg%3E")
+  );
+}
+.dark {
+  --sidebar-grain: var(
+    --grain-dark,
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='180' height='180'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='3' stitchTiles='stitch'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.09'/%3E%3C/svg%3E")
+  );
+}
+[data-slot='sidebar-wrapper']:has([data-variant='inset']),
+[data-slot='sidebar-inner'],
+[data-slot='sidebar'][data-mobile='true'],
+[data-slot='app-header']::before {
+  background-image: var(--sidebar-grain);
+  background-size: 180px;
+}
+/* Asked for plainer surfaces: a flat fill. */
+@media (prefers-contrast: more) {
+  [data-slot='sidebar-wrapper'],
+  [data-slot='sidebar-inner'],
+  [data-slot='sidebar'][data-mobile='true'],
+  [data-slot='app-header']::before {
+    background-image: none;
+  }
 }
 
 /* Toasts (components/ui/sonner.tsx). Sonner's own styles are unlayered, so

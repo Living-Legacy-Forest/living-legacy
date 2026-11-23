@@ -746,7 +746,7 @@ function CategoryPicker({
             type="button"
             variant="outline"
             className={cn(
-              'w-full justify-between pr-2 pl-2.5 font-normal',
+              'md:text-ui w-full justify-between pr-2 pl-2.5 text-base font-normal',
               !value && 'text-muted-foreground'
             )}
           />

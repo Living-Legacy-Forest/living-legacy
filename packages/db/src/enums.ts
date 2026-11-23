@@ -22,6 +22,8 @@ export const activityActions = [
   'user.permissions_changed',
   'user.removed',
   'user.photo_changed',
+  'user.passkey_added',
+  'user.passkey_removed',
   'activity.cleared',
   'settings.assistant_reset',
   'redirect.created',

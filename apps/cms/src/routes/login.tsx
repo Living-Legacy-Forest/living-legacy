@@ -8,6 +8,7 @@ import { notify } from '@/lib/notify';
 const errorMessages: Record<string, string> = {
   not_invited: 'This account has not been invited. Ask an admin to invite you.',
   google_disabled: 'Google sign-in is turned off. Use an email link instead.',
+  passkeys_off: 'Passkey sign-in is not available here. Use an email link instead.',
 };
 
 export const Route = createFileRoute('/login')({
@@ -22,7 +23,7 @@ export const Route = createFileRoute('/login')({
 
 function LoginPage() {
   const { error } = Route.useSearch();
-  const { google } = Route.useLoaderData();
+  const { google, passkeys } = Route.useLoaderData();
 
   useEffect(() => {
     if (error) {
@@ -34,7 +35,7 @@ function LoginPage() {
 
   return (
     <main className="bg-background flex min-h-svh items-center justify-center px-6 py-16">
-      <SignIn google={google} errorMessages={errorMessages} />
+      <SignIn google={google} passkeys={passkeys} errorMessages={errorMessages} />
     </main>
   );
 }

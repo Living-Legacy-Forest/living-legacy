@@ -5,6 +5,7 @@ import { type SidebarState, rememberSidebarState } from '@/lib/sidebar-state';
 import { AppHeader } from './app-header';
 import { AppSidebar } from './app-sidebar';
 import { PageSkeleton, usePendingPathname } from './page-skeleton';
+import { PasskeyNudge } from './passkey-nudge';
 import { TabBar } from './tab-bar';
 import { PhoneUpdateStrip, UpdatesProvider } from './updates';
 
@@ -46,6 +47,7 @@ export function AppShell({
           </div>
         </SidebarInset>
         <TabBar user={user} />
+        <PasskeyNudge />
       </SidebarProvider>
     </UpdatesProvider>
   );

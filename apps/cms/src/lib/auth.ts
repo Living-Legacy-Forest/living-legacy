@@ -5,16 +5,19 @@ import {
   resolveSignupRole,
   sessionDayOptions,
 } from '@ll/content';
+import { passkey } from '@better-auth/passkey';
 import { schema } from '@ll/db';
 import { betterAuth } from 'better-auth';
 import { drizzleAdapter } from 'better-auth/adapters/drizzle';
-import { APIError, createAuthMiddleware } from 'better-auth/api';
+import { APIError, createAuthMiddleware, getSessionFromCtx } from 'better-auth/api';
 import { magicLink } from 'better-auth/plugins';
 import { tanstackStartCookies } from 'better-auth/tanstack-start';
 import { env } from 'cloudflare:workers';
 import { and, count, eq, gt, sql } from 'drizzle-orm';
+import { logPasskeyChange } from '@/server/passkeys';
 import { getDb } from './db';
 import { sendChangeEmailVerificationEmail, sendMagicLinkEmail } from './email';
+import { passkeysAllowed } from './passkeys';
 import { readSiteSettings } from './site-settings';
 
 const DAY_MS = 24 * 60 * 60 * 1000;
@@ -43,6 +46,7 @@ function createAuth() {
         session: schema.session,
         account: schema.account,
         verification: schema.verification,
+        passkey: schema.passkey,
       },
     }),
     // Google is optional: enabled only when its credentials are configured.
@@ -96,6 +100,31 @@ function createAuth() {
         if (google && !(await readSiteSettings()).googleSignIn) {
           throw new APIError('FORBIDDEN', { message: 'google_disabled' });
         }
+        // Passkeys are for the live CMS only (lib/passkeys.ts); elsewhere every passkey
+        // request is refused, not only hidden.
+        if (
+          ctx.path.startsWith('/passkey/') &&
+          !passkeysAllowed({
+            dev: import.meta.env.DEV,
+            requestUrl: ctx.request?.url ?? '',
+            authUrl: env.BETTER_AUTH_URL,
+          })
+        ) {
+          throw new APIError('FORBIDDEN', { message: 'passkeys_off' });
+        }
+      }),
+      // Adding and removing a passkey go in the activity log, once the add-on has done it.
+      after: createAuthMiddleware(async (ctx) => {
+        const action =
+          ctx.path === '/passkey/verify-registration'
+            ? 'user.passkey_added'
+            : ctx.path === '/passkey/delete-passkey'
+              ? 'user.passkey_removed'
+              : null;
+        if (!action || ctx.context.returned instanceof Error) return;
+        const user = (await getSessionFromCtx(ctx))?.user;
+        if (!user) return;
+        await logPasskeyChange(db, { id: user.id, name: user.name }, action);
       }),
     },
     // A refused sign-in lands back on the login page with ?error=...
@@ -195,6 +224,12 @@ function createAuth() {
           }
           await sendMagicLinkEmail(normalised, url);
         },
+      }),
+      passkey({
+        // A passkey belongs to this address; the browser shows rpName in its prompt.
+        rpID: new URL(env.BETTER_AUTH_URL).hostname,
+        rpName: 'Living Legacy CMS',
+        origin: new URL(env.BETTER_AUTH_URL).origin,
       }),
       tanstackStartCookies(),
     ],

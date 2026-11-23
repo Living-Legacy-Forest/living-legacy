@@ -13,7 +13,9 @@ export function addFeedback() {
       // No name or email fields: reports carry the user's id, as errors do.
       feedbackIntegration({
         autoInject: false,
-        colorScheme: 'system',
+        // Colours, font and corners come from styles.css (#sentry-feedback), so the form follows
+        // the CMS theme; 'light' just stops the widget following the operating system instead.
+        colorScheme: 'light',
         showBranding: false,
         showName: false,
         showEmail: false,

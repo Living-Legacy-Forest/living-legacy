@@ -164,7 +164,9 @@
   --accent-foreground: oklch(0.2435 0 0);
   --destructive: oklch(0.577 0.245 27.325);
   --border: oklch(0.9037 0 0);
-  --input: oklch(0.9731 0 0);
+  /* The outline of inputs, selects and outlined toggles. It has to read against the page (0.991),
+     so it is a clear step darker than --border, which only needs to divide surfaces. */
+  --input: oklch(0.85 0 0);
   --ring: oklch(0.5568 0.1355 155.812);
   /* Every corner follows this: sm, md, lg and up are multiples of it. */
   --radius: 0.5rem;
@@ -1915,4 +1917,34 @@
       oklch(0.24 calc(var(--tint-c) * 0.6) var(--tint-h)),
       oklch(0.4 calc(var(--tint-c) * 0.7) calc(var(--tint-h) + var(--banner-shift, 0)))
     );
+}
+
+/* The "Report a problem" form is Sentry's widget, drawn in a shadow root. Its own variables are
+   set here on the host, so the form takes the CMS colour, font and corners and follows the
+   light/dark class live (the widget would otherwise follow the operating system). Variables
+   set outside win over the widget's own :host defaults. See lib/sentry-feedback.ts. */
+#sentry-feedback {
+  color-scheme: light;
+  --font-family: var(--font-sans);
+  --font-size: var(--text-ui);
+  --foreground: var(--card-foreground);
+  --background: var(--popover);
+  --accent-foreground: var(--primary-foreground);
+  --accent-background: var(--primary);
+  --success-color: var(--primary);
+  --error-color: var(--destructive);
+  --border: 1px solid var(--sidebar-border);
+  --box-shadow: var(--shadow-lg);
+  --outline: 2px solid var(--ring);
+  --interactive-filter: brightness(95%);
+  --dialog-border-radius: calc(var(--radius) * 2);
+  --input-border-radius: calc(var(--radius) - 2px);
+  --button-border-radius: calc(var(--radius) - 2px);
+  --button-primary-border-radius: calc(var(--radius) - 2px);
+  --button-primary-border: 1px solid transparent;
+  --menu-border-radius: calc(var(--radius) - 2px);
+}
+.dark #sentry-feedback {
+  color-scheme: dark;
+  --interactive-filter: brightness(120%);
 }

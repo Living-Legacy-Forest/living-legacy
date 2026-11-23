@@ -21,8 +21,10 @@ const buttonVariants = cva(
         // The active states repeat hover so a tap on a touch screen, where hover never fires, still answers.
         outline:
           'border-border bg-background hover:bg-muted hover:text-foreground active:bg-muted active:text-foreground aria-expanded:bg-muted aria-expanded:text-foreground dark:border-input dark:bg-input/30 dark:hover:bg-input/50 dark:active:bg-input/50',
+        // In light mode --secondary is nearly the page colour, so the fill is darkened a step to
+        // show as a button; dark mode's --secondary already stands off the surface.
         secondary:
-          'bg-secondary text-secondary-foreground hover:bg-[color-mix(in_oklch,var(--secondary),var(--foreground)_5%)] active:bg-[color-mix(in_oklch,var(--secondary),var(--foreground)_8%)] aria-expanded:bg-secondary aria-expanded:text-secondary-foreground',
+          'bg-[color-mix(in_oklch,var(--secondary),var(--foreground)_6%)] text-secondary-foreground hover:bg-[color-mix(in_oklch,var(--secondary),var(--foreground)_10%)] active:bg-[color-mix(in_oklch,var(--secondary),var(--foreground)_13%)] aria-expanded:bg-[color-mix(in_oklch,var(--secondary),var(--foreground)_10%)] aria-expanded:text-secondary-foreground dark:bg-secondary dark:hover:bg-[color-mix(in_oklch,var(--secondary),var(--foreground)_5%)] dark:active:bg-[color-mix(in_oklch,var(--secondary),var(--foreground)_8%)] dark:aria-expanded:bg-secondary',
         ghost:
           'hover:bg-muted hover:text-foreground active:bg-muted active:text-foreground aria-expanded:bg-muted aria-expanded:text-foreground dark:hover:bg-muted/50 dark:active:bg-muted/50',
         destructive:

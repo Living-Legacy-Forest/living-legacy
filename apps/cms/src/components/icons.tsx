@@ -364,6 +364,7 @@ export const LayoutDashboardIcon = animated(AnimatedLayoutDashboardIcon);
 export const PanelLeftIcon = animated(AnimatedSidebarLeftIcon);
 export const KeyboardIcon = animated(AnimatedKeyboardIcon);
 export const KeyIcon = animated(AnimatedKey01Icon);
+export const FingerprintIcon = make(H.FingerPrintIcon);
 export const IntegrationsIcon = animateUi(AnimatedUnplug);
 export const SystemIcon = animated(AnimatedServerIcon);
 export const LogOutIcon = animated(AnimatedLogout01Icon);

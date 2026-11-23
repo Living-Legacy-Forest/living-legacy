@@ -9,7 +9,7 @@ import {
   type Variants,
 } from 'motion/react';
 import logoMark from '@/assets/brand/logo-mark.webp';
-import { KeyIcon, MailCheck } from '@/components/icons';
+import { FingerprintIcon, MailCheck } from '@/components/icons';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -362,7 +362,7 @@ export function SignIn({
                           </>
                         ) : (
                           <>
-                            <KeyIcon aria-hidden />
+                            <FingerprintIcon aria-hidden />
                             Sign in with a passkey
                           </>
                         )}

@@ -32,6 +32,7 @@ import type { ActivityDay } from '@/server/activity-log';
 import { AppearanceSection } from './appearance-section';
 import { ProfileBanner } from './profile-banner';
 import { DevicesSection } from './devices-section';
+import { PasskeysSection } from './passkeys-section';
 import { useRevealOnce } from '@/lib/use-reveal-once';
 import { RevealWords } from '@/components/dashboard/reveal-words';
 
@@ -48,11 +49,14 @@ export function ProfilePage({
   user,
   activity,
   justConfirmedEmail,
+  passkeys,
 }: {
   user: SessionUser;
   /** Your changes per day over the past year. */
   activity: ActivityDay[];
   justConfirmedEmail: boolean;
+  /** Passkeys are on here (the live CMS only). */
+  passkeys: boolean;
 }) {
   const router = useRouter();
   const [name, setName] = useState(user.name);
@@ -391,6 +395,7 @@ export function ProfilePage({
         <ChangeEmail currentEmail={user.email} />
         <AppearanceSection />
         <DevicesSection />
+        {passkeys && <PasskeysSection />}
       </div>
     </div>
   );

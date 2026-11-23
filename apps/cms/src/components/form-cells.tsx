@@ -29,7 +29,11 @@ export function FormSection({
         {children}
       </div>
       {footer && (
-        <p data-slot="form-section-footer" className="text-muted-foreground text-xs">
+        // On wider screens it reads as the last field's hint, so it sits as close as one.
+        <p
+          data-slot="form-section-footer"
+          className="text-muted-foreground text-xs md:-mt-[calc(var(--form-gap,1rem)-0.375rem)]"
+        >
           {footer}
         </p>
       )}

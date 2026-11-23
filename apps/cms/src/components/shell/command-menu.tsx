@@ -30,7 +30,6 @@ import {
   EmptyMedia,
   EmptyTitle,
 } from '@/components/ui/empty';
-import { Kbd } from '@/components/ui/kbd';
 import { SidebarRow } from './sidebar-row';
 import { Spinner } from '@/components/ui/spinner';
 import { SidebarMenuItem, useSidebar } from '@/components/ui/sidebar';
@@ -40,7 +39,7 @@ import type { SessionUser } from '@/lib/session';
 import { type SearchResults, searchContent } from '@/server/search';
 import { PostStatusBadge } from '../posts/post-status-badge';
 import { pressed, useShortcut } from '@/lib/shortcuts';
-import { ShortcutKeys } from '@/components/arc/shortcut-recorder/shortcut-recorder';
+import { ShortcutKbd, ShortcutKeys } from '@/components/arc/shortcut-recorder/shortcut-recorder';
 
 type StaticItem = { label: string; icon: LucideIcon; keywords?: string; run: () => void };
 
@@ -363,7 +362,9 @@ function Hint({ keys, children }: { keys: string[]; children: ReactNode }) {
   return (
     <span className="flex items-center gap-1.5">
       {keys.map((key) => (
-        <Kbd key={key}>{key}</Kbd>
+        <ShortcutKbd key={key} size="sm">
+          {key}
+        </ShortcutKbd>
       ))}
       {children}
     </span>

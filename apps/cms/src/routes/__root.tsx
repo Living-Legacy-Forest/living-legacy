@@ -1,6 +1,7 @@
 import { FileQuestionIcon } from '@/components/icons';
 import { HeadContent, Link, Scripts, createRootRoute } from '@tanstack/react-router';
-import { type ReactNode, useEffect } from 'react';
+import { appearanceVars } from '@ll/content';
+import { type CSSProperties, type ReactNode, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import {
   Empty,
@@ -74,7 +75,7 @@ export const Route = createRootRoute({
 });
 
 function RootDocument({ children }: { children: ReactNode }) {
-  const { theme, cmsFont, cmsColour } = Route.useLoaderData();
+  const { theme, cmsFont, cmsColour, appearance } = Route.useLoaderData();
   useThemeSync(theme);
   useEffect(() => listenForTaps(), []);
 
@@ -83,7 +84,9 @@ function RootDocument({ children }: { children: ReactNode }) {
       lang="en-AU"
       data-theme-pref={theme}
       data-font={cmsFont}
-      data-colour={cmsColour}
+      // A person's own colour sets the --tint-* values inline, which the palette rules read.
+      data-colour={appearance.colour ? 'custom' : cmsColour}
+      style={appearanceVars(appearance) as CSSProperties}
       className={theme === 'dark' ? 'dark' : undefined}
       suppressHydrationWarning
     >

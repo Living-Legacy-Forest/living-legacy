@@ -54,6 +54,17 @@ export type WhatsNewEntry = {
 
 export const whatsNew: WhatsNewEntry[] = [
   {
+    id: '2026-11-23',
+    kind: 'new',
+    title: 'Pick your own colours',
+    items: [
+      {
+        title: 'Choose your own colour and grain',
+        body: 'Open Appearance at the bottom of the sidebar to pick a colour just for you. Drag the dot across the colour field or tap one of the colours below it, and the CMS changes as you go. The Grain slider sets how much texture the sidebar has. You can switch between light and dark there too, and Use the site’s look puts everything back. Only you see your choice.',
+      },
+    ],
+  },
+  {
     id: '2026-11-22-7',
     kind: 'new',
     title: 'A banner for your profile',

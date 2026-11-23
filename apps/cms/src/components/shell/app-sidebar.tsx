@@ -1,6 +1,6 @@
 import { Link, useLocation } from '@tanstack/react-router';
 import logoMark from '@/assets/brand/logo-mark.webp';
-import { ExternalLink, MegaphoneIcon, PanelLeftIcon } from '@/components/icons';
+import { ExternalLink, GiftIcon, PanelLeftIcon } from '@/components/icons';
 import { Sidebar, SidebarMenu, SidebarMenuItem } from '@/components/ui/sidebar';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import { findNavItem, footerLinks, sectionFor, sidebarSections } from '@/lib/nav';
@@ -8,6 +8,7 @@ import type { SessionUser } from '@/lib/session';
 import type { SidebarState } from '@/lib/sidebar-state';
 import { SECTION_MOTION } from '@/lib/motion';
 import { cn } from '@/lib/utils';
+import { AppearanceRow } from './appearance-row';
 import { CommandMenu } from './command-menu';
 import { ShortcutsRow, ThemeRow } from './rail-tools';
 import { SidebarRow } from './sidebar-row';
@@ -151,7 +152,7 @@ export function AppSidebar({
             <CommandMenu user={user} wide={railWide} />
             <SidebarMenuItem>
               <SidebarRow
-                icon={MegaphoneIcon}
+                icon={GiftIcon}
                 label="What's new"
                 wide={railWide}
                 active={pathname === '/whats-new'}
@@ -165,6 +166,7 @@ export function AppSidebar({
             </SidebarMenuItem>
             <ShortcutsRow wide={railWide} />
             <ThemeRow wide={railWide} />
+            <AppearanceRow wide={railWide} />
             {site && (
               <SidebarMenuItem>
                 <SidebarRow

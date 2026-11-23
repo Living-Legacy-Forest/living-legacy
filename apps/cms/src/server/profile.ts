@@ -1,3 +1,4 @@
+import { appearanceSchema } from '@ll/content';
 import { createServerFn } from '@tanstack/react-start';
 import { getRequest } from '@tanstack/react-start/server';
 import { z } from 'zod';
@@ -68,6 +69,18 @@ export const setMyBanner = createServerFn({ method: 'POST' })
   .handler(({ data, context }) =>
     adoptBanner(getDb(), context.user.id, context.user.banner, data.url)
   );
+
+/** This person's own colour and sidebar grain; both null goes back to following the site. */
+export const setMyAppearance = createServerFn({ method: 'POST' })
+  .middleware([authMiddleware])
+  .validator(appearanceSchema)
+  .handler(async ({ data, context }) => {
+    const stored = data.colour || data.grain !== null ? JSON.stringify(data) : null;
+    await getDb()
+      .update(user)
+      .set({ appearance: stored, updatedAt: new Date() })
+      .where(eq(user.id, context.user.id));
+  });
 
 /** Back to the default gradient. */
 export const clearMyBanner = createServerFn({ method: 'POST' })

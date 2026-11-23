@@ -23,6 +23,7 @@ import {
   MediaIcon,
   LayoutDashboard,
   ListTodo,
+  GiftIcon,
   MegaphoneIcon,
   MapPinIcon,
   NewspaperIcon,
@@ -268,7 +269,7 @@ export const footerLinks: { title: string; href: string; icon: LucideIcon }[] = 
 /** Pages reached from elsewhere (the account menu), with a breadcrumb but no sidebar entry. */
 const pageOnlyItems: NavItem[] = [
   { title: 'Profile', icon: UserIcon, to: '/profile' },
-  { title: "What's new", icon: MegaphoneIcon, to: '/whats-new' },
+  { title: "What's new", icon: GiftIcon, to: '/whats-new' },
 ];
 
 const allNavItems = [

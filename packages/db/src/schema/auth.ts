@@ -18,6 +18,8 @@ export const user = sqliteTable('user', {
   banner: text('banner'),
   /** This person's light or dark choice; null follows the site setting. */
   theme: text('theme', { enum: ['system', 'light', 'dark'] }),
+  /** JSON: this person's own colour and sidebar grain (`parseAppearance`); null follows the site. */
+  appearance: text('appearance'),
   role: text('role', { enum: ['admin', 'editor', 'author', 'seo', 'viewer'] })
     .notNull()
     .default('editor'),

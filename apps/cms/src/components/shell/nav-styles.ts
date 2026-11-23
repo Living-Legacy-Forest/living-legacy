@@ -1,6 +1,6 @@
 /** Shared row style: compact 28px rows, 13px medium text, muted icons. */
 export const navItemClass =
-  'h-7 gap-2.5 px-2 text-ui font-medium text-sidebar-foreground/80 transition-[width,height,padding,background-color] duration-100 hover:text-sidebar-foreground active:bg-sidebar-accent data-active:text-sidebar-accent-foreground [&_svg]:text-sidebar-foreground/55 hover:[&_svg]:text-sidebar-foreground/80 data-active:[&_svg]:text-sidebar-primary';
+  'h-7 gap-2.5 px-2 text-ui font-medium text-sidebar-foreground/80 transition-[width,height,padding,background-color] duration-100 hover:text-sidebar-foreground active:bg-sidebar-accent data-active:bg-sidebar-active data-active:text-sidebar-active-foreground [&_svg]:text-sidebar-foreground/55 hover:[&_svg]:text-sidebar-foreground/80 data-active:[&_svg]:text-sidebar-primary';
 
 /**
  * Sections that are not built yet: quieter and inert, with no badge. Styled

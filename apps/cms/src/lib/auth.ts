@@ -62,6 +62,8 @@ function createAuth() {
         bio: { type: 'string', required: false },
         imageAlt: { type: 'string', required: false },
         theme: { type: 'string', required: false },
+        // Written only by setMyAppearance, which validates it.
+        appearance: { type: 'string', required: false, input: false },
         avatarSeed: { type: 'string', required: false },
         // Set only by the server functions that check the file is the caller's own.
         banner: { type: 'string', required: false, input: false },

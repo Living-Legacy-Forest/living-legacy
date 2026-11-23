@@ -1,4 +1,7 @@
 import {
+  type Appearance,
+  DEFAULT_APPEARANCE,
+  parseAppearance,
   CONTENT_TARGET_KEYS,
   type Locale,
   SEO_DESCRIPTION_LIMIT,
@@ -51,15 +54,17 @@ export const getSiteSettings = createServerFn({ method: 'GET' })
  * The settings every page needs, with no auth: the theme renders the right
  * colour scheme server-side before a session is known (e.g. login), and
  * scheduling UI needs the time zone everywhere. A signed-in person's own
- * theme (Profile, Appearance) wins over the site's.
+ * theme (Profile, Appearance) and own colour and grain (the sidebar's Appearance
+ * picker) win over the site's.
  */
 export const getRootSettings = createServerFn({ method: 'GET' }).handler(async () => {
   const [{ theme: siteTheme, cmsFont, cmsColour, timeZone, siteIconMediaId }, personal] =
-    await Promise.all([readSiteSettings(), personalTheme()]);
+    await Promise.all([readSiteSettings(), personalChoices()]);
   return {
-    theme: personal ?? siteTheme,
+    theme: personal.theme ?? siteTheme,
     siteTheme,
-    personalTheme: personal,
+    personalTheme: personal.theme,
+    appearance: personal.appearance,
     cmsFont,
     cmsColour,
     timeZone,
@@ -67,17 +72,20 @@ export const getRootSettings = createServerFn({ method: 'GET' }).handler(async (
   };
 });
 
-/** The signed-in person's theme, read fresh so a change shows on the next load. */
-async function personalTheme(): Promise<Theme | null> {
+/** The signed-in person's theme and appearance, read fresh so a change shows on the next load. */
+async function personalChoices(): Promise<{ theme: Theme | null; appearance: Appearance }> {
   try {
     const session = await getAuth().api.getSession({
       headers: getRequest().headers,
       query: { disableCookieCache: true },
     });
-    const value = (session?.user as { theme?: unknown } | undefined)?.theme;
-    return (themes as readonly unknown[]).includes(value) ? (value as Theme) : null;
+    const person = session?.user as { theme?: unknown; appearance?: unknown } | undefined;
+    const theme = (themes as readonly unknown[]).includes(person?.theme)
+      ? (person?.theme as Theme)
+      : null;
+    return { theme, appearance: parseAppearance(person?.appearance) };
   } catch {
-    return null;
+    return { theme: null, appearance: DEFAULT_APPEARANCE };
   }
 }
 

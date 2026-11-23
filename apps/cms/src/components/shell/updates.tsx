@@ -1,7 +1,7 @@
 import { Link } from '@tanstack/react-router';
 import { AnimatePresence, motion, useReducedMotion } from 'motion/react';
 import { type ReactNode, createContext, useContext, useEffect, useMemo, useState } from 'react';
-import { MegaphoneIcon, RotateCcwIcon, XIcon } from '@/components/icons';
+import { GiftIcon, RotateCcwIcon, XIcon } from '@/components/icons';
 import { Button } from '@/components/ui/button';
 import { isNewerDeploy } from '@/lib/build-check';
 import { cn } from '@/lib/utils';
@@ -188,7 +188,7 @@ function SidebarCard() {
     <div role="status" className={cn(box, 'relative')}>
       <div className="min-w-0">
         <div className="text-muted-foreground flex items-center gap-1.5 text-xs">
-          <MegaphoneIcon aria-hidden className="size-3.5" />
+          <GiftIcon aria-hidden className="size-3.5" />
           What's new
         </div>
         <p className="mt-1 pr-5 font-medium">{unseen[0]!.title}</p>
@@ -243,7 +243,7 @@ function PhoneStrip() {
         to="/whats-new"
         className="flex h-11 min-w-0 flex-1 items-center gap-2 text-left active:opacity-60"
       >
-        <MegaphoneIcon aria-hidden className="text-muted-foreground size-4 shrink-0" />
+        <GiftIcon aria-hidden className="text-muted-foreground size-4 shrink-0" />
         <span className="min-w-0 truncate">
           <span className="text-muted-foreground">New: </span>
           <span className="font-medium">{unseen[0]!.title}</span>

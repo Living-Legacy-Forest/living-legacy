@@ -34,6 +34,7 @@ import { Logout01Icon as AnimatedLogout01Icon } from '@animateicons/react/huge/l
 import { Mail01Icon as AnimatedMail01Icon } from '@animateicons/react/huge/mail-0-1-icon';
 import { MailCheckIcon as AnimatedMailCheckIcon } from '@animateicons/react/huge/mail-check-icon';
 import { Megaphone01Icon as AnimatedMegaphone01Icon } from '@animateicons/react/huge/megaphone-0-1-icon';
+import { GiftIcon as AnimatedGiftIcon } from '@animateicons/react/huge/gift-icon';
 import { NotificationIcon as AnimatedNotificationIcon } from '@animateicons/react/huge/notification-icon';
 import { SearchIcon as AnimatedSearchIcon } from '@animateicons/react/huge/search-icon';
 import { ServerIcon as AnimatedServerIcon } from '@animateicons/react/huge/server-icon';
@@ -57,6 +58,7 @@ import { CheckListIcon as AnimatedCheckListIcon } from '@animateicons/react/huge
 import { CheckmarkCircle01Icon as AnimatedCheckmarkCircle01Icon } from '@animateicons/react/huge/checkmark-circle-0-1-icon';
 import { Moon01Icon as AnimatedMoon01Icon } from '@animateicons/react/huge/moon-0-1-icon';
 import { Sun01Icon as AnimatedSun01Icon } from '@animateicons/react/huge/sun-0-1-icon';
+import { PaletteIcon as AnimatedPaletteIcon } from '@animateicons/react/huge/palette-icon';
 import { DeliveryBox01Icon as AnimatedDeliveryBox01Icon } from '@animateicons/react/huge/delivery-box-0-1-icon';
 import { Edit02Icon as AnimatedEdit02Icon } from '@animateicons/react/huge/edit-0-2-icon';
 import { EyeIcon as AnimatedEyeIcon } from '@animateicons/react/huge/eye-icon';
@@ -233,6 +235,7 @@ export const SunIcon = animated(AnimatedSun01Icon);
 export const MoonIcon = animated(AnimatedMoon01Icon);
 export const MonitorIcon = make(H.ComputerIcon);
 export const SunMoonIcon = make(H.SunMoonIcon);
+export const PaletteIcon = animated(AnimatedPaletteIcon);
 // File types and actions for the file dropzone's rows.
 export const FileTypeIcon = make(H.File02Icon);
 export const FileTypeImageIcon = make(H.Image02Icon);
@@ -376,6 +379,8 @@ export const InfoIcon = animated(AnimatedInformationCircleIcon);
 export const TriangleAlertIcon = animated(AnimatedAlert02Icon);
 export const CopyIcon = animated(AnimatedCopyIcon);
 export const MegaphoneIcon = animated(AnimatedMegaphone01Icon);
+/** What's new: a gift whose lid lifts, so it reads apart from Announcements' megaphone. */
+export const GiftIcon = animated(AnimatedGiftIcon);
 export const OctagonXIcon = animated(AnimatedCancelCircleIcon);
 export const LoaderIcon = animated(AnimatedLoading02Icon);
 export const ArrowRightLeft = animated(AnimatedArrowLeftRightIcon);

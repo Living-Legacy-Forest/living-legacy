@@ -52,6 +52,7 @@ const colours = {
   mossTop: '#4c6252',
   mossHighlight: '#6b7e70',
   mossEdge: '#283f2e',
+  // Tints the note strip along the foot of the card; the page itself is white.
   paper: '#f6f2e9',
   line: '#e4dccb',
   white: '#ffffff',
@@ -109,9 +110,9 @@ export function layout(opts: {
 <meta name="supported-color-schemes" content="light">
 <title>${escapeHtml(opts.heading)}</title>
 </head>
-<body style="margin:0;padding:0;background:${colours.paper};">
+<body style="margin:0;padding:0;background:${colours.white};">
 <div style="display:none;max-height:0;overflow:hidden;opacity:0;">${escapeHtml(opts.preheader)}</div>
-<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="background:${colours.paper};">
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="background:${colours.white};">
   <tr>
     <td align="center" style="padding:40px 16px;">
       <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="max-width:560px;">

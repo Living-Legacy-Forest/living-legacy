@@ -23,10 +23,10 @@ const column = `flex min-h-0 shrink-0 flex-col overflow-hidden transition-[width
 
 function Logo() {
   return (
-    // White artwork painted in the brand colour via a CSS mask, as on the site and login page.
+    // White artwork painted in the brand colour via a CSS mask (plain white in dark mode).
     <span
       aria-hidden
-      className="bg-brand inline-block size-5 shrink-0"
+      className="bg-brand inline-block size-5 shrink-0 dark:bg-white"
       style={{
         WebkitMask: `url(${logoMark}) center / contain no-repeat`,
         mask: `url(${logoMark}) center / contain no-repeat`,

@@ -475,10 +475,10 @@ function Heading({
         <span
           role="img"
           aria-label="Living Legacy"
-          className="bg-brand inline-block shrink-0"
+          className="bg-brand inline-block shrink-0 dark:bg-white"
           style={{
             height: '2.75rem',
-            aspectRatio: '97 / 81',
+            aspectRatio: '1 / 1',
             WebkitMask: `url("${logoMark}") center / contain no-repeat`,
             mask: `url("${logoMark}") center / contain no-repeat`,
           }}

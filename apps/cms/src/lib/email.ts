@@ -123,8 +123,8 @@ export function layout(opts: {
                   <!-- The mark is white, so it sits on a green tile. -->
                   <table role="presentation" cellpadding="0" cellspacing="0" border="0">
                     <tr>
-                      <td style="background:${colours.moss};border-radius:10px;padding:8px 7px;">
-                        <img src="${LOGO_URL}" width="30" height="25" alt="Living Legacy" style="display:block;border:0;">
+                      <td style="background:${colours.moss};border-radius:10px;padding:7px;">
+                        <img src="${LOGO_URL}" width="30" height="30" alt="Living Legacy" style="display:block;border:0;">
                       </td>
                     </tr>
                   </table>

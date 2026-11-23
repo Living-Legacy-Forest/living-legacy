@@ -129,6 +129,11 @@ function createAuth() {
     },
     // A refused sign-in lands back on the login page with ?error=...
     onAPIError: { errorURL: '/login' },
+    // The rate limits (sign-in links and link checks, 5 a minute per caller) key on the caller's
+    // IP. By default that is X-Forwarded-For, which a caller can set to anything, and with more
+    // than one value in it no IP is found and everyone shares a single bucket. Cloudflare sets
+    // CF-Connecting-IP itself and replaces any value sent, so it cannot be dodged.
+    advanced: { ipAddress: { ipAddressHeaders: ['cf-connecting-ip'] } },
     databaseHooks: {
       session: {
         create: {
@@ -190,7 +195,11 @@ function createAuth() {
           });
           // Invite-only: say nothing to strangers. The user-create hook is the
           // backstop if a link is ever used for a non-eligible email.
-          if (!canReceiveMagicLink({ hasAccount: Boolean(existing), signupRole })) return;
+          if (!canReceiveMagicLink({ hasAccount: Boolean(existing), signupRole })) {
+            // The page says "sent" either way, so this line is the only trace of why no email came.
+            console.warn('[auth] sign-in link not sent: no account or invitation for this address');
+            return;
+          }
           // The rate limit above is per address the request came from, and only
           // within one Worker instance. This one is per inbox: a link already sent
           // in the last minute is still valid, so another email would only
@@ -209,7 +218,10 @@ function createAuth() {
                 )
               )
             );
-          if ((recent?.n ?? 0) > 1) return;
+          if ((recent?.n ?? 0) > 1) {
+            console.warn('[auth] sign-in link not sent: one was already sent in the last minute');
+            return;
+          }
           await sendMagicLinkEmail(normalised, url);
         },
       }),

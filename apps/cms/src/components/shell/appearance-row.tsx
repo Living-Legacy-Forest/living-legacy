@@ -19,9 +19,9 @@ import {
 } from 'react';
 import { MoonIcon, PaletteIcon, SunIcon, SunMoonIcon } from '@/components/icons';
 import { Button } from '@/components/ui/button';
+import { DetentDial } from '@/components/ui/detent-dial';
 import { Popover, PopoverContent, PopoverTitle, PopoverTrigger } from '@/components/ui/popover';
 import { SidebarMenuItem } from '@/components/ui/sidebar';
-import { Slider } from '@/components/ui/slider';
 import { notify } from '@/lib/notify';
 import { useThemeChoice } from '@/lib/use-theme-choice';
 import { cn } from '@/lib/utils';
@@ -156,23 +156,20 @@ function AppearancePicker() {
         ))}
       </div>
 
-      <div className="space-y-2">
-        <div className="flex items-center justify-between">
-          <span id={grainLabel} className="text-ui font-medium">
+      <div className="flex items-center gap-4">
+        <DetentDial
+          aria-labelledby={grainLabel}
+          aria-valuetext={`${grain}%`}
+          value={grain}
+          onChange={(value, commit) => change({ ...draft, grain: value / 100 }, commit)}
+        />
+        <div className="space-y-0.5">
+          <span id={grainLabel} className="text-ui block font-medium">
             Grain
           </span>
           <span className="text-muted-foreground text-xs tabular-nums">{grain}%</span>
+          <p className="text-muted-foreground text-xs">Turn the dial to set the sidebar texture.</p>
         </div>
-        <Slider
-          aria-labelledby={grainLabel}
-          value={[grain]}
-          onValueChange={(value) =>
-            change({ ...draft, grain: (Array.isArray(value) ? value[0] : value) / 100 }, false)
-          }
-          onValueCommitted={(value) =>
-            change({ ...draft, grain: (Array.isArray(value) ? value[0] : value) / 100 }, true)
-          }
-        />
       </div>
 
       <Button

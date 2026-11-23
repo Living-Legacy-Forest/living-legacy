@@ -750,6 +750,14 @@
   transition-timing-function: cubic-bezier(0.25, 1, 0.5, 1);
 }
 
+/* Switching between light and dark crossfades the whole page as one picture (a view transition
+   started in use-theme-sync). The browser's default is a touch slow for an interface, and
+   only this change is tuned: nothing else in the app uses view transitions. */
+:root[data-theme-change]::view-transition-group(root) {
+  animation-duration: 220ms;
+  animation-timing-function: ease-out;
+}
+
 /* A fine grain on the app surface, so the sidebar reads as material rather than
    a flat fill. It is grey noise at low alpha, so it darkens a light surface and
    lifts a dark one, and it follows whatever colour the surface is (palettes

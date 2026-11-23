@@ -1,5 +1,5 @@
 import { getRouteApi, useRouter } from '@tanstack/react-router';
-import { useSyncExternalStore } from 'react';
+import { useEffect, useSyncExternalStore } from 'react';
 import { authClient } from '@/lib/auth-client';
 import { notify } from '@/lib/notify';
 import { forgetCachedUser } from '@/lib/session';
@@ -13,11 +13,21 @@ type Choice = Theme | 'site';
 // The choice being saved, shared by every caller. Each caller used to hold its own, so the rail's
 // icon and label kept showing the old theme until the save came back, while the page had already
 // changed, and a quick second press repeated the first choice instead of undoing it.
-let pending: Choice | null = null;
+//
+// It is only let go once the root loader has caught up (`confirmed`, then a matching
+// personalTheme). Clearing it as soon as the save returned showed the old theme for a few frames,
+// because the reloaded settings reach the components a beat later, so the label and icon flipped
+// back and forth.
+type Saving = { pending: Choice | null; confirmed: Choice | null };
+const idle: Saving = { pending: null, confirmed: null };
+let saving: Saving = idle;
 const listeners = new Set<() => void>();
-function setPending(next: Choice | null) {
-  pending = next;
+function setSaving(next: Saving) {
+  saving = next;
   for (const listener of listeners) listener();
+}
+function setPending(next: Choice | null) {
+  setSaving(next === null ? idle : { pending: next, confirmed: null });
 }
 function subscribe(listener: () => void) {
   listeners.add(listener);
@@ -39,12 +49,18 @@ let accepted: Choice | null = null;
 export function useThemeChoice() {
   const router = useRouter();
   const { siteTheme, personalTheme } = rootRoute.useLoaderData();
-  const saving = useSyncExternalStore(
+  const { pending, confirmed } = useSyncExternalStore(
     subscribe,
-    () => pending,
-    () => null
+    () => saving,
+    () => idle
   );
-  const value = saving ?? personalTheme ?? 'site';
+  // Let go of the choice once the loaded settings show it.
+  useEffect(() => {
+    if (pending !== null && confirmed === pending && (personalTheme ?? 'site') === pending) {
+      setSaving(idle);
+    }
+  }, [pending, confirmed, personalTheme]);
+  const value = pending ?? personalTheme ?? 'site';
   const resolve = (choice: Choice): Theme => (choice === 'site' ? siteTheme : choice);
 
   function choose(next: Choice): Promise<void> {
@@ -65,7 +81,12 @@ export function useThemeChoice() {
       }
       forgetCachedUser();
       await router.invalidate();
-      if (request === latest) setPending(null);
+      if (request !== latest) return;
+      setSaving({ pending: next, confirmed: next });
+      // A way out if the loaded theme never matches (say, it was changed from another tab).
+      setTimeout(() => {
+        if (saving.pending === next && saving.confirmed === next) setSaving(idle);
+      }, 2000);
     });
     return queue;
   }

@@ -8,9 +8,42 @@ function isDark(theme: Theme): boolean {
   );
 }
 
-/** One-shot resolve + apply, with no live OS-change listener. */
+// What the page should show once the transition's callback has run. A view transition applies
+// the class a frame later, so reading the class back would be stale if a second change (a quick
+// double press, or a failed save going back) arrives in that gap; the newest choice has to win.
+let wanted = false;
+let applying = false;
+
+/**
+ * One-shot resolve + apply, with no live OS-change listener. The page crossfades between the two
+ * themes as one picture (see data-theme-change in styles.css), so text, surfaces and the logo
+ * move together. Fading each element's own colour instead stalls inherited text, which waits on
+ * its parent and then snaps at the end. People who ask for less motion get an instant change.
+ */
 export function setTheme(theme: Theme) {
-  document.documentElement.classList.toggle('dark', isDark(theme));
+  const root = document.documentElement;
+  wanted = isDark(theme);
+  // A change is already on its way and will read `wanted` when it runs.
+  if (applying) return;
+  if (root.classList.contains('dark') === wanted) return;
+  const apply = () => void root.classList.toggle('dark', wanted);
+  const still = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  if (still || typeof document.startViewTransition !== 'function') {
+    apply();
+    return;
+  }
+
+  root.dataset.themeChange = '';
+  applying = true;
+  const transition = document.startViewTransition(() => {
+    applying = false;
+    apply();
+  });
+  void transition.finished.finally(() => {
+    delete root.dataset.themeChange;
+    // A change that landed while the fade was playing, after the class was set.
+    if (!applying && root.classList.contains('dark') !== wanted) apply();
+  });
 }
 
 /** Resolves a Theme to <html>.dark and, for "system", tracks OS changes live. */

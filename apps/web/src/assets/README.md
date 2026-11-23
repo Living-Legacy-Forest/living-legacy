@@ -6,10 +6,10 @@ All are optimised through `astro:assets` (`<Image>` / `<Picture>`) when used in 
 
 ## brand/ — logo mark and wordmark
 
-| Local file                | Live source                                                                                             |
-| ------------------------- | ------------------------------------------------------------------------------------------------------- |
-| `brand/logo-mark.webp`    | https://livinglegacyforest.com/wp-content/uploads/2025/01/legacy-memorial-logo.png.webp                 |
-| `brand/logo-wordmark.png` | https://livinglegacyforest.com/wp-content/uploads/2025/02/Living-Legacy-Forest-Logo-Type-For-Footer.png |
+| Local file                | Live source                                           |
+| ------------------------- | ----------------------------------------------------- |
+| `brand/logo-mark.webp`    | `LOGOS/LL Logomark_White.png`, resized to 512px       |
+| `brand/logo-wordmark.png` | `LOGOS/LL Wordmark_White.png`, resized to 1200px wide |
 
 ## home/ — home page
 
@@ -42,7 +42,7 @@ All are optimised through `astro:assets` (`<Image>` / `<Picture>`) when used in 
 | `home/how-it-works-step-2.png`                  | https://livinglegacyforest.com/wp-content/uploads/2025/02/NAT-LLF-WEB-LAYOUT-19.png                                                                               |
 | `home/how-it-works-step-3.png`                  | https://livinglegacyforest.com/wp-content/uploads/2025/02/NAT-LLF-WEB-LAYOUT-20.png                                                                               |
 | `home/intelligence-exchange-illustration.png`   | https://livinglegacyforest.com/wp-content/uploads/2025/01/LLF-WEB-LAYOUT-17.png                                                                                   |
-| `home/legacy-quote-logo-mark.png`               | https://livinglegacyforest.com/wp-content/uploads/2025/02/NAT-LLF-WEB-LAYOUT-1.png                                                                                |
+| `home/legacy-quote-logo-mark.png`               | `LOGOS/LL Logomark_White.png`, resized to 512px                                                                                                                   |
 | `home/legacy-quote-stump-left.png`              | https://livinglegacyforest.com/wp-content/uploads/2025/01/TREE-STUMP-2.png                                                                                        |
 | `home/legacy-quote-stump-right.png`             | https://livinglegacyforest.com/wp-content/uploads/2025/01/TREE-STUMP-1.png                                                                                        |
 | `home/location-centennial-park.jpg`             | https://livinglegacyforest.com/wp-content/uploads/2025/02/1.jpg                                                                                                   |

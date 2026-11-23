@@ -1,9 +1,43 @@
+import { AnimatePresence, motion, useReducedMotion } from 'motion/react';
 import type { ReactElement, ReactNode } from 'react';
 import type { LucideIcon } from '@/components/icons';
 import { SidebarMenuButton } from '@/components/ui/sidebar';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import { cn } from '@/lib/utils';
+import { motionTokens } from '@/components/arc/lib/motion-tokens';
 import { navItemClass } from './nav-styles';
+
+/**
+ * A name that slides up out of the way when it changes ("Switch to dark" to "Switch to light"),
+ * with the new one rising in behind it. The first paint never animates, and reduced motion
+ * fades instead of moving.
+ */
+function RowLabel({ label }: { label: string }) {
+  const reduced = useReducedMotion() ?? false;
+  const offset = reduced ? 0 : 10;
+  return (
+    <span className="relative min-w-0 flex-1 overflow-hidden">
+      <AnimatePresence initial={false} mode="popLayout">
+        <motion.span
+          key={label}
+          className="block truncate"
+          initial={{ opacity: 0, y: offset }}
+          animate={{ opacity: 1, y: 0 }}
+          exit={{ opacity: 0, y: -offset }}
+          transition={{
+            y: motionTokens.spring.snappy,
+            opacity: {
+              duration: motionTokens.duration.fast,
+              ease: [...motionTokens.ease.standard],
+            },
+          }}
+        >
+          {label}
+        </motion.span>
+      </AnimatePresence>
+    </span>
+  );
+}
 
 /**
  * One row of the sidebar: its icon, then its name. The name is always there, clipped by the
@@ -40,7 +74,7 @@ export function SidebarRow({
       className={cn(navItemClass, 'h-8 gap-3 px-2.5', className)}
     >
       <Icon aria-hidden className="shrink-0" />
-      <span className="min-w-0 flex-1 truncate">{label}</span>
+      <RowLabel label={label} />
       {trailing}
     </SidebarMenuButton>
   );

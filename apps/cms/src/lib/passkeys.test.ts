@@ -51,6 +51,10 @@ describe('shouldOfferPasskey', () => {
     expect(shouldOfferPasskey({ ...base, passkeyCount: 1 })).toBe(false);
   });
 
+  it('stays quiet when it could not find out whether they have one', () => {
+    expect(shouldOfferPasskey({ ...base, passkeyCount: null })).toBe(false);
+  });
+
   it('stays quiet for 30 days after not now', () => {
     expect(shouldOfferPasskey({ ...base, dismissedAt: now - days(29) })).toBe(false);
     expect(shouldOfferPasskey({ ...base, dismissedAt: now - days(31) })).toBe(true);

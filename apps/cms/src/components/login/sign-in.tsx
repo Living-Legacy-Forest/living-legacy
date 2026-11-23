@@ -219,10 +219,17 @@ export function SignIn({
       window.location.assign('/');
       return;
     }
-    if (!autoFill) setBusy(null);
-    // Closing the prompt is not a failure; autofill fails quietly, the button can say why.
-    if (autoFill || isPasskeyCancel(error)) return;
+    // Autofill fails quietly (the button can say why), and also ends whenever the button starts
+    // its own request, so it is offered again once the button's attempt is over.
+    if (autoFill) return;
+    setBusy(null);
+    void offerAutofill();
+    if (isPasskeyCancel(error)) return;
     notify.error('Could not sign in with a passkey', 'Try again or use an email link.');
+  }
+
+  async function offerAutofill() {
+    if (await supportsPasskeyAutofill()) void signInWithPasskey(true);
   }
 
   // Saved passkeys appear in the email field's autofill, so signing in can be one tap. Started
@@ -230,9 +237,7 @@ export function SignIn({
   useEffect(() => {
     if (!passkeyReady || autofillStarted.current) return;
     autofillStarted.current = true;
-    void supportsPasskeyAutofill().then((ok) => {
-      if (ok) void signInWithPasskey(true);
-    });
+    void offerAutofill();
   }, [passkeyReady]);
 
   async function sendLink(to: string) {

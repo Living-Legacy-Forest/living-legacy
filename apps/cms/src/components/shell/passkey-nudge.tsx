@@ -44,7 +44,7 @@ export function PasskeyNudge() {
   useEffect(() => {
     let cancelled = false;
     void (async () => {
-      const offer = (passkeyCount: number) =>
+      const offer = (passkeyCount: number | null) =>
         shouldOfferPasskey({
           supported: supportsPasskeys(),
           passkeyCount,
@@ -55,8 +55,8 @@ export function PasskeyNudge() {
       if (!offer(0)) return;
       try {
         if (!(await getPasskeysEnabled())) return;
-        const { data } = await authClient.passkey.listUserPasskeys();
-        if (offer(data?.length ?? 0) && !cancelled) setOpen(true);
+        const { data, error } = await authClient.passkey.listUserPasskeys();
+        if (offer(error || !data ? null : data.length) && !cancelled) setOpen(true);
       } catch {
         // A prompt that cannot check is a prompt not shown.
       }

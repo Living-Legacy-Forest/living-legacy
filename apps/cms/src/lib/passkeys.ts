@@ -20,14 +20,17 @@ export const NUDGE_SNOOZE_MS = 30 * 24 * 60 * 60 * 1000;
 /** Where that device remembers when "Not now" was chosen (localStorage, milliseconds). */
 export const NUDGE_KEY = 'll:passkey-nudge-dismissed';
 
-/** Whether to offer someone a passkey after they signed in another way. */
+/**
+ * Whether to offer someone a passkey after they signed in another way. A `passkeyCount` of null
+ * (their passkeys could not be listed) never offers one: they may already have one.
+ */
 export function shouldOfferPasskey(opts: {
   supported: boolean;
-  passkeyCount: number;
+  passkeyCount: number | null;
   dismissedAt: number | null;
   now: number;
 }) {
-  if (!opts.supported || opts.passkeyCount > 0) return false;
+  if (!opts.supported || opts.passkeyCount !== 0) return false;
   return opts.dismissedAt === null || opts.now - opts.dismissedAt >= NUDGE_SNOOZE_MS;
 }
 

@@ -16,7 +16,7 @@ import {
   EmptyMedia,
   EmptyTitle,
 } from '@/components/ui/empty';
-import { formatInteger, formatTimeRange } from '@/lib/format';
+import { formatInteger, formatTimeRange, sameDate } from '@/lib/format';
 import type { EventsOverview } from '@/server/event-stats';
 
 type Upcoming = EventsOverview['upcoming'][number];
@@ -35,12 +35,14 @@ function flag(event: Upcoming, now: number) {
 }
 
 function dayLabel(event: Upcoming) {
-  return new Date(event.startsAt).toLocaleDateString('en-AU', {
-    timeZone: event.timeZone,
-    weekday: 'short',
-    day: 'numeric',
-    month: 'short',
-  });
+  return sameDate(
+    new Date(event.startsAt).toLocaleDateString('en-AU', {
+      timeZone: event.timeZone,
+      weekday: 'short',
+      day: 'numeric',
+      month: 'short',
+    })
+  );
 }
 
 /** The next month's event dates, each with how full it is. */

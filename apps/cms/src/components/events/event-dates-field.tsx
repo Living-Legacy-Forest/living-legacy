@@ -5,7 +5,7 @@ import { Button } from '@/components/ui/button';
 import { DateRangePicker, type DateRange } from '@/components/ui/date-range-picker';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { displayTime, fromZoned, parseTime } from '@/lib/format';
+import { displayTime, fromZoned, parseTime, sameDate } from '@/lib/format';
 
 export type EventTimes = { startsAt: number; endsAt: number };
 
@@ -48,10 +48,12 @@ const sameDay = (a: CalendarDate, b: CalendarDate) =>
 /** "14 Nov 2026", or "14 to 15 Nov 2026" for two days. */
 export function dayLabel(from: CalendarDate, to?: CalendarDate | null) {
   const fmt = (d: CalendarDate, opts: Intl.DateTimeFormatOptions) =>
-    new Date(Date.UTC(d.year, d.month, d.day)).toLocaleDateString('en-AU', {
-      timeZone: 'UTC',
-      ...opts,
-    });
+    sameDate(
+      new Date(Date.UTC(d.year, d.month, d.day)).toLocaleDateString('en-AU', {
+        timeZone: 'UTC',
+        ...opts,
+      })
+    );
   const full = { day: 'numeric', month: 'short', year: 'numeric' } as const;
   if (!to || sameDay(from, to)) return fmt(from, full);
   const sameMonth = from.month === to.month && from.year === to.year;

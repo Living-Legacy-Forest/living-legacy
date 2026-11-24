@@ -1,5 +1,6 @@
 // The dashboard's trend card: which numbers it can show, over which ranges, and how a
 // timestamp lands on a day. Plain data and functions, shared by the server and the card.
+import { sameDate } from './format';
 
 export const trendMetrics = {
   // Distinct browsers. Its total counts each one once, not once for every day they came back.
@@ -54,15 +55,19 @@ export function percentChange(current: number, previous: number) {
 const dateOf = (key: string) => new Date(`${key}T00:00:00Z`);
 /** "3 Nov". */
 export const shortDate = (key: string) =>
-  dateOf(key).toLocaleDateString('en-AU', { timeZone: 'UTC', day: 'numeric', month: 'short' });
-/** "Tue, 3 Nov". */
+  sameDate(
+    dateOf(key).toLocaleDateString('en-AU', { timeZone: 'UTC', day: 'numeric', month: 'short' })
+  );
+/** "Tue 3 Nov". */
 export const longDate = (key: string) =>
-  dateOf(key).toLocaleDateString('en-AU', {
-    timeZone: 'UTC',
-    weekday: 'short',
-    day: 'numeric',
-    month: 'short',
-  });
+  sameDate(
+    dateOf(key).toLocaleDateString('en-AU', {
+      timeZone: 'UTC',
+      weekday: 'short',
+      day: 'numeric',
+      month: 'short',
+    })
+  );
 
 /** Every few days on the axis; the chart thins them further to fit. */
 export const axisEvery = (days: number) => (days <= 7 ? 1 : days <= 30 ? 7 : 14);

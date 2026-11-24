@@ -26,6 +26,7 @@ import {
 import { Reveal } from '@/components/reveal';
 import { cn } from '@/lib/utils';
 import { type EventTimes, dayLabel } from './event-dates-field';
+import { sameDate } from '@/lib/format';
 
 export type RepeatValue = {
   repeat: RepeatKind;
@@ -311,9 +312,11 @@ export function RepeatField({
                       d.first && 'cursor-default'
                     )}
                   >
-                    {new Date(Date.UTC(d.date.year, d.date.month, d.date.day)).toLocaleDateString(
-                      'en-AU',
-                      { timeZone: 'UTC', weekday: 'short', day: 'numeric', month: 'short' }
+                    {sameDate(
+                      new Date(Date.UTC(d.date.year, d.date.month, d.date.day)).toLocaleDateString(
+                        'en-AU',
+                        { timeZone: 'UTC', weekday: 'short', day: 'numeric', month: 'short' }
+                      )
                     )}
                   </button>
                 </li>

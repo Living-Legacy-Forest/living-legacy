@@ -577,7 +577,8 @@ function FaqSection({
 
   return (
     <section>
-      <div className="flex h-8 items-center gap-2 px-1.5 max-md:px-4">
+      {/* Phones: 44pt, so the + and … beside the name keep their whole tap area. */}
+      <div className="flex h-8 items-center gap-2 px-1.5 max-md:h-11 max-md:px-4">
         <h2 className="text-muted-foreground text-xs font-medium max-md:text-[0.8125rem] max-md:font-normal max-md:text-(--ios-secondary) max-md:uppercase">
           {group ? group.name : 'Ungrouped'}
         </h2>

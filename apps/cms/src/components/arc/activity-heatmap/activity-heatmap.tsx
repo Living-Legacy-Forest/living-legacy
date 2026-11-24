@@ -22,6 +22,16 @@ import type { Variants } from 'motion/react';
 import { motionTokens } from '../lib/motion-tokens';
 import styles from './activity-heatmap.module.css';
 
+/**
+ * Engines word en-AU dates differently: V8 (the server, Chrome) writes "Sept" and "Fri 18 Sept",
+ * Safari's engine "Sep" and "Fri, 18 Sep". The labels render on the server and again in the
+ * browser, so for en-AU they settle on V8's wording, or the page fails to hydrate.
+ */
+const settle = (text: string, locale: string) =>
+  locale === 'en-AU'
+    ? text.replace(/\bSep\b/g, 'Sept').replace(/^(Mon|Tue|Wed|Thu|Fri|Sat|Sun), /, '$1 ')
+    : text;
+
 export interface ActivityDay {
   /** Calendar day as YYYY-MM-DD. */
   date: string;
@@ -116,7 +126,7 @@ function buildModel(
       months.push({
         month: date.getUTCFullYear() * 12 + date.getUTCMonth(),
         col: Math.floor((lead + index) / 7),
-        label: monthName.format(date),
+        label: settle(monthName.format(date), locale),
       });
   }
   // A partial first month keeps its label only when there is room before the next one.
@@ -419,7 +429,7 @@ export function ActivityHeatmap({
     return {
       key: `day-${toIso(date.getTime())}`,
       primary: count ? `${formats.number.format(count)} ${noun(count, unit)}` : `No ${unit.other}`,
-      secondary: formats.short.format(date),
+      secondary: settle(formats.short.format(date), locale),
       value: count,
       anchor,
     };

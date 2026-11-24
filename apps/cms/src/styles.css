@@ -13,6 +13,25 @@
 @import './components/extensions/table/style.css';
 @import './components/static-renderer/style.css';
 
+/* Phones: narrower than 48rem, or a touch screen under 30rem tall, which is a phone turned on
+   its side (an iPad is never that short). A phone keeps its phone layout in landscape, as iOS
+   apps do, instead of getting the desktop sidebar in 390px of height. `md:` and `max-md:` say
+   it once here, and every @media in this file and hooks/use-mobile.ts repeat it.
+   Redefining md keeps its place among the breakpoints (so lg: still wins over md:). max-md
+   needs the block form (a comma in the short form starts a second variant), and is placed
+   after the built-in variants; max-sm follows it so the narrower one still wins. */
+@custom-variant md (@media (width >= 48rem) and ((hover: hover) or (height >= 30rem)));
+@custom-variant max-md {
+  @media (width < 48rem), (hover: none) and (height < 30rem) {
+    @slot;
+  }
+}
+@custom-variant max-sm {
+  @media (width < 40rem) {
+    @slot;
+  }
+}
+
 /* `dark:` utilities match a .dark class on <html>, set server-side from the
    site's Theme setting (and client-side for "system"); see __root.tsx. */
 @custom-variant dark (&:where(.dark, .dark *));
@@ -32,7 +51,7 @@
    invisible layer reaches above and below it, so it looks the same and is easier to hit. The
    control must be positioned. Only vertical, so neighbours in a row never steal each other's taps. */
 @utility touch-hit {
-  @media (hover: none) and (width >= 48rem) {
+  @media (hover: none) and (width >= 48rem) and (height >= 30rem) {
     &::after {
       content: '';
       position: absolute;
@@ -316,7 +335,7 @@
    iOS's grouped-list colours, on phones only so desktop and tablet keep theirs.
    The tint (text-tint) is the text colour, switches are iOS green (ui/switch.tsx),
    and destructive stays --destructive. */
-@media (width < 48rem) {
+@media (width < 48rem), (hover: none) and (height < 30rem) {
   :root {
     --ios-grouped: #f2f2f7;
     --ios-cell: #ffffff;
@@ -344,7 +363,11 @@
 
   /* Grouped lists (ListRows): hairline dividers that start where the text does,
      or past the thumbnail, and iOS's body and secondary text sizes. */
-  [data-slot='list-rows'] > li + li::before {
+  /* Between rows only. The list starts with an empty highlight <li> (glide-highlight), so
+     `li + li` also matched the first row and drew a line across the top of the card. */
+  [data-slot='list-rows']
+    > li:not([data-slot='glide-highlight'])
+    ~ li:not([data-slot='glide-highlight'])::before {
     content: '';
     position: absolute;
     top: 0;
@@ -1263,7 +1286,7 @@
    form remounts), which is many times a day, so there is no cascade to sit through: a field-by-
    field rise took 610ms before the buttons settled. Dialogs on phones are sheets that slide in
    themselves, so are left alone. */
-@media (width >= 48rem) {
+@media (width >= 48rem) and ((hover: hover) or (height >= 30rem)) {
   :is([data-slot='pane-body'], [data-slot='dialog-content'])
     :is(
       [data-slot='form-steps'],
@@ -1403,7 +1426,7 @@
 /* The header: on the left the sidebar toggle, divider and breadcrumbs, then on the
    right status, notifications and the account. The phone's bar holds the page's own
    buttons, which come and go with each page, so it is left still. */
-@media (width >= 48rem) {
+@media (width >= 48rem) and ((hover: hover) or (height >= 30rem)) {
   [data-slot='app-header'] > :first-child > *,
   [data-slot='app-header'] > :last-child > :not(.contents),
   [data-slot='app-header'] > :last-child > .contents > * {
@@ -1531,7 +1554,7 @@
     --tab-bar-height: 0px;
   }
 
-  @media (width < 48rem) {
+  @media (width < 48rem), (hover: none) and (height < 30rem) {
     :root:has([data-tab-bar='shown']) {
       --tab-bar-height: calc(3.0625rem + env(safe-area-inset-bottom, 0px));
     }
@@ -1595,6 +1618,14 @@
   .maplibregl-ctrl-attrib-button {
     @apply bg-transparent! dark:invert;
   }
+  /* The map's own 24px button; touch screens reach 44pt round it without moving it. */
+  @media (hover: none) {
+    .maplibregl-ctrl-attrib-button::after {
+      content: '';
+      position: absolute;
+      inset: -10px;
+    }
+  }
 }
 
 /* Outside any layer, so these win over the elements' own utility classes. */
@@ -1608,11 +1639,11 @@
   }
 }
 
-/* Phone type scale, close to iOS: 34 large title, 24 figures, 20, 17 headings
-   and fields, 15 body and buttons, 13 captions. The desktop sizes (12 to 14px)
-   read as cramped on a phone, so each step moves up here and every utility
-   that uses it follows. Line heights are ratios, so they scale too. */
-@media (width < 48rem) {
+/* Phone type scale, on iOS's text styles: 34 large title, 28 title 1 (big figures), 22 title 2,
+   20 title 3, 17 body, headings and fields, 15 subheadline (buttons, secondary text), 13
+   footnote. The desktop sizes (12 to 14px) read as cramped on a phone, so each step moves up
+   here and every utility that uses it follows. Line heights are ratios, so they scale too. */
+@media (width < 48rem), (hover: none) and (height < 30rem) {
   :root {
     --text-xs: 0.8125rem;
     --text-ui-sm: 0.9375rem;
@@ -1620,6 +1651,40 @@
     --text-sm: 0.9375rem;
     --text-base: 1.0625rem;
     --text-lg: 1.25rem;
+    --text-xl: 1.375rem;
+    --text-2xl: 1.375rem;
+    --text-3xl: 1.75rem;
+  }
+}
+
+/* Phone form fields are 44pt, the height of a row in an iOS form, wherever a page puts them.
+   Outside any layer, so this wins over a field's own height classes. A compact select (size sm:
+   a card's period, Rows a page) keeps its 36pt look, with a tap area that reaches 44pt. Steppers
+   keep their own height, close to iOS's 32pt UIStepper. */
+@media (width < 48rem), (hover: none) and (height < 30rem) {
+  [data-slot='input'],
+  [data-slot='select-trigger'][data-size='default'],
+  [data-slot='input-group']:not(:has(> textarea, > [data-align^='block'])),
+  [data-slot='date-range-picker'],
+  [data-slot='date-range-picker'] > button {
+    height: 2.75rem;
+  }
+  /* Text fields are 17pt, iOS's body size, whatever size a page gives them: Safari zooms the
+     page into any field under 16px when it is tapped, and does not zoom back out. */
+  [data-slot='input'],
+  [data-slot='textarea'],
+  [data-slot='input-group-control'] {
+    font-size: 1.0625rem;
+  }
+}
+@media (hover: none) {
+  [data-slot='select-trigger'][data-size='sm'] {
+    position: relative;
+  }
+  [data-slot='select-trigger'][data-size='sm']::after {
+    content: '';
+    position: absolute;
+    inset: -4px 0;
   }
 }
 
@@ -1636,7 +1701,7 @@
 
 /* iOS large titles: the page heading is big on phones and shrinks into the top
    bar once scrolled past (see AppHeader). */
-@media (width < 48rem) {
+@media (width < 48rem), (hover: none) and (height < 30rem) {
   [data-slot='page-title'] {
     font-size: 2.125rem;
     line-height: 1.12;
@@ -1650,7 +1715,7 @@
 [data-slot='pill-track']:not([data-glide]) > :is([aria-pressed='true'], [aria-current='page']) {
   background: var(--muted);
 }
-@media (width < 48rem) {
+@media (width < 48rem), (hover: none) and (height < 30rem) {
   /* Phones show the segmented control as iOS does. */
   [data-slot='pill-track'][role='group']:not([data-glide]) > [aria-pressed='true'] {
     background: var(--ios-segment-on);
@@ -1870,7 +1935,7 @@
    one bar. In a layer, because the editor's canvas colour is an !important utility, and an
    !important rule outside every layer loses to one inside a layer. */
 @layer base {
-  @media (width < 48rem) {
+  @media (width < 48rem), (hover: none) and (height < 30rem) {
     [data-under-header] {
       background: var(--background) !important;
     }

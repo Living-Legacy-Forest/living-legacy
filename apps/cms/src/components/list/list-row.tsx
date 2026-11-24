@@ -304,7 +304,7 @@ export function ListRow({
           checked={select.checked}
           selecting={select.selecting}
           onToggle={select.onToggle}
-          className={align === 'start' ? 'mt-2' : undefined}
+          className={align === 'start' ? 'mt-2 max-md:mt-0 max-md:self-center' : undefined}
         />
       )}
       <button
@@ -340,7 +340,8 @@ export function ListRow({
           aria-hidden
           className={cn(
             'text-muted-foreground/50 touch:flex hidden shrink-0 max-md:text-(--ios-secondary) max-md:opacity-60',
-            align === 'start' ? 'mt-2.5' : 'self-center'
+            // Phones centre it in the cell, as iOS does, however many lines the row has.
+            align === 'start' ? 'mt-2.5 max-md:mt-0 max-md:self-center' : 'self-center'
           )}
         >
           <ChevronRightIcon className="size-4" />

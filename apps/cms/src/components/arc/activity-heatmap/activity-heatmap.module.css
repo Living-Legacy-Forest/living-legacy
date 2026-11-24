@@ -328,6 +328,15 @@
   border-radius: 3px;
   background: var(--level-0);
 }
+/* Touch screens: an invisible strip above and below makes each a 44pt tap. Only vertical, as the
+   swatches sit side by side. */
+@media (hover: none) {
+  .swatch::after {
+    content: '';
+    position: absolute;
+    inset: -12px 0;
+  }
+}
 .swatch[data-level='1']::before {
   background: var(--level-1);
 }
@@ -429,5 +438,13 @@
   .month,
   .ring {
     transition: opacity var(--duration-fast) var(--ease-standard);
+  }
+}
+
+/* Phones: the iOS text size (15pt subheadline) in place of 14px, as the rest of the CMS
+   uses on phones (styles.css). */
+@media (width < 48rem), (hover: none) and (height < 30rem) {
+  .root {
+    --text-sm: 0.9375rem;
   }
 }

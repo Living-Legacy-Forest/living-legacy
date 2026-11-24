@@ -491,7 +491,8 @@ function UserAvatar({ user, isSelf }: { user: TeamUser; isSelf: boolean }) {
         type="button"
         aria-label={`Change ${label}'s photo`}
         onClick={() => setOpen(true)}
-        className="group focus-visible:ring-ring relative shrink-0 rounded-full outline-none focus-visible:ring-2"
+        // Touch screens: an invisible ring round the 36px photo makes it a 44pt tap.
+        className="group focus-visible:ring-ring touch:after:absolute touch:after:-inset-1 relative shrink-0 rounded-full outline-none focus-visible:ring-2"
       >
         <Avatar className="size-9">
           {avatarSrc(user) && <AvatarImage src={avatarSrc(user)} alt={user.imageAlt ?? ''} />}

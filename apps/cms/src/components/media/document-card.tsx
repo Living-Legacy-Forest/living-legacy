@@ -38,7 +38,7 @@ export function DocumentCard({
         {['w-full', 'w-11/12', 'w-full', 'w-3/4', 'w-full', 'w-1/2'].map((width, i) => (
           <span key={i} className={`h-[2px] rounded-full bg-neutral-200 ${width}`} />
         ))}
-        <span className="bg-foreground text-background absolute -bottom-2 left-1/2 -translate-x-1/2 rounded px-1.5 py-0.5 text-[0.625rem] leading-none font-semibold tracking-wide">
+        <span className="bg-foreground text-background absolute -bottom-2 left-1/2 -translate-x-1/2 rounded px-1.5 py-0.5 text-[0.625rem] leading-none font-semibold tracking-wide max-md:text-[0.6875rem]">
           {badge}
         </span>
       </div>

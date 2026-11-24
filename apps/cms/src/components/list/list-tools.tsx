@@ -159,7 +159,9 @@ export function SelectionBar({
               ? selection.clear()
               : selection.set(visibleIds)
         }
-        className={cn(!selection.selecting && 'touch:hidden')}
+        // Phones: the heading is inset 16, the rows' ticks 10 (RowCheckbox's cell). Pull this one
+        // out to line up with them, and give the gap back so the text stays where it was.
+        className={cn(!selection.selecting && 'touch:hidden', 'max-md:mr-1.5 max-md:-ml-1.5')}
       />
       {count > 0 ? (
         <>
@@ -175,10 +177,12 @@ export function SelectionBar({
               Delete
             </Button>
           )}
+          {/* Phones: its glyph lines up with the right edge of the rows' content (12 in). */}
           <Button
             variant="ghost"
             size="icon-sm"
             aria-label="Clear selection"
+            className="max-md:-mr-3.5"
             onClick={selection.clear}
           >
             <XIcon aria-hidden />

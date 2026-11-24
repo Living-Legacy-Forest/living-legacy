@@ -1,5 +1,5 @@
 import type { LinkProps } from '@tanstack/react-router';
-import { formatInteger } from '@/lib/format';
+import { formatInteger, sameDate } from '@/lib/format';
 import type { Growth } from '@/lib/media-growth';
 
 export type Trend = {
@@ -91,7 +91,9 @@ const WEEK_MS = 7 * 86_400_000;
 
 /** "3 Nov", in the site's time zone. */
 export const dayMonth = (timestamp: number, timeZone: string) =>
-  new Date(timestamp).toLocaleDateString('en-AU', { timeZone, day: 'numeric', month: 'short' });
+  sameDate(
+    new Date(timestamp).toLocaleDateString('en-AU', { timeZone, day: 'numeric', month: 'short' })
+  );
 
 /** When week `i` (oldest first) starts: the weeks are the seven-day spans up to `endsAt`. */
 export const weekStart = (i: number, count: number, endsAt: number) =>

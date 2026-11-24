@@ -11,10 +11,14 @@ export const sheetGroupClass =
 export const sheetRowClass =
   'flex min-h-11 w-full items-center gap-3 px-4 text-left text-[1.0625rem] transition-colors active:bg-(--ios-fill) [&_svg]:size-5.5';
 
+/** An iOS sheet's bar: the title centred on the sheet, Done at the right. */
 export function SheetHeader({ title, onDone }: { title: string; onDone: () => void }) {
   return (
-    <div className="flex shrink-0 items-center justify-between px-4 pt-1 pb-2">
-      <DrawerTitle className="text-[1.0625rem] font-semibold">{title}</DrawerTitle>
+    <div className="relative flex min-h-11 shrink-0 items-center justify-end px-4 pt-1 pb-2">
+      {/* Centred on the sheet, not on the room left of Done; kept clear of Done either side. */}
+      <DrawerTitle className="pointer-events-none absolute inset-x-20 truncate text-center text-[1.0625rem] font-semibold">
+        {title}
+      </DrawerTitle>
       <button
         type="button"
         onClick={onDone}

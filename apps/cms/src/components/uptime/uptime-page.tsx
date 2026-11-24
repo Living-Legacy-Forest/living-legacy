@@ -6,7 +6,7 @@ import { StatusPulse } from '@/components/system/status-pulse';
 import { buttonVariants } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { useState } from 'react';
-import { formatDateTime, formatInteger, formatRelative } from '@/lib/format';
+import { formatDateTime, formatInteger, formatRelative, sameDate } from '@/lib/format';
 import { summariseTones, type StatusTone } from '@/lib/system-status';
 import { useRevealOnce } from '@/lib/use-reveal-once';
 import { useTimeZone } from '@/lib/use-time-zone';
@@ -75,7 +75,7 @@ function DailyBar({
           return (
             <span
               key={i}
-              title={`${dayFormat.format(date)}: ${seconds === 0 ? 'no downtime' : downtime(seconds)}`}
+              title={`${sameDate(dayFormat.format(date))}: ${seconds === 0 ? 'no downtime' : downtime(seconds)}`}
               className={cn(
                 'min-w-0 flex-1 rounded-[2px]',
                 seconds === 0 ? 'bg-emerald-500' : seconds < 1800 ? 'bg-amber-500' : 'bg-red-500'

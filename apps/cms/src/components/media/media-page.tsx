@@ -662,7 +662,7 @@ function ExtensionBadge({ item, className }: { item: MediaItem; className?: stri
   return (
     <span
       className={cn(
-        'bg-background/80 text-foreground rounded px-1.5 py-0.5 text-[0.625rem] leading-none font-semibold tracking-wide backdrop-blur-sm',
+        'bg-background/80 text-foreground rounded px-1.5 py-0.5 text-[0.625rem] leading-none font-semibold tracking-wide backdrop-blur-sm max-md:text-[0.6875rem]',
         className
       )}
     >

@@ -17,7 +17,7 @@ import {
   ChartTooltipContent,
 } from '@/components/ui/chart';
 import { MUTED } from '@/components/stat-card/stat-card';
-import { formatInteger } from '@/lib/format';
+import { formatInteger, sameDate } from '@/lib/format';
 import { useTimeZone } from '@/lib/use-time-zone';
 import type { EventsOverview } from '@/server/event-stats';
 
@@ -41,7 +41,9 @@ const locationConfig = {
 function useBucketLabels(bucket: EventsOverview['bucket']) {
   const timeZone = useTimeZone();
   const short = (start: number) =>
-    new Date(start + 1).toLocaleDateString('en-AU', { timeZone, day: 'numeric', month: 'short' });
+    sameDate(
+      new Date(start + 1).toLocaleDateString('en-AU', { timeZone, day: 'numeric', month: 'short' })
+    );
   return {
     tick: short,
     full: (start: number) => (bucket === 'week' ? `Week of ${short(start)}` : short(start)),

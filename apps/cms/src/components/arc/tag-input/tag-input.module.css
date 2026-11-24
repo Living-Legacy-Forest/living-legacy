@@ -31,7 +31,7 @@
     --pad: 7px;
   }
 }
-@media (min-width: 48rem) {
+@media (width >= 48rem) and ((hover: hover) or (height >= 30rem)) {
   .field {
     --field-text: var(--text-ui);
   }
@@ -235,4 +235,12 @@
 .tag button svg {
   width: 12px;
   height: 12px;
+}
+
+/* Phones: the iOS text size (15pt subheadline) in place of 14px, as the rest of the CMS
+   uses on phones (styles.css). */
+@media (width < 48rem), (hover: none) and (height < 30rem) {
+  .field {
+    --text-sm: 0.9375rem;
+  }
 }

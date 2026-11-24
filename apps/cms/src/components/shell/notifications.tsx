@@ -334,7 +334,10 @@ export function Notifications({ user }: { user: SessionUser }) {
     variant: 'ghost',
     size: 'icon-sm',
     'aria-label': unreadCount ? `Notifications, ${unreadCount} unread` : 'Notifications',
-    className: 'text-muted-foreground relative max-md:size-11 max-md:[&_svg]:size-5.5',
+    // Phones: a bar button like the + beside it, so the tint colour and a 44pt square. The
+    // touch size is named too, or the button's own touch:size-9 wins over max-md.
+    className:
+      'text-muted-foreground relative max-md:text-tint max-md:size-11 max-md:touch:size-11 max-md:[&_svg]:size-5.5',
   } as const;
   const bell = (
     <>

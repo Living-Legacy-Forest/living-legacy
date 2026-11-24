@@ -483,3 +483,11 @@
     animation: none;
   }
 }
+
+/* Phones: the iOS text size (15pt subheadline) in place of 14px, as the rest of the CMS
+   uses on phones (styles.css). */
+@media (width < 48rem), (hover: none) and (height < 30rem) {
+  .list {
+    --text-sm: 0.9375rem;
+  }
+}

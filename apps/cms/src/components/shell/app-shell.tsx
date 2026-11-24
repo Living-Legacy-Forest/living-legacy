@@ -6,6 +6,7 @@ import { AppHeader } from './app-header';
 import { AppSidebar } from './app-sidebar';
 import { PageSkeleton, usePendingPathname } from './page-skeleton';
 import { PasskeyNudge } from './passkey-nudge';
+import { PullToRefresh } from './pull-to-refresh';
 import { TabBar } from './tab-bar';
 import { PhoneUpdateStrip, UpdatesProvider } from './updates';
 
@@ -38,13 +39,14 @@ export function AppShell({
         {/* Phones: iOS's grouped background, which lists and cards sit on. */}
         <SidebarInset className="max-md:bg-(--ios-grouped)">
           <AppHeader user={user} />
-          {/* On phones: clear the tab bar, and the notch in landscape. */}
-          <div className="flex flex-1 flex-col gap-4 p-4 max-md:pr-[max(1rem,env(safe-area-inset-right))] max-md:pb-[calc(var(--tab-bar-height)+1.5rem)] max-md:pl-[max(1rem,env(safe-area-inset-left))] md:p-6">
+          {/* On phones: clear the tab bar, and the notch in landscape. Pulling down at the top
+              of the page reloads it, as an iOS list does. */}
+          <PullToRefresh className="flex flex-1 flex-col gap-4 p-4 max-md:pr-[max(1rem,env(safe-area-inset-right))] max-md:pb-[calc(var(--tab-bar-height)+1.5rem)] max-md:pl-[max(1rem,env(safe-area-inset-left))] md:p-6">
             <PhoneUpdateStrip />
             {pendingPathname && <PageSkeleton pathname={pendingPathname} />}
             {/* Hidden, not unmounted, so a cancelled navigation keeps the page's state. */}
             <div className={pendingPathname ? 'hidden' : 'contents'}>{children}</div>
-          </div>
+          </PullToRefresh>
         </SidebarInset>
         <TabBar user={user} />
         <PasskeyNudge />

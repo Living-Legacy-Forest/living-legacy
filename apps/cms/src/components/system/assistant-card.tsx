@@ -10,7 +10,7 @@ import {
   CardTitle,
 } from '@/components/ui/card';
 import { SuperAdminAction } from '@/components/super-admin-action';
-import { formatCompact, formatInteger } from '@/lib/format';
+import { formatCompact, formatInteger, sameDate } from '@/lib/format';
 import { useAction } from '@/lib/use-action';
 import { resetAssistantUsage } from '@/server/super-admin';
 import { cn } from '@/lib/utils';
@@ -30,12 +30,14 @@ function dollars(amount: number) {
 }
 
 function dayLabel(day: string, style: 'short' | 'long') {
-  return new Date(day + 'T00:00:00Z').toLocaleDateString('en-AU', {
-    timeZone: 'UTC',
-    day: 'numeric',
-    month: 'short',
-    ...(style === 'long' && { weekday: 'short' as const }),
-  });
+  return sameDate(
+    new Date(day + 'T00:00:00Z').toLocaleDateString('en-AU', {
+      timeZone: 'UTC',
+      day: 'numeric',
+      month: 'short',
+      ...(style === 'long' && { weekday: 'short' as const }),
+    })
+  );
 }
 
 function Figure({ label, value, hint }: { label: string; value: string; hint?: string }) {

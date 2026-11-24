@@ -223,7 +223,7 @@ function PhoneStrip() {
   const { unseen, newDeploy, dismiss } = useUpdates();
   const show = newDeploy || unseen.length > 0;
   const strip =
-    'bg-muted/70 flex h-11 items-center gap-1 rounded-full border pl-3.5 pr-1 text-[0.875rem] md:hidden';
+    'bg-muted/70 flex h-11 items-center gap-1 rounded-full border pl-3.5 pr-1 text-[0.9375rem] md:hidden';
 
   const note = !show ? null : newDeploy ? (
     <div role="status" className={strip}>

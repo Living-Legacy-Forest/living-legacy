@@ -2,8 +2,8 @@ import { can } from '@ll/content';
 import { createServerFn } from '@tanstack/react-start';
 import { getDb } from '@/lib/db';
 import { authMiddleware } from '@/lib/session';
-import type { NavCounts } from '@/lib/nav-counts';
-import { countContentIssues, loadContentChecks } from './content-checks';
+import { type NavCounts, countContentIssues } from '@/lib/nav-counts';
+import { loadContentChecks } from './content-checks';
 import { loadMissingPages } from './not-found';
 
 /**

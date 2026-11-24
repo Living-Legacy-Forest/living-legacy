@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { formatNavCount, sectionHasCount } from './nav-counts';
+import { countContentIssues, formatNavCount, sectionHasCount } from './nav-counts';
 
 describe('formatNavCount', () => {
   it('shows the number, up to 99', () => {
@@ -24,5 +24,35 @@ describe('sectionHasCount', () => {
     expect(sectionHasCount(pages, { '/checks': 0 })).toBe(false);
     expect(sectionHasCount(pages, { '/redirects': 5 })).toBe(false);
     expect(sectionHasCount(pages, {})).toBe(false);
+  });
+});
+
+describe('countContentIssues', () => {
+  it('adds up every check', () => {
+    const none = { total: 0 };
+    expect(
+      countContentIssues({
+        noDescription: { total: 1 },
+        noImage: { total: 2 },
+        noAlt: { total: 3 },
+        events: { total: 4 },
+        duplicates: { total: 5 },
+        redirected: { total: 6 },
+        brand: { total: 7 },
+        links: { total: 8 },
+      })
+    ).toBe(36);
+    expect(
+      countContentIssues({
+        noDescription: none,
+        noImage: none,
+        noAlt: none,
+        events: none,
+        duplicates: none,
+        redirected: none,
+        brand: none,
+        links: none,
+      })
+    ).toBe(0);
   });
 });

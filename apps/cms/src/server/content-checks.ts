@@ -59,20 +59,6 @@ export const getContentChecks = createServerFn({ method: 'GET' })
 
 export type ContentChecks = Awaited<ReturnType<typeof getContentChecks>>;
 
-/** Every open issue across the checks: what the dashboard and the sidebar's badge show. */
-export function countContentIssues(checks: ContentChecks) {
-  return (
-    checks.noDescription.total +
-    checks.noImage.total +
-    checks.noAlt.total +
-    checks.events.total +
-    checks.duplicates.total +
-    checks.redirected.total +
-    checks.brand.total +
-    checks.links.total
-  );
-}
-
 /** The checks themselves, for the page and for the dashboard's count. */
 export async function loadContentChecks(
   db: ReturnType<typeof getDb>,

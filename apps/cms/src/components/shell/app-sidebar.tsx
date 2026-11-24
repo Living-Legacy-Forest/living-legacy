@@ -14,7 +14,8 @@ import { Logo } from './logo';
 import { NavBadge, SectionDot } from './nav-badge';
 import { ShortcutsRow, ThemeRow } from './rail-tools';
 import { SidebarRow } from './sidebar-row';
-import { useNavCounts } from './use-nav-counts';
+import { useNavCounts } from '@/lib/nav-counts-store';
+import { useLoadNavCounts } from './load-nav-counts';
 import { SidebarUpdateCard, useUpdates } from './updates';
 
 // Two columns, as Better Stack lays out its sidebar: a rail of sections, and the pages of the
@@ -72,6 +73,7 @@ export function AppSidebar({
 }) {
   const { pathname } = useLocation();
   const { unseen } = useUpdates();
+  useLoadNavCounts(user.id);
   const counts = useNavCounts();
   const sections = sidebarSections(user);
   const current = sectionFor(pathname, sections);

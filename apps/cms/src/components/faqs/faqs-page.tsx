@@ -216,7 +216,7 @@ export function FaqsPage({
       error: 'Could not delete',
     });
     if (!result) return false;
-    if (view.pane?.kind === 'faq' && ids.includes(view.pane.id)) view.setPane(null);
+    view.closeIfShowing((t) => t.kind === 'faq' && ids.includes(t.id));
     selection.clear();
     return true;
   }
@@ -227,7 +227,7 @@ export function FaqsPage({
       error: 'Could not bring it back',
     });
 
-  const deleteButton = (faq: Faq, onRemoved: () => void, disabled = false) => (
+  const deleteButton = (faq: Faq, disabled = false) => (
     <Button
       type="button"
       variant="ghost"
@@ -235,7 +235,7 @@ export function FaqsPage({
       disabled={disabled || pending}
       aria-label="Delete FAQ"
       className="text-muted-foreground hover:text-destructive"
-      onClick={() => remove([faq.id]).then((removed) => removed && onRemoved())}
+      onClick={() => void remove([faq.id])}
     >
       <Trash2Icon aria-hidden className="size-4" />
     </Button>
@@ -479,7 +479,7 @@ export function FaqsPage({
             ) : (
               <PaneFrame
                 title={paneFaq ? paneFaq.question : targetTitle(pane)}
-                actions={paneFaq && deleteButton(paneFaq, () => view.setPane(null))}
+                actions={paneFaq && deleteButton(paneFaq)}
               >
                 {targetForm(pane, view.setPane, (submit) => (
                   <PaneActions onCancel={view.closePane}>{submit}</PaneActions>
@@ -516,9 +516,7 @@ export function FaqsPage({
             ? bulkForm(view.dismissDialog, (submit) => <DialogActions>{submit}</DialogActions>)
             : view.dialog &&
               targetForm(view.dialog, view.dismissDialog, (submit, formPending) => (
-                <DialogActions
-                  start={dialogFaq && deleteButton(dialogFaq, view.dismissDialog, formPending)}
-                >
+                <DialogActions start={dialogFaq && deleteButton(dialogFaq, formPending)}>
                   {submit}
                 </DialogActions>
               ))}
@@ -864,8 +862,8 @@ function FaqForm({
         error: 'Could not save the FAQ',
       }
     );
-    if (!result) return;
-    form.markSaved();
+    // A form closed or replaced while it saved leaves the page as it is now.
+    if (!result || !form.markSaved()) return;
     feedback.saved();
     onSaved(result.id);
   }
@@ -966,8 +964,8 @@ function GroupForm({
         error: 'Could not save the group',
       }
     );
-    if (!result) return;
-    form.markSaved();
+    // A form closed or replaced while it saved leaves the page as it is now.
+    if (!result || !form.markSaved()) return;
     onSaved();
   }
 

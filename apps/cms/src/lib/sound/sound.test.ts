@@ -112,3 +112,42 @@ describe('the preference', () => {
     expect(stored).toBe('off');
   });
 });
+
+describe('wakeAudioOnGesture', () => {
+  function stubDocument() {
+    const handlers = new Map<string, () => void>();
+    vi.stubGlobal('document', {
+      addEventListener: (type: string, fn: () => void) => handlers.set(type, fn),
+      removeEventListener: (type: string) => handlers.delete(type),
+    });
+    return handlers;
+  }
+
+  it('wakes a suspended context on a press, silently, then stops listening', async () => {
+    const context = stubBrowser();
+    context.state = 'suspended';
+    context.resume.mockImplementation(async () => {
+      context.state = 'running';
+    });
+    const handlers = stubDocument();
+    const { wakeAudioOnGesture } = await load();
+    wakeAudioOnGesture();
+    handlers.get('pointerdown')?.();
+    expect(context.resume).toHaveBeenCalledOnce();
+    await settle();
+    handlers.get('pointerdown')?.();
+    expect(handlers.size).toBe(0);
+    expect(started).toBe(0);
+  });
+
+  it('leaves the audio asleep when sound is off', async () => {
+    const context = stubBrowser();
+    context.state = 'suspended';
+    stored = 'off';
+    const handlers = stubDocument();
+    const { wakeAudioOnGesture } = await load();
+    wakeAudioOnGesture();
+    handlers.get('keydown')?.();
+    expect(context.resume).not.toHaveBeenCalled();
+  });
+});

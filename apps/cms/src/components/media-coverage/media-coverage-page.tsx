@@ -230,7 +230,7 @@ export function MediaCoveragePage({
       error: 'Could not remove',
     });
     if (!result) return;
-    if (view.pane?.kind === 'edit' && ids.includes(view.pane.id)) view.setPane(null);
+    view.closeIfShowing((t) => t.kind === 'edit' && ids.includes(t.id));
     selection.clear();
   }
 
@@ -519,7 +519,13 @@ export function MediaCoveragePage({
                     <DeleteCoverage
                       item={dialogItem}
                       disabled={pending}
-                      onConfirm={() => remove(dialogItem.id).then(view.dismissDialog)}
+                      onConfirm={() =>
+                        remove(dialogItem.id).then(
+                          (done) =>
+                            done &&
+                            view.closeIfShowing((t) => t.kind === 'edit' && t.id === dialogItem.id)
+                        )
+                      }
                     />
                   )
                 }
@@ -878,8 +884,8 @@ function CoverageForm({
         error: 'Could not save the coverage',
       }
     );
-    if (!result) return;
-    form.markSaved();
+    // A form closed or replaced while it saved leaves the page as it is now.
+    if (!result || !form.markSaved()) return;
     onSaved(result.id);
   }
 

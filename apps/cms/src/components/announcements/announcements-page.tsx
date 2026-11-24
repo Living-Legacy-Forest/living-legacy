@@ -251,7 +251,7 @@ export function AnnouncementsPage({
       error: 'Could not remove',
     });
     if (!result) return;
-    if (view.pane?.kind === 'edit' && ids.includes(view.pane.id)) view.setPane(null);
+    view.closeIfShowing((t) => t.kind === 'edit' && ids.includes(t.id));
     selection.clear();
   }
 
@@ -712,8 +712,8 @@ function AnnouncementForm({
         error: 'Could not save the announcement',
       }
     );
-    if (!result) return;
-    form.markSaved();
+    // A form closed or replaced while it saved leaves the page as it is now.
+    if (!result || !form.markSaved()) return;
     feedback.saved();
     onSaved(result.id);
   }

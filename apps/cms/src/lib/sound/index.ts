@@ -92,19 +92,42 @@ function start(name: SoundName, ctx: AudioContext) {
   });
 }
 
-/**
- * Plays one of the interface sounds. Safe to call anywhere: it does nothing on the server or
- * when sound is off. Browsers only allow audio after a tap or key press, so the first call
- * from one wakes the audio context while it still counts as that gesture.
- */
-export function play(name: SoundName) {
-  if (typeof window === 'undefined' || !isEnabled()) return;
+/** The audio context, made and resumed if it can be; none on the server or without Web Audio. */
+function wake(): AudioContext | null {
   let ctx: AudioContext;
   try {
     ctx = context ??= new AudioContext();
   } catch {
-    return; // No Web Audio here.
+    return null; // No Web Audio here.
   }
   if (ctx.state === 'suspended') void ctx.resume().catch(() => {});
-  start(name, ctx);
+  return ctx;
+}
+
+/**
+ * Plays one of the interface sounds. Safe to call anywhere: it does nothing on the server or
+ * when sound is off.
+ */
+export function play(name: SoundName) {
+  if (typeof window === 'undefined' || !isEnabled()) return;
+  const ctx = wake();
+  if (ctx) start(name, ctx);
+}
+
+/**
+ * Browsers, Safari above all, only let audio start during a tap or key press. The sounds play
+ * once a save comes back, which can be after that moment has passed, so the context is woken,
+ * silently, on the press itself. Once it is running the listeners go. Returns the function that
+ * removes them.
+ */
+export function wakeAudioOnGesture(): () => void {
+  const events = ['pointerdown', 'keydown'] as const;
+  const remove = () =>
+    events.forEach((type) => document.removeEventListener(type, onGesture, true));
+  function onGesture() {
+    if (!isEnabled()) return;
+    if (wake()?.state === 'running') remove();
+  }
+  events.forEach((type) => document.addEventListener(type, onGesture, true));
+  return remove;
 }

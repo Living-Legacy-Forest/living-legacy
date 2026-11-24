@@ -303,7 +303,7 @@ export function RedirectsPage({
       error: 'Could not remove',
     });
     if (!result) return;
-    if (view.pane?.kind === 'edit' && ids.includes(view.pane.id)) view.setPane(null);
+    view.closeIfShowing((t) => t.kind === 'edit' && ids.includes(t.id));
     selection.clear();
   }
 
@@ -335,6 +335,9 @@ export function RedirectsPage({
       footer={actions}
     />
   );
+
+  /** Matches the pane or dialog while it edits this redirect. */
+  const showing = (id: string) => (t: Target) => t.kind === 'edit' && t.id === id;
 
   const redirectForm = (
     target: Target,
@@ -578,7 +581,10 @@ export function RedirectsPage({
                 }
                 actions={
                   paneRedirect && (
-                    <DeleteRedirect redirect={paneRedirect} onRemoved={() => view.setPane(null)} />
+                    <DeleteRedirect
+                      redirect={paneRedirect}
+                      onRemoved={() => view.closeIfShowing(showing(paneRedirect.id))}
+                    />
                   )
                 }
               >
@@ -633,7 +639,7 @@ export function RedirectsPage({
                     <DeleteRedirect
                       redirect={dialogRedirect}
                       disabled={formPending}
-                      onRemoved={view.dismissDialog}
+                      onRemoved={() => view.closeIfShowing(showing(dialogRedirect.id))}
                     />
                   )
                 }
@@ -826,11 +832,13 @@ function RedirectForm({
       }
     );
     if (!result) return;
-    form.markSaved();
-    feedback.saved();
+    // About the redirect, not the form, so they show even if the form has gone.
     for (const warning of result.warnings) {
       notify.warning({ title: 'Check this redirect', description: warning });
     }
+    // A form closed or replaced while it saved leaves the page as it is now.
+    if (!form.markSaved()) return;
+    feedback.saved();
     onSaved(result.id);
   }
 

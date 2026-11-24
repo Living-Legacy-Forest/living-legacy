@@ -131,7 +131,7 @@ export function TeamPage({ data, canWrite }: { data: TeamListData; canWrite: boo
       error: 'Could not delete',
     });
     if (!result) return false;
-    if (view.pane?.kind === 'edit' && ids.includes(view.pane.id)) view.setPane(null);
+    view.closeIfShowing((t) => t.kind === 'edit' && ids.includes(t.id));
     selection.clear();
     return true;
   }
@@ -159,14 +159,14 @@ export function TeamPage({ data, canWrite }: { data: TeamListData; canWrite: boo
     ];
   };
 
-  const deleteButton = (member: TeamMember, onRemoved: () => void) => (
+  const deleteButton = (member: TeamMember) => (
     <Button
       variant="ghost"
       size="icon-sm"
       disabled={pending}
       aria-label={`Delete ${member.name}`}
       className="text-muted-foreground hover:text-destructive"
-      onClick={() => remove([member.id]).then((removed) => removed && onRemoved())}
+      onClick={() => void remove([member.id])}
     >
       <Trash2Icon aria-hidden className="size-4" />
     </Button>
@@ -414,7 +414,7 @@ export function TeamPage({ data, canWrite }: { data: TeamListData; canWrite: boo
             ) : (
               <PaneFrame
                 title={paneMember ? paneMember.name : 'New member'}
-                actions={paneMember && deleteButton(paneMember, () => view.setPane(null))}
+                actions={paneMember && deleteButton(paneMember)}
               >
                 {memberForm(
                   pane,
@@ -453,9 +453,7 @@ export function TeamPage({ data, canWrite }: { data: TeamListData; canWrite: boo
             ? bulkForm(view.dismissDialog, (submit) => <DialogActions>{submit}</DialogActions>)
             : view.dialog &&
               memberForm(view.dialog, view.dismissDialog, (submit) => (
-                <DialogActions
-                  start={dialogMember && deleteButton(dialogMember, view.dismissDialog)}
-                >
+                <DialogActions start={dialogMember && deleteButton(dialogMember)}>
                   {submit}
                 </DialogActions>
               ))}
@@ -593,8 +591,8 @@ function MemberForm({
         error: 'Could not save the team member',
       }
     );
-    if (!result) return;
-    form.markSaved();
+    // A form closed or replaced while it saved leaves the page as it is now.
+    if (!result || !form.markSaved()) return;
     feedback.saved();
     onSaved(result.id);
   }

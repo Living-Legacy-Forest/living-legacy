@@ -84,7 +84,10 @@ export function useListPane<T>() {
   const [leaving, setLeaving] = useState<{ go: () => void } | null>(null);
   const blocker = useBlocker({
     // Only leaving the page: paging or filtering the list keeps the pane, and its edits, open.
-    shouldBlockFn: ({ current, next }) => dirty.current && current.pathname !== next.pathname,
+    // `view` counts as leaving: it swaps the whole page, as Redirects does with Missing pages.
+    shouldBlockFn: ({ current, next }) =>
+      dirty.current &&
+      (current.pathname !== next.pathname || viewOf(current.search) !== viewOf(next.search)),
     enableBeforeUnload: () => dirty.current,
     withResolver: true,
   });
@@ -111,6 +114,14 @@ export function useListPane<T>() {
     closeDialog: () => (isPhone() ? setDialog(null) : guard(() => setDialog(null))),
     /** Closes the dialog without asking, for after a save or a delete. */
     dismissDialog: () => setDialog(null),
+    /**
+     * After a delete: closes the pane or dialog, without asking, only if it still shows what
+     * went. Something else opened while the delete was on its way stays open.
+     */
+    closeIfShowing: (match: (target: T) => boolean) => {
+      setPane((current) => (current !== null && match(current) ? null : current));
+      setDialog((current) => (current !== null && match(current) ? null : current));
+    },
     /** For a page's own way of moving on from the form, such as previewing another row. */
     guard,
     reportDirty,
@@ -129,6 +140,8 @@ export function useListPane<T>() {
   };
 }
 
+const viewOf = (search: unknown) => (search as { view?: unknown } | undefined)?.view;
+
 function sameTarget(a: unknown, b: unknown) {
   return a !== null && JSON.stringify(a) === JSON.stringify(b);
 }
@@ -140,22 +153,40 @@ function sameTarget(a: unknown, b: unknown) {
  * a form that is closed or replaced never leaves the page asking.
  *
  *   const form = useFormDirty({ name, role }, onDirtyChange);
- *   if (result) { form.markSaved(); onSaved(result.id); }
+ *   if (!result || !form.markSaved()) return;
+ *   onSaved(result.id);
  */
 export function useFormDirty(values: unknown, report: ((dirty: boolean) => void) | undefined) {
   const current = JSON.stringify(values);
   const [saved, setSaved] = useState(current);
   const dirty = current !== saved;
+  // What the form holds now, for a save that finishes after more typing.
+  const latest = useRef(current);
+  latest.current = current;
+  const mounted = useRef(true);
+  useEffect(() => {
+    mounted.current = true;
+    return () => {
+      mounted.current = false;
+    };
+  }, []);
   useEffect(() => {
     report?.(dirty);
   }, [dirty, report]);
   useEffect(() => () => report?.(false), [report]);
   return {
     dirty,
-    /** After a save: what was sent is now the saved copy. Tells the page at once, before it moves on. */
+    /**
+     * After a save: what was sent (`current`, from the render that submitted) is now the saved
+     * copy, and the page hears at once, before it moves on. Anything typed while it saved still
+     * counts as unsaved. Returns false if this form has since been closed or replaced: the page
+     * now shows something else, so the caller must not move it on.
+     */
     markSaved: () => {
+      if (!mounted.current) return false;
       setSaved(current);
-      report?.(false);
+      report?.(latest.current !== current);
+      return true;
     },
   };
 }

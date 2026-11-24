@@ -196,7 +196,7 @@ export function TestimonialsPage({
       error: 'Could not delete',
     });
     if (!result) return false;
-    if (view.pane?.kind === 'edit' && ids.includes(view.pane.id)) view.setPane(null);
+    view.closeIfShowing((t) => t.kind === 'edit' && ids.includes(t.id));
     selection.clear();
     return true;
   }
@@ -520,11 +520,7 @@ export function TestimonialsPage({
                       <DeleteTestimonial
                         testimonial={dialogTestimonial}
                         disabled={pending}
-                        onDelete={() =>
-                          remove([dialogTestimonial.id]).then(
-                            (removed) => removed && view.dismissDialog()
-                          )
-                        }
+                        onDelete={() => void remove([dialogTestimonial.id])}
                       />
                     )
                   }
@@ -704,8 +700,8 @@ function TestimonialForm({
         error: 'Could not save the testimonial',
       }
     );
-    if (!result) return;
-    form.markSaved();
+    // A form closed or replaced while it saved leaves the page as it is now.
+    if (!result || !form.markSaved()) return;
     onSaved(result.id);
   }
 

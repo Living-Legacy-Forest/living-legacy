@@ -632,7 +632,7 @@ function InviteDialog({
                     setRole(item.value as Role);
                   }}
                   className={cn(
-                    'focus-visible:ring-ring rounded-lg border p-3 text-left transition-colors outline-none focus-visible:ring-2',
+                    'focus-visible:ring-ring flex flex-col justify-start rounded-lg border p-3 text-left transition-colors outline-none focus-visible:ring-2',
                     selected ? 'border-foreground bg-muted/50' : 'border-border hover:bg-muted/40'
                   )}
                 >

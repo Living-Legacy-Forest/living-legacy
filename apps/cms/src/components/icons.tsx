@@ -27,6 +27,7 @@ import { HelpCircleIcon as AnimatedHelpCircleIcon } from '@animateicons/react/hu
 import { Image01Icon as AnimatedImage01Icon } from '@animateicons/react/huge/image-0-1-icon';
 import { InformationCircleIcon as AnimatedInformationCircleIcon } from '@animateicons/react/huge/information-circle-icon';
 import { Key01Icon as AnimatedKey01Icon } from '@animateicons/react/huge/key-0-1-icon';
+import { FingerPrintIcon as AnimatedFingerPrintIcon } from '@animateicons/react/huge/finger-print-icon';
 import { KeyboardIcon as AnimatedKeyboardIcon } from '@animateicons/react/huge/keyboard-icon';
 import { Link01Icon as AnimatedLink01Icon } from '@animateicons/react/huge/link-0-1-icon';
 import { Loading02Icon as AnimatedLoading02Icon } from '@animateicons/react/huge/loading-0-2-icon';
@@ -364,6 +365,7 @@ export const LayoutDashboardIcon = animated(AnimatedLayoutDashboardIcon);
 export const PanelLeftIcon = animated(AnimatedSidebarLeftIcon);
 export const KeyboardIcon = animated(AnimatedKeyboardIcon);
 export const KeyIcon = animated(AnimatedKey01Icon);
+export const FingerprintIcon = animated(AnimatedFingerPrintIcon);
 export const IntegrationsIcon = animateUi(AnimatedUnplug);
 export const SystemIcon = animated(AnimatedServerIcon);
 export const LogOutIcon = animated(AnimatedLogout01Icon);

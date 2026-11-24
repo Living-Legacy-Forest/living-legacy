@@ -17,14 +17,11 @@ import { Spinner } from '@/components/ui/spinner';
 import { authClient } from '@/lib/auth-client';
 import { formatRelative } from '@/lib/format';
 import { notify } from '@/lib/notify';
-import { isPasskeyCancel, supportsPasskeys } from '@/lib/passkey-browser';
+import { PASSKEYS_CHANGED, passkeyResult, supportsPasskeys } from '@/lib/passkey-browser';
 import { defaultPasskeyName } from '@/lib/passkeys';
+import { useAction } from '@/lib/use-action';
 
 type Passkey = { id: string; name?: string | null; backedUp: boolean; createdAt?: Date | string };
-
-/** The passkey client reports failures as values; this turns one into a toast-ready message. */
-const messageOf = (error: { message?: string } | null | undefined) =>
-  error?.message || 'Please try again.';
 
 /**
  * This person's passkeys: add one for this device, rename or remove the others. Shown on the live
@@ -32,68 +29,88 @@ const messageOf = (error: { message?: string } | null | undefined) =>
  */
 export function PasskeysSection() {
   const [passkeys, setPasskeys] = useState<Passkey[] | null>(null);
-  const [busy, setBusy] = useState<string | null>(null);
+  const { run, pending } = useAction();
+  // Which control the running action belongs to ('add' or a passkey's id), for its spinner.
+  const [target, setTarget] = useState<string | null>(null);
+  const busy = pending ? target : null;
   const [renaming, setRenaming] = useState<{ id: string; name: string } | null>(null);
   const [toRemove, setToRemove] = useState<Passkey | null>(null);
   const [supported, setSupported] = useState(false);
   const renameInput = useRef<HTMLInputElement>(null);
   const renamingId = renaming?.id;
+  const latestLoad = useRef(0);
 
   useEffect(() => {
     if (renamingId) renameInput.current?.focus();
   }, [renamingId]);
 
+  /** Reloads the list. Only the newest reload is shown, so a slow older one cannot undo a change. */
   async function load() {
-    const { data, error } = await authClient.passkey.listUserPasskeys();
-    if (error) notify.error('Could not load your passkeys', messageOf(error));
-    setPasskeys((data as Passkey[] | null) ?? []);
+    const request = ++latestLoad.current;
+    try {
+      const data = passkeyResult(await authClient.passkey.listUserPasskeys());
+      if (request === latestLoad.current) setPasskeys((data as Passkey[] | null) ?? []);
+    } catch (error) {
+      if (request !== latestLoad.current) return;
+      notify.error('Could not load your passkeys', error);
+      setPasskeys((current) => current ?? []);
+    }
   }
 
   useEffect(() => {
     setSupported(supportsPasskeys());
     void load();
+    // A passkey added from the "Sign in faster" prompt shows here without a reload.
+    const reload = () => void load();
+    window.addEventListener(PASSKEYS_CHANGED, reload);
+    return () => window.removeEventListener(PASSKEYS_CHANGED, reload);
   }, []);
 
   async function add() {
-    setBusy('add');
-    const { error } = await authClient.passkey.addPasskey({
-      name: defaultPasskeyName(navigator.userAgent),
-    });
-    setBusy(null);
-    if (error) {
-      if (!isPasskeyCancel(error)) notify.error('Could not add a passkey', messageOf(error));
-      return;
-    }
-    notify.success({ title: 'Passkey added', description: 'Next time, sign in with it.' });
+    setTarget('add');
+    await run(
+      async () =>
+        passkeyResult(
+          await authClient.passkey.addPasskey({ name: defaultPasskeyName(navigator.userAgent) })
+        ),
+      {
+        error: 'Could not add a passkey',
+        success: (added) =>
+          added
+            ? { title: 'Passkey added', description: 'Next time, sign in with it.' }
+            : undefined,
+      }
+    );
     await load();
   }
 
   async function rename() {
     if (!renaming) return;
+    const { id } = renaming;
     const name = renaming.name.trim();
-    const current = passkeys?.find((p) => p.id === renaming.id);
+    const current = passkeys?.find((p) => p.id === id);
     setRenaming(null);
     if (!name || name === current?.name) return;
-    setBusy(renaming.id);
-    const { error } = await authClient.passkey.updatePasskey({ id: renaming.id, name });
-    setBusy(null);
-    if (error) notify.error('Could not rename the passkey', messageOf(error));
+    setTarget(id);
+    await run(async () => passkeyResult(await authClient.passkey.updatePasskey({ id, name })), {
+      error: 'Could not rename the passkey',
+    });
     await load();
   }
 
   async function remove(passkey: Passkey) {
     setToRemove(null);
-    setBusy(passkey.id);
-    const { error } = await authClient.passkey.deletePasskey({ id: passkey.id });
-    setBusy(null);
-    if (error) {
-      notify.error('Could not remove the passkey', messageOf(error));
-      return;
-    }
-    notify.success({
-      title: 'Passkey removed',
-      description: 'You can still sign in with an email link.',
-    });
+    setTarget(passkey.id);
+    await run(
+      async () => passkeyResult(await authClient.passkey.deletePasskey({ id: passkey.id })),
+      {
+        error: 'Could not remove the passkey',
+        success: {
+          title: 'Passkey removed',
+          description: 'You can still sign in with an email link.',
+        },
+      }
+    );
     await load();
   }
 

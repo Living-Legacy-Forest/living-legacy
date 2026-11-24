@@ -9,7 +9,7 @@ import {
   type Variants,
 } from 'motion/react';
 import logoMark from '@/assets/brand/logo-mark.webp';
-import { KeyIcon, MailCheck } from '@/components/icons';
+import { FingerprintIcon, MailCheck } from '@/components/icons';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -194,6 +194,8 @@ export function SignIn({
   // Known only in the browser, so the server render never shows a button that cannot work.
   const [passkeyReady, setPasskeyReady] = useState(false);
   const autofillStarted = useRef(false);
+  // A button attempt in progress; autofill must not start then, or it would cancel the attempt.
+  const buttonAttempt = useRef(false);
   const [resendIn, setResendIn] = useState(0);
   const [suggestionShown, setSuggestionShown] = useState(false);
   const emailRef = useRef<HTMLInputElement>(null);
@@ -213,23 +215,38 @@ export function SignIn({
   }, [passkeys]);
 
   async function signInWithPasskey(autoFill: boolean) {
-    if (!autoFill) setBusy('passkey');
-    const { error } = await authClient.signIn.passkey({ autoFill });
-    if (!error) {
-      window.location.assign('/');
-      return;
+    if (!autoFill) {
+      // One thing at a time: not while an email link or Google sign-in is under way.
+      if (busy || buttonAttempt.current) return;
+      buttonAttempt.current = true;
+      setBusy('passkey');
+    }
+    let failed: unknown = null;
+    try {
+      const { error } = await authClient.signIn.passkey({ autoFill });
+      if (!error) {
+        window.location.assign('/');
+        return;
+      }
+      failed = error;
+    } catch (error) {
+      // The network failed before the passkey prompt could even open.
+      failed = error;
     }
     // Autofill fails quietly (the button can say why), and also ends whenever the button starts
     // its own request, so it is offered again once the button's attempt is over.
     if (autoFill) return;
+    buttonAttempt.current = false;
     setBusy(null);
     void offerAutofill();
-    if (isPasskeyCancel(error)) return;
+    if (isPasskeyCancel(failed)) return;
     notify.error('Could not sign in with a passkey', 'Try again or use an email link.');
   }
 
   async function offerAutofill() {
-    if (await supportsPasskeyAutofill()) void signInWithPasskey(true);
+    if (!(await supportsPasskeyAutofill())) return;
+    // Checked after the wait: the button may have been pressed meanwhile.
+    if (!buttonAttempt.current) void signInWithPasskey(true);
   }
 
   // Saved passkeys appear in the email field's autofill, so signing in can be one tap. Started
@@ -335,7 +352,7 @@ export function SignIn({
                       <Button
                         type="button"
                         onClick={() => void signInWithPasskey(false)}
-                        disabled={busy === 'passkey'}
+                        disabled={busy !== null}
                         className="h-11 w-full gap-2.5 rounded-xl"
                       >
                         {busy === 'passkey' ? (
@@ -345,7 +362,7 @@ export function SignIn({
                           </>
                         ) : (
                           <>
-                            <KeyIcon aria-hidden />
+                            <FingerprintIcon aria-hidden />
                             Sign in with a passkey
                           </>
                         )}

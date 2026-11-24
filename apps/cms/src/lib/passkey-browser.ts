@@ -32,3 +32,20 @@ export async function supportsPasskeyAutofill(): Promise<boolean> {
     return false;
   }
 }
+
+/**
+ * Unwraps a passkey client call for `useAction()`: the data when it worked, null when the person
+ * closed the prompt (nothing to say), and a thrown Error carrying the reason when it failed, so the
+ * runner's toast and pending reset apply. Network failures already throw on their own.
+ */
+export function passkeyResult<T>(result: {
+  data: T | null;
+  error: { message?: string; code?: string; status?: number } | null;
+}): T | null {
+  if (!result.error) return result.data;
+  if (isPasskeyCancel(result.error)) return null;
+  throw new Error(result.error.message || 'Please try again.');
+}
+
+/** Sent on window when a passkey is added elsewhere on the page, so lists of them reload. */
+export const PASSKEYS_CHANGED = 'll:passkeys-changed';

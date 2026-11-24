@@ -22,6 +22,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { COLLAPSIBLE_CONTENT } from '@/lib/motion';
 import { cn } from '@/lib/utils';
 import { ContentScorePanel } from './content-score/content-score-panel';
+import { rememberChoice } from '@/lib/last-choice';
 import { useContentScore } from './content-score/use-content-score';
 import { MultiPicker, SinglePicker, UrlPicker, tagOptions } from './property-pickers';
 import { SeoFields, SocialFields } from './seo-fields';
@@ -62,7 +63,11 @@ export function PropertiesPanel({
               options={editor.authors}
               value={values.authorId}
               placeholder="No author"
-              onChange={(authorId) => update({ authorId })}
+              onChange={(authorId) => {
+                update({ authorId });
+                // Picked by hand: the next new post starts with the same author.
+                rememberChoice('post-author', authorId);
+              }}
             />
           </Property>
           <Property label="Categories" icon={FolderIcon}>

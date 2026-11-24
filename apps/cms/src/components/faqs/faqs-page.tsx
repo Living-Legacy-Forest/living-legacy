@@ -65,6 +65,7 @@ import {
 import { Textarea } from '@/components/ui/textarea';
 import { readStatus } from '@/lib/bulk-import';
 import { reportInvalid } from '@/lib/form-validation';
+import { readLastChoice, rememberChoice } from '@/lib/last-choice';
 import { deletedNotice, restoredNotice, statusNotice } from '@/lib/notify';
 import { RevealWords } from '@/components/dashboard/reveal-words';
 import { useAction } from '@/lib/use-action';
@@ -801,6 +802,8 @@ function TargetForm({
       faq={faq}
       groups={groups}
       defaultGroupId={target.kind === 'new' ? target.groupId : undefined}
+      // The toolbar's New FAQ has no group in mind; a group's own + button does, even Ungrouped.
+      recallGroup={target.kind === 'new' && !('groupId' in target)}
       onSaved={(id) => onSaved({ kind: 'faq', id })}
       onDirtyChange={onDirtyChange}
       footer={footer}
@@ -812,6 +815,7 @@ function FaqForm({
   faq,
   groups,
   defaultGroupId,
+  recallGroup,
   onSaved,
   onDirtyChange,
   footer,
@@ -819,13 +823,21 @@ function FaqForm({
   faq: Faq | null;
   groups: FaqGroup[];
   defaultGroupId: string | undefined;
+  /** Start a new FAQ in the group the last one was added to. */
+  recallGroup: boolean;
   onSaved: (id: string) => void;
   onDirtyChange: (dirty: boolean) => void;
   footer: (pending: boolean, saved: boolean) => React.ReactNode;
 }) {
   const [question, setQuestion] = useState(faq?.question ?? '');
   const [answer, setAnswer] = useState(faq?.answer ?? '');
-  const [groupId, setGroupId] = useState(faq?.groupId ?? defaultGroupId ?? UNGROUPED);
+  const [groupId, setGroupId] = useState(
+    () =>
+      faq?.groupId ??
+      defaultGroupId ??
+      (recallGroup ? readLastChoice('faq-group', (id) => groups.some((g) => g.id === id)) : null) ??
+      UNGROUPED
+  );
   const [tags, setTags] = useState<string[]>(faq?.tags ?? []);
   const [published, setPublished] = useState(faq?.status === 'published');
   const { run, pending } = useAction();
@@ -864,6 +876,8 @@ function FaqForm({
     );
     // A form closed, replaced or edited again while it saved stays as it is now.
     if (!result || !form.markSaved(faq === null)) return;
+    // Adding several to one group in a row is the common job: the next one starts there.
+    if (faq === null) rememberChoice('faq-group', groupId === UNGROUPED ? null : groupId);
     feedback.saved();
     onSaved(result.id);
   }

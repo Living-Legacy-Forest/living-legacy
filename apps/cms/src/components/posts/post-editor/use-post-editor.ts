@@ -10,6 +10,7 @@ import {
   worthOffering,
   writeDraft,
 } from '@/lib/draft-recovery';
+import { readLastChoice } from '@/lib/last-choice';
 import { type Notice, notify } from '@/lib/notify';
 import { formatDateTime, formatRelative } from '@/lib/format';
 import { useTimeZone } from '@/lib/use-time-zone';
@@ -102,6 +103,19 @@ export function usePostEditor({
     enableBeforeUnload: () => dirtyRef.current,
     withResolver: true,
   });
+
+  // A new post starts with the author the last one was given, once the page is up (the choice
+  // is in this browser, so the server never knows it). It is not a change to save: the post was
+  // never saved, and the author shows in the panel to be changed.
+  useEffect(() => {
+    if (data.post !== null || access === 'seo' || access === 'readonly') return;
+    const last = readLastChoice('post-author', (id) => data.authors.some((a) => a.id === id));
+    if (!last) return;
+    const withAuthor = (v: PostInput) => (v.authorId === null ? { ...v, authorId: last } : v);
+    setValues(withAuthor);
+    setSaved(withAuthor);
+    // Once, as a new post opens.
+  }, []);
 
   // A copy of unsaved changes is kept in this browser, so a crash or a closed tab loses nothing.
   // Opening the post offers it back once; until that is answered nothing is written over it.

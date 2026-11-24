@@ -42,14 +42,46 @@ export const notify = {
   },
 };
 
-/** The toast after deleting one or more things: what went, and that it is gone. */
-export function removedNotice(count: number, [one, many]: readonly [string, string]): Notice {
+/** "Team member deleted", "3 team members deleted": the word matches the Delete button. */
+function deletedTitle(count: number, [one, many]: readonly [string, string]) {
+  return count === 1
+    ? `${one.charAt(0).toUpperCase()}${one.slice(1)} deleted`
+    : `${count} ${many} deleted`;
+}
+
+/** The toast after deleting one or more things for good: what went, and that it is gone. */
+export function removedNotice(count: number, noun: readonly [string, string]): Notice {
+  return {
+    title: deletedTitle(count, noun),
+    description: `${count === 1 ? 'It is' : 'They are'} gone from the CMS and the website.`,
+  };
+}
+
+/**
+ * The toast after deleting from a list that keeps a trash: off the website at once, with Undo
+ * to bring it straight back. Undo, not a "Are you sure?" first: it catches the real mistakes
+ * without asking every time.
+ */
+export function deletedNotice(
+  count: number,
+  noun: readonly [string, string],
+  undo: () => unknown
+): Notice {
+  return {
+    title: deletedTitle(count, noun),
+    description: `${count === 1 ? 'It is' : 'They are'} off the website.`,
+    action: { label: 'Undo', onClick: () => void undo() },
+  };
+}
+
+/** The toast after Undo brings deleted things back. */
+export function restoredNotice(count: number, [one, many]: readonly [string, string]): Notice {
   return {
     title:
       count === 1
-        ? `${one.charAt(0).toUpperCase()}${one.slice(1)} removed`
-        : `${count} ${many} removed`,
-    description: `${count === 1 ? 'It is' : 'They are'} gone from the CMS and the website.`,
+        ? `${one.charAt(0).toUpperCase()}${one.slice(1)} restored`
+        : `${count} ${many} restored`,
+    description: `${count === 1 ? 'It is' : 'They are'} back as before.`,
   };
 }
 

@@ -16,11 +16,13 @@ import {
   PaneColumn,
   PaneEmpty,
   PaneFrame,
+  useFormDirty,
   useListPane,
 } from '@/components/list/list-page';
+import { SaveButton, useSaveFeedback } from '@/components/list/save-button';
+import { LeaveDialog } from '@/components/editor-page/leave-dialog';
 import { ListRow, copyMenuItem, moveMenuItems, publishMenuItem } from '@/components/list/list-row';
 import {
-  ConfirmBulkDelete,
   SearchInput,
   type Selection,
   SelectionBar,
@@ -36,17 +38,6 @@ import {
   PlusIcon,
   Trash2Icon,
 } from '@/components/icons';
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-  AlertDialogTrigger,
-} from '@/components/ui/alert-dialog';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import {
@@ -71,11 +62,10 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { Spinner } from '@/components/ui/spinner';
 import { Textarea } from '@/components/ui/textarea';
 import { readStatus } from '@/lib/bulk-import';
 import { reportInvalid } from '@/lib/form-validation';
-import { removedNotice, statusNotice } from '@/lib/notify';
+import { deletedNotice, restoredNotice, statusNotice } from '@/lib/notify';
 import { RevealWords } from '@/components/dashboard/reveal-words';
 import { useAction } from '@/lib/use-action';
 import { useRevealOnce } from '@/lib/use-reveal-once';
@@ -83,9 +73,9 @@ import {
   type Faq,
   type FaqData,
   type FaqGroup,
-  deleteFaq,
   deleteFaqGroup,
   deleteFaqs,
+  restoreFaqs,
   importFaqs,
   moveFaq,
   saveFaq,
@@ -174,7 +164,6 @@ export function FaqsPage({
   const [picked, setPicked] = useState<Record<string, string[]>>({});
   const [layout, setLayout] = useListView('faqs');
   const grid = layout === 'grid';
-  const [toDelete, setToDelete] = useState<string[] | null>(null);
   const selection = useSelection(data.faqs.map((f) => f.id));
   const { run, pending } = useAction();
   const revealing = useRevealOnce();
@@ -220,15 +209,37 @@ export function FaqsPage({
   const visibleIds = visibleSections.flatMap((s) => s.faqs.map((f) => f.id));
   const groupName = new Map(data.groups.map((g) => [g.id, g.name]));
 
+  // Straight away, with Undo on the toast, rather than asking first.
   async function remove(ids: string[]) {
     const result = await run(() => deleteFaqs({ data: { ids } }), {
-      success: removedNotice(ids.length, NOUN),
-      error: 'Could not remove',
+      success: deletedNotice(ids.length, NOUN, () => restore(ids)),
+      error: 'Could not delete',
     });
-    if (!result) return;
-    if (view.pane?.kind === 'faq' && ids.includes(view.pane.id)) view.closePane();
+    if (!result) return false;
+    if (view.pane?.kind === 'faq' && ids.includes(view.pane.id)) view.setPane(null);
     selection.clear();
+    return true;
   }
+
+  const restore = (ids: string[]) =>
+    run(() => restoreFaqs({ data: { ids } }), {
+      success: restoredNotice(ids.length, NOUN),
+      error: 'Could not bring it back',
+    });
+
+  const deleteButton = (faq: Faq, onRemoved: () => void, disabled = false) => (
+    <Button
+      type="button"
+      variant="ghost"
+      size="icon-sm"
+      disabled={disabled || pending}
+      aria-label="Delete FAQ"
+      className="text-muted-foreground hover:text-destructive"
+      onClick={() => remove([faq.id]).then((removed) => removed && onRemoved())}
+    >
+      <Trash2Icon aria-hidden className="size-4" />
+    </Button>
+  );
 
   const bulkForm = (onDone: () => void, actions: (submit: React.ReactNode) => React.ReactNode) => (
     <BulkCsvForm
@@ -268,8 +279,18 @@ export function FaqsPage({
       faq={faqFor(target)}
       groups={data.groups}
       onSaved={onSaved}
-      footer={(formPending) =>
-        actions(<SubmitButton pending={formPending} target={target} />, formPending)
+      onDirtyChange={view.reportDirty}
+      footer={(formPending, saved) =>
+        actions(
+          <SaveButton pending={formPending} saved={saved}>
+            {target.kind === 'group' && !target.id
+              ? 'Add group'
+              : target.kind === 'new'
+                ? 'Add FAQ'
+                : 'Save'}
+          </SaveButton>,
+          formPending
+        )
       }
     />
   );
@@ -406,7 +427,7 @@ export function FaqsPage({
                 title="All"
                 total={data.faqs.length}
                 pending={pending}
-                onDelete={canWrite ? () => setToDelete(selection.checkedIds) : undefined}
+                onDelete={canWrite ? () => void remove(selection.checkedIds) : undefined}
               />
             }
           >
@@ -434,7 +455,7 @@ export function FaqsPage({
                     searching={searching || sort !== 'order'}
                     grid={grid}
                     onSelect={(faq) => canWrite && view.open({ kind: 'faq', id: faq.id })}
-                    onDelete={(faq) => setToDelete([faq.id])}
+                    onDelete={(faq) => void remove([faq.id])}
                     onAdd={() => view.open({ kind: 'new', groupId: section.group?.id })}
                     onEditGroup={(id) => view.open({ kind: 'group', id })}
                   />
@@ -458,7 +479,7 @@ export function FaqsPage({
             ) : (
               <PaneFrame
                 title={paneFaq ? paneFaq.question : targetTitle(pane)}
-                actions={paneFaq && <DeleteFaq faq={paneFaq} onRemoved={view.closePane} />}
+                actions={paneFaq && deleteButton(paneFaq, () => view.setPane(null))}
               >
                 {targetForm(pane, view.setPane, (submit) => (
                   <PaneActions onCancel={view.closePane}>{submit}</PaneActions>
@@ -469,14 +490,7 @@ export function FaqsPage({
         </ListPageLayout>
       )}
 
-      <ConfirmBulkDelete
-        open={toDelete !== null}
-        onOpenChange={(open) => !open && setToDelete(null)}
-        count={toDelete?.length ?? 0}
-        noun={NOUN}
-        description="They are removed from the website. This cannot be undone."
-        onConfirm={() => toDelete && remove(toDelete)}
-      />
+      <LeaveDialog blocker={view.leave} what="FAQ" />
 
       {canWrite && (
         <ListDialog
@@ -499,19 +513,11 @@ export function FaqsPage({
           }
         >
           {view.dialog?.kind === 'bulk'
-            ? bulkForm(view.closeDialog, (submit) => <DialogActions>{submit}</DialogActions>)
+            ? bulkForm(view.dismissDialog, (submit) => <DialogActions>{submit}</DialogActions>)
             : view.dialog &&
-              targetForm(view.dialog, view.closeDialog, (submit, formPending) => (
+              targetForm(view.dialog, view.dismissDialog, (submit, formPending) => (
                 <DialogActions
-                  start={
-                    dialogFaq && (
-                      <DeleteFaq
-                        faq={dialogFaq}
-                        disabled={formPending}
-                        onRemoved={view.closeDialog}
-                      />
-                    )
-                  }
+                  start={dialogFaq && deleteButton(dialogFaq, view.dismissDialog, formPending)}
                 >
                   {submit}
                 </DialogActions>
@@ -618,10 +624,10 @@ function FaqSection({
                     onClick={() =>
                       run(() => deleteFaqGroup({ data: { id: group.id } }), {
                         success: {
-                          title: 'Group removed',
+                          title: 'Group deleted',
                           description: 'Its FAQs are kept, now without a group.',
                         },
-                        error: 'Could not remove the group',
+                        error: 'Could not delete the group',
                       })
                     }
                   >
@@ -766,103 +772,29 @@ function MoveButtons({
   );
 }
 
-function SubmitButton({ pending, target }: { pending: boolean; target: FormTarget }) {
-  return (
-    <Button type="submit" disabled={pending}>
-      {pending ? (
-        <>
-          <Spinner />
-          Saving…
-        </>
-      ) : target.kind === 'group' && !target.id ? (
-        'Add group'
-      ) : target.kind === 'new' ? (
-        'Add FAQ'
-      ) : (
-        'Save'
-      )}
-    </Button>
-  );
-}
-
-function DeleteFaq({
-  faq,
-  disabled,
-  onRemoved,
-}: {
-  faq: Faq;
-  disabled?: boolean;
-  onRemoved: () => void;
-}) {
-  const { run, pending } = useAction();
-
-  return (
-    <AlertDialog>
-      <AlertDialogTrigger
-        render={
-          <Button
-            type="button"
-            variant="ghost"
-            size="icon-sm"
-            disabled={disabled || pending}
-            aria-label="Remove FAQ"
-            className="text-muted-foreground hover:text-destructive"
-          />
-        }
-      >
-        <Trash2Icon aria-hidden className="size-4" />
-      </AlertDialogTrigger>
-      <AlertDialogContent>
-        <AlertDialogHeader>
-          <AlertDialogTitle>Remove this FAQ?</AlertDialogTitle>
-          <AlertDialogDescription>
-            “{faq.question}” is removed from the website. This cannot be undone.
-          </AlertDialogDescription>
-        </AlertDialogHeader>
-        <AlertDialogFooter>
-          <AlertDialogCancel>Cancel</AlertDialogCancel>
-          <AlertDialogAction
-            onClick={() =>
-              run(
-                async () => {
-                  await deleteFaq({ data: { id: faq.id } });
-                  return true;
-                },
-                {
-                  success: removedNotice(1, NOUN),
-                  error: 'Could not remove the FAQ',
-                }
-              ).then((removed) => removed && onRemoved())
-            }
-          >
-            Remove
-          </AlertDialogAction>
-        </AlertDialogFooter>
-      </AlertDialogContent>
-    </AlertDialog>
-  );
-}
-
 /** The FAQ or group form for a target, used inline (desktop pane) and in the mobile dialog. */
 function TargetForm({
   target,
   faq,
   groups,
   onSaved,
+  onDirtyChange,
   footer,
 }: {
   target: FormTarget;
   faq: Faq | null;
   groups: FaqGroup[];
   onSaved: (saved: Target | null) => void;
-  footer: (pending: boolean) => React.ReactNode;
+  onDirtyChange: (dirty: boolean) => void;
+  footer: (pending: boolean, saved: boolean) => React.ReactNode;
 }) {
   if (target.kind === 'group') {
     return (
       <GroupForm
         group={groups.find((g) => g.id === target.id) ?? null}
         onSaved={() => onSaved(null)}
-        footer={footer}
+        onDirtyChange={onDirtyChange}
+        footer={(pending) => footer(pending, false)}
       />
     );
   }
@@ -872,6 +804,7 @@ function TargetForm({
       groups={groups}
       defaultGroupId={target.kind === 'new' ? target.groupId : undefined}
       onSaved={(id) => onSaved({ kind: 'faq', id })}
+      onDirtyChange={onDirtyChange}
       footer={footer}
     />
   );
@@ -882,13 +815,15 @@ function FaqForm({
   groups,
   defaultGroupId,
   onSaved,
+  onDirtyChange,
   footer,
 }: {
   faq: Faq | null;
   groups: FaqGroup[];
   defaultGroupId: string | undefined;
   onSaved: (id: string) => void;
-  footer: (pending: boolean) => React.ReactNode;
+  onDirtyChange: (dirty: boolean) => void;
+  footer: (pending: boolean, saved: boolean) => React.ReactNode;
 }) {
   const [question, setQuestion] = useState(faq?.question ?? '');
   const [answer, setAnswer] = useState(faq?.answer ?? '');
@@ -896,6 +831,8 @@ function FaqForm({
   const [tags, setTags] = useState<string[]>(faq?.tags ?? []);
   const [published, setPublished] = useState(faq?.status === 'published');
   const { run, pending } = useAction();
+  const form = useFormDirty([question, answer, groupId, tags, published], onDirtyChange);
+  const feedback = useSaveFeedback({ editing: faq !== null, dirty: form.dirty });
 
   const groupItems = [
     { value: UNGROUPED, label: 'Ungrouped' },
@@ -918,16 +855,19 @@ function FaqForm({
           },
         }),
       {
-        success: {
+        success: feedback.toast({
           title: faq ? 'FAQ saved' : 'FAQ added',
           description: published
             ? 'It shows on the FAQ page.'
             : 'It is a draft, so the website does not show it.',
-        },
+        }),
         error: 'Could not save the FAQ',
       }
     );
-    if (result) onSaved(result.id);
+    if (!result) return;
+    form.markSaved();
+    feedback.saved();
+    onSaved(result.id);
   }
 
   return (
@@ -990,24 +930,28 @@ function FaqForm({
           onCheckedChange={setPublished}
         />
       </FormSection>
-      {footer(pending)}
+      {footer(pending, feedback.showSaved)}
     </form>
   );
 }
 
+/** A group's form. Saving closes it, so it always says so with a toast. */
 function GroupForm({
   group,
   onSaved,
+  onDirtyChange,
   footer,
 }: {
   group: FaqGroup | null;
   onSaved: () => void;
+  onDirtyChange: (dirty: boolean) => void;
   footer: (pending: boolean) => React.ReactNode;
 }) {
   const [name, setName] = useState(group?.name ?? '');
   const [navLabel, setNavLabel] = useState(group?.navLabel ?? '');
   const [slug, setSlug] = useState(group?.slug ?? '');
   const { run, pending } = useAction();
+  const form = useFormDirty([name, navLabel, slug], onDirtyChange);
 
   async function submit(e: React.FormEvent) {
     e.preventDefault();
@@ -1022,7 +966,9 @@ function GroupForm({
         error: 'Could not save the group',
       }
     );
-    if (result) onSaved();
+    if (!result) return;
+    form.markSaved();
+    onSaved();
   }
 
   return (

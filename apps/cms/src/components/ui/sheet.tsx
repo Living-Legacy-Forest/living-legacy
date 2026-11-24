@@ -2,23 +2,13 @@
 
 import * as React from 'react';
 import { Dialog as SheetPrimitive } from '@base-ui/react/dialog';
-import { playOpen } from '@/lib/sound';
 import { cn } from '@/lib/utils';
 
 import { Button } from '@/components/ui/button';
 import { XIcon } from '@/components/icons';
 
 function Sheet({ onOpenChange, ...props }: SheetPrimitive.Root.Props) {
-  return (
-    <SheetPrimitive.Root
-      data-slot="sheet"
-      onOpenChange={(open, details) => {
-        playOpen(open);
-        onOpenChange?.(open, details);
-      }}
-      {...props}
-    />
-  );
+  return <SheetPrimitive.Root data-slot="sheet" onOpenChange={onOpenChange} {...props} />;
 }
 
 function SheetTrigger({ ...props }: SheetPrimitive.Trigger.Props) {

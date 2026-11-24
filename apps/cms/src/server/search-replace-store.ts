@@ -245,6 +245,9 @@ export type AreaMatch = { area: AreaId; label: string; count: number; items: Ite
 
 type Values = Record<string, unknown>;
 
+/** A deleted row waiting in the trash: nobody can see it to check a replacement in it. */
+const inTrash = (row: Values) => row.deletedAt !== null && row.deletedAt !== undefined;
+
 /** The matches in one set of field values. */
 function fieldMatches(values: Values, fields: Field[], pattern: RegExp): FieldMatch[] {
   const out: FieldMatch[] = [];
@@ -318,6 +321,7 @@ export async function findMatches(db: Db, input: SearchReplaceInput): Promise<Ar
 
   for (const target of SIMPLE) {
     for (const row of (await db.select().from(target.table as never)) as Values[]) {
+      if (inTrash(row)) continue;
       const fields = fieldMatches(row, target.fields, pattern);
       if (fields.length) {
         items
@@ -464,6 +468,7 @@ export async function replaceMatches(
     if (!chosen.has(target.area)) continue;
     const table = target.table as SQLiteTable & { id: never };
     for (const row of (await db.select().from(table as never)) as Values[]) {
+      if (inTrash(row)) continue;
       const next = replaced(row, target.fields, pattern, input.replace);
       if (next.count === 0) continue;
       matches += next.count;

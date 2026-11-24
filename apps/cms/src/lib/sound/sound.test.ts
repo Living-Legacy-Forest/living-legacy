@@ -76,28 +76,11 @@ describe('play', () => {
     expect(started).toBe(0);
   });
 
-  it('lets a more specific sound replace the tap of the same press', async () => {
-    stubBrowser();
-    const { play, playOpen } = await load();
-    play('tap');
-    playOpen(true);
-    await settle();
-    expect(started).toBe(1);
-  });
-
-  it('plays a lone tap', async () => {
-    stubBrowser();
-    const { play } = await load();
-    play('tap');
-    await settle();
-    expect(started).toBe(1);
-  });
-
   it('drops the same sound asked for twice at once', async () => {
     stubBrowser();
     const { play } = await load();
-    play('select');
-    play('select');
+    play('success');
+    play('success');
     await settle();
     expect(started).toBe(1);
   });
@@ -127,85 +110,5 @@ describe('the preference', () => {
     const { setSoundEnabled } = await load();
     setSoundEnabled(false);
     expect(stored).toBe('off');
-  });
-});
-
-describe('listenForTaps', () => {
-  // The DOM is faked down to what the listener reads: a click's target, `closest` and `matches`.
-  class FakeElement {
-    constructor(
-      private readonly tappable: boolean,
-      private readonly quiet = false
-    ) {}
-    closest() {
-      return this.tappable ? this : null;
-    }
-    matches() {
-      return this.quiet;
-    }
-  }
-
-  function stubDocument() {
-    let handler: ((event: unknown) => void) | undefined;
-    vi.stubGlobal('Element', FakeElement);
-    vi.stubGlobal('document', {
-      addEventListener: (_type: string, fn: (event: unknown) => void) => (handler = fn),
-      removeEventListener: () => (handler = undefined),
-    });
-    return {
-      click: (target: unknown) => handler?.({ target }),
-      attached: () => handler !== undefined,
-    };
-  }
-
-  it('taps for a click on a button or link', async () => {
-    stubBrowser();
-    const page = stubDocument();
-    const { listenForTaps } = await load();
-    listenForTaps();
-    page.click(new FakeElement(true));
-    await settle();
-    expect(started).toBe(1);
-  });
-
-  it('stays silent for a click on anything else', async () => {
-    stubBrowser();
-    const page = stubDocument();
-    const { listenForTaps } = await load();
-    listenForTaps();
-    page.click(new FakeElement(false));
-    await settle();
-    expect(started).toBe(0);
-  });
-
-  it('leaves a disabled control, or one that opens something, to its own sound', async () => {
-    stubBrowser();
-    const page = stubDocument();
-    const { listenForTaps } = await load();
-    listenForTaps();
-    page.click(new FakeElement(true, true));
-    await settle();
-    expect(started).toBe(0);
-  });
-
-  it('lets the control replace the tap with its own sound', async () => {
-    stubBrowser();
-    const page = stubDocument();
-    const { listenForTaps, play } = await load();
-    listenForTaps();
-    page.click(new FakeElement(true));
-    play('on');
-    await settle();
-    expect(started).toBe(1);
-  });
-
-  it('stops listening when removed', async () => {
-    stubBrowser();
-    const page = stubDocument();
-    const { listenForTaps } = await load();
-    const stop = listenForTaps();
-    expect(page.attached()).toBe(true);
-    stop();
-    expect(page.attached()).toBe(false);
   });
 });

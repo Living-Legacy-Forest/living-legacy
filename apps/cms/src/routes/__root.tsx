@@ -13,7 +13,6 @@ import {
 } from '@/components/ui/empty';
 import { Toaster } from '@/components/ui/sonner';
 import { TooltipProvider } from '@/components/ui/tooltip';
-import { listenForTaps } from '@/lib/sound';
 import { useThemeSync } from '@/lib/use-theme-sync';
 import { type Theme, getRootSettings } from '@/server/settings';
 import styles from '../styles.css?url';
@@ -77,7 +76,6 @@ export const Route = createRootRoute({
 function RootDocument({ children }: { children: ReactNode }) {
   const { theme, cmsFont, cmsColour, appearance } = Route.useLoaderData();
   useThemeSync(theme);
-  useEffect(() => listenForTaps(), []);
   // iOS Safari shows :active (every control's pressed look) only on a page that listens for
   // touches; an empty, passive listener is enough, and costs nothing while scrolling.
   useEffect(() => {

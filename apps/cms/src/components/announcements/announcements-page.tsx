@@ -29,8 +29,11 @@ import {
   PaneColumn,
   PaneEmpty,
   PaneFrame,
+  useFormDirty,
   useListPane,
 } from '@/components/list/list-page';
+import { SaveButton, useSaveFeedback } from '@/components/list/save-button';
+import { LeaveDialog } from '@/components/editor-page/leave-dialog';
 import { ListRow, type RowMenuItem } from '@/components/list/list-row';
 import {
   ConfirmBulkDelete,
@@ -61,7 +64,6 @@ import {
 } from '@/components/ui/empty';
 import { Input } from '@/components/ui/input';
 import { Iphone } from '@/components/ui/iphone';
-import { Spinner } from '@/components/ui/spinner';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Textarea } from '@/components/ui/textarea';
 import { formatDateTime, zoneName } from '@/lib/format';
@@ -249,7 +251,7 @@ export function AnnouncementsPage({
       error: 'Could not remove',
     });
     if (!result) return;
-    if (view.pane?.kind === 'edit' && ids.includes(view.pane.id)) view.closePane();
+    if (view.pane?.kind === 'edit' && ids.includes(view.pane.id)) view.setPane(null);
     selection.clear();
   }
 
@@ -305,6 +307,7 @@ export function AnnouncementsPage({
       copyOf={target.kind === 'new' ? target.from : undefined}
       others={data}
       onSaved={onDone}
+      onDirtyChange={view.reportDirty}
       footer={footer}
     />
   );
@@ -535,6 +538,8 @@ export function AnnouncementsPage({
         onConfirm={() => toDelete && remove(toDelete)}
       />
 
+      <LeaveDialog blocker={view.leave} what="announcement" />
+
       {canWrite && (
         <ListDialog
           open={view.dialog !== null}
@@ -544,7 +549,7 @@ export function AnnouncementsPage({
           description="A banner across the top of the website."
         >
           {view.dialog &&
-            form(view.dialog, view.closeDialog, (submit) => (
+            form(view.dialog, view.dismissDialog, (submit) => (
               <DialogActions>{submit}</DialogActions>
             ))}
         </ListDialog>
@@ -635,6 +640,7 @@ function AnnouncementForm({
   copyOf,
   others,
   onSaved,
+  onDirtyChange,
   footer,
 }: {
   announcement: Announcement | null;
@@ -642,6 +648,7 @@ function AnnouncementForm({
   copyOf?: Announcement;
   others: Announcement[];
   onSaved: (id: string | null) => void;
+  onDirtyChange: (dirty: boolean) => void;
   footer: (submit: React.ReactNode) => React.ReactNode;
 }) {
   const source = announcement ?? copyOf;
@@ -664,6 +671,8 @@ function AnnouncementForm({
     ? ANNOUNCEMENT_MOBILE_LENGTH_WITH_BUTTON
     : ANNOUNCEMENT_MOBILE_LENGTH;
   const { run, pending } = useAction();
+  const form = useFormDirty(values, onDirtyChange);
+  const feedback = useSaveFeedback({ editing: announcement !== null, dirty: form.dirty });
   const patch = (next: Partial<typeof values>) => setValues((v) => ({ ...v, ...next }));
 
   const { startsAt, endsAt } = values;
@@ -696,14 +705,17 @@ function AnnouncementForm({
           data: { ...values, id: announcement?.id, hidePaths },
         }),
       {
-        success: {
+        success: feedback.toast({
           title: announcement ? 'Announcement saved' : 'Announcement created',
           description: 'It shows on the website while it is on and within its dates.',
-        },
+        }),
         error: 'Could not save the announcement',
       }
     );
-    if (result) onSaved(result.id);
+    if (!result) return;
+    form.markSaved();
+    feedback.saved();
+    onSaved(result.id);
   }
 
   return (
@@ -892,18 +904,9 @@ function AnnouncementForm({
       </Tabs>
 
       {footer(
-        <Button type="submit" disabled={pending}>
-          {pending ? (
-            <>
-              <Spinner />
-              Saving…
-            </>
-          ) : announcement ? (
-            'Save'
-          ) : (
-            'Create announcement'
-          )}
-        </Button>
+        <SaveButton pending={pending} saved={feedback.showSaved}>
+          {announcement ? 'Save' : 'Create announcement'}
+        </SaveButton>
       )}
     </form>
   );

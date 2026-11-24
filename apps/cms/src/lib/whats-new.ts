@@ -54,6 +54,29 @@ export type WhatsNewEntry = {
 
 export const whatsNew: WhatsNewEntry[] = [
   {
+    id: '2026-11-24-2',
+    kind: 'improved',
+    title: 'Safer editing',
+    items: [
+      {
+        title: 'Undo after deleting',
+        body: 'Deleting a team member, FAQ or testimonial now happens straight away, with Undo on the message that follows, instead of asking first. Deleted ones are kept out of sight for 30 days, then removed for good.',
+      },
+      {
+        title: 'Unsaved changes are kept',
+        body: 'On the team, FAQ, testimonial, redirect, announcement, media coverage, category and tag pages, opening another item or leaving the page while a form has unsaved changes now asks first.',
+      },
+      {
+        title: 'Saved, right on the button',
+        body: 'Saving changes in the side panel now shows Saved on the Save button itself, rather than a message in the corner. A field that needs fixing is also outlined in red.',
+      },
+      {
+        title: 'Quieter sounds',
+        body: 'The CMS now only makes a sound when something saves or goes wrong, not for every click, tick box, menu or dialog. To turn sounds off, open the account menu (your picture) and choose Sounds.',
+      },
+    ],
+  },
+  {
     id: '2026-11-24',
     kind: 'improved',
     title: 'The CMS on your phone',

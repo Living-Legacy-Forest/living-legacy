@@ -58,6 +58,7 @@ export async function jobsFor(
     const [
       { sweepOrphanedMedia },
       { purgeTrashedMedia },
+      { purgeTrashedContent },
       { purgeOldBookings },
       { pruneMissingPages },
       { rescorePosts },
@@ -66,6 +67,7 @@ export async function jobsFor(
     ] = await Promise.all([
       import('./media-sweep'),
       import('./media-trash'),
+      import('./content-trash'),
       import('./event-jobs'),
       import('./not-found'),
       import('./post-score'),
@@ -88,6 +90,7 @@ export async function jobsFor(
         // The rest went; these stay in the trash and are tried again tomorrow.
         if (failed) throw new Error(`${failed} files in the trash could not be deleted.`);
       },
+      'purge-content-trash': () => purgeTrashedContent(env.DB, now),
       'purge-old-bookings': () => purgeOldBookings(env.DB, now),
       'prune-missing-pages': () => pruneMissingPages(env.DB, now),
       'rescore-posts': () => rescorePosts(env.DB),

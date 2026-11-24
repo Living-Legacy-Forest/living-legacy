@@ -2,7 +2,6 @@
 
 import * as React from 'react';
 import { Dialog as DialogPrimitive } from '@base-ui/react/dialog';
-import { playOpen } from '@/lib/sound';
 import { cn } from '@/lib/utils';
 
 import { Button } from '@/components/ui/button';
@@ -26,16 +25,7 @@ function Dialog({
   const isPhone = useIsMobile();
   // Drawer is a Dialog with swipe gestures; its props only add to the Dialog's.
   if (isPhone) return <Drawer {...({ ...props, onOpenChange } as DrawerProps)} />;
-  return (
-    <DialogPrimitive.Root
-      data-slot="dialog"
-      onOpenChange={(open, details) => {
-        playOpen(open);
-        onOpenChange?.(open, details);
-      }}
-      {...props}
-    />
-  );
+  return <DialogPrimitive.Root data-slot="dialog" onOpenChange={onOpenChange} {...props} />;
 }
 
 function DialogTrigger({ ...props }: DialogPrimitive.Trigger.Props) {

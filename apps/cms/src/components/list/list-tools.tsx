@@ -266,14 +266,14 @@ export function ConfirmBulkDelete({
       <AlertDialogContent>
         <AlertDialogHeader>
           <AlertDialogTitle>
-            Remove {count} {count === 1 ? noun[0] : noun[1]}?
+            Delete {count} {count === 1 ? noun[0] : noun[1]}?
           </AlertDialogTitle>
           <AlertDialogDescription>{description}</AlertDialogDescription>
         </AlertDialogHeader>
         <AlertDialogFooter>
           <AlertDialogCancel>Cancel</AlertDialogCancel>
           <AlertDialogAction disabled={count === 0} onClick={onConfirm}>
-            Remove
+            Delete
           </AlertDialogAction>
         </AlertDialogFooter>
       </AlertDialogContent>

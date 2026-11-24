@@ -153,7 +153,11 @@ export const listPosts = createServerFn({ method: 'GET' })
             noShareImage: sql<boolean>`${posts.ogMediaId} is null and ${posts.featuredMediaId} is null`,
           })
           .from(posts)
-          .leftJoin(teamMembers, eq(teamMembers.id, posts.authorId))
+          // A deleted author waits in the trash with the post still pointing at them.
+          .leftJoin(
+            teamMembers,
+            and(eq(teamMembers.id, posts.authorId), isNull(teamMembers.deletedAt))
+          )
           .where(filters)
           .orderBy(
             ...(data.sort && data.sort !== 'default'

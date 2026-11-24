@@ -17,8 +17,11 @@ import {
   PaneColumn,
   PaneFrame,
   isDesktop,
+  useFormDirty,
   useListPane,
 } from '@/components/list/list-page';
+import { SaveButton } from '@/components/list/save-button';
+import { LeaveDialog } from '@/components/editor-page/leave-dialog';
 import {
   ListRow,
   copyMenuItem,
@@ -28,7 +31,6 @@ import {
 } from '@/components/list/list-row';
 import { usePaged } from '@/lib/use-paged';
 import {
-  ConfirmBulkDelete,
   SearchInput,
   SelectionBar,
   matchesSearch,
@@ -42,17 +44,6 @@ import {
   StarIcon,
   Trash2Icon,
 } from '@/components/icons';
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-  AlertDialogTrigger,
-} from '@/components/ui/alert-dialog';
 import { FormCell, FormSection, FormSwitchCell } from '@/components/form-cells';
 import { ImageField } from '@/components/media/image-field';
 import { PageActions } from '@/components/shell/page-actions';
@@ -67,20 +58,19 @@ import {
   EmptyTitle,
 } from '@/components/ui/empty';
 import { Input } from '@/components/ui/input';
-import { Spinner } from '@/components/ui/spinner';
 import { Textarea } from '@/components/ui/textarea';
 import { readStatus, readYesNo } from '@/lib/bulk-import';
 import { reportInvalid } from '@/lib/form-validation';
-import { featuredNotice, removedNotice, statusNotice } from '@/lib/notify';
+import { deletedNotice, featuredNotice, restoredNotice, statusNotice } from '@/lib/notify';
 import { RevealWords } from '@/components/dashboard/reveal-words';
 import { useAction } from '@/lib/use-action';
 import { useRevealOnce } from '@/lib/use-reveal-once';
 import {
   type Testimonial,
   type TestimonialsData,
-  deleteTestimonial,
   deleteTestimonials,
   importTestimonials,
+  restoreTestimonials,
   saveTestimonial,
   setTestimonialFlags,
 } from '@/server/testimonials';
@@ -145,7 +135,6 @@ export function TestimonialsPage({
   const [picked, setPicked] = useState<Record<string, string[]>>({});
   const [layout, setLayout] = useListView('testimonials');
   const grid = layout === 'grid';
-  const [toDelete, setToDelete] = useState<string[] | null>(null);
   const selection = useSelection(data.map((t) => t.id));
   const [sort, setSort] = useListSort(SORTS);
   const ordered = sortedBy(data, sort, {
@@ -191,26 +180,32 @@ export function TestimonialsPage({
   // Without anything being edited, the pane previews the selected testimonial.
   const selectedId = data.find((t) => t.id === search.selected)?.id ?? data[0]?.id ?? null;
   const selected = data.find((t) => t.id === selectedId) ?? null;
-  const select = (id: string) => {
-    view.closePane();
+  /** Previews a testimonial in the pane, in place of any form. */
+  const preview = (id: string) => {
+    view.setPane(null);
     navigate({ search: (prev) => ({ ...prev, selected: id }), replace: true });
   };
+  // A row click asks first if the form open in the pane has changes; a save has none left.
+  const select = (id: string) => view.guard(() => preview(id));
   const pane = canWrite ? view.pane : null;
-  const remove = (id: string) =>
-    run(() => deleteTestimonial({ data: { id } }), {
-      success: removedNotice(1, NOUN),
-      error: 'Could not remove the testimonial',
-    });
 
-  async function removeMany(ids: string[]) {
+  // Straight away, with Undo on the toast, rather than asking first.
+  async function remove(ids: string[]) {
     const result = await run(() => deleteTestimonials({ data: { ids } }), {
-      success: removedNotice(ids.length, NOUN),
-      error: 'Could not remove',
+      success: deletedNotice(ids.length, NOUN, () => restore(ids)),
+      error: 'Could not delete',
     });
-    if (!result) return;
-    if (view.pane?.kind === 'edit' && ids.includes(view.pane.id)) view.closePane();
+    if (!result) return false;
+    if (view.pane?.kind === 'edit' && ids.includes(view.pane.id)) view.setPane(null);
     selection.clear();
+    return true;
   }
+
+  const restore = (ids: string[]) =>
+    run(() => restoreTestimonials({ data: { ids } }), {
+      success: restoredNotice(ids.length, NOUN),
+      error: 'Could not bring it back',
+    });
 
   const bulkForm = (onDone: () => void, actions: (submit: React.ReactNode) => React.ReactNode) => (
     <BulkCsvForm
@@ -250,7 +245,10 @@ export function TestimonialsPage({
       key={target.kind === 'edit' ? target.id : target.kind}
       testimonial={testimonialFor(target)}
       onSaved={onSaved}
-      footer={(formPending, isNew) => actions(<SubmitButton pending={formPending} isNew={isNew} />)}
+      onDirtyChange={view.reportDirty}
+      footer={(formPending, isNew) =>
+        actions(<SaveButton pending={formPending}>{isNew ? 'Add testimonial' : 'Save'}</SaveButton>)
+      }
     />
   );
 
@@ -367,7 +365,7 @@ export function TestimonialsPage({
                 title="All"
                 total={data.length}
                 pending={pending}
-                onDelete={canWrite ? () => setToDelete(selection.checkedIds) : undefined}
+                onDelete={canWrite ? () => void remove(selection.checkedIds) : undefined}
               />
             }
           >
@@ -396,7 +394,7 @@ export function TestimonialsPage({
                     menu={canWrite ? testimonialMenu(t) : undefined}
                     remove={
                       canWrite
-                        ? { label: 'Delete', onAction: () => setToDelete([t.id]) }
+                        ? { label: 'Delete', onAction: () => void remove([t.id]) }
                         : undefined
                     }
                     onOpen={() =>
@@ -435,7 +433,7 @@ export function TestimonialsPage({
                     }
                     swipe={
                       canWrite
-                        ? { label: 'Delete', onAction: () => setToDelete([t.id]) }
+                        ? { label: 'Delete', onAction: () => void remove([t.id]) }
                         : undefined
                     }
                     previews={isDesktop()}
@@ -475,7 +473,7 @@ export function TestimonialsPage({
               <PaneFrame
                 title={paneTestimonial ? `Edit ${paneTestimonial.name}` : 'New testimonial'}
               >
-                {testimonialForm(pane, select, (submit) => (
+                {testimonialForm(pane, preview, (submit) => (
                   <PaneActions onCancel={view.closePane}>{submit}</PaneActions>
                 ))}
               </PaneFrame>
@@ -486,20 +484,13 @@ export function TestimonialsPage({
               canWrite={canWrite}
               pending={pending}
               onEdit={(t) => view.open({ kind: 'edit', id: t.id })}
-              onDelete={remove}
+              onDelete={(id) => void remove([id])}
             />
           )}
         </ListPageLayout>
       )}
 
-      <ConfirmBulkDelete
-        open={toDelete !== null}
-        onOpenChange={(open) => !open && setToDelete(null)}
-        count={toDelete?.length ?? 0}
-        noun={NOUN}
-        description="Their quotes are removed from the website. This cannot be undone."
-        onConfirm={() => toDelete && removeMany(toDelete)}
-      />
+      <LeaveDialog blocker={view.leave} what="testimonial" />
 
       {canWrite && (
         <ListDialog
@@ -520,16 +511,20 @@ export function TestimonialsPage({
           }
         >
           {view.dialog?.kind === 'bulk'
-            ? bulkForm(view.closeDialog, (submit) => <DialogActions>{submit}</DialogActions>)
+            ? bulkForm(view.dismissDialog, (submit) => <DialogActions>{submit}</DialogActions>)
             : view.dialog &&
-              testimonialForm(view.dialog, view.closeDialog, (submit) => (
+              testimonialForm(view.dialog, view.dismissDialog, (submit) => (
                 <DialogActions
                   start={
                     dialogTestimonial && (
                       <DeleteTestimonial
                         testimonial={dialogTestimonial}
                         disabled={pending}
-                        onConfirm={() => remove(dialogTestimonial.id).then(view.closeDialog)}
+                        onDelete={() =>
+                          remove([dialogTestimonial.id]).then(
+                            (removed) => removed && view.dismissDialog()
+                          )
+                        }
                       />
                     )
                   }
@@ -611,7 +606,7 @@ function PreviewPane({
               <DeleteTestimonial
                 testimonial={testimonial}
                 disabled={pending}
-                onConfirm={() => onDelete(testimonial.id)}
+                onDelete={() => onDelete(testimonial.id)}
               />
             </>
           )}
@@ -635,56 +630,22 @@ function PreviewPane({
 function DeleteTestimonial({
   testimonial,
   disabled,
-  onConfirm,
+  onDelete,
 }: {
   testimonial: Testimonial;
   disabled: boolean;
-  onConfirm: () => void;
+  onDelete: () => void;
 }) {
   return (
-    <AlertDialog>
-      <AlertDialogTrigger
-        render={
-          <Button
-            variant="ghost"
-            size="icon-sm"
-            disabled={disabled}
-            aria-label={`Remove testimonial from ${testimonial.name}`}
-            className="text-muted-foreground hover:text-destructive"
-          />
-        }
-      >
-        <Trash2Icon aria-hidden className="size-4" />
-      </AlertDialogTrigger>
-      <AlertDialogContent>
-        <AlertDialogHeader>
-          <AlertDialogTitle>Remove this testimonial?</AlertDialogTitle>
-          <AlertDialogDescription>
-            The quote from {testimonial.name} is removed from the website. This cannot be undone.
-          </AlertDialogDescription>
-        </AlertDialogHeader>
-        <AlertDialogFooter>
-          <AlertDialogCancel>Cancel</AlertDialogCancel>
-          <AlertDialogAction onClick={onConfirm}>Remove</AlertDialogAction>
-        </AlertDialogFooter>
-      </AlertDialogContent>
-    </AlertDialog>
-  );
-}
-
-function SubmitButton({ pending, isNew }: { pending: boolean; isNew: boolean }) {
-  return (
-    <Button type="submit" disabled={pending}>
-      {pending ? (
-        <>
-          <Spinner />
-          Saving…
-        </>
-      ) : isNew ? (
-        'Add testimonial'
-      ) : (
-        'Save'
-      )}
+    <Button
+      variant="ghost"
+      size="icon-sm"
+      disabled={disabled}
+      aria-label={`Delete testimonial from ${testimonial.name}`}
+      className="text-muted-foreground hover:text-destructive"
+      onClick={onDelete}
+    >
+      <Trash2Icon aria-hidden className="size-4" />
     </Button>
   );
 }
@@ -694,10 +655,12 @@ function SubmitButton({ pending, isNew }: { pending: boolean; isNew: boolean }) 
 function TestimonialForm({
   testimonial,
   onSaved,
+  onDirtyChange,
   footer,
 }: {
   testimonial: Testimonial | null;
   onSaved: (id: string) => void;
+  onDirtyChange: (dirty: boolean) => void;
   footer: (pending: boolean, isNew: boolean) => React.ReactNode;
 }) {
   const [quote, setQuote] = useState(testimonial?.quote ?? '');
@@ -708,6 +671,10 @@ function TestimonialForm({
   const [published, setPublished] = useState(testimonial?.status === 'published');
   const [photoMediaId, setPhotoMediaId] = useState(testimonial?.photoMediaId ?? null);
   const { run, pending } = useAction();
+  const form = useFormDirty(
+    [quote, name, relationship, location, featured, published, photoMediaId],
+    onDirtyChange
+  );
 
   async function submit(e: React.FormEvent) {
     e.preventDefault();
@@ -727,6 +694,7 @@ function TestimonialForm({
           },
         }),
       {
+        // A save goes back to the preview, so the form is gone: the toast says it worked.
         success: {
           title: testimonial ? 'Testimonial saved' : 'Testimonial added',
           description: published
@@ -736,7 +704,9 @@ function TestimonialForm({
         error: 'Could not save the testimonial',
       }
     );
-    if (result) onSaved(result.id);
+    if (!result) return;
+    form.markSaved();
+    onSaved(result.id);
   }
 
   return (

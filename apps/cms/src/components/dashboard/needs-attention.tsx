@@ -11,6 +11,7 @@ import {
   TriangleAlertIcon,
 } from '@/components/icons';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { useShareNavCount } from '@/lib/nav-counts-store';
 import {
   Empty,
   EmptyDescription,
@@ -130,6 +131,9 @@ function buildTasks(attention: Attention, timeZone: string): Task[] {
 
 /** The dashboard's to-do list: what needs someone, linked to where they fix it. */
 export function NeedsAttention({ attention }: { attention: Attention }) {
+  // The sidebar shows the same two figures; handing them over saves it asking.
+  useShareNavCount('/checks', attention.contentIssues);
+  useShareNavCount('/redirects', attention.missingPages?.total);
   const timeZone = useTimeZone();
   const tasks = buildTasks(attention, timeZone);
 

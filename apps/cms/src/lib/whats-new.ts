@@ -54,6 +54,31 @@ export type WhatsNewEntry = {
 
 export const whatsNew: WhatsNewEntry[] = [
   {
+    id: '2026-11-24-3',
+    kind: 'improved',
+    title: 'Fewer lost edits, fewer surprises',
+    items: [
+      {
+        title: 'Undo for more deletes',
+        body: 'Deleting a redirect, announcement, category, tag or media coverage item now happens straight away, with Undo on the message that follows. A redirect comes back with its counts, and a category or tag comes back on its posts.',
+        link: { label: 'Open Redirects', to: '/redirects' },
+      },
+      {
+        title: 'Your post is kept if the page closes',
+        body: 'While a post has unsaved changes, this browser keeps a copy. If the tab closes or the browser crashes, opening the post again offers to restore it. Signing out clears it.',
+      },
+      {
+        title: 'Numbers beside what needs a look',
+        body: 'The sidebar now shows how many content issues and missing pages are waiting, next to Content checks and Redirects.',
+        link: { label: 'Open Content checks', to: '/checks' },
+      },
+      {
+        title: 'Starts where you left off',
+        body: 'A new FAQ starts in the group you last added to, and a new post starts with the author you last picked. A quiet tip also names the keyboard shortcut for a row action after you use it from the menu a few times.',
+      },
+    ],
+  },
+  {
     id: '2026-11-24-2',
     kind: 'improved',
     title: 'Safer editing',

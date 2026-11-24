@@ -65,13 +65,40 @@ export function removedNotice(count: number, noun: readonly [string, string]): N
 export function deletedNotice(
   count: number,
   noun: readonly [string, string],
-  undo: () => unknown
+  undo: () => unknown,
+  /** What it means, in place of "off the website": "Posts keep their content." */
+  description = `${count === 1 ? 'It is' : 'They are'} off the website.`
 ): Notice {
   return {
     title: deletedTitle(count, noun),
-    description: `${count === 1 ? 'It is' : 'They are'} off the website.`,
+    description,
     action: { label: 'Undo', onClick: () => void undo() },
   };
+}
+
+/**
+ * Undo for rows that are put back one at a time, where one can fail: a redirect whose path has
+ * been used again since. Throws when none came back, so the page shows it as an error with the
+ * reason; otherwise resolves to what happened, for `restoredResultNotice`.
+ */
+export async function restoredOrThrow<R extends { restored: number }>(
+  restore: () => Promise<R>,
+  whySkipped: string
+): Promise<R> {
+  const result = await restore();
+  if (result.restored === 0) throw new Error(whySkipped);
+  return result;
+}
+
+/** After Undo: that all came back, or how many did and why the rest did not. */
+export function restoredResultNotice(
+  { restored, skipped }: { restored: number; skipped: number },
+  noun: readonly [string, string],
+  whySkipped: string
+): Notice {
+  return skipped === 0
+    ? restoredNotice(restored, noun)
+    : { title: `${restored} of ${restored + skipped} restored`, description: whySkipped };
 }
 
 /** The toast after Undo brings deleted things back. */

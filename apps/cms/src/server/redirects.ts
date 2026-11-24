@@ -1,12 +1,13 @@
 import { type RedirectRule, isWildcard, redirectStatusCodes, traceRedirect } from '@ll/content';
 import { redirectDailyHits, redirects } from '@ll/db/schema';
 import { createServerFn } from '@tanstack/react-start';
-import { desc, eq, gte, inArray } from 'drizzle-orm';
+import { desc, eq, gte } from 'drizzle-orm';
 import { z } from 'zod';
 import { type BulkResult, firstIssue } from '@/lib/bulk-import';
 import { getDb } from '@/lib/db';
 import { requirePermission } from '@/lib/session';
 import { logActivity } from './activity-log';
+import { restoreWholeRows, trashWholeRows } from './row-trash';
 
 /** The public website, checked so a redirect does not hide a page that still exists. */
 const SITE_URL = 'https://livinglegacy.com.au';
@@ -210,36 +211,45 @@ export const saveRedirect = createServerFn({ method: 'POST' })
     return { id: data.id, warnings };
   });
 
-export const deleteRedirect = createServerFn({ method: 'POST' })
+const redirectsSummary = (verb: string, rows: Record<string, unknown>[]) =>
+  rows.length === 1
+    ? `${verb} the redirect from ${String(rows[0]!.fromPath)}`
+    : `${verb} ${rows.length} redirects`;
+
+/** To the trash, so Undo can bring them back. */
+export const deleteRedirects = createServerFn({ method: 'POST' })
   .middleware([requirePermission('redirects:write')])
-  .validator(z.object({ id: z.string() }))
+  .validator(z.object({ ids: z.array(z.string()).min(1).max(200) }))
   .handler(async ({ data, context }) => {
     const db = getDb();
-    const row = await db.query.redirects.findFirst({ where: eq(redirects.id, data.id) });
-    await db.delete(redirects).where(eq(redirects.id, data.id));
-    if (row) {
+    const rows = await trashWholeRows(db, 'redirects', { ids: data.ids, userId: context.user.id });
+    if (rows.length > 0) {
       await logActivity(db, {
         actorId: context.user.id,
         actorName: context.user.name,
         action: 'redirect.deleted',
-        summary: `Deleted the redirect from ${row.fromPath}`,
+        summary: redirectsSummary('Deleted', rows),
       });
     }
+    return { removed: rows.length };
   });
 
-export const deleteRedirects = createServerFn({ method: 'POST' })
+/** Undo: the redirects come back with the same counts. Skips a path that is in use again. */
+export const restoreRedirects = createServerFn({ method: 'POST' })
   .middleware([requirePermission('redirects:write')])
-  .validator(z.object({ ids: z.array(z.string()).min(1).max(500) }))
+  .validator(z.object({ ids: z.array(z.string()).min(1).max(200) }))
   .handler(async ({ data, context }) => {
     const db = getDb();
-    await db.delete(redirects).where(inArray(redirects.id, data.ids));
-    await logActivity(db, {
-      actorId: context.user.id,
-      actorName: context.user.name,
-      action: 'redirect.deleted',
-      summary: `Deleted ${data.ids.length} ${data.ids.length === 1 ? 'redirect' : 'redirects'}`,
-    });
-    return { removed: data.ids.length };
+    const result = await restoreWholeRows(db, 'redirects', { ids: data.ids });
+    if (result.restored > 0) {
+      await logActivity(db, {
+        actorId: context.user.id,
+        actorName: context.user.name,
+        action: 'redirect.created',
+        summary: `Restored ${result.restored} ${result.restored === 1 ? 'redirect' : 'redirects'}`,
+      });
+    }
+    return result;
   });
 
 /** D1 caps bound parameters per statement, so new rows are inserted a few at a time. */

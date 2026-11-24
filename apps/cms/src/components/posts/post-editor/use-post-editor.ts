@@ -1,6 +1,16 @@
 import { type PostInput, emptyPostInput, pickPostSeo, publishErrors, slugify } from '@ll/content';
 import { useBlocker, useNavigate, useRouter } from '@tanstack/react-router';
 import { useEffect, useRef, useState } from 'react';
+import {
+  type Draft,
+  clearDraft,
+  draftKey,
+  isStale,
+  readDraft,
+  worthOffering,
+  writeDraft,
+} from '@/lib/draft-recovery';
+import { readLastChoice } from '@/lib/last-choice';
 import { type Notice, notify } from '@/lib/notify';
 import { formatDateTime, formatRelative } from '@/lib/format';
 import { useTimeZone } from '@/lib/use-time-zone';
@@ -94,6 +104,62 @@ export function usePostEditor({
     withResolver: true,
   });
 
+  // A new post starts with the author the last one was given, once the page is up (the choice
+  // is in this browser, so the server never knows it). It is not a change to save: the post was
+  // never saved, and the author shows in the panel to be changed.
+  useEffect(() => {
+    if (data.post !== null || access === 'seo' || access === 'readonly') return;
+    const last = readLastChoice('post-author', (id) => data.authors.some((a) => a.id === id));
+    if (!last) return;
+    const withAuthor = (v: PostInput) => (v.authorId === null ? { ...v, authorId: last } : v);
+    setValues(withAuthor);
+    setSaved(withAuthor);
+    // Once, as a new post opens.
+  }, []);
+
+  // A copy of unsaved changes is kept in this browser, so a crash or a closed tab loses nothing.
+  // Opening the post offers it back once; until that is answered nothing is written over it.
+  const contentLocked = access === 'seo' || access === 'readonly';
+  const draftId = draftKey(meta.id);
+  const [offer, setOffer] = useState<Draft<PostInput> | null>(null);
+  const [checkedForDraft, setCheckedForDraft] = useState(false);
+  useEffect(() => {
+    if (!contentLocked) {
+      const found = readDraft<PostInput>(draftId);
+      if (worthOffering(found, saved)) setOffer(found);
+      else if (found) clearDraft(draftId);
+    }
+    setCheckedForDraft(true);
+    // Once, as the post opens: `saved` and the key are what it opened with.
+  }, []);
+  const keeping = checkedForDraft && offer === null && !contentLocked;
+  const latestDraft = useRef({ keeping, draftId, values, base: meta.updatedAt ?? null });
+  latestDraft.current = { keeping, draftId, values, base: meta.updatedAt ?? null };
+  useEffect(() => {
+    if (!keeping) return;
+    // Back to what is saved (typed, then undone): nothing left to recover.
+    if (!dirty) return clearDraft(draftId);
+    const timer = setTimeout(
+      () => writeDraft(draftId, { values, baseUpdatedAt: meta.updatedAt ?? null }),
+      800
+    );
+    return () => clearTimeout(timer);
+  }, [keeping, dirty, values, draftId, meta.updatedAt]);
+  // The last few keystrokes before a tab hides or closes would still be waiting on that timer.
+  useEffect(() => {
+    const flush = () => {
+      const { keeping: on, draftId: key, values: current, base } = latestDraft.current;
+      if (on && dirtyRef.current) writeDraft(key, { values: current, baseUpdatedAt: base });
+    };
+    const onVisibility = () => document.visibilityState === 'hidden' && flush();
+    document.addEventListener('visibilitychange', onVisibility);
+    window.addEventListener('pagehide', flush);
+    return () => {
+      document.removeEventListener('visibilitychange', onVisibility);
+      window.removeEventListener('pagehide', flush);
+    };
+  }, []);
+
   const update = (patch: Partial<PostInput>) => setValues((v) => ({ ...v, ...patch }));
   const setTitle = (title: string) =>
     update(slugTouched ? { title } : { title, slug: slugify(title) });
@@ -110,6 +176,7 @@ export function usePostEditor({
   /** The server's copy is now the saved one. It may have changed the permalink to keep it unique. */
   function markSaved(slug: string, updatedAt: number) {
     clearPostPreviews();
+    clearDraft(draftId);
     const next = { ...values, slug };
     setValues(next);
     setSaved(next);
@@ -271,7 +338,12 @@ export function usePostEditor({
     act(
       (id) => discardChanges({ data: { id } }),
       { title: 'Changes discarded', description: 'The post is back to its live version.' },
-      'Could not discard the changes'
+      'Could not discard the changes',
+      async () => {
+        // The reload that follows would otherwise offer the typing that was just thrown away.
+        clearDraft(draftId);
+        await onReload();
+      }
     );
   const unpublish = () =>
     act(
@@ -478,7 +550,7 @@ export function usePostEditor({
     working: busy !== null,
     isLive: meta.status === 'published',
     /** SEO and read-only access can't change the content. */
-    contentLocked: access === 'seo' || access === 'readonly',
+    contentLocked,
     importingDocx,
     saveState: dirty
       ? 'Unsaved changes'
@@ -486,6 +558,27 @@ export function usePostEditor({
         ? `Saved ${formatRelative(lastSavedAt)}`
         : 'Not saved yet',
     blocker,
+    /** Leaving on purpose, with the unsaved changes: the copy kept for recovery goes too. */
+    leave: () => {
+      clearDraft(draftId);
+      blocker.proceed?.();
+    },
+    /** Unsaved changes from an earlier visit, if the browser kept any, until answered. */
+    recovery: offer && {
+      savedAt: offer.savedAt,
+      /** The post was saved by someone since, so restoring would replace their changes. */
+      stale: isStale(offer, meta.updatedAt),
+      restore: () => {
+        setValues(offer.values);
+        setSlugTouched(true);
+        setBodyKey((k) => k + 1);
+        setOffer(null);
+      },
+      dismiss: () => {
+        clearDraft(draftId);
+        setOffer(null);
+      },
+    },
     update,
     setTitle,
     setSlug,

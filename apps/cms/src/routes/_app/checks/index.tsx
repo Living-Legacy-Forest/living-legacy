@@ -1,6 +1,8 @@
 import { can } from '@ll/content';
 import { createFileRoute, redirect } from '@tanstack/react-router';
 import { ContentChecksPage } from '@/components/checks/content-checks-page';
+import { countContentIssues } from '@/lib/nav-counts';
+import { useShareNavCount } from '@/lib/nav-counts-store';
 import { getContentChecks } from '@/server/content-checks';
 
 export const Route = createFileRoute('/_app/checks/')({
@@ -16,6 +18,8 @@ export const Route = createFileRoute('/_app/checks/')({
 function ChecksRoute() {
   const data = Route.useLoaderData();
   const { user } = Route.useRouteContext();
+  // The sidebar's number for this page: the checks are already here, so it costs no request.
+  useShareNavCount('/checks', countContentIssues(data));
   return (
     <ContentChecksPage
       data={data}

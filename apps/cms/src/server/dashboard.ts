@@ -8,6 +8,7 @@ import { growthOf } from '@/lib/media-growth';
 import { MEDIA_ALLOWANCE_BYTES } from '@/lib/storage-meter';
 import { readSiteSettings } from '@/lib/site-settings';
 import { authMiddleware } from '@/lib/session';
+import { countContentIssues } from '@/lib/nav-counts';
 import { loadContentChecks } from './content-checks';
 import { loadMissingPages } from './not-found';
 import { loadScoreSummary } from './post-score';
@@ -271,16 +272,7 @@ async function loadAttention(
         health: health.filter((check) => check.status === 'problem').length,
       },
     scheduledThisWeek: scheduled && Number(scheduled[0]?.total ?? 0),
-    contentIssues:
-      checks &&
-      checks.noDescription.total +
-        checks.noImage.total +
-        checks.noAlt.total +
-        checks.events.total +
-        checks.duplicates.total +
-        checks.redirected.total +
-        checks.brand.total +
-        checks.links.total,
+    contentIssues: checks && countContentIssues(checks),
     missingPages: missing && {
       total: missing.length,
       busiest: missing[0] ? { path: missing[0].path, hits: missing[0].hits } : null,

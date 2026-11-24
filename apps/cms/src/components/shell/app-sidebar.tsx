@@ -3,6 +3,7 @@ import { ExternalLink, GiftIcon, PanelLeftIcon } from '@/components/icons';
 import { Sidebar, SidebarMenu, SidebarMenuItem } from '@/components/ui/sidebar';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import { findNavItem, footerLinks, sectionFor, sidebarSections } from '@/lib/nav';
+import { type NavCountPath, sectionHasCount } from '@/lib/nav-counts';
 import type { SessionUser } from '@/lib/session';
 import type { SidebarState } from '@/lib/sidebar-state';
 import { SECTION_MOTION } from '@/lib/motion';
@@ -10,8 +11,11 @@ import { cn } from '@/lib/utils';
 import { AppearanceRow } from './appearance-row';
 import { CommandMenu } from './command-menu';
 import { Logo } from './logo';
+import { NavBadge, SectionDot } from './nav-badge';
 import { ShortcutsRow, ThemeRow } from './rail-tools';
 import { SidebarRow } from './sidebar-row';
+import { useNavCounts } from '@/lib/nav-counts-store';
+import { useLoadNavCounts } from './load-nav-counts';
 import { SidebarUpdateCard, useUpdates } from './updates';
 
 // Two columns, as Better Stack lays out its sidebar: a rail of sections, and the pages of the
@@ -69,6 +73,8 @@ export function AppSidebar({
 }) {
   const { pathname } = useLocation();
   const { unseen } = useUpdates();
+  useLoadNavCounts(user.id);
+  const counts = useNavCounts();
   const sections = sidebarSections(user);
   const current = sectionFor(pathname, sections);
   // The pages are flattened copies, so the current one is matched by its address.
@@ -129,6 +135,10 @@ export function AppSidebar({
                   wide={railWide}
                   active={section === current}
                   render={<Link to={section.pages[0]!.to} />}
+                  // Its pages are out of sight unless it is the open section.
+                  trailing={
+                    section !== current && sectionHasCount(section.pages, counts) && <SectionDot />
+                  }
                 />
               </SidebarMenuItem>
             ))}
@@ -201,6 +211,13 @@ export function AppSidebar({
                     wide={pagesWide}
                     active={page.to === currentTo}
                     render={<Link to={page.to} />}
+                    trailing={
+                      <NavBadge
+                        to={page.to as NavCountPath}
+                        count={counts[page.to as NavCountPath]}
+                        wide={pagesWide}
+                      />
+                    }
                   />
                 </SidebarMenuItem>
               ))}

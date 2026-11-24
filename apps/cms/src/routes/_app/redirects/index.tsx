@@ -1,6 +1,7 @@
 import { can } from '@ll/content';
 import { createFileRoute, redirect, useNavigate } from '@tanstack/react-router';
 import { z } from 'zod';
+import { useShareNavCount } from '@/lib/nav-counts-store';
 import { MissingPagesPage } from '@/components/missing-pages/missing-pages-page';
 import { RedirectCoveragePage } from '@/components/redirects/redirect-coverage';
 import { RedirectsPage } from '@/components/redirects/redirects-page';
@@ -30,6 +31,8 @@ export const Route = createFileRoute('/_app/redirects/')({
 function RedirectsRoute() {
   const { redirects, missing } = Route.useLoaderData();
   const { from, view } = Route.useSearch();
+  // The sidebar's number for this page: the list is already here, so it costs no request.
+  useShareNavCount('/redirects', missing.length);
   const navigate = useNavigate({ from: '/redirects/' });
 
   const switcher = (

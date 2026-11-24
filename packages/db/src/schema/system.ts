@@ -1,4 +1,11 @@
-import { index, integer, primaryKey, sqliteTable, text } from 'drizzle-orm/sqlite-core';
+import {
+  index,
+  integer,
+  primaryKey,
+  sqliteTable,
+  text,
+  uniqueIndex,
+} from 'drizzle-orm/sqlite-core';
 import { activityActions, apiKeyScopes, entityTypes } from '../enums';
 import { user } from './auth';
 import { id, timestamps } from './columns';
@@ -116,6 +123,28 @@ export const activityLog = sqliteTable(
       .$defaultFn(() => new Date()),
   },
   (t) => [index('activity_log_created_at').on(t.createdAt)]
+);
+
+// Rows deleted from tables that have no `deleted_at` of their own (redirects, announcements,
+// categories and tags), kept whole so the delete toast's Undo can put them back. The daily job
+// clears entries after 30 days. `payload` is the row as JSON, with any rows hanging off it (the
+// posts a category was on); apps/cms/src/server/row-trash.ts reads and writes it.
+export const trashedRows = sqliteTable(
+  'trashed_rows',
+  {
+    id: id(),
+    area: text('area').notNull(),
+    rowId: text('row_id').notNull(),
+    payload: text('payload', { mode: 'json' }).$type<Record<string, unknown>>().notNull(),
+    deletedBy: text('deleted_by').references(() => user.id, { onDelete: 'set null' }),
+    deletedAt: integer('deleted_at', { mode: 'timestamp_ms' })
+      .notNull()
+      .$defaultFn(() => new Date()),
+  },
+  (t) => [
+    uniqueIndex('trashed_rows_row').on(t.area, t.rowId),
+    index('trashed_rows_deleted_at').on(t.deletedAt),
+  ]
 );
 
 // One row per job per run of the CMS's cron triggers (apps/cms/src/server.ts),

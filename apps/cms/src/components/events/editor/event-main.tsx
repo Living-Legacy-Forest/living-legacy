@@ -35,6 +35,7 @@ export function EventMain({ editor, event }: { editor: EventEditorState; event: 
       <ImageField
         id="ev-cover"
         label="Cover photo"
+        headerClassName="max-md:px-4"
         mediaId={values.heroMediaId}
         onChange={(heroMediaId) => patch({ heroMediaId })}
       />

@@ -65,7 +65,7 @@ export function LocationToolbar({
         {item ? (item.status === 'published' ? 'Published' : 'Draft') : 'New'}
       </Badge>
       <UnsavedLabel show={editor.dirty} gap={12} className="text-muted-foreground text-xs" />
-      <div className="ml-auto flex items-center gap-1 max-md:w-full max-md:flex-wrap max-md:justify-end">
+      <div className="ml-auto flex items-center gap-1 max-md:flex-wrap max-md:justify-end">
         <Button
           type="button"
           variant="ghost"

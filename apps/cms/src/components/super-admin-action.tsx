@@ -43,7 +43,7 @@ export function SuperAdminAction({
             variant="outline"
             size="sm"
             disabled={pending}
-            className={`touch:min-h-11 text-destructive ${className ?? ''}`}
+            className={`text-destructive ${className ?? ''}`}
           />
         }
       >

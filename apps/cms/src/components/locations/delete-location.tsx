@@ -61,7 +61,7 @@ export function DeleteLocation({
         size="icon-sm"
         disabled={disabled}
         aria-label={`Remove ${item.name}`}
-        className="text-muted-foreground hover:text-destructive touch:size-11"
+        className="text-muted-foreground hover:text-destructive"
         onClick={() => setOpen(true)}
       >
         <Trash2Icon aria-hidden className="size-4" />

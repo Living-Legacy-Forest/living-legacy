@@ -14,10 +14,11 @@ import type { LocationEditorState } from './use-location-editor';
 export function LocationMain({ editor }: { editor: LocationEditorState }) {
   const { values, patch } = editor;
   return (
-    <div className="mx-auto w-full max-w-3xl space-y-8 [--form-gap:1.25rem] max-md:space-y-7">
+    <div className="mx-auto w-full max-w-3xl space-y-8 [--form-gap:1.25rem] max-md:space-y-7 max-md:px-4">
       <ImageField
         id="loc-hero"
         label="Hero photo"
+        headerClassName="max-md:px-4"
         description="A genuine photo of this location, never a generic one."
         mediaId={values.heroMediaId}
         onChange={(heroMediaId) => patch({ heroMediaId })}

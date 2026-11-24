@@ -266,7 +266,7 @@ export function EventGuests({ event }: { event: EventRow }) {
                           variant="ghost"
                           size="icon-sm"
                           aria-label={`More for ${fullName(g)}`}
-                          className="touch:size-11 shrink-0"
+                          className="shrink-0"
                         />
                       }
                     >
@@ -335,7 +335,7 @@ export function EventGuests({ event }: { event: EventRow }) {
                               variant="ghost"
                               size="icon-sm"
                               aria-label={`More for ${fullName(g)}`}
-                              className="touch:size-11 shrink-0"
+                              className="shrink-0"
                             />
                           }
                         >

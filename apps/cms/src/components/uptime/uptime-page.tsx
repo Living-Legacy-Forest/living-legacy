@@ -232,7 +232,7 @@ export function UptimePage({ data }: { data: UptimeData }) {
           href="https://uptime.betterstack.com/"
           target="_blank"
           rel="noreferrer"
-          className={cn(buttonVariants({ variant: 'outline', size: 'sm' }), 'touch:min-h-11')}
+          className={buttonVariants({ variant: 'outline', size: 'sm' })}
         >
           Open monitoring
           <ExternalLinkIcon aria-hidden />

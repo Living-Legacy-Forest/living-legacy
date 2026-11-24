@@ -219,7 +219,7 @@ function EntryRow({
                       <Link
                         to={item.link.to}
                         hash={item.link.hash}
-                        className="text-muted-foreground hover:text-foreground focus-visible:ring-ring/50 touch:min-h-11 inline-flex items-center gap-1 rounded-sm pt-0.5 text-xs transition-colors outline-none focus-visible:ring-2"
+                        className="text-muted-foreground hover:text-foreground focus-visible:ring-ring/50 touch:after:absolute touch:after:-inset-y-2.5 touch:after:inset-x-0 relative inline-flex items-center gap-1 rounded-sm pt-0.5 text-xs transition-colors outline-none focus-visible:ring-2"
                       >
                         {item.link.label}
                         <ArrowRight aria-hidden className="size-3" />
@@ -417,7 +417,7 @@ export function WhatsNewPage() {
                 type="button"
                 aria-pressed={on}
                 onClick={() => toggleFilter(kind.id)}
-                className="text-ui hover:bg-muted aria-pressed:bg-muted focus-visible:ring-ring/50 touch:min-h-11 inline-flex h-8 items-center gap-2 rounded-full border px-3 transition-colors outline-none focus-visible:ring-2"
+                className="text-ui hover:bg-muted aria-pressed:bg-muted focus-visible:ring-ring/50 touch:after:absolute touch:after:inset-x-0 touch:after:-inset-y-1.5 relative inline-flex h-8 items-center gap-2 rounded-full border px-3 transition-colors outline-none focus-visible:ring-2"
               >
                 <motion.span
                   aria-hidden
@@ -452,7 +452,7 @@ export function WhatsNewPage() {
                   setPage(1);
                   setFilters([]);
                 }}
-                className="text-muted-foreground hover:text-foreground text-ui touch:min-h-11 rounded-sm px-1"
+                className="text-muted-foreground hover:text-foreground text-ui touch:after:absolute touch:after:-inset-y-2.5 touch:after:inset-x-0 relative rounded-sm px-1"
                 initial={{ opacity: 0, x: -6, filter: blurSubtle }}
                 animate={{ opacity: 1, x: 0, filter: none }}
                 exit={{ opacity: 0, x: -4, filter: blurSubtle, transition: { duration: 0.1 } }}
@@ -529,7 +529,7 @@ export function WhatsNewPage() {
                 aria-label={`Jump to ${group.name} ${group.year}`}
                 aria-current={selected ? 'true' : undefined}
                 onClick={() => jumpTo(group.key)}
-                className="text-ui touch:min-h-11 relative rounded-full px-3 py-1 transition-colors aria-[current]:font-medium"
+                className="text-ui touch:after:absolute touch:after:-inset-y-2 touch:after:inset-x-0 relative rounded-full px-3 py-1 transition-colors aria-[current]:font-medium"
               >
                 {selected && (
                   <motion.span

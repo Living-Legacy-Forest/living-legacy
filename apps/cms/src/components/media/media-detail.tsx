@@ -281,7 +281,7 @@ export function MediaDetail({ detail, canDelete }: { detail: Detail; canDelete: 
       type="button"
       variant="ghost"
       size="icon-sm"
-      className="touch:size-11"
+
       aria-label={label}
       title={`${label} (${label === 'Previous file' ? '←' : '→'})`}
       disabled={!id}
@@ -383,14 +383,7 @@ export function MediaDetail({ detail, canDelete }: { detail: Detail; canDelete: 
           <div className="ml-auto flex items-center gap-1">
             <DropdownMenu>
               <DropdownMenuTrigger
-                render={
-                  <Button
-                    type="button"
-                    variant="ghost"
-                    size="sm"
-                    className="touch:min-h-11 touch:min-w-11"
-                  />
-                }
+                render={<Button type="button" variant="ghost" size="sm" />}
                 aria-label="Copy"
               >
                 <CopyIcon aria-hidden data-icon="inline-start" className="touch:size-5 size-4" />
@@ -412,7 +405,7 @@ export function MediaDetail({ detail, canDelete }: { detail: Detail; canDelete: 
               type="button"
               variant="ghost"
               size="sm"
-              className="touch:min-h-11 touch:min-w-11"
+
               onClick={() => download(item)}
             >
               <DownloadIcon aria-hidden data-icon="inline-start" className="touch:size-5 size-4" />
@@ -423,7 +416,7 @@ export function MediaDetail({ detail, canDelete }: { detail: Detail; canDelete: 
                 type="button"
                 variant="ghost"
                 size="sm"
-                className="text-muted-foreground hover:text-destructive touch:min-h-11 touch:min-w-11"
+                className="text-muted-foreground hover:text-destructive"
                 disabled={pending}
                 onClick={() => void trash()}
               >
@@ -431,7 +424,7 @@ export function MediaDetail({ detail, canDelete }: { detail: Detail; canDelete: 
                 <span className="max-sm:sr-only">Move to trash</span>
               </Button>
             )}
-            <Button type="submit" size="sm" className="touch:min-h-11" disabled={pending || !dirty}>
+            <Button type="submit" size="sm" disabled={pending || !dirty}>
               {pending ? (
                 <Spinner data-icon="inline-start" />
               ) : (

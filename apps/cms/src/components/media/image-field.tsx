@@ -108,11 +108,14 @@ export function ImageField({
   shape = 'wide',
   aspect = shape === 'square' ? 1 : undefined,
   hideLabel = false,
+  headerClassName,
 }: {
   id: string;
   label: string;
   /** When a section heading above already names the field. */
   hideLabel?: boolean;
+  /** Extra classes for the label and description, to inset them from a full-width page. */
+  headerClassName?: string;
   description?: string;
   mediaId: string | null;
   onChange: (mediaId: string | null) => void;
@@ -131,7 +134,7 @@ export function ImageField({
 
   return (
     <div className="space-y-2">
-      <div className="space-y-0.5">
+      <div className={cn('space-y-0.5', headerClassName)}>
         <Label
           htmlFor={mediaId ? `${id}-alt` : `${id}-choose`}
           className={cn(hideLabel && 'sr-only')}
@@ -165,20 +168,14 @@ export function ImageField({
           <div className="min-w-0 flex-1 space-y-2">
             {item && <AltText key={item.id} id={`${id}-alt`} item={item} onSaved={update} />}
             <div className="flex gap-2">
-              <Button
-                type="button"
-                variant="outline"
-                size="sm"
-                className="touch:min-h-11"
-                onClick={() => setPicking(true)}
-              >
+              <Button type="button" variant="outline" size="sm" onClick={() => setPicking(true)}>
                 Change
               </Button>
               <Button
                 type="button"
                 variant="ghost"
                 size="sm"
-                className="text-muted-foreground touch:min-h-11"
+                className="text-muted-foreground"
                 onClick={() => onChange(null)}
               >
                 Remove
@@ -194,13 +191,7 @@ export function ImageField({
           // The crop step shows the shape, so the box keeps to the title and buttons.
           description={null}
         >
-          <Button
-            type="button"
-            size="sm"
-            variant="outline"
-            className="touch:min-h-11"
-            onClick={() => setPicking(true)}
-          >
+          <Button type="button" size="sm" variant="outline" onClick={() => setPicking(true)}>
             From Media
           </Button>
         </ImageDropZone>

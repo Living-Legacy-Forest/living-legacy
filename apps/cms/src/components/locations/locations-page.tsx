@@ -207,7 +207,7 @@ export function LocationsPage({
   }
 
   const addButton = (
-    <Button size="sm" className="touch:min-h-11" onClick={openNew}>
+    <Button size="sm" onClick={openNew}>
       <PlusIcon aria-hidden data-icon="inline-start" />
       Add location
     </Button>

@@ -104,7 +104,7 @@ export function ImageGalleryField({
                       type="button"
                       variant="ghost"
                       size="icon-sm"
-                      className="touch:size-11"
+
                       aria-label={`Move photo ${index + 1} up`}
                       disabled={index === 0}
                       onClick={() => move(index, index - 1)}
@@ -115,7 +115,7 @@ export function ImageGalleryField({
                       type="button"
                       variant="ghost"
                       size="icon-sm"
-                      className="touch:size-11"
+
                       aria-label={`Move photo ${index + 1} down`}
                       disabled={index === mediaIds.length - 1}
                       onClick={() => move(index, index + 1)}
@@ -127,7 +127,6 @@ export function ImageGalleryField({
                         type="button"
                         variant="outline"
                         size="sm"
-                        className="touch:min-h-11"
                         onClick={() => move(index, 0)}
                       >
                         Make cover
@@ -137,7 +136,7 @@ export function ImageGalleryField({
                       type="button"
                       variant="ghost"
                       size="sm"
-                      className="text-muted-foreground touch:min-h-11 max-sm:ml-auto"
+                      className="text-muted-foreground max-sm:ml-auto"
                       onClick={() => change(mediaIds.filter((other) => other !== mediaId))}
                     >
                       Remove
@@ -158,13 +157,7 @@ export function ImageGalleryField({
           onFiles={uploadFiles}
           title="Add photos"
         >
-          <Button
-            type="button"
-            size="sm"
-            variant="outline"
-            className="touch:min-h-11"
-            onClick={() => setPicking(true)}
-          >
+          <Button type="button" size="sm" variant="outline" onClick={() => setPicking(true)}>
             From Media
           </Button>
         </ImageDropZone>

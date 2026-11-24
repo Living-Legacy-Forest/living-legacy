@@ -39,7 +39,7 @@ export function DonutCard({
             <Button
               size="sm"
               variant="ghost"
-              className="touch:min-h-11 -my-1.5"
+              className="-my-1.5"
               render={<Link {...more} />}
               nativeButton={false}
             >

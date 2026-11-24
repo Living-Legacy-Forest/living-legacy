@@ -298,7 +298,7 @@ export function PinPicker({
           <MapControls />
         </MapView>
       </div>
-      <div className="flex flex-wrap items-center gap-2">
+      <div className="flex flex-wrap items-center gap-2 max-md:px-4">
         <Button
           type="button"
           size="sm"

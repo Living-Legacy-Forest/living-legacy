@@ -34,7 +34,7 @@ export function LocationsCard({ locations }: { locations: DashboardData['locatio
           <Button
             size="sm"
             variant="ghost"
-            className="touch:min-h-11"
+
             render={<Link to="/locations" />}
             nativeButton={false}
           >

@@ -13,7 +13,6 @@ import { SuperAdminAction } from '@/components/super-admin-action';
 import { formatCompact, formatInteger, sameDate } from '@/lib/format';
 import { useAction } from '@/lib/use-action';
 import { resetAssistantUsage } from '@/server/super-admin';
-import { cn } from '@/lib/utils';
 import type { SystemStatus } from '@/server/system';
 import { StatusPulse } from './status-pulse';
 
@@ -120,7 +119,7 @@ export function AssistantCard({
           <Link
             to="/settings"
             hash="writing-assistant"
-            className={cn(buttonVariants({ variant: 'outline', size: 'sm' }), 'touch:min-h-11')}
+            className={buttonVariants({ variant: 'outline', size: 'sm' })}
           >
             Settings
           </Link>

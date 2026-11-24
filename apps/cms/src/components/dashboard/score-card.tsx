@@ -49,7 +49,7 @@ export function ScoreCard({ scores }: { scores: ScoreSummary }) {
           <Button
             size="sm"
             variant="ghost"
-            className="touch:min-h-11"
+
             render={<Link to="/checks" />}
             nativeButton={false}
           >

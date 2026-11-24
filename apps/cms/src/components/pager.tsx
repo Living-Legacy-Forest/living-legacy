@@ -39,8 +39,6 @@ const endProps = {
   tabIndex: -1,
 } as const;
 
-const toIcon = 'touch:min-h-11';
-
 /**
  * The footer under every paged list: "1–50 of 1,850 visits", how many rows a
  * page, and Previous, the page numbers and Next. Every screen that pages uses
@@ -125,7 +123,11 @@ export function Pager({
               value={String(pageSize)}
               onValueChange={(value) => rows.onChange(Number(value))}
             >
-              <SelectTrigger size="sm" aria-label="Rows a page" className="w-18">
+              <SelectTrigger
+                size="sm"
+                aria-label="Rows a page"
+                className="touch:data-[size=sm]:h-8 w-18"
+              >
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
@@ -160,7 +162,7 @@ export function Pager({
                   props: {
                     size: 'default',
                     'aria-label': 'Go to previous page',
-                    className: cn(toIcon, 'pl-1.5!'),
+                    className: 'pl-1.5!',
                   },
                   content: previous,
                 })
@@ -176,7 +178,7 @@ export function Pager({
                     props: {
                       isActive: n === page,
                       'aria-label': `Page ${n}`,
-                      className: 'touch:size-11 tabular-nums',
+                      className: 'tabular-nums',
                     },
                     content: n,
                   })
@@ -199,7 +201,7 @@ export function Pager({
                   props: {
                     size: 'default',
                     'aria-label': 'Go to next page',
-                    className: cn(toIcon, 'pr-1.5!'),
+                    className: 'pr-1.5!',
                   },
                   content: next,
                 })

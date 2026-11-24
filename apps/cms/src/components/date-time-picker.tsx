@@ -82,7 +82,6 @@ export function DateTimePicker({
               data-clearable={value !== null || undefined}
               className={cn(
                 'md:text-ui min-w-0 flex-1 justify-start text-base font-normal',
-                'touch:min-h-11',
                 value === null ? 'text-muted-foreground' : 'pr-9'
               )}
             />

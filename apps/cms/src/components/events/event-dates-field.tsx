@@ -178,7 +178,7 @@ export function EventDatesField({
               variant="ghost"
               size="icon-sm"
               aria-label={`Remove time ${i + 2}`}
-              className="touch:size-11"
+
               onClick={() => onSessionsChange?.((sessions ?? []).filter((_, k) => k !== i))}
             >
               <XIcon aria-hidden />

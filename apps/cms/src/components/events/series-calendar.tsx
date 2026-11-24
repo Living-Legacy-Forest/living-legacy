@@ -66,7 +66,7 @@ export function SeriesCalendar({
               variant="outline"
               size={compact ? 'sm' : 'default'}
               className={cn(
-                'touch:min-h-11 justify-start px-2.5 font-normal',
+                'justify-start px-2.5 font-normal',
                 compact ? 'max-w-full max-sm:w-full' : 'w-full'
               )}
             />

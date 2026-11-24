@@ -1,6 +1,8 @@
 import { CalendarClockIcon, ChevronDownIcon } from '@/components/icons';
-import { useState } from 'react';
+import { cloneElement, useState } from 'react';
 import { Button } from '@/components/ui/button';
+import { Dialog, DialogContent } from '@/components/ui/dialog';
+import { DrawerClose, DrawerTitle } from '@/components/ui/drawer';
 import { DayCalendar } from '@/components/ui/day-calendar';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -15,6 +17,7 @@ import {
   toZoned,
   zoneName,
 } from '@/lib/format';
+import { useIsMobile } from '@/hooks/use-mobile';
 import { useTimeZone } from '@/lib/use-time-zone';
 import { cn } from '@/lib/utils';
 import { isEnterKey } from '@/lib/keyboard';
@@ -79,6 +82,7 @@ export function SchedulePopover({
   onUnschedule: () => Promise<void>;
 }) {
   const zone = useTimeZone();
+  const isPhone = useIsMobile();
   const [open, setOpen] = useState(false);
   const [day, setDay] = useState<Date | undefined>();
   const [time, setTime] = useState('09:00');
@@ -108,6 +112,178 @@ export function SchedulePopover({
     if (ok) setOpen(false);
   }
 
+  const title = scheduledAt ? 'Reschedule' : 'Schedule for later';
+  const submitLabel = scheduledAt ? 'Reschedule' : 'Schedule';
+  const unschedule = async () => {
+    setPending(true);
+    await onUnschedule();
+    setPending(false);
+    setOpen(false);
+  };
+
+  const presetRow = (
+    <div className="grid grid-cols-3 gap-1.5 px-3 pt-3 max-md:px-0 max-md:pt-0">
+      {presets(zone).map((preset) => (
+        <Button
+          key={preset.label}
+          variant="outline"
+          size="xs"
+          className="w-full"
+          onClick={() => {
+            setDay(dayOf(preset.at));
+            applyTime(timeOf(preset.at));
+          }}
+        >
+          {preset.label}
+        </Button>
+      ))}
+    </div>
+  );
+  const calendar = (
+    <DayCalendar
+      value={day}
+      onChange={setDay}
+      minDate={dayOf(toZoned(Date.now(), zone))}
+      className="px-3 max-md:px-0"
+    />
+  );
+  const timeRow = (
+    <div className="space-y-3 border-t p-3 max-md:px-0">
+      <div className="flex items-center gap-2">
+        <Label htmlFor="schedule-time" className="text-muted-foreground text-xs">
+          Time
+        </Label>
+        <Input
+          id="schedule-time"
+          autoComplete="off"
+          placeholder="9:00 am"
+          value={timeText}
+          aria-invalid={!timeValid}
+          onChange={(e) => {
+            setTimeText(e.target.value);
+            const next = parseTime(e.target.value);
+            if (next) setTime(next);
+          }}
+          onBlur={() => {
+            const next = parseTime(timeText);
+            if (next) applyTime(next);
+          }}
+          onKeyDown={(e) => {
+            if (isEnterKey(e)) void submit();
+          }}
+          className="h-8 w-28"
+        />
+        <span className="text-muted-foreground text-xs">{zoneName(zone, target ?? undefined)}</span>
+      </div>
+      <p
+        className={cn(
+          'text-xs',
+          day && (!timeValid || tooSoon) ? 'text-destructive' : 'text-muted-foreground'
+        )}
+      >
+        {!day
+          ? 'Pick a day.'
+          : !timeValid
+            ? 'Enter a time like 9:30 am or 21:30.'
+            : tooSoon || target === null
+              ? 'Pick a time at least a minute from now.'
+              : `Publishes ${formatDateTime(target, zone)} ${zoneName(zone, target)}.`}
+      </p>
+      {!isPhone && (
+        <div className="flex justify-end gap-2">
+          {scheduledAt && (
+            <Button variant="ghost" size="sm" disabled={pending} onClick={unschedule}>
+              Unschedule
+            </Button>
+          )}
+          <Button size="sm" disabled={pending || tooSoon} onClick={submit}>
+            {pending && <Spinner data-icon="inline-start" />}
+            {submitLabel}
+          </Button>
+        </div>
+      )}
+    </div>
+  );
+
+  const triggerButton = labelled ? (
+    <Button variant="ghost" size="sm" disabled={disabled} />
+  ) : (
+    <Button
+      size="sm"
+      disabled={disabled}
+      aria-label={scheduledAt ? 'Change schedule' : 'Schedule for later'}
+      // The second half of the Publish button: the same rim on its outer
+      // sides, none where the two meet, and a fine divider instead.
+      className="before:bg-primary-foreground/25 relative rounded-l-none border-l-0 px-1.5 before:absolute before:inset-y-1.5 before:left-0 before:w-px"
+    />
+  );
+  const triggerContent = labelled ? (
+    <>
+      <CalendarClockIcon aria-hidden data-icon="inline-start" />
+      {scheduledAt ? 'Reschedule' : 'Schedule'}
+    </>
+  ) : (
+    <ChevronDownIcon aria-hidden />
+  );
+
+  // Phones get a sheet, as every other form does: a popover this tall runs off the screen.
+  if (isPhone) {
+    return (
+      <>
+        {cloneElement(triggerButton, {
+          onClick: () => {
+            reset();
+            setOpen(true);
+          },
+          children: triggerContent,
+        })}
+        <Dialog open={open} onOpenChange={setOpen}>
+          <DialogContent showCloseButton={false}>
+            <div
+              data-slot="sheet-header"
+              className="sticky -top-2 z-20 -mx-4 -mt-2 grid grid-cols-[minmax(4.5rem,1fr)_auto_minmax(4.5rem,1fr)] items-center gap-2 bg-(--ios-grouped)/85 px-4 pt-2 pb-1 backdrop-blur-xl"
+            >
+              <DrawerClose
+                render={
+                  <button
+                    type="button"
+                    className="text-tint min-h-11 justify-self-start text-[1.0625rem] active:opacity-50"
+                  />
+                }
+              >
+                Cancel
+              </DrawerClose>
+              <DrawerTitle className="max-w-[52vw] truncate text-center text-[1.0625rem] font-semibold">
+                {title}
+              </DrawerTitle>
+              <button
+                type="button"
+                disabled={pending || tooSoon}
+                onClick={submit}
+                className="text-tint min-h-11 justify-self-end text-[1.0625rem] font-semibold active:opacity-50 disabled:opacity-40"
+              >
+                {submitLabel}
+              </button>
+            </div>
+            {presetRow}
+            {calendar}
+            {timeRow}
+            {scheduledAt && (
+              <Button
+                variant="outline"
+                className="text-destructive w-full"
+                disabled={pending}
+                onClick={unschedule}
+              >
+                Unschedule
+              </Button>
+            )}
+          </DialogContent>
+        </Dialog>
+      </>
+    );
+  }
+
   return (
     <Popover
       open={open}
@@ -116,123 +292,15 @@ export function SchedulePopover({
         setOpen(next);
       }}
     >
-      <PopoverTrigger
-        render={
-          labelled ? (
-            <Button variant="ghost" size="sm" disabled={disabled} />
-          ) : (
-            <Button
-              size="sm"
-              disabled={disabled}
-              aria-label={scheduledAt ? 'Change schedule' : 'Schedule for later'}
-              // The second half of the Publish button: the same rim on its outer
-              // sides, none where the two meet, and a fine divider instead.
-              className="before:bg-primary-foreground/25 relative rounded-l-none border-l-0 px-1.5 before:absolute before:inset-y-1.5 before:left-0 before:w-px"
-            />
-          )
-        }
-      >
-        {labelled ? (
-          <>
-            <CalendarClockIcon aria-hidden data-icon="inline-start" />
-            {scheduledAt ? 'Reschedule' : 'Schedule'}
-          </>
-        ) : (
-          <ChevronDownIcon aria-hidden />
-        )}
-      </PopoverTrigger>
+      <PopoverTrigger render={triggerButton}>{triggerContent}</PopoverTrigger>
       <PopoverContent align="end" className="w-[22rem] p-0">
         <div className="text-ui flex items-center gap-2 border-b px-3 py-2.5 font-medium">
           <CalendarClockIcon aria-hidden className="text-muted-foreground size-4" />
-          {scheduledAt ? 'Reschedule' : 'Schedule for later'}
+          {title}
         </div>
-        <div className="grid grid-cols-3 gap-1.5 px-3 pt-3">
-          {presets(zone).map((preset) => (
-            <Button
-              key={preset.label}
-              variant="outline"
-              size="xs"
-              className="w-full"
-              onClick={() => {
-                setDay(dayOf(preset.at));
-                applyTime(timeOf(preset.at));
-              }}
-            >
-              {preset.label}
-            </Button>
-          ))}
-        </div>
-        <DayCalendar
-          value={day}
-          onChange={setDay}
-          minDate={dayOf(toZoned(Date.now(), zone))}
-          className="px-3"
-        />
-        <div className="space-y-3 border-t p-3">
-          <div className="flex items-center gap-2">
-            <Label htmlFor="schedule-time" className="text-muted-foreground text-xs">
-              Time
-            </Label>
-            <Input
-              id="schedule-time"
-              autoComplete="off"
-              placeholder="9:00 am"
-              value={timeText}
-              aria-invalid={!timeValid}
-              onChange={(e) => {
-                setTimeText(e.target.value);
-                const next = parseTime(e.target.value);
-                if (next) setTime(next);
-              }}
-              onBlur={() => {
-                const next = parseTime(timeText);
-                if (next) applyTime(next);
-              }}
-              onKeyDown={(e) => {
-                if (isEnterKey(e)) void submit();
-              }}
-              className="h-8 w-28"
-            />
-            <span className="text-muted-foreground text-xs">
-              {zoneName(zone, target ?? undefined)}
-            </span>
-          </div>
-          <p
-            className={cn(
-              'text-xs',
-              day && (!timeValid || tooSoon) ? 'text-destructive' : 'text-muted-foreground'
-            )}
-          >
-            {!day
-              ? 'Pick a day.'
-              : !timeValid
-                ? 'Enter a time like 9:30 am or 21:30.'
-                : tooSoon || target === null
-                  ? 'Pick a time at least a minute from now.'
-                  : `Publishes ${formatDateTime(target, zone)} ${zoneName(zone, target)}.`}
-          </p>
-          <div className="flex justify-end gap-2">
-            {scheduledAt && (
-              <Button
-                variant="ghost"
-                size="sm"
-                disabled={pending}
-                onClick={async () => {
-                  setPending(true);
-                  await onUnschedule();
-                  setPending(false);
-                  setOpen(false);
-                }}
-              >
-                Unschedule
-              </Button>
-            )}
-            <Button size="sm" disabled={pending || tooSoon} onClick={submit}>
-              {pending && <Spinner data-icon="inline-start" />}
-              {scheduledAt ? 'Reschedule' : 'Schedule'}
-            </Button>
-          </div>
-        </div>
+        {presetRow}
+        {calendar}
+        {timeRow}
       </PopoverContent>
     </Popover>
   );

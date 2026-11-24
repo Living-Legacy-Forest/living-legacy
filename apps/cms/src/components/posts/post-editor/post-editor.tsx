@@ -38,6 +38,7 @@ import { EditorToolbar } from './editor-toolbar';
 import type { PostAccess } from './post-access';
 import { PresenceNotice, usePostPresence } from './post-presence';
 import { PropertiesPanel } from './properties-panel';
+import { RecoveryNotice } from './recovery-notice';
 import {
   ResizablePanel,
   ResizablePanels,
@@ -116,6 +117,7 @@ export function PostEditor({
               dirty={editor.dirty}
               onReload={() => void onReload()}
             />
+            <RecoveryNotice recovery={editor.recovery} />
             <EditorToolbar
               editor={editor}
               showProperties={showProperties}
@@ -176,7 +178,7 @@ export function PostEditor({
             <AlertDialogCancel onClick={() => editor.blocker.reset?.()}>
               Keep editing
             </AlertDialogCancel>
-            <AlertDialogAction variant="destructive" onClick={() => editor.blocker.proceed?.()}>
+            <AlertDialogAction variant="destructive" onClick={editor.leave}>
               Leave
             </AlertDialogAction>
           </AlertDialogFooter>

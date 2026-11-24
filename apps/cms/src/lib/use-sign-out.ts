@@ -1,6 +1,7 @@
 import { useRouter } from '@tanstack/react-router';
 import { useState } from 'react';
 import { authClient } from '@/lib/auth-client';
+import { clearAllDrafts } from '@/lib/draft-recovery';
 import { notify } from '@/lib/notify';
 import { forgetCachedUser } from '@/lib/session';
 
@@ -21,6 +22,8 @@ export function useSignOut() {
       notify.error('Could not sign out', error.message ?? 'Please try again.');
       return;
     }
+    // Unsaved post text kept for recovery stays on this computer otherwise.
+    clearAllDrafts();
     forgetCachedUser();
     await router.navigate({ to: '/login' });
   }

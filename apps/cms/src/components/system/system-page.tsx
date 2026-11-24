@@ -15,7 +15,6 @@ import type { JobHealth } from '@/lib/cron-jobs';
 import { formatDateTime, formatDuration, formatInteger, formatRelative } from '@/lib/format';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useTimeZone } from '@/lib/use-time-zone';
-import { cn } from '@/lib/utils';
 import type { SystemStatus } from '@/server/system';
 import { type HealthStatus, checkTone, jobTone, summariseTones } from '@/lib/system-status';
 import { FailuresList } from './failures-list';
@@ -124,7 +123,7 @@ export function SystemPage({
               href={link.href}
               target="_blank"
               rel="noreferrer"
-              className={cn(buttonVariants({ variant: 'outline', size: 'sm' }), 'touch:min-h-11')}
+              className={buttonVariants({ variant: 'outline', size: 'sm' })}
             >
               {link.label}
               <ExternalLinkIcon aria-hidden />

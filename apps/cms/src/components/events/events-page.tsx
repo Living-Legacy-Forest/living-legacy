@@ -164,7 +164,7 @@ export function EventsPage({ data }: { data: EventsData }) {
   }
 
   const newButton = (
-    <Button size="sm" className="touch:min-h-11" onClick={createEvent}>
+    <Button size="sm" onClick={createEvent}>
       <PlusIcon aria-hidden data-icon="inline-start" />
       New event
     </Button>

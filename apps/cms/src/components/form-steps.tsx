@@ -7,7 +7,7 @@ import { cn } from '@/lib/utils';
 
 /** Fields a finger can hit on devices that cannot hover. */
 export const TOUCH_FIELDS =
-  'touch:**:data-[slot=input]:h-11 touch:**:data-[slot=select-trigger]:h-11!';
+  'touch:**:data-[slot=input]:h-10 touch:**:data-[slot=select-trigger]:h-10!';
 
 export function useFormSteps({
   count,

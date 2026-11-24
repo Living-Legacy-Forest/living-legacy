@@ -155,7 +155,7 @@ export function BrandRulesEditor({
               variant="ghost"
               size="icon-sm"
               aria-label={`Remove ${rule.match || 'this word'}`}
-              className="text-muted-foreground hover:text-destructive touch:size-11 max-md:col-start-2 max-md:row-start-1"
+              className="text-muted-foreground hover:text-destructive max-md:col-start-2 max-md:row-start-1"
               onClick={() => onChange(rules.filter((_, i) => i !== index))}
             >
               <Trash2Icon aria-hidden className="size-4" />

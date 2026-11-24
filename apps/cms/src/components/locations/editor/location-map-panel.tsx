@@ -6,8 +6,8 @@ export function LocationMapPanel({ editor }: { editor: LocationEditorState }) {
   const { values, patch } = editor;
   return (
     <div className="space-y-2">
-      <h2 className="text-sm font-semibold">Map pin</h2>
-      <p className="text-muted-foreground text-xs">
+      <h2 className="text-sm font-semibold max-md:px-4 max-md:text-[1.0625rem]">Map pin</h2>
+      <p className="text-muted-foreground text-xs max-md:px-4 max-md:text-[0.8125rem]">
         Find it from the address, then drag the pin or click the map to fine-tune it.
       </p>
       <PinPicker

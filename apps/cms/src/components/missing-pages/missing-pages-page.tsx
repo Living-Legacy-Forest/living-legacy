@@ -88,17 +88,14 @@ export function MissingPagesPage({
                 <Link
                   to="/redirects"
                   search={{ from: page.path }}
-                  className={cn(
-                    buttonVariants({ variant: 'outline', size: 'sm' }),
-                    'touch:min-h-11'
-                  )}
+                  className={cn(buttonVariants({ variant: 'outline', size: 'sm' }))}
                 >
                   Create redirect
                 </Link>
                 <Button
                   variant="ghost"
                   size="sm"
-                  className="touch:min-h-11 text-muted-foreground"
+                  className="text-muted-foreground"
                   disabled={pending}
                   onClick={() =>
                     run(() => dismissMissingPage({ data: { path: page.path } }), {

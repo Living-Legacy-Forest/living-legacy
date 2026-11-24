@@ -236,7 +236,7 @@ function UsersTable({ data }: { data: TeamData }) {
                     <Button
                       variant="ghost"
                       size="sm"
-                      className="touch:min-h-11"
+
                       aria-label={`Access for ${u.name || u.email}`}
                       onClick={() => openAccess(u)}
                     >

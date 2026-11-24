@@ -112,7 +112,7 @@ const NOUNS: Record<CheckKey, string> = {
 /** Rows here are tall, so a page is shorter than a plain list's. */
 const PAGE_SIZES = [10, 25, 50, 100] as const;
 
-const fixClass = cn(buttonVariants({ variant: 'outline', size: 'sm' }), 'touch:min-h-11 shrink-0');
+const fixClass = cn(buttonVariants({ variant: 'outline', size: 'sm' }), 'shrink-0');
 
 export function ContentChecksPage({
   data,
@@ -545,13 +545,7 @@ function AltTextRow({
             onChange={(e) => onAlt(e.target.value)}
             className="touch:min-h-11 min-w-0 flex-1"
           />
-          <Button
-            type="submit"
-            size="sm"
-            variant="outline"
-            disabled={pending || !alt.trim()}
-            className="touch:min-h-11"
-          >
+          <Button type="submit" size="sm" variant="outline" disabled={pending || !alt.trim()}>
             {pending ? <Spinner /> : 'Save'}
           </Button>
         </form>

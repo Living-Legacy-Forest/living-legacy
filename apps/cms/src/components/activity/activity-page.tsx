@@ -159,7 +159,7 @@ export function ActivityPage({
           <Button
             variant="ghost"
             size="sm"
-            className="touch:min-h-11 text-muted-foreground"
+            className="text-muted-foreground"
             onClick={() => filter({ kind: undefined, who: undefined, day: undefined })}
           >
             Clear
@@ -206,7 +206,7 @@ export function ActivityPage({
           <Button
             variant="link"
             size="sm"
-            className="touch:min-h-11 h-auto p-0"
+            className="h-auto p-0"
             onClick={() => filter({ day: undefined })}
           >
             Show every day

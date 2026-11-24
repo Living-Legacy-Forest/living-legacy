@@ -40,7 +40,7 @@ const stageHints: Record<LocationStage, string> = {
 function Section({ title, children }: { title: string; children: React.ReactNode }) {
   return (
     <section aria-label={title} className="space-y-3 border-b pb-6 last:border-b-0">
-      <h2 className="text-sm font-semibold">{title}</h2>
+      <h2 className="text-sm font-semibold max-md:px-4 max-md:text-[1.0625rem]">{title}</h2>
       {children}
     </section>
   );
@@ -126,7 +126,7 @@ export function LocationDetails({ editor }: { editor: LocationEditorState }) {
             placeholder="Optional, e.g. a nearby town"
           />
         </FormCell>
-        <p className="text-muted-foreground text-xs">
+        <p className="text-muted-foreground text-xs max-md:px-4 max-md:text-[0.8125rem]">
           The state filters the directory; it is never a page of its own.
         </p>
       </Section>
@@ -245,7 +245,7 @@ export function LocationDetails({ editor }: { editor: LocationEditorState }) {
           checked={values.noindex}
           onCheckedChange={(noindex) => patch({ noindex })}
         />
-        <p className="text-muted-foreground text-xs">
+        <p className="text-muted-foreground text-xs max-md:px-4 max-md:text-[0.8125rem]">
           Only locations that are live on this site have a page to describe.
         </p>
       </Section>

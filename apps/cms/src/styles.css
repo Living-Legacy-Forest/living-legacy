@@ -496,7 +496,7 @@
   [data-slot='settings-control']
     > :is([data-slot='input'], [data-slot='select-trigger'], [data-slot='popover-trigger']) {
     width: 100%;
-    height: 2.75rem !important;
+    height: 2.5rem !important;
     border: 0;
     border-radius: 0;
     background: transparent;
@@ -529,11 +529,13 @@
     box-shadow: none;
   }
 
-  /* A sheet's bar shows the first word of a long submit label (DialogActions). */
+  /* A sheet's bar shows the first word of a long submit label (DialogActions). Drawn with
+     ::before: on touch screens a button's ::after is its absolutely positioned tap area, so a
+     label there takes no room and the button collapses to nothing. */
   [data-slot='sheet-submit'] > button[data-bar-label] {
     font-size: 0;
   }
-  [data-slot='sheet-submit'] > button[data-bar-label]::after {
+  [data-slot='sheet-submit'] > button[data-bar-label]::before {
     content: attr(data-bar-label);
     font-size: 1.0625rem;
   }
@@ -609,7 +611,7 @@
     grid-template-columns: fit-content(50%) minmax(0, 1fr);
     align-items: center;
     column-gap: 1rem;
-    min-height: 2.75rem;
+    min-height: 2.5rem;
     padding-inline: 1rem;
   }
   [data-slot='form-cell'] > * {
@@ -649,7 +651,7 @@
   [data-slot='form-cell']
     > :is([data-slot='input'], [data-slot='select-trigger'], [data-slot='popover-trigger']) {
     justify-self: end;
-    height: 2.75rem !important;
+    height: 2.5rem !important;
     border: 0;
     border-radius: 0;
     background: transparent;
@@ -755,7 +757,7 @@
   }
 
   [data-slot='form-switch-cell'] {
-    min-height: 2.75rem;
+    min-height: 2.5rem;
     border: 0;
     border-radius: 0;
     padding-right: 1rem;
@@ -1657,7 +1659,7 @@
   }
 }
 
-/* Phone form fields are 44pt, the height of a row in an iOS form, wherever a page puts them.
+/* Phone form fields are 40pt, a little under the height of a row in an iOS form, wherever a page puts them.
    Outside any layer, so this wins over a field's own height classes. A compact select (size sm:
    a card's period, Rows a page) keeps its 36pt look, with a tap area that reaches 44pt. Steppers
    keep their own height, close to iOS's 32pt UIStepper. */
@@ -1667,7 +1669,7 @@
   [data-slot='input-group']:not(:has(> textarea, > [data-align^='block'])),
   [data-slot='date-range-picker'],
   [data-slot='date-range-picker'] > button {
-    height: 2.75rem;
+    height: 2.5rem;
   }
   /* Text fields are 17pt, iOS's body size, whatever size a page gives them: Safari zooms the
      page into any field under 16px when it is tapped, and does not zoom back out. */

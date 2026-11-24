@@ -10,7 +10,11 @@ const buttonVariants = cva(
   // buttons side by side never take each other's taps.
   // The press shrinks the button a touch (icons a touch more, via --btn-press). Buttons that
   // open a menu, popover or dialog stay still: the layer would measure a shrunken anchor.
-  "group/button relative inline-flex shrink-0 items-center justify-center rounded-lg border border-transparent bg-clip-padding text-sm font-medium whitespace-nowrap transition-all duration-150 ease-[cubic-bezier(0.22,1,0.36,1)] outline-none select-none [--btn-press:0.97] focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50 motion-safe:active:not-aria-[haspopup]:not-data-[popup-open]:scale-(--btn-press) active:duration-100 disabled:pointer-events-none disabled:opacity-50 aria-busy:cursor-progress aria-invalid:border-destructive aria-invalid:ring-destructive/20 dark:aria-invalid:border-destructive/50 dark:aria-invalid:ring-destructive/25 [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-4 touch:after:absolute touch:after:inset-x-0 touch:after:-inset-y-1.5",
+  // Hover eases colour in over 200ms with a plain `ease`: a strong ease-out finishes most of the
+  // change in the first frames, which reads as a snap. The properties are named, not `all`, so
+  // layout changes (the label morph animates width itself) never fight a CSS transition. The
+  // gradient colours are listed because the raised variant's hover moves them.
+  "group/button relative inline-flex shrink-0 items-center justify-center rounded-lg border border-transparent bg-clip-padding text-sm font-medium whitespace-nowrap transition-[color,background-color,border-color,box-shadow,opacity,scale,--tw-gradient-from,--tw-gradient-via,--tw-gradient-to] duration-200 ease-[ease] outline-none select-none [--btn-press:0.97] focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50 motion-safe:active:not-aria-[haspopup]:not-data-[popup-open]:scale-(--btn-press) active:duration-100 disabled:pointer-events-none disabled:opacity-50 aria-busy:cursor-progress aria-invalid:border-destructive aria-invalid:ring-destructive/20 dark:aria-invalid:border-destructive/50 dark:aria-invalid:ring-destructive/25 [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-4 touch:after:absolute touch:after:inset-x-0 touch:after:-inset-y-1.5",
   {
     variants: {
       variant: {

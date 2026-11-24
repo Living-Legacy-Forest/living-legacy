@@ -506,8 +506,8 @@ function TermForm({
       }),
       error: `Could not save the ${type}`,
     });
-    // A form closed or replaced while it saved leaves the page as it is now.
-    if (!result || !form.markSaved()) return;
+    // A form closed, replaced or edited again while it saved stays as it is now.
+    if (!result || !form.markSaved(term === null)) return;
     feedback.saved();
     onSaved(result.id);
   }

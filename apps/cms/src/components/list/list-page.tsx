@@ -179,14 +179,19 @@ export function useFormDirty(values: unknown, report: ((dirty: boolean) => void)
     /**
      * After a save: what was sent (`current`, from the render that submitted) is now the saved
      * copy, and the page hears at once, before it moves on. Anything typed while it saved still
-     * counts as unsaved. Returns false if this form has since been closed or replaced: the page
-     * now shows something else, so the caller must not move it on.
+     * counts as unsaved. Returns whether the caller may move on (close the form, say "Saved"):
+     *
+     * - false if this form has since been closed or replaced, as the page shows something else;
+     * - false if more was typed during the save, so the form stays open with those edits;
+     * - true for a new item even then: staying on a form for something already created would
+     *   let a second save make a copy, so it moves on to the saved item.
      */
-    markSaved: () => {
+    markSaved: (created = false) => {
       if (!mounted.current) return false;
       setSaved(current);
-      report?.(latest.current !== current);
-      return true;
+      const edited = latest.current !== current;
+      report?.(edited);
+      return !edited || created;
     },
   };
 }

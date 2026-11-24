@@ -591,8 +591,8 @@ function MemberForm({
         error: 'Could not save the team member',
       }
     );
-    // A form closed or replaced while it saved leaves the page as it is now.
-    if (!result || !form.markSaved()) return;
+    // A form closed, replaced or edited again while it saved stays as it is now.
+    if (!result || !form.markSaved(member === null)) return;
     feedback.saved();
     onSaved(result.id);
   }

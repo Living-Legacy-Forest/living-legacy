@@ -836,8 +836,8 @@ function RedirectForm({
     for (const warning of result.warnings) {
       notify.warning({ title: 'Check this redirect', description: warning });
     }
-    // A form closed or replaced while it saved leaves the page as it is now.
-    if (!form.markSaved()) return;
+    // A form closed, replaced or edited again while it saved stays as it is now.
+    if (!form.markSaved(redirect === null)) return;
     feedback.saved();
     onSaved(result.id);
   }

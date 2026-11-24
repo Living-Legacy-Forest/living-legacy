@@ -862,8 +862,8 @@ function FaqForm({
         error: 'Could not save the FAQ',
       }
     );
-    // A form closed or replaced while it saved leaves the page as it is now.
-    if (!result || !form.markSaved()) return;
+    // A form closed, replaced or edited again while it saved stays as it is now.
+    if (!result || !form.markSaved(faq === null)) return;
     feedback.saved();
     onSaved(result.id);
   }
@@ -964,8 +964,8 @@ function GroupForm({
         error: 'Could not save the group',
       }
     );
-    // A form closed or replaced while it saved leaves the page as it is now.
-    if (!result || !form.markSaved()) return;
+    // A form closed, replaced or edited again while it saved stays as it is now.
+    if (!result || !form.markSaved(group === null)) return;
     onSaved();
   }
 

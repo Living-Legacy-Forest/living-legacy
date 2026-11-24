@@ -746,7 +746,9 @@
   }
   [data-slot='form-cell'] > [data-slot='textarea'] {
     grid-column: 1 / -1;
-    min-height: 0;
+    /* Two lines and the padding. Safari sizes a field-sizing textarea that shows only its
+       placeholder without the bottom padding, so a wrapped placeholder ran into the hint. */
+    min-height: calc(2lh + 0.875rem);
     border: 0;
     border-radius: 0;
     background: transparent;

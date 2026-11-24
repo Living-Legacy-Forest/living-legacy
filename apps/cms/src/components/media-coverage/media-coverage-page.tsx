@@ -31,7 +31,6 @@ import {
 } from '@/components/list/list-row';
 import { usePaged } from '@/lib/use-paged';
 import {
-  ConfirmBulkDelete,
   SearchInput,
   SelectionBar,
   matchesSearch,
@@ -52,17 +51,6 @@ import {
 import { FormCell, FormSection, FormSwitchCell } from '@/components/form-cells';
 import { ImageField, useMediaItem } from '@/components/media/image-field';
 import { PageActions } from '@/components/shell/page-actions';
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-  AlertDialogTrigger,
-} from '@/components/ui/alert-dialog';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import {
@@ -94,7 +82,7 @@ import {
 import { Textarea } from '@/components/ui/textarea';
 import { formatDate } from '@/lib/format';
 import { reportInvalid } from '@/lib/form-validation';
-import { featuredNotice, removedNotice, statusNotice } from '@/lib/notify';
+import { deletedNotice, featuredNotice, restoredNotice, statusNotice } from '@/lib/notify';
 import { openInNewTab } from '@/lib/site';
 import { RevealWords } from '@/components/dashboard/reveal-words';
 import { useAction } from '@/lib/use-action';
@@ -105,6 +93,7 @@ import {
   type MediaCoverageData,
   type MediaCoverageItem,
   deleteMediaCoverage,
+  restoreMediaCoverage,
   saveMediaCoverage,
   setMediaCoverageFlags,
 } from '@/server/media-coverage';
@@ -151,7 +140,6 @@ export function MediaCoveragePage({
   const [picked, setPicked] = useState<Record<string, string[]>>({});
   const [layout, setLayout] = useListView('media_coverage');
   const grid = layout === 'grid';
-  const [toDelete, setToDelete] = useState<string[] | null>(null);
   const selection = useSelection(data.map((m) => m.id));
   const [sort, setSort] = useListSort(SORTS);
   const ordered = sortedBy(data, sort, {
@@ -218,21 +206,28 @@ export function MediaCoveragePage({
   // A row click asks first if the form open in the pane has changes; a save has none left.
   const select = (id: string) => view.guard(() => preview(id));
   const pane = canWrite ? view.pane : null;
-  const remove = (id: string) =>
-    run(() => deleteMediaCoverage({ data: { ids: [id] } }), {
-      success: removedNotice(1, NOUN),
-      error: 'Could not remove the item',
-    });
-
-  async function removeMany(ids: string[]) {
+  // Straight away, with Undo on the toast, rather than asking first.
+  async function remove(ids: string[]) {
     const result = await run(() => deleteMediaCoverage({ data: { ids } }), {
-      success: removedNotice(ids.length, NOUN),
-      error: 'Could not remove',
+      success: deletedNotice(
+        ids.length,
+        NOUN,
+        () => restore(ids),
+        `${ids.length === 1 ? 'It is' : 'They are'} off the In the media page.`
+      ),
+      error: 'Could not delete',
     });
-    if (!result) return;
+    if (!result) return false;
     view.closeIfShowing((t) => t.kind === 'edit' && ids.includes(t.id));
     selection.clear();
+    return true;
   }
+
+  const restore = (ids: string[]) =>
+    run(() => restoreMediaCoverage({ data: { ids } }), {
+      success: restoredNotice(ids.length, NOUN),
+      error: 'Could not bring it back',
+    });
 
   // Shown after the last item, so a new one lands at the end by default.
   const nextOrder = Math.max(0, ...data.map((m) => m.sortOrder)) + 1;
@@ -377,7 +372,7 @@ export function MediaCoveragePage({
                 title="All"
                 total={data.length}
                 pending={pending}
-                onDelete={canWrite ? () => setToDelete(selection.checkedIds) : undefined}
+                onDelete={canWrite ? () => void remove(selection.checkedIds) : undefined}
               />
             }
           >
@@ -405,7 +400,7 @@ export function MediaCoveragePage({
                     menu={coverageMenu(m)}
                     remove={
                       canWrite
-                        ? { label: 'Delete', onAction: () => setToDelete([m.id]) }
+                        ? { label: 'Delete', onAction: () => void remove([m.id]) }
                         : undefined
                     }
                     onOpen={() =>
@@ -446,7 +441,7 @@ export function MediaCoveragePage({
                     }
                     swipe={
                       canWrite
-                        ? { label: 'Delete', onAction: () => setToDelete([m.id]) }
+                        ? { label: 'Delete', onAction: () => void remove([m.id]) }
                         : undefined
                     }
                     // Large screens preview on a click and edit on a double click; smaller
@@ -487,20 +482,11 @@ export function MediaCoveragePage({
               canWrite={canWrite}
               pending={pending}
               onEdit={(m) => view.open({ kind: 'edit', id: m.id })}
-              onDelete={remove}
+              onDelete={(id) => void remove([id])}
             />
           )}
         </ListPageLayout>
       )}
-
-      <ConfirmBulkDelete
-        open={toDelete !== null}
-        onOpenChange={(open) => !open && setToDelete(null)}
-        count={toDelete?.length ?? 0}
-        noun={NOUN}
-        description="They are removed from the In the media page. This cannot be undone."
-        onConfirm={() => toDelete && removeMany(toDelete)}
-      />
 
       <LeaveDialog blocker={view.leave} what="coverage" />
 
@@ -519,13 +505,7 @@ export function MediaCoveragePage({
                     <DeleteCoverage
                       item={dialogItem}
                       disabled={pending}
-                      onConfirm={() =>
-                        remove(dialogItem.id).then(
-                          (done) =>
-                            done &&
-                            view.closeIfShowing((t) => t.kind === 'edit' && t.id === dialogItem.id)
-                        )
-                      }
+                      onDelete={() => void remove([dialogItem.id])}
                     />
                   )
                 }
@@ -614,7 +594,7 @@ function PreviewPane({
                 <PencilIcon aria-hidden data-icon="inline-start" />
                 Edit
               </Button>
-              <DeleteCoverage item={item} disabled={pending} onConfirm={() => onDelete(item.id)} />
+              <DeleteCoverage item={item} disabled={pending} onDelete={() => onDelete(item.id)} />
             </>
           )}
         </div>
@@ -668,40 +648,23 @@ function CoverageCard({ item }: { item: MediaCoverageItem }) {
 function DeleteCoverage({
   item,
   disabled,
-  onConfirm,
+  onDelete,
 }: {
   item: MediaCoverageItem;
   disabled: boolean;
-  onConfirm: () => void;
+  onDelete: () => void;
 }) {
   return (
-    <AlertDialog>
-      <AlertDialogTrigger
-        render={
-          <Button
-            variant="ghost"
-            size="icon-sm"
-            disabled={disabled}
-            aria-label={`Remove ${item.title}`}
-            className="text-muted-foreground hover:text-destructive"
-          />
-        }
-      >
-        <Trash2Icon aria-hidden className="size-4" />
-      </AlertDialogTrigger>
-      <AlertDialogContent>
-        <AlertDialogHeader>
-          <AlertDialogTitle>Remove this item?</AlertDialogTitle>
-          <AlertDialogDescription>
-            “{item.title}” is removed from the In the media page. This cannot be undone.
-          </AlertDialogDescription>
-        </AlertDialogHeader>
-        <AlertDialogFooter>
-          <AlertDialogCancel>Cancel</AlertDialogCancel>
-          <AlertDialogAction onClick={onConfirm}>Remove</AlertDialogAction>
-        </AlertDialogFooter>
-      </AlertDialogContent>
-    </AlertDialog>
+    <Button
+      variant="ghost"
+      size="icon-sm"
+      disabled={disabled}
+      aria-label={`Delete ${item.title}`}
+      className="text-muted-foreground hover:text-destructive"
+      onClick={onDelete}
+    >
+      <Trash2Icon aria-hidden className="size-4" />
+    </Button>
   );
 }
 

@@ -36,7 +36,6 @@ import { SaveButton, useSaveFeedback } from '@/components/list/save-button';
 import { LeaveDialog } from '@/components/editor-page/leave-dialog';
 import { ListRow, type RowMenuItem } from '@/components/list/list-row';
 import {
-  ConfirmBulkDelete,
   SearchInput,
   SelectionBar,
   matchesSearch,
@@ -68,7 +67,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Textarea } from '@/components/ui/textarea';
 import { formatDateTime, zoneName } from '@/lib/format';
 import { reportInvalid } from '@/lib/form-validation';
-import { removedNotice } from '@/lib/notify';
+import { deletedNotice, restoredNotice } from '@/lib/notify';
 import { RevealWords } from '@/components/dashboard/reveal-words';
 import { useAction } from '@/lib/use-action';
 import { useRevealOnce } from '@/lib/use-reveal-once';
@@ -79,6 +78,7 @@ import {
   type Announcement,
   type AnnouncementsData,
   deleteAnnouncements,
+  restoreAnnouncements,
   saveAnnouncement,
 } from '@/server/announcements';
 
@@ -163,7 +163,6 @@ export function AnnouncementsPage({
   const [picked, setPicked] = useState<Record<string, string[]>>({});
   const [layout, setLayout] = useListView('announcements');
   const grid = layout === 'grid';
-  const [toDelete, setToDelete] = useState<string[] | null>(null);
   const selection = useSelection(data.map((a) => a.id));
   const clearFilters = () => {
     setPicked({});
@@ -245,15 +244,28 @@ export function AnnouncementsPage({
   // An announcement removed elsewhere closes the pane.
   const pane = view.pane?.kind === 'edit' && !editing(view.pane) ? null : view.pane;
 
+  // Straight away, with Undo on the toast, rather than asking first.
   async function remove(ids: string[]) {
     const result = await run(() => deleteAnnouncements({ data: { ids } }), {
-      success: removedNotice(ids.length, NOUN),
-      error: 'Could not remove',
+      success: deletedNotice(
+        ids.length,
+        NOUN,
+        () => restore(ids),
+        `${ids.length === 1 ? 'It is' : 'They are'} gone from the website.`
+      ),
+      error: 'Could not delete',
     });
-    if (!result) return;
+    if (!result) return false;
     view.closeIfShowing((t) => t.kind === 'edit' && ids.includes(t.id));
     selection.clear();
+    return true;
   }
+
+  const restore = (ids: string[]) =>
+    run(() => restoreAnnouncements({ data: { ids } }), {
+      success: restoredNotice(ids.length, NOUN),
+      error: 'Could not bring it back',
+    });
 
   async function copyMessage(a: Announcement) {
     try {
@@ -411,7 +423,7 @@ export function AnnouncementsPage({
                 title="All"
                 total={data.length}
                 pending={pending}
-                onDelete={canWrite ? () => setToDelete(selection.checkedIds) : undefined}
+                onDelete={canWrite ? () => void remove(selection.checkedIds) : undefined}
               />
             }
           >
@@ -435,7 +447,7 @@ export function AnnouncementsPage({
                     menu={announcementMenu(a)}
                     remove={
                       canWrite
-                        ? { label: 'Delete', onAction: () => setToDelete([a.id]) }
+                        ? { label: 'Delete', onAction: () => void remove([a.id]) }
                         : undefined
                     }
                     onOpen={() => canWrite && view.open({ kind: 'edit', id: a.id })}
@@ -469,7 +481,7 @@ export function AnnouncementsPage({
                       }
                       swipe={
                         canWrite
-                          ? { label: 'Delete', onAction: () => setToDelete([a.id]) }
+                          ? { label: 'Delete', onAction: () => void remove([a.id]) }
                           : undefined
                       }
                       trailing={
@@ -528,15 +540,6 @@ export function AnnouncementsPage({
           </PaneColumn>
         </ListPageLayout>
       )}
-
-      <ConfirmBulkDelete
-        open={toDelete !== null}
-        onOpenChange={(open) => !open && setToDelete(null)}
-        count={toDelete?.length ?? 0}
-        noun={NOUN}
-        description="They are deleted for good. Live ones disappear from the website."
-        onConfirm={() => toDelete && remove(toDelete)}
-      />
 
       <LeaveDialog blocker={view.leave} what="announcement" />
 

@@ -24,7 +24,6 @@ import { ListRow, type RowMenuItem } from '@/components/list/list-row';
 import { usePaged } from '@/lib/use-paged';
 import { copyLink, openInNewTab, siteUrl } from '@/lib/site';
 import {
-  ConfirmBulkDelete,
   SearchInput,
   SelectionBar,
   matchesSearch,
@@ -47,17 +46,6 @@ import { ListSort, byNumber, byText, sortedBy, useListSort } from '@/components/
 import { TrendChart } from '@/components/list/trend-chart';
 import { readPaneOpen } from '@/lib/list-view';
 import { ViewSwitch, useListView } from '@/components/list/view-switch';
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-  AlertDialogTrigger,
-} from '@/components/ui/alert-dialog';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import {
@@ -78,15 +66,15 @@ import {
 } from '@/components/ui/select';
 import { readYesNo } from '@/lib/bulk-import';
 import { reportInvalid } from '@/lib/form-validation';
-import { notify, removedNotice } from '@/lib/notify';
+import { deletedNotice, notify, restoredOrThrow, restoredResultNotice } from '@/lib/notify';
 import { useAction } from '@/lib/use-action';
 import { useRevealOnce } from '@/lib/use-reveal-once';
 import { cn } from '@/lib/utils';
 import {
   type Redirect,
   type RedirectsData,
-  deleteRedirect,
   deleteRedirects,
+  restoreRedirects,
   importRedirects,
   saveRedirect,
   setRedirectEnabled,
@@ -252,7 +240,6 @@ export function RedirectsPage({
     document.cookie = `redirects_pane=${open ? 'open' : 'closed'}; path=/; max-age=31536000; samesite=lax`;
   };
   const grid = layout === 'grid';
-  const [toDelete, setToDelete] = useState<string[] | null>(null);
   const selection = useSelection(data.map((r) => r.id));
   const { run, pending } = useAction();
   const revealing = useRevealOnce();
@@ -297,15 +284,44 @@ export function RedirectsPage({
     },
   ];
 
+  // Straight away, with Undo on the toast, rather than asking first.
   async function remove(ids: string[]) {
     const result = await run(() => deleteRedirects({ data: { ids } }), {
-      success: removedNotice(ids.length, NOUN),
-      error: 'Could not remove',
+      success: deletedNotice(
+        ids.length,
+        NOUN,
+        () => restore(ids),
+        `${ids.length === 1 ? 'It' : 'They'} no longer redirect.`
+      ),
+      error: 'Could not delete',
     });
-    if (!result) return;
+    if (!result) return false;
     view.closeIfShowing((t) => t.kind === 'edit' && ids.includes(t.id));
     selection.clear();
+    return true;
   }
+
+  const restore = (ids: string[]) => {
+    const why = 'Its old path has a redirect again, so this one cannot come back.';
+    return run(() => restoredOrThrow(() => restoreRedirects({ data: { ids } }), why), {
+      success: (result) => restoredResultNotice(result, NOUN, why),
+      error: 'Could not bring it back',
+    });
+  };
+
+  const deleteButton = (redirect: Redirect, disabled = false) => (
+    <Button
+      type="button"
+      variant="ghost"
+      size="icon-sm"
+      disabled={disabled || pending}
+      aria-label={`Delete redirect from ${redirect.fromPath}`}
+      className="text-muted-foreground hover:text-destructive"
+      onClick={() => void remove([redirect.id])}
+    >
+      <Trash2Icon aria-hidden className="size-4" />
+    </Button>
+  );
 
   const bulkForm = (onDone: () => void, actions: (submit: React.ReactNode) => React.ReactNode) => (
     <BulkCsvForm
@@ -335,9 +351,6 @@ export function RedirectsPage({
       footer={actions}
     />
   );
-
-  /** Matches the pane or dialog while it edits this redirect. */
-  const showing = (id: string) => (t: Target) => t.kind === 'edit' && t.id === id;
 
   const redirectForm = (
     target: Target,
@@ -483,7 +496,7 @@ export function RedirectsPage({
                 title="All"
                 total={data.length}
                 pending={pending}
-                onDelete={() => setToDelete(selection.checkedIds)}
+                onDelete={() => void remove(selection.checkedIds)}
               />
             }
           >
@@ -505,7 +518,7 @@ export function RedirectsPage({
                     title={r.fromPath}
                     current={pane?.kind === 'edit' && pane.id === r.id}
                     menu={rowMenu(r)}
-                    remove={{ label: 'Delete', onAction: () => setToDelete([r.id]) }}
+                    remove={{ label: 'Delete', onAction: () => void remove([r.id]) }}
                     onOpen={() => view.open({ kind: 'edit', id: r.id })}
                   >
                     <RedirectCardBody redirect={r} />
@@ -525,7 +538,7 @@ export function RedirectsPage({
                       selecting: selection.selecting,
                       onToggle: () => selection.toggle(r.id),
                     }}
-                    swipe={{ label: 'Delete', onAction: () => setToDelete([r.id]) }}
+                    swipe={{ label: 'Delete', onAction: () => void remove([r.id]) }}
                     menu={rowMenu(r)}
                     onOpen={() => {
                       // As on Posts: the open row closes the editor, any other row opens it.
@@ -579,14 +592,7 @@ export function RedirectsPage({
                     'New redirect'
                   )
                 }
-                actions={
-                  paneRedirect && (
-                    <DeleteRedirect
-                      redirect={paneRedirect}
-                      onRemoved={() => view.closeIfShowing(showing(paneRedirect.id))}
-                    />
-                  )
-                }
+                actions={paneRedirect && deleteButton(paneRedirect)}
               >
                 {redirectForm(
                   pane,
@@ -600,15 +606,6 @@ export function RedirectsPage({
           </PaneColumn>
         </ListPageLayout>
       )}
-
-      <ConfirmBulkDelete
-        open={toDelete !== null}
-        onOpenChange={(open) => !open && setToDelete(null)}
-        count={toDelete?.length ?? 0}
-        noun={NOUN}
-        description="Those old paths will no longer redirect. This cannot be undone."
-        onConfirm={() => toDelete && remove(toDelete)}
-      />
 
       <LeaveDialog blocker={view.leave} what="redirect" />
 
@@ -633,17 +630,7 @@ export function RedirectsPage({
           ? bulkForm(view.dismissDialog, (submit) => <DialogActions>{submit}</DialogActions>)
           : view.dialog &&
             redirectForm(view.dialog, view.dismissDialog, (submit, formPending) => (
-              <DialogActions
-                start={
-                  dialogRedirect && (
-                    <DeleteRedirect
-                      redirect={dialogRedirect}
-                      disabled={formPending}
-                      onRemoved={() => view.closeIfShowing(showing(dialogRedirect.id))}
-                    />
-                  )
-                }
-              >
+              <DialogActions start={dialogRedirect && deleteButton(dialogRedirect, formPending)}>
                 {submit}
               </DialogActions>
             ))}
@@ -712,65 +699,6 @@ function RedirectSummary({ redirect, wide }: { redirect: Redirect; wide: boolean
         </span>
       </span>
     </span>
-  );
-}
-
-function DeleteRedirect({
-  redirect,
-  disabled,
-  onRemoved,
-}: {
-  redirect: Redirect;
-  disabled?: boolean;
-  onRemoved: () => void;
-}) {
-  const { run, pending } = useAction();
-
-  return (
-    <AlertDialog>
-      <AlertDialogTrigger
-        render={
-          <Button
-            type="button"
-            variant="ghost"
-            size="icon-sm"
-            disabled={disabled || pending}
-            aria-label={`Remove redirect from ${redirect.fromPath}`}
-            className="text-muted-foreground hover:text-destructive"
-          />
-        }
-      >
-        <Trash2Icon aria-hidden className="size-4" />
-      </AlertDialogTrigger>
-      <AlertDialogContent>
-        <AlertDialogHeader>
-          <AlertDialogTitle>Remove this redirect?</AlertDialogTitle>
-          <AlertDialogDescription>
-            <span className="font-mono">{redirect.fromPath}</span> will no longer redirect. This
-            cannot be undone.
-          </AlertDialogDescription>
-        </AlertDialogHeader>
-        <AlertDialogFooter>
-          <AlertDialogCancel>Cancel</AlertDialogCancel>
-          <AlertDialogAction
-            onClick={() =>
-              run(
-                async () => {
-                  await deleteRedirect({ data: { id: redirect.id } });
-                  return true;
-                },
-                {
-                  success: removedNotice(1, NOUN),
-                  error: 'Could not remove the redirect',
-                }
-              ).then((removed) => removed && onRemoved())
-            }
-          >
-            Remove
-          </AlertDialogAction>
-        </AlertDialogFooter>
-      </AlertDialogContent>
-    </AlertDialog>
   );
 }
 

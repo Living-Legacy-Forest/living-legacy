@@ -1,10 +1,11 @@
 import { mediaCoverageKinds, slugify, webUrlSchema, wholeNumberSchema } from '@ll/content';
 import { mediaCoverage } from '@ll/db/schema';
 import { createServerFn } from '@tanstack/react-start';
-import { and, asc, desc, eq, inArray, isNull, ne } from 'drizzle-orm';
+import { and, asc, desc, eq, isNull, ne } from 'drizzle-orm';
 import { z } from 'zod';
 import { getDb } from '@/lib/db';
 import { authMiddleware, requirePermission } from '@/lib/session';
+import { restoreRows, trashRows } from './content-trash';
 
 export const listMediaCoverage = createServerFn({ method: 'GET' })
   .middleware([authMiddleware])
@@ -132,12 +133,21 @@ export const saveMediaCoverage = createServerFn({ method: 'POST' })
     return { id: data.id };
   });
 
+/** To the trash, so Undo can bring them back. */
 export const deleteMediaCoverage = createServerFn({ method: 'POST' })
   .middleware([requirePermission('content:write')])
   .validator(z.object({ ids: z.array(z.string()).min(1).max(500) }))
-  .handler(async ({ data }) => {
-    await getDb().delete(mediaCoverage).where(inArray(mediaCoverage.id, data.ids));
+  .handler(async ({ data, context }) => {
+    await trashRows(getDb(), 'coverage', { ids: data.ids, userId: context.user.id });
     return { removed: data.ids.length };
+  });
+
+export const restoreMediaCoverage = createServerFn({ method: 'POST' })
+  .middleware([requirePermission('content:write')])
+  .validator(z.object({ ids: z.array(z.string()).min(1).max(500) }))
+  .handler(async ({ data, context }) => {
+    await restoreRows(getDb(), 'coverage', { ids: data.ids, userId: context.user.id });
+    return { restored: data.ids.length };
   });
 
 /** One switch from the list's row menu, without sending the whole form. */

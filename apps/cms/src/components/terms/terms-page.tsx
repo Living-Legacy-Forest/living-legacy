@@ -3,17 +3,6 @@ import { CardMeta, ListCard, ListCards } from '@/components/list/list-card';
 import { ListFilter, passes } from '@/components/list/list-filter';
 import { ListSort, byNumber, byText, sortedBy, useListSort } from '@/components/list/list-sort';
 import { ViewSwitch, useListView } from '@/components/list/view-switch';
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-  AlertDialogTrigger,
-} from '@/components/ui/alert-dialog';
 import { FormCell, FormSection } from '@/components/form-cells';
 import { FolderIcon, PlusIcon, TagIcon } from '@/components/icons';
 import { PageActions } from '@/components/shell/page-actions';
@@ -35,7 +24,6 @@ import { SaveButton, useSaveFeedback } from '@/components/list/save-button';
 import { LeaveDialog } from '@/components/editor-page/leave-dialog';
 import { ListRow } from '@/components/list/list-row';
 import {
-  ConfirmBulkDelete,
   SearchInput,
   SelectionBar,
   matchesSearch,
@@ -55,10 +43,10 @@ import {
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { reportInvalid } from '@/lib/form-validation';
-import { removedNotice } from '@/lib/notify';
+import { deletedNotice, restoredOrThrow, restoredResultNotice } from '@/lib/notify';
 import { useAction } from '@/lib/use-action';
 import { useRevealOnce } from '@/lib/use-reveal-once';
-import { type Term, type TermsData, deleteTerms, saveTerm } from '@/server/terms';
+import { type Term, type TermsData, deleteTerms, restoreTerms, saveTerm } from '@/server/terms';
 
 type TermType = 'category' | 'tag';
 
@@ -105,7 +93,6 @@ export function TermsPage({
   const [usage, setUsage] = useState<string[]>([]);
   const [layout, setLayout] = useListView(`terms_${type}`);
   const grid = layout === 'grid';
-  const [toDelete, setToDelete] = useState<string[] | null>(null);
   const selection = useSelection(data.map((t) => t.id));
   const { run, pending } = useAction();
   const revealing = useRevealOnce();
@@ -128,18 +115,30 @@ export function TermsPage({
   // A term removed elsewhere closes the pane.
   const pane = view.pane?.kind === 'edit' && !editing(view.pane) ? null : view.pane;
 
+  // Straight away, with Undo on the toast, rather than asking first.
   async function remove(ids: string[]) {
     const result = await run(() => deleteTerms({ data: { type, ids } }), {
-      success: {
-        ...removedNotice(ids.length, noun),
-        description: `${ids.length === 1 ? 'It is' : 'They are'} also taken off any posts.`,
-      },
-      error: 'Could not remove',
+      success: deletedNotice(
+        ids.length,
+        noun,
+        () => restore(ids),
+        `${ids.length === 1 ? 'It is' : 'They are'} also taken off any posts. Undo puts it back on them.`
+      ),
+      error: 'Could not delete',
     });
-    if (!result) return;
+    if (!result) return false;
     view.closeIfShowing((t) => t.kind === 'edit' && ids.includes(t.id));
     selection.clear();
+    return true;
   }
+
+  const restore = (ids: string[]) => {
+    const why = `A ${type} with the same name or address was added since, so this one cannot come back.`;
+    return run(() => restoredOrThrow(() => restoreTerms({ data: { type, ids } }), why), {
+      success: (result) => restoredResultNotice(result, noun, why),
+      error: 'Could not bring it back',
+    });
+  };
 
   const form = (target: Target, onDone: (id: string | null) => void, actions: Actions) => {
     const term = editing(target);
@@ -154,11 +153,16 @@ export function TermsPage({
           actions(
             submit,
             term && (
-              <DeleteTerm
-                type={type}
-                term={term}
-                onRemoved={() => view.closeIfShowing((t) => t.kind === 'edit' && t.id === term.id)}
-              />
+              <Button
+                type="button"
+                variant="ghost"
+                size="sm"
+                disabled={pending}
+                className="text-muted-foreground hover:text-destructive"
+                onClick={() => void remove([term.id])}
+              >
+                Delete
+              </Button>
             )
           )
         }
@@ -264,7 +268,7 @@ export function TermsPage({
                 title="All"
                 total={data.length}
                 pending={pending}
-                onDelete={canWrite ? () => setToDelete(selection.checkedIds) : undefined}
+                onDelete={canWrite ? () => void remove(selection.checkedIds) : undefined}
               />
             }
           >
@@ -287,7 +291,7 @@ export function TermsPage({
                     current={pane?.kind === 'edit' && pane.id === t.id}
                     remove={
                       canWrite
-                        ? { label: 'Delete', onAction: () => setToDelete([t.id]) }
+                        ? { label: 'Delete', onAction: () => void remove([t.id]) }
                         : undefined
                     }
                     onOpen={() => canWrite && view.open({ kind: 'edit', id: t.id })}
@@ -323,7 +327,7 @@ export function TermsPage({
                     }
                     swipe={
                       canWrite
-                        ? { label: 'Delete', onAction: () => setToDelete([t.id]) }
+                        ? { label: 'Delete', onAction: () => void remove([t.id]) }
                         : undefined
                     }
                     onOpen={() => canWrite && view.open({ kind: 'edit', id: t.id })}
@@ -359,15 +363,6 @@ export function TermsPage({
           </PaneColumn>
         </ListPageLayout>
       )}
-
-      <ConfirmBulkDelete
-        open={toDelete !== null}
-        onOpenChange={(open) => !open && setToDelete(null)}
-        count={toDelete?.length ?? 0}
-        noun={noun}
-        description="Posts using them keep their content, but lose this label. This cannot be undone."
-        onConfirm={() => toDelete && remove(toDelete)}
-      />
 
       <LeaveDialog blocker={view.leave} what={noun[0]} />
 
@@ -411,68 +406,6 @@ function TermSummary({ term: t }: { term: Term }) {
         <span className="text-muted-foreground mt-0.5 block truncate text-xs">{t.description}</span>
       )}
     </>
-  );
-}
-
-function DeleteTerm({
-  type,
-  term,
-  onRemoved,
-}: {
-  type: TermType;
-  term: Term;
-  onRemoved: () => void;
-}) {
-  const { run, pending } = useAction();
-
-  return (
-    <AlertDialog>
-      <AlertDialogTrigger
-        render={
-          <Button
-            type="button"
-            variant="ghost"
-            size="sm"
-            disabled={pending}
-            className="text-muted-foreground hover:text-destructive"
-          />
-        }
-      >
-        Delete
-      </AlertDialogTrigger>
-      <AlertDialogContent>
-        <AlertDialogHeader>
-          <AlertDialogTitle>Delete "{term.name}"?</AlertDialogTitle>
-          <AlertDialogDescription>
-            {term.postCount > 0
-              ? `${term.postCount} ${term.postCount === 1 ? 'post uses' : 'posts use'} this ${type}. They keep their content, but lose this label. This cannot be undone.`
-              : 'This cannot be undone.'}
-          </AlertDialogDescription>
-        </AlertDialogHeader>
-        <AlertDialogFooter>
-          <AlertDialogCancel>Cancel</AlertDialogCancel>
-          <AlertDialogAction
-            onClick={() =>
-              run(
-                async () => {
-                  await deleteTerms({ data: { type, ids: [term.id] } });
-                  return true;
-                },
-                {
-                  success: {
-                    title: `${type === 'category' ? 'Category' : 'Tag'} deleted`,
-                    description: 'It is also taken off any posts.',
-                  },
-                  error: `Could not delete the ${type}`,
-                }
-              ).then((removed) => removed && onRemoved())
-            }
-          >
-            Delete
-          </AlertDialogAction>
-        </AlertDialogFooter>
-      </AlertDialogContent>
-    </AlertDialog>
   );
 }
 

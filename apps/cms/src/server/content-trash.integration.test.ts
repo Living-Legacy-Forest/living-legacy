@@ -1,7 +1,7 @@
 // The trash for team members, FAQs and testimonials against local D1: deleting moves a row to
 // the trash, Undo brings it back as it was, and the daily job empties what has waited 30 days.
 import { MEDIA_TRASH_DAYS } from '@ll/content';
-import { faqs, posts, teamMembers, testimonials } from '@ll/db/schema';
+import { faqs, mediaCoverage, posts, teamMembers, testimonials } from '@ll/db/schema';
 import { eq } from 'drizzle-orm';
 import { beforeEach, describe, expect, it } from 'vitest';
 import { addUser, days, testDb } from '../../test/fixtures';
@@ -16,6 +16,7 @@ beforeEach(async () => {
   await db.delete(teamMembers);
   await db.delete(faqs);
   await db.delete(testimonials);
+  await db.delete(mediaCoverage);
   userId = await addUser('admin');
 });
 
@@ -56,6 +57,48 @@ describe('restoreRows', () => {
     await restoreRows(testDb(), 'faqs', { ids: [row!.id], userId });
     const back = await testDb().query.faqs.findFirst({ where: eq(faqs.id, row!.id) });
     expect(back).toMatchObject({ question: 'Can I visit?', tags: ['home'], deletedAt: null });
+  });
+});
+
+describe('media coverage', () => {
+  const addItem = async (slug: string) =>
+    (
+      await testDb()
+        .insert(mediaCoverage)
+        .values({ title: slug, slug, source: 'Herald', externalUrl: 'https://example.test/a' })
+        .returning()
+    )[0]!;
+
+  it('goes to the trash and comes back, and frees its slug while it waits', async () => {
+    const item = await addItem('big-news');
+    await trashRows(testDb(), 'coverage', { ids: [item.id], userId });
+    // The unique slug only counts live rows, so a new item can take it meanwhile.
+    await addItem('big-news');
+    await restoreRows(testDb(), 'coverage', { ids: [item.id], userId }).catch(() => {});
+    const rows = await testDb().select().from(mediaCoverage);
+    expect(rows).toHaveLength(2);
+  });
+});
+
+describe('long lists', () => {
+  it('go to the trash and come back past the 100 values a query allows', async () => {
+    const ids: string[] = [];
+    // A few at a time: the setup has the same limit as the code under test.
+    for (let i = 0; i < 120; i += 5) {
+      const rows = await testDb()
+        .insert(teamMembers)
+        .values(Array.from({ length: 5 }, (_, j) => ({ name: `Member ${i + j}` })))
+        .returning({ id: teamMembers.id });
+      ids.push(...rows.map((r) => r.id));
+    }
+
+    await trashRows(testDb(), 'team', { ids, userId });
+    const trashed = await testDb().select().from(teamMembers);
+    expect(trashed.every((m) => m.deletedAt !== null)).toBe(true);
+
+    await restoreRows(testDb(), 'team', { ids, userId });
+    const back = await testDb().select().from(teamMembers);
+    expect(back.every((m) => m.deletedAt === null)).toBe(true);
   });
 });
 

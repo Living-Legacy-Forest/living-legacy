@@ -1,10 +1,11 @@
 import { type AnnouncementBackground, isAnnouncementBackground } from '@ll/content';
 import { announcements } from '@ll/db/schema';
 import { createServerFn } from '@tanstack/react-start';
-import { desc, eq, inArray } from 'drizzle-orm';
+import { desc, eq } from 'drizzle-orm';
 import { z } from 'zod';
 import { getDb } from '@/lib/db';
 import { authMiddleware, requirePermission } from '@/lib/session';
+import { restoreWholeRows, trashWholeRows } from './row-trash';
 
 export const listAnnouncements = createServerFn({ method: 'GET' })
   .middleware([authMiddleware])
@@ -107,10 +108,19 @@ export const saveAnnouncement = createServerFn({ method: 'POST' })
     return { id: data.id };
   });
 
+/** To the trash, so Undo can bring them back. */
 export const deleteAnnouncements = createServerFn({ method: 'POST' })
   .middleware([requirePermission('content:write')])
   .validator(z.object({ ids: z.array(z.string()).min(1).max(200) }))
-  .handler(async ({ data }) => {
-    await getDb().delete(announcements).where(inArray(announcements.id, data.ids));
-    return { removed: data.ids.length };
+  .handler(async ({ data, context }) => {
+    const rows = await trashWholeRows(getDb(), 'announcements', {
+      ids: data.ids,
+      userId: context.user.id,
+    });
+    return { removed: rows.length };
   });
+
+export const restoreAnnouncements = createServerFn({ method: 'POST' })
+  .middleware([requirePermission('content:write')])
+  .validator(z.object({ ids: z.array(z.string()).min(1).max(200) }))
+  .handler(async ({ data }) => restoreWholeRows(getDb(), 'announcements', { ids: data.ids }));

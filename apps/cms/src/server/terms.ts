@@ -1,10 +1,11 @@
 import { slugify } from '@ll/content';
 import { posts, postTerms, terms } from '@ll/db/schema';
 import { createServerFn } from '@tanstack/react-start';
-import { and, asc, count, eq, inArray, isNull, ne } from 'drizzle-orm';
+import { and, asc, count, eq, isNull, ne } from 'drizzle-orm';
 import { z } from 'zod';
 import { getDb } from '@/lib/db';
 import { authMiddleware, requirePermission } from '@/lib/session';
+import { restoreWholeRows, trashWholeRows } from './row-trash';
 
 const typeSchema = z.object({ type: z.enum(['category', 'tag']) });
 
@@ -80,9 +81,19 @@ export const deleteTerms = createServerFn({ method: 'POST' })
   .validator(
     z.object({ type: z.enum(['category', 'tag']), ids: z.array(z.string()).min(1).max(200) })
   )
-  .handler(async ({ data }) => {
-    await getDb()
-      .delete(terms)
-      .where(and(eq(terms.type, data.type), inArray(terms.id, data.ids)));
-    return { removed: data.ids.length };
+  .handler(async ({ data, context }) => {
+    // To the trash with the posts it was on, so Undo can bring it back as it was.
+    const rows = await trashWholeRows(getDb(), 'terms', {
+      ids: data.ids,
+      userId: context.user.id,
+      also: eq(terms.type, data.type),
+    });
+    return { removed: rows.length };
   });
+
+export const restoreTerms = createServerFn({ method: 'POST' })
+  .middleware([requirePermission('content:write')])
+  .validator(
+    z.object({ type: z.enum(['category', 'tag']), ids: z.array(z.string()).min(1).max(200) })
+  )
+  .handler(async ({ data }) => restoreWholeRows(getDb(), 'terms', { ids: data.ids }));

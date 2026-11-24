@@ -97,7 +97,10 @@ export function LegalHistory({
                   {loading === entry.id ? (
                     <Spinner className="mt-0.5" />
                   ) : live ? (
-                    <Badge variant="secondary" className="h-4 px-1.5 text-[0.625rem]">
+                    <Badge
+                      variant="secondary"
+                      className="h-4 px-1.5 text-[0.625rem] max-md:h-5 max-md:text-[0.6875rem]"
+                    >
                       Live
                     </Badge>
                   ) : null}

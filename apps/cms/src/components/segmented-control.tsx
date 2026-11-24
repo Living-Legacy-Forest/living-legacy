@@ -46,18 +46,18 @@ export function SegmentedControl<T extends string>({
           className={cn(
             pillItemClass,
             'touch:min-h-11 touch:flex-1',
-            // A 32pt segment whose tap area still reaches 44pt.
-            'max-md:text-foreground max-md:h-8 max-md:min-h-8! max-md:flex-1 max-md:rounded-[7px] max-md:border-0 max-md:text-[0.8125rem] max-md:after:absolute max-md:after:inset-x-0 max-md:after:-inset-y-1.5 max-md:aria-pressed:font-semibold'
+            // A 32pt segment whose tap area still reaches 44pt. Equal shares, but never narrower
+            // than its own label (min-w-max), so a long word is not cut to "Upcom…" on a narrow
+            // phone; the others give up the room. The icons are dropped below, which is what
+            // made three segments wider than their track.
+            'max-md:text-foreground max-md:h-8 max-md:min-h-8! max-md:min-w-max max-md:flex-1 max-md:rounded-[7px] max-md:border-0 max-md:px-1 max-md:text-[0.8125rem] max-md:after:absolute max-md:after:inset-x-0 max-md:after:-inset-y-1.5 max-md:aria-pressed:font-semibold'
           )}
         >
-          {option.icon ? (
-            <span className="inline-flex items-center gap-2 [&_svg]:shrink-0">
-              {option.icon}
-              {option.label}
-            </span>
-          ) : (
-            option.label
-          )}
+          <span className="inline-flex min-w-0 items-center gap-2 [&_svg]:shrink-0">
+            {/* iOS segments are words alone; the icon is for the wider screens. */}
+            {option.icon && <span className="inline-flex max-md:hidden">{option.icon}</span>}
+            <span className="min-w-0 truncate">{option.label}</span>
+          </span>
         </Toggle>
       ))}
     </ToggleGroup>

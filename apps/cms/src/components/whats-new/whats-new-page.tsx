@@ -11,6 +11,7 @@ import { ArrowRight, CheckIcon, ChevronDown } from '@/components/icons';
 import { useUpdates } from '@/components/shell/updates';
 import { Pager } from '@/components/pager';
 import { cn } from '@/lib/utils';
+import { sameDate } from '@/lib/format';
 import { type WhatsNewEntry, type WhatsNewKind, whatsNew } from '@/lib/whats-new';
 
 /** Notes per page. */
@@ -25,9 +26,12 @@ const kindOf = (entry: WhatsNewEntry): WhatsNewKind => entry.kind ?? 'new';
 
 // Ids carry a suffix when a day has several entries (2026-11-15-8), so take the date alone.
 const dateOf = (entry: WhatsNewEntry) => new Date(`${entry.id.slice(0, 10)}T12:00:00`);
-const dayLabel = new Intl.DateTimeFormat('en-AU', { day: 'numeric', month: 'short' });
+// Wrapped in sameDate so Safari and the server agree on "Sept" (lib/format.ts).
+const dayFormat = new Intl.DateTimeFormat('en-AU', { day: 'numeric', month: 'short' });
+const dayLabel = { format: (date: Date) => sameDate(dayFormat.format(date)) };
 const monthName = new Intl.DateTimeFormat('en-AU', { month: 'long' });
-const monthShort = new Intl.DateTimeFormat('en-AU', { month: 'short' });
+const monthShortFormat = new Intl.DateTimeFormat('en-AU', { month: 'short' });
+const monthShort = { format: (date: Date) => sameDate(monthShortFormat.format(date)) };
 
 type Month = { key: string; name: string; year: string; short: string };
 const months: Month[] = [];

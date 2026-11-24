@@ -13,7 +13,7 @@ import {
   CardHeader,
   CardTitle,
 } from '@/components/ui/card';
-import { formatBytes, formatDuration, formatInteger } from '@/lib/format';
+import { formatBytes, formatDuration, formatInteger, sameDate } from '@/lib/format';
 import { addedIn, describeMonths, monthsUntilFull } from '@/lib/media-growth';
 import { databaseMeter, libraryMeter } from '@/lib/storage-meter';
 import { useTimeZone } from '@/lib/use-time-zone';
@@ -36,14 +36,18 @@ const timeSeries: LineChartSeries[] = [
 const dayKey = (timestamp: number, timeZone: string) =>
   new Date(timestamp).toLocaleDateString('en-CA', { timeZone });
 const fullDayLabel = (timestamp: number, timeZone: string) =>
-  new Date(timestamp).toLocaleDateString('en-AU', {
-    timeZone,
-    weekday: 'short',
-    day: 'numeric',
-    month: 'short',
-  });
+  sameDate(
+    new Date(timestamp).toLocaleDateString('en-AU', {
+      timeZone,
+      weekday: 'short',
+      day: 'numeric',
+      month: 'short',
+    })
+  );
 const dayLabel = (timestamp: number, timeZone: string) =>
-  new Date(timestamp).toLocaleDateString('en-AU', { timeZone, day: 'numeric', month: 'short' });
+  sameDate(
+    new Date(timestamp).toLocaleDateString('en-AU', { timeZone, day: 'numeric', month: 'short' })
+  );
 
 /** The last 14 days in the viewer's time zone, oldest first, with each hour's runs added in. */
 function byDay(history: Hour[], timeZone: string, now = Date.now()) {

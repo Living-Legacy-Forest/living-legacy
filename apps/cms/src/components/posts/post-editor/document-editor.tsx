@@ -133,9 +133,9 @@ export function DocumentEditor({
             editor={editor}
             state={state}
             underHeader={pageScroll}
-            // Under the app header: 3.5rem plus the notch on phones, and 4rem (it sits 0.5rem down) above.
+            // Under the app header: 2.75rem (iOS's 44pt bar) plus the notch on phones, and 4rem (it sits 0.5rem down) above.
             className={
-              pageScroll ? 'top-[calc(3.5rem+env(safe-area-inset-top))] md:top-16' : undefined
+              pageScroll ? 'top-[calc(2.75rem+env(safe-area-inset-top))] md:top-16' : undefined
             }
           />
         )}

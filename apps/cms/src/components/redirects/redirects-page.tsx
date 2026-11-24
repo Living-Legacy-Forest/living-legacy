@@ -89,6 +89,7 @@ import {
   saveRedirect,
   setRedirectEnabled,
 } from '@/server/redirects';
+import { sameDate } from '@/lib/format';
 
 type Code = '301' | '302' | '307' | '308' | '410';
 
@@ -105,7 +106,7 @@ const dateFormat = new Intl.DateTimeFormat('en-AU', { dateStyle: 'medium' });
 function usage(r: Redirect) {
   if (r.hits === 0) return 'Not used yet';
   const times = `Used ${r.hits} ${r.hits === 1 ? 'time' : 'times'}`;
-  return r.lastHitAt ? `${times}, last on ${dateFormat.format(r.lastHitAt)}` : times;
+  return r.lastHitAt ? `${times}, last on ${sameDate(dateFormat.format(r.lastHitAt))}` : times;
 }
 
 const filterGroups = [

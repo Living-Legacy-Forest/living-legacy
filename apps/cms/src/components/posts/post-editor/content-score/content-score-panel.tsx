@@ -101,7 +101,7 @@ function Structure({ structure }: { structure: StructureCount[] }) {
             </div>
             <p
               className={cn(
-                'text-[0.7rem] leading-tight',
+                'text-[0.6875rem] leading-tight',
                 s.state === 'within' ? 'text-muted-foreground' : tone.mid
               )}
             >

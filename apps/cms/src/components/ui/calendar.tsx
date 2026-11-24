@@ -4,6 +4,7 @@ import { DayPicker, getDefaultClassNames, type DayButton, type Locale } from 're
 
 import { Button, buttonVariants } from '@/components/ui/button';
 import { ChevronLeftIcon, ChevronRightIcon, ChevronDownIcon } from '@/components/icons';
+import { sameDate } from '@/lib/format';
 
 function Calendar({
   className,
@@ -35,7 +36,8 @@ function Calendar({
       captionLayout={captionLayout}
       locale={locale}
       formatters={{
-        formatMonthDropdown: (date) => date.toLocaleString(locale?.code, { month: 'short' }),
+        formatMonthDropdown: (date) =>
+          sameDate(date.toLocaleString(locale?.code, { month: 'short' })),
         ...formatters,
       }}
       classNames={{

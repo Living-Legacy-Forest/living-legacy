@@ -60,25 +60,36 @@ export function formatRelative(timestamp: number, now = Date.now()) {
   return 'just now';
 }
 
-/** `zone` is the site's configured time zone (Settings → Language & appearance). */
-export function formatDate(timestamp: number, zone: string) {
-  return new Date(timestamp).toLocaleDateString(LOCALE, {
-    timeZone: zone,
-    day: 'numeric',
-    month: 'short',
-    year: 'numeric',
-  });
+/**
+ * The same short date from every engine. Browsers word en-AU dates differently: V8 (the
+ * Worker, Chrome) writes "18 Sept" and "Fri 18 Sept", Safari's engine "18 Sep" and
+ * "Fri, 18 Sep". A page is rendered on the server and again in the browser, and text that
+ * differs makes React throw the server's HTML away, so every short date settles on V8's form.
+ */
+export function sameDate(text: string) {
+  return text.replace(/\bSep\b/g, 'Sept').replace(/^(Mon|Tue|Wed|Thu|Fri|Sat|Sun), /, '$1 ');
 }
 
+/** `zone` is the site's configured time zone (Settings → Language & appearance). */
+export function formatDate(timestamp: number, zone: string) {
+  return sameDate(
+    new Date(timestamp).toLocaleDateString(LOCALE, {
+      timeZone: zone,
+      day: 'numeric',
+      month: 'short',
+      year: 'numeric',
+    })
+  );
+}
+
+/** "18 Sept 2026, 1:05 pm". Put together here: Safari joins the two with "at". */
 export function formatDateTime(timestamp: number, zone: string) {
-  return new Date(timestamp).toLocaleString(LOCALE, {
+  const time = new Date(timestamp).toLocaleTimeString(LOCALE, {
     timeZone: zone,
-    day: 'numeric',
-    month: 'short',
-    year: 'numeric',
     hour: 'numeric',
     minute: '2-digit',
   });
+  return `${formatDate(timestamp, zone)}, ${time}`;
 }
 
 /** "Saturday 14 March 2027" in `zone`. */
@@ -97,12 +108,14 @@ export function formatTimeRange(start: number, end: number, zone: string) {
   const time = (ms: number) =>
     new Date(ms).toLocaleTimeString(LOCALE, { timeZone: zone, hour: 'numeric', minute: '2-digit' });
   const day = (ms: number) =>
-    new Date(ms).toLocaleDateString(LOCALE, {
-      timeZone: zone,
-      weekday: 'short',
-      day: 'numeric',
-      month: 'short',
-    });
+    sameDate(
+      new Date(ms).toLocaleDateString(LOCALE, {
+        timeZone: zone,
+        weekday: 'short',
+        day: 'numeric',
+        month: 'short',
+      })
+    );
   return day(start) === day(end)
     ? `${time(start)} – ${time(end)}`
     : `${day(start)}, ${time(start)} – ${day(end)}, ${time(end)}`;

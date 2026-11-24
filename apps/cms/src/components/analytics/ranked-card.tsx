@@ -45,12 +45,13 @@ export function RankedList({
         <ol className="flex flex-1 flex-col gap-1">
           {shown.map((row) => {
             const share = percentOf(row.value, whole);
+            // Touch screens: the link's tap area covers the whole row, as a cell's does on iOS.
             const label = row.href ? (
               <a
                 href={row.href}
                 target="_blank"
                 rel="noreferrer"
-                className="truncate hover:underline"
+                className="touch:after:absolute touch:after:inset-0 truncate hover:underline"
               >
                 {row.label}
               </a>
@@ -60,14 +61,16 @@ export function RankedList({
             return (
               <li
                 key={row.key}
-                className="relative flex min-h-9 flex-1 items-center gap-3 rounded-md px-2.5 py-1.5 [&:not(:only-child)]:max-h-14"
+                // Isolated, with the bar a layer down, so the row's text needs no positioning of
+                // its own and the link's tap area (above) is measured against the row.
+                className="touch:min-h-11 touch:has-[a:active]:bg-muted relative isolate flex min-h-9 flex-1 items-center gap-3 rounded-md px-2.5 py-1.5 [&:not(:only-child)]:max-h-14"
               >
                 <span
                   aria-hidden
-                  className="bg-primary/10 absolute inset-y-0 left-0 rounded-md"
+                  className="bg-primary/10 absolute inset-y-0 left-0 -z-10 rounded-md"
                   style={{ width: `${(row.value / top) * 100}%` }}
                 />
-                <span className="relative flex min-w-0 flex-1 flex-col">
+                <span className="flex min-w-0 flex-1 flex-col">
                   <span className="text-ui flex min-w-0 items-center gap-2">
                     {row.leading}
                     {label}
@@ -76,7 +79,7 @@ export function RankedList({
                     <span className="text-muted-foreground truncate text-xs">{row.detail}</span>
                   )}
                 </span>
-                <span className="relative shrink-0 text-right text-sm tabular-nums">
+                <span className="shrink-0 text-right text-sm tabular-nums">
                   {formatInteger(row.value)}
                   <span className="sr-only"> {counted}</span>
                   <span className="text-muted-foreground ml-2 inline-block w-11 text-xs">

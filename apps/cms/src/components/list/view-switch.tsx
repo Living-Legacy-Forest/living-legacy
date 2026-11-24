@@ -50,15 +50,18 @@ export function ViewSwitch({
   onChange: (next: ListView) => void;
 }) {
   return (
+    // Phones: iOS's segmented control, as SegmentedControl draws it, 36pt tall like the Sort and
+    // Filter buttons beside it. The highlight takes the buttons' size at every width, so it
+    // covers the chosen one exactly and slides a whole button across.
     <div
       role="group"
       aria-label="View"
-      className="bg-muted/60 relative flex items-center gap-0.5 rounded-lg p-0.5"
+      className="bg-muted/60 relative flex items-center gap-0.5 rounded-lg p-0.5 max-md:rounded-[9px] max-md:bg-(--ios-fill)"
     >
       <span
         aria-hidden
         className={cn(
-          'bg-background absolute top-0.5 left-0.5 size-7 rounded-md shadow-xs transition-transform duration-200 ease-[cubic-bezier(0.23,1,0.32,1)] motion-reduce:transition-none',
+          'bg-background touch:h-8 touch:w-10 absolute top-0.5 left-0.5 size-7 rounded-md shadow-xs transition-transform duration-200 ease-[cubic-bezier(0.23,1,0.32,1)] motion-reduce:transition-none max-md:rounded-[7px] max-md:bg-(--ios-segment-on) max-md:shadow-sm',
           // One button's width plus the 2px gap between them.
           value === 'grid' && 'translate-x-[calc(100%+0.125rem)]'
         )}
@@ -72,7 +75,7 @@ export function ViewSwitch({
           aria-pressed={value === next}
           title={`${label} view`}
           // The highlight behind is the background; the buttons only change colour.
-          className="text-muted-foreground hover:text-foreground aria-pressed:text-foreground touch-hit relative size-7 hover:bg-transparent active:bg-transparent dark:hover:bg-transparent dark:active:bg-transparent"
+          className="text-muted-foreground hover:text-foreground aria-pressed:text-foreground touch-hit touch:h-8! touch:w-10! relative size-7 hover:bg-transparent active:bg-transparent max-md:rounded-[7px] max-md:after:-inset-y-1.5 dark:hover:bg-transparent dark:active:bg-transparent"
           onClick={() => onChange(next)}
         >
           <Icon aria-hidden />

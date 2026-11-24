@@ -4,9 +4,11 @@ import {
   formatBytes,
   formatCompact,
   formatDate,
+  formatDateTime,
   formatRelative,
   formatTimeRange,
   parseTime,
+  sameDate,
   zoneOffset,
 } from './format';
 
@@ -22,6 +24,19 @@ describe('formatCompact', () => {
       '125K',
       '1.5M',
     ]);
+  });
+});
+
+describe('sameDate', () => {
+  it("turns Safari's wording into the server's, so a rendered page hydrates", () => {
+    expect(sameDate('18 Sep 2026')).toBe('18 Sept 2026');
+    expect(sameDate('Fri, 18 Sep')).toBe('Fri 18 Sept');
+    expect(sameDate('Fri 18 Sept')).toBe('Fri 18 Sept');
+  });
+
+  it('leaves other words alone', () => {
+    expect(sameDate('September 2026')).toBe('September 2026');
+    expect(sameDate('Sun 14 Mar')).toBe('Sun 14 Mar');
   });
 });
 
@@ -63,10 +78,16 @@ describe('dates in the site time zone', () => {
   it('names the end day only when a range crosses midnight', () => {
     const start = Date.UTC(2027, 2, 13, 23); // 10:00 am, 14 March in Melbourne
     expect(formatTimeRange(start, start + 2 * 3_600_000, MELBOURNE)).toBe('10:00 am – 12:00 pm');
-    // Versions of Node's locale data differ on the comma after the weekday.
-    expect(formatTimeRange(start, start + 15 * 3_600_000, MELBOURNE)).toMatch(
-      /^Sun,? 14 Mar, 10:00 am – Mon,? 15 Mar, 1:00 am$/
+    // No comma after the weekday, whichever engine's locale data formatted it (sameDate).
+    expect(formatTimeRange(start, start + 15 * 3_600_000, MELBOURNE)).toBe(
+      'Sun 14 Mar, 10:00 am – Mon 15 Mar, 1:00 am'
     );
+  });
+
+  it('writes September and joins date and time the same way in every engine', () => {
+    const september = Date.UTC(2026, 8, 18, 3, 5); // 1:05 pm, 18 September in Melbourne
+    expect(formatDate(september, MELBOURNE)).toBe('18 Sept 2026');
+    expect(formatDateTime(september, MELBOURNE)).toBe('18 Sept 2026, 1:05 pm');
   });
 
   it('follows daylight saving in the offset', () => {

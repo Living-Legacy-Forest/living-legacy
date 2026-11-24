@@ -374,3 +374,23 @@
   font-variant-numeric: tabular-nums;
   font-weight: 500;
 }
+
+/* Touch screens: an invisible strip above and below makes each series toggle a 44pt tap. */
+@media (hover: none) {
+  .toggle {
+    position: relative;
+  }
+  .toggle::after {
+    content: '';
+    position: absolute;
+    inset: -6px 0;
+  }
+}
+
+/* Phones: the iOS text size (15pt subheadline) in place of 14px, as the rest of the CMS
+   uses on phones (styles.css). */
+@media (width < 48rem), (hover: none) and (height < 30rem) {
+  .figure {
+    --text-sm: 0.9375rem;
+  }
+}

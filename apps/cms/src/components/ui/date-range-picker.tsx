@@ -31,6 +31,7 @@ import {
 } from '@/components/icons';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
+import { sameDate } from '@/lib/format';
 
 // A range picker whose trigger grows into the panel it opens, ported from a shadcn-registry
 // motion library onto our tokens and Button. Two months sit side by side when the surrounding
@@ -109,8 +110,9 @@ const clampDate = (date: Date, min?: Date, max?: Date) =>
       ? startOfDay(max)
       : date;
 
+// sameDate: Safari writes "Sep" where the server writes "Sept" (lib/format.ts).
 const fmt = (date: Date, options: Intl.DateTimeFormatOptions) =>
-  date.toLocaleDateString('en-AU', options);
+  sameDate(date.toLocaleDateString('en-AU', options));
 const FULL = { day: 'numeric', month: 'short', year: 'numeric' } as const;
 /** "14 Nov 2026", "14 to 15 Nov 2026", "30 Nov to 2 Dec 2026". Words, never a dash. */
 function rangeLabel(range: DateRange) {

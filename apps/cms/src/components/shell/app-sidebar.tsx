@@ -1,5 +1,4 @@
 import { Link, useLocation } from '@tanstack/react-router';
-import logoMark from '@/assets/brand/logo-mark.webp';
 import { ExternalLink, GiftIcon, PanelLeftIcon } from '@/components/icons';
 import { Sidebar, SidebarMenu, SidebarMenuItem } from '@/components/ui/sidebar';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
@@ -10,6 +9,7 @@ import { SECTION_MOTION } from '@/lib/motion';
 import { cn } from '@/lib/utils';
 import { AppearanceRow } from './appearance-row';
 import { CommandMenu } from './command-menu';
+import { Logo } from './logo';
 import { ShortcutsRow, ThemeRow } from './rail-tools';
 import { SidebarRow } from './sidebar-row';
 import { SidebarUpdateCard, useUpdates } from './updates';
@@ -20,20 +20,6 @@ import { SidebarUpdateCard, useUpdates } from './updates';
 
 /** Columns open and close on the same curve the sidebar's sections used to. */
 const column = `flex min-h-0 shrink-0 flex-col overflow-hidden transition-[width] ${SECTION_MOTION}`;
-
-function Logo() {
-  return (
-    // White artwork painted in the brand colour via a CSS mask (plain white in dark mode).
-    <span
-      aria-hidden
-      className="bg-brand inline-block size-5 shrink-0 dark:bg-white"
-      style={{
-        WebkitMask: `url(${logoMark}) center / contain no-repeat`,
-        mask: `url(${logoMark}) center / contain no-repeat`,
-      }}
-    />
-  );
-}
 
 /** The small square button that widens or narrows a column, named by what it will do. */
 function ColumnToggle({

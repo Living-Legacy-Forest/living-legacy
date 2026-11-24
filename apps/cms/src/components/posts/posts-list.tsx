@@ -467,7 +467,12 @@ export function PostsList({
                 data-slot="pill-track"
                 // Fills the bar's height on touch screens: it scrolls, so it clips, and the
                 // tabs' taller tap areas (touch-hit) have to fit inside it.
-                className={cn(pillTrackClass, 'no-scrollbar md:touch:self-stretch overflow-x-auto')}
+                // Phones: iOS's 32pt scope tabs, with an invisible strip above and below that
+                // makes each a 44pt tap, inside the bar's 44pt height.
+                className={cn(
+                  pillTrackClass,
+                  'no-scrollbar md:touch:self-stretch overflow-x-auto max-md:self-stretch'
+                )}
               >
                 <PillGlide value={search.status} />
                 {tabs
@@ -492,7 +497,10 @@ export function PostsList({
                           selected: undefined,
                         })}
                         aria-current={active ? 'page' : undefined}
-                        className={pillItemClass}
+                        className={cn(
+                          pillItemClass,
+                          'max-md:h-8 max-md:after:absolute max-md:after:inset-x-0 max-md:after:-inset-y-1.5'
+                        )}
                       >
                         {tab.label}
                         <span className="text-muted-foreground text-xs tabular-nums">

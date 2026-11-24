@@ -130,8 +130,9 @@ export function StatCard({ stat }: { stat: Stat }) {
                 {parts && <PartsChart parts={parts} />}
                 {meter && (
                   // Compact, and without the legend (hovering the bar names each kind): the full
-                  // breakdown is on the System page.
-                  <div className="[--meter-gap:0.25rem] [--meter-item-pad:0.125rem] [--meter-legend-display:none] [--meter-legend-min:3.5rem] [--meter-text-base:0.625rem] [--meter-text-sm:0.5625rem] [--meter-text-xs:0.5625rem] [--meter-top:20px] [--meter-total-size:0.875rem] [--meter-track:8px]">
+                  // breakdown is on the System page. Phones set the card's other text larger, so
+                  // the meter's steps up too, to iOS's footnote and caption (13 and 11pt).
+                  <div className="[--meter-gap:0.25rem] [--meter-item-pad:0.125rem] [--meter-legend-display:none] [--meter-legend-min:3.5rem] [--meter-text-base:0.625rem] [--meter-text-sm:0.5625rem] [--meter-text-xs:0.5625rem] [--meter-top:20px] [--meter-total-size:0.875rem] [--meter-track:8px] max-md:[--meter-text-base:0.8125rem] max-md:[--meter-text-sm:0.6875rem] max-md:[--meter-text-xs:0.6875rem] max-md:[--meter-top:24px] max-md:[--meter-total-size:1.0625rem]">
                     <UsageMeter {...meter} />
                   </div>
                 )}

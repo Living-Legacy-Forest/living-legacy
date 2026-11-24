@@ -144,9 +144,13 @@ function PagesTable({
       {/* Phones and tablets: a row a page, its views on the right and the rest underneath. */}
       <ul className="divide-y overflow-hidden rounded-lg border max-md:divide-(--ios-separator) max-md:rounded-[10px] max-md:border-0 max-md:bg-(--ios-cell) lg:hidden">
         {sorted.map((p) => (
-          <li key={p.path} className="space-y-1 px-4 py-3">
+          // The whole cell opens the page, as an iOS cell does, and greys while pressed.
+          <li
+            key={p.path}
+            className="has-[a:active]:bg-muted relative space-y-1 px-4 py-3 max-md:has-[a:active]:bg-(--ios-fill)"
+          >
             <div className="flex items-start justify-between gap-3">
-              <PageLink page={p} />
+              <PageLink page={p} stretch />
               <span className="shrink-0 text-sm tabular-nums">
                 {formatInteger(p.views)} <span className="text-muted-foreground">views</span>
               </span>
@@ -218,14 +222,18 @@ function Num({ value, className }: { value: string; className?: string }) {
   return <TableCell className={cn('text-right tabular-nums', className)}>{value}</TableCell>;
 }
 
-function PageLink({ page }: { page: PageRow }) {
+/** `stretch` spreads its tap area over the nearest positioned ancestor, the whole cell. */
+function PageLink({ page, stretch }: { page: PageRow; stretch?: boolean }) {
   return (
     <a
       href={siteUrl(page.path)}
       target="_blank"
       rel="noreferrer"
       title={page.path}
-      className="text-ui block min-w-0 truncate text-blue-600 hover:underline dark:text-blue-400"
+      className={cn(
+        'text-ui block min-w-0 truncate text-blue-600 hover:underline dark:text-blue-400',
+        stretch && 'after:absolute after:inset-0'
+      )}
     >
       {pageName(page)}
     </a>

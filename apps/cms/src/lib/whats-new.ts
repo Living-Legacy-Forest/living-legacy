@@ -54,6 +54,22 @@ export type WhatsNewEntry = {
 
 export const whatsNew: WhatsNewEntry[] = [
   {
+    id: '2026-11-24',
+    kind: 'improved',
+    title: 'The CMS on your phone',
+    items: [
+      {
+        title: 'Pull down to refresh',
+        body: 'On your phone, pull down at the top of any list or page and let go to load the latest, as in Mail or Messages.',
+      },
+      {
+        title: 'Back buttons, and sideways too',
+        body: 'Pages inside a tab, like Analytics › Pages or Posts › Tags, now have a back button at the top left, and going back to Analytics keeps the period you picked. Turn your phone on its side and the CMS keeps its phone layout, with the tabs along the bottom.',
+        link: { label: 'Open Analytics', to: '/analytics' },
+      },
+    ],
+  },
+  {
     id: '2026-11-23-2',
     kind: 'new',
     title: 'Sign in with a passkey',

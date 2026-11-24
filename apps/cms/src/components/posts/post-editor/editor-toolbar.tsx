@@ -178,6 +178,8 @@ function PhoneBar({ editor, canDiscard, onImport }: ActionsProps) {
     );
   }
 
+  // One short word, as an iOS bar button: a longer label squeezes the title to a few letters.
+  // The screen reader still hears what it does.
   let primary: React.ReactNode = null;
   if (access === 'full') {
     primary = (
@@ -185,14 +187,17 @@ function PhoneBar({ editor, canDiscard, onImport }: ActionsProps) {
         type="button"
         disabled={working || (isLive && !dirty && !meta.hasDraft)}
         onClick={editor.publish}
+        aria-label={
+          editor.busy === 'publish'
+            ? undefined
+            : isLive
+              ? 'Publish changes'
+              : meta.scheduledAt
+                ? 'Publish now'
+                : undefined
+        }
       >
-        {editor.busy === 'publish'
-          ? 'Publishing…'
-          : isLive
-            ? 'Publish changes'
-            : meta.scheduledAt
-              ? 'Publish now'
-              : 'Publish'}
+        {editor.busy === 'publish' ? 'Publishing…' : 'Publish'}
       </button>
     );
   } else if (access === 'author') {

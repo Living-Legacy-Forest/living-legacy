@@ -20,7 +20,7 @@ import {
   ChartTooltip,
   ChartTooltipContent,
 } from '@/components/ui/chart';
-import { formatInteger } from '@/lib/format';
+import { formatInteger, sameDate } from '@/lib/format';
 import type { EventDashboard } from '@/server/event-stats';
 
 // Loaded on its own, so the chart library doesn't hold up the figures above.
@@ -66,11 +66,13 @@ function DatesChart({ data, onDateChange }: Props) {
   const { dates, date } = data;
   const rows = dates.map((d) => ({
     ...d,
-    label: new Date(d.startsAt).toLocaleDateString('en-AU', {
-      timeZone: d.timeZone,
-      day: 'numeric',
-      month: 'short',
-    }),
+    label: sameDate(
+      new Date(d.startsAt).toLocaleDateString('en-AU', {
+        timeZone: d.timeZone,
+        day: 'numeric',
+        month: 'short',
+      })
+    ),
     notIn: Math.max(0, d.booked - d.checkedIn),
   }));
   const faded = (id: string) => date !== null && date.id !== id;

@@ -362,7 +362,8 @@ function StepButton({
       onContextMenu={(event) => event.preventDefault()}
       className={cn(
         'text-muted-foreground grid size-6 shrink-0 cursor-pointer touch-manipulation place-items-center rounded-[calc(var(--radius-lg)-4px)] transition-[background-color,color,opacity] duration-150 select-none [-webkit-tap-highlight-color:transparent] [-webkit-touch-callout:none]',
-        'touch:size-9',
+        // On touch screens an invisible strip above and below makes each a 44pt tap.
+        'touch:relative touch:size-9 touch:after:absolute touch:after:inset-x-0 touch:after:-inset-y-1',
         'hover:not-aria-disabled:not-disabled:bg-muted hover:not-aria-disabled:not-disabled:text-foreground',
         // Quick press, spring release: the fill deepens and the glyph sinks while it repeats.
         'active:not-aria-disabled:bg-foreground/10 active:not-aria-disabled:text-foreground data-pressed:not-aria-disabled:bg-foreground/10 data-pressed:not-aria-disabled:text-foreground active:duration-100 data-pressed:duration-100',

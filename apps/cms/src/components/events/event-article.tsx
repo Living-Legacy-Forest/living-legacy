@@ -56,7 +56,9 @@ const chipDay = (ms: number, zone: string) =>
     .formatToParts(new Date(ms))
     .filter((p) => p.type !== 'literal')
     .map((p) => p.value)
-    .join(' ');
+    .join(' ')
+    // Safari names the month "Sep"; the server "Sept" (sameDate, lib/format.ts).
+    .replace(/\bSep\b/, 'Sept');
 
 /** How many other dates show before the rest fold into "+N more". */
 const DATES_SHOWN = 3;

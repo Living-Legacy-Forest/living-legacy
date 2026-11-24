@@ -104,7 +104,8 @@ function CodeBlockCopyButton({
         variant={variant}
         size={size}
         aria-label={copied ? 'Copied' : 'Copy'}
-        className={cn(className)}
+        // Touch screens: bigger, since the block clips the button's usual taller tap area.
+        className={cn('touch:size-9 touch:after:-inset-1', className)}
         onClick={(event) => {
           onClick?.(event);
           navigator.clipboard

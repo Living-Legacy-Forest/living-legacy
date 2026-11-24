@@ -7,6 +7,7 @@ import {
   Trash2Icon,
   UsersIcon,
 } from '@/components/icons';
+import { LeaveDialog } from '@/components/editor-page/leave-dialog';
 import {
   DialogActions,
   ListColumn,
@@ -19,14 +20,15 @@ import {
   PaneEmpty,
   PaneFrame,
   useListPane,
+  useFormDirty,
 } from '@/components/list/list-page';
+import { SaveButton, useSaveFeedback } from '@/components/list/save-button';
 import { ListRow, moveMenuItems, publishMenuItem } from '@/components/list/list-row';
 import { CardMeta, ListCard, ListCards } from '@/components/list/list-card';
 import { ListFilter, publishStatusOptions } from '@/components/list/list-filter';
 import { ListSort, byNumber, byText, sortedBy, useListSort } from '@/components/list/list-sort';
 import { ViewSwitch, useListView } from '@/components/list/view-switch';
 import {
-  ConfirmBulkDelete,
   SearchInput,
   SelectionBar,
   matchesSearch,
@@ -34,17 +36,6 @@ import {
 } from '@/components/list/list-tools';
 import { FormCell, FormSection, FormSwitchCell } from '@/components/form-cells';
 import { PageActions } from '@/components/shell/page-actions';
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-  AlertDialogTrigger,
-} from '@/components/ui/alert-dialog';
 import { ImageField } from '@/components/media/image-field';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -57,21 +48,20 @@ import {
   EmptyTitle,
 } from '@/components/ui/empty';
 import { Input } from '@/components/ui/input';
-import { Spinner } from '@/components/ui/spinner';
 import { Textarea } from '@/components/ui/textarea';
 import { readStatus } from '@/lib/bulk-import';
 import { reportInvalid } from '@/lib/form-validation';
-import { removedNotice, statusNotice } from '@/lib/notify';
+import { deletedNotice, restoredNotice, statusNotice } from '@/lib/notify';
 import { RevealWords } from '@/components/dashboard/reveal-words';
 import { useAction } from '@/lib/use-action';
 import { useRevealOnce } from '@/lib/use-reveal-once';
 import {
   type TeamListData,
   type TeamMember,
-  deleteTeamMember,
   deleteTeamMembers,
   importTeamMembers,
   moveTeamMember,
+  restoreTeamMembers,
   saveTeamMember,
   setTeamMemberStatus,
 } from '@/server/team';
@@ -109,7 +99,6 @@ export function TeamPage({ data, canWrite }: { data: TeamListData; canWrite: boo
   const [statuses, setStatuses] = useState<string[]>([]);
   const [layout, setLayout] = useListView('team');
   const grid = layout === 'grid';
-  const [toDelete, setToDelete] = useState<string[] | null>(null);
   const selection = useSelection(data.map((m) => m.id));
   const { run, pending } = useAction();
   const revealing = useRevealOnce();
@@ -135,15 +124,23 @@ export function TeamPage({ data, canWrite }: { data: TeamListData; canWrite: boo
   // A different sort is a different order too, and moving a member only makes sense in their own.
   const narrowed = Boolean(query) || statuses.length > 0 || sort !== 'order';
 
+  // Straight away, with Undo on the toast, rather than asking first.
   async function remove(ids: string[]) {
     const result = await run(() => deleteTeamMembers({ data: { ids } }), {
-      success: removedNotice(ids.length, NOUN),
-      error: 'Could not remove',
+      success: deletedNotice(ids.length, NOUN, () => restore(ids)),
+      error: 'Could not delete',
     });
-    if (!result) return;
-    if (view.pane?.kind === 'edit' && ids.includes(view.pane.id)) view.closePane();
+    if (!result) return false;
+    view.closeIfShowing((t) => t.kind === 'edit' && ids.includes(t.id));
     selection.clear();
+    return true;
   }
+
+  const restore = (ids: string[]) =>
+    run(() => restoreTeamMembers({ data: { ids } }), {
+      success: restoredNotice(ids.length, NOUN),
+      error: 'Could not bring it back',
+    });
 
   const memberMenu = (member: TeamMember) => {
     const index = data.indexOf(member);
@@ -162,17 +159,17 @@ export function TeamPage({ data, canWrite }: { data: TeamListData; canWrite: boo
     ];
   };
 
-  const deleteButton = (member: TeamMember, onRemoved: () => void) => (
-    <DeleteMember
-      member={member}
+  const deleteButton = (member: TeamMember) => (
+    <Button
+      variant="ghost"
+      size="icon-sm"
       disabled={pending}
-      onConfirm={() =>
-        run(() => deleteTeamMember({ data: { id: member.id } }), {
-          success: removedNotice(1, NOUN),
-          error: 'Could not remove the team member',
-        }).then(onRemoved)
-      }
-    />
+      aria-label={`Delete ${member.name}`}
+      className="text-muted-foreground hover:text-destructive"
+      onClick={() => void remove([member.id])}
+    >
+      <Trash2Icon aria-hidden className="size-4" />
+    </Button>
   );
 
   const bulkForm = (onDone: () => void, actions: (submit: React.ReactNode) => React.ReactNode) => (
@@ -209,7 +206,14 @@ export function TeamPage({ data, canWrite }: { data: TeamListData; canWrite: boo
       key={target.kind === 'edit' ? target.id : target.kind}
       member={memberFor(target)}
       onSaved={onSaved}
-      footer={(formPending, isNew) => actions(<SubmitButton pending={formPending} isNew={isNew} />)}
+      onDirtyChange={view.reportDirty}
+      footer={(formPending, isNew, saved) =>
+        actions(
+          <SaveButton pending={formPending} saved={saved}>
+            {isNew ? 'Add member' : 'Save'}
+          </SaveButton>
+        )
+      }
     />
   );
 
@@ -312,7 +316,7 @@ export function TeamPage({ data, canWrite }: { data: TeamListData; canWrite: boo
                 title="Members"
                 total={data.length}
                 pending={pending}
-                onDelete={canWrite ? () => setToDelete(selection.checkedIds) : undefined}
+                onDelete={canWrite ? () => void remove(selection.checkedIds) : undefined}
               />
             }
           >
@@ -339,7 +343,7 @@ export function TeamPage({ data, canWrite }: { data: TeamListData; canWrite: boo
                     menu={canWrite ? memberMenu(member) : undefined}
                     remove={
                       canWrite
-                        ? { label: 'Delete', onAction: () => setToDelete([member.id]) }
+                        ? { label: 'Delete', onAction: () => void remove([member.id]) }
                         : undefined
                     }
                   >
@@ -372,7 +376,7 @@ export function TeamPage({ data, canWrite }: { data: TeamListData; canWrite: boo
                       }
                       swipe={
                         canWrite
-                          ? { label: 'Delete', onAction: () => setToDelete([member.id]) }
+                          ? { label: 'Delete', onAction: () => void remove([member.id]) }
                           : undefined
                       }
                       menu={canWrite ? memberMenu(member) : undefined}
@@ -410,7 +414,7 @@ export function TeamPage({ data, canWrite }: { data: TeamListData; canWrite: boo
             ) : (
               <PaneFrame
                 title={paneMember ? paneMember.name : 'New member'}
-                actions={paneMember && deleteButton(paneMember, view.closePane)}
+                actions={paneMember && deleteButton(paneMember)}
               >
                 {memberForm(
                   pane,
@@ -425,14 +429,7 @@ export function TeamPage({ data, canWrite }: { data: TeamListData; canWrite: boo
         </ListPageLayout>
       )}
 
-      <ConfirmBulkDelete
-        open={toDelete !== null}
-        onOpenChange={(open) => !open && setToDelete(null)}
-        count={toDelete?.length ?? 0}
-        noun={NOUN}
-        description="They are removed from the website. Posts they authored keep their content."
-        onConfirm={() => toDelete && remove(toDelete)}
-      />
+      <LeaveDialog blocker={view.leave} what="team member" />
 
       {canWrite && (
         <ListDialog
@@ -453,10 +450,10 @@ export function TeamPage({ data, canWrite }: { data: TeamListData; canWrite: boo
           }
         >
           {view.dialog?.kind === 'bulk'
-            ? bulkForm(view.closeDialog, (submit) => <DialogActions>{submit}</DialogActions>)
+            ? bulkForm(view.dismissDialog, (submit) => <DialogActions>{submit}</DialogActions>)
             : view.dialog &&
-              memberForm(view.dialog, view.closeDialog, (submit) => (
-                <DialogActions start={dialogMember && deleteButton(dialogMember, view.closeDialog)}>
+              memberForm(view.dialog, view.dismissDialog, (submit) => (
+                <DialogActions start={dialogMember && deleteButton(dialogMember)}>
                   {submit}
                 </DialogActions>
               ))}
@@ -545,72 +542,17 @@ function MoveButtons({
   );
 }
 
-function SubmitButton({ pending, isNew }: { pending: boolean; isNew: boolean }) {
-  return (
-    <Button type="submit" disabled={pending}>
-      {pending ? (
-        <>
-          <Spinner />
-          Saving…
-        </>
-      ) : isNew ? (
-        'Add member'
-      ) : (
-        'Save'
-      )}
-    </Button>
-  );
-}
-
-function DeleteMember({
-  member,
-  disabled,
-  onConfirm,
-}: {
-  member: TeamMember;
-  disabled: boolean;
-  onConfirm: () => void;
-}) {
-  return (
-    <AlertDialog>
-      <AlertDialogTrigger
-        render={
-          <Button
-            variant="ghost"
-            size="icon-sm"
-            disabled={disabled}
-            aria-label={`Remove ${member.name}`}
-            className="text-muted-foreground hover:text-destructive"
-          />
-        }
-      >
-        <Trash2Icon aria-hidden className="size-4" />
-      </AlertDialogTrigger>
-      <AlertDialogContent>
-        <AlertDialogHeader>
-          <AlertDialogTitle>Remove {member.name}?</AlertDialogTitle>
-          <AlertDialogDescription>
-            They are removed from the website. Posts they authored keep their content.
-          </AlertDialogDescription>
-        </AlertDialogHeader>
-        <AlertDialogFooter>
-          <AlertDialogCancel>Cancel</AlertDialogCancel>
-          <AlertDialogAction onClick={onConfirm}>Remove</AlertDialogAction>
-        </AlertDialogFooter>
-      </AlertDialogContent>
-    </AlertDialog>
-  );
-}
-
 /** Shared fields + submit logic, used inline (desktop pane) and in the mobile dialog. */
 function MemberForm({
   member,
   onSaved,
+  onDirtyChange,
   footer,
 }: {
   member: TeamMember | null;
   onSaved: (id: string) => void;
-  footer: (pending: boolean, isNew: boolean) => React.ReactNode;
+  onDirtyChange: (dirty: boolean) => void;
+  footer: (pending: boolean, isNew: boolean, saved: boolean) => React.ReactNode;
 }) {
   const [name, setName] = useState(member?.name ?? '');
   const [role, setRole] = useState(member?.role ?? '');
@@ -620,6 +562,8 @@ function MemberForm({
   const [avatarSeed, setAvatarSeed] = useState(member?.avatarSeed ?? null);
   const [pickingAvatar, setPickingAvatar] = useState(false);
   const { run, pending } = useAction();
+  const form = useFormDirty([name, role, bio, published, photoMediaId, avatarSeed], onDirtyChange);
+  const feedback = useSaveFeedback({ editing: member !== null, dirty: form.dirty });
 
   async function submit(e: React.FormEvent) {
     e.preventDefault();
@@ -638,16 +582,19 @@ function MemberForm({
           },
         }),
       {
-        success: {
+        success: feedback.toast({
           title: member ? 'Team member saved' : 'Team member added',
           description: published
             ? 'They show on the website.'
             : 'They are a draft, so the website does not show them.',
-        },
+        }),
         error: 'Could not save the team member',
       }
     );
-    if (result) onSaved(result.id);
+    // A form closed, replaced or edited again while it saved stays as it is now.
+    if (!result || !form.markSaved(member === null)) return;
+    feedback.saved();
+    onSaved(result.id);
   }
 
   return (
@@ -743,7 +690,7 @@ function MemberForm({
           onCheckedChange={setPublished}
         />
       </FormSection>
-      {footer(pending, member === null)}
+      {footer(pending, member === null, feedback.showSaved)}
     </form>
   );
 }

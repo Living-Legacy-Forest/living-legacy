@@ -1,11 +1,12 @@
 import { MAX_FAQ_TAGS, slugify, toTags } from '@ll/content';
 import { faqGroups, faqs } from '@ll/db/schema';
 import { createServerFn } from '@tanstack/react-start';
-import { asc, eq, inArray, isNull, sql } from 'drizzle-orm';
+import { asc, eq, isNull, sql } from 'drizzle-orm';
 import { z } from 'zod';
 import { type BulkResult, firstIssue } from '@/lib/bulk-import';
 import { getDb } from '@/lib/db';
 import { authMiddleware, requirePermission } from '@/lib/session';
+import { restoreRows, trashRows } from './content-trash';
 
 export const listFaqs = createServerFn({ method: 'GET' })
   .middleware([authMiddleware])
@@ -102,13 +103,6 @@ export const saveFaq = createServerFn({ method: 'POST' })
     return { id: data.id };
   });
 
-export const deleteFaq = createServerFn({ method: 'POST' })
-  .middleware([requirePermission('content:write')])
-  .validator(z.object({ id: z.string() }))
-  .handler(async ({ data }) => {
-    await getDb().delete(faqs).where(eq(faqs.id, data.id));
-  });
-
 export const moveFaq = createServerFn({ method: 'POST' })
   .middleware([requirePermission('content:write')])
   .validator(z.object({ id: z.string(), direction: z.enum(['up', 'down']) }))
@@ -123,7 +117,7 @@ export const moveFaq = createServerFn({ method: 'POST' })
       .from(faqs)
       .where(
         target.groupId
-          ? eq(faqs.groupId, target.groupId)
+          ? sql`${faqs.groupId} = ${target.groupId} and ${faqs.deletedAt} is null`
           : sql`${faqs.groupId} is null and ${faqs.deletedAt} is null`
       )
       .orderBy(asc(faqs.sortOrder), asc(faqs.question));
@@ -184,12 +178,21 @@ export const deleteFaqGroup = createServerFn({ method: 'POST' })
     await getDb().delete(faqGroups).where(eq(faqGroups.id, data.id));
   });
 
+/** To the trash, so Undo can bring them back. */
 export const deleteFaqs = createServerFn({ method: 'POST' })
   .middleware([requirePermission('content:write')])
   .validator(z.object({ ids: z.array(z.string()).min(1).max(500) }))
-  .handler(async ({ data }) => {
-    await getDb().delete(faqs).where(inArray(faqs.id, data.ids));
+  .handler(async ({ data, context }) => {
+    await trashRows(getDb(), 'faqs', { ids: data.ids, userId: context.user.id });
     return { removed: data.ids.length };
+  });
+
+export const restoreFaqs = createServerFn({ method: 'POST' })
+  .middleware([requirePermission('content:write')])
+  .validator(z.object({ ids: z.array(z.string()).min(1).max(500) }))
+  .handler(async ({ data, context }) => {
+    await restoreRows(getDb(), 'faqs', { ids: data.ids, userId: context.user.id });
+    return { restored: data.ids.length };
   });
 
 /**

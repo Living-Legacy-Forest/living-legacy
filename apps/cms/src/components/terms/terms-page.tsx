@@ -28,8 +28,11 @@ import {
   PaneColumn,
   PaneEmpty,
   PaneFrame,
+  useFormDirty,
   useListPane,
 } from '@/components/list/list-page';
+import { SaveButton, useSaveFeedback } from '@/components/list/save-button';
+import { LeaveDialog } from '@/components/editor-page/leave-dialog';
 import { ListRow } from '@/components/list/list-row';
 import {
   ConfirmBulkDelete,
@@ -50,7 +53,6 @@ import {
   EmptyTitle,
 } from '@/components/ui/empty';
 import { Input } from '@/components/ui/input';
-import { Spinner } from '@/components/ui/spinner';
 import { Textarea } from '@/components/ui/textarea';
 import { reportInvalid } from '@/lib/form-validation';
 import { removedNotice } from '@/lib/notify';
@@ -135,7 +137,7 @@ export function TermsPage({
       error: 'Could not remove',
     });
     if (!result) return;
-    if (view.pane?.kind === 'edit' && ids.includes(view.pane.id)) view.closePane();
+    view.closeIfShowing((t) => t.kind === 'edit' && ids.includes(t.id));
     selection.clear();
   }
 
@@ -147,10 +149,17 @@ export function TermsPage({
         type={type}
         term={term}
         onSaved={onDone}
+        onDirtyChange={view.reportDirty}
         footer={(submit) =>
           actions(
             submit,
-            term && <DeleteTerm type={type} term={term} onRemoved={() => onDone(null)} />
+            term && (
+              <DeleteTerm
+                type={type}
+                term={term}
+                onRemoved={() => view.closeIfShowing((t) => t.kind === 'edit' && t.id === term.id)}
+              />
+            )
           )
         }
       />
@@ -360,6 +369,8 @@ export function TermsPage({
         onConfirm={() => toDelete && remove(toDelete)}
       />
 
+      <LeaveDialog blocker={view.leave} what={noun[0]} />
+
       {canWrite && (
         <ListDialog
           open={view.dialog !== null}
@@ -372,7 +383,7 @@ export function TermsPage({
           }
         >
           {view.dialog &&
-            form(view.dialog, view.closeDialog, (submit, start) => (
+            form(view.dialog, view.dismissDialog, (submit, start) => (
               <DialogActions start={start}>{submit}</DialogActions>
             ))}
         </ListDialog>
@@ -470,28 +481,35 @@ function TermForm({
   type,
   term,
   onSaved,
+  onDirtyChange,
   footer,
 }: {
   type: TermType;
   term: Term | null;
   onSaved: (id: string | null) => void;
+  onDirtyChange: (dirty: boolean) => void;
   footer: (submit: React.ReactNode) => React.ReactNode;
 }) {
   const [name, setName] = useState(term?.name ?? '');
   const [description, setDescription] = useState(term?.description ?? '');
   const { run, pending } = useAction();
+  const form = useFormDirty([name, description], onDirtyChange);
+  const feedback = useSaveFeedback({ editing: term !== null, dirty: form.dirty });
 
   async function submit(e: React.FormEvent) {
     e.preventDefault();
     if (!reportInvalid(e.currentTarget)) return;
     const result = await run(() => saveTerm({ data: { id: term?.id, type, name, description } }), {
-      success: {
+      success: feedback.toast({
         title: `${type === 'category' ? 'Category' : 'Tag'} ${term ? 'saved' : 'created'}`,
         description: term ? 'Posts that use it show the change.' : 'It can be added to posts now.',
-      },
+      }),
       error: `Could not save the ${type}`,
     });
-    if (result) onSaved(result.id);
+    // A form closed, replaced or edited again while it saved stays as it is now.
+    if (!result || !form.markSaved(term === null)) return;
+    feedback.saved();
+    onSaved(result.id);
   }
 
   return (
@@ -529,18 +547,9 @@ function TermForm({
         </FormCell>
       </FormSection>
       {footer(
-        <Button type="submit" disabled={pending}>
-          {pending ? (
-            <>
-              <Spinner />
-              Saving…
-            </>
-          ) : term ? (
-            'Save'
-          ) : (
-            `Create ${type}`
-          )}
-        </Button>
+        <SaveButton pending={pending} saved={feedback.showSaved}>
+          {term ? 'Save' : `Create ${type}`}
+        </SaveButton>
       )}
     </form>
   );

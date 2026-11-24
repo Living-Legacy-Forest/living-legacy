@@ -15,8 +15,11 @@ import {
   PaneEmpty,
   PaneFrame,
   isDesktop,
+  useFormDirty,
   useListPane,
 } from '@/components/list/list-page';
+import { SaveButton, useSaveFeedback } from '@/components/list/save-button';
+import { LeaveDialog } from '@/components/editor-page/leave-dialog';
 import { ListRow, type RowMenuItem } from '@/components/list/list-row';
 import { usePaged } from '@/lib/use-paged';
 import { copyLink, openInNewTab, siteUrl } from '@/lib/site';
@@ -73,7 +76,6 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { Spinner } from '@/components/ui/spinner';
 import { readYesNo } from '@/lib/bulk-import';
 import { reportInvalid } from '@/lib/form-validation';
 import { notify, removedNotice } from '@/lib/notify';
@@ -301,7 +303,7 @@ export function RedirectsPage({
       error: 'Could not remove',
     });
     if (!result) return;
-    if (view.pane?.kind === 'edit' && ids.includes(view.pane.id)) view.closePane();
+    view.closeIfShowing((t) => t.kind === 'edit' && ids.includes(t.id));
     selection.clear();
   }
 
@@ -334,6 +336,9 @@ export function RedirectsPage({
     />
   );
 
+  /** Matches the pane or dialog while it edits this redirect. */
+  const showing = (id: string) => (t: Target) => t.kind === 'edit' && t.id === id;
+
   const redirectForm = (
     target: Target,
     onSaved: (id: string) => void,
@@ -344,8 +349,14 @@ export function RedirectsPage({
       redirect={redirectFor(target)}
       initialFrom={target.kind === 'new' ? target.fromPath : undefined}
       onSaved={onSaved}
-      footer={(formPending, isNew) =>
-        actions(<SubmitButton pending={formPending} isNew={isNew} />, formPending)
+      onDirtyChange={view.reportDirty}
+      footer={(formPending, isNew, saved) =>
+        actions(
+          <SaveButton pending={formPending} saved={saved}>
+            {isNew ? 'Add redirect' : 'Save'}
+          </SaveButton>,
+          formPending
+        )
       }
     />
   );
@@ -570,7 +581,10 @@ export function RedirectsPage({
                 }
                 actions={
                   paneRedirect && (
-                    <DeleteRedirect redirect={paneRedirect} onRemoved={view.closePane} />
+                    <DeleteRedirect
+                      redirect={paneRedirect}
+                      onRemoved={() => view.closeIfShowing(showing(paneRedirect.id))}
+                    />
                   )
                 }
               >
@@ -596,6 +610,8 @@ export function RedirectsPage({
         onConfirm={() => toDelete && remove(toDelete)}
       />
 
+      <LeaveDialog blocker={view.leave} what="redirect" />
+
       <ListDialog
         open={view.dialog !== null}
         onClose={view.closeDialog}
@@ -614,16 +630,16 @@ export function RedirectsPage({
         }
       >
         {view.dialog?.kind === 'bulk'
-          ? bulkForm(view.closeDialog, (submit) => <DialogActions>{submit}</DialogActions>)
+          ? bulkForm(view.dismissDialog, (submit) => <DialogActions>{submit}</DialogActions>)
           : view.dialog &&
-            redirectForm(view.dialog, view.closeDialog, (submit, formPending) => (
+            redirectForm(view.dialog, view.dismissDialog, (submit, formPending) => (
               <DialogActions
                 start={
                   dialogRedirect && (
                     <DeleteRedirect
                       redirect={dialogRedirect}
                       disabled={formPending}
-                      onRemoved={view.closeDialog}
+                      onRemoved={() => view.closeIfShowing(showing(dialogRedirect.id))}
                     />
                   )
                 }
@@ -699,23 +715,6 @@ function RedirectSummary({ redirect, wide }: { redirect: Redirect; wide: boolean
   );
 }
 
-function SubmitButton({ pending, isNew }: { pending: boolean; isNew: boolean }) {
-  return (
-    <Button type="submit" disabled={pending}>
-      {pending ? (
-        <>
-          <Spinner />
-          Saving…
-        </>
-      ) : isNew ? (
-        'Add redirect'
-      ) : (
-        'Save'
-      )}
-    </Button>
-  );
-}
-
 function DeleteRedirect({
   redirect,
   disabled,
@@ -780,13 +779,15 @@ function RedirectForm({
   redirect,
   initialFrom,
   onSaved,
+  onDirtyChange,
   footer,
 }: {
   redirect: Redirect | null;
   /** The old path for a new redirect, when one was passed in. */
   initialFrom?: string;
   onSaved: (id: string) => void;
-  footer: (pending: boolean, isNew: boolean) => React.ReactNode;
+  onDirtyChange: (dirty: boolean) => void;
+  footer: (pending: boolean, isNew: boolean, saved: boolean) => React.ReactNode;
 }) {
   const [fromPath, setFromPath] = useState(redirect?.fromPath ?? initialFrom ?? '');
   const [toPath, setToPath] = useState(redirect?.toPath ?? '');
@@ -797,6 +798,11 @@ function RedirectForm({
   const [enabled, setEnabled] = useState(redirect?.enabled ?? true);
   const [note, setNote] = useState(redirect?.note ?? '');
   const { run, pending } = useAction();
+  const form = useFormDirty(
+    [fromPath, toPath, statusCode, keepQuery, enabled, note],
+    onDirtyChange
+  );
+  const feedback = useSaveFeedback({ editing: redirect !== null, dirty: form.dirty });
   const removed = statusCode === '410';
 
   async function submit(e: React.FormEvent) {
@@ -816,19 +822,23 @@ function RedirectForm({
           },
         }),
       {
-        success: {
+        success: feedback.toast({
           title: redirect ? 'Redirect saved' : 'Redirect added',
           description: enabled
             ? 'It is on, so the website uses it.'
             : 'It is off, so the website ignores it.',
-        },
+        }),
         error: 'Could not save the redirect',
       }
     );
     if (!result) return;
+    // About the redirect, not the form, so they show even if the form has gone.
     for (const warning of result.warnings) {
       notify.warning({ title: 'Check this redirect', description: warning });
     }
+    // A form closed, replaced or edited again while it saved stays as it is now.
+    if (!form.markSaved(redirect === null)) return;
+    feedback.saved();
     onSaved(result.id);
   }
 
@@ -919,7 +929,7 @@ function RedirectForm({
         />
       </FormSection>
       {redirect && <p className="text-muted-foreground text-xs">{usage(redirect)}.</p>}
-      {footer(pending, redirect === null)}
+      {footer(pending, redirect === null, feedback.showSaved)}
     </form>
   );
 }

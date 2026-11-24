@@ -2,7 +2,6 @@
 
 import * as React from 'react';
 import { Menu as MenuPrimitive } from '@base-ui/react/menu';
-import { play } from '@/lib/sound';
 import { cn } from '@/lib/utils';
 import { ChevronRightIcon, CheckIcon } from '@/components/icons';
 import { GlideHighlight } from '@/components/ui/glide-highlight';
@@ -96,10 +95,7 @@ function DropdownMenuItem({
   return (
     <MenuPrimitive.Item
       data-slot="dropdown-menu-item"
-      onClick={(event) => {
-        play('select');
-        onClick?.(event);
-      }}
+      onClick={onClick}
       data-inset={inset}
       data-variant={variant}
       className={cn(

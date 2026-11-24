@@ -1,6 +1,5 @@
 import * as React from 'react';
 import { AlertDialog as AlertDialogPrimitive } from '@base-ui/react/alert-dialog';
-import { playOpen } from '@/lib/sound';
 import { cn } from '@/lib/utils';
 
 import { Button } from '@/components/ui/button';
@@ -26,14 +25,7 @@ function AlertDialog({
   // Drawer is a Dialog with swipe gestures; its props only add to the Dialog's.
   if (isPhone) return <Drawer {...({ ...props, onOpenChange } as DrawerProps)} />;
   return (
-    <AlertDialogPrimitive.Root
-      data-slot="alert-dialog"
-      onOpenChange={(open, details) => {
-        playOpen(open);
-        onOpenChange?.(open, details);
-      }}
-      {...props}
-    />
+    <AlertDialogPrimitive.Root data-slot="alert-dialog" onOpenChange={onOpenChange} {...props} />
   );
 }
 

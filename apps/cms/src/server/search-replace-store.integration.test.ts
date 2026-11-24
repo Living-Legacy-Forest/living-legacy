@@ -124,6 +124,25 @@ describe('replaceMatches', () => {
     expect(none).toEqual({ matches: 0, items: 0 });
   });
 
+  it('leaves deleted items in the trash alone, so Undo brings back what was there', async () => {
+    const userId = await addUser('admin');
+    const db = testDb();
+    await db.insert(faqs).values([
+      { question: 'Where is Mornington Green?', answer: null },
+      { question: 'Is Mornington Green open?', answer: null, deletedAt: new Date() },
+    ]);
+
+    const areas = await findMatches(db, input);
+    expect(areas.find((a) => a.area === 'faqs')?.items).toHaveLength(1);
+
+    const result = await replaceMatches(db, input, ['faqs'], { id: userId, name: 'Sam' });
+    expect(result).toEqual({ matches: 1, items: 1 });
+    const trashed = await db.query.faqs.findFirst({
+      where: eq(faqs.question, 'Is Mornington Green open?'),
+    });
+    expect(trashed).toBeDefined();
+  });
+
   it('replaces in the site settings', async () => {
     const userId = await addUser('admin');
     const db = testDb();

@@ -38,7 +38,7 @@ import {
   terms,
   testimonials,
 } from '@ll/db/schema';
-import { eq, isNull } from 'drizzle-orm';
+import { and, eq, isNull } from 'drizzle-orm';
 import type { SQLiteTable } from 'drizzle-orm/sqlite-core';
 import { logActivity } from './activity-log';
 import { loadContentTargets, scoreInputFromColumns, scorePost } from './post-score';
@@ -245,6 +245,9 @@ export type AreaMatch = { area: AreaId; label: string; count: number; items: Ite
 
 type Values = Record<string, unknown>;
 
+/** A deleted row waiting in the trash: nobody can see it to check a replacement in it. */
+const inTrash = (row: Values) => row.deletedAt !== null && row.deletedAt !== undefined;
+
 /** The matches in one set of field values. */
 function fieldMatches(values: Values, fields: Field[], pattern: RegExp): FieldMatch[] {
   const out: FieldMatch[] = [];
@@ -318,6 +321,7 @@ export async function findMatches(db: Db, input: SearchReplaceInput): Promise<Ar
 
   for (const target of SIMPLE) {
     for (const row of (await db.select().from(target.table as never)) as Values[]) {
+      if (inTrash(row)) continue;
       const fields = fieldMatches(row, target.fields, pattern);
       if (fields.length) {
         items
@@ -462,8 +466,12 @@ export async function replaceMatches(
 
   for (const target of SIMPLE) {
     if (!chosen.has(target.area)) continue;
-    const table = target.table as SQLiteTable & { id: never };
+    const table = target.table as SQLiteTable & { id: never; deletedAt?: never };
+    // Checked again as it writes: a row trashed since the read keeps its text, so Undo brings
+    // back what was deleted.
+    const live = table.deletedAt ? isNull(table.deletedAt) : undefined;
     for (const row of (await db.select().from(table as never)) as Values[]) {
+      if (inTrash(row)) continue;
       const next = replaced(row, target.fields, pattern, input.replace);
       if (next.count === 0) continue;
       matches += next.count;
@@ -472,7 +480,7 @@ export async function replaceMatches(
         db
           .update(table)
           .set(pick(next.values, target.fields) as never)
-          .where(eq(table.id, row.id as never))
+          .where(and(eq(table.id, row.id as never), live))
       );
     }
   }

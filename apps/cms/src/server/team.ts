@@ -1,10 +1,11 @@
 import { teamMembers } from '@ll/db/schema';
 import { createServerFn } from '@tanstack/react-start';
-import { asc, eq, inArray, isNull, sql } from 'drizzle-orm';
+import { asc, eq, isNull, sql } from 'drizzle-orm';
 import { z } from 'zod';
 import { type BulkResult, firstIssue } from '@/lib/bulk-import';
 import { getDb } from '@/lib/db';
 import { authMiddleware, requirePermission } from '@/lib/session';
+import { restoreRows, trashRows } from './content-trash';
 
 export const listTeamMembers = createServerFn({ method: 'GET' })
   .middleware([authMiddleware])
@@ -99,14 +100,6 @@ export const saveTeamMember = createServerFn({ method: 'POST' })
     return { id: data.id };
   });
 
-export const deleteTeamMember = createServerFn({ method: 'POST' })
-  .middleware([requirePermission('content:write')])
-  .validator(z.object({ id: z.string() }))
-  .handler(async ({ data }) => {
-    // Posts by this author keep their content; author_id is set null by the FK.
-    await getDb().delete(teamMembers).where(eq(teamMembers.id, data.id));
-  });
-
 export const moveTeamMember = createServerFn({ method: 'POST' })
   .middleware([requirePermission('content:write')])
   .validator(z.object({ id: z.string(), direction: z.enum(['up', 'down']) }))
@@ -137,12 +130,24 @@ export const moveTeamMember = createServerFn({ method: 'POST' })
     ]);
   });
 
+/**
+ * To the trash, so Undo can bring them back. Their posts keep their content and lose the byline
+ * on the website until then; once the trash is emptied, the FK sets the posts' author_id null.
+ */
 export const deleteTeamMembers = createServerFn({ method: 'POST' })
   .middleware([requirePermission('content:write')])
   .validator(z.object({ ids: z.array(z.string()).min(1).max(500) }))
-  .handler(async ({ data }) => {
-    await getDb().delete(teamMembers).where(inArray(teamMembers.id, data.ids));
+  .handler(async ({ data, context }) => {
+    await trashRows(getDb(), 'team', { ids: data.ids, userId: context.user.id });
     return { removed: data.ids.length };
+  });
+
+export const restoreTeamMembers = createServerFn({ method: 'POST' })
+  .middleware([requirePermission('content:write')])
+  .validator(z.object({ ids: z.array(z.string()).min(1).max(500) }))
+  .handler(async ({ data, context }) => {
+    await restoreRows(getDb(), 'team', { ids: data.ids, userId: context.user.id });
+    return { restored: data.ids.length };
   });
 
 /** Adds rows without an id and updates rows with one, from a CSV upload. */

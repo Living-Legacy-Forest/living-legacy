@@ -17,8 +17,11 @@ import {
   PaneColumn,
   PaneFrame,
   isDesktop,
+  useFormDirty,
   useListPane,
 } from '@/components/list/list-page';
+import { SaveButton } from '@/components/list/save-button';
+import { LeaveDialog } from '@/components/editor-page/leave-dialog';
 import {
   ListRow,
   type RowMenuItem,
@@ -88,7 +91,6 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { Spinner } from '@/components/ui/spinner';
 import { Textarea } from '@/components/ui/textarea';
 import { formatDate } from '@/lib/format';
 import { reportInvalid } from '@/lib/form-validation';
@@ -208,10 +210,13 @@ export function MediaCoveragePage({
   // Without anything being edited, the pane previews the selected item.
   const selectedId = data.find((m) => m.id === search.selected)?.id ?? data[0]?.id ?? null;
   const selected = data.find((m) => m.id === selectedId) ?? null;
-  const select = (id: string) => {
-    view.closePane();
+  /** Previews an item in the pane, in place of any form. */
+  const preview = (id: string) => {
+    view.setPane(null);
     navigate({ search: (prev) => ({ ...prev, selected: id }), replace: true });
   };
+  // A row click asks first if the form open in the pane has changes; a save has none left.
+  const select = (id: string) => view.guard(() => preview(id));
   const pane = canWrite ? view.pane : null;
   const remove = (id: string) =>
     run(() => deleteMediaCoverage({ data: { ids: [id] } }), {
@@ -225,7 +230,7 @@ export function MediaCoveragePage({
       error: 'Could not remove',
     });
     if (!result) return;
-    if (view.pane?.kind === 'edit' && ids.includes(view.pane.id)) view.closePane();
+    view.closeIfShowing((t) => t.kind === 'edit' && ids.includes(t.id));
     selection.clear();
   }
 
@@ -243,7 +248,10 @@ export function MediaCoveragePage({
       categories={categories}
       nextOrder={nextOrder}
       onSaved={onSaved}
-      footer={(formPending, isNew) => actions(<SubmitButton pending={formPending} isNew={isNew} />)}
+      onDirtyChange={view.reportDirty}
+      footer={(formPending, isNew) =>
+        actions(<SaveButton pending={formPending}>{isNew ? 'Add coverage' : 'Save'}</SaveButton>)
+      }
     />
   );
 
@@ -468,7 +476,7 @@ export function MediaCoveragePage({
           {pane !== null ? (
             <PaneColumn label="Edit coverage">
               <PaneFrame title={paneItem ? `Edit ${paneItem.title}` : 'New coverage'}>
-                {coverageForm(pane, select, (submit) => (
+                {coverageForm(pane, preview, (submit) => (
                   <PaneActions onCancel={view.closePane}>{submit}</PaneActions>
                 ))}
               </PaneFrame>
@@ -494,6 +502,8 @@ export function MediaCoveragePage({
         onConfirm={() => toDelete && removeMany(toDelete)}
       />
 
+      <LeaveDialog blocker={view.leave} what="coverage" />
+
       {canWrite && (
         <ListDialog
           open={view.dialog !== null}
@@ -502,14 +512,20 @@ export function MediaCoveragePage({
           description="A news article or video, shown on In the media."
         >
           {view.dialog &&
-            coverageForm(view.dialog, view.closeDialog, (submit) => (
+            coverageForm(view.dialog, view.dismissDialog, (submit) => (
               <DialogActions
                 start={
                   dialogItem && (
                     <DeleteCoverage
                       item={dialogItem}
                       disabled={pending}
-                      onConfirm={() => remove(dialogItem.id).then(view.closeDialog)}
+                      onConfirm={() =>
+                        remove(dialogItem.id).then(
+                          (done) =>
+                            done &&
+                            view.closeIfShowing((t) => t.kind === 'edit' && t.id === dialogItem.id)
+                        )
+                      }
                     />
                   )
                 }
@@ -689,23 +705,6 @@ function DeleteCoverage({
   );
 }
 
-function SubmitButton({ pending, isNew }: { pending: boolean; isNew: boolean }) {
-  return (
-    <Button type="submit" disabled={pending}>
-      {pending ? (
-        <>
-          <Spinner />
-          Saving…
-        </>
-      ) : isNew ? (
-        'Add coverage'
-      ) : (
-        'Save'
-      )}
-    </Button>
-  );
-}
-
 /** The inline desktop pane: header, scrollable form body, cancel back to the preview. */
 /**
  * One category, picked from those already in use or typed new. Styled as a
@@ -803,12 +802,14 @@ function CoverageForm({
   categories,
   nextOrder,
   onSaved,
+  onDirtyChange,
   footer,
 }: {
   item: MediaCoverageItem | null;
   categories: string[];
   nextOrder: number;
   onSaved: (id: string) => void;
+  onDirtyChange: (dirty: boolean) => void;
   footer: (pending: boolean, isNew: boolean) => React.ReactNode;
 }) {
   const [title, setTitle] = useState(item?.title ?? '');
@@ -829,6 +830,24 @@ function CoverageForm({
   const [sortOrder, setSortOrder] = useState(String(item?.sortOrder ?? nextOrder));
   const [published, setPublished] = useState(item ? item.status === 'published' : true);
   const { run, pending } = useAction();
+  const form = useFormDirty(
+    [
+      title,
+      slug,
+      kind,
+      category,
+      source,
+      coverageDate,
+      excerpt,
+      readingMinutes,
+      imageMediaId,
+      externalUrl,
+      featured,
+      sortOrder,
+      published,
+    ],
+    onDirtyChange
+  );
 
   const notYouTube = kind === 'video' && externalUrl !== '' && youtubeId(externalUrl) === null;
 
@@ -865,7 +884,9 @@ function CoverageForm({
         error: 'Could not save the coverage',
       }
     );
-    if (result) onSaved(result.id);
+    // A form closed, replaced or edited again while it saved stays as it is now.
+    if (!result || !form.markSaved(item === null)) return;
+    onSaved(result.id);
   }
 
   return (

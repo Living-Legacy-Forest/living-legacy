@@ -9,9 +9,22 @@
  *     <PaneColumn label="Edit member">{pane.pane ? <PaneFrame …/> : <PaneEmpty …/>}</PaneColumn>
  *   </ListPageLayout>
  *   <ListDialog open={pane.dialog !== null} onClose={pane.closeDialog} …/>
+ *   <LeaveDialog blocker={pane.leave} what="team member" />
+ *
+ * A form in the pane or dialog calls `useFormDirty(values, pane.reportDirty)`, so opening
+ * another row, closing the pane or leaving the page asks before its changes are lost.
  */
-import { createContext, useContext, useLayoutEffect, useRef, useState } from 'react';
+import {
+  createContext,
+  useCallback,
+  useContext,
+  useEffect,
+  useLayoutEffect,
+  useRef,
+  useState,
+} from 'react';
 import { createPortal } from 'react-dom';
+import { useBlocker } from '@tanstack/react-router';
 import { PanelRightIcon } from '@/components/icons';
 import { SplitHandle, useSplit } from '@/components/list/split-handle';
 import { useHidePagerAtTop } from '@/components/list/use-hide-pager-at-top';
@@ -34,7 +47,7 @@ import {
   EmptyMedia,
   EmptyTitle,
 } from '@/components/ui/empty';
-import { useIsMobile } from '@/hooks/use-mobile';
+import { PHONE_QUERY, useIsMobile } from '@/hooks/use-mobile';
 import { cn } from '@/lib/utils';
 import { GlideHighlight } from '@/components/ui/glide-highlight';
 
@@ -56,6 +69,9 @@ function submitSheetForm(event: React.MouseEvent) {
 export const isDesktop = () =>
   typeof window !== 'undefined' && window.matchMedia('(min-width: 1024px)').matches;
 
+/** Phones show the dialog as a sheet. */
+const isPhone = () => typeof window !== 'undefined' && window.matchMedia(PHONE_QUERY).matches;
+
 /**
  * What the pane (large screens) or the dialog (smaller ones) is showing. Pages
  * pick their own target type, e.g. `{ kind: 'edit'; id } | { kind: 'new' }`.
@@ -63,16 +79,130 @@ export const isDesktop = () =>
 export function useListPane<T>() {
   const [pane, setPane] = useState<T | null>(null);
   const [dialog, setDialog] = useState<T | null>(null);
+  // Whether the open form has changes; a ref, as the form reports it from an effect.
+  const dirty = useRef(false);
+  const [leaving, setLeaving] = useState<{ go: () => void } | null>(null);
+  const blocker = useBlocker({
+    // Only leaving the page: paging or filtering the list keeps the pane, and its edits, open.
+    // `view` counts as leaving: it swaps the whole page, as Redirects does with Missing pages.
+    shouldBlockFn: ({ current, next }) =>
+      dirty.current &&
+      (current.pathname !== next.pathname || viewOf(current.search) !== viewOf(next.search)),
+    enableBeforeUnload: () => dirty.current,
+    withResolver: true,
+  });
+  const reportDirty = useCallback((next: boolean) => {
+    dirty.current = next;
+  }, []);
+  /** Goes now, or once the person agrees to lose their changes. */
+  const guard = (go: () => void) => (dirty.current ? setLeaving({ go }) : go());
+
   return {
     pane,
     dialog,
+    /** Replaces the pane without asking: for after a save or a delete, when nothing is lost. */
     setPane,
     /** Shows the target where this screen shows things: pane or dialog. */
-    open: (target: T) => (isDesktop() ? setPane(target) : setDialog(target)),
-    closePane: () => setPane(null),
-    closeDialog: () => setDialog(null),
+    open: (target: T) => {
+      const desktop = isDesktop();
+      // Clicking the row that is already open keeps the form as it is.
+      if (sameTarget(desktop ? pane : dialog, target)) return;
+      guard(() => (desktop ? setPane(target) : setDialog(target)));
+    },
+    closePane: () => guard(() => setPane(null)),
+    // A phone sheet asks "Discard changes?" itself before it closes, so asking here would ask twice.
+    closeDialog: () => (isPhone() ? setDialog(null) : guard(() => setDialog(null))),
+    /** Closes the dialog without asking, for after a save or a delete. */
+    dismissDialog: () => setDialog(null),
+    /**
+     * After a delete: closes the pane or dialog, without asking, only if it still shows what
+     * went. Something else opened while the delete was on its way stays open.
+     */
+    closeIfShowing: (match: (target: T) => boolean) => {
+      setPane((current) => (current !== null && match(current) ? null : current));
+      setDialog((current) => (current !== null && match(current) ? null : current));
+    },
+    /** For a page's own way of moving on from the form, such as previewing another row. */
+    guard,
+    reportDirty,
+    /** For `LeaveDialog`: switching rows or closing first, else leaving the page. */
+    leave: leaving
+      ? {
+          status: 'blocked',
+          proceed: () => {
+            dirty.current = false;
+            setLeaving(null);
+            leaving.go();
+          },
+          reset: () => setLeaving(null),
+        }
+      : blocker,
   };
 }
+
+const viewOf = (search: unknown) => (search as { view?: unknown } | undefined)?.view;
+
+function sameTarget(a: unknown, b: unknown) {
+  return a !== null && JSON.stringify(a) === JSON.stringify(b);
+}
+
+/**
+ * Whether a list page's form has changes since it opened or last saved, told to the page so
+ * leaving it asks first. It compares with what was sent, not what came back: the server may tidy
+ * a value (trim a name, say), and that is no reason to ask. Unmounting says there is nothing, so
+ * a form that is closed or replaced never leaves the page asking.
+ *
+ *   const form = useFormDirty({ name, role }, onDirtyChange);
+ *   if (!result || !form.markSaved()) return;
+ *   onSaved(result.id);
+ */
+export function useFormDirty(values: unknown, report: ((dirty: boolean) => void) | undefined) {
+  const current = JSON.stringify(values);
+  const [saved, setSaved] = useState(current);
+  const dirty = current !== saved;
+  // What the form holds now, for a save that finishes after more typing.
+  const latest = useRef(current);
+  latest.current = current;
+  const mounted = useRef(true);
+  useEffect(() => {
+    mounted.current = true;
+    return () => {
+      mounted.current = false;
+    };
+  }, []);
+  useEffect(() => {
+    report?.(dirty);
+  }, [dirty, report]);
+  useEffect(() => () => report?.(false), [report]);
+  return {
+    dirty,
+    /**
+     * After a save: what was sent (`current`, from the render that submitted) is now the saved
+     * copy, and the page hears at once, before it moves on. Anything typed while it saved still
+     * counts as unsaved. Returns whether the caller may move on (close the form, say "Saved"):
+     *
+     * - false if this form has since been closed or replaced, as the page shows something else;
+     * - false if more was typed during the save, so the form stays open with those edits;
+     * - true for a new item even then: staying on a form for something already created would
+     *   let a second save make a copy, so it moves on to the saved item.
+     */
+    markSaved: (created = false) => {
+      if (!mounted.current) return false;
+      setSaved(current);
+      const edited = latest.current !== current;
+      report?.(edited);
+      return !edited || created;
+    },
+  };
+}
+
+/**
+ * Where a form is shown. The pane stays open after a save, so the form can say "Saved" itself;
+ * the dialog closes, so it needs a toast.
+ */
+const PaneHost = createContext<'pane' | 'dialog' | null>(null);
+
+export const usePaneHost = () => useContext(PaneHost);
 
 /** The bordered two-column frame: list, then pane from `lg` up. */
 export function ListPageLayout({
@@ -321,7 +451,7 @@ export function PaneFrame({
             width === 'xl' ? 'max-w-2xl' : width === 'lg' ? 'max-w-lg' : 'max-w-md'
           )}
         >
-          {children}
+          <PaneHost value="pane">{children}</PaneHost>
         </div>
       </div>
     </>
@@ -506,7 +636,9 @@ export function ListDialog({
             {description && <DialogDescription>{description}</DialogDescription>}
           </DialogHeader>
         )}
-        <SheetSubmitSlot value={slot}>{children}</SheetSubmitSlot>
+        <SheetSubmitSlot value={slot}>
+          <PaneHost value="dialog">{children}</PaneHost>
+        </SheetSubmitSlot>
       </DialogContent>
     </Dialog>
   );

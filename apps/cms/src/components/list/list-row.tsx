@@ -22,6 +22,8 @@ import {
   ContextMenuTrigger,
 } from '@/components/ui/context-menu';
 import { Kbd, KbdGroup } from '@/components/ui/kbd';
+import { notify } from '@/lib/notify';
+import { noteMenuUse } from '@/lib/shortcut-tips';
 import { copyText } from '@/lib/site';
 import { useSortLayout } from '@/lib/sort-motion';
 import { cn } from '@/lib/utils';
@@ -72,6 +74,17 @@ function matchesShortcut(event: React.KeyboardEvent, { key, alt }: RowShortcut) 
   // Mac keyboards label Backspace "delete"; full keyboards also have Delete.
   if (key === 'Backspace') return event.key === 'Backspace' || event.key === 'Delete';
   return event.key.toLowerCase() === key.toLowerCase();
+}
+
+/**
+ * Chosen from the menu with a mouse: after the third time, a quiet tip names the key. Not on a
+ * touch screen, which has no keyboard, and a beat late, so the action's own message reads first.
+ */
+function suggestShortcut(item: RowMenuItem) {
+  if (!item.shortcut || window.matchMedia('(hover: none)').matches) return;
+  const mac = /Mac|iPhone|iPad/.test(navigator.platform);
+  const tip = noteMenuUse(item.label, item.shortcut, { mac });
+  if (tip) setTimeout(() => notify.info({ title: 'A faster way', description: tip }), 1200);
 }
 
 /** Open, Select, the page's items, then the red group: the menu and the shortcuts share it. */
@@ -385,6 +398,7 @@ export function ListRow({
           destructive={destructive}
           anchorRef={drag.surfaceRef}
           preview={children}
+          onUse={suggestShortcut}
         >
           {surface}
         </RowMenu>
@@ -408,12 +422,15 @@ export function RowMenu({
   anchorRef,
   preview,
   previewClassName = 'px-4 py-2.5',
+  onUse,
   children,
 }: {
   actions: RowMenuItem[];
   destructive: RowMenuItem[];
   anchorRef: React.RefObject<HTMLDivElement | null>;
   preview: React.ReactNode;
+  /** Called after an item is chosen from the menu, for a tip about its shortcut. */
+  onUse?: (item: RowMenuItem) => void;
   /** Padding for the lifted card on touch; an image tile fills it instead. */
   previewClassName?: string;
   children: React.ReactNode;
@@ -488,7 +505,10 @@ export function RowMenu({
               key={item.label}
               className={DESKTOP_ITEM}
               disabled={item.disabled}
-              onClick={item.onSelect}
+              onClick={() => {
+                item.onSelect();
+                onUse?.(item);
+              }}
             >
               {item.icon}
               {item.label}

@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { publicBookingSchema } from './events';
+import { bookingProblem, publicBookingSchema } from './events';
 import { bookingState, hashManageToken, manageToken, manageUrl, safeEqual } from './public-booking';
 import { parseSiteSettings } from './settings';
 
@@ -40,9 +40,18 @@ describe('bookingState', () => {
     [{}, 0, 2_000, 'closed'],
     [{ status: 'cancelled' }, 0, 1_000, 'cancelled'],
     [{ status: 'draft' }, 0, 1_000, 'closed'],
-  ] as const)('bookingState %o taken %i at %i is %s', (patch, taken, now, state) =>
-    expect(bookingState({ ...event, ...patch }, taken, now)).toBe(state)
-  );
+    [{ bookingsCloseAt: 1_800 }, 0, 1_900, 'closed'],
+    [{ bookingsOpenAt: 1_500 }, 0, 1_500, 'open'],
+    [{ capacity: 1 }, 0, 1_000, 'open'],
+  ] as const)('bookingState %o taken %i at %i is %s', (patch, taken, now, state) => {
+    const e = { ...event, ...patch };
+    expect(bookingState(e, taken, now)).toBe(state);
+    // It must agree with bookingProblem for one person: open exactly when nothing stops them, and
+    // a problem never reads as open.
+    const problem = bookingProblem(e, 1, taken, now, 'website');
+    expect(bookingState(e, taken, now) === 'open').toBe(problem === null);
+    if (problem !== null) expect(bookingState(e, taken, now)).not.toBe('open');
+  });
 });
 
 describe('manage tokens', () => {

@@ -52,9 +52,16 @@ export function pageCacheKey(url: URL, version: number): Request {
   return new Request(key.toString());
 }
 
-/** Pages only: not form endpoints and other API routes, which must always run. */
+/**
+ * Pages only: not form endpoints and other API routes, which must always run.
+ * Event pages show places left, so they are always rendered fresh.
+ */
 export function isCacheablePage(request: Request, url: URL): boolean {
-  return request.method === 'GET' && !url.pathname.startsWith('/api/');
+  return (
+    request.method === 'GET' &&
+    !url.pathname.startsWith('/api/') &&
+    !url.pathname.startsWith('/events/')
+  );
 }
 
 /** A rendered page that is the same for every visitor and fine to keep. */

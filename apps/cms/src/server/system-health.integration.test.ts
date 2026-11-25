@@ -11,7 +11,7 @@ const options = (overrides: Partial<HealthOptions> = {}): HealthOptions => ({
   d1: env.DB,
   bucket: env.MEDIA,
   hubspotConnected: true,
-  hasEmailKey: true,
+  emailConfigured: true,
   production: true,
   now,
   network: true,

@@ -33,8 +33,8 @@ const services: Service[] = [
     note: 'Website forms send enquiries to HubSpot as well. That is set when the website is built, so it is not shown here.',
   },
   {
-    name: 'Resend',
-    brand: 'resend',
+    name: 'Cloudflare Email Service',
+    brand: 'cloudflare',
     does: 'Sends the sign-in links people use to get into the CMS.',
     connected: (s) => s.email,
     setup: `${ASK} Without it, sign-in links cannot be emailed.`,

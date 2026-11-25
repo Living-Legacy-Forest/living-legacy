@@ -2,8 +2,8 @@ import { env } from 'cloudflare:workers';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { emailConfigured, sendInviteEmail } from './email';
 
-type Mutable = Record<string, unknown>;
-const mutableEnv = env as unknown as Mutable;
+const mutableEnv = env as unknown as Record<string, unknown>;
+const invite = () => sendInviteEmail('a@example.test', 'https://cms.example.test/login', 'editor');
 
 describe('email delivery', () => {
   const sent: unknown[] = [];
@@ -12,8 +12,6 @@ describe('email delivery', () => {
     sent.length = 0;
     Object.assign(mutableEnv, {
       EMAIL_FROM: 'Living Legacy CMS <cms@notify.example.test>',
-      EMAIL_PROVIDER: 'resend',
-      RESEND_API_KEY: 'test-key',
       EMAIL: {
         send: async (message: unknown) => {
           sent.push(message);
@@ -21,43 +19,20 @@ describe('email delivery', () => {
         },
       },
     });
+    // Vitest runs as dev, which only prints the link; these tests are about a deployed Worker.
+    vi.stubEnv('DEV', false);
     vi.spyOn(console, 'error').mockImplementation(() => {});
+    vi.spyOn(console, 'warn').mockImplementation(() => {});
   });
 
   afterEach(() => {
     vi.restoreAllMocks();
-    vi.unstubAllGlobals();
     vi.unstubAllEnvs();
   });
 
-  it('sends through Resend unless the provider is switched', async () => {
-    const fetcher = vi.fn(async () => new Response('{}', { status: 200 }));
-    vi.stubGlobal('fetch', fetcher);
+  it('sends through the Cloudflare binding with the sender and the content', async () => {
+    await invite();
 
-    await sendInviteEmail('a@example.test', 'https://cms.example.test/login', 'editor');
-
-    expect(fetcher).toHaveBeenCalledOnce();
-    expect(sent).toHaveLength(0);
-  });
-
-  it('keeps Resend for a misspelt provider rather than failing sign-in', async () => {
-    mutableEnv.EMAIL_PROVIDER = 'cloudfare';
-    const fetcher = vi.fn(async () => new Response('{}', { status: 200 }));
-    vi.stubGlobal('fetch', fetcher);
-
-    await sendInviteEmail('a@example.test', 'https://cms.example.test/login', 'editor');
-
-    expect(fetcher).toHaveBeenCalledOnce();
-  });
-
-  it('sends through the Cloudflare binding with the same sender and content', async () => {
-    mutableEnv.EMAIL_PROVIDER = 'cloudflare';
-    const fetcher = vi.fn();
-    vi.stubGlobal('fetch', fetcher);
-
-    await sendInviteEmail('a@example.test', 'https://cms.example.test/login', 'editor');
-
-    expect(fetcher).not.toHaveBeenCalled();
     expect(sent).toEqual([
       expect.objectContaining({
         from: 'Living Legacy CMS <cms@notify.example.test>',
@@ -70,7 +45,6 @@ describe('email delivery', () => {
   });
 
   it('turns a binding failure into a short message that leaves out the reason', async () => {
-    mutableEnv.EMAIL_PROVIDER = 'cloudflare';
     mutableEnv.EMAIL = {
       send: async () => {
         throw Object.assign(new Error('domain not onboarded for a@example.test'), {
@@ -79,27 +53,29 @@ describe('email delivery', () => {
       },
     };
 
-    const result = sendInviteEmail('a@example.test', 'https://cms.example.test/login', 'editor');
+    const result = invite();
 
     await expect(result).rejects.toThrow('Cloudflare Email Service failed (E_SENDER_NOT_VERIFIED)');
     await expect(result).rejects.not.toThrow(/a@example\.test/);
   });
 
-  it('fails closed in a deployed Worker when the chosen provider has nothing to send with', async () => {
-    mutableEnv.RESEND_API_KEY = undefined;
-    // Vitest runs as dev, which only prints the link; a deployed Worker must refuse.
-    vi.stubEnv('DEV', false);
+  it('fails closed when there is no binding, rather than logging the link', async () => {
+    mutableEnv.EMAIL = undefined;
 
-    await expect(
-      sendInviteEmail('a@example.test', 'https://cms.example.test/login', 'editor')
-    ).rejects.toThrow('Email delivery is not configured');
+    await expect(invite()).rejects.toThrow('Email delivery is not configured');
+    expect(console.warn).not.toHaveBeenCalled();
   });
 
-  it('reports whether the chosen provider can send', () => {
-    expect(emailConfigured()).toBe(true);
-    mutableEnv.RESEND_API_KEY = undefined;
-    expect(emailConfigured()).toBe(false);
-    mutableEnv.EMAIL_PROVIDER = 'cloudflare';
+  it('prints the link instead of sending in local dev', async () => {
+    vi.stubEnv('DEV', true);
+
+    await invite();
+
+    expect(sent).toHaveLength(0);
+    expect(console.warn).toHaveBeenCalledOnce();
+  });
+
+  it('reports whether the binding is there', () => {
     expect(emailConfigured()).toBe(true);
     mutableEnv.EMAIL = undefined;
     expect(emailConfigured()).toBe(false);

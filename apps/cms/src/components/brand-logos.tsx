@@ -2,12 +2,12 @@ import {
   type SimpleIcon,
   siBetterstack,
   siClaude,
+  siCloudflare,
   siGoogleanalytics,
   siGoogletagmanager,
   siHubspot,
   siMeta,
   siPosthog,
-  siResend,
   siSentry,
 } from 'simple-icons';
 import { cn } from '@/lib/utils';
@@ -49,12 +49,12 @@ const marks = {
   betterstack: siBetterstack,
   claude: siClaude,
   claudecode: claudeCode,
+  cloudflare: siCloudflare,
   googleanalytics: siGoogleanalytics,
   googletagmanager: siGoogletagmanager,
   hubspot: siHubspot,
   meta: siMeta,
   posthog: siPosthog,
-  resend: siResend,
   sentry: siSentry,
 } satisfies Record<string, Pick<SimpleIcon, 'path' | 'hex'>>;
 
@@ -71,7 +71,7 @@ export function BrandMark({ brand, className }: { brand: BrandName; className?: 
 }
 
 /**
- * A service's logo on a white tile, so a black mark (Resend, PostHog, Better Stack) reads in dark
+ * A service's logo on a white tile, so a black mark (PostHog, Better Stack) reads in dark
  * mode as well as light. Decorative: the service's name is always written beside it.
  */
 export function BrandLogo({ brand, className }: { brand: BrandName; className?: string }) {

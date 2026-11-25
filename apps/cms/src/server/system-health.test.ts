@@ -113,16 +113,16 @@ describe('judgeHubspot', () => {
 });
 
 describe('judgeEmail', () => {
-  it('is a problem in production without a key, and a warning elsewhere', () => {
-    expect(judgeEmail({ hasKey: true, production: true })).toEqual({
+  it('is a problem in production when not set up, and a warning elsewhere', () => {
+    expect(judgeEmail({ configured: true, production: true })).toEqual({
       status: 'ok',
       detail: 'Sign-in links and invitations can be sent.',
     });
-    expect(judgeEmail({ hasKey: false, production: true })).toEqual({
+    expect(judgeEmail({ configured: false, production: true })).toEqual({
       status: 'problem',
-      detail: 'No email key, so sign-in links and invitations cannot be sent.',
+      detail: 'Email sending is not set up, so sign-in links and invitations cannot be sent.',
     });
-    expect(judgeEmail({ hasKey: false, production: false })).toEqual({
+    expect(judgeEmail({ configured: false, production: false })).toEqual({
       status: 'warning',
       detail: 'Not sending here: sign-in links are printed in the terminal.',
     });

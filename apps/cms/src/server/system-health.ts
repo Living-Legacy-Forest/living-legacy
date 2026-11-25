@@ -104,12 +104,13 @@ export function judgeHubspot(
   };
 }
 
-export function judgeEmail(probe: { hasKey: boolean; production: boolean }): Verdict {
-  if (probe.hasKey) return { status: 'ok', detail: 'Sign-in links and invitations can be sent.' };
+export function judgeEmail(probe: { configured: boolean; production: boolean }): Verdict {
+  if (probe.configured)
+    return { status: 'ok', detail: 'Sign-in links and invitations can be sent.' };
   return probe.production
     ? {
         status: 'problem',
-        detail: 'No email key, so sign-in links and invitations cannot be sent.',
+        detail: 'Email sending is not set up, so sign-in links and invitations cannot be sent.',
       }
     : {
         status: 'warning',
@@ -187,7 +188,7 @@ export interface HealthOptions {
   d1: D1Database;
   bucket: R2Bucket;
   hubspotConnected: boolean;
-  hasEmailKey: boolean;
+  emailConfigured: boolean;
   production: boolean;
   now: number;
   /**
@@ -204,7 +205,7 @@ export function healthOptions(network: boolean): HealthOptions {
     d1: env.DB,
     bucket: env.MEDIA,
     hubspotConnected: Boolean(env.HUBSPOT_ACCESS_TOKEN),
-    hasEmailKey: emailConfigured(),
+    emailConfigured: emailConfigured(),
     production: import.meta.env.VITE_SENTRY_ENVIRONMENT === 'production',
     now: Date.now(),
     network,
@@ -237,7 +238,7 @@ export async function runHealthChecks(options: HealthOptions): Promise<HealthChe
   checks.push({
     key: 'email',
     title: 'Email',
-    ...judgeEmail({ hasKey: options.hasEmailKey, production: options.production }),
+    ...judgeEmail({ configured: options.emailConfigured, production: options.production }),
   });
   return checks;
 }

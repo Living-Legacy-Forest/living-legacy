@@ -62,8 +62,8 @@
     // notify.livinglegacy.com.au is verified in Resend and kept apart from
     // the marketing mail sent from the root domain.
     "EMAIL_FROM": "Living Legacy CMS <cms@notify.livinglegacy.com.au>",
-    // Who delivers it: "resend" or "cloudflare". Switch to "cloudflare" once notify.livinglegacy.com.au
-    // is onboarded under Email Service > Email Sending; "resend" stays a one-line way back.
-    "EMAIL_PROVIDER": "resend"
+    // Who delivers it: "cloudflare" (Email Service, with notify.livinglegacy.com.au onboarded under
+    // Email Sending) or "resend". Setting "resend" is the one-line way back; RESEND_API_KEY stays set.
+    "EMAIL_PROVIDER": "cloudflare"
   }
 }

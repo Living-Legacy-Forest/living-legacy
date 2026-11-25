@@ -7,8 +7,6 @@ declare namespace Cloudflare {
     GOOGLE_CLIENT_ID?: string;
     GOOGLE_CLIENT_SECRET?: string;
     BOOTSTRAP_ADMIN_EMAILS?: string;
-    // Resend. The key is absent in local dev, where links are logged instead.
-    RESEND_API_KEY?: string;
     // HubSpot private app token; event bookings sync once it is set (server/event-crm.ts).
     HUBSPOT_ACCESS_TOKEN?: string;
     // Better Stack heartbeat addresses, one JSON object for all of them: keys are

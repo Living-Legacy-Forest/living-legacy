@@ -46,9 +46,8 @@
       "bucket_name": "living-legacy-media"
     }
   ],
-  // Cloudflare Email Service, used when EMAIL_PROVIDER is "cloudflare" (src/lib/email.ts). No
-  // "remote" here: `wrangler dev` and the vite dev server then simulate sending locally, instead of
-  // emailing real people from a laptop.
+  // Cloudflare Email Service sends every CMS email (src/lib/email.ts). The sender domain is onboarded
+  // under Email Service > Email Sending. No "remote": local dev prints the link instead of sending.
   "send_email": [{ "name": "EMAIL" }],
   "vars": {
     // Local dev overrides this with http://localhost:3100 in .dev.vars.
@@ -59,11 +58,8 @@
     // admin (removes people, clears the activity log). Local dev reads its own from .dev.vars.
     "BOOTSTRAP_ADMIN_EMAILS": "gede@sistercreatives.co",
     // Sender for every CMS email (sign-in links, invites, review requests).
-    // notify.livinglegacy.com.au is verified in Resend and kept apart from
+    // notify.livinglegacy.com.au is onboarded for Email Sending and kept apart from
     // the marketing mail sent from the root domain.
-    "EMAIL_FROM": "Living Legacy CMS <cms@notify.livinglegacy.com.au>",
-    // Who delivers it: "cloudflare" (Email Service, with notify.livinglegacy.com.au onboarded under
-    // Email Sending) or "resend". Setting "resend" is the one-line way back; RESEND_API_KEY stays set.
-    "EMAIL_PROVIDER": "cloudflare"
+    "EMAIL_FROM": "Living Legacy CMS <cms@notify.livinglegacy.com.au>"
   }
 }

@@ -7,9 +7,7 @@ interface __BaseEnv_CloudflareEnv {
 	BETTER_AUTH_SECRET: string;
 	BOOTSTRAP_ADMIN_EMAILS: string;
 	BETTER_AUTH_URL: string;
-	RESEND_API_KEY: string;
 	EMAIL_FROM: string;
-	EMAIL_PROVIDER: string;
 	EMAIL: SendEmail;
 	POSTHOG_PERSONAL_API_KEY?: string;
 	POSTHOG_PROJECT_ID?: string;
@@ -27,7 +25,7 @@ type StringifyValues<EnvType extends Record<string, unknown>> = {
 	[Binding in keyof EnvType]: EnvType[Binding] extends string ? EnvType[Binding] : string;
 };
 declare namespace NodeJS {
-	interface ProcessEnv extends StringifyValues<Pick<Cloudflare.Env, "BETTER_AUTH_SECRET" | "BOOTSTRAP_ADMIN_EMAILS" | "BETTER_AUTH_URL" | "RESEND_API_KEY" | "EMAIL_FROM" | "EMAIL_PROVIDER">> {}
+	interface ProcessEnv extends StringifyValues<Pick<Cloudflare.Env, "BETTER_AUTH_SECRET" | "BOOTSTRAP_ADMIN_EMAILS" | "BETTER_AUTH_URL" | "EMAIL_FROM">> {}
 }
 declare module "*.txt" {
 	const value: string;

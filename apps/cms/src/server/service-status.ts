@@ -21,7 +21,7 @@ export const getServiceStatuses = createServerFn({ method: 'GET' })
     return {
       /** HubSpot's private app token: event bookings sync to contacts once it is set. */
       hubspot: Boolean(env.HUBSPOT_ACCESS_TOKEN),
-      /** Whichever service sends the sign-in links (EMAIL_PROVIDER). */
+      /** Cloudflare Email Service, which sends the sign-in links. */
       email: emailConfigured(),
       googleSignIn: Boolean(env.GOOGLE_CLIENT_ID && env.GOOGLE_CLIENT_SECRET),
       /** Anthropic, for the Suggest buttons. */

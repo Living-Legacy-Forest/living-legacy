@@ -9,6 +9,14 @@ declare namespace Cloudflare {
     BOOTSTRAP_ADMIN_EMAILS?: string;
     // HubSpot private app token; event bookings sync once it is set (server/event-crm.ts).
     HUBSPOT_ACCESS_TOKEN?: string;
+    // Vars in wrangler.jsonc, declared here because regenerating worker-configuration.d.ts
+    // (cf-typegen) drags in unrelated churn. WEBSITE_URL hosts the page guests manage bookings on;
+    // BOOKING_EMAIL_FROM is the sender of guest booking emails.
+    WEBSITE_URL: string;
+    BOOKING_EMAIL_FROM: string;
+    // Signs each website booking's cancel link (server/booking-confirmations.ts, public-bookings.ts).
+    // Without it no confirmation goes out. Never rotate it casually: links not yet emailed stop working.
+    MANAGE_TOKEN_SECRET?: string;
     // Better Stack heartbeat addresses, one JSON object for all of them: keys are
     // schedules or jobs (server/cron-jobs.ts). Unset locally, where nothing is pinged.
     HEARTBEAT_URLS?: string;

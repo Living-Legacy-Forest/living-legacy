@@ -60,6 +60,10 @@
     // Sender for every CMS email (sign-in links, invites, review requests).
     // notify.livinglegacy.com.au is onboarded for Email Sending and kept apart from
     // the marketing mail sent from the root domain.
-    "EMAIL_FROM": "Living Legacy CMS <cms@notify.livinglegacy.com.au>"
+    "EMAIL_FROM": "Living Legacy CMS <cms@notify.livinglegacy.com.au>",
+    // Sender for guest-facing booking emails, kept apart from the CMS's own mail.
+    "BOOKING_EMAIL_FROM": "Living Legacy <bookings@notify.livinglegacy.com.au>",
+    // The public website, which hosts the page a guest manages their booking on.
+    "WEBSITE_URL": "https://livinglegacy.com.au"
   }
 }

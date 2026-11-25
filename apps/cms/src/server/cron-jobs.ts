@@ -99,13 +99,21 @@ export async function jobsFor(
     };
   }
 
-  const [{ publishDuePosts }, { syncPending }, { publishDueEvents }, { refreshAnalytics }] =
-    await Promise.all([
-      import('./scheduler'),
-      import('./event-crm'),
-      import('./event-jobs'),
-      import('./dashboard-trend-store'),
-    ]);
+  const [
+    { publishDuePosts },
+    { syncPending },
+    { publishDueEvents },
+    { refreshAnalytics },
+    { retryConfirmations },
+    { createDb },
+  ] = await Promise.all([
+    import('./scheduler'),
+    import('./event-crm'),
+    import('./event-jobs'),
+    import('./dashboard-trend-store'),
+    import('./booking-confirmations'),
+    import('@ll/db'),
+  ]);
   return {
     'publish-posts': async () => {
       const { failed } = await publishDuePosts(env.DB, now);
@@ -117,6 +125,14 @@ export async function jobsFor(
     },
     'publish-events': () => publishDueEvents(env.DB, now),
     'sync-bookings': () => syncPending(env.DB),
+    'send-booking-confirmations': async () => {
+      const { sent, failed } = await retryConfirmations(createDb(env.DB));
+      if (failed > 0) {
+        throw new Error(
+          `${failed} booking ${failed === 1 ? 'confirmation' : 'confirmations'} could not be sent (${sent} sent).`
+        );
+      }
+    },
     'refresh-analytics': async () => {
       const { readSiteSettings } = await import('@/lib/site-settings');
       return refreshAnalytics(env.DB, (await readSiteSettings()).timeZone, now.getTime());

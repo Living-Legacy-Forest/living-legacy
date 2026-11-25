@@ -1,5 +1,6 @@
 import type { PublicBookingInput } from '@ll/content';
 import { eventBookings, events } from '@ll/db/schema';
+import { eq } from 'drizzle-orm';
 import { env } from 'cloudflare:workers';
 import { beforeEach, describe, expect, it } from 'vitest';
 import { testDb } from '../../test/fixtures';
@@ -69,6 +70,7 @@ beforeEach(async () => {
   mutable.INTERNAL_KEY = KEY;
   mutable.MANAGE_TOKEN_SECRET = 'test-secret';
   mutable.BETTER_AUTH_URL = 'http://cms.test';
+  mutable.WEBSITE_URL = 'http://website.test';
   promises = [];
   await testDb().delete(eventBookings);
   await testDb().delete(events);
@@ -106,12 +108,18 @@ describe('POST /internal/events/book', () => {
   });
 
   it('queues one confirmation per booking, and none for a refused one', async () => {
-    const { event } = await book();
+    const { event, json } = await book();
     expect(promises).toHaveLength(1);
     await call('/internal/events/book', { body: guest(event.id) });
     expect(promises).toHaveLength(1);
-    // A confirmation problem never surfaces as a rejection.
-    await expect(Promise.all(promises)).resolves.toBeDefined();
+
+    // The queued work is confirmBooking for this booking: once it has run, the row is stamped.
+    const row = async () =>
+      testDb().query.eventBookings.findFirst({
+        where: eq(eventBookings.reference, json.reference as string),
+      });
+    await Promise.all(promises);
+    expect((await row())?.confirmationSentAt).toBeInstanceOf(Date);
   });
 
   it('answers 400 with the first issue for a body that fails the schema', async () => {
@@ -211,5 +219,34 @@ describe('guards', () => {
   it('answers 404 for another path', async () => {
     expect((await call('/internal/events/other', { body: {} })).status).toBe(404);
     expect((await call('/internal/nothing', { body: {} })).status).toBe(404);
+  });
+});
+
+describe('unexpected errors', () => {
+  it('answers 500 as JSON when the store fails', async () => {
+    const broken = Object.create(env, {
+      DB: {
+        value: {
+          prepare: () => {
+            throw new Error('D1 is down');
+          },
+        },
+      },
+    }) as Cloudflare.Env;
+    const response = await internalResponse(
+      new Request('http://cms.test/internal/events/view', {
+        method: 'POST',
+        headers: { 'x-internal-key': KEY },
+        body: JSON.stringify({ reference: 'LL-ABC', token: 'x'.repeat(43) }),
+      }),
+      broken,
+      ctx
+    );
+    expect(response.status).toBe(500);
+    expect(response.headers.get('content-type')).toContain('application/json');
+    expect(await response.json()).toEqual({
+      ok: false,
+      message: 'Something went wrong on our side. Please try again in a moment.',
+    });
   });
 });

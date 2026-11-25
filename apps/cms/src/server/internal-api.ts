@@ -5,6 +5,7 @@ import {
   safeEqual,
 } from '@ll/content';
 import { createDb } from '@ll/db';
+import * as Sentry from '@sentry/cloudflare';
 import { confirmBooking } from './booking-confirmations';
 import { bookFromWebsite, cancelFromWebsite, viewBooking } from './public-bookings';
 
@@ -61,12 +62,33 @@ export async function internalResponse(
     return fail(400, 'The request could not be read.');
   }
 
+  try {
+    return await dispatch(route, body, env, ctx, env.MANAGE_TOKEN_SECRET);
+  } catch (error) {
+    // The website expects JSON from every call; without this a store error would reach it as
+    // the platform's own error page. Sentry still hears of it, as it would from an escape.
+    console.error(
+      `[internal] ${route} failed:`,
+      error instanceof Error ? error.message : 'unknown error'
+    );
+    Sentry.captureException(error, { tags: { route } });
+    return fail(500, 'Something went wrong on our side. Please try again in a moment.');
+  }
+}
+
+async function dispatch(
+  route: string,
+  body: unknown,
+  env: Cloudflare.Env,
+  ctx: Pick<ExecutionContext, 'waitUntil'>,
+  secret: string
+): Promise<Response> {
   const db = createDb(env.DB);
 
   if (route === '/internal/events/book') {
     const parsed = publicBookingSchema.safeParse(body);
     if (!parsed.success) return invalid(route, parsed.error);
-    const result = await bookFromWebsite(db, parsed.data, env.MANAGE_TOKEN_SECRET);
+    const result = await bookFromWebsite(db, parsed.data, secret);
     if (!result.ok) return json(result, 409);
 
     // The visitor should not wait for the email. Deps are built inside, and nothing from it

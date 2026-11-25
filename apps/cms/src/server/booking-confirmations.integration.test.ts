@@ -219,6 +219,20 @@ describe('retryConfirmations', () => {
     expect((await stored(old.id))?.confirmationSentAt).toBeNull();
   });
 
+  it('leaves a booking alone for two minutes, so its first email can finish', async () => {
+    const event = await addEvent();
+    await addBooking(event.id, { email: 'new@example.com' }, new Date(now.getTime() - 60_000));
+    const settled = await addBooking(
+      event.id,
+      { email: 'settled@example.com' },
+      new Date(now.getTime() - 3 * 60_000)
+    );
+    const { deps, calls } = fakeDeps();
+
+    expect(await retryConfirmations(testDb(), deps, now)).toEqual({ sent: 1, failed: 0 });
+    expect(calls.map((c) => c.c.reference)).toEqual([settled.reference]);
+  });
+
   it('does not resend one that already went', async () => {
     const event = await addEvent();
     await addBooking(event.id);

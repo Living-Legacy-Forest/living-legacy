@@ -1,13 +1,15 @@
 import { hashManageToken, manageToken, manageUrl, safeEqual } from '@ll/content';
 import type { Db } from '@ll/db';
 import { eventBookings, events } from '@ll/db/schema';
-import { and, eq, gte, isNotNull, isNull } from 'drizzle-orm';
+import { and, eq, gte, isNotNull, isNull, lt } from 'drizzle-orm';
 import { env } from 'cloudflare:workers';
 import { type BookingConfirmation, cmsOrigin, sendBookingConfirmationEmail } from '@/lib/email';
 import { readSiteSettings } from '@/lib/site-settings';
 
 /** How long an unsent confirmation is retried. After this the guest has the thank-you page. */
 const RETRY_WINDOW_MS = 24 * 3_600_000;
+/** The first email is sent as the booking is made; the retry waits so it cannot send a second copy mid-send. */
+const RETRY_GRACE_MS = 2 * 60_000;
 /** Per run, so one bad day of failures cannot make a single cron run send hundreds of emails. */
 const RETRY_BATCH = 50;
 
@@ -116,7 +118,8 @@ export async function retryConfirmations(
         eq(eventBookings.source, 'website'),
         isNotNull(eventBookings.email),
         isNull(eventBookings.confirmationSentAt),
-        gte(eventBookings.createdAt, new Date(now.getTime() - RETRY_WINDOW_MS))
+        gte(eventBookings.createdAt, new Date(now.getTime() - RETRY_WINDOW_MS)),
+        lt(eventBookings.createdAt, new Date(now.getTime() - RETRY_GRACE_MS))
       )
     )
     .orderBy(eventBookings.createdAt)

@@ -88,6 +88,8 @@ export const SITE_SETTINGS_DEFAULTS = {
   // person may ask for in a day.
   aiEnabled: true,
   aiDailyLimit: 100,
+  /** Email guests a confirmation, with a link to cancel, when they book on the website. */
+  sendBookingConfirmations: true,
   // Cookies & privacy: which tags the website loads, and the banner that asks first. A tag id left
   // empty falls back to the one the site was built with.
   gtmId: '',

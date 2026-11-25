@@ -146,6 +146,7 @@ const settingsSchema = z
       .int(`Enter a whole number from 1 to ${AI_DAILY_LIMIT_MAX}.`)
       .min(1, `Enter a whole number from 1 to ${AI_DAILY_LIMIT_MAX}.`)
       .max(AI_DAILY_LIMIT_MAX, `Enter a whole number from 1 to ${AI_DAILY_LIMIT_MAX}.`),
+    sendBookingConfirmations: z.boolean(),
     consentMonths: z
       .number()
       .refine(

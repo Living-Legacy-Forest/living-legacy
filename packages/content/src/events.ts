@@ -272,6 +272,18 @@ export const guestInputSchema = z.object({
 });
 export type GuestInput = z.infer<typeof guestInputSchema>;
 
+/** A booking made on the website: the guest's email is how they get their link, so it is required. */
+export const publicBookingSchema = guestInputSchema.extend({
+  email: z
+    .string(EMAIL_MESSAGE)
+    .trim()
+    .max(200)
+    .transform((v) => v.toLowerCase())
+    .refine(isEmail, EMAIL_MESSAGE),
+  consent: z.literal(true, 'Tick the box to agree to the privacy policy.'),
+});
+export type PublicBookingInput = z.infer<typeof publicBookingSchema>;
+
 /** Cancelling or deleting a repeating event: this date only, or this and its upcoming dates. */
 export const seriesScopeSchema = z.enum(['one', 'following']).default('one');
 export type SeriesScope = z.infer<typeof seriesScopeSchema>;

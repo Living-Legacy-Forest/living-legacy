@@ -17,6 +17,9 @@ declare namespace Cloudflare {
     // Signs each website booking's cancel link (server/booking-confirmations.ts, public-bookings.ts).
     // Without it no confirmation goes out. Never rotate it casually: links not yet emailed stop working.
     MANAGE_TOKEN_SECRET?: string;
+    // Shared with the website, which sends it as `x-internal-key` on its service-binding calls
+    // (server/internal-api.ts). Without it, or without MANAGE_TOKEN_SECRET, those calls get a 503.
+    INTERNAL_KEY?: string;
     // Better Stack heartbeat addresses, one JSON object for all of them: keys are
     // schedules or jobs (server/cron-jobs.ts). Unset locally, where nothing is pinged.
     HEARTBEAT_URLS?: string;

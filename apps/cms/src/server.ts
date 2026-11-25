@@ -39,7 +39,8 @@ function noFraming(response: Response) {
   });
 }
 
-// Custom Worker entry: TanStack Start serves requests. The cron triggers in
+// Custom Worker entry: TanStack Start serves requests, except the website's internal calls
+// (/internal/, server/internal-api.ts), the health check and media. The cron triggers in
 // wrangler.jsonc: every five minutes, publish scheduled posts and events, sync event bookings
 // to HubSpot (once connected; HubSpot sends the guest emails) and renew the stored
 // website-traffic answers the dashboard reads; daily, clear out unused stored files, delete
@@ -62,7 +63,7 @@ export default Sentry.withSentry(
   }),
   {
     // The app reads bindings via `cloudflare:workers`, so it only gets the request.
-    async fetch(request, _env, ctx) {
+    async fetch(request, workerEnv, ctx) {
       // The CMS moved to its own domain. Sign-in only works there (its links and
       // cookies follow BETTER_AUTH_URL), so the old address forwards to it.
       // Preview versions have their own workers.dev hosts and are left alone.
@@ -78,6 +79,12 @@ export default Sentry.withSentry(
       if (url.pathname === HEALTH_PATH) {
         const { healthResponse } = await import('./server/health-check');
         return healthResponse(request, env.DB);
+      }
+      // The website's calls over the service binding (book, view, cancel an event booking); they
+      // carry a shared key and need nothing from the app.
+      if (url.pathname.startsWith('/internal/')) {
+        const { internalResponse } = await import('./server/internal-api');
+        return internalResponse(request, workerEnv, ctx);
       }
       return noFraming(await (await loadApp()).fetch(request));
     },

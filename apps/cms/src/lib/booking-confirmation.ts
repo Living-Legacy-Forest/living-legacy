@@ -6,7 +6,8 @@ export const CONFIRMATION_GRACE_MS = 10 * 60_000;
 
 /**
  * Whether a guest booked on the website was never sent their confirmation, even though it is
- * overdue. Turning confirmations off on purpose shows this too: it is what staff should check.
+ * overdue. Only while the CMS sends them: with the switch off (HubSpot sends them instead), none
+ * is sent from here, so nothing is flagged.
  */
 export function confirmationMissing(
   guest: {
@@ -16,9 +17,11 @@ export function confirmationMissing(
     confirmationSentAt: number | null;
     createdAt: number;
   },
-  now: number
+  now: number,
+  sending: boolean
 ) {
   return (
+    sending &&
     guest.status === 'confirmed' &&
     guest.source === 'website' &&
     guest.email !== '' &&

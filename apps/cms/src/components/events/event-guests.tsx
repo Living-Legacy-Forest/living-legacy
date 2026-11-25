@@ -47,6 +47,8 @@ const places = (n: number) => (n === 1 ? '1 place' : `${n} places`);
 /** Who is coming to an event: counts, search, check-in, add, cancel and export. */
 export function EventGuests({ event }: { event: EventRow }) {
   const [guests, setGuests] = useState<Guest[] | null>(null);
+  // Whether the CMS emails confirmations, which is what makes an unsent one worth flagging.
+  const [sendsConfirmations, setSendsConfirmations] = useState(false);
   const [query, setQuery] = useState('');
   const [adding, setAdding] = useState(false);
   const [addingToWaitlist, setAddingToWaitlist] = useState(false);
@@ -62,7 +64,10 @@ export function EventGuests({ event }: { event: EventRow }) {
   const reload = useCallback(
     () =>
       getGuests({ data: { eventId: event.id } })
-        .then(setGuests)
+        .then((result) => {
+          setGuests(result.guests);
+          setSendsConfirmations(result.sendsConfirmations);
+        })
         .catch((error) => notify.error('Could not load the guest list', error)),
     [event.id]
   );
@@ -241,7 +246,7 @@ export function EventGuests({ event }: { event: EventRow }) {
                 GUEST_ROW
               )}
             >
-              <GuestDetails guest={g} />
+              <GuestDetails guest={g} flagUnsent={sendsConfirmations} />
               {editable && (
                 <>
                   <Button
@@ -511,12 +516,15 @@ function GuestDetails({
   guest: g,
   position,
   since,
+  flagUnsent = false,
 }: {
   guest: Guest;
   /** Place in the waiting list, from 1. */
   position?: number;
   /** When they were put on the waiting list. */
   since?: string;
+  /** Flag a website booking whose confirmation never went out. */
+  flagUnsent?: boolean;
 }) {
   return (
     <div className="contents sm:block sm:min-w-0 sm:flex-1">
@@ -538,7 +546,7 @@ function GuestDetails({
             {g.partySize} people
           </Badge>
         )}
-        {confirmationMissing(g, Date.now()) && (
+        {confirmationMissing(g, Date.now(), flagUnsent) && (
           <Badge variant="outline" className="text-muted-foreground shrink-0">
             No confirmation sent
           </Badge>

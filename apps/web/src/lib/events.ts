@@ -182,7 +182,7 @@ export async function getUpcomingEvents(now = Date.now()): Promise<PublicEvent[]
 
 /**
  * The event at /events/{slug}/. A repeating event's dates share the slug, so this is the date
- * `eventId` names if it belongs to the slug, otherwise the next one still to come, otherwise the
+ * `eventId` names if it belongs to the slug, otherwise the best of those still to come (pickDate), otherwise the
  * latest that has passed (its page then says bookings have closed). Null for an unknown slug.
  */
 export async function getEventBySlug(
@@ -193,7 +193,29 @@ export async function getEventBySlug(
   const dates = await getEventDates(slug, now);
   if (dates.length === 0) return null;
   const chosen = eventId ? dates.find((d) => d.id === eventId) : undefined;
-  return chosen ?? dates.find((d) => d.endsAt > now) ?? dates[dates.length - 1]!;
+  if (chosen) return chosen;
+  const upcoming = dates.filter((d) => d.endsAt > now);
+  return upcoming.length > 0 ? pickDate(upcoming) : dates[dates.length - 1]!;
+}
+
+/**
+ * The date of a repeating event to show when none is asked for: the first that can be booked,
+ * else the first not cancelled, else the first. `dates` are upcoming, earliest first, not empty.
+ * The list and the event page both use this, so a series reads the same on each.
+ */
+export function pickDate<T extends PublicEvent>(dates: T[]): T {
+  return (
+    dates.find((d) => d.state === 'open') ??
+    dates.find((d) => d.status !== 'cancelled') ??
+    dates[0]!
+  );
+}
+
+/** A badge for the whole series: only when every upcoming date is cancelled, or all that are not are full. */
+export function seriesBadge(dates: PublicEvent[]): 'Cancelled' | 'Fully booked' | null {
+  if (dates.every((d) => d.status === 'cancelled')) return 'Cancelled';
+  if (dates.every((d) => d.status === 'cancelled' || d.state === 'full')) return 'Fully booked';
+  return null;
 }
 
 /** Every date sharing `slug`, earliest first, each with its description for the page. */

@@ -1,18 +1,26 @@
 ---
 // Upcoming events people can book. Read fresh on every visit, so places left is true; the
-// middleware never caches /events/ pages. A repeating event is one card, at its next date.
+// middleware never caches /events/ pages. A repeating event is one card, at its next bookable date.
 import BaseLayout from '@/layouts/BaseLayout.astro';
 import { Badge } from '@/components/ui/badge';
-import { formatEventWhen, getUpcomingEvents, placesLeftText } from '@/lib/events';
+import {
+  formatEventWhen,
+  getUpcomingEvents,
+  pickDate,
+  placesLeftText,
+  seriesBadge,
+} from '@/lib/events';
 import { CARD_SIZES } from '@/lib/media-srcset';
 
 export const prerender = false;
 
 const upcoming = await getUpcomingEvents();
 
-// One card per web address: the next date, and how many more follow it.
+// One card per web address: its next bookable date, and how many more dates it has. The badge
+// is for the whole series, so one cancelled date does not mark the rest.
 const cards = [...Map.groupBy(upcoming, (event) => event.slug).values()].map((dates) => ({
-  event: dates[0]!,
+  event: pickDate(dates),
+  badge: seriesBadge(dates),
   more: dates.length - 1,
 }));
 
@@ -35,7 +43,7 @@ const description = 'See what is on at Living Legacy and book your place online.
         </p>
       ) : (
         <ul class="mt-14 grid gap-8 sm:grid-cols-2 lg:grid-cols-3">
-          {cards.map(({ event, more }) => {
+          {cards.map(({ event, badge, more }) => {
             const places = placesLeftText(event.placesLeft);
             return (
               <li class="bg-card relative flex flex-col overflow-hidden rounded-xl">
@@ -56,9 +64,10 @@ const description = 'See what is on at Living Legacy and book your place online.
                 )}
                 <div class="flex flex-1 flex-col gap-3 p-6">
                   <div class="flex flex-wrap items-center gap-2">
-                    {event.status === 'cancelled' && <Badge variant="destructive">Cancelled</Badge>}
-                    {event.status !== 'cancelled' && event.state === 'full' && (
-                      <Badge variant="secondary">Fully booked</Badge>
+                    {badge && (
+                      <Badge variant={badge === 'Cancelled' ? 'destructive' : 'secondary'}>
+                        {badge}
+                      </Badge>
                     )}
                   </div>
                   <h2 class="card-title">

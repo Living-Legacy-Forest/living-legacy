@@ -2,6 +2,7 @@ import { createDb } from '@ll/db';
 import { env } from 'cloudflare:workers';
 import { eventBookings } from '@ll/db/schema';
 import { and, count, desc, isNotNull, isNull, min } from 'drizzle-orm';
+import { emailConfigured } from '@/lib/email';
 import { formatBytes, formatInteger } from '@/lib/format';
 import type { HealthStatus } from '@/lib/system-status';
 
@@ -203,7 +204,7 @@ export function healthOptions(network: boolean): HealthOptions {
     d1: env.DB,
     bucket: env.MEDIA,
     hubspotConnected: Boolean(env.HUBSPOT_ACCESS_TOKEN),
-    hasEmailKey: Boolean(env.RESEND_API_KEY),
+    hasEmailKey: emailConfigured(),
     production: import.meta.env.VITE_SENTRY_ENVIRONMENT === 'production',
     now: Date.now(),
     network,

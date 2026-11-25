@@ -9,6 +9,11 @@ BETTER_AUTH_SECRET=
 # only they can remove people, clear the activity log and reset the writing assistant.
 BOOTSTRAP_ADMIN_EMAILS=
 
+# Email goes through Resend unless EMAIL_PROVIDER (wrangler.jsonc) is "cloudflare", which uses the
+# EMAIL binding and needs no key here. Set EMAIL_PROVIDER=cloudflare below to try it locally; the
+# binding simulates sending, so nothing is delivered.
+# EMAIL_PROVIDER=cloudflare
+#
 # Resend API key for sending magic-link emails (https://resend.com/api-keys).
 # The sender domain in EMAIL_FROM (wrangler.jsonc) must be verified in Resend.
 # Leave unset in local dev to log the link to the console instead of sending.

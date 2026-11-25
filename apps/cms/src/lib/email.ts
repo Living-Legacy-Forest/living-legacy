@@ -12,20 +12,30 @@ type Email = {
   text: string;
 };
 
-async function send(email: Email): Promise<void> {
-  if (!env.RESEND_API_KEY) {
-    // Fail closed in a deployed Worker: a missing key must never cause a live
-    // sign-in link to be written to logs. Only local dev prints it, so the
-    // flow stays testable without sending anything.
-    if (!import.meta.env.DEV) {
-      throw new Error('Email delivery is not configured');
-    }
-    console.warn(
-      `[email] dev mode, no RESEND_API_KEY; link not sent to ${email.to}:\n${email.text}`
-    );
-    return;
-  }
+/**
+ * Who delivers the mail. "cloudflare" uses the Email Service binding; anything else is Resend, so
+ * a missing or misspelt value keeps today's behaviour rather than failing sign-in.
+ */
+const provider = (): 'cloudflare' | 'resend' =>
+  (env.EMAIL_PROVIDER as string) === 'cloudflare' ? 'cloudflare' : 'resend';
 
+/** Whether the chosen provider can send, for the Apps page and the health check. */
+export const emailConfigured = (): boolean =>
+  provider() === 'cloudflare' ? Boolean(env.EMAIL) : Boolean(env.RESEND_API_KEY);
+
+async function sendWithCloudflare(email: Email): Promise<void> {
+  try {
+    await env.EMAIL.send({ from: env.EMAIL_FROM, ...email });
+  } catch (error) {
+    // Log the reason (domain not onboarded, recipient suppressed, etc.) for diagnosis; keep it out
+    // of the thrown message, which surfaces to the client.
+    const code = (error as { code?: string }).code ?? 'unknown';
+    console.error(`[email] Cloudflare ${code}: ${(error as Error).message}`);
+    throw new Error(`Cloudflare Email Service failed (${code})`);
+  }
+}
+
+async function sendWithResend(email: Email): Promise<void> {
   const res = await fetch(RESEND_ENDPOINT, {
     method: 'POST',
     headers: {
@@ -41,6 +51,24 @@ async function send(email: Email): Promise<void> {
     console.error(`[email] Resend ${res.status}: ${await res.text()}`);
     throw new Error(`Resend returned ${res.status}`);
   }
+}
+
+async function send(email: Email): Promise<void> {
+  if (!emailConfigured()) {
+    // Fail closed in a deployed Worker: nothing to send with must never cause a live
+    // sign-in link to be written to logs. Only local dev prints it, so the
+    // flow stays testable without sending anything.
+    if (!import.meta.env.DEV) {
+      throw new Error('Email delivery is not configured');
+    }
+    console.warn(
+      `[email] dev mode, nothing to send with; link not sent to ${email.to}:\n${email.text}`
+    );
+    return;
+  }
+
+  if (provider() === 'cloudflare') await sendWithCloudflare(email);
+  else await sendWithResend(email);
 }
 
 // Brand colours from the website (apps/web global.css).

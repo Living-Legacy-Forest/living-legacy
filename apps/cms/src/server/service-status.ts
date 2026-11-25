@@ -3,6 +3,7 @@ import { createServerFn } from '@tanstack/react-start';
 import { env } from 'cloudflare:workers';
 import { count, isNull } from 'drizzle-orm';
 import { getDb } from '@/lib/db';
+import { emailConfigured } from '@/lib/email';
 import { requirePermission } from '@/lib/session';
 import { heartbeatCount } from './cron-jobs';
 
@@ -20,8 +21,8 @@ export const getServiceStatuses = createServerFn({ method: 'GET' })
     return {
       /** HubSpot's private app token: event bookings sync to contacts once it is set. */
       hubspot: Boolean(env.HUBSPOT_ACCESS_TOKEN),
-      /** Resend, which sends the sign-in links. */
-      email: Boolean(env.RESEND_API_KEY),
+      /** Whichever service sends the sign-in links (EMAIL_PROVIDER). */
+      email: emailConfigured(),
       googleSignIn: Boolean(env.GOOGLE_CLIENT_ID && env.GOOGLE_CLIENT_SECRET),
       /** Anthropic, for the Suggest buttons. */
       assistant: Boolean(env.ANTHROPIC_API_KEY),

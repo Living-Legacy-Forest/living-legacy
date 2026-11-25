@@ -222,4 +222,31 @@ describe('cancelFromWebsite', () => {
     expect(again?.status).toBe('cancelled');
     expect((await stored(booked.id))?.cancelledAt?.getTime()).toBe(at.getTime());
   });
+
+  it('leaves a booking alone once the event has started', async () => {
+    const event = await addEvent();
+    const booked = await bookOk(event.id);
+    const result = await cancelFromWebsite(
+      testDb(),
+      booked.reference,
+      booked.token,
+      new Date(startsAt.getTime() + 1)
+    );
+    expect(result?.status).toBe('confirmed');
+    const row = await stored(booked.id);
+    expect(row?.status).toBe('confirmed');
+    expect(row?.cancelledAt).toBeNull();
+  });
+
+  it('leaves a checked-in booking alone', async () => {
+    const event = await addEvent();
+    const booked = await bookOk(event.id);
+    await testDb()
+      .update(eventBookings)
+      .set({ checkedInAt: new Date(now) })
+      .where(eq(eventBookings.id, booked.id));
+    const result = await cancelFromWebsite(testDb(), booked.reference, booked.token, new Date(now));
+    expect(result?.status).toBe('confirmed');
+    expect((await stored(booked.id))?.status).toBe('confirmed');
+  });
 });

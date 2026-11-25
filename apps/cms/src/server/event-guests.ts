@@ -1,5 +1,4 @@
 import {
-  type BookableEvent,
   bookingProblem,
   guestInputSchema,
   normaliseEmail,
@@ -15,6 +14,7 @@ import { getDb } from '@/lib/db';
 import { requirePermission } from '@/lib/session';
 import { logActivity } from './activity-log';
 import {
+  bookable,
   insertBooking,
   insertWaitlisted,
   promoteBooking,
@@ -48,17 +48,6 @@ export const getGuests = createServerFn({ method: 'GET' })
   });
 
 export type Guest = Awaited<ReturnType<typeof getGuests>>[number];
-
-/** An event as the booking rules see it. */
-const bookable = (event: typeof events.$inferSelect): BookableEvent => ({
-  status: event.status,
-  startsAt: event.startsAt.getTime(),
-  endsAt: event.endsAt.getTime(),
-  bookingsOpenAt: event.bookingsOpenAt?.getTime() ?? null,
-  bookingsCloseAt: event.bookingsCloseAt?.getTime() ?? null,
-  capacity: event.capacity,
-  maxPartySize: event.maxPartySize,
-});
 
 /**
  * Books a guest in, or, with `waitlist`, puts them on the waiting list because the event has no

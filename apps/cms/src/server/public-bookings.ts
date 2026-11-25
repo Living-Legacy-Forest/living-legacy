@@ -1,5 +1,4 @@
 import {
-  type BookableEvent,
   bookingProblem,
   hashManageToken,
   type InternalResult,
@@ -12,24 +11,13 @@ import {
 import type { Db } from '@ll/db';
 import { eventBookings, events } from '@ll/db/schema';
 import { and, eq } from 'drizzle-orm';
-import { insertBooking } from './booking-store';
+import { bookable, insertBooking } from './booking-store';
 
 export const DUPLICATE_MESSAGE =
   'You have already booked this event. Use the link in your confirmation email to see or cancel your booking.';
 
 const NOT_OPEN = 'This event is not open for bookings.';
 const FULL = 'This event is fully booked.';
-
-/** An event as the booking rules see it. */
-const bookable = (event: typeof events.$inferSelect): BookableEvent => ({
-  status: event.status,
-  startsAt: event.startsAt.getTime(),
-  endsAt: event.endsAt.getTime(),
-  bookingsOpenAt: event.bookingsOpenAt?.getTime() ?? null,
-  bookingsCloseAt: event.bookingsCloseAt?.getTime() ?? null,
-  capacity: event.capacity,
-  maxPartySize: event.maxPartySize,
-});
 
 /**
  * Books a place from the website. The rules and the duplicate-email check are reads before the
@@ -68,9 +56,15 @@ export async function bookFromWebsite(
     return { ok: false, message: DUPLICATE_MESSAGE };
   }
 
+  // The token is derived from the id, so both are known before the insert and the hash is written
+  // with the row: a booking never exists without its link.
+  const id = crypto.randomUUID();
+  const token = await manageToken(secret, id);
   const booking = await insertBooking(
     db,
     {
+      id,
+      manageTokenHash: await hashManageToken(token),
       eventId: event.id,
       firstName: input.firstName,
       lastName: input.lastName || null,
@@ -84,12 +78,6 @@ export async function bookFromWebsite(
     event.capacity
   );
   if (!booking) return { ok: false, message: FULL };
-
-  const token = await manageToken(secret, booking.id);
-  await db
-    .update(eventBookings)
-    .set({ manageTokenHash: await hashManageToken(token) })
-    .where(eq(eventBookings.id, booking.id));
 
   return { ok: true, id: booking.id, reference: booking.reference, token };
 }
@@ -136,7 +124,8 @@ export async function viewBooking(
 
 /**
  * Cancels a guest's own booking, freeing its places. Marked unsynced so HubSpot hears of it.
- * Cancelling twice is harmless: the first cancellation's time is kept.
+ * Cancelling twice is harmless: the first cancellation's time is kept. After the event has
+ * started, or once the guest is checked in, the booking is returned unchanged.
  */
 export async function cancelFromWebsite(
   db: Db,
@@ -146,6 +135,11 @@ export async function cancelFromWebsite(
 ): Promise<ManagedBooking | null> {
   const found = await findManaged(db, reference, token);
   if (!found) return null;
+
+  // Too late to cancel once the event has started or the guest has been checked in: leave it be.
+  if (now.getTime() >= found.event.startsAt.getTime() || found.booking.checkedInAt) {
+    return managed(found.booking, found.event);
+  }
 
   await db
     .update(eventBookings)

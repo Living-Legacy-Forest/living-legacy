@@ -55,6 +55,44 @@ beforeEach(async () => {
   await testDb().delete(events);
 });
 
+describe('insertBooking', () => {
+  const full = (eventId: string, partySize: number) => ({
+    eventId,
+    ...details(partySize),
+    source: 'staff' as const,
+    consentAt: null,
+  });
+
+  it('refuses at insert time when the places are gone', async () => {
+    // Seeded directly, so only the conditional INSERT can be what says no.
+    const eventId = await addEvent(2);
+    await book(eventId, 2);
+    expect(await insertBooking(testDb(), full(eventId, 1), 2)).toBeNull();
+    expect(await testDb().select().from(eventBookings)).toHaveLength(1);
+  });
+
+  it('never takes the last places twice when two bookings race', async () => {
+    const eventId = await addEvent(2);
+    const results = await Promise.all([
+      insertBooking(testDb(), full(eventId, 2), 2),
+      insertBooking(testDb(), full(eventId, 2), 2),
+    ]);
+    expect(results.filter((r) => r !== null)).toHaveLength(1);
+    expect(await testDb().select().from(eventBookings)).toHaveLength(1);
+  });
+
+  it('writes a given id and token hash with the row', async () => {
+    const eventId = await addEvent(null);
+    const booking = await insertBooking(
+      testDb(),
+      { ...full(eventId, 1), id: 'chosen-id', manageTokenHash: 'abc123' },
+      null
+    );
+    expect(booking?.id).toBe('chosen-id');
+    expect(await stored('chosen-id')).toMatchObject({ manageTokenHash: 'abc123' });
+  });
+});
+
 describe('updateBookingDetails', () => {
   it('changes the details and marks the booking for the HubSpot sync again', async () => {
     const eventId = await addEvent(null);

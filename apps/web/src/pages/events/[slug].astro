@@ -1,0 +1,188 @@
+---
+// One event: when and where, places left, then the booking form, or one line saying why it
+// cannot be booked online. A repeating event's dates share this address, so its upcoming dates
+// are listed and ?date= picks one. Read fresh on every visit; the middleware never caches it.
+import BaseLayout from '@/layouts/BaseLayout.astro';
+import Prose from '@/components/Prose.astro';
+import { EventBookingForm } from '@/components/forms/EventBookingForm';
+import { Badge } from '@/components/ui/badge';
+import { Card, CardContent } from '@/components/ui/card';
+import {
+  Breadcrumb,
+  BreadcrumbItem,
+  BreadcrumbLink,
+  BreadcrumbList,
+  BreadcrumbPage,
+  BreadcrumbSeparator,
+} from '@/components/ui/breadcrumb';
+import {
+  closedLine,
+  formatEventWhen,
+  getEventBySlug,
+  getUpcomingDates,
+  placesLeftText,
+} from '@/lib/events';
+import { HERO_SIZES } from '@/lib/media-srcset';
+
+export const prerender = false;
+
+const { slug } = Astro.params;
+const now = Date.now();
+const event = slug
+  ? await getEventBySlug(slug, now, Astro.url.searchParams.get('date') ?? undefined)
+  : null;
+
+// An unknown address, a draft or a removed event all read as not found.
+if (!event) {
+  return Astro.rewrite('/404');
+}
+
+const dates = await getUpcomingDates(event.slug, now);
+const places = event.status === 'cancelled' ? null : placesLeftText(event.placesLeft);
+// Never offer more people than there are places left.
+const maxPeople = Math.min(event.maxPartySize, event.placesLeft ?? event.maxPartySize);
+const finished = event.endsAt <= now;
+
+const title = event.title;
+const description =
+  event.summary ||
+  `Book your place at ${event.title}, ${formatEventWhen(event.startsAt, event.endsAt, event.timeZone)}.`;
+---
+
+<BaseLayout title={title} description={description} noindex={finished}>
+  <div class="mx-auto max-w-6xl px-6 pt-10 pb-20 sm:px-10 md:pt-14 md:pb-28">
+    <Breadcrumb className="mb-8">
+      <BreadcrumbList>
+        <BreadcrumbItem>
+          <BreadcrumbLink href="/">Home</BreadcrumbLink>
+        </BreadcrumbItem>
+        <BreadcrumbSeparator />
+        <BreadcrumbItem>
+          <BreadcrumbLink href="/events/">Events</BreadcrumbLink>
+        </BreadcrumbItem>
+        <BreadcrumbSeparator />
+        <BreadcrumbItem>
+          <BreadcrumbPage>{event.title}</BreadcrumbPage>
+        </BreadcrumbItem>
+      </BreadcrumbList>
+    </Breadcrumb>
+
+    <div class="grid gap-10 lg:grid-cols-12 lg:gap-14">
+      <div class="lg:col-span-7">
+        <header class="rise-children flex flex-col gap-4">
+          <div class="flex flex-wrap items-center gap-2">
+            {event.status === 'cancelled' && <Badge variant="destructive">Cancelled</Badge>}
+            {
+              event.status !== 'cancelled' && event.state === 'full' && (
+                <Badge variant="secondary">Fully booked</Badge>
+              )
+            }
+          </div>
+          <h1 class="display-title text-balance">{event.title}</h1>
+          {event.summary && <p class="lead">{event.summary}</p>}
+          <dl class="divide-bark/15 border-bark/15 divide-y border-y text-base">
+            <div class="flex items-baseline justify-between gap-4 py-3.5">
+              <dt class="text-ink-soft">When</dt>
+              <dd class="text-ink text-right">
+                {formatEventWhen(event.startsAt, event.endsAt, event.timeZone)}
+              </dd>
+            </div>
+            {
+              event.venue && (
+                <div class="flex items-baseline justify-between gap-4 py-3.5">
+                  <dt class="text-ink-soft">Where</dt>
+                  <dd class="text-ink text-right">{event.venue}</dd>
+                </div>
+              )
+            }
+            {
+              places && event.state !== 'full' && event.placesLeft !== 0 && (
+                <div class="flex items-baseline justify-between gap-4 py-3.5">
+                  <dt class="text-ink-soft">Places</dt>
+                  <dd class="text-ink text-right">{places}</dd>
+                </div>
+              )
+            }
+          </dl>
+        </header>
+
+        {
+          event.hero && (
+            <img
+              src={event.hero.url}
+              srcset={event.hero.srcset}
+              sizes={event.hero.srcset ? HERO_SIZES : undefined}
+              alt={event.hero.alt}
+              style={event.hero.position ? `object-position: ${event.hero.position}` : undefined}
+              width={event.hero.width ?? 1600}
+              height={event.hero.height ?? 900}
+              fetchpriority="high"
+              class="mt-10 aspect-[16/9] w-full rounded-xl object-cover"
+            />
+          )
+        }
+
+        {
+          event.description && (
+            <div class="mt-10">
+              <Prose>
+                <Fragment set:html={event.description} />
+              </Prose>
+            </div>
+          )
+        }
+      </div>
+
+      <div class="flex flex-col gap-8 lg:col-span-5">
+        {
+          dates.length > 1 && (
+            <nav aria-label="Dates for this event">
+              <h2 class="card-title">Choose a date</h2>
+              <ul class="mt-4 flex flex-col gap-2">
+                {dates.map((date) => (
+                  <li>
+                    <a
+                      href={`/events/${date.slug}/?date=${date.id}`}
+                      aria-current={date.id === event.id ? 'true' : undefined}
+                      class:list={[
+                        'touch:min-h-11 flex items-center justify-between gap-3 rounded-lg border px-4 py-3 text-base transition-colors duration-200',
+                        date.id === event.id
+                          ? 'border-moss bg-card text-ink'
+                          : 'border-bark/20 text-ink-soft hover:border-moss',
+                      ]}
+                    >
+                      <span>{formatEventWhen(date.startsAt, date.endsAt, date.timeZone)}</span>
+                      {date.status === 'cancelled' && (
+                        <Badge variant="destructive">Cancelled</Badge>
+                      )}
+                      {date.status !== 'cancelled' && date.state === 'full' && (
+                        <Badge variant="secondary">Fully booked</Badge>
+                      )}
+                    </a>
+                  </li>
+                ))}
+              </ul>
+            </nav>
+          )
+        }
+
+        <Card>
+          <CardContent>
+            {
+              event.state === 'open' ? (
+                <>
+                  <h2 class="card-title">Book your place</h2>
+                  <div class="mt-6">
+                    <EventBookingForm eventId={event.id} maxPartySize={maxPeople} client:load />
+                  </div>
+                </>
+              ) : (
+                <p class="text-ink text-lg">{closedLine(event)}</p>
+              )
+            }
+          </CardContent>
+        </Card>
+      </div>
+    </div>
+  </div>
+</BaseLayout>

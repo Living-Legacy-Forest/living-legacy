@@ -31,6 +31,11 @@ interface Props {
   socialDescription?: string;
   /** Finer directives for a page that may be indexed; ignored when it is blocked. */
   robots?: { nofollow?: boolean; nosnippet?: boolean; noimageindex?: boolean };
+  /**
+   * Loads no analytics or marketing tags. For a page whose URL carries a secret, which the tags
+   * would otherwise send on as the page's address.
+   */
+  noTracking?: boolean;
   /** Skips Header and Footer — for the 404 page and anything else that draws its own chrome. */
   bare?: boolean;
   /** Marks the page as an article for social cards (og:type article and its dates and topics). */
@@ -55,6 +60,7 @@ const {
   socialDescription,
   robots,
   bare = false,
+  noTracking = false,
   article,
   jsonLd = [],
 } = Astro.props;
@@ -159,7 +165,7 @@ const structuredData = [
       )
     }
     {settings.bingVerification && <meta name="msvalidate.01" content={settings.bingVerification} />}
-    <PostHog />
+    {!noTracking && <PostHog />}
   </head>
   <body>
     <a
@@ -169,7 +175,7 @@ const structuredData = [
       Skip to content
     </a>
     <ConsentBanner />
-    <Tracking />
+    {!noTracking && <Tracking />}
     <div class="grain-layer"></div>
     {!bare && <Header />}
     <main id="main">

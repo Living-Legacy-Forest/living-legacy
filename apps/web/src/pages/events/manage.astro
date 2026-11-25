@@ -1,0 +1,228 @@
+---
+// A guest's booking: the page they land on after booking, and the link in their email. Viewing
+// asks the CMS (GET); cancelling is a plain form that posts back here, so it needs no
+// JavaScript. The reference and token come from the query string, or from hidden fields on the
+// POST. The URL carries the token, so the page is never stored (no-store), never passes the
+// address on (no-referrer), is kept out of search, and loads no analytics or marketing tags.
+import type { ManagedBooking } from '@ll/content';
+import { telHref } from '@ll/content';
+import BaseLayout from '@/layouts/BaseLayout.astro';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent } from '@/components/ui/card';
+import { buttonVariants } from '@/components/ui/button';
+import { callCms } from '@/lib/cms-internal';
+import { formatEventWhen } from '@/lib/events';
+import { getSiteSettings } from '@/lib/settings';
+
+export const prerender = false;
+
+Astro.response.headers.set('Cache-Control', 'private, no-store');
+Astro.response.headers.set('Referrer-Policy', 'no-referrer');
+
+type Fetched =
+  | { booking: ManagedBooking }
+  | { problem: 'not-found'; message: string }
+  | { problem: 'unavailable' };
+
+/** The CMS's answer for this guest; a 404 is a result, anything else is "could not reach it". */
+async function fetchBooking(
+  path: '/internal/events/view' | '/internal/events/cancel',
+  reference: string,
+  token: string
+): Promise<Fetched> {
+  try {
+    const { status, data } = await callCms<{ booking: ManagedBooking }>(path, { reference, token });
+    if (data.ok) return { booking: data.booking };
+    // Only a 404 carries wording written for a guest; other refusals are internal.
+    return status === 404
+      ? { problem: 'not-found', message: data.message }
+      : { problem: 'unavailable' };
+  } catch {
+    // Nothing about the guest is logged: the failure's reason alone is not needed here.
+    return { problem: 'unavailable' };
+  }
+}
+
+const settings = await getSiteSettings();
+const phone = settings.phone;
+
+const posting = Astro.request.method === 'POST';
+let reference = '';
+let token = '';
+if (posting) {
+  const form = await Astro.request.formData().catch(() => null);
+  reference = String(form?.get('ref') ?? '');
+  token = String(form?.get('token') ?? '');
+} else {
+  reference = Astro.url.searchParams.get('ref') ?? '';
+  token = Astro.url.searchParams.get('token') ?? '';
+}
+const arrivedNew = !posting && Astro.url.searchParams.get('new') === '1';
+
+let result: Fetched = {
+  problem: 'not-found',
+  message: 'We could not find that booking. Check the link in your confirmation email.',
+};
+let notice: string | null = null;
+
+if (reference && token) {
+  if (posting) {
+    result = await fetchBooking('/internal/events/cancel', reference, token);
+    if ('booking' in result && result.booking.status === 'confirmed') {
+      // The CMS refuses a cancel once the event has started or the guest has checked in, and
+      // hands the booking back unchanged.
+      notice = `This booking can no longer be cancelled online.${phone ? ` Please call us on ${phone}.` : ''}`;
+    } else if ('problem' in result && result.problem === 'unavailable') {
+      // Show the booking as it stands if it can be read, so nothing is lost from the screen.
+      result = await fetchBooking('/internal/events/view', reference, token);
+      notice = `We could not cancel your booking just now. Please try again${phone ? `, or call us on ${phone}` : ''}.`;
+    }
+  } else {
+    result = await fetchBooking('/internal/events/view', reference, token);
+  }
+}
+
+const booking = 'booking' in result ? result.booking : null;
+const now = Date.now();
+const canCancel =
+  booking !== null && booking.status === 'confirmed' && now < booking.event.startsAt;
+
+const heading = !booking
+  ? 'problem' in result && result.problem === 'not-found'
+    ? 'Booking not found'
+    : 'Your booking'
+  : booking.status === 'cancelled'
+    ? 'Booking cancelled'
+    : arrivedNew && booking.status === 'confirmed'
+      ? "You're booked"
+      : 'Your booking';
+
+const statusLabel = {
+  confirmed: 'Confirmed',
+  waitlisted: 'On the waiting list',
+  cancelled: 'Cancelled',
+};
+---
+
+<BaseLayout title={heading} noindex noTracking>
+  <div class="mx-auto max-w-2xl px-6 py-20 sm:px-10 lg:py-28">
+    <header class="rise-children flex flex-col gap-4">
+      <p class="eyebrow">Events</p>
+      <h1 class="display-title text-balance">{heading}</h1>
+      {
+        booking && arrivedNew && booking.status === 'confirmed' && (
+          <p class="lead">We will email you a confirmation with a link back to this page.</p>
+        )
+      }
+      {
+        booking && booking.status === 'cancelled' && (
+          <p class="lead">Your places are free for someone else.</p>
+        )
+      }
+    </header>
+
+    {
+      notice && (
+        <p role="alert" class="bg-card text-ink mt-8 rounded-xl px-5 py-4 text-base">
+          {notice}
+        </p>
+      )
+    }
+
+    {
+      booking ? (
+        <Card className="mt-10">
+          <CardContent>
+            <dl class="divide-bark/15 divide-y text-base [&>div]:flex [&>div]:items-baseline [&>div]:justify-between [&>div]:gap-4 [&>div]:py-3.5">
+              <div>
+                <dt class="text-ink-soft">Reference</dt>
+                <dd class="text-ink font-medium">{booking.reference}</dd>
+              </div>
+              <div>
+                <dt class="text-ink-soft">Event</dt>
+                <dd class="text-ink text-right">
+                  <a
+                    href={`/events/${booking.event.slug}/`}
+                    class="hover:text-moss-deep underline underline-offset-2"
+                  >
+                    {booking.event.title}
+                  </a>
+                </dd>
+              </div>
+              <div>
+                <dt class="text-ink-soft">When</dt>
+                <dd class="text-ink text-right">
+                  {formatEventWhen(
+                    booking.event.startsAt,
+                    booking.event.endsAt,
+                    booking.event.timeZone
+                  )}
+                </dd>
+              </div>
+              {booking.event.venue && (
+                <div>
+                  <dt class="text-ink-soft">Where</dt>
+                  <dd class="text-ink text-right">{booking.event.venue}</dd>
+                </div>
+              )}
+              <div>
+                <dt class="text-ink-soft">People</dt>
+                <dd class="text-ink">{booking.partySize}</dd>
+              </div>
+              <div>
+                <dt class="text-ink-soft">Status</dt>
+                <dd class="text-ink">{statusLabel[booking.status]}</dd>
+              </div>
+            </dl>
+
+            {canCancel && (
+              <form method="post" class="mt-8 flex flex-col items-start gap-3">
+                <input type="hidden" name="ref" value={reference} />
+                <input type="hidden" name="token" value={token} />
+                <Button type="submit" variant="outline">
+                  Cancel my booking
+                </Button>
+                <p class="text-ink-soft text-base">This frees your places for someone else.</p>
+              </form>
+            )}
+          </CardContent>
+        </Card>
+      ) : 'problem' in result && result.problem === 'not-found' ? (
+        <div class="mt-8 flex flex-col gap-4">
+          <p class="lead">{result.message}</p>
+          {phone && (
+            <p class="lead">
+              If you need a hand, please call us on{' '}
+              <a
+                href={telHref(phone)}
+                class="text-ink hover:text-moss-deep underline underline-offset-2"
+              >
+                {phone}
+              </a>
+              .
+            </p>
+          )}
+        </div>
+      ) : (
+        <p class="lead mt-8">
+          We could not load your booking just now. Please try again in a moment
+          {phone ? (
+            <>
+              , or call us on{' '}
+              <a
+                href={telHref(phone)}
+                class="text-ink hover:text-moss-deep underline underline-offset-2"
+              >
+                {phone}
+              </a>
+            </>
+          ) : null}
+          .
+        </p>
+      )
+    }
+
+    <a href="/events/" class:list={[buttonVariants({ variant: 'link' }), 'mt-10']}>See all events</a
+    >
+  </div>
+</BaseLayout>

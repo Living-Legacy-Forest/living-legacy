@@ -330,6 +330,13 @@
       "when": 1795529833553,
       "tag": "0046_trashed-rows",
       "breakpoints": true
+    },
+    {
+      "idx": 47,
+      "version": "6",
+      "when": 1795621140984,
+      "tag": "0047_booking-confirmation-sent",
+      "breakpoints": true
     }
   ]
 }

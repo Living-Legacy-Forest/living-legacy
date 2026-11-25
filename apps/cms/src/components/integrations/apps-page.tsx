@@ -10,9 +10,11 @@ import type { ServiceStatuses } from '@/server/service-status';
 export function AppsPage({
   tracking,
   services,
+  bookingConfirmations,
 }: {
   tracking: TrackingIds;
   services: ServiceStatuses;
+  bookingConfirmations: boolean;
 }) {
   const revealing = useRevealOnce();
 
@@ -43,7 +45,7 @@ export function AppsPage({
 
       <TrackingSection saved={tracking} />
 
-      <ServicesSection status={services} />
+      <ServicesSection status={services} bookingConfirmations={bookingConfirmations} />
     </div>
   );
 }

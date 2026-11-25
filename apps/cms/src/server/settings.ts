@@ -25,7 +25,6 @@ import {
   optionalPhoneSchema,
   optionalWebUrlSchema,
   parseEmailDomains,
-  pickTrackingIds,
   sessionDayOptions,
   themes,
   timeZones,
@@ -42,6 +41,7 @@ import { getDb } from '@/lib/db';
 import { authMiddleware, requirePermission } from '@/lib/session';
 import { readSiteSettings, writeSiteSettings } from '@/lib/site-settings';
 import { logActivity } from './activity-log';
+import { keepIntegrationSettings, saveBookingConfirmations } from './settings-store';
 
 export { TITLE_TOKENS, cmsColours, cmsFonts, timeZones };
 export type { CmsColour, CmsFont, Locale, SiteSettings, Theme, TimeZone };
@@ -187,11 +187,12 @@ export const saveSiteSettings = createServerFn({ method: 'POST' })
   .middleware([requirePermission('seo:write')])
   .validator(settingsSchema)
   .handler(async ({ data, context }) => {
-    // Without full settings access, only the search fields change. The tag ids are edited on the
-    // Integrations page, so whatever this form held for them (it may be a stale copy) is ignored.
+    // Without full settings access, only the search fields change. The tag ids and the booking
+    // confirmations switch are edited on the Integrations page, so whatever this form held for them
+    // (it may be a stale copy) is ignored.
     const existing = await readSiteSettings();
     const value: SiteSettings = can(context.user, 'settings:write')
-      ? { ...data, ...pickTrackingIds(existing) }
+      ? keepIntegrationSettings(existing, data)
       : {
           ...existing,
           ...Object.fromEntries(SEO_KEYS.map((key) => [key, data[key]])),
@@ -212,3 +213,9 @@ export const saveSiteSettings = createServerFn({ method: 'POST' })
     });
     return value;
   });
+
+/** The Integrations page's switch for the confirmation email sent to people who book online. */
+export const setBookingConfirmations = createServerFn({ method: 'POST' })
+  .middleware([requirePermission('settings:write')])
+  .validator(z.object({ enabled: z.boolean() }))
+  .handler(({ data, context }) => saveBookingConfirmations(getDb(), data.enabled, context.user));

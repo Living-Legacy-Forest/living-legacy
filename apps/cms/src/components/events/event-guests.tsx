@@ -22,6 +22,7 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { Spinner } from '@/components/ui/spinner';
+import { confirmationMissing } from '@/lib/booking-confirmation';
 import { formatDateTime } from '@/lib/format';
 import { notify } from '@/lib/notify';
 import { useAction } from '@/lib/use-action';
@@ -535,6 +536,11 @@ function GuestDetails({
         {g.partySize > 1 && (
           <Badge variant="outline" className="shrink-0 tabular-nums">
             {g.partySize} people
+          </Badge>
+        )}
+        {confirmationMissing(g, Date.now()) && (
+          <Badge variant="outline" className="text-muted-foreground shrink-0">
+            No confirmation sent
           </Badge>
         )}
       </div>

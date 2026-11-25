@@ -1,9 +1,15 @@
 import { Link } from '@tanstack/react-router';
+import { useState } from 'react';
 import { type BrandName, BrandLogo } from '@/components/brand-logos';
 import { groupBoxClass, groupHeadingClass } from '@/components/form-cells';
 import { StatusPulse } from '@/components/system/status-pulse';
+import { Label } from '@/components/ui/label';
+import { Spinner } from '@/components/ui/spinner';
+import { Switch } from '@/components/ui/switch';
+import { useAction } from '@/lib/use-action';
 import { cn } from '@/lib/utils';
 import type { ServiceStatuses } from '@/server/service-status';
+import { setBookingConfirmations } from '@/server/settings';
 
 type Service = {
   name: string;
@@ -18,6 +24,8 @@ type Service = {
     | { to: '/uptime' | '/system' | '/integrations'; label: string };
   /** A line that is true whether or not it is connected. */
   note?: string;
+  /** A setting for the service that people can change here, as the rest is set on the server. */
+  control?: 'bookingConfirmations';
 };
 
 // What to do when a service is not connected, without naming secrets: who sets these up is a developer.
@@ -35,9 +43,10 @@ const services: Service[] = [
   {
     name: 'Cloudflare Email Service',
     brand: 'cloudflare',
-    does: 'Sends the sign-in links people use to get into the CMS.',
+    does: 'Sends sign-in links, and confirmations to guests who book on the website.',
     connected: (s) => s.email,
-    setup: `${ASK} Without it, sign-in links cannot be emailed.`,
+    setup: `${ASK} Without it, sign-in links and booking confirmations cannot be emailed.`,
+    control: 'bookingConfirmations',
   },
   {
     name: 'Google sign-in',
@@ -100,7 +109,13 @@ const services: Service[] = [
  * The services the CMS is connected to, read-only. Their keys are secrets on the CMS Worker, so
  * this shows whether each is set and never what it is.
  */
-export function ServicesSection({ status }: { status: ServiceStatuses }) {
+export function ServicesSection({
+  status,
+  bookingConfirmations,
+}: {
+  status: ServiceStatuses;
+  bookingConfirmations: boolean;
+}) {
   return (
     <section className="space-y-2.5 max-md:space-y-1.5">
       <h2
@@ -135,6 +150,9 @@ export function ServicesSection({ status }: { status: ServiceStatuses }) {
               </div>
               {!connected && <p className="text-muted-foreground text-xs">{service.setup}</p>}
               {service.note && <p className="text-muted-foreground text-xs">{service.note}</p>}
+              {service.control === 'bookingConfirmations' && (
+                <BookingConfirmationsSwitch saved={bookingConfirmations} />
+              )}
               {service.link && (
                 <p className="text-xs">
                   <Link
@@ -152,9 +170,47 @@ export function ServicesSection({ status }: { status: ServiceStatuses }) {
         })}
       </div>
       <p className="text-muted-foreground text-xs max-md:px-4">
-        A developer sets these up on the server, so they cannot be changed here. The keys themselves
-        are never shown.
+        A developer sets these up on the server, so apart from the booking switch they cannot be
+        changed here. The keys themselves are never shown.
       </p>
     </section>
+  );
+}
+
+/** Saves as it is switched, like the other switches that act at once, and goes back if it fails. */
+function BookingConfirmationsSwitch({ saved }: { saved: boolean }) {
+  const [enabled, setEnabled] = useState(saved);
+  const { run, pending } = useAction();
+  const id = 'booking-confirmations';
+
+  async function change(next: boolean) {
+    setEnabled(next);
+    const result = await run(() => setBookingConfirmations({ data: { enabled: next } }), {
+      success: {
+        title: 'Saved',
+        description: next
+          ? 'Guests who book on the website get a confirmation email.'
+          : 'The CMS no longer emails booking confirmations.',
+      },
+      error: 'Could not save the switch',
+    });
+    if (result === undefined) setEnabled(!next);
+  }
+
+  return (
+    <div className="touch:min-h-11 flex items-start justify-between gap-3 pt-1.5">
+      <div className="min-w-0 space-y-0.5">
+        <Label htmlFor={id} className="text-sm font-medium">
+          Send booking confirmations from the CMS
+        </Label>
+        <p className="text-muted-foreground text-xs">
+          Turn this off once HubSpot sends booking emails, so guests don't get two.
+        </p>
+      </div>
+      <div className="mt-0.5 flex shrink-0 items-center gap-2">
+        {pending && <Spinner />}
+        <Switch id={id} checked={enabled} disabled={pending} onCheckedChange={change} />
+      </div>
+    </div>
   );
 }

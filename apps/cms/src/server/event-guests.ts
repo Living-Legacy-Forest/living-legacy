@@ -43,6 +43,7 @@ export const getGuests = createServerFn({ method: 'GET' })
       status: r.status,
       source: r.source,
       checkedInAt: r.checkedInAt?.getTime() ?? null,
+      confirmationSentAt: r.confirmationSentAt?.getTime() ?? null,
       createdAt: r.createdAt.getTime(),
     }));
   });

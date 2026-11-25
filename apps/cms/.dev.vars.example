@@ -38,3 +38,10 @@ POSTHOG_PROJECT_ID=
 
 # Better Stack Uptime API token (read-only), for the Uptime page. Without it the page stays empty.
 BETTERSTACK_API_TOKEN=
+
+# Online booking. The website sends INTERNAL_KEY with each booking call (same value in
+# apps/web, as a Worker secret there); MANAGE_TOKEN_SECRET makes the cancel link in the
+# confirmation email. Each is a random string: `openssl rand -base64 32`. Without them the
+# booking endpoint answers 503.
+INTERNAL_KEY=
+MANAGE_TOKEN_SECRET=

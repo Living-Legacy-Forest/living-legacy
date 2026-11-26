@@ -55,7 +55,7 @@ describe('clearActivityEntries', () => {
 });
 
 describe('removeActivityEntry', () => {
-  it('removes just that entry and leaves a note saying who did it', async () => {
+  it('removes just that entry and leaves nothing behind', async () => {
     const [keep, drop] = await testDb()
       .insert(activityLog)
       .values([
@@ -64,32 +64,24 @@ describe('removeActivityEntry', () => {
       ])
       .returning();
 
-    expect(await removeActivityEntry(testDb(), actor, drop!.id)).toBe(true);
+    expect(await removeActivityEntry(testDb(), drop!.id)).toBe(true);
 
     const rows = await testDb().select().from(activityLog);
-    expect(rows).toHaveLength(2);
-    expect(rows.find((r) => r.id === keep!.id)).toBeDefined();
-    expect(rows.find((r) => r.id === drop!.id)).toBeUndefined();
-    const note = rows.find((r) => r.action === 'activity.entry_removed');
-    expect(note).toMatchObject({
-      actorId: actor.id,
-      actorName: 'Boss',
-      summary: 'Removed an entry from the activity log (redirect.created by Ann)',
-    });
+    expect(rows.map((r) => r.id)).toEqual([keep!.id]);
   });
 
-  it('does nothing, and writes no note, when the entry is already gone', async () => {
+  it('does nothing when the entry is already gone', async () => {
     await testDb()
       .insert(activityLog)
       .values({ actorName: 'Sam', action: 'post.published', summary: 'Published a post' });
 
-    expect(await removeActivityEntry(testDb(), actor, 'no-such-entry')).toBe(false);
+    expect(await removeActivityEntry(testDb(), 'no-such-entry')).toBe(false);
 
     const rows = await testDb().select().from(activityLog);
     expect(rows.map((r) => r.action)).toEqual(['post.published']);
   });
 
-  it('leaves the other entries and their order alone', async () => {
+  it('leaves the other entries alone', async () => {
     const rows = await testDb()
       .insert(activityLog)
       .values([
@@ -98,14 +90,9 @@ describe('removeActivityEntry', () => {
         { actorName: 'C', action: 'post.published', summary: 'Three' },
       ])
       .returning();
-    await removeActivityEntry(testDb(), actor, rows[1]!.id);
+    await removeActivityEntry(testDb(), rows[1]!.id);
     const left = await testDb().select().from(activityLog);
-    expect(
-      left
-        .filter((r) => r.action === 'post.published')
-        .map((r) => r.summary)
-        .sort()
-    ).toEqual(['One', 'Three']);
+    expect(left.map((r) => r.summary).sort()).toEqual(['One', 'Three']);
   });
 });
 

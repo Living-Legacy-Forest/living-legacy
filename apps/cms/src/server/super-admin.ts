@@ -16,13 +16,11 @@ export const clearActivityLog = createServerFn({ method: 'POST' })
     cleared: await clearActivityEntries(getDb(), context.user),
   }));
 
-/** Removes one entry from the activity log, leaving a note that says who did it. */
+/** Removes one entry from the activity log. Nothing is left in its place. */
 export const removeActivityLogEntry = createServerFn({ method: 'POST' })
   .middleware([requireSuperAdmin])
   .validator(z.object({ id: z.string().min(1) }))
-  .handler(async ({ data, context }) => ({
-    removed: await removeActivityEntry(getDb(), context.user, data.id),
-  }));
+  .handler(async ({ data }) => ({ removed: await removeActivityEntry(getDb(), data.id) }));
 
 /** Wipes every person's writing assistant counts, so the System page and daily limits start again. */
 export const resetAssistantUsage = createServerFn({ method: 'POST' })

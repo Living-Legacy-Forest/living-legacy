@@ -1,5 +1,5 @@
-// The destructive actions kept for super admins. Each leaves a note in the activity log, so that
-// clearing the log or the usage is never silent. Kept apart from the server functions so it runs
+// The destructive actions kept for super admins. Clearing the log or the usage leaves a note in the
+// activity log, so it is never silent; removing one entry leaves none. Kept apart from the server functions so it runs
 // under the integration tests.
 import type { Db } from '@ll/db';
 import { activityLog, aiUsage } from '@ll/db/schema';
@@ -27,27 +27,15 @@ export async function clearActivityEntries(db: Db, actor: Actor): Promise<number
 }
 
 /**
- * Removes one activity entry and adds a note saying who did it, and which kind of entry and whose
- * it was (never what it said, since that is often why it is being removed). Returns false, and
- * writes no note, when the entry is already gone, so a second click or a stale page changes nothing.
+ * Removes one activity entry and nothing else: no note is left, so it is as if it never happened.
+ * Returns false when the entry is already gone, so a second click or a stale page changes nothing.
  */
-export async function removeActivityEntry(db: Db, actor: Actor, id: string): Promise<boolean> {
-  const [entry] = await db
-    .select({ action: activityLog.action, actorName: activityLog.actorName })
-    .from(activityLog)
-    .where(eq(activityLog.id, id));
-  if (!entry) return false;
-  const by = entry.actorName || 'someone';
-  await db.batch([
-    db.delete(activityLog).where(eq(activityLog.id, id)),
-    logActivity(db, {
-      actorId: actor.id,
-      actorName: actor.name,
-      action: 'activity.entry_removed',
-      summary: `Removed an entry from the activity log (${entry.action} by ${by})`,
-    }),
-  ]);
-  return true;
+export async function removeActivityEntry(db: Db, id: string): Promise<boolean> {
+  const removed = await db
+    .delete(activityLog)
+    .where(eq(activityLog.id, id))
+    .returning({ id: activityLog.id });
+  return removed.length > 0;
 }
 
 /** Removes every person's writing assistant counts and history. Returns how many rows went. */

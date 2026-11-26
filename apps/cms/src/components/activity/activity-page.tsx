@@ -272,7 +272,7 @@ export function ActivityPage({
                     className="-my-1 -mr-2 shrink-0"
                     label="Remove this entry"
                     title="Remove this entry from the activity log?"
-                    description="It is removed for everyone, and this cannot be undone. A note is added to the log saying that you removed an entry, and what kind it was, but not what it said."
+                    description="It is removed for everyone, and this cannot be undone. Nothing is left in the log to show it was there."
                     confirmLabel="Remove entry"
                     pending={pending && removingId === entry.id}
                     onConfirm={() => {
@@ -282,7 +282,7 @@ export function ActivityPage({
                           result.removed
                             ? {
                                 title: 'Entry removed',
-                                description: 'A note about it was added to the log.',
+                                description: 'It is no longer in the activity log.',
                               }
                             : {
                                 title: 'That entry was already gone',

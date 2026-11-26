@@ -124,6 +124,10 @@ describe('bookFromWebsite', () => {
     await bookOk(event.id);
     const again = await bookFromWebsite(testDb(), input(event.id, { partySize: 1 }), SECRET, now);
     expect(again).toEqual({ ok: false, message: DUPLICATE_MESSAGE });
+    // The wording is a promise to the guest: the link is in their email, and a person is reachable.
+    expect(DUPLICATE_MESSAGE).toBe(
+      'You have already booked this event. Use the link in your confirmation email to see or cancel your booking, or call us.'
+    );
     expect(await testDb().select().from(eventBookings)).toHaveLength(1);
   });
 

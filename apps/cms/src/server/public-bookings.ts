@@ -14,7 +14,7 @@ import { and, eq } from 'drizzle-orm';
 import { bookable, insertBooking } from './booking-store';
 
 export const DUPLICATE_MESSAGE =
-  'You have already booked this event. Use the link in your confirmation email to see or cancel your booking.';
+  'You have already booked this event. Use the link in your confirmation email to see or cancel your booking, or call us.';
 
 const NOT_OPEN = 'This event is not open for bookings.';
 const FULL = 'This event is fully booked.';

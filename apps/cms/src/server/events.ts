@@ -5,6 +5,7 @@ import {
   changedFields,
   deleteEventProblem,
   eventInputSchema,
+  eventSlugProblem,
   sameClockOn,
   seriesScopeSchema,
   slugify,
@@ -188,6 +189,8 @@ export const saveEvent = createServerFn({ method: 'POST' })
     const db = getDb();
     const slug = slugify(data.slug || data.title);
     if (!slug) throw new Error('Give the event a title or a web address.');
+    const slugProblem = eventSlugProblem(slug);
+    if (slugProblem) throw new Error(slugProblem);
     const publishAtProblem = (current: Date | null) =>
       data.status === 'draft' &&
       data.publishAt !== null &&

@@ -3,6 +3,7 @@ import {
   EVENT_PHOTO_LIMIT,
   changedFields,
   eventInputSchema,
+  eventSlugProblem,
   guestInputSchema,
   groupEventDates,
   type BookableEvent,
@@ -380,5 +381,16 @@ describe('guestInputSchema', () => {
 
   it.each([0, -1, 1.5, 51])('refuses %s people', (partySize) => {
     expect(problem({ partySize })).toMatch(/1 to 50/);
+  });
+});
+
+describe('eventSlugProblem', () => {
+  it('reserves the address the manage page lives at', () => {
+    expect(eventSlugProblem('manage')).toBe('That address is reserved. Choose another.');
+  });
+
+  it('allows any other address', () => {
+    expect(eventSlugProblem('open-day')).toBeNull();
+    expect(eventSlugProblem('manage-your-garden')).toBeNull();
   });
 });

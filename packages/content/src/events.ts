@@ -22,6 +22,17 @@ export const DEFAULT_MAX_PARTY_SIZE = 6;
 export const STAFF_MAX_PARTY_SIZE = 50;
 /** Bookings are personal details; they go this long after the event ends. */
 export const BOOKING_RETENTION_DAYS = 365;
+/**
+ * Addresses under /events/ that belong to a page of their own, so an event cannot take them: the
+ * website's manage page would shadow it, and the event would never open.
+ */
+const RESERVED_EVENT_SLUGS = new Set(['manage']);
+
+/** Why an event cannot use this address (already a slug), or null if it can. */
+export function eventSlugProblem(slug: string): string | null {
+  return RESERVED_EVENT_SLUGS.has(slug) ? 'That address is reserved. Choose another.' : null;
+}
+
 /** Photos on one event, its cover included. */
 export const EVENT_PHOTO_LIMIT = 20;
 

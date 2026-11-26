@@ -3,7 +3,8 @@
 // asks the CMS (GET); cancelling is a plain form that posts back here, so it needs no
 // JavaScript. The reference and token come from the query string, or from hidden fields on the
 // POST. The URL carries the token, so the page is never stored (no-store), never passes the
-// address on (no-referrer), is kept out of search, and loads no analytics or marketing tags.
+// address to another site (same-origin referrer policy), is kept out of search, and loads no
+// analytics or marketing tags.
 import type { ManagedBooking } from '@ll/content';
 import { telHref } from '@ll/content';
 import BaseLayout from '@/layouts/BaseLayout.astro';
@@ -16,14 +17,22 @@ import { getSiteSettings } from '@/lib/settings';
 export const prerender = false;
 
 Astro.response.headers.set('Cache-Control', 'private, no-store');
-Astro.response.headers.set('Referrer-Policy', 'no-referrer');
+// Not no-referrer: browsers without Sec-Fetch-Site (Safari before 16.4) then send `Origin: null`
+// with the cancel POST, and Astro's origin check refuses it. same-origin sends nothing to other
+// sites, and a same-origin POST carries its real Origin.
+Astro.response.headers.set('Referrer-Policy', 'same-origin');
 
 type Fetched =
   | { booking: ManagedBooking }
   | { problem: 'not-found'; message: string }
   | { problem: 'unavailable' };
 
-/** The CMS's answer for this guest; a 404 is a result, anything else is "could not reach it". */
+const NOT_FOUND = 'We could not find that booking. Check the link in your confirmation email.';
+
+/**
+ * The CMS's answer for this guest. A 404 is a result, and so is a 400 (a link that was cut short
+ * or mangled names no booking); anything else is "could not reach it".
+ */
 async function fetchBooking(
   path: '/internal/events/view' | '/internal/events/cancel',
   reference: string,
@@ -32,10 +41,10 @@ async function fetchBooking(
   try {
     const { status, data } = await callCms<{ booking: ManagedBooking }>(path, { reference, token });
     if (data.ok) return { booking: data.booking };
-    // Only a 404 carries wording written for a guest; other refusals are internal.
-    return status === 404
-      ? { problem: 'not-found', message: data.message }
-      : { problem: 'unavailable' };
+    // Only a 404 carries wording written for a guest; a 400's is internal, so it gets ours.
+    if (status === 404) return { problem: 'not-found', message: data.message };
+    if (status === 400) return { problem: 'not-found', message: NOT_FOUND };
+    return { problem: 'unavailable' };
   } catch {
     // Nothing about the guest is logged: the failure's reason alone is not needed here.
     return { problem: 'unavailable' };
@@ -58,10 +67,7 @@ if (posting) {
 }
 const arrivedNew = !posting && Astro.url.searchParams.get('new') === '1';
 
-let result: Fetched = {
-  problem: 'not-found',
-  message: 'We could not find that booking. Check the link in your confirmation email.',
-};
+let result: Fetched = { problem: 'not-found', message: NOT_FOUND };
 let notice: string | null = null;
 
 if (reference && token) {
@@ -132,6 +138,11 @@ const statusLabel = {
       booking ? (
         <Card className="mt-10">
           <CardContent>
+            {arrivedNew && booking.status === 'confirmed' && (
+              <p class="text-ink-soft mb-6 text-base">
+                Keep this page: it's where you can see or cancel your booking.
+              </p>
+            )}
             <dl class="divide-bark/15 divide-y text-base [&>div]:flex [&>div]:items-baseline [&>div]:justify-between [&>div]:gap-4 [&>div]:py-3.5">
               <div>
                 <dt class="text-ink-soft">Reference</dt>

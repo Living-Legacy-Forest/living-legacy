@@ -557,6 +557,8 @@ button.rte-control-button:active {
 .rte-root[data-variant='subtle'] .rte-controls-group {
   display: flex;
   align-items: center;
+  /* So neighbouring buttons never touch, which makes two pressed ones read as one block. */
+  gap: 0.125rem;
 }
 .rte-root[data-variant='subtle'] .rte-controls-group + .rte-controls-group::before {
   content: '';

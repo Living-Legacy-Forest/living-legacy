@@ -217,9 +217,11 @@ export function CommandMenu({ user, wide = true }: { user: SessionUser; wide?: b
         description="Search posts and categories, or jump to a page"
         className="sm:max-w-xl"
       >
-        <Command shouldFilter={false} loop>
+        {/* No padding, so the search field and the footer run edge to edge, over hairlines. */}
+        <Command shouldFilter={false} loop className="p-0">
           <div className="relative">
             <CommandInput
+              bare
               placeholder="Search posts, categories and pages…"
               value={query}
               onValueChange={setQuery}
@@ -228,7 +230,7 @@ export function CommandMenu({ user, wide = true }: { user: SessionUser; wide?: b
               <Spinner className="text-muted-foreground absolute top-1/2 right-4 -translate-y-1/2" />
             )}
           </div>
-          <CommandList className="max-h-[min(28rem,60vh)]">
+          <CommandList className="max-h-[min(28rem,60vh)] p-1">
             {nothing && (
               <Empty className="py-10">
                 <EmptyHeader>

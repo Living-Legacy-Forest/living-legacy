@@ -40,11 +40,54 @@
    where anything revealed on hover needs another way in. */
 @custom-variant touch (@media (hover: none));
 
-/* A dialog opened from the keyboard many times a day (the command menu) shows and hides at once,
-   backdrop included: any animation there reads as lag between the keys and the menu. */
-[data-slot='dialog-content'][data-instant],
-[data-slot='dialog-overlay']:has(~ [data-slot='dialog-content'][data-instant]) {
-  animation: none;
+/* The search dialog (ui/command.tsx) is opened from the keyboard often, so its motion is short
+   and leaves fast: 160ms in on a strong ease-out, 110ms out. It drops in a few pixels and scales
+   up from 0.97 rather than from nothing; the backdrop fades over the same time. Reduced motion
+   keeps the fade and drops the movement. */
+[data-slot='dialog-content'][data-command][data-open] {
+  animation: command-in 160ms cubic-bezier(0.23, 1, 0.32, 1) both;
+}
+[data-slot='dialog-content'][data-command][data-closed] {
+  animation: command-out 110ms cubic-bezier(0.23, 1, 0.32, 1) both;
+}
+[data-slot='dialog-overlay']:has(~ [data-slot='dialog-content'][data-command]) {
+  animation-timing-function: cubic-bezier(0.23, 1, 0.32, 1);
+  &[data-open] {
+    animation-duration: 160ms;
+  }
+  &[data-closed] {
+    animation-duration: 110ms;
+  }
+}
+@keyframes command-in {
+  from {
+    opacity: 0;
+    transform: translateY(-6px) scale(0.97);
+  }
+}
+@keyframes command-out {
+  to {
+    opacity: 0;
+    transform: scale(0.98);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  [data-slot='dialog-content'][data-command][data-open] {
+    animation-name: command-fade-in;
+  }
+  [data-slot='dialog-content'][data-command][data-closed] {
+    animation-name: command-fade-out;
+  }
+}
+@keyframes command-fade-in {
+  from {
+    opacity: 0;
+  }
+}
+@keyframes command-fade-out {
+  to {
+    opacity: 0;
+  }
 }
 
 /* On tablets with touch, a control drawn shorter than a fingertip still takes a 44px-tall tap: an
@@ -166,8 +209,10 @@
 }
 
 :root {
+  /* Contrast (Appearance) deepens text, hints and lines by a multiple of --contrast, 0 to 1,
+     which a person's choice sets on <html>. Only the neutral steps move, so every palette gets it. */
   --background: oklch(0.9911 0 0);
-  --foreground: oklch(0.2046 0 0);
+  --foreground: oklch(calc(0.2046 - 0.14 * var(--contrast, 0)) 0 0);
   --card: oklch(0.9911 0 0);
   --card-foreground: oklch(0.2046 0 0);
   --popover: oklch(0.9911 0 0);
@@ -178,14 +223,14 @@
   --secondary-foreground: oklch(0.2046 0 0);
   --muted: oklch(0.9461 0 0);
   /* Hints, placeholders and secondary text: clearly quieter than body text. */
-  --muted-foreground: oklch(0.54 0 0);
+  --muted-foreground: oklch(calc(0.54 - 0.2 * var(--contrast, 0)) 0 0);
   --accent: oklch(0.9461 0 0);
   --accent-foreground: oklch(0.2435 0 0);
   --destructive: oklch(0.577 0.245 27.325);
-  --border: oklch(0.9037 0 0);
+  --border: oklch(calc(0.9037 - 0.14 * var(--contrast, 0)) 0 0);
   /* The outline of inputs, selects and outlined toggles. It has to read against the page (0.991),
      so it is a clear step darker than --border, which only needs to divide surfaces. */
-  --input: oklch(0.85 0 0);
+  --input: oklch(calc(0.85 - 0.25 * var(--contrast, 0)) 0 0);
   --ring: oklch(0.5568 0.1355 155.812);
   /* Every corner follows this: sm, md, lg and up are multiples of it. */
   --radius: 0.5rem;
@@ -195,14 +240,14 @@
      page (active) is coloured, derived from --sidebar-primary so a Settings
      palette (below) retints it along with the surface. */
   --sidebar: oklch(0.968 0.007 155);
-  --sidebar-foreground: oklch(0.28 0 0);
+  --sidebar-foreground: oklch(calc(0.28 - 0.18 * var(--contrast, 0)) 0 0);
   --sidebar-primary: oklch(0.5568 0.1355 155.812);
   --sidebar-primary-foreground: oklch(1 0 0);
   --sidebar-accent: oklch(0 0 0 / 4.5%);
   --sidebar-accent-foreground: oklch(0.2 0 0);
   --sidebar-active: color-mix(in oklch, var(--sidebar-primary) 10%, transparent);
   --sidebar-active-foreground: color-mix(in oklch, var(--sidebar-primary) 68%, black);
-  --sidebar-border: oklch(0 0 0 / 8%);
+  --sidebar-border: oklch(0 0 0 / calc(8% + 14% * var(--contrast, 0)));
   --sidebar-ring: var(--sidebar-primary);
 
   /* The brand mark's colour; lightened in .dark so it stays visible on a
@@ -228,7 +273,7 @@
 
 .dark {
   --background: oklch(0.1822 0 0);
-  --foreground: oklch(0.93 0 0);
+  --foreground: oklch(calc(0.93 + 0.07 * var(--contrast, 0)) 0 0);
   --card: oklch(0.2046 0 0);
   --card-foreground: oklch(0.93 0 0);
   --popover: oklch(0.2603 0 0);
@@ -238,27 +283,27 @@
   --secondary: oklch(0.2603 0 0);
   --secondary-foreground: oklch(0.9851 0 0);
   --muted: oklch(0.2393 0 0);
-  --muted-foreground: oklch(0.7122 0 0);
+  --muted-foreground: oklch(calc(0.7122 + 0.18 * var(--contrast, 0)) 0 0);
   --accent: oklch(0.3132 0 0);
   --accent-foreground: oklch(0.9851 0 0);
   /* Used as text and as a 10 to 20% wash behind it, so it has to stay light on a
      dark surface; the theme's deep maroon read as a smudge. */
   --destructive: oklch(0.704 0.191 22.216);
-  --border: oklch(0.2809 0 0);
-  --input: oklch(0.2603 0 0);
+  --border: oklch(calc(0.2809 + 0.2 * var(--contrast, 0)) 0 0);
+  --input: oklch(calc(0.2603 + 0.22 * var(--contrast, 0)) 0 0);
   --ring: oklch(0.5568 0.1355 155.812);
 
   /* A step lighter than the content panel, with the same faint tint. The
      primary is lifted here so the current page's icon stays legible. */
   --sidebar: oklch(0.205 0.008 160);
-  --sidebar-foreground: oklch(0.88 0 0);
+  --sidebar-foreground: oklch(calc(0.88 + 0.12 * var(--contrast, 0)) 0 0);
   --sidebar-primary: oklch(0.7 0.14 156);
   --sidebar-primary-foreground: oklch(0.18 0 0);
   --sidebar-accent: oklch(1 0 0 / 6%);
   --sidebar-accent-foreground: oklch(0.97 0 0);
   --sidebar-active: color-mix(in oklch, var(--sidebar-primary) 14%, transparent);
   --sidebar-active-foreground: color-mix(in oklch, var(--sidebar-primary) 65%, white);
-  --sidebar-border: oklch(1 0 0 / 8%);
+  --sidebar-border: oklch(1 0 0 / calc(8% + 14% * var(--contrast, 0)));
   --sidebar-ring: var(--sidebar-primary);
 
   --brand: #8fb08c;
@@ -270,6 +315,22 @@
   --chart-2: oklch(0.7137 0.1434 254.624);
   --chart-3: oklch(0.709 0.1592 293.5412);
   --chart-5: oklch(0.7845 0.1325 181.912);
+}
+
+/* Icons that do not set their own stroke (components/icon-stroke.ts) draw at the person's choice
+   in Appearance. The icon data carries a stroke on every path, so this reaches them all; an
+   icon with its own stroke is not marked, and keeps it. */
+[data-icon-stroke],
+[data-icon-stroke] * {
+  stroke-width: var(--icon-stroke-default, 2);
+}
+
+/* A device set to more contrast starts part of the way up; a person's own choice, set inline on
+   <html>, still wins. */
+@media (prefers-contrast: more) {
+  :root {
+    --contrast: 0.6;
+  }
 }
 
 /* The site's CMS colour, set server-side as <html data-colour> (see __root.tsx).
@@ -994,32 +1055,32 @@
    Each grid cell sets --reveal, when it starts; what is inside adds its own offset. */
 [data-slot='reveal-word'] {
   display: inline-block;
-  animation: dashboard-text 500ms cubic-bezier(0.23, 1, 0.32, 1) backwards;
-  animation-delay: calc(var(--word, 0) * 70ms);
+  animation: dashboard-text 320ms cubic-bezier(0.23, 1, 0.32, 1) backwards;
+  animation-delay: calc(var(--word, 0) * 42ms);
 }
 
 [data-slot='dashboard'] > * {
-  --reveal: 120ms;
-  animation: dashboard-rise 500ms cubic-bezier(0.23, 1, 0.32, 1) backwards;
+  --reveal: 72ms;
+  animation: dashboard-rise 320ms cubic-bezier(0.23, 1, 0.32, 1) backwards;
   animation-delay: var(--reveal);
 }
 [data-slot='dashboard'] > :nth-child(2) {
-  --reveal: 180ms;
+  --reveal: 108ms;
 }
 [data-slot='dashboard'] > :nth-child(3) {
-  --reveal: 240ms;
+  --reveal: 144ms;
 }
 [data-slot='dashboard'] > :nth-child(4) {
-  --reveal: 300ms;
+  --reveal: 180ms;
 }
 [data-slot='dashboard'] > :nth-child(5) {
-  --reveal: 360ms;
+  --reveal: 216ms;
 }
 [data-slot='dashboard'] > :nth-child(6) {
-  --reveal: 420ms;
+  --reveal: 252ms;
 }
 [data-slot='dashboard'] > :nth-child(n + 7) {
-  --reveal: 480ms;
+  --reveal: 288ms;
 }
 
 /* Inside a card: text sharpens and rises a little, in steps. */
@@ -1033,28 +1094,28 @@
     [data-slot='card-content'] section > h2,
     [data-slot='item-group'] > *
   ) {
-  --at: 80ms;
-  animation: dashboard-text 450ms cubic-bezier(0.23, 1, 0.32, 1) backwards;
+  --at: 48ms;
+  animation: dashboard-text 300ms cubic-bezier(0.23, 1, 0.32, 1) backwards;
   animation-delay: calc(var(--reveal) + var(--at));
 }
 [data-slot='dashboard'] [data-slot='card-content'] section > h2 {
-  --at: 120ms;
+  --at: 72ms;
 }
 [data-slot='dashboard'] [data-reveal='2'] {
-  --at: 140ms;
+  --at: 84ms;
 }
 [data-slot='dashboard'] :is([data-reveal='3'], [data-slot='empty']) {
-  --at: 200ms;
+  --at: 120ms;
 }
 [data-slot='dashboard'] [data-reveal='4'] {
-  --at: 260ms;
+  --at: 156ms;
 }
 [data-slot='dashboard'] [data-slot='card-footer'] {
-  --at: 320ms;
+  --at: 192ms;
 }
 /* The change against the weeks before slides in once its figure has nearly counted up. */
 [data-slot='dashboard'] [data-reveal='5'] {
-  --at: 800ms;
+  --at: 480ms;
   animation-name: dashboard-nudge;
 }
 /* List rows follow each other down the card. */
@@ -1085,22 +1146,22 @@
 @keyframes dashboard-rise {
   from {
     opacity: 0;
-    transform: translateY(12px) scale(0.98);
+    transform: translateY(6px);
   }
 }
 
 @keyframes dashboard-text {
   from {
     opacity: 0;
-    transform: translateY(6px);
-    filter: blur(4px);
+    transform: translateY(3px);
+    filter: blur(2px);
   }
 }
 
 @keyframes dashboard-nudge {
   from {
     opacity: 0;
-    transform: translateX(-6px);
+    transform: translateX(-4px);
   }
 }
 
@@ -1116,8 +1177,8 @@
    following. Editor: the document panel and the sidebar rise, then the bar and the
    sidebar's sections follow. Reuses the dashboard's keyframes. */
 [data-slot='list-page'][data-revealing] [data-slot='list-toolbar'] > :not(h1) {
-  animation: dashboard-text 450ms cubic-bezier(0.23, 1, 0.32, 1) backwards;
-  animation-delay: calc(100ms + var(--step, 0) * 50ms);
+  animation: dashboard-text 300ms cubic-bezier(0.23, 1, 0.32, 1) backwards;
+  animation-delay: calc(60ms + var(--step, 0) * 30ms);
 }
 [data-slot='list-page'][data-revealing] [data-slot='list-toolbar'] > :nth-child(3) {
   --step: 1;
@@ -1129,14 +1190,14 @@
   --step: 3;
 }
 [data-slot='list-page'][data-revealing] [data-slot='list-panes'] {
-  animation: dashboard-rise 500ms cubic-bezier(0.23, 1, 0.32, 1) 180ms backwards;
+  animation: dashboard-rise 320ms cubic-bezier(0.23, 1, 0.32, 1) 108ms backwards;
 }
 [data-slot='list-page'][data-revealing] [data-slot='list-panes'] > section > :first-child {
-  animation: dashboard-text 450ms cubic-bezier(0.23, 1, 0.32, 1) 300ms backwards;
+  animation: dashboard-text 300ms cubic-bezier(0.23, 1, 0.32, 1) 180ms backwards;
 }
 [data-slot='list-page'][data-revealing] [data-slot='list-rows'] > * {
-  animation: dashboard-text 450ms cubic-bezier(0.23, 1, 0.32, 1) backwards;
-  animation-delay: calc(340ms + var(--row, 0) * 45ms);
+  animation: dashboard-text 300ms cubic-bezier(0.23, 1, 0.32, 1) backwards;
+  animation-delay: calc(204ms + var(--row, 0) * 27ms);
 }
 [data-slot='list-page'][data-revealing] [data-slot='list-rows'] > :nth-child(2) {
   --row: 1;
@@ -1158,14 +1219,14 @@
 }
 
 [data-slot='post-editor'][data-revealing] [data-slot='post-editor-main'] {
-  animation: dashboard-rise 500ms cubic-bezier(0.23, 1, 0.32, 1) 120ms backwards;
+  animation: dashboard-rise 320ms cubic-bezier(0.23, 1, 0.32, 1) 72ms backwards;
 }
 [data-slot='post-editor'][data-revealing] [data-slot='post-editor-main'] > header {
-  animation: dashboard-text 450ms cubic-bezier(0.23, 1, 0.32, 1) 260ms backwards;
+  animation: dashboard-text 300ms cubic-bezier(0.23, 1, 0.32, 1) 156ms backwards;
 }
 [data-slot='post-editor'][data-revealing] #post-properties > * {
-  animation: dashboard-text 450ms cubic-bezier(0.23, 1, 0.32, 1) backwards;
-  animation-delay: calc(240ms + var(--section, 0) * 70ms);
+  animation: dashboard-text 300ms cubic-bezier(0.23, 1, 0.32, 1) backwards;
+  animation-delay: calc(144ms + var(--section, 0) * 42ms);
 }
 [data-slot='post-editor'][data-revealing] #post-properties > :nth-child(2) {
   --section: 1;
@@ -1184,12 +1245,12 @@
    time. useListView sets data-list-switch on the root only while this plays, so filters and
    new pages of results never replay it. */
 [data-list-switch='grid'] [data-slot='list-cards'] > * {
-  animation: list-switch-card 380ms cubic-bezier(0.23, 1, 0.32, 1) backwards;
-  animation-delay: calc(var(--item, 0) * 35ms);
+  animation: list-switch-card 260ms cubic-bezier(0.23, 1, 0.32, 1) backwards;
+  animation-delay: calc(var(--item, 0) * 21ms);
 }
 [data-list-switch='list'] [data-slot='list-rows'] > * {
-  animation: list-switch-row 300ms cubic-bezier(0.23, 1, 0.32, 1) backwards;
-  animation-delay: calc(var(--item, 0) * 25ms);
+  animation: list-switch-row 200ms cubic-bezier(0.23, 1, 0.32, 1) backwards;
+  animation-delay: calc(var(--item, 0) * 15ms);
 }
 :is([data-slot='list-cards'], [data-slot='list-rows']) > :nth-child(2) {
   --item: 1;
@@ -1217,14 +1278,14 @@
 @keyframes list-switch-card {
   from {
     opacity: 0;
-    transform: translateY(8px) scale(0.97);
+    transform: translateY(5px);
   }
 }
 
 @keyframes list-switch-row {
   from {
     opacity: 0;
-    transform: translateY(4px);
+    transform: translateY(3px);
   }
 }
 
@@ -1256,11 +1317,11 @@
    alone, since the words animate themselves. */
 [data-slot='stack-page'][data-revealing] > :first-child > :not(h1, :has(h1)),
 [data-slot='stack-page'][data-revealing] > :first-child p {
-  animation: dashboard-text 450ms cubic-bezier(0.23, 1, 0.32, 1) 140ms backwards;
+  animation: dashboard-text 300ms cubic-bezier(0.23, 1, 0.32, 1) 84ms backwards;
 }
 [data-slot='stack-page'][data-revealing] > :not(:first-child) {
-  animation: dashboard-rise 500ms cubic-bezier(0.23, 1, 0.32, 1) backwards;
-  animation-delay: calc(160ms + var(--block, 0) * 70ms);
+  animation: dashboard-rise 320ms cubic-bezier(0.23, 1, 0.32, 1) backwards;
+  animation-delay: calc(96ms + var(--block, 0) * 42ms);
 }
 [data-slot='stack-page'][data-revealing] > :nth-child(3) {
   --block: 1;
@@ -1339,28 +1400,28 @@
    Quick, because one can appear at any moment (a search with no matches, a closed pane).
    The dashboard's own empty cards keep their own reveal. */
 [data-slot='empty']:not([data-slot='dashboard'] *) > * > [data-slot='empty-icon'] {
-  animation: empty-pop 400ms cubic-bezier(0.23, 1, 0.32, 1) backwards;
+  animation: empty-pop 280ms cubic-bezier(0.23, 1, 0.32, 1) backwards;
 }
 [data-slot='empty']:not([data-slot='dashboard'] *)
   > [data-slot='empty-header']
   > :is([data-slot='empty-title'], [data-slot='empty-description']),
 [data-slot='empty']:not([data-slot='dashboard'] *) > [data-slot='empty-content'],
 [data-slot='no-matches'] > * {
-  animation: dashboard-text 400ms cubic-bezier(0.23, 1, 0.32, 1) backwards;
-  animation-delay: var(--empty-at, 60ms);
+  animation: dashboard-text 280ms cubic-bezier(0.23, 1, 0.32, 1) backwards;
+  animation-delay: var(--empty-at, 36ms);
 }
 [data-slot='empty'] [data-slot='empty-description'] {
-  --empty-at: 120ms;
+  --empty-at: 72ms;
 }
 [data-slot='empty'] > [data-slot='empty-content'],
 [data-slot='no-matches'] > :nth-child(2) {
-  --empty-at: 180ms;
+  --empty-at: 108ms;
 }
 
 @keyframes empty-pop {
   from {
     opacity: 0;
-    transform: scale(0.8);
+    transform: scale(0.92);
   }
 }
 
@@ -1386,27 +1447,27 @@
     [data-slot='sidebar-group-label'],
     [data-slot='sidebar-footer'] > :not([data-slot='sidebar-menu'])
   ) {
-  animation: shell-from-side 350ms cubic-bezier(0.23, 1, 0.32, 1) backwards;
-  animation-delay: calc(var(--shell-at, 0ms) + var(--shell-item, 0) * 25ms);
+  animation: shell-from-side 240ms cubic-bezier(0.23, 1, 0.32, 1) backwards;
+  animation-delay: calc(var(--shell-at, 0ms) + var(--shell-item, 0) * 15ms);
 }
 /* Each group starts a beat after the one above; within it, items follow each other. */
 [data-slot='sidebar-container'] [data-slot='sidebar-content'] > :nth-child(1) {
-  --shell-at: 60ms;
+  --shell-at: 36ms;
 }
 [data-slot='sidebar-container'] [data-slot='sidebar-content'] > :nth-child(2) {
-  --shell-at: 130ms;
+  --shell-at: 78ms;
 }
 [data-slot='sidebar-container'] [data-slot='sidebar-content'] > :nth-child(3) {
-  --shell-at: 200ms;
+  --shell-at: 120ms;
 }
 [data-slot='sidebar-container'] [data-slot='sidebar-content'] > :nth-child(4) {
-  --shell-at: 270ms;
+  --shell-at: 162ms;
 }
 [data-slot='sidebar-container'] [data-slot='sidebar-content'] > :nth-child(n + 5) {
-  --shell-at: 340ms;
+  --shell-at: 204ms;
 }
 [data-slot='sidebar-container'] [data-slot='sidebar-footer'] {
-  --shell-at: 420ms;
+  --shell-at: 252ms;
 }
 [data-slot='sidebar-container'] [data-slot='sidebar-menu'] > :nth-child(1) {
   --shell-item: 1;
@@ -1434,14 +1495,14 @@
   [data-slot='app-header'] > :first-child > *,
   [data-slot='app-header'] > :last-child > :not(.contents),
   [data-slot='app-header'] > :last-child > .contents > * {
-    animation: shell-from-top 350ms cubic-bezier(0.23, 1, 0.32, 1) backwards;
-    animation-delay: calc(var(--shell-at) + var(--shell-item, 0) * 40ms);
+    animation: shell-from-top 240ms cubic-bezier(0.23, 1, 0.32, 1) backwards;
+    animation-delay: calc(var(--shell-at) + var(--shell-item, 0) * 24ms);
   }
   [data-slot='app-header'] > :first-child {
-    --shell-at: 60ms;
+    --shell-at: 36ms;
   }
   [data-slot='app-header'] > :last-child {
-    --shell-at: 180ms;
+    --shell-at: 108ms;
   }
   [data-slot='app-header'] > :is(:first-child, :last-child) > :nth-child(2) {
     --shell-item: 1;
@@ -1455,8 +1516,8 @@
 }
 
 [data-slot='tab-bar'] > div > * {
-  animation: shell-from-bottom 350ms cubic-bezier(0.23, 1, 0.32, 1) backwards;
-  animation-delay: calc(120ms + var(--shell-item, 0) * 40ms);
+  animation: shell-from-bottom 240ms cubic-bezier(0.23, 1, 0.32, 1) backwards;
+  animation-delay: calc(72ms + var(--shell-item, 0) * 24ms);
 }
 [data-slot='tab-bar'] > div > :nth-child(2) {
   --shell-item: 1;
@@ -1474,21 +1535,21 @@
 @keyframes shell-from-side {
   from {
     opacity: 0;
-    transform: translateX(-8px);
+    transform: translateX(-5px);
   }
 }
 
 @keyframes shell-from-top {
   from {
     opacity: 0;
-    transform: translateY(-6px);
+    transform: translateY(-4px);
   }
 }
 
 @keyframes shell-from-bottom {
   from {
     opacity: 0;
-    transform: translateY(8px);
+    transform: translateY(5px);
   }
 }
 

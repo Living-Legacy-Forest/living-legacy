@@ -8,9 +8,10 @@ import Footer from '@/components/layout/Footer.astro';
 import Reveal from '@/components/Reveal.astro';
 import { Toaster } from '@/components/ui/sonner';
 import { isIndexableHost } from '@/lib/seo';
-import { getSiteSettings, siteIconUrl, socialLinks } from '@/lib/settings';
+import { getSiteSettings, siteIconDarkUrl, siteIconUrl, socialLinks } from '@/lib/settings';
 import {
   formatPageTitle,
+  iconSchemeScript,
   organizationJsonLd,
   serializeJsonLd,
   websiteJsonLd,
@@ -93,6 +94,7 @@ const ogUrl =
 
 const siteUrl = (Astro.site ?? Astro.url).toString();
 const iconUrl = siteIconUrl(settings);
+const iconDarkUrl = siteIconDarkUrl(settings);
 const structuredData = [
   organizationJsonLd({
     siteUrl,
@@ -118,10 +120,23 @@ const structuredData = [
     {robotsContent && <meta name="robots" content={robotsContent} />}
     <link rel="canonical" href={canonical} />
     {
-      iconUrl ? (
+      iconUrl || iconDarkUrl ? (
         <>
-          <link rel="icon" href={iconUrl} />
-          <link rel="apple-touch-icon" href={iconUrl} />
+          {/* With a dark icon a script adds the tab's icon link, dark while the browser is dark. */}
+          {iconDarkUrl ? (
+            <>
+              <script
+                is:inline
+                set:html={iconSchemeScript(iconUrl ?? '/icon-192.png', iconDarkUrl)}
+              />
+              <noscript>
+                <link rel="icon" href={iconUrl ?? '/icon-192.png'} />
+              </noscript>
+            </>
+          ) : (
+            <link rel="icon" href={iconUrl ?? '/icon-192.png'} />
+          )}
+          <link rel="apple-touch-icon" href={iconUrl ?? '/apple-touch-icon.png'} />
         </>
       ) : (
         <>

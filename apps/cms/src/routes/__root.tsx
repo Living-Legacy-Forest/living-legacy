@@ -1,6 +1,6 @@
 import { FileQuestionIcon } from '@/components/icons';
 import { HeadContent, Link, Scripts, createRootRoute } from '@tanstack/react-router';
-import { appearanceVars } from '@ll/content';
+import { appearanceVars, iconSchemeScript } from '@ll/content';
 import { type CSSProperties, type ReactNode, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import {
@@ -35,9 +35,22 @@ function themeColorMeta(theme: Theme): { content: string; media?: string }[] {
   ];
 }
 
-function iconLinks(siteIconMediaId: string | undefined) {
+const iconHref = (mediaId: string) => `/api/media/${mediaId}?w=640`;
+
+// With a dark icon the tab's icon is not a link here: a script adds it (RootDocument), because
+// React would otherwise hoist a second, light copy when it hydrates and the browser would keep
+// that one. The home screen has no dark variant, so it keeps the main icon.
+function iconLinks(siteIconMediaId: string | undefined, siteIconDarkMediaId: string | undefined) {
+  if (siteIconDarkMediaId) {
+    return [
+      {
+        rel: 'apple-touch-icon',
+        href: siteIconMediaId ? iconHref(siteIconMediaId) : '/apple-touch-icon.png',
+      },
+    ];
+  }
   if (siteIconMediaId) {
-    const href = `/api/media/${siteIconMediaId}?w=640`;
+    const href = iconHref(siteIconMediaId);
     return [
       { rel: 'icon', href },
       { rel: 'apple-touch-icon', href },
@@ -67,7 +80,7 @@ export const Route = createRootRoute({
       { rel: 'stylesheet', href: styles },
       // The same icon as the public website (Settings, Site icon, or the built-in
       // files in public/), so the CMS tab is recognisable among the site's own.
-      ...iconLinks(loaderData?.siteIconMediaId),
+      ...iconLinks(loaderData?.siteIconMediaId, loaderData?.siteIconDarkMediaId),
     ],
   }),
   shellComponent: RootDocument,
@@ -75,7 +88,9 @@ export const Route = createRootRoute({
 });
 
 function RootDocument({ children }: { children: ReactNode }) {
-  const { theme, cmsFont, cmsColour, appearance } = Route.useLoaderData();
+  const { theme, cmsFont, cmsColour, appearance, siteIconMediaId, siteIconDarkMediaId } =
+    Route.useLoaderData();
+  const lightIcon = siteIconMediaId ? iconHref(siteIconMediaId) : '/icon-192.png';
   useThemeSync(theme);
   useEffect(() => wakeAudioOnGesture(), []);
   // iOS Safari shows :active (every control's pressed look) only on a page that listens for
@@ -100,6 +115,19 @@ function RootDocument({ children }: { children: ReactNode }) {
       <head>
         <script dangerouslySetInnerHTML={{ __html: THEME_INIT_SCRIPT }} />
         <HeadContent />
+        {siteIconDarkMediaId && (
+          <>
+            <script
+              dangerouslySetInnerHTML={{
+                __html: iconSchemeScript(lightIcon, iconHref(siteIconDarkMediaId)),
+              }}
+            />
+            {/* With scripts off the light icon still shows. */}
+            <noscript>
+              <link rel="icon" href={lightIcon} />
+            </noscript>
+          </>
+        )}
         {/* Here, not in head(): it keeps one meta per name, and "system" needs two. */}
         {themeColorMeta(theme).map((meta) => (
           <meta key={meta.media ?? 'all'} name="theme-color" {...meta} />

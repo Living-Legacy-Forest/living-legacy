@@ -70,12 +70,15 @@ export const setMyBanner = createServerFn({ method: 'POST' })
     adoptBanner(getDb(), context.user.id, context.user.banner, data.url)
   );
 
-/** This person's own colour and sidebar grain; both null goes back to following the site. */
+/** This person's own colour, sidebar grain, contrast and icon stroke; all null goes back to following the site. */
 export const setMyAppearance = createServerFn({ method: 'POST' })
   .middleware([authMiddleware])
   .validator(appearanceSchema)
   .handler(async ({ data, context }) => {
-    const stored = data.colour || data.grain !== null ? JSON.stringify(data) : null;
+    const stored =
+      data.colour || data.grain !== null || data.contrast !== null || data.iconStroke !== null
+        ? JSON.stringify(data)
+        : null;
     await getDb()
       .update(user)
       .set({ appearance: stored, updatedAt: new Date() })

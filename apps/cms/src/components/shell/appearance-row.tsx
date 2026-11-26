@@ -1,35 +1,21 @@
 import {
-  APPEARANCE_VARS,
-  type Appearance,
   type AppearanceColour,
   DEFAULT_APPEARANCE,
   DEFAULT_GRAIN,
   appearancePresets,
-  appearanceVars,
   colourCss,
 } from '@ll/content';
-import { getRouteApi, useRouter } from '@tanstack/react-router';
-import {
-  type CSSProperties,
-  type KeyboardEvent,
-  type PointerEvent,
-  useId,
-  useRef,
-  useState,
-} from 'react';
+import { type CSSProperties, type KeyboardEvent, type PointerEvent, useId, useRef } from 'react';
 import { MoonIcon, PaletteIcon, SunIcon, SunMoonIcon } from '@/components/icons';
 import { Button } from '@/components/ui/button';
 import { DetentDial } from '@/components/ui/detent-dial';
 import { Popover, PopoverContent, PopoverTitle, PopoverTrigger } from '@/components/ui/popover';
 import { SidebarMenuItem } from '@/components/ui/sidebar';
-import { notify } from '@/lib/notify';
+import { useAppearanceDraft } from '@/lib/use-appearance-draft';
 import { useThemeChoice } from '@/lib/use-theme-choice';
 import { cn } from '@/lib/utils';
-import { setMyAppearance } from '@/server/profile';
 import type { Theme } from '@/server/settings';
 import { SidebarRow } from './sidebar-row';
-
-const rootRoute = getRouteApi('__root__');
 
 /** A row in the rail that opens this person's own colour, grain and light or dark choice. */
 export function AppearanceRow({ wide }: { wide: boolean }) {
@@ -43,50 +29,6 @@ export function AppearanceRow({ wide }: { wide: boolean }) {
       </Popover>
     </SidebarMenuItem>
   );
-}
-
-/** Writes an appearance onto <html> ahead of the save, so dragging changes the page as it goes. */
-function paint(appearance: Appearance, siteColour: string) {
-  const root = document.documentElement;
-  for (const name of APPEARANCE_VARS) root.style.removeProperty(name);
-  for (const [name, value] of Object.entries(appearanceVars(appearance))) {
-    root.style.setProperty(name, value);
-  }
-  root.dataset.colour = appearance.colour ? 'custom' : siteColour;
-}
-
-/**
- * The picked appearance, shown at once and saved shortly after the last change, so a drag or a
- * run of arrow presses is one save. If saving fails the page goes back to what was saved.
- */
-function useAppearanceDraft() {
-  const router = useRouter();
-  const { appearance: saved, cmsColour } = rootRoute.useLoaderData();
-  const [draft, setDraft] = useState<Appearance>(saved);
-  const timer = useRef(0);
-  const savedRef = useRef(saved);
-  savedRef.current = saved;
-
-  function change(next: Appearance, commit: boolean) {
-    setDraft(next);
-    paint(next, cmsColour);
-    if (!commit) return;
-    window.clearTimeout(timer.current);
-    timer.current = window.setTimeout(() => void save(next), 350);
-  }
-
-  async function save(next: Appearance) {
-    try {
-      await setMyAppearance({ data: next });
-      await router.invalidate();
-    } catch (error) {
-      paint(savedRef.current, cmsColour);
-      setDraft(savedRef.current);
-      notify.error('Could not save your appearance', error);
-    }
-  }
-
-  return { draft, change };
 }
 
 const modes: { value: Theme; label: string; icon: typeof SunIcon }[] = [
@@ -179,7 +121,11 @@ function AppearancePicker() {
         className="text-muted-foreground -mx-1 self-start"
         disabled={isDefault}
         onClick={() => {
-          change(DEFAULT_APPEARANCE, true);
+          // Contrast and icon stroke are set on the Profile page, so they stay as they are.
+          change(
+            { ...DEFAULT_APPEARANCE, contrast: draft.contrast, iconStroke: draft.iconStroke },
+            true
+          );
           if (theme.value !== 'site') void theme.choose('site');
         }}
       >

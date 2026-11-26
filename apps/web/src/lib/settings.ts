@@ -63,6 +63,15 @@ export function socialLinks(
 
 /** The icon chosen in the CMS (Settings, Site icon), or null for the built-in files. */
 export function siteIconUrl(settings: SiteSettings): string | null {
-  if (!settings.siteIconMediaId) return null;
-  return `${CMS_URL.replace(/\/+$/, '')}/api/media/${settings.siteIconMediaId}?w=640`;
+  return mediaIconUrl(settings.siteIconMediaId);
+}
+
+/** The icon for browsers in dark mode (Settings, Site icon), or null to use the site icon. */
+export function siteIconDarkUrl(settings: SiteSettings): string | null {
+  return mediaIconUrl(settings.siteIconDarkMediaId);
+}
+
+function mediaIconUrl(mediaId: string): string | null {
+  if (!mediaId) return null;
+  return `${CMS_URL.replace(/\/+$/, '')}/api/media/${mediaId}?w=640`;
 }

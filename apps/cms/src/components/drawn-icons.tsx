@@ -1,4 +1,5 @@
 import { cn } from '@/lib/utils';
+import { ICON_STROKE, ICON_STROKE_ATTR } from './icon-stroke';
 
 // Hugeicons drawings from Animate UI, kept as plain SVG with their motion
 // redone in CSS (styles.css, `.drawn-icon`), so they cost no animation
@@ -6,7 +7,7 @@ import { cn } from '@/lib/utils';
 
 type DrawnIconProps = React.SVGProps<SVGSVGElement>;
 
-function DrawnSvg({ className, strokeWidth = 1.5, children, ...props }: DrawnIconProps) {
+function DrawnSvg({ className, strokeWidth, children, ...props }: DrawnIconProps) {
   return (
     <svg
       xmlns="http://www.w3.org/2000/svg"
@@ -15,7 +16,8 @@ function DrawnSvg({ className, strokeWidth = 1.5, children, ...props }: DrawnIco
       viewBox="0 0 24 24"
       fill="none"
       stroke="currentColor"
-      strokeWidth={strokeWidth}
+      strokeWidth={strokeWidth ?? ICON_STROKE}
+      {...(strokeWidth === undefined && ICON_STROKE_ATTR)}
       strokeLinecap="round"
       strokeLinejoin="round"
       className={cn('drawn-icon shrink-0', className)}

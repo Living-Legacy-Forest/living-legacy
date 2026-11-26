@@ -1,4 +1,5 @@
 import { createLink, useNavigate } from '@tanstack/react-router';
+import { useState } from 'react';
 import {
   ActivityIcon,
   ArrowRightLeft,
@@ -6,13 +7,14 @@ import {
   FileText,
   KeyIcon,
   Settings,
+  Trash2,
   UserCog,
   type LucideIcon,
 } from '@/components/icons';
 import { SuperAdminAction } from '@/components/super-admin-action';
 import { Button } from '@/components/ui/button';
 import { useAction } from '@/lib/use-action';
-import { clearActivityLog } from '@/server/super-admin';
+import { clearActivityLog, removeActivityLogEntry } from '@/server/super-admin';
 import { ActivityCalendar } from './activity-calendar';
 import {
   Empty,
@@ -73,10 +75,12 @@ export function ActivityPage({
 }: {
   data: ActivityLogData;
   search: ActivitySearch;
-  /** Only a super admin may clear the log. */
+  /** Only a super admin may clear the log or remove one entry. */
   canClearLog?: boolean;
 }) {
   const { run, pending } = useAction();
+  // Which entry is being removed, so only its button shows the spinner.
+  const [removingId, setRemovingId] = useState<string | null>(null);
   const timeZone = useTimeZone();
   const navigate = useNavigate({ from: '/activity/' });
   const filtered = Boolean(search.kind || search.who || search.day);
@@ -262,6 +266,33 @@ export function ActivityPage({
                     {formatRelative(entry.createdAt)}
                   </p>
                 </div>
+                {canClearLog && (
+                  <SuperAdminAction
+                    icon={<Trash2 aria-hidden />}
+                    className="-my-1 -mr-2 shrink-0"
+                    label="Remove this entry"
+                    title="Remove this entry from the activity log?"
+                    description="It is removed for everyone, and this cannot be undone. Nothing is left in the log to show it was there."
+                    confirmLabel="Remove entry"
+                    pending={pending && removingId === entry.id}
+                    onConfirm={() => {
+                      setRemovingId(entry.id);
+                      void run(() => removeActivityLogEntry({ data: { id: entry.id } }), {
+                        success: (result) =>
+                          result.removed
+                            ? {
+                                title: 'Entry removed',
+                                description: 'It is no longer in the activity log.',
+                              }
+                            : {
+                                title: 'That entry was already gone',
+                                description: 'Nothing was changed.',
+                              },
+                        error: 'Could not remove the entry',
+                      });
+                    }}
+                  />
+                )}
               </li>
             );
           })}

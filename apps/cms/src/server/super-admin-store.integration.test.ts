@@ -2,7 +2,11 @@
 import { activityLog, aiUsage } from '@ll/db/schema';
 import { beforeEach, describe, expect, it } from 'vitest';
 import { addUser, testDb } from '../../test/fixtures';
-import { clearActivityEntries, resetAssistantCounts } from './super-admin-store';
+import {
+  clearActivityEntries,
+  removeActivityEntry,
+  resetAssistantCounts,
+} from './super-admin-store';
 
 let actor: { id: string; name: string };
 
@@ -47,6 +51,48 @@ describe('clearActivityEntries', () => {
     await clearActivityEntries(testDb(), actor);
     const rows = await testDb().select().from(activityLog);
     expect(rows[0]?.summary).toBe('Cleared the activity log (1 entry)');
+  });
+});
+
+describe('removeActivityEntry', () => {
+  it('removes just that entry and leaves nothing behind', async () => {
+    const [keep, drop] = await testDb()
+      .insert(activityLog)
+      .values([
+        { actorName: 'Sam', action: 'post.published', summary: 'Published a post' },
+        { actorName: 'Ann', action: 'redirect.created', summary: 'Added a redirect' },
+      ])
+      .returning();
+
+    expect(await removeActivityEntry(testDb(), drop!.id)).toBe(true);
+
+    const rows = await testDb().select().from(activityLog);
+    expect(rows.map((r) => r.id)).toEqual([keep!.id]);
+  });
+
+  it('does nothing when the entry is already gone', async () => {
+    await testDb()
+      .insert(activityLog)
+      .values({ actorName: 'Sam', action: 'post.published', summary: 'Published a post' });
+
+    expect(await removeActivityEntry(testDb(), 'no-such-entry')).toBe(false);
+
+    const rows = await testDb().select().from(activityLog);
+    expect(rows.map((r) => r.action)).toEqual(['post.published']);
+  });
+
+  it('leaves the other entries alone', async () => {
+    const rows = await testDb()
+      .insert(activityLog)
+      .values([
+        { actorName: 'A', action: 'post.published', summary: 'One' },
+        { actorName: 'B', action: 'post.published', summary: 'Two' },
+        { actorName: 'C', action: 'post.published', summary: 'Three' },
+      ])
+      .returning();
+    await removeActivityEntry(testDb(), rows[1]!.id);
+    const left = await testDb().select().from(activityLog);
+    expect(left.map((r) => r.summary).sort()).toEqual(['One', 'Three']);
   });
 });
 

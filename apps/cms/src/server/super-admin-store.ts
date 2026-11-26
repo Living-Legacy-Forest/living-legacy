@@ -1,9 +1,9 @@
-// The destructive actions kept for super admins. Each leaves a note in the activity log, so that
-// clearing the log or the usage is never silent. Kept apart from the server functions so it runs
+// The destructive actions kept for super admins. Clearing the log or the usage leaves a note in the
+// activity log, so it is never silent; removing one entry leaves none. Kept apart from the server functions so it runs
 // under the integration tests.
 import type { Db } from '@ll/db';
 import { activityLog, aiUsage } from '@ll/db/schema';
-import { count } from 'drizzle-orm';
+import { count, eq } from 'drizzle-orm';
 import { logActivity } from './activity-log';
 
 type Actor = { id: string; name: string };
@@ -24,6 +24,18 @@ export async function clearActivityEntries(db: Db, actor: Actor): Promise<number
     }),
   ]);
   return removed;
+}
+
+/**
+ * Removes one activity entry and nothing else: no note is left, so it is as if it never happened.
+ * Returns false when the entry is already gone, so a second click or a stale page changes nothing.
+ */
+export async function removeActivityEntry(db: Db, id: string): Promise<boolean> {
+  const removed = await db
+    .delete(activityLog)
+    .where(eq(activityLog.id, id))
+    .returning({ id: activityLog.id });
+  return removed.length > 0;
 }
 
 /** Removes every person's writing assistant counts and history. Returns how many rows went. */

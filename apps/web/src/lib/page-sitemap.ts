@@ -26,6 +26,7 @@ const db = (env as { DB?: D1 }).DB;
  */
 const LOCATION_PAGES_EXIST = false;
 
+type EventRow = { slug: string; lastmod: number };
 type ContentRow = { n: number; lastmod: number | null };
 type LocationRow = {
   slug: string;
@@ -52,7 +53,7 @@ async function pageContent(query: string, what: string): Promise<PageContent> {
 }
 
 export async function getPageSitemapEntries(): Promise<SitemapEntry[]> {
-  const [faqs, coverage, locations, legal] = await Promise.all([
+  const [faqs, coverage, locations, legal, events] = await Promise.all([
     // The FAQs page shows only FAQs that sit in a group.
     pageContent(
       `SELECT COUNT(*) AS n, MAX(f.updated_at) AS lastmod
@@ -72,18 +73,36 @@ export async function getPageSitemapEntries(): Promise<SitemapEntry[]> {
         )
       : [],
     getLegalSitemapEntries(),
+    // A repeating event's dates share one page, so GROUP BY slug lists each address once.
+    // Cancelled and finished events are not worth a visit from search.
+    rows<EventRow>(
+      `SELECT slug, MAX(updated_at) AS lastmod FROM events
+        WHERE status = 'published' AND ends_at > ${Date.now()} GROUP BY slug ORDER BY slug`,
+      'events'
+    ),
   ]);
 
-  return pageSitemapEntries({
-    faqs,
-    coverage,
-    locations: locations.map((l) => ({
-      slug: l.slug,
-      stage: l.stage,
-      status: l.status,
-      noindex: l.noindex === 1,
-      updatedAt: l.updated_at,
-    })),
-    legal,
-  });
+  const eventPages: SitemapEntry[] =
+    events.length > 0
+      ? [
+          { path: '/events/', lastmod: Math.max(...events.map((e) => e.lastmod)) },
+          ...events.map((e) => ({ path: `/events/${e.slug}/`, lastmod: e.lastmod })),
+        ]
+      : [];
+
+  return [
+    ...pageSitemapEntries({
+      faqs,
+      coverage,
+      locations: locations.map((l) => ({
+        slug: l.slug,
+        stage: l.stage,
+        status: l.status,
+        noindex: l.noindex === 1,
+        updatedAt: l.updated_at,
+      })),
+      legal,
+    }),
+    ...eventPages,
+  ];
 }

@@ -1,6 +1,18 @@
-import { bookingReference } from '@ll/content';
+import { type BookableEvent, bookingReference } from '@ll/content';
 import type { Db } from '@ll/db';
+import type { events } from '@ll/db/schema';
 import { sql } from 'drizzle-orm';
+
+/** An event as the booking rules see it. */
+export const bookable = (event: typeof events.$inferSelect): BookableEvent => ({
+  status: event.status,
+  startsAt: event.startsAt.getTime(),
+  endsAt: event.endsAt.getTime(),
+  bookingsOpenAt: event.bookingsOpenAt?.getTime() ?? null,
+  bookingsCloseAt: event.bookingsCloseAt?.getTime() ?? null,
+  capacity: event.capacity,
+  maxPartySize: event.maxPartySize,
+});
 
 export type NewBooking = {
   eventId: string;
@@ -12,6 +24,9 @@ export type NewBooking = {
   note: string | null;
   source: 'website' | 'staff';
   consentAt: Date | null;
+  /** Website bookings choose their id first, so the token derived from it is written with the row. */
+  id?: string;
+  manageTokenHash?: string;
 };
 
 /**
@@ -26,16 +41,16 @@ export async function insertBooking(
   capacity: number | null
 ): Promise<{ id: string; reference: string } | null> {
   for (let attempt = 0; ; attempt++) {
-    const id = crypto.randomUUID();
+    const id = b.id ?? crypto.randomUUID();
     const reference = bookingReference(crypto.getRandomValues(new Uint8Array(6)));
     try {
       const result = await db.run(sql`
         INSERT INTO event_bookings
           (id, event_id, reference, first_name, last_name, email, phone, party_size, note,
-           status, source, consent_at, created_at)
+           status, source, consent_at, manage_token_hash, created_at)
         SELECT ${id}, ${b.eventId}, ${reference}, ${b.firstName}, ${b.lastName}, ${b.email},
           ${b.phone}, ${b.partySize}, ${b.note}, 'confirmed', ${b.source},
-          ${b.consentAt?.getTime() ?? null}, ${Date.now()}
+          ${b.consentAt?.getTime() ?? null}, ${b.manageTokenHash ?? null}, ${Date.now()}
         WHERE ${capacity} IS NULL OR (
           SELECT coalesce(sum(party_size), 0) FROM event_bookings
           WHERE event_id = ${b.eventId} AND status = 'confirmed'

@@ -1,9 +1,11 @@
-import type { Role } from '@ll/content';
+import type { Role, TimeZone } from '@ll/content';
 import { env } from 'cloudflare:workers';
 import { formatDateTime, zoneName } from './format';
 import { readSiteSettings } from './site-settings';
 
 type Email = {
+  /** Defaults to EMAIL_FROM, the sender for CMS mail; guest mail names its own. */
+  from?: string;
   to: string;
   subject: string;
   html: string;
@@ -24,7 +26,7 @@ async function send(email: Email): Promise<void> {
   if (!emailConfigured()) throw new Error('Email delivery is not configured');
 
   try {
-    await env.EMAIL.send({ from: env.EMAIL_FROM, ...email });
+    await env.EMAIL.send({ ...email, from: email.from ?? env.EMAIL_FROM });
   } catch (error) {
     // Log the reason (domain not onboarded, recipient suppressed, etc.) for diagnosis; keep it out
     // of the thrown message, which surfaces to the client.
@@ -279,4 +281,76 @@ export async function sendInviteEmail(to: string, loginUrl: string, role: Role):
   });
 
   await send({ to, subject, html, text });
+}
+
+export type BookingConfirmation = {
+  firstName: string;
+  reference: string;
+  partySize: number;
+  title: string;
+  startsAt: number;
+  endsAt: number;
+  timeZone: TimeZone;
+  venue: string;
+  manageUrl: string;
+  calendarUrl: string;
+  qrUrl: string;
+};
+
+/** What the guest booked, as one email: the ticket code, when and where, and the link to manage it. */
+export function bookingConfirmationEmail(c: BookingConfirmation) {
+  const subject = `You're booked: ${c.title}`;
+  const people = c.partySize === 1 ? '1 person' : `${c.partySize} people`;
+  // The event's own zone, never the viewer's: a guest in Sydney booking a Perth event needs Perth time.
+  const city = c.timeZone.split('/')[1] ?? c.timeZone;
+  const when = `${formatDateTime(c.startsAt, c.timeZone)} (${zoneName(c.timeZone, c.startsAt)}, ${city} time)`;
+
+  const text = [
+    `Hi ${c.firstName},`,
+    '',
+    `You're booked for ${c.title}.`,
+    '',
+    `Reference: ${c.reference}`,
+    `Who: ${people}`,
+    `When: ${when}`,
+    ...(c.venue ? [`Where: ${c.venue}`] : []),
+    '',
+    `Add it to your calendar: ${c.calendarUrl}`,
+    '',
+    'See or cancel your booking:',
+    c.manageUrl,
+    '',
+    `Your ticket code is your reference, ${c.reference}. Show it when you arrive.`,
+    ...textFooter,
+  ].join('\n');
+
+  const strong = (value: string) =>
+    `<strong style="color:${colours.ink};">${escapeHtml(value)}</strong>`;
+  const html = layout({
+    preheader: `Your booking for ${c.title} is confirmed.`,
+    heading: "You're booked",
+    intro: [
+      `Hi ${escapeHtml(c.firstName)}, your places at ${strong(c.title)} are booked.`,
+      [
+        `Reference: ${strong(c.reference)}`,
+        `Who: ${escapeHtml(people)}`,
+        `When: ${escapeHtml(when)}`,
+        ...(c.venue ? [`Where: ${escapeHtml(c.venue)}`] : []),
+      ].join('<br>'),
+      `<img src="${escapeHtml(c.qrUrl)}" width="160" height="160" alt="Your ticket code" style="display:block;border:0;">`,
+      `Show this code when you arrive. <a href="${escapeHtml(c.calendarUrl)}" style="color:${colours.moss};">Add it to your calendar</a>.`,
+    ],
+    button: { label: 'See or cancel your booking', url: c.manageUrl },
+    note: 'If your plans change, please cancel so someone else can have your places.',
+  });
+
+  return { subject, html, text };
+}
+
+/** Sends from the guest-facing sender, not the CMS one. */
+export async function sendBookingConfirmationEmail(
+  to: string,
+  c: BookingConfirmation
+): Promise<void> {
+  await send({ from: env.BOOKING_EMAIL_FROM, to, ...bookingConfirmationEmail(c) });
 }

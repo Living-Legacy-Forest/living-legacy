@@ -47,7 +47,9 @@ job for the schedule's heartbeat, that job for its own.
 | CMS job: send bookings to HubSpot               | `sync-bookings`      | 5 + 10 minutes |
 | CMS job: delete bookings a year after the event | `purge-old-bookings` | 24 hours + 1   |
 
-The other daily jobs (`lib/cron-jobs.ts`) are covered by the daily heartbeat only. Period plus
+The other jobs (`lib/cron-jobs.ts`) are covered by their schedule's heartbeat only: the daily ones by
+the daily heartbeat, and the 5-minute ones, such as `send-booking-confirmations` (resends booking
+confirmation emails that failed), by the 5-minute heartbeat. Period plus
 grace matches `staleAfterMs` in `lib/cron-jobs.ts`; change both together.
 
 Every address lives in one Worker secret, `HEARTBEAT_URLS`: a JSON object from key to address,

@@ -17,6 +17,50 @@ export function scrubEmails<T>(event: T): T {
   }
 }
 
+const SECRET_KEY = /x[-_]internal[-_]key/i;
+const FILTERED = '[Filtered]';
+
+/**
+ * Replaces the website's shared key wherever it shows up by name: a request header, or a span
+ * attribute such as `http.request.header.x_internal_key`. Its value is a credential, so it must
+ * not reach Sentry (traces are sampled at 1.0). Values are replaced whole, whatever their shape.
+ */
+function filterSecretKey(node: unknown): unknown {
+  if (Array.isArray(node)) return node.map(filterSecretKey);
+  if (node && typeof node === 'object') {
+    return Object.fromEntries(
+      Object.entries(node).map(([k, v]) => [k, SECRET_KEY.test(k) ? FILTERED : filterSecretKey(v)])
+    );
+  }
+  return node;
+}
+
+// drizzle-orm's DrizzleQueryError message is `Failed query: <sql>\nparams: <every bound value>`,
+// and for a booking those values are the guest's name, email, phone and note. Keep the SQL (it
+// still tells us which query failed) and drop everything from `params:` on.
+const QUERY_PARAMS = /\n\s*params:[\s\S]*$|(Failed query:[\s\S]*?)\s+params:[\s\S]*$/;
+
+function stripQueryParams(node: unknown): unknown {
+  if (typeof node === 'string') return node.replace(QUERY_PARAMS, '$1');
+  if (Array.isArray(node)) return node.map(stripQueryParams);
+  if (node && typeof node === 'object') {
+    return Object.fromEntries(Object.entries(node).map(([k, v]) => [k, stripQueryParams(v)]));
+  }
+  return node;
+}
+
+/**
+ * What is sent to Sentry: failed-query parameters dropped, emails masked and the internal key
+ * filtered.
+ */
+export function scrubEvent<T>(event: T): T {
+  try {
+    return scrubEmails(stripQueryParams(filterSecretKey(event)) as T);
+  } catch {
+    return event;
+  }
+}
+
 // Public by design: the browser bundle carries it too. It lets someone send
 // events to the project, not read them.
 const DSN =
@@ -37,8 +81,8 @@ export const sentryOptions = {
   // that no longer exist. It is offered a reload (components/shell/updates.tsx), so this is
   // expected after every deploy, not a bug.
   ignoreErrors: [/Server function info not found/],
-  beforeSend: scrubEmails,
+  beforeSend: scrubEvent,
   // Spans carry URLs and attributes, so they are masked too. Not `beforeSendTransaction`: with
   // span streaming, the SDK's default, that is ignored (and logs a warning on every request).
-  beforeSendSpan: scrubEmails,
+  beforeSendSpan: scrubEvent,
 };

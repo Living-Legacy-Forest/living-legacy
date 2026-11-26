@@ -1,6 +1,11 @@
 import { env } from 'cloudflare:workers';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { emailConfigured, sendInviteEmail } from './email';
+import {
+  type BookingConfirmation,
+  emailConfigured,
+  sendBookingConfirmationEmail,
+  sendInviteEmail,
+} from './email';
 
 const mutableEnv = env as unknown as Record<string, unknown>;
 const invite = () => sendInviteEmail('a@example.test', 'https://cms.example.test/login', 'editor');
@@ -40,6 +45,37 @@ describe('email delivery', () => {
         subject: 'You have been invited to Living Legacy',
         html: expect.stringContaining('Accept invitation'),
         text: expect.stringContaining('https://cms.example.test/login'),
+      }),
+    ]);
+  });
+
+  it('sends guest confirmations from the guest-facing sender, and CMS mail from the CMS one', async () => {
+    mutableEnv.BOOKING_EMAIL_FROM = 'Living Legacy <events@notify.example.test>';
+    const confirmation: BookingConfirmation = {
+      firstName: 'Sam',
+      reference: 'LL-ABC123',
+      partySize: 2,
+      title: 'Open day',
+      startsAt: Date.UTC(2027, 0, 20, 2),
+      endsAt: Date.UTC(2027, 0, 20, 4),
+      timeZone: 'Australia/Perth',
+      venue: 'The forest gate',
+      manageUrl: 'https://example.test/events/manage/?ref=LL-ABC123&token=t',
+      calendarUrl: 'https://example.test/events/open-day.ics',
+      qrUrl: 'https://example.test/qr.png',
+    };
+
+    await sendBookingConfirmationEmail('sam@example.test', confirmation);
+    await invite();
+
+    expect(sent).toEqual([
+      expect.objectContaining({
+        from: 'Living Legacy <events@notify.example.test>',
+        to: 'sam@example.test',
+      }),
+      expect.objectContaining({
+        from: 'Living Legacy CMS <cms@notify.example.test>',
+        to: 'a@example.test',
       }),
     ]);
   });

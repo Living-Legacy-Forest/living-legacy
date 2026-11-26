@@ -21,6 +21,7 @@ export * from './focal-point';
 export * from './media-sweep';
 export * from './media-trash';
 export * from './events';
+export * from './public-booking';
 export * from './phone';
 export * from './event-crm';
 export * from './tickets';

@@ -71,6 +71,38 @@ Settings > Writing assistant. The System page shows today's and the last week's 
 and an estimated cost (rates in `apps/cms/src/server/ai/pricing.ts`). For a hard stop on the bill
 as a whole, also set a monthly spend limit for the key's workspace in the Anthropic Console.
 
+### Online booking
+
+People book events on the website (`/events/`). The website holds no booking rules and no email
+binding: it hands each booking to the CMS over a Worker service binding, and the CMS books it,
+emails the confirmation and keeps the guest list.
+
+Secrets, set with `bunx wrangler secret put <NAME>` (from `apps/cms` and `apps/web`). Make each
+one with `openssl rand -base64 32` and never commit or paste a value anywhere else:
+
+| Secret                | Where                       | What it does                                                                                                                    |
+| --------------------- | --------------------------- | ------------------------------------------------------------------------------------------------------------------------------- |
+| `INTERNAL_KEY`        | CMS and website, same value | The website sends it with each booking call, and the CMS refuses calls without it.                                              |
+| `MANAGE_TOKEN_SECRET` | CMS                         | Makes the cancel link in each confirmation email. Changing it breaks only the retry of an unsent email, not links already sent. |
+
+Without `INTERNAL_KEY` or `MANAGE_TOKEN_SECRET` the CMS answers booking calls with a 503, so
+nobody can book.
+
+Config in `wrangler.jsonc`, not secret:
+
+- CMS vars `WEBSITE_URL` (where the cancel link in the email points) and `BOOKING_EMAIL_FROM` (the
+  sender guests see, kept apart from `EMAIL_FROM`, which the CMS uses for its own mail).
+- Website `CMS` service binding (to the `living-legacy-cms` Worker) and the `BOOKING_LIMITER` rate
+  limit (5 bookings a minute per visitor).
+
+Deploy the CMS first, since the website's service binding needs it to exist, then the website.
+
+Confirmation emails go out as each booking is made, and the `send-booking-confirmations` job
+retries any that failed every 5 minutes. When HubSpot takes over booking emails, an admin turns off
+"Send booking confirmations from the CMS" on the Apps page so guests do not get two. Turning it back on emails every unsent website booking
+from the last 24 hours (HubSpot may already have emailed them), and the guest list can flag
+bookings made while it was off, so turn it on only if HubSpot is not sending them.
+
 ## Database changes
 
 1. Edit the schema in `packages/db/src/schema/`.

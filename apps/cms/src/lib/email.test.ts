@@ -1,6 +1,6 @@
 import { env } from 'cloudflare:workers';
 import { beforeAll, describe, expect, it } from 'vitest';
-import { layout } from './email';
+import { type BookingConfirmation, bookingConfirmationEmail, layout } from './email';
 
 beforeAll(() => {
   (env as unknown as Record<string, string>).BETTER_AUTH_URL = 'https://cms.example.com/some/path';
@@ -61,5 +61,77 @@ describe('email layout', () => {
 
   it('has no strip without a note', () => {
     expect(layout(base)).not.toContain('border-top:1px solid');
+  });
+});
+
+const confirmation: BookingConfirmation = {
+  firstName: 'Alex',
+  reference: 'LL-7K2M9Q',
+  partySize: 2,
+  title: 'Open day',
+  startsAt: Date.UTC(2027, 0, 20, 23, 0),
+  endsAt: Date.UTC(2027, 0, 21, 1, 0),
+  timeZone: 'Australia/Melbourne',
+  venue: 'The forest gate',
+  manageUrl: 'https://livinglegacy.com.au/events/manage/?ref=LL-7K2M9Q&token=abc',
+  calendarUrl: 'https://cms.example.com/api/tickets/LL-7K2M9Q/calendar',
+  qrUrl: 'https://cms.example.com/api/tickets/LL-7K2M9Q/qr',
+};
+
+describe('booking confirmation email', () => {
+  it('names the event in the subject', () => {
+    expect(bookingConfirmationEmail(confirmation).subject).toBe("You're booked: Open day");
+  });
+
+  it('puts the reference, party, venue and both links in the text', () => {
+    const { text } = bookingConfirmationEmail(confirmation);
+    expect(text).toContain('LL-7K2M9Q');
+    expect(text).toContain('2 people');
+    expect(text).toContain('The forest gate');
+    expect(text).toContain(confirmation.calendarUrl);
+    expect(text).toContain(confirmation.manageUrl);
+  });
+
+  it('says "1 person" for a party of one', () => {
+    const { text } = bookingConfirmationEmail({ ...confirmation, partySize: 1 });
+    expect(text).toContain('1 person');
+    expect(text).not.toContain('1 people');
+  });
+
+  it("shows the time in the event's own zone and names it", () => {
+    const { text } = bookingConfirmationEmail({
+      ...confirmation,
+      timeZone: 'Australia/Perth',
+      startsAt: Date.UTC(2027, 0, 20, 2, 0),
+    });
+    expect(text).toContain('10:00');
+    expect(text).toContain('AWST');
+    expect(text).toContain('Perth time');
+  });
+
+  it('leaves the venue line out when the event has none', () => {
+    const { text } = bookingConfirmationEmail({ ...confirmation, venue: '' });
+    expect(text).not.toContain('Where:');
+  });
+
+  it('shows the ticket code and the button to manage the booking in the html', () => {
+    const { html } = bookingConfirmationEmail(confirmation);
+    expect(html).toMatch(/<img[^>]*src="https:\/\/cms\.example\.com\/api\/tickets\/LL-7K2M9Q\/qr"/);
+    expect(html).toContain('alt="Your ticket code"');
+    expect(html).toContain('See or cancel your booking');
+    expect(html).toContain('token=abc');
+  });
+
+  it('escapes what a guest or an editor typed', () => {
+    const { html } = bookingConfirmationEmail({
+      ...confirmation,
+      firstName: '<b>Al</b>',
+      title: 'Open <day>',
+      venue: 'Gate & <yard>',
+    });
+    expect(html).not.toContain('<b>Al</b>');
+    expect(html).toContain('&lt;b&gt;Al&lt;/b&gt;');
+    expect(html).toContain('Open &lt;day&gt;');
+    expect(html).toContain('Gate &amp; &lt;yard&gt;');
   });
 });

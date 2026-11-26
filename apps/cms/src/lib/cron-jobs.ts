@@ -30,6 +30,11 @@ export const cronJobs = [
   { key: 'publish-posts', schedule: 'every-5-minutes', title: 'Publish scheduled posts' },
   { key: 'publish-events', schedule: 'every-5-minutes', title: 'Publish scheduled events' },
   { key: 'sync-bookings', schedule: 'every-5-minutes', title: 'Send bookings to HubSpot' },
+  {
+    key: 'send-booking-confirmations',
+    schedule: 'every-5-minutes',
+    title: 'Resend booking confirmations',
+  },
   { key: 'refresh-analytics', schedule: 'every-5-minutes', title: 'Refresh website traffic' },
   { key: 'sweep-media', schedule: 'daily', title: 'Delete unused files' },
   { key: 'purge-media-trash', schedule: 'daily', title: 'Empty old files from the media trash' },

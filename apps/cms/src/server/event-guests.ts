@@ -1,5 +1,4 @@
 import {
-  type BookableEvent,
   bookingProblem,
   guestInputSchema,
   normaliseEmail,
@@ -13,8 +12,10 @@ import { and, asc, eq } from 'drizzle-orm';
 import { z } from 'zod';
 import { getDb } from '@/lib/db';
 import { requirePermission } from '@/lib/session';
+import { readSiteSettings } from '@/lib/site-settings';
 import { logActivity } from './activity-log';
 import {
+  bookable,
   insertBooking,
   insertWaitlisted,
   promoteBooking,
@@ -26,12 +27,15 @@ export const getGuests = createServerFn({ method: 'GET' })
   .middleware([requirePermission('events:manage')])
   .validator(z.object({ eventId: z.string() }))
   .handler(async ({ data }) => {
-    const rows = await getDb()
-      .select()
-      .from(eventBookings)
-      .where(eq(eventBookings.eventId, data.eventId))
-      .orderBy(asc(eventBookings.firstName), asc(eventBookings.lastName));
-    return rows.map((r) => ({
+    const [rows, settings] = await Promise.all([
+      getDb()
+        .select()
+        .from(eventBookings)
+        .where(eq(eventBookings.eventId, data.eventId))
+        .orderBy(asc(eventBookings.firstName), asc(eventBookings.lastName)),
+      readSiteSettings(),
+    ]);
+    const guests = rows.map((r) => ({
       id: r.id,
       reference: r.reference,
       firstName: r.firstName,
@@ -43,22 +47,14 @@ export const getGuests = createServerFn({ method: 'GET' })
       status: r.status,
       source: r.source,
       checkedInAt: r.checkedInAt?.getTime() ?? null,
+      confirmationSentAt: r.confirmationSentAt?.getTime() ?? null,
       createdAt: r.createdAt.getTime(),
     }));
+    // Only the one setting leaves the server: the list flags unsent confirmations while the CMS sends them.
+    return { guests, sendsConfirmations: settings.sendBookingConfirmations };
   });
 
-export type Guest = Awaited<ReturnType<typeof getGuests>>[number];
-
-/** An event as the booking rules see it. */
-const bookable = (event: typeof events.$inferSelect): BookableEvent => ({
-  status: event.status,
-  startsAt: event.startsAt.getTime(),
-  endsAt: event.endsAt.getTime(),
-  bookingsOpenAt: event.bookingsOpenAt?.getTime() ?? null,
-  bookingsCloseAt: event.bookingsCloseAt?.getTime() ?? null,
-  capacity: event.capacity,
-  maxPartySize: event.maxPartySize,
-});
+export type Guest = Awaited<ReturnType<typeof getGuests>>['guests'][number];
 
 /**
  * Books a guest in, or, with `waitlist`, puts them on the waiting list because the event has no

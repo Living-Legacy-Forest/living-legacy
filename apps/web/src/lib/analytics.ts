@@ -23,7 +23,7 @@ export interface PageContext {
 }
 
 /** Which form was sent, for the `form_type` parameter. */
-export type FormType = 'contact' | 'partner' | 'interest' | 'tour' | 'brochure';
+export type FormType = 'contact' | 'partner' | 'interest' | 'tour' | 'brochure' | 'event_rsvp';
 
 type EventParams = Record<string, string | number | undefined>;
 

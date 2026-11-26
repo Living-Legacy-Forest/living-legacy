@@ -92,6 +92,8 @@ export const eventBookings = sqliteTable(
     crmSyncedAt: integer('crm_synced_at', { mode: 'timestamp_ms' }),
     crmContactId: text('crm_contact_id'),
     crmError: text('crm_error'),
+    /** When the website booking's confirmation email was sent; null means not sent (yet). */
+    confirmationSentAt: integer('confirmation_sent_at', { mode: 'timestamp_ms' }),
     createdAt: integer('created_at', { mode: 'timestamp_ms' }).notNull(),
     cancelledAt: integer('cancelled_at', { mode: 'timestamp_ms' }),
   },

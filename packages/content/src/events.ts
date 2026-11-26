@@ -22,6 +22,17 @@ export const DEFAULT_MAX_PARTY_SIZE = 6;
 export const STAFF_MAX_PARTY_SIZE = 50;
 /** Bookings are personal details; they go this long after the event ends. */
 export const BOOKING_RETENTION_DAYS = 365;
+/**
+ * Addresses under /events/ that belong to a page of their own, so an event cannot take them: the
+ * website's manage page would shadow it, and the event would never open.
+ */
+const RESERVED_EVENT_SLUGS = new Set(['manage']);
+
+/** Why an event cannot use this address (already a slug), or null if it can. */
+export function eventSlugProblem(slug: string): string | null {
+  return RESERVED_EVENT_SLUGS.has(slug) ? 'That address is reserved. Choose another.' : null;
+}
+
 /** Photos on one event, its cover included. */
 export const EVENT_PHOTO_LIMIT = 20;
 
@@ -271,6 +282,18 @@ export const guestInputSchema = z.object({
   note: optionalText(500),
 });
 export type GuestInput = z.infer<typeof guestInputSchema>;
+
+/** A booking made on the website: the guest's email is how they get their link, so it is required. */
+export const publicBookingSchema = guestInputSchema.extend({
+  email: z
+    .string(EMAIL_MESSAGE)
+    .trim()
+    .max(200)
+    .transform((v) => v.toLowerCase())
+    .refine(isEmail, EMAIL_MESSAGE),
+  consent: z.literal(true, 'Tick the box to agree to the privacy policy.'),
+});
+export type PublicBookingInput = z.infer<typeof publicBookingSchema>;
 
 /** Cancelling or deleting a repeating event: this date only, or this and its upcoming dates. */
 export const seriesScopeSchema = z.enum(['one', 'following']).default('one');

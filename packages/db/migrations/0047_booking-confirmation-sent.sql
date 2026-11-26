@@ -1,0 +1,1 @@
+ALTER TABLE `event_bookings` ADD `confirmation_sent_at` integer;

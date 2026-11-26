@@ -1,0 +1,100 @@
+---
+// Upcoming events people can book. Read fresh on every visit, so places left is true; the
+// middleware never caches /events/ pages. A repeating event is one card, at its next bookable date.
+import BaseLayout from '@/layouts/BaseLayout.astro';
+import { Badge } from '@/components/ui/badge';
+import {
+  formatEventWhen,
+  getUpcomingEvents,
+  pickDate,
+  placesLeftText,
+  seriesBadge,
+} from '@/lib/events';
+import { CARD_SIZES } from '@/lib/media-srcset';
+
+export const prerender = false;
+
+const upcoming = await getUpcomingEvents();
+
+// One card per web address: its next bookable date, and how many more dates it has. The badge
+// is for the whole series, so one cancelled date does not mark the rest.
+const cards = [...Map.groupBy(upcoming, (event) => event.slug).values()].map((dates) => ({
+  event: pickDate(dates),
+  badge: seriesBadge(dates),
+  more: dates.length - 1,
+}));
+
+const title = 'Events';
+const description = 'See what is on at Living Legacy and book your place online.';
+---
+
+<BaseLayout title={title} description={description}>
+  <div class="mx-auto max-w-6xl px-6 py-20 sm:px-10 lg:py-28">
+    <header class="rise-children flex max-w-2xl flex-col gap-4">
+      <p class="eyebrow">Events</p>
+      <h1 class="display-title">What is on</h1>
+      <p class="lead">Choose an event to see the details and book your place.</p>
+    </header>
+
+    {
+      cards.length === 0 ? (
+        <p class="lead mt-14">
+          There are no events to book right now. Call us if you would like to visit.
+        </p>
+      ) : (
+        <ul class="mt-14 grid gap-8 sm:grid-cols-2 lg:grid-cols-3">
+          {cards.map(({ event, badge, more }) => {
+            const places = placesLeftText(event.placesLeft);
+            return (
+              <li class="bg-card relative flex flex-col overflow-hidden rounded-xl">
+                {event.hero && (
+                  <img
+                    src={event.hero.cardUrl ?? event.hero.url}
+                    srcset={event.hero.srcset}
+                    sizes={event.hero.srcset ? CARD_SIZES : undefined}
+                    alt={event.hero.alt}
+                    style={
+                      event.hero.position ? `object-position: ${event.hero.position}` : undefined
+                    }
+                    width={event.hero.width ?? 1600}
+                    height={event.hero.height ?? 900}
+                    loading="lazy"
+                    class="aspect-[16/9] w-full object-cover"
+                  />
+                )}
+                <div class="flex flex-1 flex-col gap-3 p-6">
+                  <div class="flex flex-wrap items-center gap-2">
+                    {badge && (
+                      <Badge variant={badge === 'Cancelled' ? 'destructive' : 'secondary'}>
+                        {badge}
+                      </Badge>
+                    )}
+                  </div>
+                  <h2 class="card-title">
+                    <a
+                      href={`/events/${event.slug}/`}
+                      class="hover:text-moss-deep transition-colors duration-200 after:absolute after:inset-0"
+                    >
+                      {event.title}
+                    </a>
+                  </h2>
+                  <p class="card-body">
+                    {formatEventWhen(event.startsAt, event.endsAt, event.timeZone)}
+                  </p>
+                  {event.venue && <p class="card-body">{event.venue}</p>}
+                  {more > 0 && (
+                    <p class="card-body">{more === 1 ? '1 more date' : `${more} more dates`}</p>
+                  )}
+                  {event.status !== 'cancelled' &&
+                    event.state !== 'full' &&
+                    places &&
+                    event.placesLeft !== 0 && <p class="text-moss-deep text-base">{places}</p>}
+                </div>
+              </li>
+            );
+          })}
+        </ul>
+      )
+    }
+  </div>
+</BaseLayout>

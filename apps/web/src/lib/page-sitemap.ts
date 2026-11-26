@@ -73,8 +73,8 @@ export async function getPageSitemapEntries(): Promise<SitemapEntry[]> {
         )
       : [],
     getLegalSitemapEntries(),
-    // A repeating event's dates share one page, so each address is listed once (sitemapXml
-    // drops the repeats). Cancelled and finished events are not worth a visit from search.
+    // A repeating event's dates share one page, so GROUP BY slug lists each address once.
+    // Cancelled and finished events are not worth a visit from search.
     rows<EventRow>(
       `SELECT slug, MAX(updated_at) AS lastmod FROM events
         WHERE status = 'published' AND ends_at > ${Date.now()} GROUP BY slug ORDER BY slug`,

@@ -234,6 +234,8 @@ export function EventBookingForm({
         <Field orientation="horizontal" className="items-start gap-3 sm:col-span-2">
           <Checkbox
             id="event-consent"
+            required
+            aria-required
             checked={consent}
             onCheckedChange={(checked) => setConsent(checked === true)}
           />

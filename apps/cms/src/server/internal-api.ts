@@ -6,6 +6,7 @@ import {
 } from '@ll/content';
 import { createDb } from '@ll/db';
 import * as Sentry from '@sentry/cloudflare';
+import { describeFailure } from '@/lib/describe-failure';
 import { confirmBooking } from './booking-confirmations';
 import { bookFromWebsite, cancelFromWebsite, viewBooking } from './public-bookings';
 
@@ -71,18 +72,6 @@ export async function internalResponse(
     Sentry.captureException(error, { tags: { route } });
     return fail(500, 'Something went wrong on our side. Please try again in a moment.');
   }
-}
-
-/**
- * What is safe to log about a failure. A failed Drizzle query throws a `DrizzleQueryError` whose
- * message is the SQL plus every bound value (the guest's name, email, phone and note), so its
- * message is never logged: the error's name and the database's own reason are.
- */
-function describeFailure(error: unknown): string {
-  if (!(error instanceof Error)) return 'unknown error';
-  const cause = error.cause instanceof Error ? error.cause.message : undefined;
-  if (error.name === 'DrizzleQueryError') return `${error.name}: ${cause ?? 'no reason given'}`;
-  return cause ? `${error.message} (${cause})` : error.message;
 }
 
 async function dispatch(

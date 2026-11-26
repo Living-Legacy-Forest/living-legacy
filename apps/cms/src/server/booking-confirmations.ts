@@ -3,6 +3,7 @@ import type { Db } from '@ll/db';
 import { eventBookings, events } from '@ll/db/schema';
 import { and, eq, gte, isNotNull, isNull, lt } from 'drizzle-orm';
 import { env } from 'cloudflare:workers';
+import { describeFailure } from '@/lib/describe-failure';
 import { type BookingConfirmation, cmsOrigin, sendBookingConfirmationEmail } from '@/lib/email';
 import { readSiteSettings } from '@/lib/site-settings';
 
@@ -95,7 +96,7 @@ export async function confirmBooking(
       .where(and(eq(eventBookings.id, booking.id), isNull(eventBookings.confirmationSentAt)));
     return 'sent';
   } catch (error) {
-    console.error(`[booking-confirmation] ${bookingId} not sent: ${(error as Error).message}`);
+    console.error(`[booking-confirmation] ${bookingId} not sent: ${describeFailure(error)}`);
     return 'failed';
   }
 }

@@ -1,6 +1,6 @@
 import type { PublicBookingInput } from '@ll/content';
 import { eventBookings, events } from '@ll/db/schema';
-import { eq } from 'drizzle-orm';
+import { DrizzleQueryError, eq } from 'drizzle-orm';
 import { env } from 'cloudflare:workers';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { testDb } from '../../test/fixtures';
@@ -250,14 +250,13 @@ describe('unexpected errors', () => {
     });
   });
 
-  it('logs nothing the guest typed when a query fails', async () => {
-    // drizzle-orm's DrizzleQueryError carries every bound value in its message.
+  it('logs nothing the guest typed when a real database query fails', async () => {
     const typed = ['Sam', 'Tester', 'sam@example.test', '0412345678', 'uses a wheelchair'];
-    const failure = Object.assign(
-      new Error(`Failed query: insert into "bookings" values (?)\nparams: ${typed.join(',')}`, {
-        cause: new Error('D1_ERROR: database is locked'),
-      }),
-      { name: 'DrizzleQueryError' }
+    // The real error drizzle-orm throws: its name stays "Error" and its message holds the values.
+    const failure = new DrizzleQueryError(
+      'insert into event_bookings (first_name, last_name, email, phone, note) values (?, ?, ?, ?, ?)',
+      typed,
+      new Error('D1_ERROR: locked')
     );
     const broken = Object.create(env, {
       DB: {
@@ -280,10 +279,15 @@ describe('unexpected errors', () => {
         ctx
       );
       expect(response.status).toBe(500);
+      expect(await response.json()).toEqual({
+        ok: false,
+        message: 'Something went wrong on our side. Please try again in a moment.',
+      });
       const output = JSON.stringify(logged.mock.calls);
       for (const value of typed) expect(output).not.toContain(value);
-      expect(output).toContain('DrizzleQueryError');
-      expect(output).toContain('database is locked');
+      expect(output).not.toContain('params:');
+      expect(output).not.toContain('Failed query');
+      expect(output).toContain('D1_ERROR: locked');
     } finally {
       logged.mockRestore();
     }

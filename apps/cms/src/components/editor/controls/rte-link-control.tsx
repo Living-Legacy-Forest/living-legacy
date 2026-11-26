@@ -2,12 +2,12 @@ import { useEditorState } from '@tiptap/react';
 import * as React from 'react';
 import { useCallback, useState } from 'react';
 
-import { useRichTextEditorContext } from '../rte-context';
-import { Button } from '../ui/button';
-import { Input } from '../ui/input';
-import { Popover, PopoverContent, PopoverTrigger } from '../ui/popover';
-import { Toggle } from '../ui/toggle';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { isEnterKey } from '@/lib/keyboard';
+import { useRichTextEditorContext } from '../rte-context';
+import { Toggle } from '../ui/toggle';
 
 export const LinkControl = () => {
   const { editor, labels, icons } = useRichTextEditorContext();
@@ -75,7 +75,12 @@ export const LinkControl = () => {
       >
         {icons.linkControlIcon}
       </PopoverTrigger>
-      <PopoverContent className="w-72 p-3">
+      {/*
+        The CMS's own popover, input and button, so it looks like the rest of the app (rounded, a
+        border-only focus). Opened a little further down: the toolbar's padding and border sit
+        between the button and its edge, and the popover must clear that edge, not cover it.
+      */}
+      <PopoverContent className="w-72 p-3" sideOffset={12}>
         <div className="rte-link-editor">
           <Input
             type="url"
@@ -84,14 +89,9 @@ export const LinkControl = () => {
             value={url}
             onChange={(e) => setUrl(e.target.value)}
             onKeyDown={handleKeyDown}
-            className="rte-link-editor-input h-8 text-sm"
+            className="rte-link-editor-input"
           />
-          <Button
-            size="sm"
-            variant="default"
-            onClick={handleSave}
-            className="rte-link-editor-save h-8"
-          >
+          <Button size="sm" onClick={handleSave}>
             {labels.linkEditorSave}
           </Button>
         </div>

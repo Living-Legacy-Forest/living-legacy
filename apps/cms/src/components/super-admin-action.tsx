@@ -26,6 +26,7 @@ export function SuperAdminAction({
   pending,
   onConfirm,
   className,
+  icon,
 }: {
   label: string;
   title: string;
@@ -34,21 +35,33 @@ export function SuperAdminAction({
   pending: boolean;
   onConfirm: () => void;
   className?: string;
+  /** Shows just this icon, with `label` as its accessible name, for a button repeated on every row. */
+  icon?: ReactNode;
 }) {
   return (
     <AlertDialog>
       <AlertDialogTrigger
         render={
-          <Button
-            variant="outline"
-            size="sm"
-            disabled={pending}
-            className={`text-destructive ${className ?? ''}`}
-          />
+          icon ? (
+            <Button
+              variant="ghost"
+              size="icon-sm"
+              aria-label={label}
+              disabled={pending}
+              className={`text-muted-foreground hover:text-destructive touch:after:-inset-x-1 ${className ?? ''}`}
+            />
+          ) : (
+            <Button
+              variant="outline"
+              size="sm"
+              disabled={pending}
+              className={`text-destructive ${className ?? ''}`}
+            />
+          )
         }
       >
-        {pending && <Spinner data-icon="inline-start" />}
-        {label}
+        {pending && <Spinner data-icon={icon ? undefined : 'inline-start'} />}
+        {icon ?? label}
       </AlertDialogTrigger>
       <AlertDialogContent>
         <AlertDialogHeader>

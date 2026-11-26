@@ -99,7 +99,9 @@ Deploy the CMS first, since the website's service binding needs it to exist, the
 
 Confirmation emails go out as each booking is made, and the `send-booking-confirmations` job
 retries any that failed every 5 minutes. When HubSpot takes over booking emails, an admin turns off
-"Send booking confirmations from the CMS" on the Apps page so guests do not get two.
+"Send booking confirmations from the CMS" on the Apps page so guests do not get two. Turning it back on emails every unsent website booking
+from the last 24 hours (HubSpot may already have emailed them), and the guest list can flag
+bookings made while it was off, so turn it on only if HubSpot is not sending them.
 
 ## Database changes
 

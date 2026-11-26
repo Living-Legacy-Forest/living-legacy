@@ -63,6 +63,11 @@ export const whatsNew: WhatsNewEntry[] = [
         body: 'People can now book events on the website. They get a confirmation email with a link to cancel, and their booking shows in the guest list.',
         link: { label: 'Open Events', to: '/events' },
       },
+      {
+        title: 'A switch for booking confirmations',
+        body: 'On the Apps page, admins can turn off the booking confirmation emails the CMS sends, for when HubSpot sends them instead. Bookings made while it is off show "No confirmation sent" in the guest list.',
+        link: { label: 'Open Apps', to: '/integrations/apps' },
+      },
     ],
   },
   {

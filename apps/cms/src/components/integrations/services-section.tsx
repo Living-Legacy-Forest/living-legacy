@@ -204,7 +204,10 @@ function BookingConfirmationsSwitch({ saved }: { saved: boolean }) {
           Send booking confirmations from the CMS
         </Label>
         <p className="text-muted-foreground text-xs">
-          Turn this off once HubSpot sends booking emails, so guests don't get two.
+          Turn this off once HubSpot sends booking emails, so guests don't get two. Turning it back
+          on emails every unsent website booking from the last 24 hours, which HubSpot may already
+          have emailed, so only do that if HubSpot is not sending them. The guest list flags
+          bookings made while it was off.
         </p>
       </div>
       <div className="mt-0.5 flex shrink-0 items-center gap-2">

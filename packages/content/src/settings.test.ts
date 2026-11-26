@@ -11,6 +11,7 @@ import {
   parseEmailDomains,
   parseSiteSettings,
   telHref,
+  iconSchemeScript,
   siteIconProblem,
 } from './settings';
 
@@ -140,7 +141,32 @@ describe('content targets', () => {
   });
 });
 
+describe('iconSchemeScript', () => {
+  it('adds its own icon link, dark in dark mode, and follows the browser', () => {
+    const script = iconSchemeScript('/api/media/light?w=640', '/api/media/abc?w=640');
+    expect(script).toContain("createElement('link')");
+    expect(script).toContain('"/api/media/light?w=640"');
+    expect(script).toContain('"/api/media/abc?w=640"');
+    expect(script).toContain('prefers-color-scheme: dark');
+    expect(script).toContain("addEventListener('change'");
+  });
+
+  it('cannot be ended early by the address it carries', () => {
+    expect(iconSchemeScript('/a</script>', '/x</script><b>')).not.toContain('</script>');
+  });
+
+  it('is valid JavaScript', () => {
+    expect(() => new Function(iconSchemeScript('/l', '/api/media/abc?w=640'))).not.toThrow();
+  });
+});
+
 describe('siteIconProblem', () => {
+  it('names the dark mode icon when asked', () => {
+    expect(siteIconProblem({ width: 800, height: 600 }, 'dark mode icon')).toBe(
+      'The dark mode icon must be square. This image is 800 by 600 pixels.'
+    );
+  });
+
   it('accepts a square image of at least 512 pixels', () => {
     expect(siteIconProblem({ width: 512, height: 512 })).toBeNull();
     expect(siteIconProblem({ width: 1024, height: 1024 })).toBeNull();

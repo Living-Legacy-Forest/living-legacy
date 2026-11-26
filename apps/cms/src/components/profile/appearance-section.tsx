@@ -1,4 +1,7 @@
+import { DEFAULT_ICON_STROKE } from '@ll/content';
+import { BellIcon, ImageIcon, SearchIcon, UserIcon } from '@/components/icons';
 import { SettingsRow, SettingsSection } from '@/components/settings/settings-section';
+import { Button } from '@/components/ui/button';
 import {
   Select,
   SelectContent,
@@ -6,6 +9,8 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
+import { Slider } from '@/components/ui/slider';
+import { useAppearanceDraft } from '@/lib/use-appearance-draft';
 import { useThemeChoice } from '@/lib/use-theme-choice';
 import type { Theme } from '@/server/settings';
 
@@ -15,12 +20,59 @@ const THEME_LABELS: Record<Theme, string> = {
   dark: 'Dark',
 };
 
+const first = (value: number | readonly number[]) => (Array.isArray(value) ? value[0] : value);
+
 /**
- * This person's own light or dark choice. "Site setting" follows Settings,
+ * A slider that changes the page as it moves and saves when let go, with its percentage beside
+ * it and a Reset that goes back to following the default (`null`).
+ */
+function AppearanceSlider({
+  id,
+  value,
+  isDefault,
+  onChange,
+  onReset,
+}: {
+  id: string;
+  value: number;
+  isDefault: boolean;
+  onChange: (value: number, commit: boolean) => void;
+  onReset: () => void;
+}) {
+  return (
+    <div className="flex items-center gap-3">
+      <Slider
+        id={id}
+        className="w-40"
+        min={0}
+        max={100}
+        step={5}
+        value={value}
+        onValueChange={(next) => onChange(first(next), false)}
+        onValueCommitted={(next) => onChange(first(next), true)}
+      />
+      <span className="text-muted-foreground w-9 text-right text-xs tabular-nums">{value}%</span>
+      <Button
+        type="button"
+        variant="ghost"
+        size="sm"
+        className={isDefault ? 'invisible' : undefined}
+        tabIndex={isDefault ? -1 : undefined}
+        onClick={onReset}
+      >
+        Reset
+      </Button>
+    </div>
+  );
+}
+
+/**
+ * This person's own light or dark choice, text contrast and icon stroke. "Site setting" follows Settings,
  * Language & appearance. Saved as soon as it is picked.
  */
 export function AppearanceSection() {
   const { value, siteTheme, choose } = useThemeChoice();
+  const { draft, change } = useAppearanceDraft();
 
   const items = [
     { value: 'site', label: `Site setting (${THEME_LABELS[siteTheme].toLowerCase()})` },
@@ -53,6 +105,44 @@ export function AppearanceSection() {
             ))}
           </SelectContent>
         </Select>
+      </SettingsRow>
+
+      <SettingsRow
+        id="profile-contrast"
+        title="Contrast"
+        description="Stronger text, hints and lines. A device set to more contrast starts it partway up."
+        below
+      >
+        <AppearanceSlider
+          id="profile-contrast"
+          value={Math.round((draft.contrast ?? 0) * 100)}
+          isDefault={draft.contrast === null}
+          onChange={(next, commit) => change({ ...draft, contrast: next / 100 }, commit)}
+          onReset={() => change({ ...draft, contrast: null }, true)}
+        />
+      </SettingsRow>
+
+      <SettingsRow
+        id="profile-icon-stroke"
+        title="Icon stroke"
+        description="How thin or bold icons are drawn."
+        suffix={
+          <span aria-hidden className="text-muted-foreground flex items-center gap-2">
+            <SearchIcon className="size-4" />
+            <BellIcon className="size-4" />
+            <ImageIcon className="size-4" />
+            <UserIcon className="size-4" />
+          </span>
+        }
+        below
+      >
+        <AppearanceSlider
+          id="profile-icon-stroke"
+          value={Math.round((draft.iconStroke ?? DEFAULT_ICON_STROKE) * 100)}
+          isDefault={draft.iconStroke === null}
+          onChange={(next, commit) => change({ ...draft, iconStroke: next / 100 }, commit)}
+          onReset={() => change({ ...draft, iconStroke: null }, true)}
+        />
       </SettingsRow>
     </SettingsSection>
   );

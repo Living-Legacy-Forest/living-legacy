@@ -49,8 +49,8 @@ function CommandDialog({
         <DialogDescription>{description}</DialogDescription>
       </DialogHeader>
       <DialogContent
-        // Opened from the keyboard many times a day, so it appears and goes at once (styles.css).
-        data-instant=""
+        // Its own short motion, instead of the dialog's stock zoom (styles.css).
+        data-command=""
         className={cn('top-[12vh] translate-y-0 overflow-hidden rounded-xl! p-0', className)}
         showCloseButton={showCloseButton}
       >
@@ -62,8 +62,30 @@ function CommandDialog({
 
 function CommandInput({
   className,
+  bare = false,
   ...props
-}: React.ComponentProps<typeof CommandPrimitive.Input>) {
+}: React.ComponentProps<typeof CommandPrimitive.Input> & {
+  /**
+   * No box: the field is the top of the surface it sits in, over a hairline, as in a search
+   * dialog. The default is the small boxed field a popover's list has.
+   */
+  bare?: boolean;
+}) {
+  if (bare) {
+    return (
+      <div data-slot="command-input-wrapper" className="flex h-12 items-center gap-3 border-b px-4">
+        <SearchIcon aria-hidden className="text-muted-foreground size-4 shrink-0" />
+        <CommandPrimitive.Input
+          data-slot="command-input"
+          className={cn(
+            'placeholder:text-muted-foreground h-full min-w-0 flex-1 bg-transparent text-base outline-hidden disabled:cursor-not-allowed disabled:opacity-50 md:text-[0.9375rem]',
+            className
+          )}
+          {...props}
+        />
+      </div>
+    );
+  }
   return (
     <div data-slot="command-input-wrapper" className="p-1 pb-0">
       <InputGroup className="border-input/30 bg-input/30 h-8! rounded-lg! shadow-none! *:data-[slot=input-group-addon]:pl-2!">

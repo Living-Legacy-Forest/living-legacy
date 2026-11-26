@@ -68,6 +68,8 @@ export const SITE_SETTINGS_DEFAULTS = {
   seoImageUrl: '',
   /** Media library image for browser tabs and home screens; '' uses the built-in icons. */
   siteIconMediaId: '',
+  /** Shown instead of the site icon when the browser is in dark mode; '' uses the site icon. */
+  siteIconDarkMediaId: '',
   googleVerification: '',
   bingVerification: '',
   /** Ask search engines to leave the whole website out of their results. */
@@ -119,17 +121,35 @@ export type SiteSettings = typeof SITE_SETTINGS_DEFAULTS;
 /** The smallest side a site icon may have: phones ask for up to 512 pixels. */
 export const SITE_ICON_MIN = 512;
 
-/** Why an image cannot be the site icon, or null when it can. */
-export function siteIconProblem(size: { width: number | null; height: number | null }) {
+/** Why an image cannot be the site icon (or `label`, for the dark one), or null when it can. */
+export function siteIconProblem(
+  size: { width: number | null; height: number | null },
+  label = 'site icon'
+) {
   const { width, height } = size;
   if (!width || !height) return 'That image could not be measured. Upload it again as a PNG.';
   if (width !== height) {
-    return `The site icon must be square. This image is ${width} by ${height} pixels.`;
+    return `The ${label} must be square. This image is ${width} by ${height} pixels.`;
   }
   if (width < SITE_ICON_MIN) {
-    return `The site icon must be at least ${SITE_ICON_MIN} by ${SITE_ICON_MIN} pixels. This image is ${width} by ${height}.`;
+    return `The ${label} must be at least ${SITE_ICON_MIN} by ${SITE_ICON_MIN} pixels. This image is ${width} by ${height}.`;
   }
   return null;
+}
+
+/**
+ * A few lines that add the page's icon link themselves, showing `lightHref` and, while the
+ * browser is in dark mode, `darkHref`, and following the browser if it changes. The link is the
+ * script's own, not part of the markup: a framework that renders the page (React hoists and
+ * re-creates icon links when it hydrates) would otherwise add a second link with the light icon
+ * after this one was changed, and the browser would keep showing that. A `media` attribute on
+ * two icon links would do this with no script, but browsers disagree on whether they honour it.
+ * Pair it with a `<noscript>` holding the light icon.
+ */
+export function iconSchemeScript(lightHref: string, darkHref: string): string {
+  // JSON.stringify keeps the quotes right; `<` is escaped so a value can never end the tag.
+  const quote = (value: string) => JSON.stringify(value).replace(/</g, '\\u003c');
+  return `(function(){try{var light=${quote(lightHref)},dark=${quote(darkHref)},m=matchMedia('(prefers-color-scheme: dark)'),l=document.createElement('link');l.rel='icon';document.head.appendChild(l);function s(){l.href=m.matches?dark:light}s();m.addEventListener('change',s)}catch(e){}})();`;
 }
 
 export function parseSiteSettings(data: unknown): SiteSettings {

@@ -23,7 +23,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
-import { ArrowRight, ChevronDownIcon } from '@/components/icons';
+import { ArrowRight, ChevronDownIcon, MoonIcon, SunIcon } from '@/components/icons';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -368,6 +368,8 @@ export function SettingsPage({
                 mediaId={values.siteIconMediaId || null}
                 siteTitle={values.siteTitle}
                 onChange={(id) => patch({ siteIconMediaId: id ?? '' })}
+                darkMediaId={values.siteIconDarkMediaId || null}
+                onDarkChange={(id) => patch({ siteIconDarkMediaId: id ?? '' })}
               />
               <SettingsRow
                 id="settings-email"
@@ -1223,71 +1225,162 @@ function Counter({ value, limit }: { value: string; limit: number }) {
 
 /** A small preview of the share image, at the 1.91:1 shape link previews use. */
 /**
- * The icon for browser tabs and home screens. Shown on its own and in a browser
- * tab, at the size people actually see it, with the built-in icon until one is
- * chosen.
+ * The icon for browser tabs and home screens, one upload for light mode and one for dark mode,
+ * each shown on a tab in its own colours, at the size people actually see it. Dark is optional:
+ * without it the light icon is used in both. Until a light icon is chosen the built-in one shows.
  */
 function SiteIconRow({
   mediaId,
   siteTitle,
   onChange,
+  darkMediaId,
+  onDarkChange,
 }: {
   mediaId: string | null;
   siteTitle: string;
   onChange: (mediaId: string | null) => void;
+  darkMediaId: string | null;
+  onDarkChange: (mediaId: string | null) => void;
 }) {
-  const { item, update } = useMediaItem(mediaId);
-  const [picking, setPicking] = useState(false);
-  const src = item ? `${item.url}?w=640` : '/icon-192.png';
-  // Saving checks this too; saying so on picking saves a round trip.
-  const problem = item ? siteIconProblem(item) : null;
+  const light = useMediaItem(mediaId);
+  const lightSrc = light.item ? `${light.item.url}?w=640` : '/icon-192.png';
 
   return (
     <SettingsRow
       id="settings-site-icon"
       title="Site icon"
-      description="Shown in browser tabs, bookmarks and on phone home screens, for the website and the CMS. Use a square image at least 512 by 512 pixels; PNG works best."
+      description="Shown in browser tabs, bookmarks and on phone home screens, for the website and the CMS. Add one for light mode and, if you like, a different one for dark mode. Each should be a square image at least 512 by 512 pixels; PNG works best."
       stacked
     >
-      <div className="bg-muted/50 flex max-w-lg items-center gap-5 rounded-xl border p-4 max-sm:flex-col max-sm:items-stretch">
-        {/* The icon as a phone's home screen shows it. */}
-        <img
-          src={src}
-          alt=""
-          className="size-16 shrink-0 rounded-[1.1rem] object-cover shadow-md ring-1 ring-black/10 max-sm:self-center"
+      <div className="grid max-w-2xl gap-3 sm:grid-cols-2">
+        <SiteIconPanel
+          mode="light"
+          mediaId={mediaId}
+          item={light.item}
+          update={light.update}
+          fallbackSrc="/icon-192.png"
+          emptyNote="Using the built-in icon."
+          siteTitle={siteTitle}
+          onChange={onChange}
+          pickerId="settings-site-icon"
         />
-        {/* The icon as a browser tab shows it, in a desktop window's tab bar. */}
-        <div
-          aria-hidden
-          className="min-w-0 flex-1 overflow-hidden rounded-xl bg-[#e4e4e8] shadow-md ring-1 ring-black/10 dark:bg-[#1f1f22] dark:ring-black/20"
-        >
-          <div className="flex h-11 items-center gap-2.5 px-3">
-            <span className="flex shrink-0 gap-1.5">
-              <span className="size-3 rounded-full bg-[#ff5f57]" />
-              <span className="size-3 rounded-full bg-[#febc2e]" />
-              <span className="size-3 rounded-full bg-[#28c840]" />
-            </span>
-            <span className="flex size-6 shrink-0 items-center justify-center rounded-md bg-black/[0.07] text-neutral-600 dark:bg-white/10 dark:text-neutral-300">
-              <ChevronDownIcon className="size-3.5" />
-            </span>
-            <span className="flex h-8 min-w-0 flex-1 items-center gap-2 rounded-lg bg-white px-2.5 text-xs text-neutral-900 shadow-xs dark:bg-white/[0.09] dark:text-neutral-100 dark:shadow-none">
-              <img src={src} alt="" className="size-4 shrink-0 rounded-[3px] object-cover" />
-              <span className="truncate">{siteTitle || 'Site title'}</span>
-              <span className="ml-auto pl-2 text-sm leading-none text-neutral-400 dark:text-neutral-400">
-                ×
-              </span>
-            </span>
-          </div>
-          {/* A hint of the toolbar under the tabs, so it reads as a window. */}
-          <div className="flex h-7 items-center border-t border-black/5 bg-[#f4f4f6] px-3 dark:border-white/5 dark:bg-[#2a2a2e]">
-            <span className="h-3 w-2/3 rounded-full bg-black/[0.07] dark:bg-white/[0.07]" />
-          </div>
-        </div>
+        <SiteIconPanel
+          mode="dark"
+          mediaId={darkMediaId}
+          fallbackSrc={lightSrc}
+          emptyNote="Using the light mode icon."
+          siteTitle={siteTitle}
+          onChange={onDarkChange}
+        />
       </div>
+      <p className="text-muted-foreground max-w-2xl text-xs">
+        Phone home screens always use the light mode icon, and a browser with scripts turned off
+        shows it too.
+      </p>
+    </SettingsRow>
+  );
+}
+
+const TAB_PREVIEW = {
+  light: {
+    window: 'bg-[#e4e4e8] ring-black/10',
+    chrome: 'bg-black/[0.07] text-neutral-600',
+    tab: 'bg-white text-neutral-900 shadow-xs',
+    close: 'text-neutral-400',
+  },
+  dark: {
+    window: 'bg-[#1f1f22] ring-black/20',
+    chrome: 'bg-white/10 text-neutral-300',
+    tab: 'bg-white/[0.09] text-neutral-100',
+    close: 'text-neutral-400',
+  },
+} as const;
+
+/** The icon in a browser tab, drawn in light or dark whatever the CMS's own theme is. */
+function TabPreview({
+  mode,
+  src,
+  siteTitle,
+}: {
+  mode: 'light' | 'dark';
+  src: string;
+  siteTitle: string;
+}) {
+  const look = TAB_PREVIEW[mode];
+  return (
+    <div aria-hidden className={cn('overflow-hidden rounded-xl shadow-md ring-1', look.window)}>
+      <div className="flex h-10 items-center gap-2 px-2.5">
+        <span className="flex shrink-0 gap-1.5">
+          <span className="size-2.5 rounded-full bg-[#ff5f57]" />
+          <span className="size-2.5 rounded-full bg-[#febc2e]" />
+          <span className="size-2.5 rounded-full bg-[#28c840]" />
+        </span>
+        <span
+          className={cn('flex size-5 shrink-0 items-center justify-center rounded-md', look.chrome)}
+        >
+          <ChevronDownIcon className="size-3" />
+        </span>
+        <span
+          className={cn(
+            'flex h-7 min-w-0 flex-1 items-center gap-2 rounded-lg px-2 text-xs',
+            look.tab
+          )}
+        >
+          <img src={src} alt="" className="size-4 shrink-0 rounded-[3px] object-cover" />
+          <span className="truncate">{siteTitle || 'Site title'}</span>
+          <span className={cn('ml-auto pl-1 text-sm leading-none', look.close)}>×</span>
+        </span>
+      </div>
+    </div>
+  );
+}
+
+/** One mode's icon: its tab preview, then Choose, Change and Remove. */
+function SiteIconPanel({
+  mode,
+  mediaId,
+  item: givenItem,
+  update: givenUpdate,
+  fallbackSrc,
+  emptyNote,
+  siteTitle,
+  onChange,
+  pickerId,
+}: {
+  mode: 'light' | 'dark';
+  mediaId: string | null;
+  /** The light panel's media item, which the row already loads to preview the dark one. */
+  item?: ReturnType<typeof useMediaItem>['item'];
+  update?: ReturnType<typeof useMediaItem>['update'];
+  /** What the tab shows while nothing is chosen. */
+  fallbackSrc: string;
+  emptyNote: string;
+  siteTitle: string;
+  onChange: (mediaId: string | null) => void;
+  /** The id on the Choose button, so an error toast can name the field. */
+  pickerId?: string;
+}) {
+  const own = useMediaItem(givenItem === undefined ? mediaId : null);
+  const item = givenItem === undefined ? own.item : givenItem;
+  const update = givenUpdate ?? own.update;
+  const [picking, setPicking] = useState(false);
+  const Icon = mode === 'light' ? SunIcon : MoonIcon;
+  const label = mode === 'light' ? 'light mode icon' : 'dark mode icon';
+  const src = item ? `${item.url}?w=640` : fallbackSrc;
+  // Saving checks this too; saying so on picking saves a round trip.
+  const problem = item ? siteIconProblem(item, label) : null;
+
+  return (
+    <div className="bg-muted/50 space-y-3 rounded-xl border p-3">
+      <p className="text-ui flex items-center gap-1.5 font-medium">
+        <Icon aria-hidden className="text-muted-foreground size-4" />
+        {mode === 'light' ? 'Light mode' : 'Dark mode'}
+      </p>
+      <TabPreview mode={mode} src={src} siteTitle={siteTitle} />
       {problem && <p className="text-destructive text-xs">{problem}</p>}
-      <div className="flex items-center gap-2 pt-1">
+      <div className="flex flex-wrap items-center gap-2">
         <Button
-          id="settings-site-icon"
+          id={pickerId}
           type="button"
           variant="outline"
           size="sm"
@@ -1306,7 +1399,7 @@ function SiteIconRow({
             Remove
           </Button>
         ) : (
-          <span className="text-muted-foreground text-xs">Using the built-in icon.</span>
+          <span className="text-muted-foreground text-xs">{emptyNote}</span>
         )}
       </div>
       <MediaPicker
@@ -1320,7 +1413,7 @@ function SiteIconRow({
           setPicking(false);
         }}
       />
-    </SettingsRow>
+    </div>
   );
 }
 

@@ -77,6 +77,7 @@ import { SaveIcon as AnimatedSaveIcon } from '@animateicons/react/huge/save-icon
 import { SendIcon as AnimatedSendIcon } from '@animateicons/react/huge/send-icon';
 import { UndoIcon as AnimatedUndoIcon } from '@animateicons/react/huge/undo-icon';
 import { cn } from '@/lib/utils';
+import { ICON_STROKE, ICON_STROKE_ATTR } from './icon-stroke';
 import { CheckIcon as DrawnCheckIcon, GalleryHorizontalIcon } from './drawn-icons';
 
 // @hugeicons/core-free-icons doesn't export its icon-data type, so derive it
@@ -89,8 +90,12 @@ export type LucideIcon = React.ComponentType<React.SVGProps<SVGSVGElement>>;
 function make(icon: IconData): LucideIcon {
   return function WrappedIcon({ strokeWidth, ...props }) {
     // Lucide's icons accepted a string|number strokeWidth; Hugeicons wants a number.
-    const width = strokeWidth === undefined ? undefined : Number(strokeWidth);
-    return <HugeiconsIcon icon={icon} strokeWidth={width} {...props} />;
+    if (strokeWidth === undefined) {
+      return (
+        <HugeiconsIcon icon={icon} strokeWidth={ICON_STROKE} {...ICON_STROKE_ATTR} {...props} />
+      );
+    }
+    return <HugeiconsIcon icon={icon} strokeWidth={Number(strokeWidth)} {...props} />;
   };
 }
 
@@ -156,11 +161,11 @@ function animateUi(
       () => setOn(false)
     );
     return (
-      <span ref={anchor} className="contents">
+      <span ref={anchor} className="contents" {...(strokeWidth === undefined && ICON_STROKE_ATTR)}>
         <Icon
           {...(props as object)}
           animate={on}
-          strokeWidth={strokeWidth ?? 1.5}
+          strokeWidth={strokeWidth ?? ICON_STROKE}
           className={cn('shrink-0', className)}
         />
       </span>
@@ -184,15 +189,15 @@ function animated(Icon: AnimatedComponent): LucideIcon {
     // The drawing is a fixed 24px inside a wrapper. When the call site sizes
     // the icon (size-4 and so on), stretch the drawing to fill it; otherwise
     // leave it to the parent's own svg rules, as with the static icons. The
-    // stroke matches Hugeicons' 1.5 default unless one is passed.
+    // stroke is ICON_STROKE (the CSS fallback below repeats it) unless one is passed.
     const sized = /(^|\s)size-/.test(String(className ?? ''));
     return (
-      <span ref={anchor} className="contents">
+      <span ref={anchor} className="contents" {...(strokeWidth === undefined && ICON_STROKE_ATTR)}>
         <Icon
           ref={handle}
           {...(props as React.HTMLAttributes<HTMLDivElement>)}
           className={cn(
-            'shrink-0 [&>svg]:[stroke-width:var(--icon-stroke,1.5)]',
+            'shrink-0 [&>svg]:[stroke-width:var(--icon-stroke,var(--icon-stroke-default,2))]',
             sized && '[&>svg]:size-full!',
             className
           )}

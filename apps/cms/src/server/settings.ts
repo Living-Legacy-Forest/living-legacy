@@ -58,8 +58,10 @@ export const getSiteSettings = createServerFn({ method: 'GET' })
  * picker) win over the site's.
  */
 export const getRootSettings = createServerFn({ method: 'GET' }).handler(async () => {
-  const [{ theme: siteTheme, cmsFont, cmsColour, timeZone, siteIconMediaId }, personal] =
-    await Promise.all([readSiteSettings(), personalChoices()]);
+  const [
+    { theme: siteTheme, cmsFont, cmsColour, timeZone, siteIconMediaId, siteIconDarkMediaId },
+    personal,
+  ] = await Promise.all([readSiteSettings(), personalChoices()]);
   return {
     theme: personal.theme ?? siteTheme,
     siteTheme,
@@ -69,6 +71,7 @@ export const getRootSettings = createServerFn({ method: 'GET' }).handler(async (
     cmsColour,
     timeZone,
     siteIconMediaId,
+    siteIconDarkMediaId,
   };
 });
 
@@ -121,6 +124,7 @@ const settingsSchema = z
     seoDescription: text(SEO_DESCRIPTION_LIMIT),
     seoImageUrl: link,
     siteIconMediaId: z.string().max(64),
+    siteIconDarkMediaId: z.string().max(64),
     googleVerification: verification,
     bingVerification: verification,
     hideFromSearch: z.boolean(),
@@ -198,10 +202,14 @@ export const saveSiteSettings = createServerFn({ method: 'POST' })
           ...Object.fromEntries(SEO_KEYS.map((key) => [key, data[key]])),
         };
     const db = getDb();
-    if (value.siteIconMediaId) {
-      const icon = await db.query.media.findFirst({ where: eq(media.id, value.siteIconMediaId) });
-      if (!icon) throw new Error('That site icon is no longer in the media library.');
-      const problem = siteIconProblem(icon);
+    for (const [id, label] of [
+      [value.siteIconMediaId, 'site icon'],
+      [value.siteIconDarkMediaId, 'dark mode icon'],
+    ] as const) {
+      if (!id) continue;
+      const icon = await db.query.media.findFirst({ where: eq(media.id, id) });
+      if (!icon) throw new Error(`That ${label} is no longer in the media library.`);
+      const problem = siteIconProblem(icon, label);
       if (problem) throw new Error(problem);
     }
     await writeSiteSettings(db, value, context.user.id);

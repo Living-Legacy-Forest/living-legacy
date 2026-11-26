@@ -1,8 +1,9 @@
 import { z } from 'zod';
 
 /**
- * A person's own look for the CMS: a colour picked on the Appearance field and how much grain
- * the sidebar has. Either can be null, which follows the site's setting.
+ * A person's own look for the CMS: a colour picked on the Appearance field, how much grain the
+ * sidebar has, how much contrast text and lines have, and how heavy icons are drawn. Each can be null, which follows the
+ * site's setting.
  */
 export const appearanceSchema = z.object({
   colour: z
@@ -15,12 +16,24 @@ export const appearanceSchema = z.object({
     .nullable(),
   /** From none (0) to strong (1); 0.5 matches the default. */
   grain: z.number().min(0).max(1).nullable(),
+  /**
+   * From the default (0) to the strongest (1). It only goes up: the default is the least
+   * contrast that still passes, so a softer setting would let text fail.
+   */
+  contrast: z.number().min(0).max(1).nullable().default(null),
+  /** From the thinnest line (0) to the heaviest (1); `DEFAULT_ICON_STROKE` matches the default. */
+  iconStroke: z.number().min(0).max(1).nullable().default(null),
 });
 
 export type Appearance = z.infer<typeof appearanceSchema>;
 export type AppearanceColour = NonNullable<Appearance['colour']>;
 
-export const DEFAULT_APPEARANCE: Appearance = { colour: null, grain: null };
+export const DEFAULT_APPEARANCE: Appearance = {
+  colour: null,
+  grain: null,
+  contrast: null,
+  iconStroke: null,
+};
 
 /** The grain a person sees before they set it, matching the stylesheet's own. */
 export const DEFAULT_GRAIN = 0.5;
@@ -34,6 +47,17 @@ export function parseAppearance(value: unknown): Appearance {
   } catch {
     return DEFAULT_APPEARANCE;
   }
+}
+
+/** The icon stroke a person sees before they set it: 2px, matching the stylesheet's own. */
+export const DEFAULT_ICON_STROKE = 0.6;
+
+const MIN_ICON_PX = 1.25;
+const MAX_ICON_PX = 2.5;
+
+/** The line weight, in px of a 24px icon, that an icon stroke setting draws. */
+export function iconStrokePx(iconStroke: number): number {
+  return Math.round((MIN_ICON_PX + iconStroke * (MAX_ICON_PX - MIN_ICON_PX)) * 100) / 100;
 }
 
 const MAX_CHROMA = 0.16;
@@ -78,10 +102,13 @@ export const APPEARANCE_VARS = [
   '--tint-l-dark',
   '--grain-light',
   '--grain-dark',
+  '--contrast',
+  '--icon-stroke-default',
 ] as const;
 
 /**
- * The custom properties for <html>: the tint when a colour is picked, the grain when it is set.
+ * The custom properties for <html>: the tint when a colour is picked, the grain, contrast and
+ * icon stroke when they are set.
  * Grain shows less in dark mode, where the same alpha reads stronger.
  */
 export function appearanceVars(appearance: Appearance): Record<string, string> {
@@ -96,6 +123,12 @@ export function appearanceVars(appearance: Appearance): Record<string, string> {
   if (appearance.grain !== null) {
     vars['--grain-light'] = grainImage(appearance.grain * 0.22);
     vars['--grain-dark'] = grainImage(appearance.grain * 0.18);
+  }
+  // The stylesheet moves text, hints and lines by a multiple of this (styles.css, :root).
+  if (appearance.contrast !== null) vars['--contrast'] = String(round(appearance.contrast));
+  // Icons that do not set their own stroke draw at this (styles.css, [data-icon-stroke]).
+  if (appearance.iconStroke !== null) {
+    vars['--icon-stroke-default'] = String(iconStrokePx(appearance.iconStroke));
   }
   return vars;
 }

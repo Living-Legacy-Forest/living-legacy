@@ -2,7 +2,7 @@ import type { PublicBookingInput } from '@ll/content';
 import { eventBookings, events } from '@ll/db/schema';
 import { eq } from 'drizzle-orm';
 import { env } from 'cloudflare:workers';
-import { beforeEach, describe, expect, it } from 'vitest';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { testDb } from '../../test/fixtures';
 import { internalResponse } from './internal-api';
 import { DUPLICATE_MESSAGE } from './public-bookings';
@@ -248,5 +248,44 @@ describe('unexpected errors', () => {
       ok: false,
       message: 'Something went wrong on our side. Please try again in a moment.',
     });
+  });
+
+  it('logs nothing the guest typed when a query fails', async () => {
+    // drizzle-orm's DrizzleQueryError carries every bound value in its message.
+    const typed = ['Sam', 'Tester', 'sam@example.test', '0412345678', 'uses a wheelchair'];
+    const failure = Object.assign(
+      new Error(`Failed query: insert into "bookings" values (?)\nparams: ${typed.join(',')}`, {
+        cause: new Error('D1_ERROR: database is locked'),
+      }),
+      { name: 'DrizzleQueryError' }
+    );
+    const broken = Object.create(env, {
+      DB: {
+        value: {
+          prepare: () => {
+            throw failure;
+          },
+        },
+      },
+    }) as Cloudflare.Env;
+    const logged = vi.spyOn(console, 'error').mockImplementation(() => {});
+    try {
+      const response = await internalResponse(
+        new Request('http://cms.test/internal/events/book', {
+          method: 'POST',
+          headers: { 'x-internal-key': KEY },
+          body: JSON.stringify(guest(crypto.randomUUID())),
+        }),
+        broken,
+        ctx
+      );
+      expect(response.status).toBe(500);
+      const output = JSON.stringify(logged.mock.calls);
+      for (const value of typed) expect(output).not.toContain(value);
+      expect(output).toContain('DrizzleQueryError');
+      expect(output).toContain('database is locked');
+    } finally {
+      logged.mockRestore();
+    }
   });
 });

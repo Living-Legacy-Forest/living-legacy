@@ -35,10 +35,27 @@ function filterSecretKey(node: unknown): unknown {
   return node;
 }
 
-/** What is sent to Sentry: emails masked and the internal key filtered. */
+// drizzle-orm's DrizzleQueryError message is `Failed query: <sql>\nparams: <every bound value>`,
+// and for a booking those values are the guest's name, email, phone and note. Keep the SQL (it
+// still tells us which query failed) and drop everything from `params:` on.
+const QUERY_PARAMS = /\n\s*params:[\s\S]*$|(Failed query:[\s\S]*?)\s+params:[\s\S]*$/;
+
+function stripQueryParams(node: unknown): unknown {
+  if (typeof node === 'string') return node.replace(QUERY_PARAMS, '$1');
+  if (Array.isArray(node)) return node.map(stripQueryParams);
+  if (node && typeof node === 'object') {
+    return Object.fromEntries(Object.entries(node).map(([k, v]) => [k, stripQueryParams(v)]));
+  }
+  return node;
+}
+
+/**
+ * What is sent to Sentry: failed-query parameters dropped, emails masked and the internal key
+ * filtered.
+ */
 export function scrubEvent<T>(event: T): T {
   try {
-    return scrubEmails(filterSecretKey(event) as T);
+    return scrubEmails(stripQueryParams(filterSecretKey(event)) as T);
   } catch {
     return event;
   }

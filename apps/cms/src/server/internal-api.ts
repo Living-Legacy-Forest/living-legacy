@@ -67,13 +67,22 @@ export async function internalResponse(
   } catch (error) {
     // The website expects JSON from every call; without this a store error would reach it as
     // the platform's own error page. Sentry still hears of it, as it would from an escape.
-    console.error(
-      `[internal] ${route} failed:`,
-      error instanceof Error ? error.message : 'unknown error'
-    );
+    console.error(`[internal] ${route} failed:`, describeFailure(error));
     Sentry.captureException(error, { tags: { route } });
     return fail(500, 'Something went wrong on our side. Please try again in a moment.');
   }
+}
+
+/**
+ * What is safe to log about a failure. A failed Drizzle query throws a `DrizzleQueryError` whose
+ * message is the SQL plus every bound value (the guest's name, email, phone and note), so its
+ * message is never logged: the error's name and the database's own reason are.
+ */
+function describeFailure(error: unknown): string {
+  if (!(error instanceof Error)) return 'unknown error';
+  const cause = error.cause instanceof Error ? error.cause.message : undefined;
+  if (error.name === 'DrizzleQueryError') return `${error.name}: ${cause ?? 'no reason given'}`;
+  return cause ? `${error.message} (${cause})` : error.message;
 }
 
 async function dispatch(
@@ -100,7 +109,7 @@ async function dispatch(
         } catch (error) {
           console.error(
             '[internal] a booking confirmation could not be queued:',
-            error instanceof Error ? error.message : 'unknown error'
+            describeFailure(error)
           );
         }
       })()

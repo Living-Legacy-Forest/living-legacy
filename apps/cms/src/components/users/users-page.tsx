@@ -376,7 +376,7 @@ function AccessDialog({
   return (
     <Sheet open={open && user !== null} onOpenChange={(isOpen) => !isOpen && onClose()}>
       <SheetContent className="gap-0 data-[side=right]:sm:max-w-md">
-        <SheetHeader className="border-b pr-12">
+        <SheetHeader className="pr-12">
           <SheetTitle className="text-lg">Access</SheetTitle>
           <SheetDescription>{description}</SheetDescription>
         </SheetHeader>
@@ -679,7 +679,7 @@ function InviteDialog({
   return (
     <Sheet open={open} onOpenChange={setOpen}>
       <SheetContent className="gap-0 data-[side=right]:sm:max-w-md">
-        <SheetHeader className="border-b pr-12">
+        <SheetHeader className="pr-12">
           <SheetTitle className="text-lg">Invite someone</SheetTitle>
           <SheetDescription>{description}</SheetDescription>
         </SheetHeader>

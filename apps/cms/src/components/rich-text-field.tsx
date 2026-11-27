@@ -50,11 +50,12 @@ export function RichTextField({
     }) ?? (editor ? readState(editor) : null);
 
   return (
-    <div className="bg-muted/60 focus-within:bg-background focus-within:ring-ring/15 overflow-clip rounded-lg transition-colors focus-within:ring-1">
+    <div className="group bg-muted/60 focus-within:bg-background focus-within:ring-ring/15 overflow-clip rounded-lg transition-colors focus-within:ring-1">
+      {/* The box above is the surface, so the editor sits on it without a fill of its own. */}
       <RichTextEditor
         editor={editor}
         variant="subtle"
-        className="rounded-none! border-0! shadow-none!"
+        className="rounded-none! border-0! bg-transparent! shadow-none!"
       >
         <Toolbar
           editor={editor}
@@ -63,7 +64,9 @@ export function RichTextField({
           // padding, letting text show above it. -top-6 cancels it so the toolbar meets the edge.
           // The box uses overflow-clip, not hidden: it rounds the corners without becoming a
           // scroll container, which would stop the toolbar sticking to the form.
-          className="-top-6"
+          // The box above is the surface, so the bar drops the floating pill the post editor uses:
+          // no outline or shadow, left aligned, on the same fill (solid, so text scrolls under it).
+          className="group-focus-within:bg-background! -top-6 bg-[color-mix(in_oklab,var(--muted)_60%,var(--background))]! sm:px-1.5! sm:pt-1.5! sm:pb-0! [&>div]:mx-0! [&>div]:border-0! [&>div]:shadow-none! sm:[&>div]:w-full sm:[&>div]:rounded-none!"
         />
         <RichTextEditor.Content
           className={cn(

@@ -67,7 +67,7 @@ export function LocationMain({ editor }: { editor: LocationEditorState }) {
         />
       </FormBlock>
 
-      <section aria-label="Where" className="space-y-5 border-t pt-8 max-md:border-0 max-md:pt-0">
+      <section aria-label="Where" className="space-y-5 pt-8 max-md:pt-0">
         <h2 className="text-base font-semibold max-md:px-4 max-md:text-[1.0625rem]">Where</h2>
         <FormSection>
           <FormCell label="Address" htmlFor="loc-address">
@@ -82,7 +82,7 @@ export function LocationMain({ editor }: { editor: LocationEditorState }) {
         </FormSection>
       </section>
 
-      <section aria-label="Details" className="space-y-5 border-t pt-8 max-md:border-0 max-md:pt-0">
+      <section aria-label="Details" className="space-y-5 pt-8 max-md:pt-0">
         <h2 className="text-base font-semibold max-md:px-4 max-md:text-[1.0625rem]">Details</h2>
         <LocationDetails editor={editor} />
       </section>

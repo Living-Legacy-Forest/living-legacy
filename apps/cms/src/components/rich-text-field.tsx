@@ -65,8 +65,9 @@ export function RichTextField({
           // The box uses overflow-clip, not hidden: it rounds the corners without becoming a
           // scroll container, which would stop the toolbar sticking to the form.
           // The box above is the surface, so the bar drops the floating pill the post editor uses:
-          // no outline or shadow, left aligned, on the same fill (solid, so text scrolls under it).
-          className="group-focus-within:bg-background! -top-6 bg-(--field)! sm:px-1.5! sm:pt-1.5! sm:pb-0! [&>div]:mx-0! [&>div]:border-0! [&>div]:shadow-none! sm:[&>div]:w-full sm:[&>div]:rounded-none!"
+          // no outline or shadow, left aligned, a softly rounded strip lifted a shade off the same fill
+          // (the fill itself is solid, so text scrolls under it).
+          className="group-focus-within:bg-background! sm:[&>div]:bg-foreground/5! -top-6 bg-(--field)! sm:px-1.5! sm:pt-1.5! sm:pb-1.5! [&>div]:mx-0! [&>div]:border-0! [&>div]:shadow-none! sm:[&>div]:w-full sm:[&>div]:rounded-lg"
         />
         <RichTextEditor.Content
           className={cn(

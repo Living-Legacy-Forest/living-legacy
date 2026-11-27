@@ -11,6 +11,7 @@ export function SettingsSection({
   title,
   description,
   framed = false,
+  divided = true,
   children,
 }: {
   id: string;
@@ -21,6 +22,8 @@ export function SettingsSection({
    * rows of one thing. Plain settings rows sit unframed.
    */
   framed?: boolean;
+  /** Whether a framed group draws a line between its rows from md. Phones always do. */
+  divided?: boolean;
   children: ReactNode;
 }) {
   return (
@@ -47,7 +50,10 @@ export function SettingsSection({
         className={cn(
           'min-w-0 max-md:divide-y max-md:divide-(--ios-separator) max-md:overflow-hidden max-md:rounded-[10px] max-md:bg-(--ios-cell)',
           framed
-            ? 'md:divide-border/60 md:bg-muted/50 md:divide-y md:overflow-hidden md:rounded-lg'
+            ? cn(
+                'md:bg-muted/50 md:overflow-hidden md:rounded-lg',
+                divided && 'md:divide-border/60 md:divide-y'
+              )
             : 'md:space-y-6'
         )}
       >

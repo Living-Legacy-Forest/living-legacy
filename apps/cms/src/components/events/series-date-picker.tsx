@@ -1,4 +1,5 @@
 // Moves between the dates of a repeating event, each with its own form and guest list.
+import { FIELD_LABEL } from '@/components/form-cells';
 import { Label } from '@/components/ui/label';
 import { cn } from '@/lib/utils';
 import { formatDateTime, zoneName } from '@/lib/format';
@@ -36,7 +37,7 @@ export function SeriesDatePicker({
 }) {
   return (
     <div className="min-w-0 space-y-1.5">
-      <Label htmlFor="ev-viewing" className={cn(compact && 'sr-only')}>
+      <Label htmlFor="ev-viewing" className={cn(FIELD_LABEL, compact && 'sr-only')}>
         Viewing date
       </Label>
       <SeriesCalendar

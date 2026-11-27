@@ -311,12 +311,8 @@ export function SettingsPage({
   const revealing = useRevealOnce();
 
   return (
-    <div
-      data-slot="stack-page"
-      data-revealing={revealing || undefined}
-      className="mx-auto w-full max-w-5xl"
-    >
-      <div className="mb-8 space-y-1">
+    <div data-slot="stack-page" data-revealing={revealing || undefined} className="w-full">
+      <div className="mx-auto mb-8 max-w-5xl space-y-1">
         <h1 data-slot="page-title" className="text-xl font-semibold tracking-tight">
           <RevealWords text="Settings" />
         </h1>
@@ -336,7 +332,7 @@ export function SettingsPage({
             )}
         />
 
-        <form noValidate onSubmit={submit} className="space-y-10">
+        <form noValidate onSubmit={submit} className="mx-auto max-w-5xl space-y-10">
           {!seoOnly && (
             <SettingsSection
               id="general"
@@ -669,6 +665,7 @@ export function SettingsPage({
             id="brand-language"
             title="Brand language"
             framed
+            divided={false}
             description="Words the content score flags in posts, and what to write instead. Never use counts as critical; Check is usually wrong but sometimes fine. The AI wording check uses this list too."
           >
             <BrandRulesEditor
@@ -1159,9 +1156,12 @@ function SectionNav({ ids }: { ids: string[] }) {
     // so the tabs jump to sections and follow the one in view. From md; phones scroll.
     <nav
       aria-label="Settings sections"
-      className="bg-background sticky top-16 z-20 mb-8 hidden py-1.5 md:block"
+      // The fill spans the whole content area (the page's padding included) so it doesn't stop
+      // short of the header and cut off its shadow; the tabs stay in the page column. z-10 keeps
+      // the header's shadow drawing over it.
+      className="bg-background sticky top-16 z-10 -mx-6 mb-8 hidden px-6 py-2 md:block"
     >
-      <ul ref={list} className="no-scrollbar flex gap-1 overflow-x-auto">
+      <ul ref={list} className="no-scrollbar mx-auto flex max-w-5xl gap-1 overflow-x-auto">
         {shown.map((section) => (
           <li key={section.id} className="shrink-0">
             <a
@@ -1482,6 +1482,7 @@ function LegalPagesSection({ pages }: { pages: LegalPageSummary[] }) {
       id="legal"
       title="Legal"
       framed
+      divided={false}
       description="Changes go live when an admin publishes them. Every published version is kept."
     >
       {pages.map((page) => (

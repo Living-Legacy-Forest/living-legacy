@@ -11,6 +11,7 @@ import {
 } from '@ll/content';
 import { useState } from 'react';
 import { NumberField } from '@/components/ui/number-field';
+import { FIELD_LABEL } from '@/components/form-cells';
 import { Label } from '@/components/ui/label';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Calendar } from '@/components/ui/calendar';
@@ -113,7 +114,9 @@ export function RepeatField({
       {/* Stacked: a pattern like "Every 2 weeks on Monday, Wednesday and Saturday" needs the width. */}
       <div className="space-y-3">
         <div className="space-y-1.5">
-          <Label htmlFor="ev-repeat">Repeats</Label>
+          <Label htmlFor="ev-repeat" className={FIELD_LABEL}>
+            Repeats
+          </Label>
           <Select
             items={items}
             value={value.repeat}
@@ -133,7 +136,9 @@ export function RepeatField({
         </div>
         <Reveal show={value.repeat !== 'none' && !custom}>
           <div className="space-y-1.5">
-            <Label htmlFor="ev-repeat-ends">Ends</Label>
+            <Label htmlFor="ev-repeat-ends" className={FIELD_LABEL}>
+              Ends
+            </Label>
             <div className="flex max-w-sm gap-2">
               <Select
                 items={[

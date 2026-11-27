@@ -50,8 +50,8 @@ export function RichTextField({
     }) ?? (editor ? readState(editor) : null);
 
   return (
-    <div className="focus-within:ring-ring/15 overflow-clip rounded-lg bg-(--field) transition-colors [--field:color-mix(in_oklab,var(--muted)_60%,var(--card))] focus-within:ring-1 dark:[--field:color-mix(in_oklab,var(--foreground)_6%,var(--card))]">
-      {/* One fill (--field), like the text inputs, shared by the bar and the writing area so they read as one box. */}
+    <div className="focus-within:ring-ring/15 overflow-clip rounded-lg bg-(--field) transition-colors [--field-under:color-mix(in_oklab,var(--muted)_50%,var(--card))] [--field:color-mix(in_oklab,var(--muted)_60%,var(--field-under))] focus-within:ring-1 dark:[--field:color-mix(in_oklab,var(--foreground)_6%,var(--field-under))]">
+      {/* One fill (--field), like the text inputs, shared by the bar and the writing area so they read as one box. It is solid so text scrolls under the bar, so it is worked out over the form panel's own fill (--field-under, the panels' bg-muted/50): over a plain card it would sit almost the same shade as the panel and vanish. */}
       <RichTextEditor
         editor={editor}
         variant="subtle"

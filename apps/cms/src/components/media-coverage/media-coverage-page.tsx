@@ -1,6 +1,6 @@
 import { type MediaCoverageKind, mediaCoverageKindLabels, slugify, youtubeId } from '@ll/content';
 import { useNavigate } from '@tanstack/react-router';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { CardMeta, ListCard, ListCards } from '@/components/list/list-card';
 import { ListFilter, optionsOf, publishStatusOptions } from '@/components/list/list-filter';
 import { ListSort, byNumber, byText, sortedBy, useListSort } from '@/components/list/list-sort';
@@ -115,6 +115,8 @@ const kindItems = (Object.keys(mediaCoverageKindLabels) as MediaCoverageKind[]).
 /** What the pane edits in place of the preview (or the dialog shows, on smaller screens). */
 type Target = { kind: 'edit'; id: string } | { kind: 'new' };
 
+const PREVIEW_KEY = 'media-coverage-preview-open';
+
 const SORTS = [
   { value: 'order', label: 'Your order' },
   { value: 'date-new', label: 'Newest coverage' },
@@ -137,6 +139,16 @@ export function MediaCoveragePage({
   const { run, pending } = useAction();
   const revealing = useRevealOnce();
   const view = useListPane<Target>();
+  // Whether the preview pane is open beside the list from lg up; remembered on this device.
+  // A form in the pane (add or edit) always shows it.
+  const [previewOpen, setPreviewOpen] = useState(true);
+  useEffect(() => {
+    if (localStorage.getItem(PREVIEW_KEY) === '0') setPreviewOpen(false);
+  }, []);
+  const openPreview = (open: boolean) => {
+    setPreviewOpen(open);
+    localStorage.setItem(PREVIEW_KEY, open ? '1' : '0');
+  };
   const [query, setQuery] = useState('');
   // Ticked values per filter group; an empty group does not narrow the list.
   const [picked, setPicked] = useState<Record<string, string[]>>({});
@@ -208,11 +220,19 @@ export function MediaCoveragePage({
   /** Previews an item in the pane, in place of any form. */
   const preview = (id: string) => {
     view.setPane(null);
+    // Choosing an item is asking to see it, so a folded pane opens.
+    openPreview(true);
     navigate({ search: (prev) => ({ ...prev, selected: id }), replace: true });
   };
   // A row click asks first if the form open in the pane has changes; a save has none left.
   const select = (id: string) => view.guard(() => preview(id));
   const pane = canWrite ? view.pane : null;
+  const showPane = previewOpen || pane !== null;
+  // Folding the pane glides the columns and slides and fades what is in it, as on Announcements.
+  const paneMotion = cn(
+    'min-w-0 overflow-hidden transition-[opacity,translate] duration-300 ease-[cubic-bezier(0.32,0.72,0,1)] motion-reduce:transition-none',
+    !showPane && 'translate-x-4 opacity-0'
+  );
   // Straight away, with Undo on the toast, rather than asking first.
   async function remove(ids: string[]) {
     const result = await run(() => deleteMediaCoverage({ data: { ids } }), {
@@ -355,6 +375,21 @@ export function MediaCoveragePage({
           />
         )}
         <div className="flex gap-3 max-md:hidden">
+          {data.length > 0 && (
+            <Button
+              type="button"
+              variant="ghost"
+              size="icon-sm"
+              aria-label={showPane ? 'Hide the preview' : 'Show the preview'}
+              aria-pressed={showPane}
+              // From lg up, where the preview sits beside the list; a form in it keeps it open.
+              disabled={pane !== null}
+              onClick={() => openPreview(!previewOpen)}
+              className="max-lg:hidden"
+            >
+              <PanelRightIcon open={showPane} aria-hidden />
+            </Button>
+          )}
           <Button
             size="sm"
             variant="outline"
@@ -403,8 +438,15 @@ export function MediaCoveragePage({
           {canWrite && <EmptyContent>{addButton}</EmptyContent>}
         </Empty>
       ) : (
-        <ListPageLayout resizable={{ key: 'media-coverage', defaultShare: 0.5 }}>
+        <ListPageLayout
+          resizable={{ key: 'media-coverage', defaultShare: 0.5, active: showPane, animated: true }}
+          className={cn(
+            'motion-reduce:transition-none lg:transition-[grid-template-columns] lg:duration-300 lg:ease-[cubic-bezier(0.32,0.72,0,1)]',
+            !showPane && 'lg:grid-cols-[1fr_0fr]'
+          )}
+        >
           <ListColumn
+            className="lg:min-w-80"
             label="Media coverage"
             header={
               <SelectionBar
@@ -511,7 +553,7 @@ export function MediaCoveragePage({
           </ListColumn>
 
           {pane !== null ? (
-            <PaneColumn label="Edit coverage">
+            <PaneColumn label="Edit coverage" inert={!showPane} className={paneMotion}>
               <PaneFrame title={paneItem ? `Edit ${paneItem.title}` : 'New coverage'}>
                 {coverageForm(pane, preview, (submit) => (
                   <PaneActions onCancel={view.closePane}>{submit}</PaneActions>
@@ -520,6 +562,8 @@ export function MediaCoveragePage({
             </PaneColumn>
           ) : (
             <PreviewPane
+              inert={!showPane}
+              className={paneMotion}
               item={selected}
               canWrite={canWrite}
               pending={pending}
@@ -587,7 +631,12 @@ function PreviewPane({
   pending,
   onEdit,
   onDelete,
+  className,
+  inert,
 }: {
+  className?: string;
+  /** Folded away but still on the page, gliding out. */
+  inert?: boolean;
   item: MediaCoverageItem | null;
   canWrite: boolean;
   pending: boolean;
@@ -596,7 +645,7 @@ function PreviewPane({
 }) {
   if (!item) {
     return (
-      <section aria-label="Preview" className="hidden lg:flex">
+      <section aria-label="Preview" inert={inert} className={cn('hidden lg:flex', className)}>
         <Empty>
           <EmptyHeader>
             <EmptyMedia variant="icon">
@@ -611,7 +660,11 @@ function PreviewPane({
   }
 
   return (
-    <section aria-label="Preview" className="hidden min-h-0 flex-col lg:flex">
+    <section
+      aria-label="Preview"
+      inert={inert}
+      className={cn('hidden min-h-0 flex-col lg:flex', className)}
+    >
       <div className="flex h-10 shrink-0 items-center gap-1.5 px-3">
         <Badge
           variant={item.status === 'published' ? 'secondary' : 'outline'}

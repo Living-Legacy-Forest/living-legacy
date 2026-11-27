@@ -429,7 +429,7 @@ export const Toolbar = ({
     className={cn('sticky top-0 z-10 sm:px-3 sm:pt-3 sm:pb-1', CANVAS, className)}
   >
     <div
-      className="mx-auto w-full max-w-full [scrollbar-width:none] overflow-x-auto border-b sm:w-fit sm:rounded-xl sm:border sm:shadow-sm [&::-webkit-scrollbar]:hidden"
+      className="sm:bg-background mx-auto w-full max-w-full [scrollbar-width:none] overflow-x-auto sm:w-fit sm:rounded-xl [&::-webkit-scrollbar]:hidden"
       style={SCROLL_SHADOWS}
     >
       <RichTextEditor.Toolbar className="[&_.rte-controls-group>button:not([data-state=on]):not([aria-pressed=true])]:text-foreground! flex-nowrap! justify-start! border-0! bg-transparent! px-1! py-1! sm:w-max [&>*]:shrink-0">

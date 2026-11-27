@@ -376,7 +376,7 @@ function AccessDialog({
   return (
     <Sheet open={open && user !== null} onOpenChange={(isOpen) => !isOpen && onClose()}>
       <SheetContent className="gap-0 data-[side=right]:sm:max-w-md">
-        <SheetHeader className="border-b pr-12">
+        <SheetHeader className="pr-12">
           <SheetTitle className="text-lg">Access</SheetTitle>
           <SheetDescription>{description}</SheetDescription>
         </SheetHeader>
@@ -633,7 +633,9 @@ function InviteDialog({
                   }}
                   className={cn(
                     'focus-visible:ring-ring flex flex-col justify-start rounded-lg border p-3 text-left transition-colors outline-none focus-visible:ring-2',
-                    selected ? 'border-foreground bg-muted/50' : 'border-border hover:bg-muted/40'
+                    selected
+                      ? 'border-foreground/20 bg-muted'
+                      : 'hover:bg-muted/40 border-transparent'
                   )}
                 >
                   <div className="text-sm font-medium">{item.label}</div>
@@ -677,7 +679,7 @@ function InviteDialog({
   return (
     <Sheet open={open} onOpenChange={setOpen}>
       <SheetContent className="gap-0 data-[side=right]:sm:max-w-md">
-        <SheetHeader className="border-b pr-12">
+        <SheetHeader className="pr-12">
           <SheetTitle className="text-lg">Invite someone</SheetTitle>
           <SheetDescription>{description}</SheetDescription>
         </SheetHeader>

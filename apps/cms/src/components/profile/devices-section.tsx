@@ -81,6 +81,7 @@ export function DevicesSection() {
       id="devices"
       title="Devices"
       framed
+      divided={false}
       description="Where you are signed in. Sign out anything you do not recognise."
     >
       {devices === null ? (

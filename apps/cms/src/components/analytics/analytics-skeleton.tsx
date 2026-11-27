@@ -185,7 +185,7 @@ function TableSkeleton({
           tableFrom === 'lg' ? 'max-lg:hidden' : 'max-md:hidden'
         )}
       >
-        <div className="flex h-10 items-center gap-6 border-b px-4">
+        <div className="flex h-10 items-center gap-6 px-4">
           <Skeleton className="h-3.5 w-16" />
           <div className="ml-auto flex gap-8">
             {Array.from({ length: columns }, (_, i) => (
@@ -193,7 +193,7 @@ function TableSkeleton({
             ))}
           </div>
         </div>
-        <div className="divide-y">
+        <div>
           {Array.from({ length: rows }, (_, i) => (
             <div key={i} className="flex items-center gap-6 px-4 py-3">
               <div className="min-w-0 flex-1 space-y-1.5">
@@ -211,7 +211,7 @@ function TableSkeleton({
       </div>
       <ul
         className={cn(
-          'divide-border/60 bg-muted/50 divide-y overflow-hidden rounded-lg max-md:divide-(--ios-separator) max-md:rounded-[10px] max-md:border-0 max-md:bg-(--ios-cell)',
+          'bg-muted/50 overflow-hidden rounded-lg max-md:divide-y max-md:divide-(--ios-separator) max-md:rounded-[10px] max-md:border-0 max-md:bg-(--ios-cell)',
           tableFrom === 'lg' ? 'lg:hidden' : 'md:hidden'
         )}
       >

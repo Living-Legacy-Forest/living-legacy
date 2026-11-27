@@ -75,10 +75,7 @@ export function EventMain({ editor, event }: { editor: EventEditorState; event: 
         />
       </FormBlock>
 
-      <section
-        aria-label="Sessions"
-        className="space-y-5 border-t pt-8 max-md:border-0 max-md:pt-0"
-      >
+      <section aria-label="Sessions" className="space-y-5 pt-8 max-md:pt-0">
         <h2 className="text-base font-semibold max-md:px-4 max-md:text-[1.0625rem]">Sessions</h2>
         <FormSection>
           <FormCell

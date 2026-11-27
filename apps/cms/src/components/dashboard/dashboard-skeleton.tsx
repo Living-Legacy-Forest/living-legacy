@@ -5,7 +5,7 @@ export function DashboardSkeleton() {
     <div
       className={cn(
         'grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-4',
-        '*:bg-muted *:ring-border *:dark:bg-muted/50 *:min-h-48 *:w-full *:ring-1'
+        '*:bg-muted *:dark:bg-muted/50 *:min-h-48 *:w-full'
       )}
     >
       <div className="rounded-lg" />

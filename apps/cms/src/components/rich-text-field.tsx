@@ -50,8 +50,8 @@ export function RichTextField({
     }) ?? (editor ? readState(editor) : null);
 
   return (
-    <div className="group bg-muted/60 focus-within:bg-background focus-within:ring-ring/15 overflow-clip rounded-lg transition-colors focus-within:ring-1">
-      {/* The box above is the surface, so the editor sits on it without a fill of its own. */}
+    <div className="group focus-within:bg-background focus-within:ring-ring/15 overflow-clip rounded-lg bg-(--field) transition-colors [--field:color-mix(in_oklab,var(--muted)_60%,var(--card))] focus-within:ring-1 dark:[--field:color-mix(in_oklab,var(--foreground)_6%,var(--card))]">
+      {/* One fill (--field), like the text inputs, shared by the bar and the writing area so they read as one box. */}
       <RichTextEditor
         editor={editor}
         variant="subtle"
@@ -66,7 +66,7 @@ export function RichTextField({
           // scroll container, which would stop the toolbar sticking to the form.
           // The box above is the surface, so the bar drops the floating pill the post editor uses:
           // no outline or shadow, left aligned, on the same fill (solid, so text scrolls under it).
-          className="group-focus-within:bg-background! -top-6 bg-[color-mix(in_oklab,var(--muted)_60%,var(--background))]! sm:px-1.5! sm:pt-1.5! sm:pb-0! [&>div]:mx-0! [&>div]:border-0! [&>div]:shadow-none! sm:[&>div]:w-full sm:[&>div]:rounded-none!"
+          className="group-focus-within:bg-background! -top-6 bg-(--field)! sm:px-1.5! sm:pt-1.5! sm:pb-0! [&>div]:mx-0! [&>div]:border-0! [&>div]:shadow-none! sm:[&>div]:w-full sm:[&>div]:rounded-none!"
         />
         <RichTextEditor.Content
           className={cn(

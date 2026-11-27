@@ -31,7 +31,7 @@ export function ExtraAccess({
           <legend className={cn('mb-2 text-sm font-medium max-md:mb-1.5', groupHeadingClass)}>
             {group.heading}
           </legend>
-          <div className={cn(groupBoxClass, 'divide-y max-md:divide-(--ios-separator)')}>
+          <div className={cn(groupBoxClass, 'max-md:divide-y max-md:divide-(--ios-separator)')}>
             {group.items.map((item) => {
               const state = permissionState(role, value, item.permission);
               const off = disabled || state.locked;

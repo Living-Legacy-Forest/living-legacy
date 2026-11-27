@@ -119,7 +119,7 @@ function SplitSkeleton() {
           <div className="flex h-11 shrink-0 items-center gap-2 px-3">
             <Skeleton className="h-6 w-full max-w-56" />
           </div>
-          <div className="divide-y">
+          <div>
             {Array.from({ length: 7 }, (_, i) => (
               <div key={i} className="space-y-2 px-3 py-3">
                 <Skeleton className="h-4" style={{ width: `${80 - ((i * 13) % 35)}%` }} />
@@ -149,7 +149,7 @@ function SplitSkeleton() {
 function MediaFileSkeleton() {
   return (
     <div className="flex min-h-0 flex-1 flex-col">
-      <div className="flex min-h-12 shrink-0 flex-wrap items-center gap-2 border-b px-3 py-1.5">
+      <div className="flex min-h-12 shrink-0 flex-wrap items-center gap-2 px-3 py-1.5">
         <Skeleton className="size-7" />
         <div className="min-w-0 flex-1 space-y-1.5">
           <Skeleton className="h-4 w-48 max-w-full" />
@@ -174,7 +174,7 @@ function MediaFileSkeleton() {
               <Skeleton className="h-8 w-full" />
             </div>
           ))}
-          <Lines count={5} className="space-y-2.5 border-t pt-6" />
+          <Lines count={5} className="space-y-2.5 pt-6" />
         </div>
       </div>
     </div>
@@ -191,7 +191,7 @@ function MediaSkeleton() {
         <Skeleton className="h-8 w-24 max-md:hidden" />
       </div>
       <div className="flex min-h-0 flex-1 flex-col overflow-hidden rounded-lg max-md:flex-none max-md:overflow-visible max-md:rounded-none max-md:border-0">
-        <div className="flex h-11 shrink-0 items-center gap-2 border-b px-3 max-md:hidden">
+        <div className="flex h-11 shrink-0 items-center gap-2 px-3 max-md:hidden">
           <Skeleton className="h-4 w-16" />
         </div>
         <div className="p-3 max-md:-mx-4 max-md:p-0">
@@ -220,7 +220,7 @@ function ListSkeleton({ width = 'max-w-3xl' }: { width?: string }) {
       {[4, 3].map((rows, s) => (
         <section key={s} className="space-y-2.5">
           <Skeleton className="h-4 w-20" />
-          <div className="divide-border/60 bg-muted/50 divide-y rounded-lg">
+          <div className="bg-muted/50 rounded-lg">
             {Array.from({ length: rows }, (_, i) => (
               <div key={i} className="flex items-center gap-3 px-4 py-3">
                 <div className="flex-1 space-y-2">
@@ -250,7 +250,7 @@ function SettingsSkeleton() {
             <Skeleton className="h-4 w-24" />
             <Skeleton className="h-3 w-56" />
           </div>
-          <div className="divide-border/60 bg-muted/50 divide-y rounded-lg">
+          <div className="bg-muted/50 rounded-lg">
             {Array.from({ length: rows }, (_, i) => (
               <div key={i} className="flex items-center justify-between gap-4 px-4 py-3.5">
                 <Skeleton className="h-4 w-28" />
@@ -269,7 +269,7 @@ function EditorSkeleton() {
   return (
     <div className="grid flex-1 gap-6 lg:grid-cols-[minmax(0,1fr)_17rem] lg:gap-0">
       <div className="bg-muted/50 flex min-w-0 flex-col overflow-hidden rounded-lg lg:mr-6 lg:h-[calc(100svh-7.5rem)]">
-        <div className="flex h-12 shrink-0 items-center gap-3 border-b px-3">
+        <div className="flex h-12 shrink-0 items-center gap-3 px-3">
           <Skeleton className="h-4 w-20" />
           <Skeleton className="h-4 w-28" />
           <div className="ml-auto flex items-center gap-1.5">
@@ -283,7 +283,7 @@ function EditorSkeleton() {
           <DocumentEditorSkeleton />
         </div>
       </div>
-      <aside className="space-y-6 lg:border-l lg:pl-6">
+      <aside className="space-y-6 lg:pl-6">
         <div className="space-y-4">
           <Skeleton className="h-3.5 w-20" />
           {[24, 20, 16, 28, 32].map((w, i) => (
@@ -293,15 +293,15 @@ function EditorSkeleton() {
             </div>
           ))}
         </div>
-        <div className="space-y-3 border-t pt-6">
+        <div className="space-y-3 pt-6">
           <Skeleton className="h-3.5 w-28" />
           <Skeleton className="h-3 w-full" />
           <Skeleton className="h-52 w-full rounded-lg" />
         </div>
-        <div className="border-t pt-6">
+        <div className="pt-6">
           <Skeleton className="h-3.5 w-24" />
         </div>
-        <div className="border-t pt-6">
+        <div className="pt-6">
           <Skeleton className="h-3.5 w-20" />
         </div>
       </aside>
@@ -318,7 +318,7 @@ function RowsCard({ rows, bar = false }: { rows: number; bar?: boolean }) {
         <Skeleton className="h-3.5 w-56 max-w-full" />
       </CardHeader>
       <CardContent>
-        <div className="divide-y">
+        <div>
           {Array.from({ length: rows }, (_, i) => (
             <div key={i} className="space-y-3 py-3">
               <div className="flex items-center gap-4">

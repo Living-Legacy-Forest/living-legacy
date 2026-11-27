@@ -15,10 +15,10 @@ export function EventsListSkeleton() {
         <Skeleton className="h-8 w-28 max-md:hidden" />
       </div>
       <div className="bg-muted/50 min-h-0 flex-1 overflow-hidden rounded-lg">
-        <div className="space-y-2 border-b px-3 pt-2.5 pb-3">
+        <div className="space-y-2 px-3 pt-2.5 pb-3">
           <Skeleton className="h-8 w-full max-w-xs" />
         </div>
-        <div className="divide-y">
+        <div>
           {Array.from({ length: 6 }, (_, i) => (
             <div key={i} className="flex items-center gap-4 px-3 py-3">
               <Skeleton className="size-14 shrink-0" />
@@ -79,7 +79,7 @@ export function EventEditorSkeleton() {
   return (
     <div className="flex flex-1 flex-col gap-6 lg:flex-row lg:gap-0">
       <div className="bg-muted/50 flex min-w-0 flex-col overflow-hidden rounded-lg lg:mr-6 lg:h-[calc(100svh-7.5rem)] lg:flex-[7]">
-        <div className="flex min-h-12 shrink-0 items-center gap-3 border-b px-3 py-1.5">
+        <div className="flex min-h-12 shrink-0 items-center gap-3 px-3 py-1.5">
           <Skeleton className="h-6 w-40 max-md:hidden" />
           <div className="ml-auto flex items-center gap-1.5">
             <Skeleton className="h-7 w-20" />
@@ -98,9 +98,9 @@ export function EventEditorSkeleton() {
           ))}
         </div>
       </div>
-      <aside className="space-y-6 lg:flex-[3] lg:border-l lg:pl-6">
+      <aside className="space-y-6 lg:flex-[3] lg:pl-6">
         {[4, 3, 2].map((rows, s) => (
-          <div key={s} className={cn('space-y-4', s > 0 && 'border-t pt-6')}>
+          <div key={s} className={cn('space-y-4', s > 0 && 'pt-6')}>
             <Skeleton className="h-3.5 w-24" />
             {Array.from({ length: rows }, (_, i) => (
               <div key={i} className="space-y-2">

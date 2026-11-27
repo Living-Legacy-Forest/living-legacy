@@ -23,6 +23,8 @@ const fixed: ShortcutListGroup[] = [
     label: 'Lists',
     items: [
       { label: 'Select the focused row', shortcut: 'x' },
+      { label: 'Select every row shown', shortcut: 'mod+a', keywords: 'all' },
+      { label: 'Clear the selection', shortcut: 'escape', keywords: 'deselect' },
       {
         label: 'Delete the focused row, or move a post to the trash',
         shortcut: 'backspace',

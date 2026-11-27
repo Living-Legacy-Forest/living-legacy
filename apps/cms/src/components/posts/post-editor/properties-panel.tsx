@@ -242,7 +242,7 @@ function Section({
   title: string;
   count?: number;
   defaultOpen?: boolean;
-  /** Drops the top border/padding for the first section in the sidebar. */
+  /** Drops the extra top gap for the first section in the sidebar. */
   first?: boolean;
   children: ReactNode;
 }) {
@@ -250,7 +250,7 @@ function Section({
     <Collapsible
       id={id}
       defaultOpen={defaultOpen}
-      className={cn('scroll-mt-6 pt-4', !first && 'border-t')}
+      className={cn('scroll-mt-6', first ? 'pt-4' : 'pt-6')}
     >
       <CollapsibleTrigger className="group text-muted-foreground hover:text-foreground flex w-full items-center gap-1 text-xs font-medium">
         <ChevronRightIcon

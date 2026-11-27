@@ -16,6 +16,7 @@ import { usePaged } from '@/lib/use-paged';
 import { useRevealOnce } from '@/lib/use-reveal-once';
 import { type RedirectCoverage, checkRedirectCoverage } from '@/server/redirect-coverage';
 import { importRedirects } from '@/server/redirects';
+import { GlideHighlight } from '@/components/ui/glide-highlight';
 
 type Tab = 'missing' | 'redirected' | 'live';
 
@@ -23,7 +24,7 @@ type Tab = 'missing' | 'redirected' | 'live';
 const PAGE_SIZES = [10, 25, 50, 100] as const;
 
 const listClass =
-  'divide-y rounded-lg border max-md:divide-(--ios-separator) max-md:overflow-hidden max-md:rounded-[10px] max-md:border-0 max-md:bg-(--ios-cell)';
+  'divide-y divide-border/60 overflow-hidden rounded-lg bg-muted/50 max-md:divide-(--ios-separator) max-md:overflow-hidden max-md:rounded-[10px] max-md:border-0 max-md:bg-(--ios-cell)';
 
 const noun = (n: number) => `${formatInteger(n)} ${n === 1 ? 'address' : 'addresses'}`;
 
@@ -222,15 +223,22 @@ export function RedirectCoveragePage({ switcher }: { switcher?: React.ReactNode 
               />
 
               {shown.length === 0 ? (
-                <p className="text-muted-foreground rounded-lg border border-dashed px-4 py-8 text-center text-sm max-md:border-0">
+                <p className="text-muted-foreground bg-muted/50 rounded-lg px-4 py-8 text-center text-sm max-md:border-0">
                   {tab === 'missing' ? 'Every address has a redirect or a page.' : 'None.'}
                 </p>
               ) : (
                 <ul className={listClass}>
+                  <GlideHighlight
+                    follow="hover"
+                    as="li"
+                    selector="[data-glide]"
+                    className="bg-muted border-0! max-md:hidden"
+                  />
                   {paged.shown.map((row) => (
                     <li
                       key={row.path}
-                      className="flex flex-col gap-2 px-4 py-3 sm:flex-row sm:items-center sm:gap-4"
+                      data-glide
+                      className="relative flex flex-col gap-2 px-4 py-3 sm:flex-row sm:items-center sm:gap-4"
                     >
                       <p
                         className="text-ui min-w-0 truncate font-mono sm:w-2/5 sm:shrink-0"

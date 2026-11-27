@@ -61,7 +61,7 @@ export function ViewSwitch({
       <span
         aria-hidden
         className={cn(
-          'bg-background touch:h-8 touch:w-10 absolute top-0.5 left-0.5 size-7 rounded-md shadow-xs transition-transform duration-200 ease-[cubic-bezier(0.23,1,0.32,1)] motion-reduce:transition-none max-md:rounded-[7px] max-md:bg-(--ios-segment-on) max-md:shadow-sm',
+          'bg-background touch:h-8 touch:w-10 absolute top-0.5 left-0.5 size-6 rounded-md shadow-xs transition-transform duration-200 ease-[cubic-bezier(0.23,1,0.32,1)] motion-reduce:transition-none max-md:rounded-[7px] max-md:bg-(--ios-segment-on) max-md:shadow-sm',
           // One button's width plus the 2px gap between them.
           value === 'grid' && 'translate-x-[calc(100%+0.125rem)]'
         )}
@@ -75,7 +75,7 @@ export function ViewSwitch({
           aria-pressed={value === next}
           title={`${label} view`}
           // The highlight behind is the background; the buttons only change colour.
-          className="text-muted-foreground hover:text-foreground aria-pressed:text-foreground touch-hit touch:h-8! touch:w-10! relative size-7 hover:bg-transparent active:bg-transparent max-md:rounded-[7px] max-md:after:-inset-y-1.5 dark:hover:bg-transparent dark:active:bg-transparent"
+          className="text-muted-foreground hover:text-foreground aria-pressed:text-foreground touch-hit touch:h-8! touch:w-10! relative size-6 hover:bg-transparent active:bg-transparent max-md:rounded-[7px] max-md:after:-inset-y-1.5 dark:hover:bg-transparent dark:active:bg-transparent [&_svg:not([class*='size-'])]:size-3.5"
           onClick={() => onChange(next)}
         >
           <Icon aria-hidden />

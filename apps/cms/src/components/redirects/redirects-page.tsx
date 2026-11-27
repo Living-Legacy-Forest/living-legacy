@@ -24,7 +24,7 @@ import { ListRow, type RowMenuItem } from '@/components/list/list-row';
 import { usePaged } from '@/lib/use-paged';
 import { copyLink, openInNewTab, siteUrl } from '@/lib/site';
 import {
-  SearchInput,
+  ToolbarSearch,
   SelectionBar,
   matchesSearch,
   useSelection,
@@ -41,11 +41,12 @@ import {
 } from '@/components/icons';
 import { useEffect, useState } from 'react';
 import { CardMeta, ListCard, ListCards } from '@/components/list/list-card';
-import { ListFilter, passes } from '@/components/list/list-filter';
+import { ListFilter } from '@/components/list/list-filter';
 import { ListSort, byNumber, byText, sortedBy, useListSort } from '@/components/list/list-sort';
 import { TrendChart } from '@/components/list/trend-chart';
 import { readPaneOpen } from '@/lib/list-view';
-import { ViewSwitch, useListView } from '@/components/list/view-switch';
+import { useListView } from '@/components/list/view-switch';
+import { ListDisplay } from '@/components/list/list-display';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import {
@@ -80,6 +81,7 @@ import {
   setRedirectEnabled,
 } from '@/server/redirects';
 import { sameDate } from '@/lib/format';
+import { dateFacts, dateOptions, rowPasses, type MatchMode } from '@/components/list/filter-tools';
 
 type Code = '301' | '302' | '307' | '308' | '410';
 
@@ -127,14 +129,27 @@ const filterGroups = [
       { value: 'unused', label: 'Never used' },
     ],
   },
+  { key: 'lastUsed', label: 'Last used', options: dateOptions },
+  { key: 'created', label: 'Created', options: dateOptions },
+  {
+    key: 'query',
+    label: 'Query string',
+    options: [
+      { value: 'kept', label: 'Kept' },
+      { value: 'dropped', label: 'Dropped' },
+    ],
+  },
 ];
 
-function matchesFilters(r: Redirect, picked: Record<string, string[]>) {
-  return (
-    passes(picked.types, String(r.statusCode)) &&
-    passes(picked.states, r.enabled ? 'on' : 'off') &&
-    passes(picked.usage, r.hits > 0 ? 'used' : 'unused')
-  );
+function matchesFilters(r: Redirect, picked: Record<string, string[]>, match: MatchMode) {
+  return rowPasses(match, picked, {
+    types: String(r.statusCode),
+    states: r.enabled ? 'on' : 'off',
+    usage: r.hits > 0 ? 'used' : 'unused',
+    lastUsed: dateFacts(r.lastHitAt),
+    created: dateFacts(r.createdAt),
+    query: r.keepQuery ? 'kept' : 'dropped',
+  });
 }
 
 const NOUN: [string, string] = ['redirect', 'redirects'];
@@ -225,6 +240,7 @@ export function RedirectsPage({
   const [query, setQuery] = useState('');
   // Ticked values per filter group; an empty group does not narrow the list.
   const [picked, setPicked] = useState<Record<string, string[]>>({});
+  const [match, setMatch] = useState<MatchMode>('all');
   // The edit pane can fold away to give the list the full width; the choice is remembered.
   const [layout, setLayout] = useListView('redirects');
   // Cards take the full width, so Grid starts with the editor folded away.
@@ -258,10 +274,10 @@ export function RedirectsPage({
     recent: (a, b) => byNumber(b.lastHitAt, a.lastHitAt),
   });
   const visible = ordered.filter(
-    (r) => matchesFilters(r, picked) && matchesSearch(query, [r.fromPath, r.toPath, r.note])
+    (r) => matchesFilters(r, picked, match) && matchesSearch(query, [r.fromPath, r.toPath, r.note])
   );
   // A new search, filter or order starts again from the first page.
-  const paged = usePaged(visible, JSON.stringify([query, picked, sort]));
+  const paged = usePaged(visible, JSON.stringify([query, picked, match, sort]));
   const clearFilters = () => {
     setPicked({});
     selection.clear();
@@ -395,7 +411,7 @@ export function RedirectsPage({
       data-revealing={revealing || undefined}
       className="flex flex-1 flex-col gap-4 lg:h-[calc(100svh-7.5rem)] lg:flex-none"
     >
-      <div data-slot="list-toolbar" className="flex flex-wrap items-center gap-3">
+      <div data-slot="list-toolbar" className="flex flex-wrap items-center gap-3 md:gap-1.5">
         <div className="mr-auto flex flex-wrap items-center gap-3 max-md:w-full">
           <h1 data-slot="page-title" className="text-xl">
             Redirects
@@ -404,23 +420,32 @@ export function RedirectsPage({
         </div>
         {data.length > 0 && (
           <>
-            <SearchInput
+            <ToolbarSearch
               label="Search redirects"
               placeholder="Search paths and notes"
               value={query}
               onChange={setQuery}
             />
-            <ListSort options={SORTS} value={sort} onChange={setSort} />
-            <ListFilter
-              groups={filterGroups}
-              values={picked}
-              onChange={(key, next) => {
-                setPicked((prev) => ({ ...prev, [key]: next }));
-                selection.clear();
-              }}
-              onClear={clearFilters}
-            />
-            <ViewSwitch
+            <ListSort options={SORTS} value={sort} onChange={setSort} hideOnDesktop />
+
+            <ListDisplay
+              filter={
+                <ListFilter
+                  groups={filterGroups}
+                  match={match}
+                  onMatchChange={setMatch}
+                  savedKey="redirects"
+                  values={picked}
+                  onChange={(key, next) => {
+                    setPicked((prev) => ({ ...prev, [key]: next }));
+                    selection.clear();
+                  }}
+                  onClear={clearFilters}
+                />
+              }
+              sortOptions={SORTS}
+              sortValue={sort}
+              onSortChange={(next) => setSort(next as typeof sort)}
               value={layout}
               onChange={(next) => {
                 setLayout(next);
@@ -441,7 +466,7 @@ export function RedirectsPage({
             className="max-lg:hidden"
             onClick={() => setPaneOpen(!paneOpen)}
           >
-            <PanelRightIcon aria-hidden />
+            <PanelRightIcon open={paneOpen} aria-hidden />
           </Button>
         )}
         <div className="flex gap-3 max-md:hidden">{addButtons}</div>
@@ -460,7 +485,7 @@ export function RedirectsPage({
       </div>
 
       {data.length === 0 && pane === null ? (
-        <Empty className="flex-1 rounded-lg border">
+        <Empty className="flex-1 rounded-lg">
           <EmptyHeader>
             <EmptyMedia variant="icon">
               <ArrowRightIcon aria-hidden />
@@ -483,10 +508,7 @@ export function RedirectsPage({
           )}
         >
           <ListColumn
-            className={cn(
-              'transition-[border-color] duration-300 lg:min-w-80',
-              !paneOpen && 'border-transparent'
-            )}
+            className="lg:min-w-80"
             label="Redirects"
             header={
               <SelectionBar
@@ -540,6 +562,10 @@ export function RedirectsPage({
                     }}
                     swipe={{ label: 'Delete', onAction: () => void remove([r.id]) }}
                     menu={rowMenu(r)}
+                    menuOpen={() => {
+                      setPaneOpen(true);
+                      view.open({ kind: 'edit', id: r.id });
+                    }}
                     onOpen={() => {
                       // As on Posts: the open row closes the editor, any other row opens it.
                       if (isDesktop() && paneOpen && pane?.kind === 'edit' && pane.id === r.id) {
@@ -559,7 +585,7 @@ export function RedirectsPage({
                 {...paged.pager}
                 noun="redirects"
                 label="Redirect pages"
-                className="mt-0 shrink-0 border-t px-3 py-2 max-md:border-0"
+                className="mt-0 shrink-0 px-3 py-2"
               />
             )}
           </ListColumn>

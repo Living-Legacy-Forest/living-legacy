@@ -18,13 +18,14 @@ const buttonVariants = cva(
   {
     variants: {
       variant: {
-        // Raised look: a top-lit gradient, a one-pixel highlight along the top edge and a
-        // darker rim, all mixed from --primary so it follows the theme and dark mode.
+        // Flat: one solid fill, no rim or highlight.
+        // Turned off, it is a quiet grey that still reads, not a dimmed copy of the colour. While
         default:
-          '[--btn-edge:color-mix(in_oklch,var(--primary),black_10%)] [--btn-hi:color-mix(in_oklch,var(--primary),white_30%)] [--btn-top:color-mix(in_oklch,var(--primary),white_15%)] border-(--btn-edge) bg-primary bg-linear-to-b from-(--btn-top) to-primary text-primary-foreground shadow-[inset_0_1px_0_0_var(--btn-hi),0_1px_2px_0_rgb(0_0_0/0.05)] hover:from-(--btn-hi) active:from-primary',
+          // busy it keeps the colour, so the spinner has a button to sit on.
+          'bg-primary text-primary-foreground hover:bg-primary/90 active:bg-primary/85 [&:disabled:not([aria-busy])]:bg-foreground/10 [&:disabled:not([aria-busy])]:text-muted-foreground [&:disabled:not([aria-busy])]:opacity-100',
         // The active states repeat hover so a tap on a touch screen, where hover never fires, still answers.
         outline:
-          'border-border bg-background hover:bg-muted hover:text-foreground active:bg-muted active:text-foreground aria-expanded:bg-muted aria-expanded:text-foreground dark:border-input dark:bg-input/30 dark:hover:bg-input/50 dark:active:bg-input/50',
+          'bg-muted/60 hover:bg-muted hover:text-foreground active:bg-muted active:text-foreground aria-expanded:bg-muted aria-expanded:text-foreground dark:bg-input/30 dark:hover:bg-input/50 dark:active:bg-input/50',
         // In light mode --secondary is nearly the page colour, so the fill is darkened a step to
         // show as a button; dark mode's --secondary already stands off the surface.
         secondary:
@@ -39,13 +40,13 @@ const buttonVariants = cva(
         default:
           'touch:h-9 touch:after:-inset-y-[5px] h-8 gap-1.5 px-3 has-data-[icon=inline-end]:pr-2.5 has-data-[icon=inline-start]:pl-2.5',
         xs: "touch:after:-inset-y-2.5 h-6 gap-1 rounded-[min(var(--radius-md),10px)] px-2 text-xs in-data-[slot=button-group]:rounded-lg has-data-[icon=inline-end]:pr-1.5 has-data-[icon=inline-start]:pl-1.5 [&_svg:not([class*='size-'])]:size-3",
-        sm: "touch:h-9 touch:after:-inset-y-[5px] h-8 gap-1 rounded-[min(var(--radius-md),12px)] px-2.5 text-ui-sm in-data-[slot=button-group]:rounded-lg has-data-[icon=inline-end]:pr-1.5 has-data-[icon=inline-start]:pl-1.5 [&_svg:not([class*='size-'])]:size-3.5",
+        sm: "touch:h-9 touch:after:-inset-y-[5px] h-7 gap-1 rounded-[min(var(--radius-md),12px)] px-2.5 text-ui-sm in-data-[slot=button-group]:rounded-lg has-data-[icon=inline-end]:pr-1.5 has-data-[icon=inline-start]:pl-1.5 [&_svg:not([class*='size-'])]:size-3.5",
         lg: 'h-10 gap-1.5 px-3 has-data-[icon=inline-end]:pr-2.5 has-data-[icon=inline-start]:pl-2.5',
         icon: 'touch:size-9 touch:after:-inset-y-[5px] size-8 [--btn-press:0.96]',
         'icon-xs':
           "touch:after:-inset-y-2.5 size-6 rounded-[min(var(--radius-md),10px)] [--btn-press:0.96] in-data-[slot=button-group]:rounded-lg [&_svg:not([class*='size-'])]:size-3",
         'icon-sm':
-          'touch:size-9 touch:after:-inset-y-[5px] size-8 rounded-[min(var(--radius-md),12px)] [--btn-press:0.96] in-data-[slot=button-group]:rounded-lg',
+          'touch:size-9 touch:after:-inset-y-[5px] size-7 rounded-[min(var(--radius-md),12px)] [--btn-press:0.96] in-data-[slot=button-group]:rounded-lg',
         'icon-lg': 'size-10 [--btn-press:0.96]',
       },
     },
@@ -79,7 +80,7 @@ function labelKey(node: ReactNode): string {
  * other re-renders, so the cost is a string compare. The old width is read during render, the
  * last moment it is still on screen; it only happens on the render where the label changed.
  */
-function useLabelMorph(children: ReactNode) {
+function useLabelMorph(children: ReactNode, morphWidth: boolean) {
   const buttonRef = useRef<HTMLElement | null>(null);
   const labelRef = useRef<HTMLSpanElement>(null);
   const key = labelKey(children);
@@ -101,6 +102,11 @@ function useLabelMorph(children: ReactNode) {
 
     const reduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
     const iconOnly = !/\S/.test(key.replace(/<[^>]*>/g, ''));
+    const to = layoutWidth(button);
+    const resizing = morphWidth && !reduced && from !== null && Math.abs(to - from) >= 1;
+    // A wider label would show clipped at the edges while the button is still catching up, so it
+    // waits a beat before it fades in, and arrives as the width is nearly there.
+    const wait = resizing && to > (from ?? 0) ? 90 : 0;
     label.animate(
       reduced
         ? [{ opacity: 0 }, { opacity: 1 }]
@@ -113,11 +119,10 @@ function useLabelMorph(children: ReactNode) {
               { opacity: 0, transform: 'translateY(2px)' },
               { opacity: 1, transform: 'none' },
             ],
-      { duration: reduced ? 100 : 200, easing: easeOut }
+      { duration: reduced ? 100 : 200, delay: wait, fill: 'backwards', easing: easeOut }
     );
 
-    const to = layoutWidth(button);
-    if (reduced || from === null || Math.abs(to - from) < 1) return;
+    if (!resizing || from === null) return;
     const width = button.animate([{ width: `${from}px` }, { width: `${to}px` }], {
       duration: 300,
       easing: easeOut,
@@ -137,6 +142,12 @@ type ButtonProps = ButtonPrimitive.Props &
   VariantProps<typeof buttonVariants> & {
     /** Shows a spinner over the label and ignores presses, keeping focus and the button's width. */
     loading?: boolean;
+    /**
+     * Whether the button eases to its new width when the label changes. Off for a button whose
+     * neighbours change at the same time (a split button losing its arrow), where the width it
+     * measures is not the one it ends up at and the label shows clipped on the way.
+     */
+    morphWidth?: boolean;
   };
 
 function Button({
@@ -144,13 +155,14 @@ function Button({
   variant = 'default',
   size = 'default',
   loading = false,
+  morphWidth = true,
   disabled,
   focusableWhenDisabled,
   children,
   ref,
   ...props
 }: ButtonProps) {
-  const { buttonRef, labelRef } = useLabelMorph(children);
+  const { buttonRef, labelRef } = useLabelMorph(children, morphWidth);
   const setRef = (node: HTMLButtonElement | null) => {
     buttonRef.current = node;
     if (typeof ref === 'function') ref(node);

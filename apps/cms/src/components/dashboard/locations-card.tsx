@@ -44,7 +44,7 @@ export function LocationsCard({ locations }: { locations: DashboardData['locatio
       </CardHeader>
       {/* The map grows to match the card beside it. */}
       <CardContent className="flex-1">
-        <div className="h-full min-h-72 overflow-hidden rounded-lg border">
+        <div className="h-full min-h-72 overflow-hidden rounded-lg">
           <LocationsOverviewMap
             locations={locations.map((l) => ({
               id: l.id,

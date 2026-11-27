@@ -32,6 +32,7 @@ import { SuggestButton } from '@/components/ai/suggest-button';
 import { suggestAltText } from '@/server/ai';
 import { type MediaItem, getMediaItems, listMedia, updateMedia } from '@/server/media';
 import { isEnterKey } from '@/lib/keyboard';
+import { FIELD_LABEL } from '@/components/form-cells';
 
 // Images seen this session, so reopening a form shows its image at once.
 const known = new Map<string, MediaItem>();
@@ -137,7 +138,7 @@ export function ImageField({
       <div className={cn('space-y-0.5', headerClassName)}>
         <Label
           htmlFor={mediaId ? `${id}-alt` : `${id}-choose`}
-          className={cn(hideLabel && 'sr-only')}
+          className={cn(FIELD_LABEL, hideLabel && 'sr-only')}
         >
           {label}
         </Label>
@@ -148,7 +149,7 @@ export function ImageField({
         <div className={cn('flex gap-3', shape === 'wide' && 'flex-col')}>
           <div
             className={cn(
-              'bg-muted relative shrink-0 overflow-hidden rounded-md border',
+              'bg-muted relative shrink-0 overflow-hidden rounded-md',
               shape === 'wide' ? 'aspect-video w-full' : 'size-24'
             )}
           >

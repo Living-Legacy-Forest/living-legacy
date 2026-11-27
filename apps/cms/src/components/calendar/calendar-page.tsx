@@ -114,9 +114,9 @@ function EntryLink({
   );
 }
 
-function EntryIcon({ entry }: { entry: CalendarEntry }) {
+function EntryIcon({ entry, className }: { entry: CalendarEntry; className?: string }) {
   const Icon = entry.kind === 'post' ? FileText : CalendarClockIcon;
-  return <Icon aria-hidden className="text-muted-foreground size-3.5 shrink-0" />;
+  return <Icon aria-hidden className={cn('text-muted-foreground size-3.5 shrink-0', className)} />;
 }
 
 // The date picker's curves, so the two feel alike.
@@ -208,18 +208,26 @@ function Chip({ entry, siteZone }: { entry: CalendarEntry; siteZone: string }) {
           <EntryLink
             entry={entry}
             siteZone={siteZone}
-            className="hover:bg-muted focus-visible:ring-ring/50 flex items-center gap-1.5 rounded-md px-1.5 py-1 text-xs outline-none focus-visible:ring-2"
+            className="bg-background/70 hover:bg-background focus-visible:ring-ring/50 flex flex-col gap-0.5 rounded-md px-2 py-1.5 text-xs transition-colors outline-none focus-visible:ring-2"
           >
-            <span
-              aria-hidden
-              className={cn('size-1.5 shrink-0 rounded-full', STATE_DOT[entry.state])}
-            />
-            <EntryIcon entry={entry} />
-            <span className="text-muted-foreground shrink-0 tabular-nums">
-              {entry.kind === 'event-live' ? 'Live' : timeOf(entry, siteZone)}
+            {/* The title leads, so it keeps the room; when and what kind sit quietly beneath. */}
+            <span className="flex min-w-0 items-center gap-1.5">
+              <span
+                aria-hidden
+                className={cn('size-1.5 shrink-0 rounded-full', STATE_DOT[entry.state])}
+              />
+              <span
+                className={cn(
+                  'truncate font-medium',
+                  entry.state === 'cancelled' && 'text-muted-foreground line-through'
+                )}
+              >
+                {entry.title || 'Untitled'}
+              </span>
             </span>
-            <span className={cn('truncate', entry.state === 'cancelled' && 'line-through')}>
-              {entry.title || 'Untitled'}
+            <span className="text-muted-foreground flex items-center gap-1 pl-3 text-[0.6875rem] tabular-nums">
+              <EntryIcon entry={entry} className="size-3" />
+              {entry.kind === 'event-live' ? 'Live' : timeOf(entry, siteZone)}
             </span>
           </EntryLink>
         }
@@ -283,7 +291,7 @@ function DayCell({
     <div
       role="gridcell"
       aria-label={dayName(day)}
-      className={cn('min-h-28 min-w-0 border-t border-l p-1.5', !day.inMonth && 'bg-muted/30')}
+      className={cn('bg-muted/50 min-h-28 min-w-0 rounded-lg p-1.5', !day.inMonth && 'bg-muted/20')}
     >
       <span
         className={cn(
@@ -545,16 +553,16 @@ export function CalendarPage({ data, now }: { data: CalendarData; now: number })
               {/* Wider screens: the month as a grid. */}
               <TooltipProvider delay={400}>
                 <div role="grid" aria-label={monthName(month)} className="max-md:hidden">
-                  <div role="row" className="text-muted-foreground grid grid-cols-7 text-xs">
+                  <div role="row" className="text-muted-foreground grid grid-cols-7 gap-1 text-xs">
                     {WEEKDAYS.map((name) => (
                       <div key={name} role="columnheader" className="px-2 pb-1.5">
                         {name}
                       </div>
                     ))}
                   </div>
-                  <div className="border-r border-b">
+                  <div className="space-y-1">
                     {weeks.map((week) => (
-                      <div key={dayKey(week[0]!)} role="row" className="grid grid-cols-7">
+                      <div key={dayKey(week[0]!)} role="row" className="grid grid-cols-7 gap-1">
                         {week.map((day) => (
                           <DayCell
                             key={dayKey(day)}
@@ -577,7 +585,7 @@ export function CalendarPage({ data, now }: { data: CalendarData; now: number })
                     Nothing scheduled in {monthName(month)}.
                   </p>
                 ) : (
-                  <div className="divide-y rounded-xl border">
+                  <div className="bg-muted/50 rounded-xl">
                     <AnimatePresence initial={false} mode="popLayout">
                       {busy.map((day, dayIndex) => (
                         <Reveal
@@ -595,7 +603,7 @@ export function CalendarPage({ data, now }: { data: CalendarData; now: number })
                             {dayName(day)}
                             {dayKey(day) === today && ' · Today'}
                           </h3>
-                          <div className="divide-y">
+                          <div>
                             <AnimatePresence initial={false} mode="popLayout">
                               {byDay.get(dayKey(day))!.map((entry, index) => (
                                 <Reveal key={entry.key} index={index}>

@@ -8,9 +8,11 @@ import { useNavigate } from '@tanstack/react-router';
 import { useIsDesktop } from '@/components/editor-page/use-is-desktop';
 import { useState } from 'react';
 import { CardMeta, ListCard, ListCards } from '@/components/list/list-card';
-import { ListFilter, passes, publishStatusOptions } from '@/components/list/list-filter';
+import { ListFilter, optionsOf, publishStatusOptions } from '@/components/list/list-filter';
 import { ListSort, byText, sortedBy, useListSort } from '@/components/list/list-sort';
-import { ViewSwitch, useListView } from '@/components/list/view-switch';
+import { useListView } from '@/components/list/view-switch';
+import { ListDisplay } from '@/components/list/list-display';
+import { PanelToggleIcon } from '@/components/panel-toggle-icon';
 import {
   ListColumn,
   ListPageLayout,
@@ -27,18 +29,12 @@ import {
 } from '@/components/list/list-row';
 import {
   ConfirmBulkDelete,
-  SearchInput,
+  ToolbarSearch,
   SelectionBar,
   matchesSearch,
   useSelection,
 } from '@/components/list/list-tools';
-import {
-  ExternalLink,
-  List as ListIcon,
-  MapPinIcon,
-  PencilIcon,
-  PlusIcon,
-} from '@/components/icons';
+import { ExternalLink, MapPinIcon, PencilIcon, PlusIcon } from '@/components/icons';
 import { LocationsOverviewMap } from '@/components/locations/location-map';
 import { pinOf } from '@/components/locations/editor/location-values';
 import { DeleteLocation } from '@/components/locations/delete-location';
@@ -74,6 +70,7 @@ import {
   deleteLocations,
   setLocationStatus,
 } from '@/server/locations';
+import { rowPasses, type MatchMode } from '@/components/list/filter-tools';
 
 type Search = { selected?: string };
 
@@ -116,6 +113,7 @@ export function LocationsPage({
   const [query, setQuery] = useState('');
   // Ticked values per filter group; an empty group does not narrow the list.
   const [picked, setPicked] = useState<Record<string, string[]>>({});
+  const [match, setMatch] = useState<MatchMode>('all');
   const [layout, setLayout] = useListView('locations');
   const grid = layout === 'grid';
   const [toDelete, setToDelete] = useState<string[] | null>(null);
@@ -133,10 +131,14 @@ export function LocationsPage({
   });
   const visible = ordered.filter(
     (l) =>
-      passes(picked.statuses, l.status) &&
-      passes(picked.states, l.state) &&
-      passes(picked.stages, l.stage) &&
-      matchesSearch(query, [l.name, l.region, australianStateLabels[l.state], l.address])
+      rowPasses(match, picked, {
+        statuses: l.status,
+        states: l.state,
+        stages: l.stage,
+        regions: l.region,
+        photo: l.heroMediaId ? 'yes' : 'no',
+        pin: l.latitude === null || l.latitude === undefined ? 'no' : 'yes',
+      }) && matchesSearch(query, [l.name, l.region, australianStateLabels[l.state], l.address])
   );
   const clearFilters = () => {
     setPicked({});
@@ -227,9 +229,9 @@ export function LocationsPage({
       <div
         data-slot="list-toolbar"
         className={cn(
-          'flex flex-wrap items-center gap-3',
+          'flex flex-wrap items-center gap-3 md:gap-1.5',
           bleed &&
-            'lg:bg-background/90 lg:absolute lg:inset-x-3 lg:top-3 lg:z-10 lg:rounded-xl lg:border lg:px-3 lg:py-2 lg:shadow-sm lg:backdrop-blur'
+            'lg:bg-background/90 lg:absolute lg:inset-x-3 lg:top-3 lg:z-10 lg:rounded-xl lg:px-3 lg:py-2 lg:shadow-md lg:backdrop-blur'
         )}
       >
         <h1 data-slot="page-title" className="mr-auto text-xl">
@@ -238,7 +240,7 @@ export function LocationsPage({
         {data.length > 0 && (
           // Under the title and Add location on phones, beside them from sm.
           <div className="order-last w-full sm:order-none sm:w-auto">
-            <SearchInput
+            <ToolbarSearch
               label="Search locations"
               placeholder="Search locations"
               value={query}
@@ -246,31 +248,10 @@ export function LocationsPage({
             />
           </div>
         )}
-        {data.length > 0 && <ListSort options={SORTS} value={sort} onChange={setSort} />}
         {data.length > 0 && (
-          <ListFilter
-            groups={[
-              { key: 'statuses', label: 'Status', options: publishStatusOptions },
-              // Only the states and stages some location is in.
-              {
-                key: 'states',
-                label: 'State',
-                options: stateItems.filter((s) => data.some((l) => l.state === s.value)),
-              },
-              {
-                key: 'stages',
-                label: 'Stage',
-                options: stageItems.filter((s) => data.some((l) => l.stage === s.value)),
-              },
-            ]}
-            values={picked}
-            onChange={(key, next) => {
-              setPicked((prev) => ({ ...prev, [key]: next }));
-              selection.clear();
-            }}
-            onClear={clearFilters}
-          />
+          <ListSort options={SORTS} value={sort} onChange={setSort} hideOnDesktop />
         )}
+
         {data.length > 0 && (
           // Only means something while the list is open. Its width glides to nothing, on
           // the same curve as the list, so the toolbar does not jump when it goes.
@@ -283,7 +264,58 @@ export function LocationsPage({
             )}
           >
             <div className="min-w-0 overflow-hidden">
-              <ViewSwitch
+              <ListDisplay
+                filter={
+                  <ListFilter
+                    groups={[
+                      { key: 'statuses', label: 'Status', options: publishStatusOptions },
+                      // Only the states and stages some location is in.
+                      {
+                        key: 'states',
+                        label: 'State',
+                        options: stateItems.filter((s) => data.some((l) => l.state === s.value)),
+                      },
+                      {
+                        key: 'stages',
+                        label: 'Stage',
+                        options: stageItems.filter((s) => data.some((l) => l.stage === s.value)),
+                      },
+                      {
+                        key: 'regions',
+                        label: 'Region',
+                        options: optionsOf(data.map((l) => l.region)),
+                      },
+                      {
+                        key: 'photo',
+                        label: 'Photo',
+                        options: [
+                          { value: 'yes', label: 'Has a photo' },
+                          { value: 'no', label: 'No photo' },
+                        ],
+                      },
+                      {
+                        key: 'pin',
+                        label: 'Map pin',
+                        options: [
+                          { value: 'yes', label: 'On the map' },
+                          { value: 'no', label: 'No pin yet' },
+                        ],
+                      },
+                    ]}
+                    match={match}
+                    onMatchChange={setMatch}
+                    savedKey="locations"
+                    values={picked}
+                    onChange={(key, next) => {
+                      setPicked((prev) => ({ ...prev, [key]: next }));
+                      selection.clear();
+                    }}
+                    onClear={clearFilters}
+                  />
+                }
+                sortOptions={SORTS}
+                sortValue={sort}
+                onSortChange={(next) => setSort(next as typeof sort)}
                 value={layout}
                 onChange={(next) => {
                   setLayout(next);
@@ -303,7 +335,8 @@ export function LocationsPage({
             className="max-lg:hidden"
             onClick={() => setListOpen((open) => !open)}
           >
-            <ListIcon aria-hidden />
+            {/* Still, and mirrored: the list is the panel on the left. */}
+            <PanelToggleIcon open={listOpen} aria-hidden className="-scale-x-100" />
           </Button>
         )}
         {canWrite && <div className="max-md:hidden">{addButton}</div>}
@@ -323,7 +356,7 @@ export function LocationsPage({
       </div>
 
       {data.length === 0 ? (
-        <Empty className="flex-1 rounded-lg border">
+        <Empty className="flex-1 rounded-lg">
           <EmptyHeader>
             <EmptyMedia variant="icon">
               <MapPinIcon aria-hidden />
@@ -342,7 +375,7 @@ export function LocationsPage({
             inert={!listOpen && desktop}
             className={cn(
               // From lg a panel over the left of the map; below it the list is the page.
-              'lg:bg-background lg:absolute lg:top-[4.75rem] lg:bottom-3 lg:left-3 lg:z-10 lg:w-96 lg:max-w-[calc(100%-1.5rem)] lg:overflow-hidden lg:rounded-xl lg:border lg:shadow-lg',
+              'lg:bg-background lg:absolute lg:top-[4.75rem] lg:bottom-3 lg:left-3 lg:z-10 lg:w-96 lg:max-w-[calc(100%-1.5rem)] lg:overflow-hidden lg:rounded-xl lg:shadow-lg',
               'transition-[opacity,translate] duration-300 ease-[cubic-bezier(0.32,0.72,0,1)] motion-reduce:transition-none',
               !listOpen && 'lg:pointer-events-none lg:-translate-x-4 lg:opacity-0'
             )}
@@ -483,7 +516,7 @@ function LocationSummary({ item }: { item: LocationItem }) {
   return (
     <span className="flex min-w-0 items-center gap-3">
       {/* Locations without a hero photo keep the space, so the names line up. */}
-      <span className="bg-muted text-muted-foreground flex h-10 w-15 shrink-0 items-center justify-center overflow-hidden rounded-md border">
+      <span className="bg-muted text-muted-foreground flex h-10 w-15 shrink-0 items-center justify-center overflow-hidden rounded-md">
         {item.heroMediaId ? (
           <img
             src={`/api/media/${item.heroMediaId}?w=640`}
@@ -535,7 +568,7 @@ function LocationSheet({
       <SheetContent showOverlay={false} initialFocus={false} className="gap-0 sm:max-w-md">
         {item && (
           <>
-            <SheetHeader className="gap-2 border-b pr-12">
+            <SheetHeader className="gap-2 pr-12">
               <div className="flex items-center gap-1.5">
                 <Badge
                   variant={item.status === 'published' ? 'secondary' : 'outline'}
@@ -553,7 +586,7 @@ function LocationSheet({
             <div className="min-h-0 flex-1 overflow-y-auto p-4">
               <LocationCard item={item} />
             </div>
-            <SheetFooter className="flex-row items-center border-t">
+            <SheetFooter className="flex-row items-center">
               {item.stage === 'external' && item.externalUrl && (
                 <Button
                   variant="outline"
@@ -598,7 +631,7 @@ function LocationCard({ item }: { item: LocationItem }) {
 
   return (
     <article>
-      <div className="bg-muted mb-4 aspect-[3/2] overflow-hidden rounded-xl border">
+      <div className="bg-muted mb-4 aspect-[3/2] overflow-hidden rounded-xl">
         {image ? (
           <img src={image.url} alt={image.alt} className="size-full object-cover" />
         ) : (
@@ -612,7 +645,7 @@ function LocationCard({ item }: { item: LocationItem }) {
         <p className="text-muted-foreground mt-3 font-mono text-xs">/locations/{item.slug}/</p>
       )}
       {details.length > 0 && (
-        <dl className="mt-5 space-y-2 border-t pt-4 text-sm">
+        <dl className="mt-5 space-y-2 pt-1 text-sm">
           {details.map(([label, value]) => (
             <div key={label} className="grid grid-cols-[4.5rem_1fr] gap-2">
               <dt className="text-muted-foreground text-xs leading-5">{label}</dt>

@@ -227,7 +227,7 @@
   --accent: oklch(0.9461 0 0);
   --accent-foreground: oklch(0.2435 0 0);
   --destructive: oklch(0.577 0.245 27.325);
-  --border: oklch(calc(0.9037 - 0.14 * var(--contrast, 0)) 0 0);
+  --border: oklch(calc(0.9215 - 0.14 * var(--contrast, 0)) 0 0);
   /* The outline of inputs, selects and outlined toggles. It has to read against the page (0.991),
      so it is a clear step darker than --border, which only needs to divide surfaces. */
   --input: oklch(calc(0.85 - 0.25 * var(--contrast, 0)) 0 0);
@@ -289,7 +289,7 @@
   /* Used as text and as a 10 to 20% wash behind it, so it has to stay light on a
      dark surface; the theme's deep maroon read as a smudge. */
   --destructive: oklch(0.704 0.191 22.216);
-  --border: oklch(calc(0.2809 + 0.2 * var(--contrast, 0)) 0 0);
+  --border: oklch(calc(0.2609 + 0.2 * var(--contrast, 0)) 0 0);
   --input: oklch(calc(0.2603 + 0.22 * var(--contrast, 0)) 0 0);
   --ring: oklch(0.5568 0.1355 155.812);
 
@@ -912,6 +912,18 @@
 [data-sonner-toaster]
   [data-sonner-toast][data-styled='true']:not([data-type='loading'], [data-swipe-out='true']) {
   animation: toast-countdown var(--toast-duration, 5s) linear forwards;
+}
+/* Phones go without the line: a toast there is swiped away, and the bar along its edge is
+   noise on a small card. The same phone test as the rest of this file. */
+@media (width < 48rem), (hover: none) and (height < 30rem) {
+  [data-sonner-toaster] [data-sonner-toast][data-styled='true'] {
+    background-image: none;
+  }
+  /* Matches the countdown rule's selector, or its higher specificity keeps the timer running. */
+  [data-sonner-toaster]
+    [data-sonner-toast][data-styled='true']:not([data-type='loading'], [data-swipe-out='true']) {
+    animation: none;
+  }
 }
 /* Sonner holds the timer while the stack is hovered or touched; so does the line. */
 [data-sonner-toaster] [data-sonner-toast][data-styled='true'][data-expanded='true'] {

@@ -17,6 +17,7 @@ import { cn } from '@/lib/utils';
 import { type MissingPage, dismissMissingPage } from '@/server/not-found';
 import { useRevealOnce } from '@/lib/use-reveal-once';
 import { RevealWords } from '@/components/dashboard/reveal-words';
+import { GlideHighlight } from '@/components/ui/glide-highlight';
 
 /** Each row carries two buttons, so the pages are shorter than a plain list's. */
 const PAGE_SIZES = [10, 25, 50, 100] as const;
@@ -55,7 +56,7 @@ export function MissingPagesPage({
       </div>
 
       {data.length === 0 ? (
-        <Empty className="rounded-lg border max-md:rounded-[10px] max-md:border-0 max-md:bg-(--ios-cell)">
+        <Empty className="rounded-lg max-md:rounded-[10px] max-md:border-0 max-md:bg-(--ios-cell)">
           <EmptyHeader>
             <EmptyMedia variant="icon">
               <Link2Off aria-hidden />
@@ -67,11 +68,18 @@ export function MissingPagesPage({
           </EmptyHeader>
         </Empty>
       ) : (
-        <ul className="divide-y rounded-lg border max-md:divide-(--ios-separator) max-md:overflow-hidden max-md:rounded-[10px] max-md:border-0 max-md:bg-(--ios-cell)">
+        <ul className="divide-border/60 bg-muted/50 divide-y overflow-hidden rounded-lg max-md:divide-(--ios-separator) max-md:overflow-hidden max-md:rounded-[10px] max-md:border-0 max-md:bg-(--ios-cell)">
+          <GlideHighlight
+            follow="hover"
+            as="li"
+            selector="[data-glide]"
+            className="bg-muted border-0! max-md:hidden"
+          />
           {paged.shown.map((page) => (
             <li
               key={page.path}
-              className="flex flex-col gap-2 px-4 py-3 sm:flex-row sm:items-center sm:gap-4"
+              data-glide
+              className="relative flex flex-col gap-2 px-4 py-3 sm:flex-row sm:items-center sm:gap-4"
             >
               <div className="min-w-0 flex-1">
                 <p className="text-ui truncate font-mono" title={page.path}>

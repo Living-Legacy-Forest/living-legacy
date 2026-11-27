@@ -1,4 +1,5 @@
 import type { ReactNode } from 'react';
+import { InfoTip } from '@/components/info-tip';
 import { Label } from '@/components/ui/label';
 import { cn } from '@/lib/utils';
 
@@ -27,7 +28,7 @@ export function SettingsSection({
     // settings on the right, with a rule between sections. Phones keep iOS Settings' groups.
     <section
       id={id}
-      className="scroll-mt-32 max-md:space-y-1.5 md:grid md:grid-cols-[minmax(0,15rem)_minmax(0,1fr)] md:gap-x-10 md:border-t md:pt-8 md:first:border-t-0 md:first:pt-0"
+      className="scroll-mt-32 max-md:space-y-1.5 md:grid md:grid-cols-[minmax(0,15rem)_minmax(0,1fr)] md:gap-x-10 md:pt-8 md:first:pt-0"
     >
       {/* Phones: iOS Settings' small grey heading over an inset group. */}
       <div className="max-md:px-4">
@@ -45,7 +46,9 @@ export function SettingsSection({
         data-framed={framed || undefined}
         className={cn(
           'min-w-0 max-md:divide-y max-md:divide-(--ios-separator) max-md:overflow-hidden max-md:rounded-[10px] max-md:bg-(--ios-cell)',
-          framed ? 'md:divide-y md:overflow-hidden md:rounded-lg md:border' : 'md:space-y-6'
+          framed
+            ? 'md:divide-border/60 md:bg-muted/50 md:divide-y md:overflow-hidden md:rounded-lg'
+            : 'md:space-y-6'
         )}
       >
         {children}
@@ -58,6 +61,7 @@ export function SettingsRow({
   id,
   title,
   description,
+  info,
   suffix,
   stacked = false,
   below = false,
@@ -67,12 +71,23 @@ export function SettingsRow({
   id: string;
   title: string;
   description?: ReactNode;
+  /** The detail that would make the description too long, in a "?" beside the title. */
+  info?: ReactNode;
   suffix?: ReactNode;
   stacked?: boolean;
   /** Phones: the control takes its own line under the title, for one too wide to sit beside it. */
   below?: boolean;
   children: ReactNode;
 }) {
+  const heading = info ? (
+    <div className="flex items-center gap-1.5">
+      <Label htmlFor={id}>{title}</Label>
+      <InfoTip label={`About ${title.toLowerCase()}`}>{info}</InfoTip>
+    </div>
+  ) : (
+    <Label htmlFor={id}>{title}</Label>
+  );
+
   if (stacked) {
     return (
       <div
@@ -81,7 +96,7 @@ export function SettingsRow({
         className="space-y-1.5 max-md:px-4 max-md:py-3.5"
       >
         <div className="flex items-center justify-between gap-2">
-          <Label htmlFor={id}>{title}</Label>
+          {heading}
           {suffix}
         </div>
         {description && <p className="text-muted-foreground text-xs">{description}</p>}
@@ -98,7 +113,7 @@ export function SettingsRow({
       className="flex flex-wrap items-center justify-between gap-x-4 gap-y-2 max-md:grid max-md:grid-cols-[fit-content(50%)_minmax(0,1fr)] max-md:gap-y-0 max-md:px-4 max-md:py-0"
     >
       <div className="min-w-0 flex-1 space-y-0.5 max-md:contents">
-        <Label htmlFor={id}>{title}</Label>
+        {heading}
         {description && (
           <p className="text-muted-foreground text-xs max-md:col-span-2 max-md:row-start-2">
             {description}

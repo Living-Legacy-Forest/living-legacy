@@ -39,7 +39,7 @@ const stageHints: Record<LocationStage, string> = {
 
 function Section({ title, children }: { title: string; children: React.ReactNode }) {
   return (
-    <section aria-label={title} className="space-y-3 border-b pb-6 last:border-b-0">
+    <section aria-label={title} className="space-y-3 pb-6">
       <h2 className="text-sm font-semibold max-md:px-4 max-md:text-[1.0625rem]">{title}</h2>
       {children}
     </section>
@@ -202,7 +202,7 @@ export function LocationDetails({ editor }: { editor: LocationEditorState }) {
       </Section>
 
       <Section title="Search and sharing">
-        <div className="space-y-0.5 rounded-md border p-3">
+        <div className="bg-muted/50 space-y-0.5 rounded-md p-3">
           <p className="text-muted-foreground truncate text-xs">
             {SITE_HOST} › locations › {values.slug || '…'}
           </p>

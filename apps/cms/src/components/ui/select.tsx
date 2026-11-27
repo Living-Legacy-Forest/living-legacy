@@ -74,7 +74,7 @@ function SelectTrigger({
       data-slot="select-trigger"
       data-size={size}
       className={cn(
-        "group/select-trigger border-input focus-visible:border-ring aria-invalid:border-destructive aria-invalid:ring-destructive/20 data-placeholder:text-muted-foreground dark:bg-input/30 dark:hover:bg-input/50 dark:aria-invalid:border-destructive/50 dark:aria-invalid:ring-destructive/25 md:text-ui touch:data-[size=default]:h-9 touch:data-[size=sm]:h-9 flex w-fit items-center justify-between gap-1.5 rounded-lg border bg-transparent py-2 pr-2 pl-2.5 text-base whitespace-nowrap transition-colors outline-none select-none disabled:cursor-not-allowed disabled:opacity-50 data-[size=default]:h-8 data-[size=sm]:h-8 data-[size=sm]:rounded-[min(var(--radius-md),10px)] *:data-[slot=select-value]:line-clamp-1 *:data-[slot=select-value]:flex *:data-[slot=select-value]:items-center *:data-[slot=select-value]:gap-1.5 [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-4",
+        "group/select-trigger focus-visible:bg-background focus-visible:ring-ring/15 aria-invalid:border-destructive aria-invalid:ring-destructive/20 data-placeholder:text-muted-foreground dark:bg-input/30 dark:hover:bg-input/50 dark:aria-invalid:border-destructive/50 dark:aria-invalid:ring-destructive/25 touch:data-[size=default]:h-9 touch:data-[size=sm]:h-9 bg-muted/60 hover:bg-muted flex w-fit items-center justify-between gap-1.5 rounded-lg border border-transparent py-2 pr-2 pl-2.5 text-base whitespace-nowrap transition-colors outline-none select-none focus-visible:ring-1 disabled:cursor-not-allowed disabled:opacity-50 data-[size=default]:h-8 data-[size=sm]:h-8 data-[size=sm]:rounded-[min(var(--radius-md),10px)] *:data-[slot=select-value]:line-clamp-1 *:data-[slot=select-value]:flex *:data-[slot=select-value]:items-center *:data-[slot=select-value]:gap-1.5 md:text-xs [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-3.5",
         className
       )}
       {...props}
@@ -126,7 +126,7 @@ function SelectContent({
           data-slot="select-content"
           data-align-trigger={alignItemWithTrigger}
           className={cn(
-            'bg-popover text-popover-foreground ring-foreground/6 relative isolate z-50 max-h-(--available-height) w-(--anchor-width) min-w-36 origin-(--transform-origin) overflow-x-hidden overflow-y-auto rounded-lg shadow-md ring-1 max-md:min-w-60 max-md:rounded-xl',
+            'bg-popover text-popover-foreground relative isolate z-50 max-h-(--available-height) w-max max-w-xs min-w-(--anchor-width) origin-(--transform-origin) overflow-x-hidden overflow-y-auto rounded-[10px] shadow-md max-md:min-w-60 max-md:rounded-xl',
             // Grows from the trigger, as dropdown menus do. Laid over the trigger (aligned to the
             // chosen item) there is no side, so it only fades and scales.
             'transition-[opacity,scale,translate] duration-150 ease-[cubic-bezier(0.16,1,0.3,1)] motion-reduce:transition-opacity',
@@ -162,7 +162,7 @@ function SelectItem({ className, children, onClick, ...props }: SelectPrimitive.
       data-slot="select-item"
       onClick={onClick}
       className={cn(
-        "focus:text-accent-foreground not-data-[variant=destructive]:focus:**:text-accent-foreground text-ui touch:min-h-9 relative flex w-full cursor-default items-center gap-1.5 rounded-md py-1 pr-8 pl-1.5 outline-hidden select-none data-disabled:pointer-events-none data-disabled:opacity-50 max-md:text-[1.0625rem] [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-4 *:[span]:last:flex *:[span]:last:items-center *:[span]:last:gap-2",
+        "focus:text-accent-foreground not-data-[variant=destructive]:focus:**:text-accent-foreground touch:text-ui-sm touch:min-h-9 relative flex w-full cursor-default items-center gap-1.5 rounded-md py-1.5 pr-8 pl-1.5 text-xs outline-hidden select-none data-disabled:pointer-events-none data-disabled:opacity-50 max-md:text-[1.0625rem] [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-3.5 *:[span]:last:flex *:[span]:last:items-center *:[span]:last:gap-2",
         className
       )}
       {...props}
@@ -186,7 +186,7 @@ function SelectSeparator({ className, ...props }: SelectPrimitive.Separator.Prop
   return (
     <SelectPrimitive.Separator
       data-slot="select-separator"
-      className={cn('bg-border pointer-events-none -mx-1 my-1 h-px', className)}
+      className={cn('pointer-events-none -mx-1 my-1 h-px bg-transparent', className)}
       {...props}
     />
   );

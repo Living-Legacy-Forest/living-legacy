@@ -73,6 +73,30 @@ export function useShortcut(id: ShortcutId): string | null {
 const platform = (): Platform =>
   /mac|iphone|ipad|ipod/i.test(globalThis.navigator?.platform ?? '') ? 'mac' : 'other';
 
+/** True when a key press is a fixed shortcut such as "mod+a": ⌘A on a Mac, Ctrl+A elsewhere. */
+export function pressedFixed(event: KeyboardEvent, shortcut: string) {
+  return matchesShortcut(event, shortcut, platform());
+}
+
+/** The bits of an element `isTypingElement` looks at, so it can be tested without a browser. */
+type MaybeField = {
+  tagName?: string;
+  isContentEditable?: boolean;
+  closest?: (selector: string) => unknown;
+};
+
+/**
+ * Whether keys are going into a text field, the rich-text editor or a menu's search: places where
+ * ⌘A, Esc and the like must keep their usual meaning, not select a list's rows.
+ */
+export function isTypingElement(element: MaybeField | null | undefined): boolean {
+  if (!element) return false;
+  const tag = element.tagName?.toUpperCase();
+  if (tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT') return true;
+  if (element.isContentEditable) return true;
+  return !!element.closest?.('[contenteditable="true"],[role="textbox"],[role="combobox"]');
+}
+
 /** True when a key press is the current shortcut. Read at press time, so a change applies at once. */
 export function pressed(event: KeyboardEvent, id: ShortcutId) {
   const shortcut = read(id);

@@ -2,6 +2,7 @@ import { Link } from '@tanstack/react-router';
 import { useState } from 'react';
 import { type BrandName, BrandLogo } from '@/components/brand-logos';
 import { groupBoxClass, groupHeadingClass } from '@/components/form-cells';
+import { InfoTip } from '@/components/info-tip';
 import { StatusPulse } from '@/components/system/status-pulse';
 import { Label } from '@/components/ui/label';
 import { Spinner } from '@/components/ui/spinner';
@@ -16,8 +17,8 @@ type Service = {
   brand: BrandName;
   does: string;
   connected: (status: ServiceStatuses) => boolean;
-  /** What an admin does to connect it, shown while it is not. */
-  setup: string;
+  /** What happens without it, shown while it is not connected. Who connects it is said once, on the page. */
+  setup?: string;
   /** Where to use or manage it. */
   link?:
     | { to: '/settings'; hash: string; label: string }
@@ -28,16 +29,12 @@ type Service = {
   control?: 'bookingConfirmations';
 };
 
-// What to do when a service is not connected, without naming secrets: who sets these up is a developer.
-const ASK = 'Ask your developer to connect it.';
-
 const services: Service[] = [
   {
     name: 'HubSpot',
     brand: 'hubspot',
     does: 'Sends event bookings to HubSpot as contacts.',
     connected: (s) => s.hubspot,
-    setup: ASK,
     note: 'Website forms send enquiries to HubSpot as well. That is set when the website is built, so it is not shown here.',
   },
   {
@@ -45,7 +42,7 @@ const services: Service[] = [
     brand: 'cloudflare',
     does: 'Sends sign-in links, and confirmations to guests who book on the website.',
     connected: (s) => s.email,
-    setup: `${ASK} Without it, sign-in links and booking confirmations cannot be emailed.`,
+    setup: 'Without it, sign-in links and booking confirmations cannot be emailed.',
     control: 'bookingConfirmations',
   },
   {
@@ -53,7 +50,6 @@ const services: Service[] = [
     brand: 'google',
     does: 'Lets people sign in with their Google account.',
     connected: (s) => s.googleSignIn,
-    setup: ASK,
     link: { to: '/settings', hash: 'sign-in', label: 'Turn it on or off in Settings' },
   },
   {
@@ -61,7 +57,7 @@ const services: Service[] = [
     brand: 'claude',
     does: 'Suggests search text, summaries, tags and alt text.',
     connected: (s) => s.assistant,
-    setup: `${ASK} Until then the Suggest buttons are hidden.`,
+    setup: 'Until then the Suggest buttons are hidden.',
     link: { to: '/settings', hash: 'writing-assistant', label: 'Writing assistant settings' },
   },
   {
@@ -69,14 +65,15 @@ const services: Service[] = [
     brand: 'posthog',
     does: 'Draws the page-view charts on the Posts list.',
     connected: (s) => s.posthogReports,
-    setup: `${ASK} The charts are skipped without them. The website's own PostHog key is under Website tracking.`,
+    setup:
+      "The charts are skipped without them. The website's own PostHog key is under Website tracking.",
   },
   {
     name: 'Better Stack uptime',
     brand: 'betterstack',
     does: 'Shows whether the website and CMS are up.',
     connected: (s) => s.uptime,
-    setup: `${ASK} The Uptime page stays empty without it.`,
+    setup: 'The Uptime page stays empty without it.',
     link: { to: '/uptime', label: 'Open Uptime' },
   },
   {
@@ -84,7 +81,7 @@ const services: Service[] = [
     brand: 'betterstack',
     does: 'Tells Better Stack that each scheduled job ran, so a missed one raises an alert.',
     connected: (s) => s.heartbeats,
-    setup: `${ASK} Nothing is pinged without it.`,
+    setup: 'Nothing is pinged without it.',
     link: { to: '/system', label: 'See the jobs on System' },
   },
   {
@@ -148,7 +145,9 @@ export function ServicesSection({
                   className="mt-0.5"
                 />
               </div>
-              {!connected && <p className="text-muted-foreground text-xs">{service.setup}</p>}
+              {!connected && service.setup && (
+                <p className="text-muted-foreground text-xs">{service.setup}</p>
+              )}
               {service.note && <p className="text-muted-foreground text-xs">{service.note}</p>}
               {service.control === 'bookingConfirmations' && (
                 <BookingConfirmationsSwitch saved={bookingConfirmations} />
@@ -169,10 +168,6 @@ export function ServicesSection({
           );
         })}
       </div>
-      <p className="text-muted-foreground text-xs max-md:px-4">
-        A developer sets these up on the server, so apart from the booking switch they cannot be
-        changed here. The keys themselves are never shown.
-      </p>
     </section>
   );
 }
@@ -200,15 +195,20 @@ function BookingConfirmationsSwitch({ saved }: { saved: boolean }) {
   return (
     <div className="touch:min-h-11 flex items-start justify-between gap-3 pt-1.5">
       <div className="min-w-0 space-y-0.5">
-        <Label htmlFor={id} className="text-sm font-medium">
-          Send booking confirmations from the CMS
-        </Label>
-        <p className="text-muted-foreground text-xs">
-          Turn this off once HubSpot sends booking emails, so guests don't get two. Turning it back
-          on emails every unsent website booking from the last 24 hours, which HubSpot may already
-          have emailed, so only do that if HubSpot is not sending them. The guest list flags
-          bookings made while it was off.
-        </p>
+        <div className="flex items-center gap-1.5">
+          <Label htmlFor={id} className="text-sm font-medium">
+            Send booking confirmations from the CMS
+          </Label>
+          <InfoTip label="About booking confirmations">
+            <p>Turn this off once HubSpot sends booking emails, so guests don't get two.</p>
+            <p>
+              Turning it back on emails every unsent website booking from the last 24 hours, which
+              HubSpot may already have emailed, so only do that if HubSpot is not sending them. The
+              guest list flags bookings made while it was off.
+            </p>
+          </InfoTip>
+        </div>
+        <p className="text-muted-foreground text-xs">Turn off once HubSpot sends booking emails.</p>
       </div>
       <div className="mt-0.5 flex shrink-0 items-center gap-2">
         {pending && <Spinner />}

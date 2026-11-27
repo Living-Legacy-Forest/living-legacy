@@ -99,7 +99,7 @@ export function LocationEditor({
             <div
               data-slot="location-editor-main"
               className={cn(
-                'bg-background flex min-w-0 flex-col overflow-hidden rounded-lg border lg:h-[calc(100svh-7.5rem)]',
+                'bg-muted/50 flex min-w-0 flex-col overflow-hidden rounded-lg lg:h-[calc(100svh-7.5rem)]',
                 // The gap closes with the panel, on the same curve, so the card does not jump.
                 PANE_GAP_MOTION,
                 showMap && 'lg:mr-6'

@@ -309,7 +309,7 @@ export function MediaDetail({ detail, canDelete }: { detail: Detail; canDelete: 
           item={item}
           width={640}
           showName={false}
-          className="h-80 w-full rounded-lg border"
+          className="bg-muted h-80 w-full rounded-lg"
         />
       )}
       <div className="flex flex-wrap items-center gap-3">
@@ -357,7 +357,7 @@ export function MediaDetail({ detail, canDelete }: { detail: Detail; canDelete: 
     <>
       <form onSubmit={save} data-slot="media-detail" className="flex min-h-0 flex-1 flex-col">
         {/* Phones: the name on its own line, then Previous and Next with the actions. */}
-        <header className="flex min-h-12 shrink-0 flex-wrap items-center gap-x-2 gap-y-1 border-b px-3 py-1.5 max-md:py-2">
+        <header className="flex min-h-12 shrink-0 flex-wrap items-center gap-x-2 gap-y-1 px-3 py-1.5 max-md:py-2">
           {back}
           <div className="flex items-center">
             {neighbour(
@@ -483,7 +483,7 @@ export function MediaDetail({ detail, canDelete }: { detail: Detail; canDelete: 
                 />
               </div>
               {replacement && (
-                <div className="bg-muted/50 grid gap-3 rounded-md border p-3">
+                <div className="bg-muted/50 grid gap-3 rounded-md p-3">
                   <p className="text-ui">
                     Replace with <span className="font-medium break-all">{replacement.name}</span>?
                     Everything using this {isDocument ? 'document' : 'image'} shows the new file.
@@ -605,7 +605,7 @@ export function MediaDetail({ detail, canDelete }: { detail: Detail; canDelete: 
               )}
             </div>
             {/* What you edit, then what is known about the file. */}
-            <div className="grid gap-6 border-t pt-6">
+            <div className="grid gap-6 pt-6">
               <section className="grid gap-2" aria-labelledby="m-facts">
                 <h3 id="m-facts" className="text-sm font-medium">
                   Details

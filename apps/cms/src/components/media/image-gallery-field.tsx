@@ -14,6 +14,7 @@ import { Label } from '@/components/ui/label';
 import { Spinner } from '@/components/ui/spinner';
 import { notify } from '@/lib/notify';
 import type { MediaItem } from '@/server/media';
+import { FIELD_LABEL } from '@/components/form-cells';
 
 export function ImageGalleryField({
   id,
@@ -63,7 +64,9 @@ export function ImageGalleryField({
   return (
     <div className="space-y-2">
       <div className="space-y-0.5">
-        <Label htmlFor={`${id}-choose`}>{label}</Label>
+        <Label htmlFor={`${id}-choose`} className={FIELD_LABEL}>
+          {label}
+        </Label>
         {description && <p className="text-muted-foreground text-xs">{description}</p>}
       </div>
 
@@ -76,7 +79,7 @@ export function ImageGalleryField({
                 key={mediaId}
                 className="grid grid-cols-[auto_minmax(0,1fr)] items-start gap-x-3 gap-y-1 sm:flex sm:gap-3"
               >
-                <div className="bg-muted relative size-24 shrink-0 overflow-hidden rounded-md border">
+                <div className="bg-muted relative size-24 shrink-0 overflow-hidden rounded-md">
                   {item ? (
                     <img
                       src={mediaSrc(item, 640)}

@@ -1,7 +1,7 @@
 import { Link, useLocation, useSearch } from '@tanstack/react-router';
 import { useEffect, useState } from 'react';
-import { ChevronLeftIcon } from '@/components/icons';
-import { Separator } from '@/components/ui/separator';
+import { ChevronLeftIcon, PanelLeftIcon } from '@/components/icons';
+import { useSidebar } from '@/components/ui/sidebar';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { cn } from '@/lib/utils';
 import { editorBack, findNavItem, isEditorPath, isTabActive, phoneTabs } from '@/lib/nav';
@@ -17,6 +17,8 @@ export function AppHeader({ user }: { user: SessionUser }) {
   const item = findNavItem(pathname);
   const current = item && item.to !== pathname ? 'Edit' : undefined;
   const { collapsed, scrolled, title } = useLargeTitle(pathname);
+  // Only the one-column sidebar can be hidden outright, so this is how to get it back.
+  const { open: sidebarOpen, toggleSidebar } = useSidebar();
 
   // Phones have no sidebar or breadcrumb: a page below a tab gets a back button. That includes a
   // page of its own inside a tab (Analytics > Pages, Posts > Tags), which goes back to the tab's
@@ -37,9 +39,19 @@ export function AppHeader({ user }: { user: SessionUser }) {
     <header
       data-slot="app-header"
       data-scrolled={scrolled || undefined}
-      className="bg-background/80 max-md:data-scrolled:border-border/70 md:before:bg-sidebar md:after:bg-background md:after:border-border sticky top-0 z-20 flex h-14 shrink-0 items-center gap-3 rounded-t-[inherit] border-b px-4 backdrop-blur max-md:h-[calc(2.75rem+env(safe-area-inset-top))] max-md:border-transparent max-md:pt-[env(safe-area-inset-top)] max-md:pr-[max(0.5rem,env(safe-area-inset-right))] max-md:pl-[max(0.5rem,env(safe-area-inset-left))] max-md:backdrop-blur-xl max-md:backdrop-saturate-150 max-md:transition-colors md:top-2 md:bg-transparent md:px-6 md:backdrop-blur-none md:before:absolute md:before:inset-x-0 md:before:-top-2 md:before:-z-20 md:before:h-5 md:after:absolute md:after:inset-x-0 md:after:top-0 md:after:-bottom-px md:after:-z-10 md:after:rounded-t-[inherit] md:after:border-b"
+      className="bg-background/80 md:before:bg-sidebar md:after:bg-background sticky top-0 z-20 flex h-14 shrink-0 items-center gap-3 rounded-t-[inherit] px-4 backdrop-blur max-md:h-[calc(2.75rem+env(safe-area-inset-top))] max-md:pt-[env(safe-area-inset-top)] max-md:pr-[max(0.5rem,env(safe-area-inset-right))] max-md:pl-[max(0.5rem,env(safe-area-inset-left))] max-md:backdrop-blur-xl max-md:backdrop-saturate-150 max-md:transition-shadow max-md:data-scrolled:shadow-[0_10px_16px_-14px_rgb(0_0_0/0.3)] md:top-2 md:bg-transparent md:px-6 md:backdrop-blur-none md:before:absolute md:before:inset-x-0 md:before:-top-2 md:before:-z-20 md:before:h-5 md:after:absolute md:after:inset-x-0 md:after:top-0 md:after:-bottom-px md:after:-z-10 md:after:rounded-t-[inherit] md:after:transition-shadow md:data-scrolled:after:shadow-[0_10px_16px_-14px_rgb(0_0_0/0.3)]"
     >
       <div className="flex min-w-0 items-center gap-3 max-md:hidden">
+        {!sidebarOpen && (
+          <button
+            type="button"
+            aria-label="Show sidebar"
+            onClick={toggleSidebar}
+            className="text-muted-foreground hover:text-foreground hover:bg-accent focus-visible:ring-ring/50 -ml-2 grid size-8 shrink-0 place-items-center rounded-md transition-colors outline-none focus-visible:ring-[3px]"
+          >
+            <PanelLeftIcon aria-hidden className="size-4" />
+          </button>
+        )}
         <AppBreadcrumbs item={item} current={current} />
       </div>
 
@@ -108,10 +120,7 @@ export function AppHeader({ user }: { user: SessionUser }) {
         </div>
         {/* Phones: the page's … and + (PageActions). The account lives in More. */}
         <div data-slot="page-actions-end" className="flex items-center md:hidden" />
-        <Separator
-          className="mx-1.5 h-4 data-[orientation=vertical]:self-center max-md:hidden"
-          orientation="vertical"
-        />
+        <div aria-hidden className="mx-0.5 max-md:hidden" />
         <div className="max-md:hidden">
           <NavUser user={user} />
         </div>
@@ -129,17 +138,17 @@ function useLargeTitle(pathname: string) {
   const [state, setState] = useState({ collapsed: false, scrolled: false, title: '' });
 
   useEffect(() => {
-    if (!isMobile) return;
     let frame = 0;
     const update = () => {
       frame = 0;
       const heading = document.querySelector<HTMLElement>('[data-slot="page-title"]');
       const header = document.querySelector<HTMLElement>('[data-slot="app-header"]');
       const headerBottom = header?.getBoundingClientRect().bottom ?? 0;
+      // Desktop only needs to know whether the page has moved, for the header's line.
       const next = {
-        collapsed: !!heading && heading.getBoundingClientRect().bottom <= headerBottom,
+        collapsed: isMobile && !!heading && heading.getBoundingClientRect().bottom <= headerBottom,
         scrolled: window.scrollY > 0,
-        title: heading?.textContent?.trim() ?? '',
+        title: isMobile ? (heading?.textContent?.trim() ?? '') : '',
       };
       setState((prev) =>
         prev.collapsed === next.collapsed &&

@@ -374,7 +374,7 @@ export function Notifications({ user }: { user: SessionUser }) {
     <div
       className={cn(
         'flex items-center justify-between gap-3',
-        isPhone ? 'px-4 pb-3' : 'border-b px-2.5 pb-2'
+        isPhone ? 'px-4 pb-3' : 'px-2.5 pb-2'
       )}
     >
       <div
@@ -688,7 +688,7 @@ export function Notifications({ user }: { user: SessionUser }) {
           <div
             className={cn(
               'flex items-center justify-between gap-3',
-              isPhone ? 'mt-2 px-1 text-[0.9375rem]' : 'text-ui min-h-10 border-t px-3'
+              isPhone ? 'mt-2 px-1 text-[0.9375rem]' : 'text-ui min-h-10 px-3'
             )}
           >
             {history || <span />}

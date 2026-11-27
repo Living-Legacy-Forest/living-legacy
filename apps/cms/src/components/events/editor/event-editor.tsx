@@ -110,7 +110,7 @@ export function EventEditor({
 
       {/* Guests and Dashboard take the whole width; a cancelled event's details are a summary. */}
       {event && (view !== 'details' || cancelled) && (
-        <div className="bg-background flex min-w-0 flex-1 flex-col rounded-lg border">
+        <div className="bg-muted/50 flex min-w-0 flex-1 flex-col rounded-lg">
           <EventViewsHeader
             view={view}
             onViewChange={(next) => onViewChange?.(next)}
@@ -182,7 +182,7 @@ export function EventEditor({
               <div
                 data-slot="event-editor-main"
                 className={cn(
-                  'bg-background flex min-w-0 flex-col overflow-hidden rounded-lg border lg:h-[calc(100svh-7.5rem)]',
+                  'bg-muted/50 flex min-w-0 flex-col overflow-hidden rounded-lg lg:h-[calc(100svh-7.5rem)]',
                   // The gap closes with the panel, on the same curve, so the card does not jump.
                   PANE_GAP_MOTION,
                   showSide && 'lg:mr-6'

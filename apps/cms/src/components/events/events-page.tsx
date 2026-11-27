@@ -14,14 +14,15 @@ import { ListRow, type RowMenuItem } from '@/components/list/list-row';
 import { ListFilter } from '@/components/list/list-filter';
 import { ListSort, byText, sortedBy, useListSort } from '@/components/list/list-sort';
 import { CardMeta, ListCard, ListCards } from '@/components/list/list-card';
-import { ViewSwitch, useListView } from '@/components/list/view-switch';
+import { useListView } from '@/components/list/view-switch';
+import { ListDisplay } from '@/components/list/list-display';
 import { RowCell } from '@/components/list/row-cell';
 import { cn } from '@/lib/utils';
 import { formatDate, formatTimeRange } from '@/lib/format';
 import { CancelEventDialog } from './editor/event-actions';
 import {
   ConfirmBulkDelete,
-  SearchInput,
+  ToolbarSearch,
   SelectionBar,
   matchesSearch,
   useSelection,
@@ -44,6 +45,12 @@ import { useAction } from '@/lib/use-action';
 import { useRevealOnce } from '@/lib/use-reveal-once';
 import { type EventRow, type EventsData, deleteEvents, duplicateEvent } from '@/server/events';
 import { dateStatus, startsIn } from './series-date-picker';
+import {
+  rowPasses,
+  upcomingFacts,
+  upcomingOptions,
+  type MatchMode,
+} from '@/components/list/filter-tools';
 
 const NOUN: [string, string] = ['event', 'events'];
 
@@ -78,6 +85,7 @@ export function EventsPage({ data }: { data: EventsData }) {
   const [filter, setFilter] = useState<Filter>('upcoming');
   // Ticked values per group; empty means that group does not narrow the list.
   const [picked, setPicked] = useState<Record<string, string[]>>({ places: [], statuses: [] });
+  const [match, setMatch] = useState<MatchMode>('all');
   const [toDelete, setToDelete] = useState<string[] | null>(null);
   const [toCancel, setToCancel] = useState<EventRow | null>(null);
   const { run, pending } = useAction();
@@ -92,8 +100,16 @@ export function EventsPage({ data }: { data: EventsData }) {
   const dated = groupEventDates(
     data.events
       .filter((e) => inFilter(e, filter, now))
-      .filter((e) => !picked.places?.length || picked.places.includes(e.locationId ?? ''))
-      .filter((e) => !picked.statuses?.length || picked.statuses.includes(e.status))
+      .filter((e) =>
+        rowPasses(match, picked, {
+          places: e.locationId,
+          statuses: e.status,
+          when: upcomingFacts(e.startsAt, now),
+          booking: e.bookings > 0 ? 'booked' : 'none',
+          capacity: e.capacity === null ? 'open' : e.booked >= e.capacity ? 'full' : 'places',
+          series: e.seriesId ? 'repeating' : 'single',
+        })
+      )
       .filter((e) => matchesSearch(query, [e.title, e.locationName, e.venue])),
     now
   ).sort((a, b) =>
@@ -176,14 +192,15 @@ export function EventsPage({ data }: { data: EventsData }) {
       data-revealing={revealing || undefined}
       className="flex flex-1 flex-col gap-4 lg:h-[calc(100svh-7.5rem)] lg:flex-none"
     >
-      <div data-slot="list-toolbar" className="flex flex-wrap items-center gap-3">
-        <h1 data-slot="page-title" className="mr-auto text-xl">
+      <div data-slot="list-toolbar" className="flex flex-wrap items-center gap-3 md:gap-1.5">
+        <h1 data-slot="page-title" className="mr-auto text-xl md:sr-only">
           <RevealWords text="Events" />
         </h1>
+        <div className="mr-auto max-md:hidden" />
         {data.events.length > 0 && (
           // Under the title and New event on phones, beside them from sm.
           <div className="order-last w-full sm:order-none sm:w-auto">
-            <SearchInput
+            <ToolbarSearch
               label="Search events"
               placeholder="Search events"
               value={query}
@@ -191,37 +208,77 @@ export function EventsPage({ data }: { data: EventsData }) {
             />
           </div>
         )}
-        {data.events.length > 0 && <ListSort options={SORTS} value={sort} onChange={setSort} />}
         {data.events.length > 0 && (
-          <ListFilter
-            groups={[
-              {
-                key: 'places',
-                label: 'Place',
-                options: data.locations.map((l) => ({ value: l.id, label: l.name })),
-              },
-              {
-                key: 'statuses',
-                label: 'Status',
-                options: [
-                  { value: 'published', label: 'Published' },
-                  { value: 'draft', label: 'Draft' },
-                  { value: 'cancelled', label: 'Cancelled' },
-                ],
-              },
-            ]}
-            values={picked}
-            onChange={(key, next) => {
-              setPicked((prev) => ({ ...prev, [key]: next }));
-              selection.clear();
-            }}
-            onClear={() => {
-              setPicked({ places: [], statuses: [] });
-              selection.clear();
-            }}
+          <ListSort options={SORTS} value={sort} onChange={setSort} hideOnDesktop />
+        )}
+
+        {data.events.length > 0 && (
+          <ListDisplay
+            filter={
+              <ListFilter
+                groups={[
+                  {
+                    key: 'places',
+                    label: 'Place',
+                    options: data.locations.map((l) => ({ value: l.id, label: l.name })),
+                  },
+                  {
+                    key: 'statuses',
+                    label: 'Status',
+                    options: [
+                      { value: 'published', label: 'Published' },
+                      { value: 'draft', label: 'Draft' },
+                      { value: 'cancelled', label: 'Cancelled' },
+                    ],
+                  },
+                  { key: 'when', label: 'When', options: upcomingOptions },
+                  {
+                    key: 'booking',
+                    label: 'Bookings',
+                    options: [
+                      { value: 'booked', label: 'Has bookings' },
+                      { value: 'none', label: 'No bookings yet' },
+                    ],
+                  },
+                  {
+                    key: 'capacity',
+                    label: 'Places',
+                    options: [
+                      { value: 'places', label: 'Places left' },
+                      { value: 'full', label: 'Full' },
+                      { value: 'open', label: 'No limit' },
+                    ],
+                  },
+                  {
+                    key: 'series',
+                    label: 'Repeats',
+                    options: [
+                      { value: 'repeating', label: 'Repeating' },
+                      { value: 'single', label: 'One date' },
+                    ],
+                  },
+                ]}
+                match={match}
+                onMatchChange={setMatch}
+                savedKey="events"
+                values={picked}
+                onChange={(key, next) => {
+                  setPicked((prev) => ({ ...prev, [key]: next }));
+                  selection.clear();
+                }}
+                onClear={() => {
+                  setPicked({ places: [], statuses: [] });
+                  selection.clear();
+                }}
+              />
+            }
+            sortOptions={SORTS}
+            sortValue={sort}
+            onSortChange={(next) => setSort(next as typeof sort)}
+            value={layout}
+            onChange={setLayout}
           />
         )}
-        {data.events.length > 0 && <ViewSwitch value={layout} onChange={setLayout} />}
         <div className="max-md:hidden">{newButton}</div>
         <PageActions
           edit={{
@@ -233,7 +290,7 @@ export function EventsPage({ data }: { data: EventsData }) {
       </div>
 
       {data.events.length === 0 ? (
-        <Empty className="flex-1 rounded-lg border">
+        <Empty className="flex-1 rounded-lg">
           <EmptyHeader>
             <EmptyMedia variant="icon">
               <CalendarClockIcon aria-hidden />

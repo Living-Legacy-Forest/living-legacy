@@ -47,15 +47,15 @@
   padding: 6px 16px 6px 6px;
 }
 .trigger {
-  border: 1px solid var(--border);
+  border: 0;
   border-radius: 22px;
-  background: var(--picker-fill);
-  box-shadow: var(--shadow-resting);
+  /* A soft fill, as the form fields have, instead of an outline. */
+  background: color-mix(in oklab, var(--muted) 60%, transparent);
   color: inherit;
   font: inherit;
   cursor: pointer;
   -webkit-tap-highlight-color: transparent;
-  transition: border-color var(--duration-fast) var(--ease-standard);
+  transition: background-color var(--duration-fast) var(--ease-standard);
 }
 .triggerText {
   display: grid;
@@ -111,9 +111,10 @@
 .panel {
   width: var(--picker-width);
   padding-bottom: 14px;
-  border: 1px solid var(--border);
+  border: 0;
   border-radius: var(--radius-panel);
   background: var(--picker-fill);
+  box-shadow: 0 10px 32px -8px rgb(0 0 0 / 0.28);
   will-change: clip-path;
 }
 .head {
@@ -241,13 +242,13 @@
   align-items: stretch;
   overflow: hidden;
   margin-top: 2px;
-  border: 1px solid var(--border);
+  border: 0;
   border-radius: 14px;
   background: var(--surface-muted);
-  transition: border-color var(--duration-fast) var(--ease-standard);
+  transition: box-shadow var(--duration-fast) var(--ease-standard);
 }
 .field[data-invalid] {
-  border-color: var(--danger);
+  box-shadow: inset 0 0 0 1px var(--danger);
 }
 .format {
   display: flex;
@@ -439,7 +440,7 @@
 
 @media (hover: hover) and (pointer: fine) {
   .trigger:hover {
-    border-color: var(--border-strong);
+    background: var(--muted);
   }
   .iconButton:hover,
   .format:hover {

@@ -10,6 +10,20 @@ const searchSchema = z.object({
   sort: z.string().max(30).optional().catch(undefined),
   categories: z.array(z.string()).optional().catch(undefined),
   authors: z.array(z.string()).optional().catch(undefined),
+  tags: z.array(z.string()).optional().catch(undefined),
+  updated: z
+    .array(z.enum(['today', 'week', 'month', 'older']))
+    .optional()
+    .catch(undefined),
+  image: z
+    .array(z.enum(['yes', 'no']))
+    .optional()
+    .catch(undefined),
+  seo: z
+    .array(z.enum(['complete', 'missing']))
+    .optional()
+    .catch(undefined),
+  match: z.enum(['all', 'any']).optional().catch(undefined),
   page: z.number().int().min(1).optional().catch(undefined),
   /** Posts a page, when not the usual 20. */
   rows: pageSizeParam(POSTS_PAGE_SIZES),

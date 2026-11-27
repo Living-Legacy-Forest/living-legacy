@@ -46,37 +46,62 @@ export function useListSort<T extends string>(options: readonly { value: T }[]) 
 }
 
 /** A Sort button beside Filter: a menu of the orders this list can be in, the current one ticked. */
-export function ListSort<T extends string>({
-  options,
-  value,
-  onChange,
-}: {
+export function ListSort<T extends string>({ hideOnDesktop, ...props }: SortProps<T>) {
+  if (props.iconOnly !== undefined) return <SortControl {...props} />;
+  if (hideOnDesktop)
+    return (
+      <div className="contents md:hidden">
+        <SortControl {...props} iconOnly={false} />
+      </div>
+    );
+  return (
+    <>
+      <div className="contents md:hidden">
+        <SortControl {...props} iconOnly={false} />
+      </div>
+      <div className="contents max-md:hidden">
+        <SortControl {...props} iconOnly />
+      </div>
+    </>
+  );
+}
+
+type SortProps<T extends string> = {
   options: readonly { value: T; label: string }[];
   value: T;
   onChange: (value: T) => void;
-}) {
+  /** Just the icon. Left out, phones get the labelled button and desktop the icon. */
+  iconOnly?: boolean;
+  /** Phones only: a page whose Display menu already holds the ordering. */
+  hideOnDesktop?: boolean;
+};
+
+function SortControl<T extends string>({ options, value, onChange, iconOnly }: SortProps<T>) {
   const current = options.find((o) => o.value === value) ?? options[0]!;
   return (
     <DropdownMenu>
       <DropdownMenuTrigger
         render={
           <Button
-            variant="secondary"
-            size="sm"
+            variant={iconOnly ? 'ghost' : 'secondary'}
+            size={iconOnly ? 'icon-sm' : 'sm'}
             aria-label={`Sort, by ${current.label}`}
-            className="text-ui shrink-0"
+            title={iconOnly ? 'Sort' : undefined}
+            className={
+              iconOnly ? 'text-muted-foreground hover:text-foreground shrink-0' : 'text-ui shrink-0'
+            }
           />
         }
       >
-        <SortIcon aria-hidden data-icon="inline-start" />
-        Sort
+        <SortIcon aria-hidden data-icon={iconOnly ? undefined : 'inline-start'} />
+        {!iconOnly && 'Sort'}
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end" className="min-w-48 p-1">
         <DropdownMenuRadioGroup value={value} onValueChange={(next) => onChange(next as T)}>
           {/* A label is a group part, so it lives inside the group it names. */}
           <DropdownMenuLabel>Sort by</DropdownMenuLabel>
           {options.map((option) => (
-            <DropdownMenuRadioItem key={option.value} value={option.value} className="text-ui">
+            <DropdownMenuRadioItem key={option.value} value={option.value}>
               {option.label}
             </DropdownMenuRadioItem>
           ))}

@@ -27,7 +27,7 @@ export function ReviewerPopover({
 }: {
   reviewers: { id: string; name: string }[];
   disabled?: boolean;
-  size?: 'sm' | 'icon-sm';
+  size?: 'xs' | 'sm' | 'icon-sm';
   /** The button's words; the phone bar has room for one. */
   label?: string;
   onSubmit: (reviewerId: string | null) => Promise<boolean>;
@@ -67,7 +67,7 @@ export function ReviewerPopover({
         }
       >
         <SendIcon aria-hidden data-icon="inline-start" />
-        {size === 'sm' && label}
+        {size !== 'icon-sm' && label}
       </PopoverTrigger>
       <PopoverContent align="end" className="w-72 space-y-3 p-3">
         <p className="text-ui font-medium">Submit for review</p>

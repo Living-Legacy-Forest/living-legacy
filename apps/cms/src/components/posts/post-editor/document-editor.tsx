@@ -141,7 +141,7 @@ export function DocumentEditor({
         )}
         {/* The page fills the editor's height, and the writing area fills the
             page, so clicking anywhere below the text lands in it. */}
-        <article className="bg-background flex flex-1 flex-col px-4 py-5 sm:mx-auto sm:mt-4 sm:mb-6 sm:w-full sm:max-w-3xl sm:rounded-md sm:border sm:px-14 sm:py-12 sm:shadow-xs [&>.relative]:flex [&>.relative]:flex-1 [&>.relative]:flex-col">
+        <article className="bg-background flex flex-1 flex-col px-4 py-5 sm:mx-auto sm:mt-4 sm:mb-6 sm:w-full sm:max-w-3xl sm:rounded-md sm:px-14 sm:py-12 sm:shadow-xs [&>.relative]:flex [&>.relative]:flex-1 [&>.relative]:flex-col">
           <textarea
             aria-label="Title"
             rows={1}
@@ -156,7 +156,7 @@ export function DocumentEditor({
       </RichTextEditor>
       <TableHoverOverlay editor={editor} />
 
-      <footer className="text-muted-foreground flex h-9 shrink-0 items-center gap-3 border-t px-3 text-xs tabular-nums">
+      <footer className="text-muted-foreground flex h-9 shrink-0 items-center gap-3 px-3 text-xs tabular-nums">
         <span>{words.toLocaleString('en-AU')} words</span>
         <span>{(state?.characters ?? 0).toLocaleString('en-AU')} characters</span>
         <span>{Math.max(1, Math.ceil(words / 200))} min read</span>

@@ -2,83 +2,132 @@
 // call sites (`<FileTextIcon aria-hidden className="size-4" />`) don't change.
 import * as H from '@hugeicons/core-free-icons';
 import { HugeiconsIcon } from '@hugeicons/react';
-import { useEffect, useRef, useState } from 'react';
-import { CalendarClock as AnimatedCalendarClock } from '@/components/animate-ui/icons/hugeicons/calendar-clock';
-import { Unplug as AnimatedUnplug } from '@/components/animate-ui/icons/hugeicons/unplug';
-import { HeartCheckIcon as AnimatedHeartCheckIcon } from '@animateicons/react/huge/heart-check-icon';
-import { ActivityIcon as AnimatedActivityIcon } from '@animateicons/react/huge/activity-icon';
-import { Add01Icon as AnimatedAdd01Icon } from '@animateicons/react/huge/add-0-1-icon';
-import { AlertCircleIcon as AnimatedAlertCircleIcon } from '@animateicons/react/huge/alert-circle-icon';
-import { BrowserIcon as AnimatedBrowserIcon } from '@animateicons/react/huge/browser-icon';
-import { Layers01Icon as AnimatedLayers01Icon } from '@animateicons/react/huge/layers-0-1-icon';
-import { Shield01Icon as AnimatedShield01Icon } from '@animateicons/react/huge/shield-0-1-icon';
-import { Camera01Icon as AnimatedCamera01Icon } from '@animateicons/react/huge/camera-0-1-icon';
-import { Cancel01Icon as AnimatedCancel01Icon } from '@animateicons/react/huge/cancel-0-1-icon';
-import { CancelCircleIcon as AnimatedCancelCircleIcon } from '@animateicons/react/huge/cancel-circle-icon';
-import { Compass01Icon as AnimatedCompass01Icon } from '@animateicons/react/huge/compass-0-1-icon';
-import { CopyIcon as AnimatedCopyIcon } from '@animateicons/react/huge/copy-icon';
-import { Delete02Icon as AnimatedDelete02Icon } from '@animateicons/react/huge/delete-0-2-icon';
-import { DownloadIcon as AnimatedDownloadIcon } from '@animateicons/react/huge/download-icon';
-import { FileAddIcon as AnimatedFileAddIcon } from '@animateicons/react/huge/file-add-icon';
-import { Folder01Icon as AnimatedFolder01Icon } from '@animateicons/react/huge/folder-0-1-icon';
-import { FolderAddIcon as AnimatedFolderAddIcon } from '@animateicons/react/huge/folder-add-icon';
-import { Globe02Icon as AnimatedGlobe02Icon } from '@animateicons/react/huge/globe-0-2-icon';
-import { HelpCircleIcon as AnimatedHelpCircleIcon } from '@animateicons/react/huge/help-circle-icon';
-import { Image01Icon as AnimatedImage01Icon } from '@animateicons/react/huge/image-0-1-icon';
-import { InformationCircleIcon as AnimatedInformationCircleIcon } from '@animateicons/react/huge/information-circle-icon';
-import { Key01Icon as AnimatedKey01Icon } from '@animateicons/react/huge/key-0-1-icon';
-import { FingerPrintIcon as AnimatedFingerPrintIcon } from '@animateicons/react/huge/finger-print-icon';
-import { KeyboardIcon as AnimatedKeyboardIcon } from '@animateicons/react/huge/keyboard-icon';
-import { Link01Icon as AnimatedLink01Icon } from '@animateicons/react/huge/link-0-1-icon';
-import { Loading02Icon as AnimatedLoading02Icon } from '@animateicons/react/huge/loading-0-2-icon';
-import { Logout01Icon as AnimatedLogout01Icon } from '@animateicons/react/huge/logout-0-1-icon';
-import { Mail01Icon as AnimatedMail01Icon } from '@animateicons/react/huge/mail-0-1-icon';
-import { MailCheckIcon as AnimatedMailCheckIcon } from '@animateicons/react/huge/mail-check-icon';
-import { Megaphone01Icon as AnimatedMegaphone01Icon } from '@animateicons/react/huge/megaphone-0-1-icon';
-import { GiftIcon as AnimatedGiftIcon } from '@animateicons/react/huge/gift-icon';
-import { NotificationIcon as AnimatedNotificationIcon } from '@animateicons/react/huge/notification-icon';
-import { SearchIcon as AnimatedSearchIcon } from '@animateicons/react/huge/search-icon';
-import { ServerIcon as AnimatedServerIcon } from '@animateicons/react/huge/server-icon';
-import { Settings01Icon as AnimatedSettings01Icon } from '@animateicons/react/huge/settings-0-1-icon';
-import { SidebarLeftIcon as AnimatedSidebarLeftIcon } from '@animateicons/react/huge/sidebar-left-icon';
-import { SidebarRightIcon as AnimatedSidebarRightIcon } from '@animateicons/react/huge/sidebar-right-icon';
-import { StarIcon as AnimatedStarIcon } from '@animateicons/react/huge/star-icon';
-import { Tag01Icon as AnimatedTag01Icon } from '@animateicons/react/huge/tag-0-1-icon';
-import { Upload01Icon as AnimatedUpload01Icon } from '@animateicons/react/huge/upload-0-1-icon';
-import { UserAdd01Icon as AnimatedUserAdd01Icon } from '@animateicons/react/huge/user-add-0-1-icon';
-import { UserGroupIcon as AnimatedUserGroupIcon } from '@animateicons/react/huge/user-group-icon';
-import { UserCircleIcon as AnimatedUserCircleIcon } from '@animateicons/react/huge/user-circle-icon';
-import { UserIcon as AnimatedUserIcon } from '@animateicons/react/huge/user-icon';
-import { UserSettings01Icon as AnimatedUserSettings01Icon } from '@animateicons/react/huge/user-settings-0-1-icon';
-import { Alert02Icon as AnimatedAlert02Icon } from '@animateicons/react/huge/alert-0-2-icon';
-import { Analytics01Icon as AnimatedAnalytics01Icon } from '@animateicons/react/huge/analytics-0-1-icon';
-import { ArrowLeftRightIcon as AnimatedArrowLeftRightIcon } from '@animateicons/react/huge/arrow-left-right-icon';
-import { ArrowUpRight01Icon as AnimatedArrowUpRight01Icon } from '@animateicons/react/huge/arrow-up-right-0-1-icon';
-import { ChartLineIcon as AnimatedChartLineIcon } from '@animateicons/react/huge/chart-line-icon';
-import { CheckListIcon as AnimatedCheckListIcon } from '@animateicons/react/huge/check-list-icon';
-import { CheckmarkCircle01Icon as AnimatedCheckmarkCircle01Icon } from '@animateicons/react/huge/checkmark-circle-0-1-icon';
-import { Moon01Icon as AnimatedMoon01Icon } from '@animateicons/react/huge/moon-0-1-icon';
-import { Sun01Icon as AnimatedSun01Icon } from '@animateicons/react/huge/sun-0-1-icon';
-import { PaletteIcon as AnimatedPaletteIcon } from '@animateicons/react/huge/palette-icon';
-import { DeliveryBox01Icon as AnimatedDeliveryBox01Icon } from '@animateicons/react/huge/delivery-box-0-1-icon';
-import { Edit02Icon as AnimatedEdit02Icon } from '@animateicons/react/huge/edit-0-2-icon';
-import { EyeIcon as AnimatedEyeIcon } from '@animateicons/react/huge/eye-icon';
-import { EyeOffIcon as AnimatedEyeOffIcon } from '@animateicons/react/huge/eye-off-icon';
-import { File01Icon as AnimatedFile01Icon } from '@animateicons/react/huge/file-0-1-icon';
-import { FileRemoveIcon as AnimatedFileRemoveIcon } from '@animateicons/react/huge/file-remove-icon';
-import { LayoutDashboardIcon as AnimatedLayoutDashboardIcon } from '@animateicons/react/huge/layout-dashboard-icon';
+import {
+  ArchiveNavIcon,
+  AreaNavIcon,
+  ArrowDownNavIcon,
+  ArrowLeftNavIcon,
+  ArrowRightNavIcon,
+  ArrowUpNavIcon,
+  BanNavIcon,
+  BellNavIcon,
+  BrowserNavIcon,
+  BubbleLinesNavIcon,
+  CalendarNavIcon,
+  CameraNavIcon,
+  CheckCheckNavIcon,
+  ChecklistNavIcon,
+  ChevDownNavIcon,
+  ChevLeftNavIcon,
+  ChevRightNavIcon,
+  ChevUpNavIcon,
+  CircleAlertNavIcon,
+  CircleCheckNavIcon,
+  CopyNavIcon,
+  CropNavIcon,
+  DashboardNavIcon,
+  DotsVNavIcon,
+  DownloadNavIcon,
+  EyeNavIcon,
+  EyeOffNavIcon,
+  FilePlusNavIcon,
+  FileQuestionNavIcon,
+  FingerprintNavIcon,
+  FolderNavIcon,
+  FolderPlusNavIcon,
+  FullScreenNavIcon,
+  GalleryNavIcon,
+  GiftNavIcon,
+  GlobeNavIcon,
+  HelpNavIcon,
+  InfoNavIcon,
+  KeyNavIcon,
+  KeyboardNavIcon,
+  LaptopNavIcon,
+  LayersNavIcon,
+  LegalNavIcon,
+  LinkNavIcon,
+  LoaderNavIcon,
+  LocateNavIcon,
+  LogOutNavIcon,
+  MailCheckNavIcon,
+  MailNavIcon,
+  MailOpenNavIcon,
+  MegaphoneNavIcon,
+  MinusNavIcon,
+  MonitorNavIcon,
+  MoonNavIcon,
+  NewsNavIcon,
+  OctagonXNavIcon,
+  PageNavIcon,
+  PaletteNavIcon,
+  PanelLeftNavIcon,
+  PanelRightNavIcon,
+  PhoneNavIcon,
+  PieNavIcon,
+  PinNavIcon,
+  PinOffNavIcon,
+  PipetteNavIcon,
+  PlugNavIcon,
+  PulseNavIcon,
+  PushPinNavIcon,
+  QuoteNavIcon,
+  RetryNavIcon,
+  RouteNavIcon,
+  SaveNavIcon,
+  ScanQrNavIcon,
+  SearchSwapNavIcon,
+  SearchXNavIcon,
+  SendNavIcon,
+  ServerNavIcon,
+  SettingsNavIcon,
+  ShieldNavIcon,
+  ShieldUserNavIcon,
+  SparklesNavIcon,
+  StarNavIcon,
+  SunMoonNavIcon,
+  SunNavIcon,
+  SwapNavIcon,
+  TabletNavIcon,
+  TagNavIcon,
+  TeamNavIcon,
+  TickNavIcon,
+  ToggleOffNavIcon,
+  ToggleOnNavIcon,
+  TrendDownNavIcon,
+  TrendUpNavIcon,
+  TriangleAlertNavIcon,
+  UndoNavIcon,
+  UploadArrowNavIcon,
+  UploadNavIcon,
+  UserCircleNavIcon,
+  UserCogNavIcon,
+  UserNavIcon,
+  UserPlusNavIcon,
+  VolumeNavIcon,
+  VolumeOffNavIcon,
+} from './nav-icons';
+import {
+  ArrowOutIcon,
+  BarsIcon,
+  BinIcon,
+  CellsViewIcon,
+  CrossMarkIcon,
+  DotsIcon,
+  FunnelIcon,
+  KnobsIcon,
+  LensIcon,
+  PencilNibIcon,
+  PlusMarkIcon,
+  RowsViewIcon,
+} from './view-icons';
+import { useEffect, useRef } from 'react';
 import { LeftToRightListBulletIcon as AnimatedLeftToRightListBulletIcon } from '@animateicons/react/huge/left-to-right-list-bullet-icon';
 import { LinkOffIcon as AnimatedLinkOffIcon } from '@animateicons/react/huge/link-off-icon';
-import { Message01Icon as AnimatedMessage01Icon } from '@animateicons/react/huge/message-0-1-icon';
-import { Location01Icon as AnimatedLocation01Icon } from '@animateicons/react/huge/location-0-1-icon';
-import { NewspaperIcon as AnimatedNewspaperIcon } from '@animateicons/react/huge/newspaper-icon';
 import { QuoteIcon as AnimatedQuoteIcon } from '@animateicons/react/huge/quote-icon';
-import { SaveIcon as AnimatedSaveIcon } from '@animateicons/react/huge/save-icon';
-import { SendIcon as AnimatedSendIcon } from '@animateicons/react/huge/send-icon';
-import { UndoIcon as AnimatedUndoIcon } from '@animateicons/react/huge/undo-icon';
 import { cn } from '@/lib/utils';
 import { ICON_STROKE, ICON_STROKE_ATTR } from './icon-stroke';
-import { CheckIcon as DrawnCheckIcon, GalleryHorizontalIcon } from './drawn-icons';
+import { CheckIcon as DrawnCheckIcon } from './drawn-icons';
 
 // @hugeicons/core-free-icons doesn't export its icon-data type, so derive it
 // structurally from one of its own exports.
@@ -140,39 +189,6 @@ function useHoverPlay(
   }, [anchor]);
 }
 
-/**
- * Icons from Animate UI (components/animate-ui/icons), also Hugeicons
- * drawings, for ones AnimateIcons does not animate. They take an \`animate\`
- * flag rather than a handle; the same hover rule switches it.
- */
-function animateUi(
-  Icon: React.ComponentType<{
-    animate?: boolean;
-    className?: string;
-    strokeWidth?: number | string;
-  }>
-): LucideIcon {
-  return function AnimateUiIcon({ className, strokeWidth, ...props }) {
-    const anchor = useRef<HTMLSpanElement>(null);
-    const [on, setOn] = useState(false);
-    useHoverPlay(
-      anchor,
-      () => setOn(true),
-      () => setOn(false)
-    );
-    return (
-      <span ref={anchor} className="contents" {...(strokeWidth === undefined && ICON_STROKE_ATTR)}>
-        <Icon
-          {...(props as object)}
-          animate={on}
-          strokeWidth={strokeWidth ?? ICON_STROKE}
-          className={cn('shrink-0', className)}
-        />
-      </span>
-    );
-  };
-}
-
 function animated(Icon: AnimatedComponent): LucideIcon {
   return function AnimatedIcon({ className, strokeWidth, style, ...props }) {
     const handle = useRef<AnimatedHandle>(null);
@@ -214,34 +230,36 @@ function animated(Icon: AnimatedComponent): LucideIcon {
 }
 
 // Dashboard & stats
-export const ChartPieIcon = animated(AnimatedAnalytics01Icon);
-export const ChartAreaIcon = animated(AnimatedChartLineIcon);
+export const ChartPieIcon = PieNavIcon;
+export const ChartAreaIcon = AreaNavIcon;
 // Plain arrows: beside a small figure, a boxed chart glyph reads as a blob.
-export const TrendingUpIcon = make(H.ArrowUpRight01Icon);
-export const TrendingDownIcon = make(H.ArrowDownRight01Icon);
-export const ArrowUpIcon = make(H.ArrowUp01Icon);
-export const ArrowDownIcon = make(H.ArrowDown01Icon);
-export const MinusIcon = make(H.MinusSignIcon);
-export const FilePlus2Icon = animated(AnimatedFileAddIcon);
-export const MessageCircleQuestionIcon = animated(AnimatedHelpCircleIcon);
-export const DownloadIcon = animated(AnimatedDownloadIcon);
-export const UploadIcon = animated(AnimatedUpload01Icon);
-export const CameraIcon = animated(AnimatedCamera01Icon);
-export const ActivityIcon = animated(AnimatedActivityIcon);
-export const UserPlusIcon = animated(AnimatedUserAdd01Icon);
-export const PencilLineIcon = animated(AnimatedEdit02Icon);
-export const SendIcon = animated(AnimatedSendIcon);
+export const TrendingUpIcon = TrendUpNavIcon;
+export const TrendingDownIcon = TrendDownNavIcon;
+export const ArrowUpIcon = ArrowUpNavIcon;
+export const PinIcon = PushPinNavIcon;
+export const PinOffIcon = PinOffNavIcon;
+export const ArrowDownIcon = ArrowDownNavIcon;
+export const MinusIcon = MinusNavIcon;
+export const FilePlus2Icon = FilePlusNavIcon;
+export const MessageCircleQuestionIcon = HelpNavIcon;
+export const DownloadIcon = DownloadNavIcon;
+export const UploadIcon = UploadNavIcon;
+export const CameraIcon = CameraNavIcon;
+export const ActivityIcon = PulseNavIcon;
+export const UserPlusIcon = UserPlusNavIcon;
+export const PencilLineIcon = PencilNibIcon;
+export const SendIcon = SendNavIcon;
 
 // Rich text editor (bare, unsuffixed names as the editor imports them)
 export const Bold = make(H.TextBoldIcon);
 export const Code = make(H.CodeIcon);
-export const CropIcon = make(H.CropIcon);
-export const LaptopIcon = make(H.LaptopIcon);
-export const SunIcon = animated(AnimatedSun01Icon);
-export const MoonIcon = animated(AnimatedMoon01Icon);
-export const MonitorIcon = make(H.ComputerIcon);
-export const SunMoonIcon = make(H.SunMoonIcon);
-export const PaletteIcon = animated(AnimatedPaletteIcon);
+export const CropIcon = CropNavIcon;
+export const LaptopIcon = LaptopNavIcon;
+export const SunIcon = SunNavIcon;
+export const MoonIcon = MoonNavIcon;
+export const MonitorIcon = MonitorNavIcon;
+export const SunMoonIcon = SunMoonNavIcon;
+export const PaletteIcon = PaletteNavIcon;
 // File types and actions for the file dropzone's rows.
 export const FileTypeIcon = make(H.File02Icon);
 export const FileTypeImageIcon = make(H.Image02Icon);
@@ -250,20 +268,20 @@ export const FileTypeArchiveIcon = make(H.Zip02Icon);
 export const FileTypeDocIcon = make(H.Doc02Icon);
 export const FileTypePdfIcon = make(H.Pdf02Icon);
 export const FileTypeCsvIcon = make(H.Csv02Icon);
-export const RetryIcon = make(H.ReloadIcon);
-export const SortIcon = make(H.ArrowUpDownIcon);
-export const UploadArrowIcon = make(H.ArrowUp02Icon);
-export const RemoveFileIcon = make(H.Cancel01Icon);
-export const AlertCircleIcon = make(H.AlertCircleIcon);
-export const SmartphoneIcon = make(H.SmartPhone01Icon);
-export const TabletIcon = make(H.Tablet01Icon);
-export const ToggleOnIcon = make(H.ToggleOnIcon);
-export const ToggleOffIcon = make(H.ToggleOffIcon);
+export const RetryIcon = RetryNavIcon;
+export const SortIcon = BarsIcon;
+export const UploadArrowIcon = UploadArrowNavIcon;
+export const RemoveFileIcon = CrossMarkIcon;
+export const AlertCircleIcon = CircleAlertNavIcon;
+export const SmartphoneIcon = PhoneNavIcon;
+export const TabletIcon = TabletNavIcon;
+export const ToggleOnIcon = ToggleOnNavIcon;
+export const ToggleOffIcon = ToggleOffNavIcon;
 /** A breadcrumb separator: static, since it sits in every header. */
-export const BreadcrumbChevronIcon = make(H.ArrowRight01Icon);
-export const FullScreenIcon = make(H.FullScreenIcon);
-export const UptimeIcon = animated(AnimatedHeartCheckIcon);
-export const LocateIcon = make(H.Gps01Icon);
+export const BreadcrumbChevronIcon = ChevRightNavIcon;
+export const FullScreenIcon = FullScreenNavIcon;
+export const UptimeIcon = ShieldNavIcon;
+export const LocateIcon = LocateNavIcon;
 export const Heading1 = make(H.Heading01Icon);
 export const Heading2 = make(H.Heading02Icon);
 export const Heading3 = make(H.Heading03Icon);
@@ -276,7 +294,7 @@ export const Link = make(H.Link01Icon);
 export const Link2Off = animated(AnimatedLinkOffIcon);
 export const List = animated(AnimatedLeftToRightListBulletIcon);
 export const ListOrdered = make(H.LeftToRightListNumberIcon);
-export const Minus = make(H.MinusSignIcon);
+export const Minus = MinusNavIcon;
 export const Redo2 = make(H.RedoIcon);
 export const RemoveFormatting = make(H.RemoveFormattingIcon);
 export const SquareCode = make(H.CodeSquareIcon);
@@ -294,48 +312,48 @@ export const AlignCenter = make(H.TextAlignCenterIcon);
 export const AlignLeft = make(H.TextAlignLeftIcon);
 export const AlignRight = make(H.TextAlignRightIcon);
 export const AlignJustify = make(H.TextAlignJustifyCenterIcon);
-export const MoreHorizontal = make(H.MoreHorizontalIcon);
-export const Trash2 = animated(AnimatedDelete02Icon);
-export const MoreVertical = make(H.MoreVerticalIcon);
-export const Plus = animated(AnimatedAdd01Icon);
-export const ArrowRight = make(H.ArrowRight01Icon);
-export const ArrowLeft = make(H.ArrowLeft01Icon);
-export const ArrowUp = make(H.ArrowUp01Icon);
-export const ArrowDown = make(H.ArrowDown01Icon);
-export const Keyboard = animated(AnimatedKeyboardIcon);
-export const Ban = make(H.CancelCircleIcon);
+export const MoreHorizontal = DotsIcon;
+export const Trash2 = BinIcon;
+export const MoreVertical = DotsVNavIcon;
+export const Plus = PlusMarkIcon;
+export const ArrowRight = ArrowRightNavIcon;
+export const ArrowLeft = ArrowLeftNavIcon;
+export const ArrowUp = ArrowUpNavIcon;
+export const ArrowDown = ArrowDownNavIcon;
+export const Keyboard = KeyboardNavIcon;
+export const Ban = BanNavIcon;
 export const Baseline = make(H.BaselineIcon);
-export const ChevronDown = make(H.ArrowDown01Icon);
+export const ChevronDown = ChevDownNavIcon;
 export const Code2 = make(H.CodeIcon);
 export const IndentDecrease = make(H.TextIndentLessIcon);
 export const IndentIncrease = make(H.TextIndentMoreIcon);
-export const ListTodo = animated(AnimatedCheckListIcon);
-export const Quote = animated(AnimatedQuoteIcon);
+export const ListTodo = ChecklistNavIcon;
+export const Quote = QuoteNavIcon;
 export const Table = make(H.TableIcon);
 
 // Shared UI ("Icon"-suffixed names)
 // Calendar with a clock, whose hands turn: no fixed date printed on it.
-export const CalendarClockIcon = animateUi(AnimatedCalendarClock);
-export const FileTextIcon = animated(AnimatedFile01Icon);
-export const GlobeIcon = animated(AnimatedGlobe02Icon);
+export const CalendarClockIcon = CalendarNavIcon;
+export const FileTextIcon = PageNavIcon;
+export const GlobeIcon = GlobeNavIcon;
 export const CheckIcon = DrawnCheckIcon;
 /** The tick inside a checkbox: static, since it sits in every list row. */
-export const CheckboxTickIcon = make(H.Tick02Icon);
-export const SaveIcon = animated(AnimatedSaveIcon);
-export const ScanQrIcon = make(H.QrCodeScanIcon);
-export const ChevronUpIcon = make(H.ArrowUp01Icon);
-export const ChevronDownIcon = make(H.ArrowDown01Icon);
-export const ChevronLeftIcon = make(H.ArrowLeft01Icon);
-export const ChevronRightIcon = make(H.ArrowRight01Icon);
-export const EyeIcon = animated(AnimatedEyeIcon);
-export const EyeOffIcon = animated(AnimatedEyeOffIcon);
-export const FolderIcon = animated(AnimatedFolder01Icon);
-export const LinkIcon = animated(AnimatedLink01Icon);
-export const PlusIcon = animated(AnimatedAdd01Icon);
-export const TagIcon = animated(AnimatedTag01Icon);
+export const CheckboxTickIcon = TickNavIcon;
+export const SaveIcon = SaveNavIcon;
+export const ScanQrIcon = ScanQrNavIcon;
+export const ChevronUpIcon = ChevUpNavIcon;
+export const ChevronDownIcon = ChevDownNavIcon;
+export const ChevronLeftIcon = ChevLeftNavIcon;
+export const ChevronRightIcon = ChevRightNavIcon;
+export const EyeIcon = EyeNavIcon;
+export const EyeOffIcon = EyeOffNavIcon;
+export const FolderIcon = FolderNavIcon;
+export const LinkIcon = LinkNavIcon;
+export const PlusIcon = PlusMarkIcon;
+export const TagIcon = TagNavIcon;
 // The writing assistant's Suggest buttons.
-export const SparklesIcon = make(H.SparklesIcon);
-export const Trash2Icon = animated(AnimatedDelete02Icon);
+export const SparklesIcon = SparklesNavIcon;
+export const Trash2Icon = BinIcon;
 // The rich-text editor's toolbar is pressed constantly while typing, so its icons stay still.
 // These are the ones other screens also use in their animated form.
 export const EditorList = make(H.LeftToRightListBulletIcon);
@@ -345,78 +363,81 @@ export const EditorQuote = make(H.QuoteDownIcon);
 export const EditorListTodo = make(H.CheckListIcon);
 export const EditorPlus = make(H.Add01Icon);
 export const EditorImage = make(H.Image01Icon);
-export const Undo2Icon = animated(AnimatedUndoIcon);
-export const UserIcon = animated(AnimatedUserIcon);
-export const CircleAlertIcon = animated(AnimatedAlertCircleIcon);
-export const ExternalLinkIcon = animated(AnimatedArrowUpRight01Icon);
-export const MoreHorizontalIcon = make(H.MoreHorizontalIcon);
-export const PanelRightIcon = animated(AnimatedSidebarRightIcon);
-export const GridIcon = make(H.GridViewIcon);
+export const Undo2Icon = UndoNavIcon;
+export const UserIcon = UserNavIcon;
+export const CircleAlertIcon = CircleAlertNavIcon;
+export const ExternalLinkIcon = ArrowOutIcon;
+export const MoreHorizontalIcon = DotsIcon;
+export const PanelRightIcon = PanelRightNavIcon;
+export const GridIcon = CellsViewIcon;
 /** The list half of the list/grid switch: static, like the grid, so the pair matches. */
-export const ListViewIcon = make(H.LeftToRightListBulletIcon);
-export const FilterIcon = make(H.FilterIcon);
-export const PencilIcon = animated(AnimatedEdit02Icon);
-export const RotateCcwIcon = animated(AnimatedUndoIcon);
-export const SearchIcon = animated(AnimatedSearchIcon);
-export const SearchXIcon = make(H.SearchRemoveIcon);
+export const ListViewIcon = RowsViewIcon;
+export const FilterIcon = FunnelIcon;
+export const SlidersIcon = KnobsIcon;
+export const PencilIcon = PencilNibIcon;
+export const RotateCcwIcon = UndoNavIcon;
+export const SearchIcon = LensIcon;
+/** The same magnifier, still, for a toolbar button that should not move when pointed at. */
+export const SearchStillIcon = LensIcon;
+export const SearchXIcon = SearchXNavIcon;
 // No animated search-and-replace drawing: the magnifier, which moves like the others.
-export const SearchReplaceIcon = animated(AnimatedSearchIcon);
-export const XIcon = animated(AnimatedCancel01Icon);
-export const ArrowRightIcon = make(H.ArrowRight01Icon);
+export const SearchReplaceIcon = SearchSwapNavIcon;
+export const XIcon = CrossMarkIcon;
+export const ArrowRightIcon = ArrowRightNavIcon;
 /** A straight arrow, where ArrowRightIcon is a chevron. */
-export const ArrowForwardIcon = make(H.ArrowRight02Icon);
-export const ArchiveIcon = animated(AnimatedDeliveryBox01Icon);
-export const LayoutDashboardIcon = animated(AnimatedLayoutDashboardIcon);
-export const PanelLeftIcon = animated(AnimatedSidebarLeftIcon);
-export const KeyboardIcon = animated(AnimatedKeyboardIcon);
-export const KeyIcon = animated(AnimatedKey01Icon);
-export const FingerprintIcon = animated(AnimatedFingerPrintIcon);
-export const IntegrationsIcon = animateUi(AnimatedUnplug);
-export const SystemIcon = animated(AnimatedServerIcon);
-export const LogOutIcon = animated(AnimatedLogout01Icon);
-export const BellIcon = animated(AnimatedNotificationIcon);
-export const CheckCheckIcon = make(H.TickDouble02Icon);
-export const PipetteIcon = make(H.PipetteIcon);
-export const VolumeHighIcon = make(H.VolumeHighIcon);
-export const VolumeOffIcon = make(H.VolumeOffIcon);
-export const MailOpenIcon = make(H.MailOpen01Icon);
-export const LegalDocumentIcon = make(H.LegalDocument01Icon);
-export const CircleCheckIcon = animated(AnimatedCheckmarkCircle01Icon);
-export const InfoIcon = animated(AnimatedInformationCircleIcon);
-export const TriangleAlertIcon = animated(AnimatedAlert02Icon);
-export const CopyIcon = animated(AnimatedCopyIcon);
-export const MegaphoneIcon = animated(AnimatedMegaphone01Icon);
+export const ArrowForwardIcon = ArrowRightNavIcon;
+export const ArchiveIcon = ArchiveNavIcon;
+export const LayoutDashboardIcon = DashboardNavIcon;
+export const PanelLeftIcon = PanelLeftNavIcon;
+export const KeyboardIcon = KeyboardNavIcon;
+export const KeyIcon = KeyNavIcon;
+export const FingerprintIcon = FingerprintNavIcon;
+export const IntegrationsIcon = PlugNavIcon;
+export const SystemIcon = ServerNavIcon;
+export const LogOutIcon = LogOutNavIcon;
+export const BellIcon = BellNavIcon;
+export const CheckCheckIcon = CheckCheckNavIcon;
+export const PipetteIcon = PipetteNavIcon;
+export const VolumeHighIcon = VolumeNavIcon;
+export const VolumeOffIcon = VolumeOffNavIcon;
+export const MailOpenIcon = MailOpenNavIcon;
+export const LegalDocumentIcon = LegalNavIcon;
+export const CircleCheckIcon = CircleCheckNavIcon;
+export const InfoIcon = InfoNavIcon;
+export const TriangleAlertIcon = TriangleAlertNavIcon;
+export const CopyIcon = CopyNavIcon;
+export const MegaphoneIcon = MegaphoneNavIcon;
 /** What's new: a gift whose lid lifts, so it reads apart from Announcements' megaphone. */
-export const GiftIcon = animated(AnimatedGiftIcon);
-export const OctagonXIcon = animated(AnimatedCancelCircleIcon);
-export const LoaderIcon = animated(AnimatedLoading02Icon);
-export const ArrowRightLeft = animated(AnimatedArrowLeftRightIcon);
-export const CircleHelp = animated(AnimatedHelpCircleIcon);
-export const ExternalLink = animated(AnimatedArrowUpRight01Icon);
-export const FileText = animated(AnimatedFile01Icon);
-export const ImageIcon = animated(AnimatedImage01Icon);
-export const MediaIcon = GalleryHorizontalIcon;
-export const LayoutDashboard = animated(AnimatedLayoutDashboardIcon);
-export const Settings = animated(AnimatedSettings01Icon);
-export const UserCog = animated(AnimatedUserSettings01Icon);
-export const Users = animated(AnimatedUserGroupIcon);
-export const UsersIcon = animated(AnimatedUserGroupIcon);
-export const FileQuestionIcon = animated(AnimatedFileRemoveIcon);
-export const MailCheck = animated(AnimatedMailCheckIcon);
-export const MessageSquareQuoteIcon = animated(AnimatedMessage01Icon);
-export const StarIcon = animated(AnimatedStarIcon);
-export const CircleHelpIcon = animated(AnimatedHelpCircleIcon);
-export const FolderPlusIcon = animated(AnimatedFolderAddIcon);
-export const MailIcon = animated(AnimatedMail01Icon);
-export const MapPinIcon = animated(AnimatedLocation01Icon);
-export const NewspaperIcon = animated(AnimatedNewspaperIcon);
+export const GiftIcon = GiftNavIcon;
+export const OctagonXIcon = OctagonXNavIcon;
+export const LoaderIcon = LoaderNavIcon;
+export const ArrowRightLeft = SwapNavIcon;
+export const CircleHelp = HelpNavIcon;
+export const ExternalLink = ArrowOutIcon;
+export const FileText = PageNavIcon;
+export const ImageIcon = GalleryNavIcon;
+export const MediaIcon = GalleryNavIcon;
+export const LayoutDashboard = DashboardNavIcon;
+export const Settings = SettingsNavIcon;
+export const UserCog = UserCogNavIcon;
+export const Users = TeamNavIcon;
+export const UsersIcon = TeamNavIcon;
+export const FileQuestionIcon = FileQuestionNavIcon;
+export const MailCheck = MailCheckNavIcon;
+export const MessageSquareQuoteIcon = BubbleLinesNavIcon;
+export const StarIcon = StarNavIcon;
+export const CircleHelpIcon = HelpNavIcon;
+export const FolderPlusIcon = FolderPlusNavIcon;
+export const MailIcon = MailNavIcon;
+export const MapPinIcon = PinNavIcon;
+export const NewspaperIcon = NewsNavIcon;
 
 // Analytics. Audience is a single person in a circle, as Team already has the group.
-export const BrowserIcon = animated(AnimatedBrowserIcon);
-export const RouteIcon = animated(AnimatedCompass01Icon);
-export const AudienceIcon = animated(AnimatedUserCircleIcon);
+export const BrowserIcon = BrowserNavIcon;
+export const RouteIcon = RouteNavIcon;
+export const AudienceIcon = UserCircleNavIcon;
 export const InboxIcon = MailIcon;
 
 // Sidebar sections, in the rail.
-export const ContentIcon = animated(AnimatedLayers01Icon);
-export const AdminIcon = animated(AnimatedShield01Icon);
+export const ContentIcon = LayersNavIcon;
+export const AdminIcon = ShieldUserNavIcon;

@@ -67,21 +67,36 @@
   position: relative;
   z-index: 2;
   flex: 0 0 1px;
-  background: var(--border);
+  background: transparent;
   cursor: col-resize;
   touch-action: none;
   outline: none;
   -webkit-tap-highlight-color: transparent;
-  transition: background-color var(--duration-fast) var(--ease-standard);
 }
 .handle::before {
   position: absolute;
   inset: 0 -6px;
   content: '';
 }
+/* The line itself. It is hidden at rest, fades in on hover intent, and thins out towards both
+   ends so it reads as a soft edge rather than a hard rule. */
+.handle::after {
+  position: absolute;
+  inset: 0 auto 0 0;
+  width: 1px;
+  background: var(--border-strong);
+  content: '';
+  opacity: 0;
+  pointer-events: none;
+  -webkit-mask-image: linear-gradient(to bottom, transparent, #000 14%, #000 86%, transparent);
+  mask-image: linear-gradient(to bottom, transparent, #000 14%, #000 86%, transparent);
+  transition: opacity 160ms var(--ease-standard);
+}
 .handle[data-collapsed] {
-  background: transparent;
   cursor: pointer;
+}
+.handle[data-collapsed]::after {
+  display: none;
 }
 .grip {
   position: absolute;
@@ -95,27 +110,32 @@
   pointer-events: none;
   transform: translate(-50%, -50%) scaleY(0.6);
   transition:
-    opacity var(--duration-fast) var(--ease-standard),
-    background-color var(--duration-fast) var(--ease-standard),
-    transform var(--duration-spring) var(--ease-spring);
+    opacity 160ms var(--ease-standard),
+    background-color 160ms var(--ease-standard),
+    transform 200ms var(--ease-standard);
 }
 @media (hover: hover) and (pointer: fine) {
-  .handle:not([data-collapsed]):hover {
-    background: var(--border-strong);
+  /* A short delay on the way in, so passing over the edge does not flash it; none on the way out. */
+  .handle:not([data-collapsed]):hover::after {
+    opacity: 1;
+    transition-delay: 90ms;
   }
   .handle:not([data-collapsed]):hover .grip {
     opacity: 1;
     transform: translate(-50%, -50%) scaleY(1);
+    transition-delay: 90ms;
   }
   .handle[data-collapsed]:hover .restore {
     border-color: var(--border-strong);
     color: var(--foreground);
   }
 }
-.handle[data-active] {
-  background: var(--border-strong);
+.handle[data-active]::after {
+  opacity: 1;
+  transition-delay: 0ms;
 }
 .handle[data-active] .grip {
+  transition-delay: 0ms;
   background: var(--foreground);
   opacity: 1;
   transform: translate(-50%, -50%) scaleY(1);
@@ -167,7 +187,7 @@
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .handle,
+  .handle::after,
   .grip,
   .restore {
     transition: none;

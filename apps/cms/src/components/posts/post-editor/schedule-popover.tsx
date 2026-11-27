@@ -148,7 +148,7 @@ export function SchedulePopover({
     />
   );
   const timeRow = (
-    <div className="space-y-3 border-t p-3 max-md:px-0">
+    <div className="bg-muted/50 space-y-3 p-3 max-md:bg-transparent max-md:px-0">
       <div className="flex items-center gap-2">
         <Label htmlFor="schedule-time" className="text-muted-foreground text-xs">
           Time
@@ -294,7 +294,7 @@ export function SchedulePopover({
     >
       <PopoverTrigger render={triggerButton}>{triggerContent}</PopoverTrigger>
       <PopoverContent align="end" className="w-[22rem] p-0">
-        <div className="text-ui flex items-center gap-2 border-b px-3 py-2.5 font-medium">
+        <div className="text-ui flex items-center gap-2 px-3 py-2.5 font-medium">
           <CalendarClockIcon aria-hidden className="text-muted-foreground size-4" />
           {title}
         </div>

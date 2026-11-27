@@ -203,6 +203,8 @@ export function CommandMenu({ user, wide = true }: { user: SessionUser; wide?: b
           icon={SearchIcon}
           label="Search"
           wide={wide}
+          // A soft fill, not an outline, so the row reads as a field and keeps its size.
+          className="bg-sidebar-accent/60"
           onClick={() => setOpen(true)}
           trailing={
             searchShortcut ? <ShortcutKeys shortcut={searchShortcut} size="sm" /> : undefined

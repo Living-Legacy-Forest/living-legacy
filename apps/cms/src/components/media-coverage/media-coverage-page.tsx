@@ -2,9 +2,10 @@ import { type MediaCoverageKind, mediaCoverageKindLabels, slugify, youtubeId } f
 import { useNavigate } from '@tanstack/react-router';
 import { useState } from 'react';
 import { CardMeta, ListCard, ListCards } from '@/components/list/list-card';
-import { ListFilter, optionsOf, passes, publishStatusOptions } from '@/components/list/list-filter';
+import { ListFilter, optionsOf, publishStatusOptions } from '@/components/list/list-filter';
 import { ListSort, byNumber, byText, sortedBy, useListSort } from '@/components/list/list-sort';
-import { ViewSwitch, useListView } from '@/components/list/view-switch';
+import { useListView } from '@/components/list/view-switch';
+import { ListDisplay } from '@/components/list/list-display';
 import {
   DialogActions,
   ListColumn,
@@ -31,7 +32,7 @@ import {
 } from '@/components/list/list-row';
 import { usePaged } from '@/lib/use-paged';
 import {
-  SearchInput,
+  ToolbarSearch,
   SelectionBar,
   matchesSearch,
   useSelection,
@@ -97,6 +98,7 @@ import {
   saveMediaCoverage,
   setMediaCoverageFlags,
 } from '@/server/media-coverage';
+import { dateFacts, dateOptions, rowPasses, type MatchMode } from '@/components/list/filter-tools';
 
 type Search = { selected?: string };
 
@@ -138,6 +140,7 @@ export function MediaCoveragePage({
   const [query, setQuery] = useState('');
   // Ticked values per filter group; an empty group does not narrow the list.
   const [picked, setPicked] = useState<Record<string, string[]>>({});
+  const [match, setMatch] = useState<MatchMode>('all');
   const [layout, setLayout] = useListView('media_coverage');
   const grid = layout === 'grid';
   const selection = useSelection(data.map((m) => m.id));
@@ -151,15 +154,19 @@ export function MediaCoveragePage({
   });
   const visible = ordered.filter(
     (m) =>
-      passes(picked.statuses, m.status) &&
-      passes(picked.kinds, m.kind) &&
-      passes(picked.sources, m.source) &&
-      passes(picked.topics, m.category) &&
-      passes(picked.featured, m.featured ? 'yes' : 'no') &&
-      matchesSearch(query, [m.title, m.source, m.category, m.excerpt])
+      rowPasses(match, picked, {
+        statuses: m.status,
+        kinds: m.kind,
+        sources: m.source,
+        topics: m.category,
+        featured: m.featured ? 'yes' : 'no',
+        dated: dateFacts(m.coverageDate),
+        image: m.imageMediaId ? 'yes' : 'no',
+        link: m.externalUrl ? 'yes' : 'no',
+      }) && matchesSearch(query, [m.title, m.source, m.category, m.excerpt])
   );
   // A new search, filter or order starts again from the first page.
-  const paged = usePaged(visible, JSON.stringify([query, picked, sort]));
+  const paged = usePaged(visible, JSON.stringify([query, picked, match, sort]));
   const clearFilters = () => {
     setPicked({});
     selection.clear();
@@ -266,45 +273,80 @@ export function MediaCoveragePage({
       data-revealing={revealing || undefined}
       className="flex flex-col gap-4 lg:h-[calc(100svh-7.5rem)]"
     >
-      <div data-slot="list-toolbar" className="flex flex-wrap items-center gap-3">
-        <h1 data-slot="page-title" className="mr-auto text-xl">
+      <div data-slot="list-toolbar" className="flex flex-wrap items-center gap-3 md:gap-1.5">
+        <h1 data-slot="page-title" className="mr-auto text-xl md:sr-only">
           <RevealWords text="Media coverage" />
         </h1>
+        <div className="mr-auto max-md:hidden" />
         {data.length > 0 && (
-          <SearchInput
+          <ToolbarSearch
             label="Search media coverage"
             placeholder="Search titles and outlets"
             value={query}
             onChange={setQuery}
           />
         )}
-        {data.length > 0 && <ListSort options={SORTS} value={sort} onChange={setSort} />}
         {data.length > 0 && (
-          <ListFilter
-            groups={[
-              { key: 'statuses', label: 'Status', options: publishStatusOptions },
-              { key: 'kinds', label: 'Type', options: kindItems },
-              { key: 'sources', label: 'Outlet', options: optionsOf(data.map((m) => m.source)) },
-              { key: 'topics', label: 'Topic', options: optionsOf(data.map((m) => m.category)) },
-              {
-                key: 'featured',
-                label: 'Featured',
-                options: [
-                  { value: 'yes', label: 'Featured' },
-                  { value: 'no', label: 'Not featured' },
-                ],
-              },
-            ]}
-            values={picked}
-            onChange={(key, next) => {
-              setPicked((prev) => ({ ...prev, [key]: next }));
-              selection.clear();
-            }}
-            onClear={clearFilters}
-          />
+          <ListSort options={SORTS} value={sort} onChange={setSort} hideOnDesktop />
         )}
+
         {data.length > 0 && (
-          <ViewSwitch
+          <ListDisplay
+            filter={
+              <ListFilter
+                groups={[
+                  { key: 'statuses', label: 'Status', options: publishStatusOptions },
+                  { key: 'kinds', label: 'Type', options: kindItems },
+                  {
+                    key: 'sources',
+                    label: 'Outlet',
+                    options: optionsOf(data.map((m) => m.source)),
+                  },
+                  {
+                    key: 'topics',
+                    label: 'Topic',
+                    options: optionsOf(data.map((m) => m.category)),
+                  },
+                  {
+                    key: 'featured',
+                    label: 'Featured',
+                    options: [
+                      { value: 'yes', label: 'Featured' },
+                      { value: 'no', label: 'Not featured' },
+                    ],
+                  },
+                  { key: 'dated', label: 'Covered', options: dateOptions },
+                  {
+                    key: 'image',
+                    label: 'Image',
+                    options: [
+                      { value: 'yes', label: 'Has an image' },
+                      { value: 'no', label: 'No image' },
+                    ],
+                  },
+                  {
+                    key: 'link',
+                    label: 'Link',
+                    options: [
+                      { value: 'yes', label: 'Links to the original' },
+                      { value: 'no', label: 'No link' },
+                    ],
+                  },
+                ]}
+                match={match}
+                onMatchChange={setMatch}
+                savedKey="media-coverage"
+                values={picked}
+                onChange={(key, next) => {
+                  setPicked((prev) => ({ ...prev, [key]: next }));
+                  selection.clear();
+                }}
+                onClear={clearFilters}
+              />
+            }
+            sortOptions={SORTS}
+            sortValue={sort}
+            onSortChange={(next) => setSort(next as typeof sort)}
             value={layout}
             onChange={(next) => {
               setLayout(next);
@@ -348,7 +390,7 @@ export function MediaCoveragePage({
       </div>
 
       {data.length === 0 && pane === null ? (
-        <Empty className="flex-1 rounded-lg border">
+        <Empty className="flex-1 rounded-lg">
           <EmptyHeader>
             <EmptyMedia variant="icon">
               <NewspaperIcon aria-hidden />
@@ -463,7 +505,7 @@ export function MediaCoveragePage({
                 {...paged.pager}
                 noun="articles"
                 label="Media coverage pages"
-                className="mt-0 shrink-0 border-t px-3 py-2 max-md:border-0"
+                className="mt-0 shrink-0 px-3 py-2"
               />
             )}
           </ListColumn>
@@ -570,7 +612,7 @@ function PreviewPane({
 
   return (
     <section aria-label="Preview" className="hidden min-h-0 flex-col lg:flex">
-      <div className="flex h-11 shrink-0 items-center gap-1.5 border-b px-3">
+      <div className="flex h-10 shrink-0 items-center gap-1.5 px-3">
         <Badge
           variant={item.status === 'published' ? 'secondary' : 'outline'}
           className="capitalize"

@@ -62,7 +62,7 @@ export function UpcomingEvents({ events, now }: { events: Upcoming[]; now: numbe
       </CardHeader>
       <CardContent>
         {events.length === 0 ? (
-          <Empty className="min-h-40 border py-8">
+          <Empty className="min-h-40 py-8">
             <EmptyHeader>
               <EmptyMedia variant="icon">
                 <CalendarClockIcon aria-hidden />

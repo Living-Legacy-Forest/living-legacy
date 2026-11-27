@@ -21,11 +21,13 @@ export function ListCards({
   /** For a grid inside a section that scrolls with its page rather than on its own. */
   className?: string;
 }) {
+  // Cards stop growing at 21rem, so a card keeps its size when the editor opens beside the list
+  // and the grid has fewer columns, instead of stretching as the layout moves.
   return (
     <ul
       data-slot="list-cards"
       className={cn(
-        'grid min-h-0 flex-1 auto-rows-max grid-cols-[repeat(auto-fill,minmax(16rem,1fr))] gap-4 overflow-y-auto p-4 max-md:p-0',
+        'grid min-h-0 flex-1 auto-rows-max grid-cols-[repeat(auto-fill,minmax(16rem,21rem))] gap-4 overflow-y-auto p-4 max-md:p-0',
         className
       )}
     >
@@ -46,6 +48,7 @@ export function ListCard({
   imagePosition = 'center',
   current = false,
   onOpen,
+  menuOpen,
   link,
   previews,
   menu = [],
@@ -65,6 +68,8 @@ export function ListCard({
   /** The card open in the pane. */
   current?: boolean;
   onOpen: () => void;
+  /** What the menu's Open does, where that differs from a click on the card (a click can toggle). */
+  menuOpen?: () => void;
   /** Renders the title as a link (so it opens in a new tab too) instead of a button. */
   link?: (props: { className: string; children: React.ReactNode }) => React.ReactNode;
   /** A click shows a preview rather than the edit form, so the menu says Preview. */
@@ -76,7 +81,12 @@ export function ListCard({
   largeTitle?: boolean;
   children?: React.ReactNode;
 }) {
-  const { actions, destructive } = rowActions({ onOpen, previews, items: menu, swipe: remove });
+  const { actions, destructive } = rowActions({
+    onOpen: menuOpen ?? onOpen,
+    previews,
+    items: menu,
+    swipe: remove,
+  });
   const sortLayout = useSortLayout();
   // The title's ::after covers the card, so a click anywhere opens it; the menu sits above.
   const titleClass =
@@ -89,8 +99,9 @@ export function ListCard({
       {...sortLayout}
       data-slot="list-card"
       className={cn(
-        'group/card bg-card has-[:focus-visible]:ring-ring/50 relative flex flex-col overflow-hidden rounded-xl border transition-shadow hover:shadow-md has-[:focus-visible]:ring-2 motion-reduce:transition-none',
-        current && 'ring-ring ring-2'
+        'group/card bg-muted/50 has-[:focus-visible]:ring-ring/50 hover:bg-muted/80 has-[[data-popup-open]]:bg-muted/80 relative flex flex-col overflow-hidden rounded-xl transition-colors has-[:focus-visible]:ring-2 motion-reduce:transition-none',
+        current &&
+          'bg-foreground/10 hover:bg-foreground/10 has-[[data-popup-open]]:bg-foreground/10'
       )}
     >
       {image !== undefined && (
@@ -101,7 +112,7 @@ export function ListCard({
               alt=""
               loading="lazy"
               className={cn(
-                'size-full object-cover transition-transform duration-300 ease-out group-hover/card:scale-[1.03] motion-reduce:transition-none',
+                'size-full object-cover transition-transform duration-300 ease-out group-hover/card:scale-[1.03] group-has-[[data-popup-open]]/card:scale-[1.03] motion-reduce:transition-none',
                 imagePosition === 'top' && 'object-top'
               )}
             />

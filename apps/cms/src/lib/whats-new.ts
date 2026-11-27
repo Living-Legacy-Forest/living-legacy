@@ -54,6 +54,46 @@ export type WhatsNewEntry = {
 
 export const whatsNew: WhatsNewEntry[] = [
   {
+    id: '2026-11-27-2',
+    kind: 'new',
+    title: 'Sharper filters on every list',
+    items: [
+      {
+        title: 'Filters live in Display',
+        body: 'On a wide screen, the Display button now holds the view, the order and every filter in one place. Filters include when something was added or changed, whether it has a photo or image, and more on each page. Posts can also be filtered by tag, image and search description.',
+        link: { label: 'Try it on Events', to: '/events' },
+      },
+      {
+        title: 'Match all or any',
+        body: 'When two or more filters are ticked, choose whether a row must match all of them or just one.',
+      },
+      {
+        title: 'Save a filter',
+        body: 'Tick some filters, then choose Save this filter and name it. Your saved filters appear as buttons in the panel, kept in this browser.',
+      },
+    ],
+  },
+  {
+    id: '2026-11-27',
+    kind: 'new',
+    title: 'Set up the sidebar your way',
+    items: [
+      {
+        title: 'One column or two',
+        body: 'The sidebar can now be a single column, with every section under its own heading that folds shut and your tools in a menu at the bottom. Admins set the default in Settings, and anyone can choose their own on their profile or by right-clicking the empty space in the sidebar.',
+        link: { label: 'Open your profile', to: '/profile', hash: 'appearance' },
+      },
+      {
+        title: 'Select every row with ⌘A',
+        body: 'On any list, press ⌘A (Ctrl+A on Windows) to tick every row shown, and Esc to clear the ticks. In a field or the editor, ⌘A still selects text as usual. All the keys are in the Keyboard shortcuts list.',
+      },
+      {
+        title: 'Right-click the sidebar',
+        body: 'Right-click (or press and hold) a section or page to pin it to the top, move it up or down, or hide it. Open in new tab and Copy link are there too. Right-click the empty space to show names or icons, bring hidden items back, or reset the order.',
+      },
+    ],
+  },
+  {
     id: '2026-11-26',
     kind: 'new',
     title: 'Online booking',

@@ -102,6 +102,11 @@ const consentMonthItems = CONSENT_MONTHS_OPTIONS.map((months) => ({
   label: `${months} months`,
 }));
 
+const sidebarItems = [
+  { value: '2', label: 'Two columns' },
+  { value: '1', label: 'One column' },
+];
+
 const themeLabels: Record<Theme, string> = {
   system: 'System preference',
   light: 'Light',
@@ -541,7 +546,7 @@ export function SettingsPage({
             </SettingsRow>
             <div className="space-y-1.5 max-md:px-4 max-md:py-3.5">
               <p className="text-muted-foreground text-xs">Search result preview</p>
-              <div className="rounded-md border px-4 py-3">
+              <div className="bg-muted/50 rounded-md px-4 py-3">
                 <p className="text-muted-foreground truncate text-xs">{SITE_HOST} › our-story</p>
                 <p className="truncate text-base text-[#1a0dab] dark:text-[#8ab4f8]">
                   {exampleTitle}
@@ -867,7 +872,7 @@ export function SettingsPage({
             <SettingsSection
               id="appearance"
               title="Language & appearance"
-              description="The site's language, time zone, and the CMS theme, colour and font."
+              description="The site's language, time zone, and the CMS theme, sidebar, colour and font."
             >
               <SettingsRow id="settings-locale" title="Language">
                 <Select
@@ -941,6 +946,40 @@ export function SettingsPage({
                 />
               </SettingsRow>
               <SettingsRow
+                id="settings-sidebar"
+                title="Sidebar"
+                description="The default for everyone. People can choose their own."
+                info={
+                  <>
+                    <p>Two columns: sections down the left and their pages beside them.</p>
+                    <p>
+                      One column: every section under its own heading, with the tools in a menu at
+                      the bottom.
+                    </p>
+                    <p>Anyone can pick their own on their profile, which then wins over this.</p>
+                  </>
+                }
+              >
+                <Select
+                  items={sidebarItems}
+                  value={String(values.sidebarColumns)}
+                  onValueChange={(value) =>
+                    value && patch({ sidebarColumns: value === '1' ? 1 : 2 })
+                  }
+                >
+                  <SelectTrigger id="settings-sidebar" className={fieldWidth}>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {sidebarItems.map((item) => (
+                      <SelectItem key={item.value} value={item.value}>
+                        {item.label}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </SettingsRow>
+              <SettingsRow
                 id="settings-colour"
                 title="Colour"
                 description="Tints buttons, highlights and the sidebar, in light and dark."
@@ -990,7 +1029,7 @@ export function SettingsPage({
           {/* Only there while something is unsaved, so it never nags. */}
           <div
             className={cn(
-              'bg-background/95 sticky bottom-[calc(var(--tab-bar-height)+1rem)] z-10 flex items-center gap-3 rounded-lg border px-4 py-3 shadow-lg backdrop-blur transition-all',
+              'bg-background/95 sticky bottom-[calc(var(--tab-bar-height)+1rem)] z-10 flex items-center gap-3 rounded-lg px-4 py-3 shadow-lg backdrop-blur transition-all',
               dirty ? 'translate-y-0 opacity-100' : 'pointer-events-none translate-y-2 opacity-0'
             )}
             aria-hidden={!dirty}
@@ -1120,9 +1159,9 @@ function SectionNav({ ids }: { ids: string[] }) {
     // so the tabs jump to sections and follow the one in view. From md; phones scroll.
     <nav
       aria-label="Settings sections"
-      className="bg-background sticky top-16 z-20 mb-8 hidden border-b md:block"
+      className="bg-background sticky top-16 z-20 mb-8 hidden py-1.5 md:block"
     >
-      <ul ref={list} className="no-scrollbar -mb-px flex gap-6 overflow-x-auto">
+      <ul ref={list} className="no-scrollbar flex gap-1 overflow-x-auto">
         {shown.map((section) => (
           <li key={section.id} className="shrink-0">
             <a
@@ -1137,8 +1176,8 @@ function SectionNav({ ids }: { ids: string[] }) {
                 });
               }}
               className={cn(
-                'text-muted-foreground hover:text-foreground text-ui block border-b-2 border-transparent py-2.5 whitespace-nowrap transition-colors',
-                active === section.id && 'border-foreground text-foreground font-medium'
+                'text-muted-foreground hover:text-foreground hover:bg-foreground/[0.06] text-ui block rounded-md px-2.5 py-1 whitespace-nowrap transition-colors',
+                active === section.id && 'bg-foreground/10 text-foreground font-medium'
               )}
             >
               {section.title}
@@ -1371,7 +1410,7 @@ function SiteIconPanel({
   const problem = item ? siteIconProblem(item, label) : null;
 
   return (
-    <div className="bg-muted/50 space-y-3 rounded-xl border p-3">
+    <div className="bg-muted/50 space-y-3 rounded-xl p-3">
       <p className="text-ui flex items-center gap-1.5 font-medium">
         <Icon aria-hidden className="text-muted-foreground size-4" />
         {mode === 'light' ? 'Light mode' : 'Dark mode'}

@@ -85,8 +85,8 @@ export function PresenceNotice({
       role="status"
       className={
         newerSave
-          ? 'flex flex-wrap items-center gap-x-3 gap-y-2 border-b bg-amber-500/10 px-3 py-2 text-sm text-amber-900 dark:text-amber-200'
-          : 'bg-muted/50 text-muted-foreground flex flex-wrap items-center gap-x-3 gap-y-2 border-b px-3 py-2 text-sm'
+          ? 'flex flex-wrap items-center gap-x-3 gap-y-2 bg-amber-500/10 px-3 py-2 text-sm text-amber-900 dark:text-amber-200'
+          : 'bg-muted/50 text-muted-foreground flex flex-wrap items-center gap-x-3 gap-y-2 px-3 py-2 text-sm'
       }
     >
       {others.length > 0 && (

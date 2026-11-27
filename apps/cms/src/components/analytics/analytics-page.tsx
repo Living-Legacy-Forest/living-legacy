@@ -159,7 +159,7 @@ export function AnalyticsNotice({
   children?: React.ReactNode;
 }) {
   return (
-    <Empty className="rounded-lg border max-md:rounded-[10px] max-md:border-0 max-md:bg-(--ios-cell)">
+    <Empty className="rounded-lg max-md:rounded-[10px] max-md:border-0 max-md:bg-(--ios-cell)">
       <EmptyHeader>
         <EmptyMedia variant="icon">
           <ChartAreaIcon aria-hidden />

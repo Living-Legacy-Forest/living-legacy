@@ -3,6 +3,7 @@ import { useBlocker } from '@tanstack/react-router';
 import { useState } from 'react';
 import { type BrandName, BrandLogo } from '@/components/brand-logos';
 import { groupBoxClass, groupHeadingClass } from '@/components/form-cells';
+import { InfoTip } from '@/components/info-tip';
 import { StatusPulse } from '@/components/system/status-pulse';
 import {
   AlertDialog,
@@ -127,14 +128,18 @@ export function TrackingSection({ saved }: { saved: TrackingIds }) {
       <form noValidate onSubmit={submit} className="space-y-8">
         {groups.map((group) => (
           <section key={group.title} className="space-y-2.5 max-md:space-y-1.5">
-            <h2
-              className={cn(
-                'max-md:text-ui text-sm font-medium max-md:font-normal',
-                groupHeadingClass
-              )}
-            >
-              {group.title}
-            </h2>
+            <div className={cn('flex items-center gap-1.5', groupHeadingClass)}>
+              <h2 className="max-md:text-ui text-sm font-medium max-md:font-normal">
+                {group.title}
+              </h2>
+              <InfoTip label={`Where to find the ${group.title.toLowerCase()} ids`}>
+                {group.apps.map((app) => (
+                  <p key={app.key}>
+                    <span className="font-medium">{app.name}.</span> {app.where}
+                  </p>
+                ))}
+              </InfoTip>
+            </div>
             <div className={cn(groupBoxClass, 'divide-y max-md:divide-(--ios-separator)')}>
               {group.apps.map((app) => (
                 <AppRow
@@ -147,18 +152,13 @@ export function TrackingSection({ saved }: { saved: TrackingIds }) {
                 />
               ))}
             </div>
-            <p className="text-muted-foreground text-xs max-md:px-4">{group.note}</p>
           </section>
         ))}
-
-        <p className="text-muted-foreground text-xs max-md:px-4">
-          Leave an id blank to use the one the site was built with.
-        </p>
 
         {/* Only there while something is unsaved, so it never nags. */}
         <div
           className={cn(
-            'bg-background/95 sticky bottom-[calc(var(--tab-bar-height)+1rem)] z-10 flex items-center gap-3 rounded-lg border px-4 py-3 shadow-lg backdrop-blur transition-all',
+            'bg-background/95 sticky bottom-[calc(var(--tab-bar-height)+1rem)] z-10 flex items-center gap-3 rounded-lg px-4 py-3 shadow-lg backdrop-blur transition-all',
             dirty ? 'translate-y-0 opacity-100' : 'pointer-events-none translate-y-2 opacity-0'
           )}
           aria-hidden={!dirty}
@@ -253,7 +253,6 @@ function AppRow({
         onChange={(e) => onChange(e.target.value)}
         className="font-mono"
       />
-      <p className="text-muted-foreground text-xs">{app.where}</p>
     </div>
   );
 }

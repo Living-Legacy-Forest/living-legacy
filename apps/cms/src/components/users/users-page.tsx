@@ -456,7 +456,7 @@ function AccessForm({
     return (
       <form noValidate onSubmit={submit} className="flex min-h-0 flex-1 flex-col">
         <div className="min-h-0 flex-1 space-y-5 overflow-y-auto p-4">{fields}</div>
-        <SheetFooter className="mt-0 flex-row items-center justify-end border-t">
+        <SheetFooter className="mt-0 flex-row items-center justify-end">
           <SheetClose render={<Button type="button" variant="outline" />}>
             {readOnly ? 'Close' : 'Cancel'}
           </SheetClose>
@@ -683,7 +683,7 @@ function InviteDialog({
         </SheetHeader>
         <form noValidate onSubmit={submit} className="flex min-h-0 flex-1 flex-col">
           <div className="min-h-0 flex-1 space-y-5 overflow-y-auto p-4">{fields}</div>
-          <SheetFooter className="mt-0 flex-row items-center justify-end border-t">
+          <SheetFooter className="mt-0 flex-row items-center justify-end">
             <SheetClose render={<Button type="button" variant="outline" />}>Cancel</SheetClose>
             {sendButton}
           </SheetFooter>

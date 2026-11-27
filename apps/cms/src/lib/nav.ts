@@ -334,7 +334,7 @@ export function sidebarSections(access: Access): SidebarSection[] {
 }
 
 /** The section the page at `pathname` belongs to; the first section for pages outside them. */
-export function sectionFor(pathname: string, sections: SidebarSection[]) {
+export function sectionFor<S extends SidebarSection>(pathname: string, sections: S[]): S | null {
   const item = findNavItem(pathname);
   return sections.find((s) => s.pages.some((p) => item && p.to === item.to)) ?? sections[0] ?? null;
 }

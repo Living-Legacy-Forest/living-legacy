@@ -91,8 +91,10 @@ export function SplitHandle({
       className={cn(
         'touch:w-6 absolute inset-y-0 z-10 hidden w-3 -translate-x-1/2 cursor-col-resize touch-none outline-none select-none lg:block',
         // The line shows on hover, on focus and while dragging; the 1px border beneath stays quiet.
-        'after:absolute after:inset-y-0 after:left-1/2 after:w-0.5 after:-translate-x-1/2 after:rounded-full after:bg-transparent after:transition-colors',
-        'hover:after:bg-primary/40 focus-visible:after:bg-primary data-active:after:bg-primary'
+        // It fades in after a short hover delay and thins out at both ends, so it reads as a soft edge.
+        'after:bg-primary/50 after:absolute after:inset-y-0 after:left-1/2 after:w-0.5 after:-translate-x-1/2 after:rounded-full after:opacity-0 after:transition-opacity after:duration-150 after:ease-out',
+        'after:[mask-image:linear-gradient(to_bottom,transparent,#000_14%,#000_86%,transparent)]',
+        'focus-visible:after:bg-primary data-active:after:bg-primary hover:after:opacity-100 hover:after:delay-100 focus-visible:after:opacity-100 data-active:after:opacity-100 data-active:after:delay-0 motion-reduce:after:transition-none'
       )}
       onPointerDown={(event) => {
         if (event.button !== 0) return;

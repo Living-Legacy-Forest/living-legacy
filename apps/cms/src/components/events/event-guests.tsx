@@ -40,6 +40,7 @@ import {
 import { Reveal } from '@/components/reveal';
 import { AddGuestDialog } from './add-guest-dialog';
 import { TicketScanner } from './ticket-scanner';
+import { GlideHighlight } from '@/components/ui/glide-highlight';
 
 const fullName = (g: Guest) => [g.firstName, g.lastName].filter(Boolean).join(' ');
 const places = (n: number) => (n === 1 ? '1 place' : `${n} places`);
@@ -233,14 +234,21 @@ export function EventGuests({ event }: { event: EventRow }) {
       </div>
 
       {confirmed.length === 0 ? (
-        <p className="text-muted-foreground rounded-lg border border-dashed px-4 py-8 text-center text-sm max-md:border-0 max-md:text-[0.9375rem]">
+        <p className="text-muted-foreground bg-muted/50 rounded-lg px-4 py-8 text-center text-sm max-md:border-0 max-md:text-[0.9375rem]">
           No guests yet. Add phone bookings and walk-ins here.
         </p>
       ) : (
         <ul className={GUEST_LIST}>
+          <GlideHighlight
+            follow="hover"
+            as="li"
+            selector="[data-glide]"
+            className="bg-muted border-0! max-md:hidden"
+          />
           {confirmedPaged.shown.map((g) => (
             <li
               key={g.id}
+              data-glide
               className={cn(
                 'animate-in fade-in slide-in-from-top-1 duration-200 motion-reduce:animate-none',
                 GUEST_ROW
@@ -313,10 +321,16 @@ export function EventGuests({ event }: { event: EventRow }) {
             </p>
           </div>
           <ul className={GUEST_LIST}>
+            <GlideHighlight
+              follow="hover"
+              as="li"
+              selector="[data-glide]"
+              className="bg-muted border-0! max-md:hidden"
+            />
             {waiting.filter(matches).map((g, index) => {
               const fits = left === null || g.partySize <= left;
               return (
-                <li key={g.id} className={GUEST_ROW}>
+                <li key={g.id} data-glide className={GUEST_ROW}>
                   <GuestDetails
                     guest={g}
                     position={index + 1}
@@ -376,8 +390,14 @@ export function EventGuests({ event }: { event: EventRow }) {
             Cancelled
           </h3>
           <ul className={cn(GUEST_LIST, 'opacity-70')}>
+            <GlideHighlight
+              follow="hover"
+              as="li"
+              selector="[data-glide]"
+              className="bg-muted border-0! max-md:hidden"
+            />
             {cancelled.filter(matches).map((g) => (
-              <li key={g.id} className={GUEST_ROW}>
+              <li key={g.id} data-glide className={GUEST_ROW}>
                 <GuestDetails guest={g} />
               </li>
             ))}
@@ -503,14 +523,14 @@ function Stat({ label, value }: { label: string; value: string }) {
 
 /** Bordered on wider screens; an iOS grouped list on phones. */
 const GUEST_LIST =
-  'divide-y rounded-lg border max-md:divide-(--ios-separator) max-md:overflow-hidden max-md:rounded-[10px] max-md:border-0 max-md:bg-(--ios-cell-raised)';
+  'divide-y divide-border/60 overflow-hidden rounded-lg bg-muted/50 max-md:divide-(--ios-separator) max-md:overflow-hidden max-md:rounded-[10px] max-md:border-0 max-md:bg-(--ios-cell-raised)';
 
 /**
  * A guest beside their buttons. On phones the name stays beside them and the rest
  * runs the full width beneath, which leaves the longest lines the most room.
  */
 const GUEST_ROW =
-  'grid grid-cols-[minmax(0,1fr)_auto_auto] items-center gap-x-3 gap-y-1 px-3 py-2.5 sm:flex sm:gap-y-0 max-md:px-4';
+  'relative grid grid-cols-[minmax(0,1fr)_auto_auto] items-center gap-x-3 gap-y-1 px-3 py-2.5 sm:flex sm:gap-y-0 max-md:px-4';
 
 function GuestDetails({
   guest: g,

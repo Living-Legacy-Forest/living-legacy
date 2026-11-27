@@ -19,6 +19,7 @@ export function PostStatusBadge({
   inReview = false,
   scheduledAt = null,
   showDate = false,
+  dotOnly = false,
   className,
 }: {
   status: 'draft' | 'published';
@@ -30,6 +31,8 @@ export function PostStatusBadge({
   scheduledAt?: number | null;
   /** Append the scheduled time, for example "Scheduled · 2 Nov, 9:00 am". */
   showDate?: boolean;
+  /** Just the coloured dot, named for screen readers and on hover, for a dense row. */
+  dotOnly?: boolean;
   className?: string;
 }) {
   const key = trashed
@@ -45,6 +48,14 @@ export function PostStatusBadge({
           : 'draft';
   const { dot, label } = styles[key];
   const timeZone = useTimeZone();
+  if (dotOnly) {
+    return (
+      <span title={label} className={cn('inline-flex shrink-0 items-center', className)}>
+        <span aria-hidden className={cn('size-2 rounded-full', dot)} />
+        <span className="sr-only">{label}</span>
+      </span>
+    );
+  }
   return (
     <span
       className={cn('text-muted-foreground inline-flex items-center gap-1.5 text-xs', className)}

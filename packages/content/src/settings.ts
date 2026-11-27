@@ -110,6 +110,8 @@ export const SITE_SETTINGS_DEFAULTS = {
   sessionDays: 7,
   locale: 'en-AU' as Locale,
   theme: 'system' as Theme,
+  /** The CMS sidebar for anyone who has not chosen their own: 2 is a rail and pages, 1 a single list. */
+  sidebarColumns: 2 as 1 | 2,
   cmsFont: 'inter' as CmsFont,
   cmsColour: 'neutral' as CmsColour,
   timeZone: 'Australia/Melbourne' as TimeZone,
@@ -160,6 +162,9 @@ export function parseSiteSettings(data: unknown): SiteSettings {
     if (typeof value === typeof settings[key]) Object.assign(settings, { [key]: value });
   }
   // A list needs more than a type check: an invalid one falls back to the defaults.
+  if (settings.sidebarColumns !== 1 && settings.sidebarColumns !== 2) {
+    settings.sidebarColumns = SITE_SETTINGS_DEFAULTS.sidebarColumns;
+  }
   if (!(cmsFonts as readonly string[]).includes(settings.cmsFont)) {
     settings.cmsFont = SITE_SETTINGS_DEFAULTS.cmsFont;
   }

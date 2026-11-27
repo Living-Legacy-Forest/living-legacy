@@ -50,7 +50,7 @@ export function RichTextField({
     }) ?? (editor ? readState(editor) : null);
 
   return (
-    <div className="focus-within:border-ring overflow-clip rounded-lg border transition-colors">
+    <div className="bg-muted/60 focus-within:bg-background focus-within:ring-ring/15 overflow-clip rounded-lg transition-colors focus-within:ring-1">
       <RichTextEditor
         editor={editor}
         variant="subtle"

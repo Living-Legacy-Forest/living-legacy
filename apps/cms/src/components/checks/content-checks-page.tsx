@@ -27,6 +27,7 @@ import type { BrandBreach, ContentChecks, LinkBreach } from '@/server/content-ch
 import { updateMedia } from '@/server/media';
 import { useRevealOnce } from '@/lib/use-reveal-once';
 import { RevealWords } from '@/components/dashboard/reveal-words';
+import { GlideHighlight } from '@/components/ui/glide-highlight';
 
 type CheckKey =
   | 'noDescription'
@@ -87,7 +88,7 @@ const CHECKS: { key: CheckKey; icon: LucideIcon; title: string; passing: string;
     icon: PencilLineIcon,
     title: 'Brand language',
     passing: 'Nothing published uses a word the guide rules out.',
-    why: 'The brand language guide rules these words out. Each shows what to write instead. An admin can edit the guide in Settings.',
+    why: 'The brand guide rules these words out. Each shows what to write instead.',
   },
   {
     key: 'links',
@@ -194,7 +195,7 @@ function CheckSection({
   return (
     <section
       aria-labelledby={headingId}
-      className="rounded-lg border max-md:rounded-none max-md:border-0"
+      className="bg-muted/50 rounded-lg max-md:rounded-none max-md:bg-transparent"
     >
       <header className="flex items-start gap-3 px-4 py-3 max-md:px-4 max-md:pt-0 max-md:pb-2">
         <CheckIcon icon={check.icon} />
@@ -228,9 +229,19 @@ function PassingList({ checks }: { checks: (typeof CHECKS)[number][] }) {
       >
         Passing
       </h2>
-      <ul className="divide-y rounded-lg border max-md:divide-(--ios-separator) max-md:overflow-hidden max-md:rounded-[10px] max-md:border-0 max-md:bg-(--ios-cell)">
+      <ul className="bg-muted/50 overflow-hidden rounded-lg max-md:divide-y max-md:divide-(--ios-separator) max-md:overflow-hidden max-md:rounded-[10px] max-md:bg-(--ios-cell)">
+        <GlideHighlight
+          follow="hover"
+          as="li"
+          selector="[data-glide]"
+          className="bg-muted border-0! max-md:hidden"
+        />
         {checks.map((check) => (
-          <li key={check.key} className="touch:min-h-11 flex items-center gap-3 px-4 py-3">
+          <li
+            key={check.key}
+            data-glide
+            className="touch:min-h-11 relative flex items-center gap-3 px-4 py-3"
+          >
             <CheckIcon icon={check.icon} />
             <span className="min-w-0 flex-1">
               <span className="text-ui block font-medium">{check.title}</span>
@@ -249,16 +260,20 @@ function PassingList({ checks }: { checks: (typeof CHECKS)[number][] }) {
 
 function Row({ children }: { children: React.ReactNode }) {
   return (
-    <li className="touch:min-h-11 flex min-h-13 flex-wrap items-center gap-x-3 gap-y-2 px-4 py-2 md:pl-15">
+    <li
+      data-glide
+      className="touch:min-h-11 relative flex min-h-13 flex-wrap items-center gap-x-3 gap-y-2 px-4 py-2 md:pl-15"
+    >
       {children}
     </li>
   );
 }
 
+/** "Open the FAQ" reads as "Open FAQ"; the full label is still what a screen reader hears. */
 function FixLink({ label, ...link }: LinkProps & { label: string }) {
   return (
-    <Link {...link} className={fixClass}>
-      {label}
+    <Link {...link} aria-label={label} className={fixClass}>
+      {label.replace(/ (the|a|an) /, ' ')}
     </Link>
   );
 }
@@ -281,7 +296,13 @@ function CheckRows({
 
   return (
     <>
-      <ul className="divide-y border-t max-md:divide-(--ios-separator) max-md:overflow-hidden max-md:rounded-[10px] max-md:border-0 max-md:bg-(--ios-cell)">
+      <ul className="overflow-hidden rounded-b-lg max-md:divide-y max-md:divide-(--ios-separator) max-md:overflow-hidden max-md:rounded-[10px] max-md:bg-(--ios-cell)">
+        <GlideHighlight
+          follow="hover"
+          as="li"
+          selector="[data-glide]"
+          className="bg-muted border-0! max-md:hidden"
+        />
         {paged.shown}
         {page === pageCount && <More shown={rows.length} total={data[checkKey].total} />}
       </ul>
@@ -290,7 +311,7 @@ function CheckRows({
           {...paged.pager}
           noun={NOUNS[checkKey]}
           label={`Pages of ${NOUNS[checkKey]} to fix`}
-          className="mt-0 border-t px-4 py-2 max-md:border-0"
+          className="mt-0 px-4 py-2"
         />
       )}
     </>
@@ -420,7 +441,7 @@ function useCheckRows(
                     sentence={f.sentence}
                     found={f.found}
                     limit={2000}
-                    label={`Suggest a fix for “${f.found}”`}
+                    label={b.never.length > 1 ? `Fix “${f.found}”` : 'Suggest fix'}
                   />
                 ))}
               </span>
@@ -523,7 +544,7 @@ function AltTextRow({
         alt=""
         title={filename}
         loading="lazy"
-        className="bg-muted size-9 shrink-0 rounded-md border object-cover"
+        className="bg-muted size-9 shrink-0 rounded-md object-cover"
       />
       {canEdit ? (
         <form

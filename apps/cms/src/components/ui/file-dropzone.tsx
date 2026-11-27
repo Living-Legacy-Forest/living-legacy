@@ -467,7 +467,7 @@ function FileRow({ item, reduce, delay, fresh, canRetry, onRemove, onRetry, remo
                     title="Retry"
                     className={cn(
                       rowButtonClass,
-                      'bg-background pointer-fine:hover:bg-muted flex h-7.5 items-center gap-1.25 rounded-full border pr-3 pl-2.5 text-xs font-medium whitespace-nowrap'
+                      'bg-background pointer-fine:hover:bg-muted flex h-7.5 items-center gap-1.25 rounded-full pr-3 pl-2.5 text-xs font-medium whitespace-nowrap'
                     )}
                   >
                     <RetryIcon aria-hidden className="size-3.5" />
@@ -809,7 +809,7 @@ export function DropTarget({
               </motion.span>
             )}
           </AnimatePresence>
-          <strong className="text-ui relative block font-medium">
+          <strong className="relative block text-xs font-medium">
             <TextSwap
               text={shownLabel}
               className="inline-block max-w-full truncate align-top"
@@ -817,7 +817,7 @@ export function DropTarget({
             />
           </strong>
           {description !== null && (
-            <span id={descriptionId} className="text-muted-foreground text-ui mt-1">
+            <span id={descriptionId} className="text-muted-foreground mt-1 text-xs">
               {description}
             </span>
           )}

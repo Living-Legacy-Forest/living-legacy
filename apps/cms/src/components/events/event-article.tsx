@@ -202,7 +202,7 @@ export function EventArticle({
 
         {/* Booking card: beside the details on wide screens, under the description on phones. */}
         <aside className="lg:col-start-2 lg:row-span-3 lg:row-start-1">
-          <div className="space-y-3 rounded-xl border p-5 shadow-sm lg:sticky lg:top-16">
+          <div className="bg-muted/50 space-y-3 rounded-xl p-5 lg:sticky lg:top-16">
             <p className="font-semibold">
               {event.startsAt !== null ? formatDateTime(event.startsAt, zone) : 'Date not set'}
             </p>
@@ -257,7 +257,7 @@ export function EventArticle({
                   {where && <span className="text-muted-foreground">{where}</span>}
                 </p>
                 {location?.pin && (
-                  <div className="h-56 overflow-hidden rounded-lg border">
+                  <div className="h-56 overflow-hidden rounded-lg">
                     <ClientOnly fallback={placeholder('h-full')}>
                       <Suspense fallback={placeholder('h-full')}>
                         <PinMap pin={location.pin} name={location.name} />

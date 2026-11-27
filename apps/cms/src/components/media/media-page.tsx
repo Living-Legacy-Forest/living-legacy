@@ -598,9 +598,9 @@ function MediaTile({
       ref={anchor}
       className={cn(
         'group bg-muted relative aspect-square overflow-hidden rounded-md',
-        checked && 'ring-ring ring-2',
+        checked && 'ring-ring/40 ring-1',
         // While its context menu is open, so it is clear which file the menu acts on.
-        'group-data-popup-open/row-menu:ring-ring group-data-popup-open/row-menu:ring-2'
+        'group-data-popup-open/row-menu:ring-ring/40 group-data-popup-open/row-menu:ring-1'
       )}
     >
       <RowCheckbox
@@ -613,7 +613,7 @@ function MediaTile({
       <button
         type="button"
         onClick={onOpen}
-        className="focus-visible:ring-ring absolute inset-0 outline-none focus-visible:ring-2"
+        className="focus-visible:ring-ring/40 absolute inset-0 outline-none focus-visible:ring-1"
       >
         {isDocumentMime(item.mime) ? (
           <DocumentThumb

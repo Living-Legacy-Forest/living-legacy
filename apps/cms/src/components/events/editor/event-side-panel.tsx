@@ -22,7 +22,7 @@ const NO_LOCATION = 'none';
 
 function Section({ title, children }: { title: string; children: React.ReactNode }) {
   return (
-    <section aria-label={title} className="space-y-3 border-b pb-6 last:border-b-0">
+    <section aria-label={title} className="space-y-3 pb-6">
       <h2 className="text-sm font-semibold">{title}</h2>
       {children}
     </section>
@@ -53,7 +53,7 @@ export function EventSidePanel({
   return (
     <div className="space-y-6 [--form-gap:1rem]">
       {event && series && (
-        <section aria-label="Date" className="border-b pb-6">
+        <section aria-label="Date" className="pb-6">
           <SeriesDatePicker
             event={event}
             dates={series.dates}

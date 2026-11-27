@@ -1124,8 +1124,8 @@ function DateRangePicker({
       {/* One material from trigger to panel. The border is an overlay, so it never changes a measurement. */}
       <motion.div
         className={cn(
-          'bg-background dark:bg-input/30 absolute top-0 left-0 z-0 overflow-clip transition-[box-shadow,background-color] duration-150',
-          'after:border-input after:pointer-events-none after:absolute after:inset-0 after:rounded-[inherit] after:border after:transition-colors',
+          'bg-muted/60 dark:bg-foreground/6 absolute top-0 left-0 z-0 overflow-clip transition-[box-shadow,background-color] duration-150',
+          'after:pointer-events-none after:absolute after:inset-0 after:rounded-[inherit] after:border after:border-transparent after:transition-colors',
           '[@media(hover:hover)]:not-group-data-open/drp:group-hover/drp:bg-muted dark:[@media(hover:hover)]:not-group-data-open/drp:group-hover/drp:bg-input/50',
           'group-data-open/drp:bg-popover dark:group-data-open/drp:bg-popover group-data-open/drp:after:border-border group-data-open/drp:z-2 group-data-open/drp:shadow-lg'
         )}
@@ -1163,7 +1163,7 @@ function DateRangePicker({
                     role="group"
                     aria-label="Presets"
                     onKeyDown={onRailKey}
-                    className="relative flex w-37 shrink-0 flex-col gap-0.5 border-r pr-2.5 group-data-compact/panel:-mx-2 group-data-compact/panel:w-auto group-data-compact/panel:[scrollbar-width:none] group-data-compact/panel:flex-row group-data-compact/panel:overflow-x-auto group-data-compact/panel:overscroll-x-contain group-data-compact/panel:border-r-0 group-data-compact/panel:border-b group-data-compact/panel:px-2 group-data-compact/panel:pb-2"
+                    className="relative flex w-37 shrink-0 flex-col gap-0.5 pr-2.5 group-data-compact/panel:-mx-2 group-data-compact/panel:w-auto group-data-compact/panel:[scrollbar-width:none] group-data-compact/panel:flex-row group-data-compact/panel:overflow-x-auto group-data-compact/panel:overscroll-x-contain group-data-compact/panel:px-2 group-data-compact/panel:pb-2"
                   >
                     <motion.span
                       aria-hidden
@@ -1253,7 +1253,7 @@ function DateRangePicker({
                 </div>
               </motion.div>
 
-              <div className="mt-2.5 flex w-0 min-w-full items-center justify-between gap-3 border-t pt-2.5 pr-0.5 pl-3 group-data-compact/panel:mt-1.5 group-data-compact/panel:flex-wrap group-data-compact/panel:pl-2.5">
+              <div className="mt-2.5 flex w-0 min-w-full items-center justify-between gap-3 pt-2.5 pr-0.5 pl-3 group-data-compact/panel:mt-1.5 group-data-compact/panel:flex-wrap group-data-compact/panel:pl-2.5">
                 <div className="grid min-w-0 gap-px group-data-compact/panel:flex-[1_1_8rem]">
                   <motion.span
                     layoutId={layoutId}

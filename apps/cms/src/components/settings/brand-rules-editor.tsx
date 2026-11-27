@@ -87,7 +87,7 @@ export function BrandRulesEditor({
         )}
         <Button
           type="button"
-          variant="outline"
+          variant="secondary"
           size="sm"
           disabled={rules.length >= BRAND_RULES_MAX}
           onClick={add}

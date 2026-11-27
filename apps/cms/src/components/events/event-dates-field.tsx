@@ -4,6 +4,7 @@ import { XIcon } from '@/components/icons';
 import { Button } from '@/components/ui/button';
 import { DateRangePicker, type DateRange } from '@/components/ui/date-range-picker';
 import { Input } from '@/components/ui/input';
+import { FIELD_LABEL } from '@/components/form-cells';
 import { Label } from '@/components/ui/label';
 import { displayTime, fromZoned, parseTime, sameDate } from '@/lib/format';
 
@@ -133,7 +134,9 @@ export function EventDatesField({
     <div className="space-y-3">
       <div className="grid grid-cols-2 gap-3 sm:grid-cols-[1fr_7.5rem_7.5rem]">
         <div className="col-span-2 space-y-1.5 sm:col-span-1">
-          <Label htmlFor={id}>Date</Label>
+          <Label htmlFor={id} className={FIELD_LABEL}>
+            Date
+          </Label>
           <DateRangePicker
             id={id}
             label="Date"
@@ -143,7 +146,9 @@ export function EventDatesField({
           />
         </div>
         <div className="space-y-1.5">
-          <Label htmlFor={`${id}-start`}>Starts</Label>
+          <Label htmlFor={`${id}-start`} className={FIELD_LABEL}>
+            Starts
+          </Label>
           <Input
             id={`${id}-start`}
             value={startText}
@@ -154,7 +159,9 @@ export function EventDatesField({
           />
         </div>
         <div className="space-y-1.5">
-          <Label htmlFor={`${id}-end`}>Ends</Label>
+          <Label htmlFor={`${id}-end`} className={FIELD_LABEL}>
+            Ends
+          </Label>
           <Input
             id={`${id}-end`}
             value={endText}

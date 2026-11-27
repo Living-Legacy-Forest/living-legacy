@@ -3,6 +3,26 @@ import { cn } from '@/lib/utils';
 
 const glideEase = 'cubic-bezier(0.22, 1, 0.36, 1)';
 
+/**
+ * The part of an item that its scrolling or clipping ancestors (inside the list) leave visible.
+ * The highlight sits outside them, so without this it would paint over whatever the item has
+ * scrolled under, such as the sidebar's search box.
+ */
+function visibleBox(item: HTMLElement, container: HTMLElement) {
+  const box = item.getBoundingClientRect();
+  let { top, bottom, left, right } = box;
+  for (let el = item.parentElement; el && el !== container; el = el.parentElement) {
+    const style = getComputedStyle(el);
+    if (!/auto|scroll|hidden|clip/.test(style.overflowX + style.overflowY)) continue;
+    const frame = el.getBoundingClientRect();
+    top = Math.max(top, frame.top);
+    bottom = Math.min(bottom, frame.bottom);
+    left = Math.max(left, frame.left);
+    right = Math.min(right, frame.right);
+  }
+  return { box, top, bottom, left, right };
+}
+
 type GlideHighlightProps = {
   /**
    * `active` follows the item a list marks as active (menus, selects, command lists), from
@@ -68,7 +88,20 @@ function GlideHighlight({
       mark.style.translate = `${left}px ${top}px`;
       mark.style.width = `${box.width / scale}px`;
       mark.style.height = `${box.height / scale}px`;
-      mark.style.opacity = '1';
+      // Cut away whatever a scrolled list hides, or hide it all when the item is out of view.
+      const seen = visibleBox(item, container);
+      const cut = (px: number) => (px > 0.5 ? px / scale : 0);
+      const [cutTop, cutRight, cutBottom, cutLeft] = [
+        cut(seen.top - box.top),
+        cut(box.right - seen.right),
+        cut(box.bottom - seen.bottom),
+        cut(seen.left - box.left),
+      ];
+      const clipped = cutTop || cutRight || cutBottom || cutLeft;
+      mark.style.clipPath = clipped
+        ? `inset(${cutTop}px ${cutRight}px ${cutBottom}px ${cutLeft}px)`
+        : '';
+      mark.style.opacity = seen.bottom <= seen.top || seen.right <= seen.left ? '0' : '1';
       mark.dataset.tone = item.dataset.variant === 'destructive' ? 'danger' : '';
       current = item;
     };

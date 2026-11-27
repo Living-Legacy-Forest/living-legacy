@@ -66,14 +66,14 @@ function CommandInput({
   ...props
 }: React.ComponentProps<typeof CommandPrimitive.Input> & {
   /**
-   * No box: the field is the top of the surface it sits in, over a hairline, as in a search
-   * dialog. The default is the small boxed field a popover's list has.
+   * No box: the field is the top of the surface it sits in, with no line under it, as in a
+   * search dialog. The default is the small boxed field a popover's list has.
    */
   bare?: boolean;
 }) {
   if (bare) {
     return (
-      <div data-slot="command-input-wrapper" className="flex h-12 items-center gap-3 border-b px-4">
+      <div data-slot="command-input-wrapper" className="flex h-12 items-center gap-3 px-4">
         <SearchIcon aria-hidden className="text-muted-foreground size-4 shrink-0" />
         <CommandPrimitive.Input
           data-slot="command-input"

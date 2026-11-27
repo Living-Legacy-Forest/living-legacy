@@ -323,7 +323,7 @@ export function CommandMenu({ user, wide = true }: { user: SessionUser; wide?: b
             <StaticGroup heading="Go to" items={visiblePages} query={q} onRun={go} />
             <StaticGroup heading="Actions" items={visibleActions} query={q} onRun={go} />
           </CommandList>
-          <div className="text-muted-foreground flex items-center gap-4 border-t px-3 py-2 text-xs">
+          <div className="text-muted-foreground flex items-center gap-4 px-3 py-2 text-xs">
             <Hint keys={['↑', '↓']}>Move</Hint>
             <Hint keys={['↵']}>Open</Hint>
             <Hint keys={['esc']}>Close</Hint>

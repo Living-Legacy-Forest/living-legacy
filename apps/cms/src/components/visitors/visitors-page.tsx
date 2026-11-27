@@ -102,7 +102,7 @@ function VisitorsBody({ data }: { data: VisitorsData }) {
     return (
       <div className="space-y-4 max-md:space-y-3">
         <NotConnectedNote />
-        <div className="overflow-hidden rounded-lg border max-md:hidden">
+        <div className="bg-muted/50 overflow-hidden rounded-lg max-md:hidden">
           <Table>
             <TableHeader>
               <TableRow>
@@ -150,7 +150,7 @@ function VisitorsBody({ data }: { data: VisitorsData }) {
   return (
     <>
       {/* From md: a table, one visit a row. */}
-      <div className="overflow-hidden rounded-lg border max-md:hidden">
+      <div className="bg-muted/50 overflow-hidden rounded-lg max-md:hidden">
         <Table>
           <TableHeader>
             <TableRow>
@@ -236,7 +236,7 @@ function Notice({
   children?: React.ReactNode;
 }) {
   return (
-    <Empty className="rounded-lg border max-md:rounded-[10px] max-md:border-0 max-md:bg-(--ios-cell)">
+    <Empty className="rounded-lg max-md:rounded-[10px] max-md:border-0 max-md:bg-(--ios-cell)">
       <EmptyHeader>
         <EmptyMedia variant="icon">
           <GlobeIcon aria-hidden />

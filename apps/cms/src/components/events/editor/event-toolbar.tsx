@@ -119,7 +119,7 @@ export function EventToolbar({
           // Below lg the panel sits under the form, where hiding it helps no one.
           className="max-lg:hidden"
         >
-          <PanelRightIcon aria-hidden />
+          <PanelRightIcon open={showSide} aria-hidden />
         </Button>
         {event && (
           <DropdownMenu>

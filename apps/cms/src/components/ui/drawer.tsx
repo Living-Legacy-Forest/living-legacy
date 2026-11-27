@@ -67,7 +67,7 @@ function Drawer({ children, onOpenChange, actionsRef, ...props }: DrawerProps) {
               </div>
               <div
                 data-slot="alert-dialog-footer"
-                className={cn('-mx-4 flex flex-col-reverse gap-2 border-t px-4', sheetFooterClass)}
+                className={cn('-mx-4 flex flex-col-reverse gap-2 px-4', sheetFooterClass)}
               >
                 <DrawerPrimitive.Close
                   data-slot="alert-dialog-cancel"

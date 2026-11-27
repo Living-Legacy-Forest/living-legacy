@@ -6,7 +6,7 @@ import {
   colourCss,
 } from '@ll/content';
 import { type CSSProperties, type KeyboardEvent, type PointerEvent, useId, useRef } from 'react';
-import { MoonIcon, PaletteIcon, SunIcon, SunMoonIcon } from '@/components/icons';
+import { type LucideIcon, MoonIcon, PaletteIcon, SunIcon, SunMoonIcon } from '@/components/icons';
 import { Button } from '@/components/ui/button';
 import { DetentDial } from '@/components/ui/detent-dial';
 import { Popover, PopoverContent, PopoverTitle, PopoverTrigger } from '@/components/ui/popover';
@@ -31,7 +31,7 @@ export function AppearanceRow({ wide }: { wide: boolean }) {
   );
 }
 
-const modes: { value: Theme; label: string; icon: typeof SunIcon }[] = [
+const modes: { value: Theme; label: string; icon: LucideIcon }[] = [
   { value: 'system', label: 'Match my device', icon: SunMoonIcon },
   { value: 'light', label: 'Light', icon: SunIcon },
   { value: 'dark', label: 'Dark', icon: MoonIcon },
@@ -47,7 +47,7 @@ const swatchVars = (colour: AppearanceColour) =>
 const sameColour = (a: AppearanceColour | null, b: AppearanceColour) =>
   !!a && Math.abs(a.hue - b.hue) < 0.5 && Math.abs(a.strength - b.strength) < 0.005;
 
-function AppearancePicker() {
+export function AppearancePicker() {
   const theme = useThemeChoice();
   const { draft, change } = useAppearanceDraft();
   const grainLabel = useId();

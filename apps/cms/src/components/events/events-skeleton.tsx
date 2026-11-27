@@ -14,7 +14,7 @@ export function EventsListSkeleton() {
         <Skeleton className="h-8 w-16 max-md:hidden" />
         <Skeleton className="h-8 w-28 max-md:hidden" />
       </div>
-      <div className="min-h-0 flex-1 overflow-hidden rounded-lg border">
+      <div className="bg-muted/50 min-h-0 flex-1 overflow-hidden rounded-lg">
         <div className="space-y-2 border-b px-3 pt-2.5 pb-3">
           <Skeleton className="h-8 w-full max-w-xs" />
         </div>
@@ -78,7 +78,7 @@ export function EventsOverviewSkeleton() {
 export function EventEditorSkeleton() {
   return (
     <div className="flex flex-1 flex-col gap-6 lg:flex-row lg:gap-0">
-      <div className="bg-background flex min-w-0 flex-col overflow-hidden rounded-lg border lg:mr-6 lg:h-[calc(100svh-7.5rem)] lg:flex-[7]">
+      <div className="bg-muted/50 flex min-w-0 flex-col overflow-hidden rounded-lg lg:mr-6 lg:h-[calc(100svh-7.5rem)] lg:flex-[7]">
         <div className="flex min-h-12 shrink-0 items-center gap-3 border-b px-3 py-1.5">
           <Skeleton className="h-6 w-40 max-md:hidden" />
           <div className="ml-auto flex items-center gap-1.5">

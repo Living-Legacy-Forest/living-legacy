@@ -433,7 +433,7 @@ export function PdfReader({
       // Sideways moves are ours; up and down still scroll the page.
       style={{ touchAction: 'pan-y' }}
       className={cn(
-        'focus-visible:ring-ring bg-muted/60 relative h-[72vh] min-h-96 overflow-hidden rounded-lg border outline-none select-none focus-visible:ring-2',
+        'focus-visible:ring-ring bg-muted/60 relative h-[72vh] min-h-96 overflow-hidden rounded-lg outline-none select-none focus-visible:ring-2',
         className
       )}
       onKeyDown={(e) => {
@@ -567,7 +567,7 @@ export function PdfReader({
         <div
           role="group"
           aria-label="Pages shown"
-          className="bg-background/80 absolute top-3 right-3 z-20 flex gap-0.5 rounded-lg border p-0.5 backdrop-blur-sm"
+          className="bg-background/80 absolute top-3 right-3 z-20 flex gap-0.5 rounded-lg p-0.5 shadow-md backdrop-blur-sm"
         >
           {(['single', 'double'] as const).map((option) => (
             <Button

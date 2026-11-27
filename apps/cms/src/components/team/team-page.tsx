@@ -25,11 +25,12 @@ import {
 import { SaveButton, useSaveFeedback } from '@/components/list/save-button';
 import { ListRow, moveMenuItems, publishMenuItem } from '@/components/list/list-row';
 import { CardMeta, ListCard, ListCards } from '@/components/list/list-card';
-import { ListFilter, publishStatusOptions } from '@/components/list/list-filter';
+import { ListFilter, optionsOf, publishStatusOptions } from '@/components/list/list-filter';
 import { ListSort, byNumber, byText, sortedBy, useListSort } from '@/components/list/list-sort';
-import { ViewSwitch, useListView } from '@/components/list/view-switch';
+import { useListView } from '@/components/list/view-switch';
+import { ListDisplay } from '@/components/list/list-display';
 import {
-  SearchInput,
+  ToolbarSearch,
   SelectionBar,
   matchesSearch,
   useSelection,
@@ -67,6 +68,7 @@ import {
 } from '@/server/team';
 import { avatarUrl, initialsOf } from '@/lib/avatar';
 import { AvatarPicker } from '@/components/avatar-picker';
+import { dateFacts, dateOptions, rowPasses, type MatchMode } from '@/components/list/filter-tools';
 
 const NOUN: [string, string] = ['team member', 'team members'];
 
@@ -96,7 +98,9 @@ const SORTS = [
 export function TeamPage({ data, canWrite }: { data: TeamListData; canWrite: boolean }) {
   const view = useListPane<Target>();
   const [query, setQuery] = useState('');
-  const [statuses, setStatuses] = useState<string[]>([]);
+  const [picked, setPicked] = useState<Record<string, string[]>>({});
+  const [match, setMatch] = useState<MatchMode>('all');
+  const filtering = Object.values(picked).some((ticked) => ticked.length > 0);
   const [layout, setLayout] = useListView('team');
   const grid = layout === 'grid';
   const selection = useSelection(data.map((m) => m.id));
@@ -117,12 +121,16 @@ export function TeamPage({ data, canWrite }: { data: TeamListData; canWrite: boo
   });
   const visible = ordered.filter(
     (m) =>
-      (statuses.length === 0 || statuses.includes(m.status)) &&
-      matchesSearch(query, [m.name, m.role, m.bio])
+      rowPasses(match, picked, {
+        statuses: m.status,
+        roles: m.role,
+        photo: m.photoMediaId ? 'yes' : 'no',
+        added: dateFacts(m.createdAt),
+      }) && matchesSearch(query, [m.name, m.role, m.bio])
   );
   // Reordering a narrowed list would be confusing, so it waits for a clear search and filter.
   // A different sort is a different order too, and moving a member only makes sense in their own.
-  const narrowed = Boolean(query) || statuses.length > 0 || sort !== 'order';
+  const narrowed = Boolean(query) || filtering || sort !== 'order';
 
   // Straight away, with Undo on the toast, rather than asking first.
   async function remove(ids: string[]) {
@@ -238,32 +246,54 @@ export function TeamPage({ data, canWrite }: { data: TeamListData; canWrite: boo
       data-revealing={revealing || undefined}
       className="flex flex-1 flex-col gap-4 lg:h-[calc(100svh-7.5rem)] lg:flex-none"
     >
-      <div data-slot="list-toolbar" className="flex flex-wrap items-center gap-3">
-        <h1 data-slot="page-title" className="mr-auto text-xl">
+      <div data-slot="list-toolbar" className="flex flex-wrap items-center gap-3 md:gap-1.5">
+        <h1 data-slot="page-title" className="mr-auto text-xl md:sr-only">
           <RevealWords text="Team" />
         </h1>
+        <div className="mr-auto max-md:hidden" />
         {data.length > 0 && (
-          <SearchInput
+          <ToolbarSearch
             label="Search team members"
             placeholder="Search names and roles"
             value={query}
             onChange={setQuery}
           />
         )}
-        {data.length > 0 && <ListSort options={SORTS} value={sort} onChange={setSort} />}
         {data.length > 0 && (
-          <ListFilter
-            groups={[{ key: 'statuses', label: 'Status', options: publishStatusOptions }]}
-            values={{ statuses }}
-            onChange={(_, next) => {
-              setStatuses(next);
-              selection.clear();
-            }}
-            onClear={() => setStatuses([])}
-          />
+          <ListSort options={SORTS} value={sort} onChange={setSort} hideOnDesktop />
         )}
+
         {data.length > 0 && (
-          <ViewSwitch
+          <ListDisplay
+            filter={
+              <ListFilter
+                groups={[
+                  { key: 'statuses', label: 'Status', options: publishStatusOptions },
+                  { key: 'roles', label: 'Role', options: optionsOf(data.map((m) => m.role)) },
+                  {
+                    key: 'photo',
+                    label: 'Photo',
+                    options: [
+                      { value: 'yes', label: 'Has a photo' },
+                      { value: 'no', label: 'No photo' },
+                    ],
+                  },
+                  { key: 'added', label: 'Added', options: dateOptions },
+                ]}
+                values={picked}
+                onChange={(key, next) => {
+                  setPicked((prev) => ({ ...prev, [key]: next }));
+                  selection.clear();
+                }}
+                onClear={() => setPicked({})}
+                match={match}
+                onMatchChange={setMatch}
+                savedKey="team"
+              />
+            }
+            sortOptions={SORTS}
+            sortValue={sort}
+            onSortChange={(next) => setSort(next as typeof sort)}
             value={layout}
             onChange={(next) => {
               setLayout(next);
@@ -289,7 +319,7 @@ export function TeamPage({ data, canWrite }: { data: TeamListData; canWrite: boo
       </div>
 
       {data.length === 0 && pane === null ? (
-        <Empty className="flex-1 rounded-lg border">
+        <Empty className="flex-1 rounded-lg">
           <EmptyHeader>
             <EmptyMedia variant="icon">
               <UsersIcon aria-hidden />
@@ -324,7 +354,7 @@ export function TeamPage({ data, canWrite }: { data: TeamListData; canWrite: boo
               <NoMatches
                 onClear={() => {
                   setQuery('');
-                  setStatuses([]);
+                  setPicked({});
                 }}
               >
                 Nobody matches that search.

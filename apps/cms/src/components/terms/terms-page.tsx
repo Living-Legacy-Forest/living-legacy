@@ -1,8 +1,9 @@
 import { useState } from 'react';
 import { CardMeta, ListCard, ListCards } from '@/components/list/list-card';
-import { ListFilter, passes } from '@/components/list/list-filter';
+import { ListFilter } from '@/components/list/list-filter';
 import { ListSort, byNumber, byText, sortedBy, useListSort } from '@/components/list/list-sort';
-import { ViewSwitch, useListView } from '@/components/list/view-switch';
+import { useListView } from '@/components/list/view-switch';
+import { ListDisplay } from '@/components/list/list-display';
 import { FormCell, FormSection } from '@/components/form-cells';
 import { FolderIcon, PlusIcon, TagIcon } from '@/components/icons';
 import { PageActions } from '@/components/shell/page-actions';
@@ -24,7 +25,7 @@ import { SaveButton, useSaveFeedback } from '@/components/list/save-button';
 import { LeaveDialog } from '@/components/editor-page/leave-dialog';
 import { ListRow } from '@/components/list/list-row';
 import {
-  SearchInput,
+  ToolbarSearch,
   SelectionBar,
   matchesSearch,
   useSelection,
@@ -47,6 +48,7 @@ import { deletedNotice, restoredOrThrow, restoredResultNotice } from '@/lib/noti
 import { useAction } from '@/lib/use-action';
 import { useRevealOnce } from '@/lib/use-reveal-once';
 import { type Term, type TermsData, deleteTerms, restoreTerms, saveTerm } from '@/server/terms';
+import { rowPasses, type MatchMode } from '@/components/list/filter-tools';
 
 type TermType = 'category' | 'tag';
 
@@ -90,7 +92,8 @@ export function TermsPage({
   const { title, noun, icon: Icon, emptyBody } = copy[type];
   const view = useListPane<Target>();
   const [query, setQuery] = useState('');
-  const [usage, setUsage] = useState<string[]>([]);
+  const [picked, setPicked] = useState<Record<string, string[]>>({});
+  const [match, setMatch] = useState<MatchMode>('all');
   const [layout, setLayout] = useListView(`terms_${type}`);
   const grid = layout === 'grid';
   const selection = useSelection(data.map((t) => t.id));
@@ -106,8 +109,11 @@ export function TermsPage({
   });
   const visible = ordered.filter(
     (t) =>
-      passes(usage, t.postCount > 0 ? 'used' : 'unused') &&
-      matchesSearch(query, [t.name, t.slug, t.description])
+      rowPasses(match, picked, {
+        usage: t.postCount > 0 ? 'used' : 'unused',
+        popularity: t.postCount >= 10 ? 'busy' : t.postCount > 0 ? 'some' : null,
+        description: t.description ? 'yes' : 'no',
+      }) && matchesSearch(query, [t.name, t.slug, t.description])
   );
 
   const editing = (target: Target | null) =>
@@ -176,41 +182,67 @@ export function TermsPage({
       data-revealing={revealing || undefined}
       className="flex flex-1 flex-col gap-4 lg:h-[calc(100svh-7.5rem)] lg:flex-none"
     >
-      <div data-slot="list-toolbar" className="flex flex-wrap items-center gap-3">
-        <h1 data-slot="page-title" className="mr-auto text-xl">
+      <div data-slot="list-toolbar" className="flex flex-wrap items-center gap-3 md:gap-1.5">
+        <h1 data-slot="page-title" className="mr-auto text-xl md:sr-only">
           <RevealWords text={title} />
         </h1>
+        <div className="mr-auto max-md:hidden" />
         {data.length > 0 && (
-          <SearchInput
+          <ToolbarSearch
             label={`Search ${noun[1]}`}
             placeholder={`Search ${noun[1]}`}
             value={query}
             onChange={setQuery}
           />
         )}
-        {data.length > 0 && <ListSort options={SORTS} value={sort} onChange={setSort} />}
         {data.length > 0 && (
-          <ListFilter
-            groups={[
-              {
-                key: 'usage',
-                label: 'Use',
-                options: [
-                  { value: 'used', label: 'On posts' },
-                  { value: 'unused', label: 'Not on any post' },
-                ],
-              },
-            ]}
-            values={{ usage }}
-            onChange={(_, next) => {
-              setUsage(next);
-              selection.clear();
-            }}
-            onClear={() => setUsage([])}
-          />
+          <ListSort options={SORTS} value={sort} onChange={setSort} hideOnDesktop />
         )}
+
         {data.length > 0 && (
-          <ViewSwitch
+          <ListDisplay
+            filter={
+              <ListFilter
+                groups={[
+                  {
+                    key: 'usage',
+                    label: 'Use',
+                    options: [
+                      { value: 'used', label: 'On posts' },
+                      { value: 'unused', label: 'Not on any post' },
+                    ],
+                  },
+                  {
+                    key: 'popularity',
+                    label: 'On how many posts',
+                    options: [
+                      { value: 'some', label: '1 to 9' },
+                      { value: 'busy', label: '10 or more' },
+                    ],
+                  },
+                  {
+                    key: 'description',
+                    label: 'Description',
+                    options: [
+                      { value: 'yes', label: 'Has one' },
+                      { value: 'no', label: 'Missing' },
+                    ],
+                  },
+                ]}
+                values={picked}
+                onChange={(key, next) => {
+                  setPicked((prev) => ({ ...prev, [key]: next }));
+                  selection.clear();
+                }}
+                onClear={() => setPicked({})}
+                match={match}
+                onMatchChange={setMatch}
+                savedKey={`terms-${type}`}
+              />
+            }
+            sortOptions={SORTS}
+            sortValue={sort}
+            onSortChange={(next) => setSort(next as typeof sort)}
             value={layout}
             onChange={(next) => {
               setLayout(next);
@@ -240,7 +272,7 @@ export function TermsPage({
       </div>
 
       {data.length === 0 && pane === null ? (
-        <Empty className="flex-1 rounded-lg border">
+        <Empty className="flex-1 rounded-lg">
           <EmptyHeader>
             <EmptyMedia variant="icon">
               <Icon aria-hidden />
@@ -276,7 +308,7 @@ export function TermsPage({
               <NoMatches
                 onClear={() => {
                   setQuery('');
-                  setUsage([]);
+                  setPicked({});
                 }}
               >
                 No {noun[1]} match that search.

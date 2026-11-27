@@ -114,9 +114,9 @@ function SplitSkeleton() {
         <Skeleton className="mr-auto h-7 w-32" />
         <Skeleton className="h-8 w-28" />
       </div>
-      <div className="grid min-h-0 flex-1 grid-cols-1 overflow-hidden rounded-lg border lg:grid-cols-[minmax(20rem,2fr)_minmax(0,3fr)]">
-        <section className="flex min-h-0 flex-col lg:border-r">
-          <div className="flex h-11 shrink-0 items-center gap-2 border-b px-3">
+      <div className="grid min-h-0 flex-1 grid-cols-1 overflow-hidden rounded-lg lg:grid-cols-[minmax(20rem,2fr)_minmax(0,3fr)]">
+        <section className="flex min-h-0 flex-col">
+          <div className="flex h-11 shrink-0 items-center gap-2 px-3">
             <Skeleton className="h-6 w-full max-w-56" />
           </div>
           <div className="divide-y">
@@ -128,14 +128,16 @@ function SplitSkeleton() {
             ))}
           </div>
         </section>
-        <section className="hidden min-h-0 flex-col lg:flex">
-          <div className="flex h-11 shrink-0 items-center border-b px-3">
-            <Skeleton className="h-5 w-24" />
-          </div>
-          <div className="space-y-5 p-6">
-            <Skeleton className="h-8 w-2/3" />
-            <Skeleton className="aspect-video w-full" />
-            <Lines count={5} className="space-y-2.5" />
+        <section className="hidden min-h-0 flex-col lg:flex lg:pl-3">
+          <div className="bg-muted/50 flex min-h-0 flex-1 flex-col overflow-hidden rounded-xl">
+            <div className="flex h-10 shrink-0 items-center px-3">
+              <Skeleton className="h-5 w-24" />
+            </div>
+            <div className="space-y-5 p-6">
+              <Skeleton className="h-8 w-2/3" />
+              <Skeleton className="aspect-video w-full" />
+              <Lines count={5} className="space-y-2.5" />
+            </div>
           </div>
         </section>
       </div>
@@ -188,7 +190,7 @@ function MediaSkeleton() {
         <Skeleton className="h-8 w-48 max-md:hidden" />
         <Skeleton className="h-8 w-24 max-md:hidden" />
       </div>
-      <div className="flex min-h-0 flex-1 flex-col overflow-hidden rounded-lg border max-md:flex-none max-md:overflow-visible max-md:rounded-none max-md:border-0">
+      <div className="flex min-h-0 flex-1 flex-col overflow-hidden rounded-lg max-md:flex-none max-md:overflow-visible max-md:rounded-none max-md:border-0">
         <div className="flex h-11 shrink-0 items-center gap-2 border-b px-3 max-md:hidden">
           <Skeleton className="h-4 w-16" />
         </div>
@@ -218,7 +220,7 @@ function ListSkeleton({ width = 'max-w-3xl' }: { width?: string }) {
       {[4, 3].map((rows, s) => (
         <section key={s} className="space-y-2.5">
           <Skeleton className="h-4 w-20" />
-          <div className="divide-y rounded-lg border">
+          <div className="divide-border/60 bg-muted/50 divide-y rounded-lg">
             {Array.from({ length: rows }, (_, i) => (
               <div key={i} className="flex items-center gap-3 px-4 py-3">
                 <div className="flex-1 space-y-2">
@@ -248,7 +250,7 @@ function SettingsSkeleton() {
             <Skeleton className="h-4 w-24" />
             <Skeleton className="h-3 w-56" />
           </div>
-          <div className="divide-y rounded-lg border">
+          <div className="divide-border/60 bg-muted/50 divide-y rounded-lg">
             {Array.from({ length: rows }, (_, i) => (
               <div key={i} className="flex items-center justify-between gap-4 px-4 py-3.5">
                 <Skeleton className="h-4 w-28" />
@@ -266,7 +268,7 @@ function SettingsSkeleton() {
 function EditorSkeleton() {
   return (
     <div className="grid flex-1 gap-6 lg:grid-cols-[minmax(0,1fr)_17rem] lg:gap-0">
-      <div className="flex min-w-0 flex-col overflow-hidden rounded-lg border lg:mr-6 lg:h-[calc(100svh-7.5rem)]">
+      <div className="bg-muted/50 flex min-w-0 flex-col overflow-hidden rounded-lg lg:mr-6 lg:h-[calc(100svh-7.5rem)]">
         <div className="flex h-12 shrink-0 items-center gap-3 border-b px-3">
           <Skeleton className="h-4 w-20" />
           <Skeleton className="h-4 w-28" />
@@ -385,7 +387,7 @@ function LegalEditorSkeleton() {
           <Skeleton className="h-8 w-24" />
           <Skeleton className="h-8 w-20" />
         </div>
-        <div className="min-h-[32rem] overflow-clip rounded-lg border">
+        <div className="bg-muted/50 min-h-[32rem] overflow-clip rounded-lg">
           <DocumentEditorSkeleton />
         </div>
       </div>

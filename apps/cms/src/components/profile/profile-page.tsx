@@ -356,7 +356,7 @@ export function ProfilePage({
                     : { opacity: 0, y: 8, transition: exitTransition }
                 }
                 transition={enterTransition}
-                className="bg-background/95 sticky bottom-[calc(var(--tab-bar-height)+1rem)] z-10 mt-4 flex items-center gap-3 rounded-lg border px-4 py-3 shadow-lg backdrop-blur max-md:hidden"
+                className="bg-background/95 sticky bottom-[calc(var(--tab-bar-height)+1rem)] z-10 mt-4 flex items-center gap-3 rounded-lg px-4 py-3 shadow-lg backdrop-blur max-md:hidden"
               >
                 <span className="mr-auto text-sm">You have unsaved changes.</span>
                 <Button

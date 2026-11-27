@@ -1,9 +1,10 @@
 import { useNavigate } from '@tanstack/react-router';
 import { useState } from 'react';
 import { CardMeta, ListCard, ListCards } from '@/components/list/list-card';
-import { ListFilter, optionsOf, passes, publishStatusOptions } from '@/components/list/list-filter';
+import { ListFilter, optionsOf, publishStatusOptions } from '@/components/list/list-filter';
 import { ListSort, byNumber, byText, sortedBy, useListSort } from '@/components/list/list-sort';
-import { ViewSwitch, useListView } from '@/components/list/view-switch';
+import { useListView } from '@/components/list/view-switch';
+import { ListDisplay } from '@/components/list/list-display';
 import { BulkCsvForm } from '@/components/bulk/bulk-csv-form';
 import {
   DialogActions,
@@ -31,7 +32,7 @@ import {
 } from '@/components/list/list-row';
 import { usePaged } from '@/lib/use-paged';
 import {
-  SearchInput,
+  ToolbarSearch,
   SelectionBar,
   matchesSearch,
   useSelection,
@@ -74,6 +75,7 @@ import {
   saveTestimonial,
   setTestimonialFlags,
 } from '@/server/testimonials';
+import { dateFacts, dateOptions, rowPasses, type MatchMode } from '@/components/list/filter-tools';
 
 type Search = { selected?: string };
 
@@ -133,6 +135,7 @@ export function TestimonialsPage({
   const [query, setQuery] = useState('');
   // Ticked values per filter group; an empty group does not narrow the list.
   const [picked, setPicked] = useState<Record<string, string[]>>({});
+  const [match, setMatch] = useState<MatchMode>('all');
   const [layout, setLayout] = useListView('testimonials');
   const grid = layout === 'grid';
   const selection = useSelection(data.map((t) => t.id));
@@ -146,13 +149,17 @@ export function TestimonialsPage({
   });
   const visible = ordered.filter(
     (t) =>
-      passes(picked.statuses, t.status) &&
-      passes(picked.featured, t.featured ? 'yes' : 'no') &&
-      passes(picked.locations, t.location) &&
-      matchesSearch(query, [t.name, t.quote, t.relationship, t.location])
+      rowPasses(match, picked, {
+        statuses: t.status,
+        featured: t.featured ? 'yes' : 'no',
+        locations: t.location,
+        relationships: t.relationship,
+        photo: t.photoMediaId ? 'yes' : 'no',
+        added: dateFacts(t.createdAt),
+      }) && matchesSearch(query, [t.name, t.quote, t.relationship, t.location])
   );
   // A new search, filter or order starts again from the first page.
-  const paged = usePaged(visible, JSON.stringify([query, picked, sort]));
+  const paged = usePaged(visible, JSON.stringify([query, picked, match, sort]));
   const clearFilters = () => {
     setPicked({});
     selection.clear();
@@ -273,47 +280,71 @@ export function TestimonialsPage({
       data-revealing={revealing || undefined}
       className="flex flex-col gap-4 lg:h-[calc(100svh-7.5rem)]"
     >
-      <div data-slot="list-toolbar" className="flex flex-wrap items-center gap-3">
-        <h1 data-slot="page-title" className="mr-auto text-xl">
+      <div data-slot="list-toolbar" className="flex flex-wrap items-center gap-3 md:gap-1.5">
+        <h1 data-slot="page-title" className="mr-auto text-xl md:sr-only">
           <RevealWords text="Testimonials" />
         </h1>
+        <div className="mr-auto max-md:hidden" />
         {data.length > 0 && (
-          <SearchInput
+          <ToolbarSearch
             label="Search testimonials"
             placeholder="Search names and quotes"
             value={query}
             onChange={setQuery}
           />
         )}
-        {data.length > 0 && <ListSort options={SORTS} value={sort} onChange={setSort} />}
         {data.length > 0 && (
-          <ListFilter
-            groups={[
-              { key: 'statuses', label: 'Status', options: publishStatusOptions },
-              {
-                key: 'featured',
-                label: 'Featured',
-                options: [
-                  { value: 'yes', label: 'Featured' },
-                  { value: 'no', label: 'Not featured' },
-                ],
-              },
-              {
-                key: 'locations',
-                label: 'Location',
-                options: optionsOf(data.map((t) => t.location)),
-              },
-            ]}
-            values={picked}
-            onChange={(key, next) => {
-              setPicked((prev) => ({ ...prev, [key]: next }));
-              selection.clear();
-            }}
-            onClear={clearFilters}
-          />
+          <ListSort options={SORTS} value={sort} onChange={setSort} hideOnDesktop />
         )}
+
         {data.length > 0 && (
-          <ViewSwitch
+          <ListDisplay
+            filter={
+              <ListFilter
+                groups={[
+                  { key: 'statuses', label: 'Status', options: publishStatusOptions },
+                  {
+                    key: 'featured',
+                    label: 'Featured',
+                    options: [
+                      { value: 'yes', label: 'Featured' },
+                      { value: 'no', label: 'Not featured' },
+                    ],
+                  },
+                  {
+                    key: 'locations',
+                    label: 'Location',
+                    options: optionsOf(data.map((t) => t.location)),
+                  },
+                  {
+                    key: 'relationships',
+                    label: 'Relationship',
+                    options: optionsOf(data.map((t) => t.relationship)),
+                  },
+                  {
+                    key: 'photo',
+                    label: 'Photo',
+                    options: [
+                      { value: 'yes', label: 'Has a photo' },
+                      { value: 'no', label: 'No photo' },
+                    ],
+                  },
+                  { key: 'added', label: 'Added', options: dateOptions },
+                ]}
+                match={match}
+                onMatchChange={setMatch}
+                savedKey="testimonials"
+                values={picked}
+                onChange={(key, next) => {
+                  setPicked((prev) => ({ ...prev, [key]: next }));
+                  selection.clear();
+                }}
+                onClear={clearFilters}
+              />
+            }
+            sortOptions={SORTS}
+            sortValue={sort}
+            onSortChange={(next) => setSort(next as typeof sort)}
             value={layout}
             onChange={(next) => {
               setLayout(next);
@@ -339,7 +370,7 @@ export function TestimonialsPage({
       </div>
 
       {data.length === 0 && pane === null ? (
-        <Empty className="flex-1 rounded-lg border">
+        <Empty className="flex-1 rounded-lg">
           <EmptyHeader>
             <EmptyMedia variant="icon">
               <MessageSquareQuoteIcon aria-hidden />
@@ -455,7 +486,7 @@ export function TestimonialsPage({
                 {...paged.pager}
                 noun="testimonials"
                 label="Testimonial pages"
-                className="mt-0 shrink-0 border-t px-3 py-2 max-md:border-0"
+                className="mt-0 shrink-0 px-3 py-2"
               />
             )}
           </ListColumn>
@@ -584,7 +615,7 @@ function PreviewPane({
 
   return (
     <section aria-label="Preview" className="hidden min-h-0 flex-col lg:flex">
-      <div className="flex h-11 shrink-0 items-center gap-1.5 border-b px-3">
+      <div className="flex h-10 shrink-0 items-center gap-1.5 px-3">
         <Badge
           variant={testimonial.status === 'published' ? 'secondary' : 'outline'}
           className="capitalize"

@@ -59,7 +59,7 @@ export function ScoreCard({ scores }: { scores: ScoreSummary }) {
       </CardHeader>
       <CardContent className="grid gap-6 sm:grid-cols-2">
         {published === 0 ? (
-          <Empty className="border py-8 sm:col-span-2">
+          <Empty className="py-8 sm:col-span-2">
             <EmptyHeader>
               <EmptyMedia variant="icon">
                 <CircleCheckIcon aria-hidden />

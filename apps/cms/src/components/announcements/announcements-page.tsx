@@ -12,9 +12,10 @@ import {
 import { useEffect, useState } from 'react';
 import { type ColorSwatch, ColorPicker } from '@/components/arc/color-picker/color-picker';
 import { CardMeta, ListCard, ListCards } from '@/components/list/list-card';
-import { ListFilter, passes } from '@/components/list/list-filter';
+import { ListFilter } from '@/components/list/list-filter';
 import { ListSort, byNumber, byText, sortedBy, useListSort } from '@/components/list/list-sort';
-import { ViewSwitch, useListView } from '@/components/list/view-switch';
+import { useListView } from '@/components/list/view-switch';
+import { ListDisplay } from '@/components/list/list-display';
 import { DateTimePicker } from '@/components/date-time-picker';
 import { FormCell, FormSection, FormSwitchCell } from '@/components/form-cells';
 import { PageActions } from '@/components/shell/page-actions';
@@ -29,6 +30,7 @@ import {
   PaneColumn,
   PaneEmpty,
   PaneFrame,
+  isDesktop,
   useFormDirty,
   useListPane,
 } from '@/components/list/list-page';
@@ -36,7 +38,7 @@ import { SaveButton, useSaveFeedback } from '@/components/list/save-button';
 import { LeaveDialog } from '@/components/editor-page/leave-dialog';
 import { ListRow, type RowMenuItem } from '@/components/list/list-row';
 import {
-  SearchInput,
+  ToolbarSearch,
   SelectionBar,
   matchesSearch,
   useSelection,
@@ -44,6 +46,7 @@ import {
 import {
   CalendarClockIcon,
   CopyIcon,
+  PanelRightIcon,
   EyeOffIcon,
   MegaphoneIcon,
   PlusIcon,
@@ -73,6 +76,7 @@ import { useAction } from '@/lib/use-action';
 import { useRevealOnce } from '@/lib/use-reveal-once';
 import { useTimeZone } from '@/lib/use-time-zone';
 import { notify } from '@/lib/notify';
+import { readPaneOpen } from '@/lib/list-view';
 import { cn } from '@/lib/utils';
 import {
   type Announcement,
@@ -81,6 +85,12 @@ import {
   restoreAnnouncements,
   saveAnnouncement,
 } from '@/server/announcements';
+import {
+  rowPasses,
+  upcomingFacts,
+  upcomingOptions,
+  type MatchMode,
+} from '@/components/list/filter-tools';
 
 const NOUN: [string, string] = ['announcement', 'announcements'];
 
@@ -127,7 +137,7 @@ type Target = { kind: 'edit'; id: string } | { kind: 'new'; from?: Announcement 
 /** A group of fields; its legend is the heading, and on phones the group's small heading. */
 const FIELDSET = 'space-y-3 [--form-gap:0.75rem] max-md:space-y-0';
 const LEGEND =
-  'mb-2 text-sm font-medium max-md:mb-0 max-md:px-4 max-md:pb-1.5 max-md:text-[0.8125rem] max-md:font-normal max-md:text-(--ios-secondary) max-md:uppercase';
+  'mb-2 text-xs font-medium max-md:mb-0 max-md:px-4 max-md:pb-1.5 max-md:text-[0.8125rem] max-md:font-normal max-md:text-(--ios-secondary) max-md:uppercase';
 
 const SORTS = [
   { value: 'status', label: 'Status, then start date' },
@@ -161,7 +171,36 @@ export function AnnouncementsPage({
   const [query, setQuery] = useState('');
   // Ticked values per filter group; an empty group does not narrow the list.
   const [picked, setPicked] = useState<Record<string, string[]>>({});
+  const [match, setMatch] = useState<MatchMode>('all');
   const [layout, setLayout] = useListView('announcements');
+  // The edit pane can fold away to give the list the full width; the choice is remembered.
+  // Cards take the full width, so Grid starts with the editor folded away.
+  const [paneOpen, setPaneOpenState] = useState(
+    () => readPaneOpen('announcements') && layout !== 'grid'
+  );
+  // Choosing an announcement or preparing one brings the editor back.
+  useEffect(() => {
+    if (view.pane) setPaneOpenState(true);
+  }, [view.pane]);
+  const setPaneOpen = (open: boolean) => {
+    setPaneOpenState(open);
+    document.cookie = `announcements_pane=${open ? 'open' : 'closed'}; path=/; max-age=31536000; samesite=lax`;
+  };
+  // The menu's Open always shows the editor; it never closes it.
+  const showRow = (id: string) => {
+    if (!canWrite) return;
+    setPaneOpen(true);
+    view.open({ kind: 'edit', id });
+  };
+  // As on Posts: the open row closes the editor, any other row opens it.
+  const openRow = (id: string) => {
+    if (!canWrite) return;
+    if (isDesktop() && paneOpen && view.pane?.kind === 'edit' && view.pane.id === id) {
+      return setPaneOpen(false);
+    }
+    setPaneOpen(true);
+    view.open({ kind: 'edit', id });
+  };
   const grid = layout === 'grid';
   const selection = useSelection(data.map((a) => a.id));
   const clearFilters = () => {
@@ -187,9 +226,12 @@ export function AnnouncementsPage({
   });
   const visible = ordered.filter(
     (a) =>
-      passes(picked.statuses, status(a)) &&
-      passes(picked.backgrounds, colourKind(a.background)) &&
-      matchesSearch(query, [a.title, a.message, a.messageTablet, a.messageDesktop])
+      rowPasses(match, picked, {
+        statuses: status(a),
+        backgrounds: colourKind(a.background),
+        starts: upcomingFacts(a.startsAt),
+        ends: a.endsAt === null ? 'no' : 'yes',
+      }) && matchesSearch(query, [a.title, a.message, a.messageTablet, a.messageDesktop])
   );
 
   const announcementMenu = (a: Announcement): RowMenuItem[] | undefined => {
@@ -337,51 +379,85 @@ export function AnnouncementsPage({
       data-revealing={revealing || undefined}
       className="flex flex-1 flex-col gap-4 lg:h-[calc(100svh-7.5rem)] lg:flex-none"
     >
-      <div data-slot="list-toolbar" className="flex flex-wrap items-center gap-3">
-        <h1 data-slot="page-title" className="mr-auto text-xl">
+      <div data-slot="list-toolbar" className="flex flex-wrap items-center gap-3 md:gap-1.5">
+        <h1 data-slot="page-title" className="mr-auto text-xl md:sr-only">
           <RevealWords text="Announcements" />
         </h1>
+        <div className="mr-auto max-md:hidden" />
         {data.length > 0 && (
-          <SearchInput
+          <ToolbarSearch
             label="Search announcements"
             placeholder="Search names and messages"
             value={query}
             onChange={setQuery}
           />
         )}
-        {data.length > 0 && <ListSort options={SORTS} value={sort} onChange={setSort} />}
         {data.length > 0 && (
-          <ListFilter
-            groups={[
-              {
-                key: 'statuses',
-                label: 'Status',
-                options: (Object.keys(statusOrder) as AnnouncementStatus[])
-                  .sort((a, b) => statusOrder[a] - statusOrder[b])
-                  .map((value) => ({ value, label: statusLabels[value] })),
-              },
-              {
-                key: 'backgrounds',
-                label: 'Colour',
-                options: [...palette, { value: 'custom', label: 'Custom colour' }],
-              },
-            ]}
-            values={picked}
-            onChange={(key, next) => {
-              setPicked((prev) => ({ ...prev, [key]: next }));
-              selection.clear();
-            }}
-            onClear={clearFilters}
-          />
+          <ListSort options={SORTS} value={sort} onChange={setSort} hideOnDesktop />
         )}
+
         {data.length > 0 && (
-          <ViewSwitch
+          <ListDisplay
+            filter={
+              <ListFilter
+                groups={[
+                  {
+                    key: 'statuses',
+                    label: 'Status',
+                    options: (Object.keys(statusOrder) as AnnouncementStatus[])
+                      .sort((a, b) => statusOrder[a] - statusOrder[b])
+                      .map((value) => ({ value, label: statusLabels[value] })),
+                  },
+                  {
+                    key: 'backgrounds',
+                    label: 'Colour',
+                    options: [...palette, { value: 'custom', label: 'Custom colour' }],
+                  },
+                  { key: 'starts', label: 'Starts', options: upcomingOptions },
+                  {
+                    key: 'ends',
+                    label: 'End date',
+                    options: [
+                      { value: 'yes', label: 'Has an end date' },
+                      { value: 'no', label: 'Runs until turned off' },
+                    ],
+                  },
+                ]}
+                match={match}
+                onMatchChange={setMatch}
+                savedKey="announcements"
+                values={picked}
+                onChange={(key, next) => {
+                  setPicked((prev) => ({ ...prev, [key]: next }));
+                  selection.clear();
+                }}
+                onClear={clearFilters}
+              />
+            }
+            sortOptions={SORTS}
+            sortValue={sort}
+            onSortChange={(next) => setSort(next as typeof sort)}
             value={layout}
             onChange={(next) => {
               setLayout(next);
+              // Cards take the full width, as on Posts; the list brings the editor back.
+              setPaneOpenState(next === 'list');
               selection.clear();
             }}
           />
+        )}
+        {data.length > 0 && (
+          <Button
+            variant="ghost"
+            size="icon-sm"
+            aria-label={paneOpen ? 'Expand list' : 'Show editor'}
+            aria-pressed={!paneOpen}
+            title={paneOpen ? 'Expand list' : 'Show editor'}
+            className="max-lg:hidden"
+            onClick={() => setPaneOpen(!paneOpen)}
+          >
+            <PanelRightIcon open={paneOpen} aria-hidden />
+          </Button>
         )}
         {canWrite && <div className="max-md:hidden">{newButton}</div>}
         {canWrite && (
@@ -400,7 +476,7 @@ export function AnnouncementsPage({
       </div>
 
       {data.length === 0 && pane === null ? (
-        <Empty className="flex-1 rounded-lg border">
+        <Empty className="flex-1 rounded-lg">
           <EmptyHeader>
             <EmptyMedia variant="icon">
               <MegaphoneIcon aria-hidden />
@@ -413,8 +489,15 @@ export function AnnouncementsPage({
           {canWrite && <EmptyContent>{newButton}</EmptyContent>}
         </Empty>
       ) : (
-        <ListPageLayout resizable={{ key: 'announcements', defaultShare: 0.5 }}>
+        <ListPageLayout
+          resizable={{ key: 'announcements', defaultShare: 0.5, active: paneOpen, animated: true }}
+          className={cn(
+            'motion-reduce:transition-none lg:transition-[grid-template-columns] lg:duration-300 lg:ease-[cubic-bezier(0.32,0.72,0,1)]',
+            !paneOpen && 'lg:grid-cols-[1fr_0fr]'
+          )}
+        >
           <ListColumn
+            className="lg:min-w-80"
             label="Announcements"
             header={
               <SelectionBar
@@ -450,7 +533,8 @@ export function AnnouncementsPage({
                         ? { label: 'Delete', onAction: () => void remove([a.id]) }
                         : undefined
                     }
-                    onOpen={() => canWrite && view.open({ kind: 'edit', id: a.id })}
+                    onOpen={() => openRow(a.id)}
+                    menuOpen={() => showRow(a.id)}
                   >
                     <AnnouncementCardBody
                       announcement={a}
@@ -498,7 +582,8 @@ export function AnnouncementsPage({
                         )
                       }
                       menu={announcementMenu(a)}
-                      onOpen={() => canWrite && view.open({ kind: 'edit', id: a.id })}
+                      onOpen={() => openRow(a.id)}
+                      menuOpen={() => showRow(a.id)}
                     >
                       <AnnouncementSummary
                         announcement={a}
@@ -512,7 +597,14 @@ export function AnnouncementsPage({
             )}
           </ListColumn>
 
-          <PaneColumn label="Edit announcement">
+          <PaneColumn
+            label="Edit announcement"
+            inert={!paneOpen}
+            className={cn(
+              'min-w-0 overflow-hidden transition-[opacity,translate] duration-300 ease-[cubic-bezier(0.32,0.72,0,1)] motion-reduce:transition-none',
+              !paneOpen && 'translate-x-4 opacity-0'
+            )}
+          >
             {!canWrite || pane === null ? (
               <PaneEmpty
                 title="No announcement selected"
@@ -731,11 +823,7 @@ function AnnouncementForm({
         {/* Kept mounted, so nothing typed is lost and the preview is never stale. */}
         <TabsContent value="edit" keepMounted className="space-y-5 max-md:space-y-7">
           <FormSection>
-            <FormCell
-              label="Name"
-              htmlFor="a-title"
-              hint="For the CMS list only. Not shown on the site."
-            >
+            <FormCell label="Name" htmlFor="a-title">
               <Input
                 id="a-title"
                 required
@@ -748,7 +836,6 @@ function AnnouncementForm({
             <FormSwitchCell
               id="a-enabled"
               label="Enabled"
-              description="Off hides it, whatever the dates. Shows within its dates when on."
               checked={values.enabled}
               onCheckedChange={(enabled) => patch({ enabled })}
             />
@@ -770,7 +857,7 @@ function AnnouncementForm({
                     {values.message.length}/{mobileLimit}
                   </span>
                 }
-                hint={`Keep under ${mobileLimit} characters to stay on one line on a phone${hasButton ? '' : `, or ${ANNOUNCEMENT_MOBILE_LENGTH_WITH_BUTTON} if you add a button`}. Used on larger screens too, unless replaced below.`}
+                info={`Keep under ${mobileLimit} characters to stay on one line on a phone${hasButton ? '' : `, or ${ANNOUNCEMENT_MOBILE_LENGTH_WITH_BUTTON} if you add a button`}. Larger screens use it too, unless replaced below.`}
               >
                 <Input
                   id="a-message"
@@ -844,11 +931,7 @@ function AnnouncementForm({
             <legend className={LEGEND}>Schedule ({zone})</legend>
             <FormSection>
               <div className="grid gap-3 max-md:contents sm:grid-cols-2">
-                <FormCell
-                  label="Go live"
-                  htmlFor="a-start"
-                  hint="Blank shows it as soon as it is enabled."
-                >
+                <FormCell label="Go live" htmlFor="a-start">
                   <DateTimePicker
                     id="a-start"
                     value={values.startsAt}
@@ -856,7 +939,7 @@ function AnnouncementForm({
                     placeholder="As soon as enabled"
                   />
                 </FormCell>
-                <FormCell label="Expire" htmlFor="a-end" hint="Blank never expires.">
+                <FormCell label="Expire" htmlFor="a-end">
                   <DateTimePicker
                     id="a-end"
                     value={values.endsAt}
@@ -883,7 +966,7 @@ function AnnouncementForm({
             <FormCell
               label="Hide on pages"
               htmlFor="a-hide"
-              hint="One path per line. End with * to hide a whole section, like /section/*. Leave empty to show everywhere."
+              info="One path per line. End with * to hide a whole section, like /section/*. Leave it empty to show everywhere."
             >
               <Textarea
                 id="a-hide"
@@ -1002,9 +1085,6 @@ function BackgroundPicker({
         />
         <TextColourField background={value} />
       </div>
-      <p className="text-muted-foreground text-xs">
-        The text on the bar switches between dark and light so it stays readable.
-      </p>
     </div>
   );
 }
@@ -1019,7 +1099,7 @@ function TextColourField({ background }: { background: AnnouncementBackground })
       role="group"
       title={`Contrast ${ratio.toFixed(1)} to 1`}
       aria-label={`Text colour, chosen automatically: ${fg}, contrast ${ratio.toFixed(1)} to 1, ${grade}`}
-      className="border-input bg-muted/30 touch:h-11 flex h-8 items-center gap-2 rounded-[10px] border p-[3px] pr-2.5"
+      className="bg-muted/60 touch:h-11 flex h-8 items-center gap-2 rounded-[10px] p-[3px] pr-2.5"
     >
       {/* The letters in the text colour on the bar's colour: what the bar will look like. */}
       <span

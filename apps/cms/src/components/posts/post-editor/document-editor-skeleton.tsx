@@ -9,10 +9,10 @@ const LINE_WIDTHS = ['94%', '88%', '97%', '72%', '91%', '84%', '58%'];
 
 export function DocumentEditorSkeleton() {
   return (
-    <div className="bg-background flex h-full min-h-[32rem] flex-col overflow-hidden rounded-lg border">
+    <div className="bg-muted/50 flex h-full min-h-[32rem] flex-col overflow-hidden rounded-lg">
       <div className={cn('flex min-h-0 flex-1 flex-col', CANVAS)}>
         <div className="sm:px-3 sm:pt-3 sm:pb-1">
-          <div className="bg-background flex h-[42px] items-center gap-2 overflow-hidden border-b px-3 sm:rounded-xl sm:border sm:shadow-sm">
+          <div className="bg-background flex h-[42px] items-center gap-2 overflow-hidden px-3 sm:rounded-xl sm:shadow-sm">
             <Skeleton className="size-5" />
             <Skeleton className="size-5" />
             <Skeleton className="mx-2 h-5 w-20" />
@@ -21,7 +21,7 @@ export function DocumentEditorSkeleton() {
             ))}
           </div>
         </div>
-        <div className="bg-background flex flex-1 flex-col px-4 py-5 sm:mx-auto sm:mt-4 sm:mb-6 sm:w-full sm:max-w-3xl sm:rounded-md sm:border sm:px-14 sm:py-12 sm:shadow-xs">
+        <div className="bg-background flex flex-1 flex-col px-4 py-5 sm:mx-auto sm:mt-4 sm:mb-6 sm:w-full sm:max-w-3xl sm:rounded-md sm:px-14 sm:py-12 sm:shadow-xs">
           <Skeleton className="h-9 w-3/4" />
           <Skeleton className="mt-3 h-5 w-1/2" />
           <div className="mt-8 space-y-3">
@@ -31,7 +31,7 @@ export function DocumentEditorSkeleton() {
           </div>
         </div>
       </div>
-      <div className="flex h-9 shrink-0 items-center gap-3 border-t px-3">
+      <div className="flex h-9 shrink-0 items-center gap-3 px-3">
         <Skeleton className="h-3 w-14" />
         <Skeleton className="h-3 w-20" />
         <Skeleton className="h-3 w-16" />

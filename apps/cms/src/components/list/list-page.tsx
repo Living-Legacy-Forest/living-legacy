@@ -235,11 +235,12 @@ export function ListPageLayout({
       data-resizing={split.dragging || undefined}
       style={resizable ? ({ '--split-cols': columns } as React.CSSProperties) : undefined}
       className={cn(
-        'relative grid min-h-0 flex-1 grid-cols-1 overflow-hidden rounded-lg border lg:grid-cols-[minmax(20rem,1fr)_minmax(0,1fr)]',
+        // No outline round the whole list: the rows and the divider between the panes are enough.
+        'relative grid min-h-0 flex-1 grid-cols-1 overflow-hidden lg:grid-cols-[minmax(20rem,1fr)_minmax(0,1fr)]',
         resizable &&
           'data-resizing:select-none lg:grid-cols-[var(--split-cols)] lg:data-resizing:transition-none',
-        // Phones: no frame. The list is an iOS grouped list that ends with its rows.
-        'max-md:flex-none max-md:overflow-visible max-md:rounded-none max-md:border-0',
+        // Phones: the list is an iOS grouped list that ends with its rows.
+        'max-md:flex-none max-md:overflow-visible',
         className
       )}
     >
@@ -282,11 +283,7 @@ export function ListColumn({
   const [rows, setRows] = useState<HTMLElement | null>(null);
   return (
     <RowsContext value={{ rows, setRows }}>
-      <section
-        aria-label={label}
-        inert={inert}
-        className={cn('flex min-h-0 flex-col lg:border-r', className)}
-      >
+      <section aria-label={label} inert={inert} className={cn('flex min-h-0 flex-col', className)}>
         {header}
         {children}
       </section>
@@ -398,9 +395,16 @@ export function PaneColumn({
     <section
       aria-label={label}
       inert={inert}
-      className={cn('hidden min-h-0 flex-col lg:flex', className)}
+      className={cn('hidden min-h-0 flex-col lg:flex lg:pl-3', className)}
     >
-      {children}
+      {/* A soft card, as on the posts page, with no line round it. Fields inside go white so they
+          still read against the grey. */}
+      <div
+        data-slot="pane-card"
+        className="bg-muted/50 **:data-[slot=input]:bg-background **:data-[slot=input-group]:bg-background **:data-[slot=select-trigger]:bg-background **:data-[slot=textarea]:bg-background flex min-h-0 flex-1 flex-col overflow-hidden rounded-xl"
+      >
+        {children}
+      </div>
     </section>
   );
 }
@@ -435,7 +439,7 @@ export function PaneFrame({
 }) {
   return (
     <>
-      <div className="flex h-11 shrink-0 items-center gap-1.5 border-b px-3">
+      <div className="flex h-10 shrink-0 items-center gap-1.5 px-3">
         <span className="min-w-0 truncate text-sm font-medium">{title}</span>
         {actions && <div className="ml-auto flex items-center gap-1">{actions}</div>}
       </div>

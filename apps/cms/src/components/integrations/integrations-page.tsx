@@ -1,4 +1,5 @@
-import { type ReactNode, useEffect, useState } from 'react';
+import { AnimatePresence, motion, useReducedMotion } from 'motion/react';
+import { type ReactNode, useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { BrandMark } from '@/components/brand-logos';
 import {
   CheckIcon,
@@ -29,7 +30,13 @@ import {
   CodeBlockContent,
   CodeBlockCopyButton,
 } from '@/components/ui/code-block';
-import { FormCell, FormSection, groupBoxClass, groupHeadingClass } from '@/components/form-cells';
+import {
+  FormBlock,
+  FormCell,
+  FormSection,
+  groupBoxClass,
+  groupHeadingClass,
+} from '@/components/form-cells';
 import { SegmentedControl } from '@/components/segmented-control';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import {
@@ -44,7 +51,6 @@ import { DialogActions, ListDialog } from '@/components/list/list-page';
 import { PageActions } from '@/components/shell/page-actions';
 import { useSheetSaved } from '@/components/ui/drawer';
 import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
 import { Spinner } from '@/components/ui/spinner';
 import {
   Table,
@@ -59,7 +65,7 @@ import { reportInvalid } from '@/lib/form-validation';
 import { notify } from '@/lib/notify';
 import { useAction } from '@/lib/use-action';
 import { useTimeZone } from '@/lib/use-time-zone';
-import { COLLAPSIBLE_CONTENT } from '@/lib/motion';
+import { COLLAPSIBLE_CONTENT, enterTransition, exitTransition } from '@/lib/motion';
 import { cn } from '@/lib/utils';
 import { type ApiKeyRow, createApiKey, revokeApiKey } from '@/server/api-keys';
 import { useRevealOnce } from '@/lib/use-reveal-once';
@@ -128,7 +134,7 @@ export function IntegrationsPage({ keys, origin }: { keys: ApiKeyRow[]; origin: 
             <KeysTable keys={active} />
           </div>
         ) : (
-          <Empty className="rounded-lg border max-md:border-0 max-md:bg-(--ios-cell)">
+          <Empty className="rounded-lg max-md:border-0 max-md:bg-(--ios-cell)">
             <EmptyHeader>
               <EmptyMedia variant="icon">
                 <KeyIcon aria-hidden />
@@ -318,13 +324,8 @@ function CreateKeyDialog({
       title={created ? 'Copy your key' : 'New API key'}
       description={
         created
-          ? 'This is the only time the key is shown. Store it somewhere safe, like a password manager.'
+          ? 'It is shown only once, so store it somewhere safe.'
           : 'Name it after the tool that will use it, so you know which to revoke later.'
-      }
-      icon={
-        <span className="bg-muted text-foreground mb-1 flex size-10 items-center justify-center rounded-lg">
-          <KeyIcon aria-hidden className="size-5" />
-        </span>
       }
     >
       {created ? (
@@ -343,33 +344,19 @@ function CreateKeyDialog({
               />
             </FormCell>
           </FormSection>
-          <div className="space-y-2 max-md:space-y-1.5">
-            <Label className={groupHeadingClass}>Access</Label>
-            <FormSection>
-              <div className="grid grid-cols-2 gap-2">
-                {scopeItems.map((item) => {
-                  const selected = scope === item.value;
-                  return (
-                    <button
-                      key={item.value}
-                      type="button"
-                      aria-pressed={selected}
-                      onClick={() => setScope(item.value)}
-                      className={cn(
-                        'focus-visible:ring-ring flex flex-col justify-start rounded-lg border p-3 text-left transition-colors outline-none focus-visible:ring-2',
-                        selected
-                          ? 'border-foreground bg-muted/50'
-                          : 'border-border hover:bg-muted/40'
-                      )}
-                    >
-                      <div className="text-sm font-medium">{item.label}</div>
-                      <div className="text-muted-foreground mt-0.5 text-xs">{item.description}</div>
-                    </button>
-                  );
-                })}
-              </div>
-            </FormSection>
-          </div>
+          <FormSection>
+            <FormBlock label="Access">
+              <SegmentedControl
+                label="Access"
+                value={scope}
+                onValueChange={setScope}
+                options={scopeItems}
+              />
+              <AnimatedHint>
+                {scopeItems.find((item) => item.value === scope)?.description}
+              </AnimatedHint>
+            </FormBlock>
+          </FormSection>
           <DialogActions>
             <Button type="submit" disabled={pending}>
               {pending && <Spinner data-icon="inline-start" />}
@@ -379,6 +366,58 @@ function CreateKeyDialog({
         </form>
       )}
     </ListDialog>
+  );
+}
+
+/**
+ * A hint whose text changes with a choice above it. The old text fades out, the new fades in,
+ * and the box glides to the new height, so the form below moves with it instead of jumping
+ * when one description takes a line and the next takes two.
+ */
+function AnimatedHint({ children }: { children: ReactNode }) {
+  const reduce = useReducedMotion() ?? false;
+  const inner = useRef<HTMLDivElement>(null);
+  const [height, setHeight] = useState<number>();
+
+  useLayoutEffect(() => {
+    const el = inner.current;
+    if (!el) return;
+    const measure = () => setHeight(el.offsetHeight);
+    measure();
+    // Also catches the text rewrapping when the dialog is resized.
+    const observer = new ResizeObserver(measure);
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, []);
+
+  return (
+    <motion.div
+      className="mt-1.5 overflow-hidden"
+      initial={false}
+      animate={{ height: height ?? 'auto' }}
+      transition={reduce ? { duration: 0 } : enterTransition}
+    >
+      <div ref={inner} className="relative">
+        {/* popLayout takes the leaving text out of flow, so the box measures only the new text. */}
+        <AnimatePresence initial={false} mode="popLayout">
+          <motion.p
+            key={typeof children === 'string' ? children : undefined}
+            data-slot="form-hint"
+            className="text-muted-foreground text-xs"
+            aria-live="polite"
+            initial={reduce ? false : { opacity: 0 }}
+            animate={{ opacity: 1, transition: enterTransition }}
+            exit={
+              reduce
+                ? { opacity: 0, transition: { duration: 0 } }
+                : { opacity: 0, transition: exitTransition }
+            }
+          >
+            {children}
+          </motion.p>
+        </AnimatePresence>
+      </div>
+    </motion.div>
   );
 }
 
@@ -410,7 +449,7 @@ function CreatedKey({
       <CopyableKey value={value} />
       <div className="space-y-2">
         <p className="text-muted-foreground text-sm">
-          To connect Claude Code, run this in a terminal. The key is already in it.
+          To connect Claude Code, run this in a terminal. Your key is already in it.
         </p>
         <CodeBlock size="sm">
           <CodeBlockActions>
@@ -511,7 +550,7 @@ function ConnectGuide({ origin }: { origin: string }) {
   return (
     <section className="space-y-2.5 max-md:space-y-1.5">
       <h2 className={cn('text-sm font-medium', groupHeadingClass)}>Connect a tool</h2>
-      <div className="space-y-4 rounded-lg border p-4 text-sm max-md:rounded-[10px] max-md:border-0 max-md:bg-(--ios-cell)">
+      <div className="bg-muted/50 space-y-4 rounded-lg p-4 text-sm max-md:rounded-[10px] max-md:border-0 max-md:bg-(--ios-cell)">
         <SegmentedControl
           label="How to connect"
           value={method}

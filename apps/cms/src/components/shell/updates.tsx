@@ -174,7 +174,7 @@ function SidebarCard() {
   const { unseen, newDeploy, dismiss } = useUpdates();
   const show = newDeploy || unseen.length > 0;
   const box =
-    'text-ui bg-sidebar-accent/60 text-sidebar-foreground mx-2 flex flex-col gap-2 rounded-lg border p-3 group-data-[collapsible=icon]:hidden';
+    'text-ui bg-sidebar-accent/60 text-sidebar-foreground mx-2 flex flex-col gap-2 rounded-lg p-3 group-data-[collapsible=icon]:hidden';
 
   // Built here, not inside the wrapper, so a note that is leaving keeps what it was showing.
   const note = !show ? null : newDeploy ? (

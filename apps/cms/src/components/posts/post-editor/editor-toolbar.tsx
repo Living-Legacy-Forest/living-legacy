@@ -57,7 +57,7 @@ export function EditorToolbar({
   // the rest in its … menu; this bar keeps the status and, for a publisher, Schedule.
   if (isPhone) {
     return (
-      <header className="flex min-h-11 shrink-0 items-center gap-3 border-b px-3 py-1.5">
+      <header className="flex min-h-11 shrink-0 items-center gap-3 px-3 py-1.5">
         <PostStatusBadge
           status={meta.status}
           hasDraft={meta.hasDraft}
@@ -85,7 +85,7 @@ export function EditorToolbar({
   }
 
   return (
-    <header className="flex h-12 shrink-0 items-center gap-3 border-b px-3 max-md:h-auto max-md:min-h-12 max-md:flex-wrap max-md:gap-y-1.5 max-md:py-2">
+    <header className="flex h-12 shrink-0 items-center gap-3 px-3 max-md:h-auto max-md:min-h-12 max-md:flex-wrap max-md:gap-y-1.5 max-md:py-2">
       <PostStatusBadge
         status={meta.status}
         hasDraft={meta.hasDraft}
@@ -127,7 +127,7 @@ export function EditorToolbar({
           // Below lg the properties sit under the editor, where hiding them helps no one.
           className="max-lg:hidden"
         >
-          <PanelRightIcon aria-hidden />
+          <PanelRightIcon open={showProperties} aria-hidden />
         </Button>
       </div>
       {importDialog}
@@ -235,6 +235,9 @@ function PublisherActions({ editor, canDiscard, onImport }: ActionsProps) {
       <div className="flex max-md:flex-1">
         <Button
           size="sm"
+          // The arrow beside it leaves as this reads "Publish changes", so the width is not settled
+          // when the label changes; fading the label is enough.
+          morphWidth={false}
           disabled={working || (isLive && !dirty && !meta.hasDraft)}
           onClick={editor.publish}
           className={cn('max-md:flex-1', !isLive && 'rounded-r-none border-r-0')}

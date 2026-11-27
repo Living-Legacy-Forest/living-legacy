@@ -10,6 +10,7 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { Slider } from '@/components/ui/slider';
+import { useSidebarLayout } from '@/components/shell/sidebar-layout';
 import { useAppearanceDraft } from '@/lib/use-appearance-draft';
 import { useThemeChoice } from '@/lib/use-theme-choice';
 import type { Theme } from '@/server/settings';
@@ -73,6 +74,13 @@ function AppearanceSlider({
 export function AppearanceSection() {
   const { value, siteTheme, choose } = useThemeChoice();
   const { draft, change } = useAppearanceDraft();
+  const { layout, siteColumns, setLayout } = useSidebarLayout();
+  const columnLabels = { 1: 'One column', 2: 'Two columns' } as const;
+  const layoutItems = [
+    { value: 'site', label: `Site setting (${columnLabels[siteColumns].toLowerCase()})` },
+    { value: '2', label: columnLabels[2] },
+    { value: '1', label: columnLabels[1] },
+  ];
 
   const items = [
     { value: 'site', label: `Site setting (${THEME_LABELS[siteTheme].toLowerCase()})` },
@@ -99,6 +107,41 @@ export function AppearanceSection() {
           </SelectTrigger>
           <SelectContent>
             {items.map((item) => (
+              <SelectItem key={item.value} value={item.value}>
+                {item.label}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+      </SettingsRow>
+
+      <SettingsRow
+        id="profile-sidebar"
+        title="Sidebar"
+        description="Kept in this browser."
+        info={
+          <>
+            <p>Two columns: sections down the left and their pages beside them.</p>
+            <p>
+              One column: every section under its own heading, with the tools in a menu at the
+              bottom.
+            </p>
+            <p>Site setting follows what an admin chose in Settings, Language & appearance.</p>
+          </>
+        }
+      >
+        <Select
+          items={layoutItems}
+          value={layout.columns ? String(layout.columns) : 'site'}
+          onValueChange={(next) =>
+            next && setLayout({ columns: next === '1' ? 1 : next === '2' ? 2 : null })
+          }
+        >
+          <SelectTrigger id="profile-sidebar" className="w-56">
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            {layoutItems.map((item) => (
               <SelectItem key={item.value} value={item.value}>
                 {item.label}
               </SelectItem>

@@ -59,13 +59,22 @@ export const getSiteSettings = createServerFn({ method: 'GET' })
  */
 export const getRootSettings = createServerFn({ method: 'GET' }).handler(async () => {
   const [
-    { theme: siteTheme, cmsFont, cmsColour, timeZone, siteIconMediaId, siteIconDarkMediaId },
+    {
+      theme: siteTheme,
+      sidebarColumns,
+      cmsFont,
+      cmsColour,
+      timeZone,
+      siteIconMediaId,
+      siteIconDarkMediaId,
+    },
     personal,
   ] = await Promise.all([readSiteSettings(), personalChoices()]);
   return {
     theme: personal.theme ?? siteTheme,
     siteTheme,
     personalTheme: personal.theme,
+    sidebarColumns,
     appearance: personal.appearance,
     cmsFont,
     cmsColour,
@@ -167,6 +176,7 @@ const settingsSchema = z
       .refine((n) => (sessionDayOptions as readonly number[]).includes(n), 'Pick 1, 7 or 30 days.'),
     locale: z.enum(locales),
     theme: z.enum(themes),
+    sidebarColumns: z.union([z.literal(1), z.literal(2)]),
     cmsFont: z.enum(cmsFonts),
     cmsColour: z.enum(cmsColours),
     timeZone: z.enum(timeZones),

@@ -1,4 +1,4 @@
-import { type ReactNode, useState } from 'react';
+import { type ReactNode, useEffect, useRef, useState } from 'react';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { SearchIcon, XIcon } from '@/components/icons';
 import {
@@ -13,6 +13,8 @@ import {
 } from '@/components/ui/alert-dialog';
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
+import { ExpandingSearch } from '@/components/list/expanding-search';
+import { isTypingElement, pressedFixed } from '@/lib/shortcuts';
 import { cn } from '@/lib/utils';
 
 // Shared by the list-and-pane pages: search, multi-select and bulk delete.
@@ -46,9 +48,26 @@ export function SearchInput({
         autoCorrect="off"
         spellCheck={false}
         // Phones zoom into a field under 16px, so the smaller size starts at md.
-        className="bg-muted/60 placeholder:text-muted-foreground focus-visible:bg-background focus-visible:ring-ring md:text-ui touch:h-11 h-8 w-full rounded-md pr-2 pl-8 text-base outline-none focus-visible:ring-1 max-md:h-9 max-md:rounded-[10px] max-md:bg-(--ios-fill) max-md:pl-10 max-md:text-[1.0625rem] max-md:placeholder:text-(--ios-secondary) max-md:focus-visible:bg-(--ios-fill) max-md:focus-visible:ring-0"
+        className="bg-muted/60 placeholder:text-muted-foreground focus-visible:bg-muted md:text-ui touch:h-11 h-7 w-full rounded-md pr-2 pl-8 text-base outline-none max-md:h-9 max-md:rounded-[10px] max-md:bg-(--ios-fill) max-md:pl-10 max-md:text-[1.0625rem] max-md:placeholder:text-(--ios-secondary) max-md:focus-visible:bg-(--ios-fill)"
       />
     </div>
+  );
+}
+
+/**
+ * The search in a list page's toolbar: the full field on phones, and on desktop an icon that
+ * opens into the field, as on the posts page.
+ */
+export function ToolbarSearch(props: React.ComponentProps<typeof SearchInput>) {
+  return (
+    <>
+      <div className="contents md:hidden">
+        <SearchInput {...props} />
+      </div>
+      <div className="max-md:hidden">
+        <ExpandingSearch {...props} />
+      </div>
+    </>
   );
 }
 
@@ -96,6 +115,50 @@ export function useSelection(ids: string[]) {
 
 export type Selection = ReturnType<typeof useSelection>;
 
+/** A dialog, menu or list is open on top of the page, and owns the keyboard. */
+const overlayOpen = () =>
+  !!document.querySelector('[role="dialog"],[role="alertdialog"],[role="menu"],[role="listbox"]');
+
+/**
+ * ⌘A (Ctrl+A) ticks every row shown and Esc clears the ticks, as in a mail app. Only on a list
+ * people can select from, and never while typing, so ⌘A in a field or the editor still selects
+ * its text. The latest rows are read at press time, so the listener is set up once.
+ */
+export function useSelectionKeys(
+  enabled: boolean,
+  latest: { selection: Selection; scope: string[]; visibleIds: string[]; paged: boolean }
+) {
+  const current = useRef(latest);
+  current.current = latest;
+
+  useEffect(() => {
+    if (!enabled) return;
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.defaultPrevented || isTypingElement(event.target as Element | null)) return;
+      if (overlayOpen()) return;
+      const { selection, scope, visibleIds, paged } = current.current;
+      if (pressedFixed(event, 'mod+a')) {
+        if (scope.length === 0) return;
+        event.preventDefault();
+        // On a paged list this page's rows are added to any ticked on other pages.
+        if (paged) selection.add(scope);
+        else selection.set(visibleIds);
+      } else if (
+        event.key === 'Escape' &&
+        !event.metaKey &&
+        !event.ctrlKey &&
+        !event.altKey &&
+        selection.selecting
+      ) {
+        event.preventDefault();
+        selection.clear();
+      }
+    };
+    window.addEventListener('keydown', onKeyDown);
+    return () => window.removeEventListener('keydown', onKeyDown);
+  }, [enabled]);
+}
+
 /**
  * The list header: a select-all box, then either the count or the selection's
  * actions. Without `onDelete` (people who cannot edit) it is just the count.
@@ -132,10 +195,16 @@ export function SelectionBar({
   const scope = pageIds ?? visibleIds;
   const allChecked = scope.length > 0 && scope.every(selection.isChecked);
   const filtered = visibleIds.length !== total;
+  useSelectionKeys(!!(onDelete || actions), {
+    selection,
+    scope,
+    visibleIds,
+    paged: !!pageIds,
+  });
 
   if (!onDelete && !actions) {
     return (
-      <div className={cn('flex h-11 shrink-0 items-center gap-2 border-b px-3', phoneHeading)}>
+      <div className={cn('flex h-11 shrink-0 items-center gap-2 px-3', phoneHeading)}>
         <span className="text-ui font-medium">{filtered ? 'Shown' : title}</span>
         <span className="text-muted-foreground text-xs tabular-nums">
           {filtered ? `${visibleIds.length} of ${total}` : total}
@@ -145,7 +214,7 @@ export function SelectionBar({
   }
 
   return (
-    <div className={cn('flex h-11 shrink-0 items-center gap-2 border-b pr-2 pl-3', phoneHeading)}>
+    <div className={cn('flex h-11 shrink-0 items-center gap-2 pr-2 pl-3', phoneHeading)}>
       <Checkbox
         aria-label={allChecked ? 'Clear selection' : 'Select all shown'}
         checked={allChecked}

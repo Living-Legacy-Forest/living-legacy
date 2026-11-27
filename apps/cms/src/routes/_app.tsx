@@ -5,6 +5,7 @@ import { AppShell } from '@/components/shell/app-shell';
 import { getCachedAiEnabled } from '@/lib/ai-status';
 import { getCachedUser } from '@/lib/session';
 import { readListViews } from '@/lib/list-view';
+import { readNavPrefs } from '@/lib/nav-prefs-cookie';
 import { readSidebarState } from '@/lib/sidebar-state';
 
 export const Route = createFileRoute('/_app')({
@@ -12,13 +13,19 @@ export const Route = createFileRoute('/_app')({
     const user = await getCachedUser();
     if (!user) throw redirect({ to: '/login' });
     const ai = await getCachedAiEnabled(user.id);
-    return { user, ai, sidebar: readSidebarState(), listViews: readListViews() };
+    return {
+      user,
+      ai,
+      sidebar: readSidebarState(),
+      navPrefs: readNavPrefs(),
+      listViews: readListViews(),
+    };
   },
   component: AppLayout,
 });
 
 function AppLayout() {
-  const { user, sidebar } = Route.useRouteContext();
+  const { user, sidebar, navPrefs } = Route.useRouteContext();
   // Errors say whose session and which role, by id only: never a name or email.
   useEffect(() => {
     Sentry.setUser({ id: user.id });
@@ -30,7 +37,7 @@ function AppLayout() {
   }, [user.id, user.role]);
 
   return (
-    <AppShell user={user} sidebar={sidebar}>
+    <AppShell user={user} sidebar={sidebar} navPrefs={navPrefs}>
       <Outlet />
     </AppShell>
   );

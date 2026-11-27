@@ -245,6 +245,7 @@ export function ListRow({
   menu,
   previews,
   onOpen,
+  menuOpen,
   onDoubleClick,
   buttonProps,
   align = 'center',
@@ -264,6 +265,8 @@ export function ListRow({
   /** A click shows a preview here rather than the edit form, so the menu says Preview. */
   previews?: boolean;
   onOpen: () => void;
+  /** What the menu's Open does, where that differs from a click on the row (a click can toggle). */
+  menuOpen?: () => void;
   onDoubleClick?: () => void;
   /** Extra attributes for the row's main button (e.g. keyboard handling). */
   buttonProps?: React.ButtonHTMLAttributes<HTMLButtonElement> & Record<`data-${string}`, unknown>;
@@ -275,7 +278,7 @@ export function ListRow({
   const drag = useSwipe(!!swipe && !selecting);
   const hasMenu = !selecting && !!(menu?.length || swipe || select);
   const { actions: menuActions, destructive } = rowActions({
-    onOpen,
+    onOpen: menuOpen ?? onOpen,
     previews,
     onSelect: select?.onToggle,
     items: menu ?? [],

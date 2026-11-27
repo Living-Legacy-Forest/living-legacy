@@ -2,6 +2,7 @@ import { blogPath, can, postSorts } from '@ll/content';
 import { Link, useNavigate } from '@tanstack/react-router';
 import {
   CalendarClockIcon,
+  ChevronDownIcon,
   CircleAlertIcon,
   CopyIcon,
   ExternalLinkIcon,
@@ -21,7 +22,7 @@ import {
   Trash2Icon,
   XIcon,
 } from '@/components/icons';
-import { type KeyboardEvent, useEffect, useState } from 'react';
+import { Fragment, type KeyboardEvent, useEffect, useState } from 'react';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -36,12 +37,12 @@ import { Button } from '@/components/ui/button';
 import { ListRows, isDesktop } from '@/components/list/list-page';
 import { Pager } from '@/components/pager';
 import { ListRow, type RowMenuItem } from '@/components/list/list-row';
-import { SearchInput, useSelection } from '@/components/list/list-tools';
+import { ExpandingSearch } from '@/components/list/expanding-search';
+import { SearchInput, useSelection, useSelectionKeys } from '@/components/list/list-tools';
 import { ListFilter } from '@/components/list/list-filter';
 import { ListSort, useListSort } from '@/components/list/list-sort';
 import { CardMeta, ListCard, ListCards } from '@/components/list/list-card';
 import { ViewSwitch, useListView } from '@/components/list/view-switch';
-import { RowCell } from '@/components/list/row-cell';
 import { TrendChart } from '@/components/list/trend-chart';
 import { PillGlide, pillItemClass, pillTrackClass } from '@/components/ui/pill-track';
 import { PageActions } from '@/components/shell/page-actions';
@@ -60,7 +61,10 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
+import { useIsMobile } from '@/hooks/use-mobile';
 import { formatDate, formatRelative } from '@/lib/format';
+import { type PostProperty, type PostsDisplay, groupPosts } from '@/lib/posts-display';
+import { readPostsDisplay, rememberPostsDisplay } from '@/lib/posts-display-cookie';
 import type { SessionUser } from '@/lib/session';
 import { copyLink, openInNewTab, siteUrl } from '@/lib/site';
 import { RevealWords } from '@/components/dashboard/reveal-words';
@@ -82,16 +86,24 @@ import {
   unpublishPost,
 } from '@/server/posts';
 import { PostArticle } from './post-article';
+import { PanelToggleIcon } from '@/components/panel-toggle-icon';
+import { PostDisplayMenu } from './post-display-menu';
 import { PostStatusBadge } from './post-status-badge';
 import { ReviewerPopover } from './reviewer-popover';
 import { clearPostPreviews, loadPostPreview, usePostPreview } from './use-post-preview';
 import { usePostViews } from './use-post-views';
+import { dateOptions } from '@/components/list/filter-tools';
 
 export type PostListSearch = {
   status: PostStatusTab;
   q?: string;
   categories?: string[];
   authors?: string[];
+  tags?: string[];
+  updated?: ('today' | 'week' | 'month' | 'older')[];
+  image?: ('yes' | 'no')[];
+  seo?: ('complete' | 'missing')[];
+  match?: 'all' | 'any';
   page?: number;
   rows?: number;
   selected?: string;
@@ -123,6 +135,20 @@ export function PostsList({
   const revealing = useRevealOnce();
   const selection = useSelection(data.rows.map((r) => r.id));
   const [confirmDelete, setConfirmDelete] = useState<string[] | null>(null);
+  // How the list is laid out (grouping, details shown), kept in a cookie; and which groups are folded.
+  const [display, setDisplayState] = useState<PostsDisplay>(readPostsDisplay);
+  const setDisplay = (next: PostsDisplay) => {
+    setDisplayState(next);
+    rememberPostsDisplay(next);
+  };
+  const [folded, setFolded] = useState<Set<string>>(new Set());
+  const toggleFolded = (key: string) =>
+    setFolded((prev) => {
+      const next = new Set(prev);
+      if (next.has(key)) next.delete(key);
+      else next.add(key);
+      return next;
+    });
   const [query, setQuery] = useState(search.q ?? '');
   const inTrash = search.status === 'trash';
   // The preview pane can be closed to give the list the full width; the choice is remembered.
@@ -138,6 +164,14 @@ export function PostsList({
   const canPurge = can(user, 'content:purge');
   const canWrite = can(user, 'posts:write');
   const canPublish = can(user, 'posts:publish');
+  // ⌘A ticks every post on the page and Esc clears them, for those who can act on a selection.
+  const pageIds = data.rows.map((r) => r.id);
+  useSelectionKeys(canWrite, {
+    selection,
+    scope: pageIds,
+    visibleIds: pageIds,
+    paged: true,
+  });
 
   // The previewed post: the one in the URL, else the first row.
   const selectedId =
@@ -305,73 +339,245 @@ export function PostsList({
   const checkedIds = selection.checkedIds;
   const selectedRow = data.rows.find((r) => r.id === selectedId) ?? null;
 
+  const filterKeys = ['categories', 'authors', 'tags', 'updated', 'image', 'seo'] as const;
+  const filterProps = {
+    groups: [
+      {
+        key: 'categories',
+        label: 'Category',
+        options: data.categories.map((c) => ({ value: c.id, label: c.name })),
+      },
+      {
+        key: 'tags',
+        label: 'Tag',
+        options: data.tagOptions.map((t) => ({ value: t.id, label: t.name })),
+      },
+      {
+        key: 'authors',
+        label: 'Author',
+        options: data.authors.map((a) => ({ value: a.id, label: a.name })),
+      },
+      { key: 'updated', label: 'Updated', options: dateOptions },
+      {
+        key: 'image',
+        label: 'Featured image',
+        options: [
+          { value: 'yes', label: 'Has an image' },
+          { value: 'no', label: 'No image' },
+        ],
+      },
+      {
+        key: 'seo',
+        label: 'Search description',
+        options: [
+          { value: 'complete', label: 'Has one' },
+          { value: 'missing', label: 'Missing' },
+        ],
+      },
+    ],
+    values: {
+      categories: search.categories ?? [],
+      tags: search.tags ?? [],
+      authors: search.authors ?? [],
+      updated: search.updated ?? [],
+      image: search.image ?? [],
+      seo: search.seo ?? [],
+    },
+    onChange: (key: string, next: string[]) =>
+      navigate({
+        search: (prev) => ({
+          ...prev,
+          [key]: next.length ? next : undefined,
+          page: undefined,
+          selected: undefined,
+        }),
+      }),
+    onClear: () =>
+      navigate({
+        search: (prev) => ({
+          ...prev,
+          ...Object.fromEntries(filterKeys.map((key) => [key, undefined])),
+          match: undefined,
+          page: undefined,
+          selected: undefined,
+        }),
+      }),
+    match: search.match ?? ('all' as const),
+    onMatchChange: (next: 'all' | 'any') =>
+      navigate({
+        search: (prev) => ({
+          ...prev,
+          match: next === 'any' ? next : undefined,
+          page: undefined,
+          selected: undefined,
+        }),
+      }),
+    savedKey: 'posts',
+  };
+  const groups = groupPosts(data.rows, display.grouping, inTrash);
+
+  // The status tabs, or the ticked posts' actions: one piece, shown in the toolbar on desktop and
+  // over the list on phones.
+  const headerLeft = (
+    <>
+      {checkedIds.length > 0 ? (
+        <>
+          <Button
+            variant="ghost"
+            size="icon-sm"
+            aria-label="Clear selection"
+            onClick={selection.clear}
+          >
+            <XIcon aria-hidden />
+          </Button>
+          <span className="text-ui mr-auto">{checkedIds.length} selected</span>
+          {inTrash ? (
+            <>
+              <Button
+                variant="ghost"
+                size="sm"
+                disabled={pending}
+                onClick={() => restore(checkedIds)}
+              >
+                Restore
+              </Button>
+              {canPurge && (
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="text-destructive hover:text-destructive"
+                  disabled={pending}
+                  onClick={() => setConfirmDelete(checkedIds)}
+                >
+                  Delete permanently
+                </Button>
+              )}
+            </>
+          ) : (
+            <Button variant="ghost" size="sm" disabled={pending} onClick={() => trash(checkedIds)}>
+              Move to trash
+            </Button>
+          )}
+        </>
+      ) : (
+        <nav
+          aria-label="Post status"
+          data-slot="pill-track"
+          // Fills the bar's height on touch screens: it scrolls, so it clips, and the
+          // tabs' taller tap areas (touch-hit) have to fit inside it.
+          // Phones: iOS's 32pt scope tabs, with an invisible strip above and below that
+          // makes each a 44pt tap, inside the bar's 44pt height.
+          className={cn(
+            pillTrackClass,
+            'no-scrollbar md:touch:self-stretch overflow-x-auto max-md:self-stretch'
+          )}
+        >
+          <PillGlide value={search.status} />
+          {tabs
+            // Empty tabs only crowd the row (and pushed Trash out of sight); All and the
+            // current tab always stay.
+            .filter(
+              (tab) =>
+                tab.value === 'all' || tab.value === search.status || data.counts[tab.value] > 0
+            )
+            .map((tab) => {
+              const active = tab.value === search.status;
+              return (
+                <Link
+                  key={tab.value}
+                  to="/posts"
+                  search={(prev) => ({
+                    ...prev,
+                    status: tab.value,
+                    page: undefined,
+                    selected: undefined,
+                  })}
+                  aria-current={active ? 'page' : undefined}
+                  className={cn(
+                    pillItemClass,
+                    'max-md:h-8 max-md:after:absolute max-md:after:inset-x-0 max-md:after:-inset-y-1.5'
+                  )}
+                >
+                  {tab.label}
+                  <span className="text-muted-foreground text-xs tabular-nums">
+                    {data.counts[tab.value]}
+                  </span>
+                </Link>
+              );
+            })}
+        </nav>
+      )}
+      {canPublish && !grid && checkedIds.length === 0 && (
+        <Button
+          variant="ghost"
+          size="sm"
+          // Phones have Edit in the top bar; touch tablets keep it here.
+          className="text-tint touch:inline-flex ml-auto hidden min-h-11 shrink-0 text-[0.9375rem] font-medium max-md:hidden!"
+          onClick={selection.selecting ? selection.clear : selection.startEditing}
+        >
+          {selection.selecting ? 'Done' : 'Edit'}
+        </Button>
+      )}
+    </>
+  );
+
   return (
     <div
       data-slot="list-page"
       data-revealing={revealing || undefined}
       className="flex flex-col gap-4 lg:h-[calc(100svh-7.5rem)]"
     >
-      <div data-slot="list-toolbar" className="flex flex-wrap items-center gap-3">
-        <h1 data-slot="page-title" className="mr-auto text-xl">
+      <div data-slot="list-toolbar" className="flex flex-wrap items-center gap-3 md:gap-1.5">
+        {/* The page's heading, for screen readers and phones; the header bar names the page. */}
+        <h1 data-slot="page-title" className="mr-auto text-xl md:sr-only">
           <RevealWords text="Posts" />
         </h1>
-        <SearchInput
-          label="Search posts by title"
-          placeholder="Filter by title"
-          value={query}
-          onChange={setQuery}
-        />
-        <ListSort options={postSorts} value={sort} onChange={setSort} />
-        <ListFilter
-          groups={[
-            {
-              key: 'categories',
-              label: 'Category',
-              options: data.categories.map((c) => ({ value: c.id, label: c.name })),
-            },
-            {
-              key: 'authors',
-              label: 'Author',
-              options: data.authors.map((a) => ({ value: a.id, label: a.name })),
-            },
-          ]}
-          values={{ categories: search.categories ?? [], authors: search.authors ?? [] }}
-          onChange={(key, next) =>
-            navigate({
-              search: (prev) => ({
-                ...prev,
-                [key]: next.length ? next : undefined,
-                page: undefined,
-                selected: undefined,
-              }),
-            })
-          }
-          onClear={() =>
-            navigate({
-              search: (prev) => ({
-                ...prev,
-                categories: undefined,
-                authors: undefined,
-                page: undefined,
-                selected: undefined,
-              }),
-            })
-          }
-        />
-        <ViewSwitch value={view} onChange={setView} />
-        {!grid && (
-          <Button
-            variant="ghost"
-            size="icon-sm"
-            aria-label={previewOpen ? 'Expand list' : 'Show preview'}
-            aria-pressed={!previewOpen}
-            title={previewOpen ? 'Expand list' : 'Show preview'}
-            className="max-lg:hidden"
-            onClick={() => setPreview(!previewOpen)}
-          >
-            <PanelRightIcon aria-hidden />
-          </Button>
-        )}
+        {/* Desktop: the status tabs (or the ticked posts' actions) lead the toolbar. */}
+        <div className="mr-auto flex min-w-0 items-center gap-1 max-md:hidden">{headerLeft}</div>
+        {/* Phones keep their full controls. */}
+        <div className="contents md:hidden">
+          <SearchInput
+            label="Search posts by title"
+            placeholder="Filter by title"
+            value={query}
+            onChange={setQuery}
+          />
+          <ListSort options={postSorts} value={sort} onChange={setSort} />
+          <ListFilter {...filterProps} />
+          <ViewSwitch value={view} onChange={setView} />
+        </div>
+        {/* Desktop: icons only. View, ordering and the row details are in Display. */}
+        <div className="flex items-center gap-0.5 max-md:hidden">
+          <ExpandingSearch
+            label="Search posts by title"
+            placeholder="Filter by title"
+            value={query}
+            onChange={setQuery}
+          />
+          <ListFilter {...filterProps} iconOnly />
+          <PostDisplayMenu
+            display={display}
+            onDisplayChange={setDisplay}
+            view={view}
+            onViewChange={setView}
+            sort={sort}
+            sorts={postSorts}
+            onSortChange={(next) => setSort(next as typeof sort)}
+          />
+          {!grid && (
+            <Button
+              variant="ghost"
+              size="icon-sm"
+              aria-label={previewOpen ? 'Expand list' : 'Show preview'}
+              aria-pressed={previewOpen}
+              title={previewOpen ? 'Expand list' : 'Show preview'}
+              className="text-muted-foreground hover:text-foreground aria-pressed:bg-muted aria-pressed:text-foreground max-lg:hidden"
+              onClick={() => setPreview(!previewOpen)}
+            >
+              <PanelToggleIcon open={previewOpen} aria-hidden />
+            </Button>
+          )}
+        </div>
         {canWrite && (
           <Button
             size="sm"
@@ -404,124 +610,15 @@ export function PostsList({
         data-slot="list-panes"
         className={cn(
           // Plain fr tracks so the columns glide between open and closed.
-          'grid min-h-0 flex-1 grid-cols-1 overflow-hidden rounded-lg border max-md:flex-none max-md:overflow-visible max-md:rounded-none max-md:border-0',
+          'grid min-h-0 flex-1 grid-cols-1 overflow-hidden max-md:flex-none max-md:overflow-visible',
           'motion-reduce:transition-none lg:transition-[grid-template-columns] lg:duration-300 lg:ease-[cubic-bezier(0.32,0.72,0,1)]',
           previewOpen ? 'lg:grid-cols-[2fr_3fr]' : 'lg:grid-cols-[1fr_0fr]'
         )}
       >
-        <section
-          aria-label="Post list"
-          className={cn(
-            'flex min-h-0 min-w-80 flex-col transition-[border-color] duration-300 lg:border-r',
-            !previewOpen && 'border-transparent'
-          )}
-        >
-          <div className="flex h-11 shrink-0 items-center gap-1 border-b px-2 max-md:mb-2 max-md:border-0 max-md:px-0">
-            {checkedIds.length > 0 ? (
-              <>
-                <Button
-                  variant="ghost"
-                  size="icon-sm"
-                  aria-label="Clear selection"
-                  onClick={selection.clear}
-                >
-                  <XIcon aria-hidden />
-                </Button>
-                <span className="text-ui mr-auto">{checkedIds.length} selected</span>
-                {inTrash ? (
-                  <>
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      disabled={pending}
-                      onClick={() => restore(checkedIds)}
-                    >
-                      Restore
-                    </Button>
-                    {canPurge && (
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        className="text-destructive hover:text-destructive"
-                        disabled={pending}
-                        onClick={() => setConfirmDelete(checkedIds)}
-                      >
-                        Delete permanently
-                      </Button>
-                    )}
-                  </>
-                ) : (
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    disabled={pending}
-                    onClick={() => trash(checkedIds)}
-                  >
-                    Move to trash
-                  </Button>
-                )}
-              </>
-            ) : (
-              <nav
-                aria-label="Post status"
-                data-slot="pill-track"
-                // Fills the bar's height on touch screens: it scrolls, so it clips, and the
-                // tabs' taller tap areas (touch-hit) have to fit inside it.
-                // Phones: iOS's 32pt scope tabs, with an invisible strip above and below that
-                // makes each a 44pt tap, inside the bar's 44pt height.
-                className={cn(
-                  pillTrackClass,
-                  'no-scrollbar md:touch:self-stretch overflow-x-auto max-md:self-stretch'
-                )}
-              >
-                <PillGlide value={search.status} />
-                {tabs
-                  // Empty tabs only crowd the row (and pushed Trash out of sight); All and the
-                  // current tab always stay.
-                  .filter(
-                    (tab) =>
-                      tab.value === 'all' ||
-                      tab.value === search.status ||
-                      data.counts[tab.value] > 0
-                  )
-                  .map((tab) => {
-                    const active = tab.value === search.status;
-                    return (
-                      <Link
-                        key={tab.value}
-                        to="/posts"
-                        search={(prev) => ({
-                          ...prev,
-                          status: tab.value,
-                          page: undefined,
-                          selected: undefined,
-                        })}
-                        aria-current={active ? 'page' : undefined}
-                        className={cn(
-                          pillItemClass,
-                          'max-md:h-8 max-md:after:absolute max-md:after:inset-x-0 max-md:after:-inset-y-1.5'
-                        )}
-                      >
-                        {tab.label}
-                        <span className="text-muted-foreground text-xs tabular-nums">
-                          {data.counts[tab.value]}
-                        </span>
-                      </Link>
-                    );
-                  })}
-              </nav>
-            )}
-            {canPublish && !grid && checkedIds.length === 0 && (
-              <Button
-                variant="ghost"
-                size="sm"
-                // Phones have Edit in the top bar; touch tablets keep it here.
-                className="text-tint touch:inline-flex ml-auto hidden min-h-11 shrink-0 text-[0.9375rem] font-medium max-md:hidden!"
-                onClick={selection.selecting ? selection.clear : selection.startEditing}
-              >
-                {selection.selecting ? 'Done' : 'Edit'}
-              </Button>
-            )}
+        <section aria-label="Post list" className="flex min-h-0 min-w-80 flex-col">
+          {/* Phones: the status tabs sit over the list, as before. */}
+          <div className="flex h-11 shrink-0 items-center gap-1 px-2 max-md:mb-2 max-md:px-0 md:hidden">
+            {headerLeft}
           </div>
 
           {data.rows.length === 0 ? (
@@ -542,38 +639,56 @@ export function PostsList({
             </ListCards>
           ) : (
             <ListRows>
-              {data.rows.map((row) => (
-                <PostListItem
-                  key={row.id}
-                  row={row}
-                  inTrash={inTrash}
-                  selected={row.id === selectedId}
-                  select={
-                    canPublish
-                      ? {
-                          label: `Select ${row.title || 'Untitled'}`,
-                          checked: selection.isChecked(row.id),
-                          selecting: selection.selecting,
-                          onToggle: () => selection.toggle(row.id),
-                        }
-                      : undefined
-                  }
-                  swipe={removeAction(row)}
-                  menu={rowMenu(row)}
-                  previewOpen={previewOpen}
-                  views={views?.[row.slug]}
-                  onSelect={() => {
-                    // Choosing the post already showing closes the preview again.
-                    if (previewOpen && row.id === selectedId) return setPreview(false);
-                    select(row.id);
-                    setPreview(true);
-                  }}
-                />
-              ))}
+              {groups.map((group) => {
+                const open = !folded.has(group.key);
+                return (
+                  <Fragment key={group.key}>
+                    {group.label && (
+                      <GroupHeader
+                        label={group.label}
+                        count={group.rows.length}
+                        open={open}
+                        onToggle={() => toggleFolded(group.key)}
+                        addTo={canWrite && !inTrash && display.grouping === 'status'}
+                      />
+                    )}
+                    {open &&
+                      group.rows.map((row) => (
+                        <PostListItem
+                          key={row.id}
+                          row={row}
+                          inTrash={inTrash}
+                          selected={row.id === selectedId}
+                          select={
+                            canPublish
+                              ? {
+                                  label: `Select ${row.title || 'Untitled'}`,
+                                  checked: selection.isChecked(row.id),
+                                  selecting: selection.selecting,
+                                  onToggle: () => selection.toggle(row.id),
+                                }
+                              : undefined
+                          }
+                          swipe={removeAction(row)}
+                          menu={rowMenu(row)}
+                          previewOpen={previewOpen}
+                          display={display}
+                          views={views?.[row.slug]}
+                          onSelect={() => {
+                            // Choosing the post already showing closes the preview again.
+                            if (previewOpen && row.id === selectedId) return setPreview(false);
+                            select(row.id);
+                            setPreview(true);
+                          }}
+                        />
+                      ))}
+                  </Fragment>
+                );
+              })}
             </ListRows>
           )}
 
-          {data.total > 0 && (
+          {data.pageCount > 1 && (
             <Pager
               page={page}
               pageCount={data.pageCount}
@@ -581,7 +696,7 @@ export function PostsList({
               pageSize={data.pageSize}
               noun="posts"
               label="Post pages"
-              className="mt-0 shrink-0 border-t px-3 py-2 max-md:border-0"
+              className="mt-0 shrink-0 px-3 py-2"
               onPageChange={(n) =>
                 navigate({
                   search: (prev) => ({
@@ -612,7 +727,7 @@ export function PostsList({
           inert={!previewOpen}
           className={cn(
             'hidden min-h-0 min-w-0 flex-col overflow-hidden transition-[opacity,translate] duration-300 ease-[cubic-bezier(0.32,0.72,0,1)] motion-reduce:transition-none lg:flex',
-            !previewOpen && 'translate-x-4 opacity-0'
+            previewOpen ? 'lg:pl-3' : 'translate-x-4 opacity-0'
           )}
         >
           <PreviewPane
@@ -667,8 +782,12 @@ export function PostsList({
 function onRowKeyDown(event: KeyboardEvent<HTMLButtonElement>) {
   if (event.key !== 'ArrowDown' && event.key !== 'ArrowUp') return;
   event.preventDefault();
-  const item = event.currentTarget.closest('li');
-  const next = event.key === 'ArrowDown' ? item?.nextElementSibling : item?.previousElementSibling;
+  const down = event.key === 'ArrowDown';
+  let next: Element | null = event.currentTarget.closest('li');
+  // Group headings and the hover highlight sit between rows; step over them.
+  do {
+    next = down ? (next?.nextElementSibling ?? null) : (next?.previousElementSibling ?? null);
+  } while (next && !next.querySelector('button[data-row]'));
   const button = next?.querySelector<HTMLButtonElement>('button[data-row]');
   button?.focus();
   button?.click();
@@ -731,6 +850,55 @@ function PostCard({
   );
 }
 
+/** A group's heading band: fold it with the chevron; on a status group, "+" starts a post. */
+function GroupHeader({
+  label,
+  count,
+  open,
+  onToggle,
+  addTo,
+}: {
+  label: string;
+  count: number;
+  open: boolean;
+  onToggle: () => void;
+  addTo: boolean;
+}) {
+  return (
+    <li className="bg-muted/50 mt-1 flex h-9 items-center rounded-md first:mt-0">
+      <button
+        type="button"
+        aria-expanded={open}
+        onClick={onToggle}
+        className="text-ui focus-visible:ring-ring flex h-full min-w-0 flex-1 items-center gap-2 rounded-md px-3 text-left font-medium outline-none focus-visible:ring-2"
+      >
+        <ChevronDownIcon
+          aria-hidden
+          className={cn(
+            'text-muted-foreground size-3.5 shrink-0 transition-transform duration-200 motion-reduce:transition-none',
+            !open && '-rotate-90'
+          )}
+        />
+        <span className="truncate">{label}</span>
+        <span className="text-muted-foreground text-xs tabular-nums">{count}</span>
+      </button>
+      {addTo && (
+        <Button
+          variant="ghost"
+          size="icon-sm"
+          aria-label="New post"
+          title="New post"
+          className="text-muted-foreground hover:text-foreground mr-1"
+          render={<Link to="/posts/new" />}
+          nativeButton={false}
+        >
+          <PlusIcon aria-hidden />
+        </Button>
+      )}
+    </li>
+  );
+}
+
 function PostListItem({
   row,
   inTrash,
@@ -739,6 +907,7 @@ function PostListItem({
   swipe,
   menu,
   previewOpen,
+  display,
   views,
   onSelect,
 }: {
@@ -750,19 +919,19 @@ function PostListItem({
   swipe?: React.ComponentProps<typeof ListRow>['swipe'];
   menu: RowMenuItem[];
   previewOpen: boolean;
+  display: PostsDisplay;
   /** Last 30 days of page views, when PostHog is connected. */
   views?: number[];
   onSelect: () => void;
 }) {
   const navigate = useNavigate();
   const timeZone = useTimeZone();
+  const mobile = useIsMobile();
   const date = inTrash
     ? row.deletedAt
     : row.status === 'published'
       ? row.publishedAt
       : (row.scheduledAt ?? row.updatedAt);
-  // With the preview closed the row has the room for the columns the pane would have shown.
-  const wide = !previewOpen;
   const dateLabel = inTrash
     ? 'Trashed'
     : row.status === 'published'
@@ -770,7 +939,8 @@ function PostListItem({
       : row.scheduledAt
         ? 'Scheduled'
         : 'Edited';
-  const meta = [row.categories.map((c) => c.name).join(', '), row.author].filter(Boolean);
+  const categories = row.categories.map((c) => c.name).join(', ');
+  const meta = [categories, row.author].filter(Boolean);
   // Only live posts: a draft is expected to be unfinished.
   const gaps =
     row.status === 'published' && !inTrash
@@ -778,94 +948,130 @@ function PostListItem({
           (gap): gap is string => Boolean(gap)
         )
       : [];
+  const has = (property: PostProperty) => display.properties.includes(property);
+  // With the preview open the list is narrow: the title, and the details that fit.
+  const roomy = !previewOpen;
 
   const open = () =>
     inTrash ? undefined : navigate({ to: '/posts/$postId', params: { postId: row.id } });
 
-  return (
-    <ListRow
-      align="start"
-      current={selected}
-      select={select}
-      swipe={swipe}
-      menu={menu}
-      previews={!inTrash && previewOpen && isDesktop()}
-      // Below lg there is no preview pane: a tap opens the editor instead.
-      onOpen={() => (isDesktop() ? onSelect() : open())}
-      onDoubleClick={open}
-      buttonProps={{
-        'data-row': true,
-        onKeyDown: onRowKeyDown,
-        onPointerEnter: () => void loadPostPreview(row.id),
-      }}
-    >
-      <span className="flex items-center gap-4">
-        <span className="bg-muted relative size-14 shrink-0 overflow-hidden rounded-md">
-          {row.featuredMediaId ? (
-            <img
-              src={`/api/media/${row.featuredMediaId}?w=320`}
-              alt=""
-              loading="lazy"
-              className="size-full object-cover"
-            />
-          ) : (
-            <span className="text-muted-foreground/60 flex size-full items-center justify-center">
-              <ImageIcon aria-hidden className="size-5" />
-            </span>
-          )}
+  const thumbnail = (size: string) => (
+    <span className={cn('bg-muted relative shrink-0 overflow-hidden rounded-md', size)}>
+      {row.featuredMediaId ? (
+        <img
+          src={`/api/media/${row.featuredMediaId}?w=320`}
+          alt=""
+          loading="lazy"
+          className="size-full object-cover"
+        />
+      ) : (
+        <span className="text-muted-foreground/60 flex size-full items-center justify-center">
+          <ImageIcon aria-hidden className="size-4" />
         </span>
-        <span className="min-w-0 flex-1">
-          <span className="text-ui block truncate font-medium">{row.title || 'Untitled'}</span>
-          <span className="text-muted-foreground mt-0.5 flex min-w-0 items-center gap-1 text-xs">
-            <PostStatusBadge
-              status={row.status}
-              hasDraft={row.hasDraft}
-              trashed={inTrash}
-              inReview={row.reviewRequestedAt !== null}
-              scheduledAt={row.scheduledAt}
-            />
-            {meta.length > 0 && (
-              <span className={cn('min-w-0 truncate', wide && 'lg:hidden')}>
-                {['', ...meta].join(' · ')}
-              </span>
-            )}
-            {date && (
-              <span className={cn('shrink-0 tabular-nums', wide && 'lg:hidden')}>
-                {' · '}
-                {formatDate(date, timeZone)}
+      )}
+    </span>
+  );
+
+  const rowProps = {
+    current: selected,
+    select,
+    swipe,
+    menu,
+    previews: !inTrash && previewOpen && isDesktop(),
+    // Below lg there is no preview pane: a tap opens the editor instead.
+    onOpen: () => (isDesktop() ? onSelect() : open()),
+    onDoubleClick: open,
+    buttonProps: {
+      'data-row': true,
+      onKeyDown: onRowKeyDown,
+      onPointerEnter: () => void loadPostPreview(row.id),
+    },
+  } as const;
+
+  // Phones keep iOS's two-line cell: the title, then its status, category, author and date.
+  if (mobile) {
+    return (
+      <ListRow align="start" {...rowProps}>
+        <span className="flex items-center gap-4">
+          {thumbnail('size-14')}
+          <span className="min-w-0 flex-1">
+            <span className="text-ui block truncate font-medium">{row.title || 'Untitled'}</span>
+            <span className="text-muted-foreground mt-0.5 flex min-w-0 items-center gap-1 text-xs">
+              <PostStatusBadge
+                status={row.status}
+                hasDraft={row.hasDraft}
+                trashed={inTrash}
+                inReview={row.reviewRequestedAt !== null}
+                scheduledAt={row.scheduledAt}
+              />
+              {meta.length > 0 && (
+                <span className="min-w-0 truncate">{['', ...meta].join(' · ')}</span>
+              )}
+              {date && (
+                <span className="shrink-0 tabular-nums">
+                  {' · '}
+                  {formatDate(date, timeZone)}
+                </span>
+              )}
+            </span>
+            {gaps.length > 0 && (
+              <span className="mt-0.5 flex items-center gap-1 text-xs text-amber-700 dark:text-amber-400">
+                <CircleAlertIcon aria-hidden className="size-3 shrink-0" />
+                <span className="truncate">No {gaps.join(' or ')}</span>
               </span>
             )}
           </span>
-          {gaps.length > 0 && (
-            <span className="mt-0.5 flex items-center gap-1 text-xs text-amber-700 dark:text-amber-400">
-              <CircleAlertIcon aria-hidden className="size-3 shrink-0" />
-              <span className="truncate">No {gaps.join(' or ')}</span>
-            </span>
-          )}
         </span>
-        {views && (
-          <span className={cn('flex shrink-0 max-sm:hidden', wide && 'lg:max-xl:hidden')}>
-            <TrendChart series={views} showTotal={wide} />
+      </ListRow>
+    );
+  }
+
+  // Desktop: one quiet line. The status is a dot, and the rest is muted detail, as chosen in Display.
+  return (
+    <ListRow {...rowProps}>
+      <span className="flex items-center gap-3">
+        {has('thumbnail') && thumbnail('size-9')}
+        <PostStatusBadge
+          dotOnly
+          status={row.status}
+          hasDraft={row.hasDraft}
+          trashed={inTrash}
+          inReview={row.reviewRequestedAt !== null}
+          scheduledAt={row.scheduledAt}
+        />
+        <span className="text-ui min-w-0 flex-1 truncate font-medium">
+          {row.title || 'Untitled'}
+        </span>
+        {has('warnings') && gaps.length > 0 && (
+          <span
+            title={`No ${gaps.join(' or ')}`}
+            className="shrink-0 text-amber-700 dark:text-amber-400"
+          >
+            <CircleAlertIcon aria-hidden className="size-3.5" />
+            <span className="sr-only">No {gaps.join(' or ')}</span>
           </span>
         )}
-        {wide && (
-          <span className="animate-in fade-in slide-in-from-right-2 hidden shrink-0 items-center gap-6 text-xs duration-300 lg:flex">
-            <RowCell
-              className="w-40"
-              primary={row.categories.map((c) => c.name).join(', ')}
-              secondary={row.tags.map((t) => t.name).join(', ')}
-            />
-            <RowCell className="hidden w-28 xl:block" primary={row.author ?? ''} />
-            <RowCell
-              className="w-28"
-              primary={date ? formatDate(date, timeZone) : ''}
-              secondary={dateLabel}
-            />
-            <RowCell
-              className="hidden w-24 text-right 2xl:block"
-              primary={formatRelative(row.updatedAt)}
-              secondary="Last edit"
-            />
+        {roomy && has('views') && views && (
+          <span className="flex shrink-0 max-xl:hidden">
+            <TrendChart series={views} showTotal />
+          </span>
+        )}
+        {roomy && has('category') && (
+          <span className="text-muted-foreground hidden w-36 shrink-0 truncate text-xs lg:block">
+            {categories}
+          </span>
+        )}
+        {roomy && has('author') && (
+          <span className="text-muted-foreground hidden w-28 shrink-0 truncate text-xs xl:block">
+            {row.author}
+          </span>
+        )}
+        {has('date') && (
+          <span
+            title={date ? `${dateLabel} ${formatDate(date, timeZone)}` : undefined}
+            className="text-muted-foreground w-24 shrink-0 text-right text-xs tabular-nums"
+          >
+            {date ? formatDate(date, timeZone) : ''}
           </span>
         )}
       </span>
@@ -908,7 +1114,7 @@ function PreviewPane({
 
   if (!row) {
     return (
-      <section aria-label="Preview" className="flex flex-1">
+      <section aria-label="Preview" className="bg-muted/50 flex flex-1 rounded-xl">
         <Empty>
           <EmptyHeader>
             <EmptyMedia variant="icon">
@@ -930,8 +1136,11 @@ function PreviewPane({
     !row.reviewRequestedAt;
 
   return (
-    <section aria-label="Preview" className="flex min-h-0 flex-1 flex-col">
-      <div className="flex h-11 shrink-0 items-center gap-2 border-b px-3">
+    <section
+      aria-label="Preview"
+      className="bg-muted/50 flex min-h-0 flex-1 flex-col overflow-hidden rounded-xl"
+    >
+      <div className="flex h-12 shrink-0 items-center gap-2 px-3">
         <span className="text-muted-foreground mr-auto truncate text-xs">
           {inTrash
             ? `Trashed ${formatRelative(row.deletedAt ?? row.updatedAt)}`
@@ -1014,7 +1223,7 @@ function PreviewPane({
           </DropdownMenu>
         )}
         <Button variant="ghost" size="icon-sm" aria-label="Close preview" onClick={onClose}>
-          <PanelRightIcon aria-hidden />
+          <PanelToggleIcon open aria-hidden />
         </Button>
       </div>
       <div className="min-h-0 flex-1 overflow-y-auto">
@@ -1082,7 +1291,15 @@ const emptyStates = {
 } satisfies Record<PostStatusTab, { icon: LucideIcon; title: string; description: string }>;
 
 function EmptyState({ search }: { search: PostListSearch }) {
-  const filtered = Boolean(search.q || search.categories?.length || search.authors?.length);
+  const filtered = Boolean(
+    search.q ||
+    search.categories?.length ||
+    search.authors?.length ||
+    search.tags?.length ||
+    search.updated?.length ||
+    search.image?.length ||
+    search.seo?.length
+  );
   const {
     icon: Icon,
     title,

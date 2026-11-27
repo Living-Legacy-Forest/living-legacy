@@ -3,8 +3,12 @@
 // stacked label, control and hint the CMS has always used; the phone look lives
 // in styles.css, keyed on these data-slots.
 import type { ReactNode } from 'react';
+import { InfoTip } from '@/components/info-tip';
 import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
+
+/** A field's name: small and quiet, so the value is what you read. */
+export const FIELD_LABEL = 'text-muted-foreground text-xs font-normal';
 
 export function FormSection({
   title,
@@ -48,6 +52,7 @@ export function FormCell({
   hint,
   error,
   aside,
+  info,
   children,
 }: {
   label: string;
@@ -57,9 +62,22 @@ export function FormCell({
   error?: string;
   /** A note level with the label (a character count); under the label on phones. */
   aside?: ReactNode;
+  /** Detail kept in a small "?" beside the label, in place of a line of hint under the field. */
+  info?: ReactNode;
   children: ReactNode;
 }) {
-  const labelEl = <Label htmlFor={htmlFor}>{label}</Label>;
+  const labelEl = info ? (
+    <div className="flex items-center gap-1.5">
+      <Label htmlFor={htmlFor} className={FIELD_LABEL}>
+        {label}
+      </Label>
+      <InfoTip label={`About ${label.toLowerCase()}`}>{info}</InfoTip>
+    </div>
+  ) : (
+    <Label htmlFor={htmlFor} className={FIELD_LABEL}>
+      {label}
+    </Label>
+  );
   return (
     <div data-slot="form-cell" data-invalid={error ? '' : undefined} className="space-y-1.5">
       {aside ? (
@@ -108,7 +126,7 @@ export function FormSwitchCell({
   return (
     <div
       data-slot="form-switch-cell"
-      className="flex items-center justify-between gap-4 rounded-lg border pr-3"
+      className="bg-background flex items-center justify-between gap-4 rounded-lg pr-3"
     >
       {/* The label fills the row, so all of it is the target and not just the small switch. */}
       <Label
@@ -143,7 +161,7 @@ export function FormBlock({
 }) {
   return (
     <div data-slot="form-block" className="space-y-1.5">
-      <Label id={labelId} htmlFor={htmlFor}>
+      <Label id={labelId} htmlFor={htmlFor} className={FIELD_LABEL}>
         {label}
       </Label>
       <div data-slot="form-block-body">{children}</div>
@@ -162,4 +180,4 @@ export const groupHeadingClass =
 
 /** The box a table or list sits in: bordered on wider screens, an inset group on phones. */
 export const groupBoxClass =
-  'overflow-hidden rounded-lg border max-md:rounded-[10px] max-md:border-0 max-md:bg-(--ios-cell) max-md:[&_tr]:border-(--ios-separator)';
+  'overflow-hidden rounded-lg bg-muted/50 max-md:rounded-[10px] max-md:border-0 max-md:bg-(--ios-cell) max-md:[&_tr]:border-(--ios-separator)';

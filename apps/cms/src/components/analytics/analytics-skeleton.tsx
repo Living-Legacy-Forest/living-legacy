@@ -181,7 +181,7 @@ function TableSkeleton({
     <>
       <div
         className={cn(
-          'overflow-hidden rounded-lg border',
+          'bg-muted/50 overflow-hidden rounded-lg',
           tableFrom === 'lg' ? 'max-lg:hidden' : 'max-md:hidden'
         )}
       >
@@ -211,7 +211,7 @@ function TableSkeleton({
       </div>
       <ul
         className={cn(
-          'divide-y overflow-hidden rounded-lg border max-md:divide-(--ios-separator) max-md:rounded-[10px] max-md:border-0 max-md:bg-(--ios-cell)',
+          'divide-border/60 bg-muted/50 divide-y overflow-hidden rounded-lg max-md:divide-(--ios-separator) max-md:rounded-[10px] max-md:border-0 max-md:bg-(--ios-cell)',
           tableFrom === 'lg' ? 'lg:hidden' : 'md:hidden'
         )}
       >

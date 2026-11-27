@@ -43,7 +43,7 @@ export function PlacesCard({ data, className }: { data: AudiencePage; className?
         </CardAction>
       </CardHeader>
       <CardContent className="grid gap-4 lg:grid-cols-[minmax(0,3fr)_minmax(0,2fr)]">
-        <div className="bg-muted/40 relative h-64 overflow-hidden rounded-lg border sm:h-80 lg:h-[26rem]">
+        <div className="bg-muted/40 relative h-64 overflow-hidden rounded-lg sm:h-80 lg:h-[26rem]">
           {data.places.length === 0 ? (
             <p className="text-muted-foreground absolute inset-0 grid place-items-center text-sm">
               No cities to show in this period

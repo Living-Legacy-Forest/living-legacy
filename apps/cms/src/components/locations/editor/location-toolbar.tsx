@@ -49,7 +49,7 @@ export function LocationToolbar({
       ? siteUrl(`/locations/${item.slug}/`)
       : null;
   return (
-    <header className="flex min-h-12 shrink-0 flex-wrap items-center gap-x-3 gap-y-2 border-b px-3 py-1.5">
+    <header className="flex min-h-12 shrink-0 flex-wrap items-center gap-x-3 gap-y-2 px-3 py-1.5">
       {/* Phones have ‹ Locations in the app's own top bar. */}
       <Button
         variant="ghost"
@@ -76,7 +76,7 @@ export function LocationToolbar({
           // Below lg the map sits under the form, where hiding it helps no one.
           className="max-lg:hidden"
         >
-          <PanelRightIcon aria-hidden />
+          <PanelRightIcon open={showMap} aria-hidden />
         </Button>
         {item && (
           <DropdownMenu>

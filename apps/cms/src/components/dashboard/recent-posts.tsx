@@ -74,7 +74,7 @@ function PostList({
         {title}
       </h2>
       {posts.length === 0 ? (
-        <Empty className="border py-8">
+        <Empty className="py-8">
           <EmptyHeader>
             <EmptyMedia variant="icon">
               <empty.icon aria-hidden />

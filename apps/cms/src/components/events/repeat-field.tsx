@@ -251,7 +251,7 @@ export function RepeatField({
             )}
           </div>
           {/* The first date shows as chosen and stays so; tapping others adds or removes them. */}
-          <div className="rounded-lg border">
+          <div className="bg-muted/50 rounded-lg">
             <Calendar
               mode="multiple"
               weekStartsOn={1}

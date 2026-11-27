@@ -4,7 +4,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import {
   ConfirmBulkDelete,
   RowCheckbox,
-  SearchInput,
+  ToolbarSearch,
   SelectionBar,
   useSelection,
 } from '@/components/list/list-tools';
@@ -23,7 +23,8 @@ import { type RowMenuItem, RowMenu } from '@/components/list/list-row';
 import { PageActions } from '@/components/shell/page-actions';
 import { ListFilter } from '@/components/list/list-filter';
 import { ListSort, useListSort } from '@/components/list/list-sort';
-import { ViewSwitch, useListView } from '@/components/list/view-switch';
+import { useListView } from '@/components/list/view-switch';
+import { ListDisplay } from '@/components/list/list-display';
 import { DocumentThumb } from '@/components/media/document-card';
 import {
   copyLink,
@@ -263,10 +264,11 @@ export function MediaPage({
         setUploading(true);
       }}
     >
-      <div className="flex flex-wrap items-center gap-3">
-        <h1 data-slot="page-title" className="mr-auto text-xl">
+      <div className="flex flex-wrap items-center gap-3 md:gap-1.5">
+        <h1 data-slot="page-title" className="mr-auto text-xl md:sr-only">
           <RevealWords text={inTrash ? 'Media trash' : 'Media'} />
         </h1>
+        <div className="mr-auto max-md:hidden" />
         {inTrash ? (
           <Button variant="outline" size="sm" onClick={() => toTrash(false)}>
             Back to the library
@@ -280,7 +282,7 @@ export function MediaPage({
           )
         )}
         {!libraryEmpty && !trashEmpty && (
-          <SearchInput
+          <ToolbarSearch
             label="Search media"
             placeholder="Search filenames and captions"
             value={query}
@@ -317,7 +319,7 @@ export function MediaPage({
               onChange={changeFilter}
               onClear={clearFilters}
             />
-            <ListSort options={mediaSorts} value={sort} onChange={setSort} />
+            <ListSort options={mediaSorts} value={sort} onChange={setSort} hideOnDesktop />
             {!inTrash && missingCovers.length > 0 && (
               <Button
                 variant="outline"
@@ -331,7 +333,13 @@ export function MediaPage({
                   : `Make ${missingCovers.length} PDF ${missingCovers.length === 1 ? 'thumbnail' : 'thumbnails'}`}
               </Button>
             )}
-            <ViewSwitch value={view} onChange={setView} />
+            <ListDisplay
+              sortOptions={mediaSorts}
+              sortValue={sort}
+              onSortChange={(next) => setSort(next as typeof sort)}
+              value={view}
+              onChange={setView}
+            />
           </>
         )}
         {!inTrash && (
@@ -369,7 +377,7 @@ export function MediaPage({
       )}
 
       {trashEmpty ? (
-        <Empty className="flex-1 rounded-lg border">
+        <Empty className="flex-1 rounded-lg">
           <EmptyHeader>
             <EmptyMedia variant="icon">
               <Trash2Icon aria-hidden />
@@ -384,7 +392,7 @@ export function MediaPage({
           </EmptyContent>
         </Empty>
       ) : libraryEmpty ? (
-        <Empty className={cn('flex-1 rounded-lg border', dragOver && 'border-ring bg-accent/40')}>
+        <Empty className={cn('flex-1 rounded-lg', dragOver && 'bg-accent/40 ring-ring ring-2')}>
           <EmptyHeader>
             <EmptyMedia variant="icon">
               <MediaIcon aria-hidden />
@@ -405,9 +413,9 @@ export function MediaPage({
       ) : (
         <div
           className={cn(
-            'flex min-h-0 flex-1 flex-col overflow-hidden rounded-lg border',
+            'flex min-h-0 flex-1 flex-col overflow-hidden rounded-lg',
             // Phones: no frame. The grid keeps the page's side gutters; the list runs edge to edge.
-            'max-md:flex-none max-md:overflow-visible max-md:rounded-none max-md:border-0',
+            'max-md:flex-none max-md:overflow-visible max-md:rounded-none',
             dragOver && 'ring-ring ring-2'
           )}
         >
@@ -500,7 +508,7 @@ export function MediaPage({
                   ))}
                 </div>
               ) : (
-                <ul className="divide-y rounded-md border max-md:rounded-none max-md:border-x-0">
+                <ul className="bg-muted/50 rounded-md max-md:rounded-none">
                   {items.map((m, index) => (
                     <MediaRow
                       key={m.id}
@@ -589,7 +597,7 @@ function MediaTile({
       {...sortLayout}
       ref={anchor}
       className={cn(
-        'group max-md:bg-muted relative aspect-square overflow-hidden rounded-md border',
+        'group bg-muted relative aspect-square overflow-hidden rounded-md',
         checked && 'ring-ring ring-2',
         // While its context menu is open, so it is clear which file the menu acts on.
         'group-data-popup-open/row-menu:ring-ring group-data-popup-open/row-menu:ring-2'
@@ -761,7 +769,7 @@ function MediaRow({
         onClick={onOpen}
         className="focus-visible:ring-ring flex min-w-0 flex-1 items-center gap-3 rounded-md text-left outline-none focus-visible:ring-2"
       >
-        <span className="bg-muted relative grid size-11 shrink-0 place-items-center overflow-hidden rounded-md border p-0.5">
+        <span className="bg-muted relative grid size-11 shrink-0 place-items-center overflow-hidden rounded-md p-0.5">
           {!isDocument ? (
             <img
               src={mediaSrc(item, 320)}
@@ -775,7 +783,7 @@ function MediaRow({
               src={mediaSrc(item, 320)}
               alt=""
               loading="lazy"
-              className="max-h-full max-w-full rounded-[2px] bg-white object-contain shadow-sm ring-1 ring-black/10"
+              className="max-h-full max-w-full rounded-[2px] bg-white object-contain shadow-sm"
             />
           ) : (
             <FileTextIcon aria-hidden className="text-muted-foreground size-5" />

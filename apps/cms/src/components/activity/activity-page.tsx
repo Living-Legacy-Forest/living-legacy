@@ -44,6 +44,7 @@ import {
 } from '@/server/activity-log';
 import { useRevealOnce } from '@/lib/use-reveal-once';
 import { RevealWords } from '@/components/dashboard/reveal-words';
+import { GlideHighlight } from '@/components/ui/glide-highlight';
 
 export type ActivitySearch = {
   page?: number;
@@ -193,7 +194,7 @@ export function ActivityPage({
         )}
       </div>
 
-      <div className="bg-card mb-4 rounded-lg border p-4 max-md:rounded-[10px] max-md:border-0 max-md:bg-(--ios-cell) max-md:[--heatmap-surface:var(--ios-cell)]">
+      <div className="bg-card bg-muted/50 mb-4 rounded-lg p-4 max-md:rounded-[10px] max-md:border-0 max-md:bg-(--ios-cell) max-md:[--heatmap-surface:var(--ios-cell)]">
         <ActivityCalendar
           days={data.days}
           label={`Changes over the past year${person ? ` by ${person}` : ''}`}
@@ -219,7 +220,7 @@ export function ActivityPage({
       )}
 
       {data.total === 0 ? (
-        <Empty className="rounded-lg border max-md:rounded-[10px] max-md:border-0 max-md:bg-(--ios-cell)">
+        <Empty className="rounded-lg max-md:rounded-[10px] max-md:border-0 max-md:bg-(--ios-cell)">
           <EmptyHeader>
             <EmptyMedia variant="icon">
               <ActivityIcon aria-hidden />
@@ -244,11 +245,17 @@ export function ActivityPage({
           )}
         </Empty>
       ) : (
-        <ul className="divide-y rounded-lg border max-md:divide-(--ios-separator) max-md:overflow-hidden max-md:rounded-[10px] max-md:border-0 max-md:bg-(--ios-cell)">
+        <ul className="bg-muted/50 overflow-hidden rounded-lg max-md:divide-y max-md:divide-(--ios-separator) max-md:overflow-hidden max-md:rounded-[10px] max-md:border-0 max-md:bg-(--ios-cell)">
+          <GlideHighlight
+            follow="hover"
+            as="li"
+            selector="[data-glide]"
+            className="bg-muted border-0! max-md:hidden"
+          />
           {data.rows.map((entry) => {
             const Icon = iconFor(entry.action);
             return (
-              <li key={entry.id} className="flex items-start gap-3 px-4 py-3">
+              <li key={entry.id} data-glide className="relative flex items-start gap-3 px-4 py-3">
                 <span className="bg-muted text-muted-foreground mt-0.5 flex size-7 shrink-0 items-center justify-center rounded-full">
                   <Icon aria-hidden className="size-3.5" />
                 </span>

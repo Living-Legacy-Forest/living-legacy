@@ -74,7 +74,13 @@ export function BrandFixButton({
       {/* Button's extended touch area makes the xs size a 44pt target on phones. */}
       <PopoverTrigger
         render={
-          <Button type="button" variant="outline" size="xs" className="text-muted-foreground" />
+          <Button
+            type="button"
+            variant="outline"
+            size="xs"
+            aria-label={`Suggest a fix for “${found}”`}
+            className="text-muted-foreground"
+          />
         }
       >
         <SparklesIcon aria-hidden className="size-3" />

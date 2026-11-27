@@ -1,9 +1,10 @@
 import { MAX_FAQ_TAGS, slugify, splitTags, toTags } from '@ll/content';
 import { useEffect, useState } from 'react';
 import { ListCard, ListCards } from '@/components/list/list-card';
-import { ListFilter, passes, publishStatusOptions } from '@/components/list/list-filter';
+import { ListFilter, publishStatusOptions } from '@/components/list/list-filter';
 import { ListSort, byText, sortedBy, useListSort } from '@/components/list/list-sort';
-import { ViewSwitch, useListView } from '@/components/list/view-switch';
+import { useListView } from '@/components/list/view-switch';
+import { ListDisplay } from '@/components/list/list-display';
 import { BulkCsvForm } from '@/components/bulk/bulk-csv-form';
 import {
   DialogActions,
@@ -23,7 +24,7 @@ import { SaveButton, useSaveFeedback } from '@/components/list/save-button';
 import { LeaveDialog } from '@/components/editor-page/leave-dialog';
 import { ListRow, copyMenuItem, moveMenuItems, publishMenuItem } from '@/components/list/list-row';
 import {
-  SearchInput,
+  ToolbarSearch,
   type Selection,
   SelectionBar,
   matchesSearch,
@@ -86,6 +87,7 @@ import {
 import { TagInput } from '@/components/arc/tag-input/tag-input';
 import { FormCell, FormSection, FormSwitchCell } from '@/components/form-cells';
 import { PageActions } from '@/components/shell/page-actions';
+import { rowPasses, type MatchMode } from '@/components/list/filter-tools';
 
 const UNGROUPED = 'ungrouped';
 
@@ -163,6 +165,7 @@ export function FaqsPage({
   const [query, setQuery] = useState('');
   // Ticked values per filter group; an empty group does not narrow the list.
   const [picked, setPicked] = useState<Record<string, string[]>>({});
+  const [match, setMatch] = useState<MatchMode>('all');
   const [layout, setLayout] = useListView('faqs');
   const grid = layout === 'grid';
   const selection = useSelection(data.faqs.map((f) => f.id));
@@ -182,13 +185,11 @@ export function FaqsPage({
     ...(ungrouped.length > 0 ? [{ group: null, faqs: ungrouped }] : []),
   ];
   const knownTags = [...new Set(data.faqs.flatMap((f) => f.tags))].sort();
-  const matchesTag = (f: Faq) =>
-    !picked.tags?.length ||
-    picked.tags.some((tag) => (tag === NO_TAG ? f.tags.length === 0 : f.tags.includes(tag)));
+  const answerLength = (f: Faq) =>
+    f.answer.length < 150 ? 'short' : f.answer.length < 400 ? 'medium' : 'long';
   const filtering = Object.values(picked).some((ticked) => ticked.length > 0);
   const searching = query.trim() !== '' || filtering;
   const visibleSections = sections
-    .filter((s) => passes(picked.groups, s.group?.id ?? UNGROUPED))
     .map((s) => ({
       ...s,
       // Within each group: the groups stay in their own order.
@@ -197,9 +198,12 @@ export function FaqsPage({
         'question-za': (a, b) => byText(b.question, a.question),
       }).filter(
         (f) =>
-          matchesTag(f) &&
-          passes(picked.statuses, f.status) &&
-          matchesSearch(query, [f.question, f.answer, ...f.tags])
+          rowPasses(match, picked, {
+            statuses: f.status,
+            groups: s.group?.id ?? UNGROUPED,
+            tags: f.tags.length ? f.tags : [NO_TAG],
+            length: answerLength(f),
+          }) && matchesSearch(query, [f.question, f.answer, ...f.tags])
       ),
     }))
     .filter((s) => !searching || s.faqs.length > 0);
@@ -305,52 +309,71 @@ export function FaqsPage({
       data-revealing={revealing || undefined}
       className="flex flex-1 flex-col gap-4 lg:h-[calc(100svh-7.5rem)] lg:flex-none"
     >
-      <div data-slot="list-toolbar" className="flex flex-wrap items-center gap-3">
-        <h1 data-slot="page-title" className="mr-auto text-xl">
+      <div data-slot="list-toolbar" className="flex flex-wrap items-center gap-3 md:gap-1.5">
+        <h1 data-slot="page-title" className="mr-auto text-xl md:sr-only">
           <RevealWords text="FAQs" />
         </h1>
+        <div className="mr-auto max-md:hidden" />
         {data.faqs.length > 0 && (
-          <SearchInput
+          <ToolbarSearch
             label="Search FAQs"
             placeholder="Search questions, answers, tags"
             value={query}
             onChange={setQuery}
           />
         )}
-        {data.faqs.length > 0 && <ListSort options={SORTS} value={sort} onChange={setSort} />}
         {data.faqs.length > 0 && (
-          <ListFilter
-            groups={[
-              { key: 'statuses', label: 'Status', options: publishStatusOptions },
-              {
-                key: 'groups',
-                label: 'Group',
-                options: [
-                  ...data.groups.map((g) => ({ value: g.id, label: g.name })),
-                  ...(ungrouped.length > 0 ? [{ value: UNGROUPED, label: 'Ungrouped' }] : []),
-                ],
-              },
-              {
-                key: 'tags',
-                label: 'Tag',
-                options: knownTags.length
-                  ? [
-                      ...knownTags.map((tag) => ({ value: tag, label: tag })),
-                      { value: NO_TAG, label: 'No tag' },
-                    ]
-                  : [],
-              },
-            ]}
-            values={picked}
-            onChange={(key, next) => {
-              setPicked((prev) => ({ ...prev, [key]: next }));
-              selection.clear();
-            }}
-            onClear={clearFilters}
-          />
+          <ListSort options={SORTS} value={sort} onChange={setSort} hideOnDesktop />
         )}
+
         {data.faqs.length > 0 && (
-          <ViewSwitch
+          <ListDisplay
+            filter={
+              <ListFilter
+                groups={[
+                  { key: 'statuses', label: 'Status', options: publishStatusOptions },
+                  {
+                    key: 'groups',
+                    label: 'Group',
+                    options: [
+                      ...data.groups.map((g) => ({ value: g.id, label: g.name })),
+                      ...(ungrouped.length > 0 ? [{ value: UNGROUPED, label: 'Ungrouped' }] : []),
+                    ],
+                  },
+                  {
+                    key: 'tags',
+                    label: 'Tag',
+                    options: knownTags.length
+                      ? [
+                          ...knownTags.map((tag) => ({ value: tag, label: tag })),
+                          { value: NO_TAG, label: 'No tag' },
+                        ]
+                      : [],
+                  },
+                  {
+                    key: 'length',
+                    label: 'Answer length',
+                    options: [
+                      { value: 'short', label: 'Short' },
+                      { value: 'medium', label: 'Medium' },
+                      { value: 'long', label: 'Long' },
+                    ],
+                  },
+                ]}
+                match={match}
+                onMatchChange={setMatch}
+                savedKey="faqs"
+                values={picked}
+                onChange={(key, next) => {
+                  setPicked((prev) => ({ ...prev, [key]: next }));
+                  selection.clear();
+                }}
+                onClear={clearFilters}
+              />
+            }
+            sortOptions={SORTS}
+            sortValue={sort}
+            onSortChange={(next) => setSort(next as typeof sort)}
             value={layout}
             onChange={(next) => {
               setLayout(next);
@@ -395,7 +418,7 @@ export function FaqsPage({
       </div>
 
       {sections.length === 0 && pane === null ? (
-        <Empty className="flex-1 rounded-lg border">
+        <Empty className="flex-1 rounded-lg">
           <EmptyHeader>
             <EmptyMedia variant="icon">
               <CircleHelpIcon aria-hidden />

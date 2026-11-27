@@ -24,7 +24,22 @@ import {
 } from '@ll/db/schema';
 import { createServerFn } from '@tanstack/react-start';
 import { getRequest } from '@tanstack/react-start/server';
-import { and, asc, count, desc, eq, inArray, isNotNull, isNull, like, ne, sql } from 'drizzle-orm';
+import {
+  and,
+  asc,
+  count,
+  desc,
+  eq,
+  gte,
+  inArray,
+  isNotNull,
+  isNull,
+  like,
+  lt,
+  ne,
+  or,
+  sql,
+} from 'drizzle-orm';
 import { z } from 'zod';
 import { getDb } from '@/lib/db';
 import { pageSizeParam } from '@/lib/page-size';
@@ -83,6 +98,24 @@ const listSchema = z.object({
   q: z.string().trim().max(100).optional(),
   categories: z.array(z.string()).max(50).optional(),
   authors: z.array(z.string()).max(50).optional(),
+  tags: z.array(z.string()).max(50).optional(),
+  /** When the post was last changed: any of these spans. */
+  updated: z
+    .array(z.enum(['today', 'week', 'month', 'older']))
+    .max(4)
+    .optional(),
+  /** Whether it has a featured image. */
+  image: z
+    .array(z.enum(['yes', 'no']))
+    .max(2)
+    .optional(),
+  /** Whether it has a search description (its own or an excerpt). */
+  seo: z
+    .array(z.enum(['complete', 'missing']))
+    .max(2)
+    .optional(),
+  /** Whether a post must match every filter that has ticks, or only one of them. */
+  match: z.enum(['all', 'any']).catch('all').optional(),
   page: z.number().int().min(1).catch(1),
   /** Posts a page; anything but a size on offer is the usual one. */
   rows: pageSizeParam(POSTS_PAGE_SIZES),
@@ -104,97 +137,134 @@ export const listPosts = createServerFn({ method: 'GET' })
       trash: isNotNull(posts.deletedAt),
     } satisfies Record<PostStatusTab, unknown>;
 
+    // Each group with ticks is one test; "all" needs every test, "any" needs one.
+    const DAY = 86_400_000;
+    const now = Date.now();
+    const span = {
+      today: gte(posts.updatedAt, new Date(now - DAY)),
+      week: gte(posts.updatedAt, new Date(now - 7 * DAY)),
+      month: gte(posts.updatedAt, new Date(now - 30 * DAY)),
+      older: lt(posts.updatedAt, new Date(now - 30 * DAY)),
+    };
+    const termTest = (ids: string[]) =>
+      inArray(
+        posts.id,
+        db.select({ id: postTerms.postId }).from(postTerms).where(inArray(postTerms.termId, ids))
+      );
+    const noDescription = sql`coalesce(trim(${posts.seoDescription}), '') = '' and coalesce(trim(${posts.excerpt}), '') = ''`;
+    const tests = [
+      data.authors?.length ? inArray(posts.authorId, data.authors) : undefined,
+      data.categories?.length ? termTest(data.categories) : undefined,
+      data.tags?.length ? termTest(data.tags) : undefined,
+      data.updated?.length ? or(...data.updated.map((u) => span[u])) : undefined,
+      data.image?.length
+        ? or(
+            ...data.image.map((i) =>
+              i === 'yes' ? isNotNull(posts.featuredMediaId) : isNull(posts.featuredMediaId)
+            )
+          )
+        : undefined,
+      data.seo?.length
+        ? or(
+            ...data.seo.map((v) => (v === 'missing' ? noDescription : sql`not (${noDescription})`))
+          )
+        : undefined,
+    ].filter((test): test is NonNullable<typeof test> => test !== undefined);
+
     const filters = and(
       byTab[data.status],
       data.q ? like(posts.title, `%${data.q.replace(/[%_]/g, '\\$&')}%`) : undefined,
-      data.authors?.length ? inArray(posts.authorId, data.authors) : undefined,
-      data.categories?.length
-        ? inArray(
-            posts.id,
-            db
-              .select({ id: postTerms.postId })
-              .from(postTerms)
-              .where(inArray(postTerms.termId, data.categories))
-          )
-        : undefined
+      tests.length ? (data.match === 'any' ? or(...tests) : and(...tests)) : undefined
     );
 
-    const [tabCounts, [{ total } = { total: 0 }], rows, categories, reviewers, authors] =
-      await db.batch([
-        db
-          .select({
-            all: sql<number>`coalesce(sum(${posts.deletedAt} is null), 0)`,
-            published: sql<number>`coalesce(sum(${posts.deletedAt} is null and ${posts.status} = 'published'), 0)`,
-            scheduled: sql<number>`coalesce(sum(${posts.deletedAt} is null and ${posts.status} = 'draft' and ${posts.scheduledAt} is not null), 0)`,
-            draft: sql<number>`coalesce(sum(${posts.deletedAt} is null and ${posts.status} = 'draft' and ${posts.scheduledAt} is null), 0)`,
-            review: sql<number>`coalesce(sum(${posts.deletedAt} is null and ${posts.reviewRequestedAt} is not null), 0)`,
-            trash: sql<number>`coalesce(sum(${posts.deletedAt} is not null), 0)`,
-          })
-          .from(posts),
-        db.select({ total: count() }).from(posts).where(filters),
-        db
-          .select({
-            id: posts.id,
-            title: posts.title,
-            slug: posts.slug,
-            status: posts.status,
-            hasDraft: sql<boolean>`${posts.draft} is not null`,
-            publishedAt: posts.publishedAt,
-            updatedAt: posts.updatedAt,
-            deletedAt: posts.deletedAt,
-            scheduledAt: posts.scheduledAt,
-            reviewRequestedAt: posts.reviewRequestedAt,
-            reviewerId: posts.reviewerId,
-            createdBy: posts.createdBy,
-            featuredMediaId: posts.featuredMediaId,
-            author: teamMembers.name,
-            // The same gaps Content checks lists, so the list can flag them too.
-            noDescription: sql<boolean>`coalesce(trim(${posts.seoDescription}), '') = '' and coalesce(trim(${posts.excerpt}), '') = ''`,
-            noShareImage: sql<boolean>`${posts.ogMediaId} is null and ${posts.featuredMediaId} is null`,
-          })
-          .from(posts)
-          // A deleted author waits in the trash with the post still pointing at them.
-          .leftJoin(
-            teamMembers,
-            and(eq(teamMembers.id, posts.authorId), isNull(teamMembers.deletedAt))
-          )
-          .where(filters)
-          .orderBy(
-            ...(data.sort && data.sort !== 'default'
-              ? {
-                  updated: [desc(posts.updatedAt)],
-                  oldest: [sql`coalesce(${posts.publishedAt}, ${posts.updatedAt}) asc`],
-                  'title-az': [sql`lower(${posts.title}) asc`],
-                  'title-za': [sql`lower(${posts.title}) desc`],
-                }[data.sort]
-              : [
-                  data.status === 'trash'
-                    ? desc(posts.deletedAt)
-                    : data.status === 'scheduled'
-                      ? asc(posts.scheduledAt)
-                      : sql`coalesce(${posts.publishedAt}, ${posts.updatedAt}) desc`,
-                ]),
-            // Equal values never swap places between pages.
-            asc(posts.id)
-          )
-          .limit(pageSize)
-          .offset((data.page - 1) * pageSize),
-        db
-          .select({ id: terms.id, name: terms.name })
-          .from(terms)
-          .where(eq(terms.type, 'category'))
-          .orderBy(asc(terms.name)),
-        db
-          .select({ id: user.id, name: user.name })
-          .from(user)
-          .where(hasPermissionSql('posts:publish'))
-          .orderBy(asc(user.name)),
-        db
-          .select({ id: teamMembers.id, name: teamMembers.name })
-          .from(teamMembers)
-          .where(isNull(teamMembers.deletedAt))
-          .orderBy(asc(teamMembers.sortOrder), asc(teamMembers.name)),
-      ]);
+    const [
+      tabCounts,
+      [{ total } = { total: 0 }],
+      rows,
+      categories,
+      reviewers,
+      authors,
+      tagOptions,
+    ] = await db.batch([
+      db
+        .select({
+          all: sql<number>`coalesce(sum(${posts.deletedAt} is null), 0)`,
+          published: sql<number>`coalesce(sum(${posts.deletedAt} is null and ${posts.status} = 'published'), 0)`,
+          scheduled: sql<number>`coalesce(sum(${posts.deletedAt} is null and ${posts.status} = 'draft' and ${posts.scheduledAt} is not null), 0)`,
+          draft: sql<number>`coalesce(sum(${posts.deletedAt} is null and ${posts.status} = 'draft' and ${posts.scheduledAt} is null), 0)`,
+          review: sql<number>`coalesce(sum(${posts.deletedAt} is null and ${posts.reviewRequestedAt} is not null), 0)`,
+          trash: sql<number>`coalesce(sum(${posts.deletedAt} is not null), 0)`,
+        })
+        .from(posts),
+      db.select({ total: count() }).from(posts).where(filters),
+      db
+        .select({
+          id: posts.id,
+          title: posts.title,
+          slug: posts.slug,
+          status: posts.status,
+          hasDraft: sql<boolean>`${posts.draft} is not null`,
+          publishedAt: posts.publishedAt,
+          updatedAt: posts.updatedAt,
+          deletedAt: posts.deletedAt,
+          scheduledAt: posts.scheduledAt,
+          reviewRequestedAt: posts.reviewRequestedAt,
+          reviewerId: posts.reviewerId,
+          createdBy: posts.createdBy,
+          featuredMediaId: posts.featuredMediaId,
+          author: teamMembers.name,
+          // The same gaps Content checks lists, so the list can flag them too.
+          noDescription: sql<boolean>`coalesce(trim(${posts.seoDescription}), '') = '' and coalesce(trim(${posts.excerpt}), '') = ''`,
+          noShareImage: sql<boolean>`${posts.ogMediaId} is null and ${posts.featuredMediaId} is null`,
+        })
+        .from(posts)
+        // A deleted author waits in the trash with the post still pointing at them.
+        .leftJoin(
+          teamMembers,
+          and(eq(teamMembers.id, posts.authorId), isNull(teamMembers.deletedAt))
+        )
+        .where(filters)
+        .orderBy(
+          ...(data.sort && data.sort !== 'default'
+            ? {
+                updated: [desc(posts.updatedAt)],
+                oldest: [sql`coalesce(${posts.publishedAt}, ${posts.updatedAt}) asc`],
+                'title-az': [sql`lower(${posts.title}) asc`],
+                'title-za': [sql`lower(${posts.title}) desc`],
+              }[data.sort]
+            : [
+                data.status === 'trash'
+                  ? desc(posts.deletedAt)
+                  : data.status === 'scheduled'
+                    ? asc(posts.scheduledAt)
+                    : sql`coalesce(${posts.publishedAt}, ${posts.updatedAt}) desc`,
+              ]),
+          // Equal values never swap places between pages.
+          asc(posts.id)
+        )
+        .limit(pageSize)
+        .offset((data.page - 1) * pageSize),
+      db
+        .select({ id: terms.id, name: terms.name })
+        .from(terms)
+        .where(eq(terms.type, 'category'))
+        .orderBy(asc(terms.name)),
+      db
+        .select({ id: user.id, name: user.name })
+        .from(user)
+        .where(hasPermissionSql('posts:publish'))
+        .orderBy(asc(user.name)),
+      db
+        .select({ id: teamMembers.id, name: teamMembers.name })
+        .from(teamMembers)
+        .where(isNull(teamMembers.deletedAt))
+        .orderBy(asc(teamMembers.sortOrder), asc(teamMembers.name)),
+      db
+        .select({ id: terms.id, name: terms.name })
+        .from(terms)
+        .where(eq(terms.type, 'tag'))
+        .orderBy(asc(terms.name)),
+    ]);
 
     const assigned = await loadTermsFor(
       db,
@@ -231,6 +301,7 @@ export const listPosts = createServerFn({ method: 'GET' })
       // is expanded until someone opens the preview.
       previewOpen: /(?:^|;\s*)posts_preview=open/.test(getRequest().headers.get('cookie') ?? ''),
       categories,
+      tagOptions,
       reviewers,
       authors,
     };

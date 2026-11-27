@@ -31,7 +31,7 @@ export function FailuresList({
 
   if (failures.length === 0) {
     return (
-      <Empty className="border py-8">
+      <Empty className="py-8">
         <EmptyHeader>
           <EmptyMedia variant="icon">
             <CircleCheckIcon aria-hidden />

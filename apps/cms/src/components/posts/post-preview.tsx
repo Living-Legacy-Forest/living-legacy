@@ -14,7 +14,7 @@ import { postContentExtensions } from './post-extensions';
 export function PostPreviewBody({ body }: { body: RichTextDoc | null }) {
   if (!body) {
     return (
-      <Empty className="border py-10">
+      <Empty className="py-10">
         <EmptyHeader>
           <EmptyMedia variant="icon">
             <FileTextIcon aria-hidden />

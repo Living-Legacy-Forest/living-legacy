@@ -33,7 +33,7 @@ export function SeoFields({
 
   return (
     <div className="space-y-4">
-      <div className="space-y-0.5 rounded-md border p-3">
+      <div className="bg-muted/50 space-y-0.5 rounded-md p-3">
         <p className="text-muted-foreground truncate text-xs">
           {SITE_HOST} › blog › {values.slug || '…'}
         </p>
@@ -107,7 +107,7 @@ export function SeoFields({
         />
       </div>
 
-      <div className="space-y-3 border-t pt-4">
+      <div className="space-y-3 pt-2">
         <p className="text-xs font-medium">Advanced</p>
         <div className="space-y-1.5">
           <Label htmlFor="seo-canonical" className="text-muted-foreground text-xs font-normal">
@@ -206,7 +206,7 @@ export function SocialFields({
 
   return (
     <div className="space-y-4">
-      <div className="overflow-hidden rounded-md border">
+      <div className="bg-muted/50 overflow-hidden rounded-md">
         <div className="bg-muted aspect-[1.91] w-full">
           {imageId && (
             <img
@@ -217,7 +217,7 @@ export function SocialFields({
             />
           )}
         </div>
-        <div className="space-y-0.5 border-t p-3">
+        <div className="space-y-0.5 p-3">
           <p className="text-muted-foreground truncate text-xs">{SITE_HOST}</p>
           <p className="line-clamp-2 font-medium">{title}</p>
           {description && (

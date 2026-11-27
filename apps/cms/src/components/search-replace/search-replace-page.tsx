@@ -121,7 +121,7 @@ export function SearchReplacePage() {
         </p>
       </div>
 
-      <form onSubmit={search} className="space-y-4 rounded-xl border p-4 sm:p-5">
+      <form onSubmit={search} className="bg-muted/50 space-y-4 rounded-xl p-4 sm:p-5">
         <div className="grid gap-4 sm:grid-cols-2">
           <div className="space-y-1.5">
             <Label htmlFor="sr-find">Find</Label>
@@ -170,7 +170,7 @@ export function SearchReplacePage() {
 
       {results !== null &&
         (shown.length === 0 ? (
-          <p className="text-muted-foreground rounded-xl border border-dashed px-4 py-10 text-center text-sm">
+          <p className="text-muted-foreground bg-muted/50 rounded-xl px-4 py-10 text-center text-sm">
             No matches for “{searched?.find}”.
           </p>
         ) : (
@@ -243,7 +243,7 @@ function AreaResults({
 }) {
   const id = `sr-area-${area.area}`;
   return (
-    <section className="overflow-hidden rounded-xl border">
+    <section className="bg-muted/50 overflow-hidden rounded-xl">
       <div className="bg-muted/40 flex items-center gap-3 border-b px-4 py-2.5">
         <Checkbox
           id={id}

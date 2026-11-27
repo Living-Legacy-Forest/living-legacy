@@ -182,7 +182,7 @@ export function LegalPageEditor({
         </div>
         {/* Clip, not hidden: hidden would make a scroll box and stop the toolbar sticking. */}
         {/* Phones: edge to edge, so the toolbar spans the screen under the header as one bar. */}
-        <div className="bg-background min-h-[32rem] overflow-clip rounded-lg border max-md:-mx-4 max-md:rounded-none max-md:border-x-0">
+        <div className="bg-muted/50 max-md:bg-background min-h-[32rem] overflow-clip rounded-lg max-md:-mx-4 max-md:rounded-none max-md:border-x-0">
           <ClientOnly fallback={<DocumentEditorSkeleton />}>
             <Suspense fallback={<DocumentEditorSkeleton />}>
               <DocumentEditor
@@ -203,7 +203,7 @@ export function LegalPageEditor({
           <h2 id="legal-search" className="font-medium">
             In search results
           </h2>
-          <div className="space-y-0.5 rounded-md border p-3">
+          <div className="bg-muted/50 space-y-0.5 rounded-md p-3">
             <p className="text-muted-foreground truncate text-xs">
               {SITE_HOST} › {data.slug}
             </p>

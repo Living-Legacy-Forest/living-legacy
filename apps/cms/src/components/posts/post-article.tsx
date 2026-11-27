@@ -42,7 +42,7 @@ export function PostArticle({
           {post.excerpt}
         </p>
       )}
-      <p className="text-muted-foreground text-ui mt-5 border-b pb-5">
+      <p className="text-muted-foreground text-ui mt-5 pb-5">
         {[
           post.author,
           post.publishedAt

@@ -83,7 +83,7 @@ export function LegalHistory({
                     aria-hidden
                     className={cn(
                       'relative mt-1 size-2 rounded-full ring-3 ring-[var(--background)]',
-                      live ? 'bg-emerald-500' : 'bg-muted-foreground/50'
+                      live ? 'bg-success' : 'bg-muted-foreground/50'
                     )}
                   />
                   <span className="min-w-0">

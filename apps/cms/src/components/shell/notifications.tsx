@@ -353,7 +353,7 @@ export function Notifications({ user }: { user: SessionUser }) {
           <motion.span
             key="badge"
             aria-hidden
-            className="ring-background absolute -top-1 -right-1 grid h-4 min-w-4 place-items-center overflow-hidden rounded-full bg-sky-500 px-1 text-[0.625rem] leading-none font-medium text-white tabular-nums ring-2 max-md:top-1 max-md:right-0.5"
+            className="ring-background bg-info absolute -top-1 -right-1 grid h-4 min-w-4 place-items-center overflow-hidden rounded-full px-1 text-[0.625rem] leading-none font-medium text-white tabular-nums ring-2 max-md:top-1 max-md:right-0.5"
             initial={reduce ? { opacity: 0 } : { opacity: 0, scale: 0.6 }}
             animate={{ opacity: 1, scale: 1 }}
             exit={reduce ? fadeOut : { opacity: 0, scale: 0.6, transition: exitFast }}
@@ -543,7 +543,7 @@ export function Notifications({ user }: { user: SessionUser }) {
                             key="dot"
                             aria-hidden
                             custom={bulk}
-                            className="size-1.5 shrink-0 rounded-full bg-sky-500"
+                            className="bg-info size-1.5 shrink-0 rounded-full"
                             variants={{
                               exit: (isBulk: boolean) =>
                                 reduce

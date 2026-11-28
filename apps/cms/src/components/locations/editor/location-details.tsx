@@ -202,7 +202,7 @@ export function LocationDetails({ editor }: { editor: LocationEditorState }) {
       </Section>
 
       <Section title="Search and sharing">
-        <div className="bg-muted/50 space-y-0.5 rounded-md p-3">
+        <div className="bg-muted/50 space-y-0.5 rounded-lg p-3">
           <p className="text-muted-foreground truncate text-xs">
             {SITE_HOST} › locations › {values.slug || '…'}
           </p>

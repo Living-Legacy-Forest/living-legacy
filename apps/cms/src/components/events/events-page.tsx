@@ -51,6 +51,7 @@ import {
   upcomingOptions,
   type MatchMode,
 } from '@/components/list/filter-tools';
+import { EmptyNote } from '@/components/empty-note';
 
 const NOUN: [string, string] = ['event', 'events'];
 
@@ -336,13 +337,13 @@ export function EventsPage({ data }: { data: EventsData }) {
               query ? (
                 <NoMatches onClear={() => setQuery('')}>No events match that search.</NoMatches>
               ) : (
-                <p className="text-muted-foreground px-4 py-10 text-center text-sm">
+                <EmptyNote>
                   {filter === 'drafts'
                     ? 'No drafts.'
                     : filter === 'past'
                       ? 'No past events.'
                       : 'No upcoming events.'}
-                </p>
+                </EmptyNote>
               )
             ) : grid ? (
               <ListCards>

@@ -53,6 +53,7 @@ import { FormCell, FormSection, FormSwitchCell } from '@/components/form-cells';
 import { ImageField, useMediaItem } from '@/components/media/image-field';
 import { PageActions } from '@/components/shell/page-actions';
 import { Badge } from '@/components/ui/badge';
+import { StatusBadge } from '@/components/status-badge';
 import { Button } from '@/components/ui/button';
 import {
   Command,
@@ -666,12 +667,7 @@ function PreviewPane({
       className={cn('hidden min-h-0 flex-col lg:flex', className)}
     >
       <div className="flex h-10 shrink-0 items-center gap-1.5 px-3">
-        <Badge
-          variant={item.status === 'published' ? 'secondary' : 'outline'}
-          className="capitalize"
-        >
-          {item.status}
-        </Badge>
+        <StatusBadge kind={item.status} />
         {item.featured && <Badge variant="default">Featured</Badge>}
         <div className="ml-auto flex items-center gap-1.5">
           <Button
@@ -716,7 +712,7 @@ function CoverageCard({ item }: { item: MediaCoverageItem }) {
 
   return (
     <article>
-      <div className="bg-muted relative aspect-video overflow-hidden rounded-xl border">
+      <div className="bg-muted relative aspect-video overflow-hidden rounded-xl">
         {thumb ? (
           <img src={thumb} alt={image?.alt ?? ''} className="size-full object-cover" />
         ) : (

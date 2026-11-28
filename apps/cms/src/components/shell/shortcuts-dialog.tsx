@@ -118,7 +118,7 @@ export function ShortcutsDialog({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-h-[90svh] gap-0 overflow-hidden p-0 sm:max-w-3xl">
         <div className="grid min-h-0 md:grid-cols-[minmax(0,5fr)_minmax(0,6fr)]">
-          <div className="flex flex-col gap-5 p-6 md:border-r">
+          <div className="flex flex-col gap-5 p-6">
             <DialogHeader>
               <DialogTitle>Keyboard shortcuts</DialogTitle>
               <DialogDescription>

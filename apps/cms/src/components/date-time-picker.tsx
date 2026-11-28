@@ -99,7 +99,7 @@ export function DateTimePicker({
             minDate={minWall ? new Date(minWall.year, minWall.month, minWall.day) : undefined}
             className="px-3"
           />
-          <div className="flex items-center gap-2 border-t p-3">
+          <div className="flex items-center gap-2 p-3">
             <Label htmlFor={`${id}-time`} className="text-muted-foreground text-xs">
               Time
             </Label>

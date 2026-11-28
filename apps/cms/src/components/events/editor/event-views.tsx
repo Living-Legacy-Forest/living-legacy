@@ -74,7 +74,7 @@ export function EventViewBar({
 /** The bar for the views that are not the form: back, where it stands, then the tabs. */
 export function EventViewsHeader(props: Parameters<typeof EventViewBar>[0]) {
   return (
-    <header className="flex min-h-12 shrink-0 flex-wrap items-center gap-x-3 gap-y-2 border-b px-3 py-1.5">
+    <header className="flex min-h-12 shrink-0 flex-wrap items-center gap-x-3 gap-y-2 px-3 py-1.5">
       {/* Phones have ‹ Events in the app's own top bar. */}
       <Button
         variant="ghost"

@@ -20,6 +20,7 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Input } from '@/components/ui/input';
+import { FIELD_LABEL } from '@/components/form-cells';
 import { Label } from '@/components/ui/label';
 import { Spinner } from '@/components/ui/spinner';
 import { Switch } from '@/components/ui/switch';
@@ -34,6 +35,7 @@ import {
 } from '@/server/search-replace';
 import { useRevealOnce } from '@/lib/use-reveal-once';
 import { RevealWords } from '@/components/dashboard/reveal-words';
+import { EmptyNote } from '@/components/empty-note';
 
 const plural = (n: number, one: string, many = `${one}s`) => `${n} ${n === 1 ? one : many}`;
 
@@ -124,7 +126,9 @@ export function SearchReplacePage() {
       <form onSubmit={search} className="bg-muted/50 space-y-4 rounded-xl p-4 sm:p-5">
         <div className="grid gap-4 sm:grid-cols-2">
           <div className="space-y-1.5">
-            <Label htmlFor="sr-find">Find</Label>
+            <Label htmlFor="sr-find" className={FIELD_LABEL}>
+              Find
+            </Label>
             <Input
               id="sr-find"
               value={input.find}
@@ -135,7 +139,9 @@ export function SearchReplacePage() {
             />
           </div>
           <div className="space-y-1.5">
-            <Label htmlFor="sr-replace">Replace with</Label>
+            <Label htmlFor="sr-replace" className={FIELD_LABEL}>
+              Replace with
+            </Label>
             <Input
               id="sr-replace"
               value={input.replace}
@@ -170,9 +176,7 @@ export function SearchReplacePage() {
 
       {results !== null &&
         (shown.length === 0 ? (
-          <p className="text-muted-foreground bg-muted/50 rounded-xl px-4 py-10 text-center text-sm">
-            No matches for “{searched?.find}”.
-          </p>
+          <EmptyNote boxed>No matches for “{searched?.find}”.</EmptyNote>
         ) : (
           <div className="space-y-4">
             <div className="flex flex-wrap items-center gap-3">
@@ -244,7 +248,7 @@ function AreaResults({
   const id = `sr-area-${area.area}`;
   return (
     <section className="bg-muted/50 overflow-hidden rounded-xl">
-      <div className="bg-muted/40 flex items-center gap-3 border-b px-4 py-2.5">
+      <div className="bg-muted/40 flex items-center gap-3 px-4 py-2.5">
         <Checkbox
           id={id}
           checked={checked}
@@ -295,7 +299,7 @@ function ItemResult({ item, replacement }: { item: ItemMatch; replacement: strin
                     {s.match}
                   </del>
                   {replacement && (
-                    <ins className="rounded-sm bg-emerald-500/15 px-0.5 text-emerald-800 no-underline dark:text-emerald-300">
+                    <ins className="bg-success/15 text-success-text rounded-sm px-0.5 no-underline">
                       {replacement}
                     </ins>
                   )}

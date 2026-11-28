@@ -185,7 +185,7 @@ export function NavUser({ user }: { user: SessionUser }) {
                   {user.email}
                 </span>
               </span>
-              <span className="bg-muted text-muted-foreground ml-auto rounded px-1.5 py-0.5 text-[11px] font-normal capitalize">
+              <span className="bg-muted text-muted-foreground ml-auto rounded px-1.5 py-0.5 text-[0.6875rem] font-normal capitalize">
                 {user.role}
               </span>
             </DropdownMenuLabel>

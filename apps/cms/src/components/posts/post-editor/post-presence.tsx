@@ -85,7 +85,7 @@ export function PresenceNotice({
       role="status"
       className={
         newerSave
-          ? 'flex flex-wrap items-center gap-x-3 gap-y-2 bg-amber-500/10 px-3 py-2 text-sm text-amber-900 dark:text-amber-200'
+          ? 'bg-warning/10 text-warning-text flex flex-wrap items-center gap-x-3 gap-y-2 px-3 py-2 text-sm'
           : 'bg-muted/50 text-muted-foreground flex flex-wrap items-center gap-x-3 gap-y-2 px-3 py-2 text-sm'
       }
     >

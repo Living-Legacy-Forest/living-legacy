@@ -42,6 +42,7 @@ import { PageActions } from '@/components/shell/page-actions';
 import { useMediaItem } from '@/components/media/image-field';
 import { cn } from '@/lib/utils';
 import { Badge } from '@/components/ui/badge';
+import { StatusBadge } from '@/components/status-badge';
 import { Button } from '@/components/ui/button';
 import {
   Empty,
@@ -570,12 +571,7 @@ function LocationSheet({
           <>
             <SheetHeader className="gap-2 pr-12">
               <div className="flex items-center gap-1.5">
-                <Badge
-                  variant={item.status === 'published' ? 'secondary' : 'outline'}
-                  className="capitalize"
-                >
-                  {item.status}
-                </Badge>
+                <StatusBadge kind={item.status} />
                 <Badge variant="outline">{locationStageLabels[item.stage]}</Badge>
               </div>
               <SheetTitle className="text-lg">{item.name}</SheetTitle>

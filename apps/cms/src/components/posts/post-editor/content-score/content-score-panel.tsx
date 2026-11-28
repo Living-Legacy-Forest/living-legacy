@@ -71,9 +71,9 @@ function Heading({ id, children }: { id: string; children: string }) {
 }
 
 const BAR = {
-  within: 'bg-emerald-600 dark:bg-emerald-400',
-  below: 'bg-amber-500',
-  above: 'bg-amber-500',
+  within: 'bg-success',
+  below: 'bg-warning',
+  above: 'bg-warning',
 } as const;
 
 function Structure({ structure }: { structure: StructureCount[] }) {
@@ -82,7 +82,7 @@ function Structure({ structure }: { structure: StructureCount[] }) {
       <Heading id="score-structure">Structure</Heading>
       <ul className="grid grid-cols-2 gap-2">
         {structure.map((s) => (
-          <li key={s.key} className="bg-muted/50 min-w-0 space-y-1.5 rounded-md px-2.5 py-2">
+          <li key={s.key} className="bg-muted/50 min-w-0 space-y-1.5 rounded-lg px-2.5 py-2">
             <p className="flex items-baseline justify-between gap-2">
               <span className="text-muted-foreground truncate text-xs">{s.label}</span>
               <span className="text-sm font-semibold tabular-nums">
@@ -115,8 +115,8 @@ function Structure({ structure }: { structure: StructureCount[] }) {
 }
 
 const CHIP = {
-  met: 'bg-emerald-500/10 text-emerald-700 dark:text-emerald-400',
-  partial: 'bg-amber-500/10 text-amber-700 dark:text-amber-400',
+  met: 'bg-success/10 text-success-text',
+  partial: 'bg-warning/10 text-warning-text',
   unused: 'bg-destructive/10 text-destructive',
 } as const;
 

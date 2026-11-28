@@ -369,7 +369,7 @@ export function AnnouncementsPage({
   const newButton = (
     <Button size="sm" onClick={() => view.open({ kind: 'new' })}>
       <PlusIcon aria-hidden data-icon="inline-start" />
-      New announcement
+      Add announcement
     </Button>
   );
 
@@ -450,9 +450,9 @@ export function AnnouncementsPage({
           <Button
             variant="ghost"
             size="icon-sm"
-            aria-label={paneOpen ? 'Expand list' : 'Show editor'}
-            aria-pressed={!paneOpen}
-            title={paneOpen ? 'Expand list' : 'Show editor'}
+            aria-label={paneOpen ? 'Hide the editor' : 'Show the editor'}
+            aria-pressed={paneOpen}
+            title={paneOpen ? 'Hide the editor' : 'Show the editor'}
             className="max-lg:hidden"
             onClick={() => setPaneOpen(!paneOpen)}
           >
@@ -470,7 +470,7 @@ export function AnnouncementsPage({
                     onToggle: selection.selecting ? selection.clear : selection.startEditing,
                   }
             }
-            add={{ label: 'New announcement', onClick: () => view.open({ kind: 'new' }) }}
+            add={{ label: 'Add announcement', onClick: () => view.open({ kind: 'new' }) }}
           />
         )}
       </div>
@@ -682,7 +682,7 @@ function AnnouncementCardBody({
         {clashesWith.length > 0 && (
           <TriangleAlertIcon
             aria-label={`Overlaps with ${clashesWith.map((c) => c.title).join(', ')}`}
-            className="size-3.5 shrink-0 text-amber-600"
+            className="text-warning-text size-3.5 shrink-0"
           />
         )}
       </span>
@@ -717,7 +717,7 @@ function AnnouncementSummary({
         {clashesWith.length > 0 && (
           <TriangleAlertIcon
             aria-label={`Overlaps with ${clashesWith.map((c) => c.title).join(', ')}`}
-            className="size-3.5 shrink-0 text-amber-600"
+            className="text-warning-text size-3.5 shrink-0"
           />
         )}
         <StatusBadge status={status} />
@@ -851,7 +851,7 @@ function AnnouncementForm({
                   <span
                     className={cn(
                       'text-muted-foreground text-xs tabular-nums',
-                      values.message.length > mobileLimit && 'text-amber-600'
+                      values.message.length > mobileLimit && 'text-warning-text'
                     )}
                   >
                     {values.message.length}/{mobileLimit}
@@ -952,8 +952,11 @@ function AnnouncementForm({
               </div>
             </FormSection>
             {overlaps.length > 0 && (
-              <div className="flex gap-2 rounded-md border border-amber-500/40 bg-amber-500/10 px-3 py-2 text-xs max-md:mt-3">
-                <TriangleAlertIcon aria-hidden className="mt-px size-3.5 shrink-0 text-amber-600" />
+              <div className="bg-warning/10 flex gap-2 rounded-lg px-3 py-2 text-xs max-md:mt-3">
+                <TriangleAlertIcon
+                  aria-hidden
+                  className="text-warning-text mt-px size-3.5 shrink-0"
+                />
                 <p>
                   Overlaps with {overlaps.map((o) => o.title).join(', ')}. While both are live, the
                   one that went live most recently is shown.

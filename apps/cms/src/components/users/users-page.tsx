@@ -58,6 +58,7 @@ import { formatRelative } from '@/lib/format';
 import { reportInvalid } from '@/lib/form-validation';
 import { useAction } from '@/lib/use-action';
 import { cn } from '@/lib/utils';
+import { FOCUS_RING, SELECTED_RING } from '@/lib/ui-states';
 import {
   type TeamData,
   changeUserRole,
@@ -105,7 +106,9 @@ function Section({
   return (
     <section className="space-y-2.5 max-md:space-y-1.5">
       <div className={cn('flex items-baseline gap-2', groupHeadingClass)}>
-        <h2 className="text-sm font-medium max-md:text-[0.8125rem] max-md:font-normal">{title}</h2>
+        <h2 className="text-sm font-semibold max-md:text-[0.8125rem] max-md:font-normal">
+          {title}
+        </h2>
         <span className="text-muted-foreground text-xs tabular-nums max-md:text-[0.8125rem]">
           {count}
         </span>
@@ -632,10 +635,9 @@ function InviteDialog({
                     setRole(item.value as Role);
                   }}
                   className={cn(
-                    'focus-visible:ring-ring flex flex-col justify-start rounded-lg border p-3 text-left transition-colors outline-none focus-visible:ring-2',
-                    selected
-                      ? 'border-foreground/20 bg-muted'
-                      : 'hover:bg-muted/40 border-transparent'
+                    'flex flex-col justify-start rounded-lg p-3 text-left transition-colors',
+                    FOCUS_RING,
+                    selected ? cn('bg-muted', SELECTED_RING) : 'hover:bg-muted/40'
                   )}
                 >
                   <div className="text-sm font-medium">{item.label}</div>

@@ -97,7 +97,7 @@ export function HelpMenu() {
             )}
 
             {latest.length > 0 && (
-              <div className="mt-1 border-t pt-2">
+              <div className="mt-1 pt-2">
                 <p className="text-muted-foreground px-2 pb-1 text-xs font-medium">
                   What&apos;s new
                 </p>

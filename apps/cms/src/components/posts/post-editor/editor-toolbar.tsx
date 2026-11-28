@@ -122,7 +122,8 @@ export function EditorToolbar({
         <Button
           variant="ghost"
           size="icon-sm"
-          aria-label={showProperties ? 'Hide properties panel' : 'Show properties panel'}
+          aria-label={showProperties ? 'Hide the properties panel' : 'Show the properties panel'}
+          aria-pressed={showProperties}
           onClick={onToggleProperties}
           // Below lg the properties sit under the editor, where hiding them helps no one.
           className="max-lg:hidden"

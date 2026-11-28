@@ -118,7 +118,6 @@ function EntryRow({
   return (
     <motion.li
       layout="position"
-      className="border-border/60 border-b last:border-b-0"
       initial={reduce ? { opacity: 0 } : { opacity: 0, filter: blurSubtle }}
       animate={{ opacity: 1, filter: none }}
       exit={

@@ -685,7 +685,7 @@ function FaqSection({
               {faq.tags.length > 0 && (
                 <span className="flex flex-wrap gap-1">
                   {faq.tags.map((tag) => (
-                    <Badge key={tag} variant="outline" className="font-mono text-[11px]">
+                    <Badge key={tag} variant="outline" className="font-mono text-[0.6875rem]">
                       {tag}
                     </Badge>
                   ))}
@@ -747,7 +747,7 @@ function FaqSummary({ faq }: { faq: Faq }) {
       {faq.tags.length > 0 && (
         <span className="mt-1 flex flex-wrap gap-1">
           {faq.tags.map((tag) => (
-            <Badge key={tag} variant="outline" className="font-mono text-[11px]">
+            <Badge key={tag} variant="outline" className="font-mono text-[0.6875rem]">
               {tag}
             </Badge>
           ))}

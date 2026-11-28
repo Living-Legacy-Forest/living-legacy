@@ -236,7 +236,7 @@ function GuestsCard({ data, onOpenGuests }: { data: Dashboard; onOpenGuests: () 
         </CardDescription>
       </CardHeader>
       <CardContent>
-        <dl className="divide-y text-sm">
+        <dl className="text-sm max-md:divide-y">
           {rows.map((row) => (
             <div key={row.label} className="grid grid-cols-[6rem_1fr] gap-x-4 py-2.5">
               <dt className="text-muted-foreground">{row.label}</dt>

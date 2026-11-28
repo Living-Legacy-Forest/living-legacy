@@ -27,6 +27,7 @@ import { focalStyle } from '@/components/media/media-file';
 import { Spinner } from '@/components/ui/spinner';
 import { notify } from '@/lib/notify';
 import { cn } from '@/lib/utils';
+import { DROP_TARGET, FOCUS_RING, SELECTED_RING } from '@/lib/ui-states';
 import { useLoadMore } from '@/hooks/use-load-more';
 import { SuggestButton } from '@/components/ai/suggest-button';
 import { suggestAltText } from '@/server/ai';
@@ -446,7 +447,7 @@ export function MediaPicker({
             {...dropProps}
             className={cn(
               '-mx-1 min-h-48 flex-1 overflow-y-auto rounded-md px-1 py-1 transition-colors',
-              over && 'bg-accent/50 ring-ring ring-2'
+              over && DROP_TARGET
             )}
           >
             {items === null ? (
@@ -473,8 +474,9 @@ export function MediaPicker({
                     onClick={() => choose(m.id)}
                     onDoubleClick={() => onSelect?.(m)}
                     className={cn(
-                      'focus-visible:ring-ring relative aspect-square overflow-hidden rounded-md border outline-none focus-visible:ring-2',
-                      chosen.includes(m.id) && 'ring-foreground ring-2 ring-offset-1'
+                      'bg-muted relative aspect-square overflow-hidden rounded-md',
+                      FOCUS_RING,
+                      chosen.includes(m.id) && SELECTED_RING
                     )}
                   >
                     <img

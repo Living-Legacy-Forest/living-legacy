@@ -12,7 +12,7 @@ export function RecoveryNotice({ recovery }: { recovery: PostEditorState['recove
   return (
     <div
       role="status"
-      className="flex flex-wrap items-center gap-x-3 gap-y-2 bg-amber-500/10 px-3 py-2 text-sm text-amber-900 dark:text-amber-200"
+      className="bg-warning/10 text-warning-text flex flex-wrap items-center gap-x-3 gap-y-2 px-3 py-2 text-sm"
     >
       <p className="min-w-0 flex-1">
         This browser kept changes you had not saved, from {formatRelative(recovery.savedAt)}.

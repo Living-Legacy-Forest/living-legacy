@@ -56,6 +56,7 @@ import { mediaSrc } from '@/lib/upload-media';
 import { MEDIA_TRASH_DAYS, daysLeftInTrash, isDocumentMime, mediaSorts } from '@ll/content';
 import { useAction } from '@/lib/use-action';
 import { cn } from '@/lib/utils';
+import { DROP_TARGET, FOCUS_RING, SELECTED_RING } from '@/lib/ui-states';
 import {
   type MediaItem,
   type MediaListData,
@@ -392,7 +393,7 @@ export function MediaPage({
           </EmptyContent>
         </Empty>
       ) : libraryEmpty ? (
-        <Empty className={cn('flex-1 rounded-lg', dragOver && 'bg-accent/40 ring-ring ring-2')}>
+        <Empty className={cn('flex-1 rounded-lg', dragOver && DROP_TARGET)}>
           <EmptyHeader>
             <EmptyMedia variant="icon">
               <MediaIcon aria-hidden />
@@ -416,7 +417,7 @@ export function MediaPage({
             'flex min-h-0 flex-1 flex-col overflow-hidden rounded-lg',
             // Phones: no frame. The grid keeps the page's side gutters; the list runs edge to edge.
             'max-md:flex-none max-md:overflow-visible max-md:rounded-none',
-            dragOver && 'ring-ring ring-2'
+            dragOver && DROP_TARGET
           )}
         >
           <SelectionBar
@@ -508,7 +509,7 @@ export function MediaPage({
                   ))}
                 </div>
               ) : (
-                <ul className="bg-muted/50 rounded-md max-md:rounded-none">
+                <ul className="bg-muted/50 rounded-lg max-md:rounded-none">
                   {items.map((m, index) => (
                     <MediaRow
                       key={m.id}
@@ -598,7 +599,7 @@ function MediaTile({
       ref={anchor}
       className={cn(
         'group bg-muted relative aspect-square overflow-hidden rounded-md',
-        checked && 'ring-ring/40 ring-1',
+        checked && SELECTED_RING,
         // While its context menu is open, so it is clear which file the menu acts on.
         'group-data-popup-open/row-menu:ring-ring/40 group-data-popup-open/row-menu:ring-1'
       )}
@@ -610,11 +611,7 @@ function MediaTile({
         onToggle={onToggle}
         className="bg-background/80 absolute top-1.5 left-1.5 z-10 backdrop-blur-sm"
       />
-      <button
-        type="button"
-        onClick={onOpen}
-        className="focus-visible:ring-ring/40 absolute inset-0 outline-none focus-visible:ring-1"
-      >
+      <button type="button" onClick={onOpen} className={cn('absolute inset-0', FOCUS_RING)}>
         {isDocumentMime(item.mime) ? (
           <DocumentThumb
             item={item}

@@ -38,6 +38,7 @@ import {
   InputGroupInput,
   InputGroupText,
 } from '@/components/ui/input-group';
+import { FIELD_LABEL } from '@/components/form-cells';
 import { Label } from '@/components/ui/label';
 import { Spinner } from '@/components/ui/spinner';
 import { Textarea } from '@/components/ui/textarea';
@@ -483,7 +484,7 @@ export function MediaDetail({ detail, canDelete }: { detail: Detail; canDelete: 
                 />
               </div>
               {replacement && (
-                <div className="bg-muted/50 grid gap-3 rounded-md p-3">
+                <div className="bg-muted/50 grid gap-3 rounded-lg p-3">
                   <p className="text-ui">
                     Replace with <span className="font-medium break-all">{replacement.name}</span>?
                     Everything using this {isDocument ? 'document' : 'image'} shows the new file.
@@ -513,7 +514,9 @@ export function MediaDetail({ detail, canDelete }: { detail: Detail; canDelete: 
 
           <div className="grid content-start gap-6">
             <div className="grid gap-2">
-              <Label htmlFor="m-name">Name</Label>
+              <Label htmlFor="m-name" className={FIELD_LABEL}>
+                Name
+              </Label>
               <InputGroup>
                 <InputGroupInput
                   id="m-name"
@@ -539,7 +542,9 @@ export function MediaDetail({ detail, canDelete }: { detail: Detail; canDelete: 
             {!isDocument && (
               <div className="grid gap-2">
                 <div className="flex items-center justify-between gap-2">
-                  <Label htmlFor="m-alt">Alt text</Label>
+                  <Label htmlFor="m-alt" className={FIELD_LABEL}>
+                    Alt text
+                  </Label>
                   <SuggestButton
                     value={alt}
                     request={() =>
@@ -556,7 +561,7 @@ export function MediaDetail({ detail, canDelete }: { detail: Detail; canDelete: 
                   placeholder="What the image shows"
                 />
                 {alt.trim() === '' && (
-                  <p className="text-xs text-amber-600 dark:text-amber-400">
+                  <p className="text-warning-text text-xs">
                     Screen readers and search engines skip an image without alt text.
                   </p>
                 )}
@@ -564,7 +569,9 @@ export function MediaDetail({ detail, canDelete }: { detail: Detail; canDelete: 
             )}
             <div className="grid gap-2">
               <div className="flex items-center justify-between gap-2">
-                <Label htmlFor="m-caption">Caption</Label>
+                <Label htmlFor="m-caption" className={FIELD_LABEL}>
+                  Caption
+                </Label>
                 {!isDocument && (
                   <SuggestButton
                     value={caption}

@@ -184,12 +184,7 @@ function Change({ change, days, known }: { change: number | null; days: number; 
   }
   const up = change >= 0;
   return (
-    <p
-      className={cn(
-        'text-sm tabular-nums',
-        up ? 'text-emerald-600 dark:text-emerald-400' : 'text-destructive'
-      )}
-    >
+    <p className={cn('text-sm tabular-nums', up ? 'text-success-text' : 'text-destructive')}>
       <RollingNumber value={change} decimals={1} signed />% {against}
     </p>
   );

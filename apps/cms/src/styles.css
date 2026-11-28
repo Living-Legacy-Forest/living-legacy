@@ -168,6 +168,12 @@
   --color-accent: var(--accent);
   --color-accent-foreground: var(--accent-foreground);
   --color-destructive: var(--destructive);
+  --color-success: var(--success);
+  --color-success-text: var(--success-text);
+  --color-warning: var(--warning);
+  --color-warning-text: var(--warning-text);
+  --color-info: var(--info);
+  --color-scheduled: var(--scheduled);
   --color-border: var(--border);
   --color-input: var(--input);
   --color-ring: var(--ring);
@@ -227,6 +233,16 @@
   --accent: oklch(0.9461 0 0);
   --accent-foreground: oklch(0.2435 0 0);
   --destructive: oklch(0.577 0.245 27.325);
+  /* Status: a dot or wash (success, warning, info) and a shade of each that reads as text. */
+  --success: oklch(0.696 0.17 162.48);
+  --success-text: oklch(0.508 0.118 165.612);
+  --warning: oklch(0.769 0.188 70.08);
+  --warning-text: oklch(0.555 0.163 48.998);
+  --info: oklch(0.685 0.169 237.323);
+  --scheduled: oklch(0.585 0.233 277.117);
+  /* The fill of every text field, select and picker. A panel that is grey itself sets it to
+     --background, so its fields still read against it. */
+  --field-bg: color-mix(in oklab, var(--muted) 60%, transparent);
   --border: oklch(calc(0.9215 - 0.14 * var(--contrast, 0)) 0 0);
   /* The outline of inputs, selects and outlined toggles. It has to read against the page (0.991),
      so it is a clear step darker than --border, which only needs to divide surfaces. */
@@ -289,6 +305,13 @@
   /* Used as text and as a 10 to 20% wash behind it, so it has to stay light on a
      dark surface; the theme's deep maroon read as a smudge. */
   --destructive: oklch(0.704 0.191 22.216);
+  --success: oklch(0.696 0.17 162.48);
+  --success-text: oklch(0.765 0.177 163.223);
+  --warning: oklch(0.769 0.188 70.08);
+  --warning-text: oklch(0.828 0.189 84.429);
+  --info: oklch(0.685 0.169 237.323);
+  --scheduled: oklch(0.585 0.233 277.117);
+  --field-bg: color-mix(in oklab, var(--foreground) 6%, transparent);
   --border: oklch(calc(0.2609 + 0.2 * var(--contrast, 0)) 0 0);
   --input: oklch(calc(0.2603 + 0.22 * var(--contrast, 0)) 0 0);
   --ring: oklch(0.5568 0.1355 155.812);
@@ -366,6 +389,20 @@
   --tint-c: 0.12;
   --tint-l: 0.53;
   --tint-l-dark: 0.75;
+}
+
+/* A grey panel (bg-muted/50) fills its fields white, so they still read against it: list panes,
+   the event and location editors, framed Settings groups and the like. On phones a panel that
+   turns into a plain iOS group (max-md:bg-…) keeps the usual fill. */
+[class~='bg-muted/50'],
+[class~='md:bg-muted/50'] {
+  --field-bg: var(--background);
+}
+@media (width < 48rem) {
+  [class~='bg-muted/50'][class*='max-md:bg-'],
+  [class~='md:bg-muted/50'] {
+    --field-bg: inherit;
+  }
 }
 
 :root[data-colour]:not([data-colour='neutral']) {

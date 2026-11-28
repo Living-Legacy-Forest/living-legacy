@@ -398,10 +398,10 @@ export function PaneColumn({
       className={cn('hidden min-h-0 flex-col lg:flex lg:pl-3', className)}
     >
       {/* A soft card, as on the posts page, with no line round it. Fields inside go white so they
-          still read against the grey. */}
+          still read against the grey (styles.css, --field-bg). */}
       <div
         data-slot="pane-card"
-        className="bg-muted/50 **:data-[slot=input]:bg-background **:data-[slot=input-group]:bg-background **:data-[slot=select-trigger]:bg-background **:data-[slot=textarea]:bg-background flex min-h-0 flex-1 flex-col overflow-hidden rounded-xl"
+        className="bg-muted/50 flex min-h-0 flex-1 flex-col overflow-hidden rounded-xl"
       >
         {children}
       </div>

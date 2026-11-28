@@ -129,7 +129,7 @@ export function TrackingSection({ saved }: { saved: TrackingIds }) {
         {groups.map((group) => (
           <section key={group.title} className="space-y-2.5 max-md:space-y-1.5">
             <div className={cn('flex items-center gap-1.5', groupHeadingClass)}>
-              <h2 className="max-md:text-ui text-sm font-medium max-md:font-normal">
+              <h2 className="max-md:text-ui text-sm font-semibold max-md:font-normal">
                 {group.title}
               </h2>
               <InfoTip label={`Where to find the ${group.title.toLowerCase()} ids`}>

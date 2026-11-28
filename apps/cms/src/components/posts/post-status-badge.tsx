@@ -1,17 +1,8 @@
 import { formatDateTime } from '@/lib/format';
 import { useTimeZone } from '@/lib/use-time-zone';
-import { cn } from '@/lib/utils';
+import { StatusBadge, type StatusKind } from '@/components/status-badge';
 
-const styles = {
-  draft: { dot: 'bg-neutral-400', label: 'Draft' },
-  scheduled: { dot: 'bg-indigo-500', label: 'Scheduled' },
-  published: { dot: 'bg-emerald-500', label: 'Published' },
-  changes: { dot: 'bg-amber-500', label: 'Unpublished changes' },
-  review: { dot: 'bg-sky-500', label: 'In review' },
-  trash: { dot: 'bg-red-400', label: 'In trash' },
-};
-
-/** Linear-style status: a small coloured dot and a word. */
+/** A post's status, worked out from its state, in the shared status style. */
 export function PostStatusBadge({
   status,
   hasDraft = false,
@@ -35,7 +26,7 @@ export function PostStatusBadge({
   dotOnly?: boolean;
   className?: string;
 }) {
-  const key = trashed
+  const key: StatusKind = trashed
     ? 'trash'
     : inReview
       ? 'review'
@@ -46,25 +37,17 @@ export function PostStatusBadge({
         : scheduledAt
           ? 'scheduled'
           : 'draft';
-  const { dot, label } = styles[key];
   const timeZone = useTimeZone();
-  if (dotOnly) {
-    return (
-      <span title={label} className={cn('inline-flex shrink-0 items-center', className)}>
-        <span aria-hidden className={cn('size-2 rounded-full', dot)} />
-        <span className="sr-only">{label}</span>
-      </span>
-    );
-  }
   return (
-    <span
-      className={cn('text-muted-foreground inline-flex items-center gap-1.5 text-xs', className)}
-    >
-      <span aria-hidden className={cn('size-1.5 shrink-0 rounded-full', dot)} />
-      {label}
-      {key === 'scheduled' && showDate && scheduledAt && (
-        <span className="text-muted-foreground">· {formatDateTime(scheduledAt, timeZone)}</span>
-      )}
-    </span>
+    <StatusBadge
+      kind={key}
+      dotOnly={dotOnly}
+      className={className}
+      after={
+        key === 'scheduled' && showDate && scheduledAt ? (
+          <span className="text-muted-foreground">· {formatDateTime(scheduledAt, timeZone)}</span>
+        ) : null
+      }
+    />
   );
 }

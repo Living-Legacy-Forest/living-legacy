@@ -38,6 +38,7 @@ import { displayTime, formatDateTime, zoneName } from '@/lib/format';
 import { useTimeZone } from '@/lib/use-time-zone';
 import { cn } from '@/lib/utils';
 import type { CalendarData, CalendarEntry } from '@/server/calendar';
+import { EmptyNote } from '@/components/empty-note';
 
 type Filter = 'all' | 'post' | 'event';
 
@@ -46,10 +47,10 @@ const WEEKDAYS = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
 const SHOWN = 3;
 
 const STATE_DOT: Record<CalendarEntry['state'], string> = {
-  scheduled: 'bg-indigo-500',
-  published: 'bg-emerald-500',
+  scheduled: 'bg-scheduled',
+  published: 'bg-success',
   draft: 'bg-neutral-400',
-  cancelled: 'bg-red-400',
+  cancelled: 'bg-destructive',
 };
 const STATE_WORD: Record<CalendarEntry['state'], string> = {
   scheduled: 'scheduled',
@@ -581,9 +582,7 @@ export function CalendarPage({ data, now }: { data: CalendarData; now: number })
               {/* Phones: only the days with something on. */}
               <div className="md:hidden">
                 {busy.length === 0 ? (
-                  <p className="text-muted-foreground px-1 py-6 text-center text-sm">
-                    Nothing scheduled in {monthName(month)}.
-                  </p>
+                  <EmptyNote>Nothing scheduled in {monthName(month)}.</EmptyNote>
                 ) : (
                   <div className="bg-muted/50 rounded-xl">
                     <AnimatePresence initial={false} mode="popLayout">

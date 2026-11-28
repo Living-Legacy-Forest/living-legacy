@@ -163,7 +163,7 @@ export function ContentChecksPage({
 /** How many a failing check has to fix. */
 function ToFix({ total }: { total: number }) {
   return (
-    <span className="flex shrink-0 items-center gap-1 text-xs font-medium text-amber-700 tabular-nums dark:text-amber-400">
+    <span className="text-warning-text flex shrink-0 items-center gap-1 text-xs font-medium tabular-nums">
       <CircleAlertIcon aria-hidden className="size-3.5" />
       {formatInteger(total)} to fix
     </span>
@@ -247,10 +247,7 @@ function PassingList({ checks }: { checks: (typeof CHECKS)[number][] }) {
               <span className="text-ui block font-medium">{check.title}</span>
               <span className="text-muted-foreground block text-xs">{check.passing}</span>
             </span>
-            <CircleCheckIcon
-              aria-hidden
-              className="size-4 shrink-0 text-emerald-700 dark:text-emerald-400"
-            />
+            <CircleCheckIcon aria-hidden className="text-success-text size-4 shrink-0" />
           </li>
         ))}
       </ul>

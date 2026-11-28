@@ -229,8 +229,8 @@ export function RepeatField({
                     })
                   }
                   className={cn(
-                    'touch:size-11 size-9 rounded-full border text-xs font-medium transition-colors',
-                    on ? 'bg-primary text-primary-foreground border-transparent' : 'hover:bg-muted'
+                    'touch:size-11 size-9 rounded-full text-xs font-medium transition-colors',
+                    on ? 'bg-primary text-primary-foreground' : 'bg-muted/60 hover:bg-muted'
                   )}
                 >
                   {short}
@@ -310,10 +310,8 @@ export function RepeatField({
                       })
                     }
                     className={cn(
-                      'touch:min-h-11 animate-in fade-in zoom-in-95 rounded-md border px-2 py-1 text-xs tabular-nums transition-colors duration-200 motion-reduce:animate-none',
-                      d.skipped
-                        ? 'text-muted-foreground border-dashed line-through'
-                        : 'bg-muted/60 border-transparent',
+                      'touch:min-h-11 animate-in fade-in zoom-in-95 rounded-md px-2 py-1 text-xs tabular-nums transition-colors duration-200 motion-reduce:animate-none',
+                      d.skipped ? 'text-muted-foreground line-through' : 'bg-muted/60',
                       d.first && 'cursor-default'
                     )}
                   >

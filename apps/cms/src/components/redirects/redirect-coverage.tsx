@@ -6,6 +6,7 @@ import { RevealWords } from '@/components/dashboard/reveal-words';
 import { SegmentedControl } from '@/components/segmented-control';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { FIELD_LABEL } from '@/components/form-cells';
 import { Label } from '@/components/ui/label';
 import { Spinner } from '@/components/ui/spinner';
 import { Textarea } from '@/components/ui/textarea';
@@ -17,6 +18,7 @@ import { useRevealOnce } from '@/lib/use-reveal-once';
 import { type RedirectCoverage, checkRedirectCoverage } from '@/server/redirect-coverage';
 import { importRedirects } from '@/server/redirects';
 import { GlideHighlight } from '@/components/ui/glide-highlight';
+import { EmptyNote } from '@/components/empty-note';
 
 type Tab = 'missing' | 'redirected' | 'live';
 
@@ -24,7 +26,7 @@ type Tab = 'missing' | 'redirected' | 'live';
 const PAGE_SIZES = [10, 25, 50, 100] as const;
 
 const listClass =
-  'divide-y divide-border/60 overflow-hidden rounded-lg bg-muted/50 max-md:divide-(--ios-separator) max-md:overflow-hidden max-md:rounded-[10px] max-md:border-0 max-md:bg-(--ios-cell)';
+  'overflow-hidden rounded-lg bg-muted/50 max-md:divide-y max-md:divide-(--ios-separator) max-md:overflow-hidden max-md:rounded-[10px] max-md:border-0 max-md:bg-(--ios-cell)';
 
 const noun = (n: number) => `${formatInteger(n)} ${n === 1 ? 'address' : 'addresses'}`;
 
@@ -139,7 +141,9 @@ export function RedirectCoveragePage({ switcher }: { switcher?: React.ReactNode 
       </div>
 
       <div className="space-y-2">
-        <Label htmlFor="old-addresses">Old addresses</Label>
+        <Label htmlFor="old-addresses" className={FIELD_LABEL}>
+          Old addresses
+        </Label>
         <Textarea
           id="old-addresses"
           value={text}
@@ -223,9 +227,9 @@ export function RedirectCoveragePage({ switcher }: { switcher?: React.ReactNode 
               />
 
               {shown.length === 0 ? (
-                <p className="text-muted-foreground bg-muted/50 rounded-lg px-4 py-8 text-center text-sm max-md:border-0">
+                <EmptyNote boxed>
                   {tab === 'missing' ? 'Every address has a redirect or a page.' : 'None.'}
-                </p>
+                </EmptyNote>
               ) : (
                 <ul className={listClass}>
                   <GlideHighlight

@@ -122,7 +122,7 @@ export function IntegrationsPage({ keys, origin }: { keys: ApiKeyRow[]; origin: 
 
       <section className="space-y-2.5 max-md:space-y-1.5">
         <div className={cn('flex items-baseline gap-2', groupHeadingClass)}>
-          <h2 className="text-sm font-medium max-md:text-[0.8125rem] max-md:font-normal">
+          <h2 className="text-sm font-semibold max-md:text-[0.8125rem] max-md:font-normal">
             Active API keys
           </h2>
           {active.length > 0 && (
@@ -595,7 +595,7 @@ function ConnectGuide({ origin }: { origin: string }) {
 
 function Abilities() {
   return (
-    <div className="space-y-2 border-t pt-4">
+    <div className="space-y-2 pt-4">
       <h3 className="text-sm font-medium">What it can do</h3>
       <ul className="space-y-1.5">
         {abilities.map((a) => (
@@ -644,7 +644,7 @@ const postFields = [
 
 function ApiReference() {
   return (
-    <div className="space-y-3 border-t pt-4">
+    <div className="space-y-3 pt-4">
       <ul className="space-y-1.5 font-mono text-xs">
         {endpoints.map((e) => (
           <li key={e.method + e.path} className="flex items-baseline gap-2">

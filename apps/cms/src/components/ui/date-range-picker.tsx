@@ -1074,7 +1074,7 @@ function DateRangePicker({
         disabled={!today}
         inert={open || undefined}
         onClick={openPanel}
-        className="focus-visible:ring-ring/50 touch:h-9 touch:after:absolute touch:after:inset-x-0 touch:after:-inset-y-1 relative z-1 flex h-8 w-full cursor-pointer items-center gap-2 rounded-lg px-2.5 text-left whitespace-nowrap outline-none [-webkit-tap-highlight-color:transparent] focus-visible:ring-3 disabled:cursor-default"
+        className="focus-visible:ring-ring/15 touch:h-9 touch:after:absolute touch:after:inset-x-0 touch:after:-inset-y-1 relative z-1 flex h-8 w-full cursor-pointer items-center gap-2 rounded-lg px-2.5 text-left whitespace-nowrap outline-none [-webkit-tap-highlight-color:transparent] focus-visible:ring-1 disabled:cursor-default"
       >
         <motion.span
           className="text-muted-foreground grid shrink-0 place-items-center"
@@ -1124,7 +1124,7 @@ function DateRangePicker({
       {/* One material from trigger to panel. The border is an overlay, so it never changes a measurement. */}
       <motion.div
         className={cn(
-          'bg-muted/60 dark:bg-foreground/6 absolute top-0 left-0 z-0 overflow-clip transition-[box-shadow,background-color] duration-150',
+          'absolute top-0 left-0 z-0 overflow-clip bg-(--field-bg) transition-[box-shadow,background-color] duration-150',
           'after:pointer-events-none after:absolute after:inset-0 after:rounded-[inherit] after:border after:border-transparent after:transition-colors',
           '[@media(hover:hover)]:not-group-data-open/drp:group-hover/drp:bg-muted dark:[@media(hover:hover)]:not-group-data-open/drp:group-hover/drp:bg-input/50',
           'group-data-open/drp:bg-popover dark:group-data-open/drp:bg-popover group-data-open/drp:after:border-border group-data-open/drp:z-2 group-data-open/drp:shadow-lg'

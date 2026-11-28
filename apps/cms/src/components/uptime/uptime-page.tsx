@@ -12,6 +12,7 @@ import { useRevealOnce } from '@/lib/use-reveal-once';
 import { useTimeZone } from '@/lib/use-time-zone';
 import { cn } from '@/lib/utils';
 import type { MonitorState, UptimeData, UptimeIncident, UptimeMonitor } from '@/server/uptime';
+import { EmptyNote } from '@/components/empty-note';
 
 const TONE: Record<MonitorState, StatusTone> = {
   up: 'green',
@@ -78,7 +79,7 @@ function DailyBar({
               title={`${sameDate(dayFormat.format(date))}: ${seconds === 0 ? 'no downtime' : downtime(seconds)}`}
               className={cn(
                 'min-w-0 flex-1 rounded-[2px]',
-                seconds === 0 ? 'bg-emerald-500' : seconds < 1800 ? 'bg-amber-500' : 'bg-red-500'
+                seconds === 0 ? 'bg-success' : seconds < 1800 ? 'bg-warning' : 'bg-destructive'
               )}
             />
           );
@@ -132,7 +133,7 @@ function IncidentList({ incidents, timeZone }: { incidents: UptimeIncident[]; ti
   const shown = incidents.slice(from, from + pageSize);
   return (
     <>
-      <ul className="divide-y">
+      <ul className="max-md:divide-y">
         {shown.map((i) => (
           <li key={i.id} className="space-y-0.5 py-3">
             <div className="flex items-center justify-between gap-3">
@@ -299,9 +300,9 @@ export function UptimePage({ data }: { data: UptimeData }) {
         </CardHeader>
         <CardContent>
           {monitors.length === 0 ? (
-            <p className="text-muted-foreground py-6 text-center text-sm">No monitors to show.</p>
+            <EmptyNote>No monitors to show.</EmptyNote>
           ) : (
-            <ul className="divide-y">
+            <ul className="max-md:divide-y">
               {monitors.map((m) => (
                 <MonitorRow key={m.id} monitor={m} anchor={fetchedAt} />
               ))}
@@ -317,9 +318,9 @@ export function UptimePage({ data }: { data: UptimeData }) {
         </CardHeader>
         <CardContent>
           {!data.connected || data.incidents.length === 0 ? (
-            <p className="text-muted-foreground py-6 text-center text-sm">
+            <EmptyNote>
               {data.connected ? 'No incidents in the last 30 days.' : 'No incidents to show.'}
-            </p>
+            </EmptyNote>
           ) : (
             <IncidentList incidents={data.incidents} timeZone={timeZone} />
           )}

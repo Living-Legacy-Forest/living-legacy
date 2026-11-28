@@ -568,9 +568,9 @@ export function PostsList({
             <Button
               variant="ghost"
               size="icon-sm"
-              aria-label={previewOpen ? 'Expand list' : 'Show preview'}
+              aria-label={previewOpen ? 'Hide the preview' : 'Show the preview'}
               aria-pressed={previewOpen}
-              title={previewOpen ? 'Expand list' : 'Show preview'}
+              title={previewOpen ? 'Hide the preview' : 'Show the preview'}
               className="text-muted-foreground hover:text-foreground aria-pressed:bg-muted aria-pressed:text-foreground max-lg:hidden"
               onClick={() => setPreview(!previewOpen)}
             >
@@ -1015,7 +1015,7 @@ function PostListItem({
               )}
             </span>
             {gaps.length > 0 && (
-              <span className="mt-0.5 flex items-center gap-1 text-xs text-amber-700 dark:text-amber-400">
+              <span className="text-warning-text mt-0.5 flex items-center gap-1 text-xs">
                 <CircleAlertIcon aria-hidden className="size-3 shrink-0" />
                 <span className="truncate">No {gaps.join(' or ')}</span>
               </span>
@@ -1043,10 +1043,7 @@ function PostListItem({
           {row.title || 'Untitled'}
         </span>
         {has('warnings') && gaps.length > 0 && (
-          <span
-            title={`No ${gaps.join(' or ')}`}
-            className="shrink-0 text-amber-700 dark:text-amber-400"
-          >
+          <span title={`No ${gaps.join(' or ')}`} className="text-warning-text shrink-0">
             <CircleAlertIcon aria-hidden className="size-3.5" />
             <span className="sr-only">No {gaps.join(' or ')}</span>
           </span>

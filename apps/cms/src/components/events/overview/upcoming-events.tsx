@@ -77,7 +77,7 @@ export function UpcomingEvents({ events, now }: { events: Upcoming[]; now: numbe
             </EmptyHeader>
           </Empty>
         ) : (
-          <ul className="divide-y">
+          <ul className="max-md:divide-y">
             {events.slice(0, SHOWN).map((event) => (
               <UpcomingRow key={event.id} event={event} now={now} />
             ))}

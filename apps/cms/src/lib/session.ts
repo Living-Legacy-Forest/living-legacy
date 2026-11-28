@@ -1,8 +1,9 @@
-import { type Permission, can } from '@ll/content';
+import { type Permission, can, parseBootstrapEmails } from '@ll/content';
 import { createMiddleware, createServerFn } from '@tanstack/react-start';
 import { getRequest } from '@tanstack/react-start/server';
 import { env } from 'cloudflare:workers';
 import { getAuth } from './auth';
+import { isLocalHost, takeDevLoginLink } from './dev-login';
 import { type SessionUser, toSessionUser } from './session-user';
 import { readSiteSettings } from './site-settings';
 import { passkeysAllowed } from './passkeys';
@@ -90,3 +91,23 @@ export function requirePermission(permission: Permission) {
 export const getPasskeysEnabled = createServerFn({ method: 'GET' })
   .middleware([authMiddleware])
   .handler(() => passkeysOnHere());
+
+/**
+ * Local dev only: a sign-in link for the first bootstrap admin, so testing the CMS does not mean
+ * digging a link out of the terminal. Refused unless this is `vite dev` and the request is for
+ * localhost; a production build never contains it.
+ */
+export const getDevLoginLink = createServerFn({ method: 'POST' }).handler(async () => {
+  if (!import.meta.env.DEV || !isLocalHost(getRequest().url)) {
+    throw new Error('Dev sign-in is only available on localhost.');
+  }
+  const [email] = parseBootstrapEmails(env.BOOTSTRAP_ADMIN_EMAILS);
+  if (!email) throw new Error('Add an address to BOOTSTRAP_ADMIN_EMAILS in .dev.vars first.');
+  await getAuth().api.signInMagicLink({
+    body: { email, callbackURL: '/' },
+    headers: getRequest().headers,
+  });
+  const url = takeDevLoginLink(email);
+  if (!url) throw new Error('No sign-in link was made. Check the terminal for why.');
+  return { url };
+});

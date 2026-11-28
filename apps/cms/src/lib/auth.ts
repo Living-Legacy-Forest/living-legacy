@@ -16,6 +16,7 @@ import { env } from 'cloudflare:workers';
 import { and, count, eq, gt, sql } from 'drizzle-orm';
 import { logPasskeyChange } from '@/server/passkeys';
 import { getDb } from './db';
+import { parkDevLoginLink } from './dev-login';
 import { sendChangeEmailVerificationEmail, sendMagicLinkEmail } from './email';
 import { passkeysAllowed } from './passkeys';
 import { readSiteSettings } from './site-settings';
@@ -224,10 +225,12 @@ function createAuth() {
                 )
               )
             );
-          if ((recent?.n ?? 0) > 1) {
+          // Local dev has no inbox to protect, and the dev sign-in button may ask more than once a minute.
+          if (!import.meta.env.DEV && (recent?.n ?? 0) > 1) {
             console.warn('[auth] sign-in link not sent: one was already sent in the last minute');
             return;
           }
+          if (import.meta.env.DEV) parkDevLoginLink(normalised, url);
           await sendMagicLinkEmail(normalised, url);
         },
       }),

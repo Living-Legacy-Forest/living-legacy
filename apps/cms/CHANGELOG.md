@@ -1,5 +1,50 @@
 # Changelog
 
+## [1.4.0](https://github.com/Living-Legacy-Forest/living-legacy/compare/cms-v1.3.0...cms-v1.4.0) (2026-11-28)
+
+
+### Features
+
+* book events online from the website ([#292](https://github.com/Living-Legacy-Forest/living-legacy/issues/292)) ([f6ae002](https://github.com/Living-Legacy-Forest/living-legacy/commit/f6ae0029b4a78ac5a422ef70ed429aeb9bb8dd90))
+* **cms:** a banner and a polished header on the profile page ([#269](https://github.com/Living-Legacy-Forest/living-legacy/issues/269)) ([2ba4bd6](https://github.com/Living-Legacy-Forest/living-legacy/commit/2ba4bd6048656fe2d288709c0d8764cd16b1c5b7))
+* **cms:** a detent dial for grain, plus light mode polish ([#278](https://github.com/Living-Legacy-Forest/living-legacy/issues/278)) ([530015f](https://github.com/Living-Legacy-Forest/living-legacy/commit/530015f8fde7f7d353e8a03a855922db74adf016))
+* **cms:** add a localhost-only dev sign-in button ([#300](https://github.com/Living-Legacy-Forest/living-legacy/issues/300)) ([1d47bcd](https://github.com/Living-Legacy-Forest/living-legacy/commit/1d47bcda77a3483bf5dd518c148ab9ae0011d03d))
+* **cms:** add contrast, icon stroke and dark favicon, and lighten motion ([#293](https://github.com/Living-Legacy-Forest/living-legacy/issues/293)) ([ac717eb](https://github.com/Living-Legacy-Forest/living-legacy/commit/ac717ebf99ceb538965dcf6e04edd3d4dcd146a6))
+* **cms:** add soft interface sounds with a mute switch in the account menu ([#262](https://github.com/Living-Legacy-Forest/living-legacy/issues/262)) ([f2626ca](https://github.com/Living-Legacy-Forest/living-legacy/commit/f2626ca93059e465dcea88b9a33487eb22dc793e))
+* **cms:** choose a one or two column sidebar, and filter every list from Display ([#294](https://github.com/Living-Legacy-Forest/living-legacy/issues/294)) ([1ff084b](https://github.com/Living-Legacy-Forest/living-legacy/commit/1ff084b0d5c561661064340eac9d67c101d913c8))
+* **cms:** content checks for duplicate search text and redirected posts ([#266](https://github.com/Living-Legacy-Forest/living-legacy/issues/266)) ([d151a07](https://github.com/Living-Legacy-Forest/living-legacy/commit/d151a07345720818383413f859f702da342780f1))
+* **cms:** extra permissions per person and super admins ([#260](https://github.com/Living-Legacy-Forest/living-legacy/issues/260)) ([d9b738f](https://github.com/Living-Legacy-Forest/living-legacy/commit/d9b738f4f4161c2aa17650244ffd40592cec4300))
+* **cms:** give Settings its own sidebar and a page for each section ([#298](https://github.com/Living-Legacy-Forest/living-legacy/issues/298)) ([ba37235](https://github.com/Living-Legacy-Forest/living-legacy/commit/ba37235ee25f872ade1466f21641b09d4b629229))
+* **cms:** green theme with a retuned sidebar, readable reds and matching key caps ([#275](https://github.com/Living-Legacy-Forest/living-legacy/issues/275)) ([a64208f](https://github.com/Living-Legacy-Forest/living-legacy/commit/a64208f326bb5b407456063a5ba12706398a1799))
+* **cms:** let a super admin remove one entry from the activity log ([#291](https://github.com/Living-Legacy-Forest/living-legacy/issues/291)) ([7b818ff](https://github.com/Living-Legacy-Forest/living-legacy/commit/7b818ff656c5f63feb38874164ecfdc170b52ae7))
+* **cms:** media trash with a 30-day purge, backups runbook and bootstrap admin var ([#267](https://github.com/Living-Legacy-Forest/living-legacy/issues/267)) ([7fa6fa0](https://github.com/Living-Legacy-Forest/living-legacy/commit/7fa6fa029d4745bf669745496fc2e221c7da7904))
+* **cms:** more Settings controls for contact details, dates, assistant and targets ([#301](https://github.com/Living-Legacy-Forest/living-legacy/issues/301)) ([e2984ae](https://github.com/Living-Legacy-Forest/living-legacy/commit/e2984ae67404f99f922eea46e67abadaa4b24a31))
+* **cms:** new brand logos and a smoother light and dark switch ([#277](https://github.com/Living-Legacy-Forest/living-legacy/issues/277)) ([9691829](https://github.com/Living-Legacy-Forest/living-legacy/commit/96918296005fd31165f647754ab1a6af62719e6e))
+* **cms:** open Invite in a sheet from the right on wider screens ([#264](https://github.com/Living-Legacy-Forest/living-legacy/issues/264)) ([b8f11c9](https://github.com/Living-Legacy-Forest/living-legacy/commit/b8f11c97da4d1c0b1bd34c66eba8aa71ba6294f3))
+* **cms:** open pickers as bottom sheets and tick cards in grid view on phones ([#302](https://github.com/Living-Legacy-Forest/living-legacy/issues/302)) ([b438ed7](https://github.com/Living-Legacy-Forest/living-legacy/commit/b438ed725230707f7e6f8429e0925cdf03328dcf))
+* **cms:** phone screens follow iOS sizes, with pull to refresh and a landscape layout ([#283](https://github.com/Living-Legacy-Forest/living-legacy/issues/283)) ([67d447c](https://github.com/Living-Legacy-Forest/living-legacy/commit/67d447c2ba2dd06f17cd53ecc2df910984116d0a))
+* **cms:** send email through Cloudflare Email Service, with Resend as the fallback ([0da84bf](https://github.com/Living-Legacy-Forest/living-legacy/commit/0da84bf1b075eaf17d9c6c002558bc777c3c6691))
+* **cms:** send sign-in and invitation email through Cloudflare Email Service ([123a0a2](https://github.com/Living-Legacy-Forest/living-legacy/commit/123a0a245090760645460bdd611a6c1ae6091d4f))
+* **cms:** sign in with a passkey ([#281](https://github.com/Living-Legacy-Forest/living-legacy/issues/281)) ([53ea91e](https://github.com/Living-Legacy-Forest/living-legacy/commit/53ea91ea1de93c760c1d46e1172f4cb2daff2a59))
+* **cms:** tap sound for plain buttons and links outside the shared components ([#263](https://github.com/Living-Legacy-Forest/living-legacy/issues/263)) ([fae9bb8](https://github.com/Living-Legacy-Forest/living-legacy/commit/fae9bb841e52a791b654ba6920e4adc5f2673191))
+* **cms:** undo deletes, keep unsaved edits, and quieter feedback on list pages ([#285](https://github.com/Living-Legacy-Forest/living-legacy/issues/285)) ([b1338eb](https://github.com/Living-Legacy-Forest/living-legacy/commit/b1338eb0f5e648eedf949be415c72c4784bee43e))
+* **cms:** undo more deletes, recover unsaved posts, sidebar counts, remembered choices ([#286](https://github.com/Living-Legacy-Forest/living-legacy/issues/286)) ([7dd1081](https://github.com/Living-Legacy-Forest/living-legacy/commit/7dd108106643dfea36b431fd258bdacbecbf161b))
+* **cms:** your own colour and grain, a grainy sidebar and cleaner light and dark tokens ([#276](https://github.com/Living-Legacy-Forest/living-legacy/issues/276)) ([1be447d](https://github.com/Living-Legacy-Forest/living-legacy/commit/1be447df5d0d5c3a087ffa483ccf76c6cee0c3c5))
+* cookie consent banner and an Apps page for connected services ([#268](https://github.com/Living-Legacy-Forest/living-legacy/issues/268)) ([8ff7254](https://github.com/Living-Legacy-Forest/living-legacy/commit/8ff7254630d16f29d91366ed2982835a2f9a48c2))
+* location search and sharing fields, data-driven pages sitemap ([#265](https://github.com/Living-Legacy-Forest/living-legacy/issues/265)) ([794314e](https://github.com/Living-Legacy-Forest/living-legacy/commit/794314e18398357f477646e6f3744343026cc144))
+
+
+### Bug Fixes
+
+* **cms:** a white page behind every email ([#280](https://github.com/Living-Legacy-Forest/living-legacy/issues/280)) ([71264da](https://github.com/Living-Legacy-Forest/living-legacy/commit/71264daeaa39f4586605a02f25c383f609ceef56))
+* **cms:** make the UI consistent across pages ([#297](https://github.com/Living-Legacy-Forest/living-legacy/issues/297)) ([5afa073](https://github.com/Living-Legacy-Forest/living-legacy/commit/5afa0736d1003c4c6a3cd3b12ea15501fea9d218))
+* **cms:** passkey controls recover from network failures, with an animated fingerprint ([#282](https://github.com/Living-Legacy-Forest/living-legacy/issues/282)) ([8df853c](https://github.com/Living-Legacy-Forest/living-legacy/commit/8df853cc697a6799ac1626e4251a01fbfe01543e))
+* **cms:** phone sheets no longer slide sideways, and buttons, fields and menus are smaller ([#284](https://github.com/Living-Legacy-Forest/living-legacy/issues/284)) ([da9fccb](https://github.com/Living-Legacy-Forest/living-legacy/commit/da9fccb4a5522894013f46080a9b59d4a215dfe5))
+* **cms:** quieter fields and dividers, a hideable media coverage preview ([#296](https://github.com/Living-Legacy-Forest/living-legacy/issues/296)) ([ba03bc0](https://github.com/Living-Legacy-Forest/living-legacy/commit/ba03bc00aaf240c292925a91c41acf37114e0325))
+* **cms:** tidy lines, fields and the rich text editor ([#295](https://github.com/Living-Legacy-Forest/living-legacy/issues/295)) ([1850621](https://github.com/Living-Legacy-Forest/living-legacy/commit/18506216a62a19e081d86fd893f1b935925f48a2))
+* **cms:** tidy the editor toolbar gap and link popover ([#290](https://github.com/Living-Legacy-Forest/living-legacy/issues/290)) ([b4503e4](https://github.com/Living-Legacy-Forest/living-legacy/commit/b4503e498e2fc61250b842fc01cbb7706f405263))
+* **cms:** trust the Cloudflare client IP for sign-in rate limits and log skipped links ([#279](https://github.com/Living-Legacy-Forest/living-legacy/issues/279)) ([e421597](https://github.com/Living-Legacy-Forest/living-legacy/commit/e421597f34b0cacf2e50f3d48d0847fdf487ea55))
+
 ## [1.3.0](https://github.com/Living-Legacy-Forest/living-legacy/compare/cms-v1.2.0...cms-v1.3.0) (2026-11-20)
 
 

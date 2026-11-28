@@ -1,9 +1,12 @@
 import { Link, useLocation } from '@tanstack/react-router';
+import { useEffect } from 'react';
 import { ExternalLink, GiftIcon, PanelLeftIcon } from '@/components/icons';
 import { Sidebar, SidebarMenu, SidebarMenuItem } from '@/components/ui/sidebar';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import { findNavItem, footerLinks, sectionFor, sidebarSections } from '@/lib/nav';
+import { rememberAppPath } from '@/lib/last-app-path';
 import { type NavPrefs, applyNavPrefs } from '@/lib/nav-prefs';
+import { isSettingsPath } from '@/lib/settings-nav';
 import { type NavCountPath, sectionHasCount } from '@/lib/nav-counts';
 import type { SessionUser } from '@/lib/session';
 import type { ShownSidebarState, SidebarState } from '@/lib/sidebar-state';
@@ -16,6 +19,7 @@ import { NavBadge, SectionDot } from './nav-badge';
 import { useNavEditing } from './nav-editing';
 import { ShortcutsRow, ThemeRow } from './rail-tools';
 import { ColumnMenu, type NavAction, NavLinkMenu } from './sidebar-menus';
+import { SettingsSidebar } from './settings-sidebar';
 import { SingleColumnSidebar } from './single-sidebar';
 import { SidebarRow } from './sidebar-row';
 import { useNavCounts } from '@/lib/nav-counts-store';
@@ -67,6 +71,13 @@ function ColumnToggle({
 }
 
 export function AppSidebar(props: SidebarProps) {
+  const { pathname, searchStr, hash } = useLocation();
+  const inSettings = isSettingsPath(pathname);
+  // Back to app returns to the last page that was not in Settings.
+  useEffect(() => {
+    if (!inSettings) rememberAppPath(`${pathname}${searchStr}${hash ? `#${hash}` : ''}`);
+  }, [inSettings, pathname, searchStr, hash]);
+  if (inSettings) return <SettingsSidebar user={props.user} />;
   return props.layout.columns === 1 ? (
     <SingleColumnSidebar {...props} />
   ) : (

@@ -11,6 +11,7 @@ import {
 } from '@/components/ui/select';
 import { Slider } from '@/components/ui/slider';
 import { useSidebarLayout } from '@/components/shell/sidebar-layout';
+import { ColourRows } from './colour-controls';
 import { useAppearanceDraft } from '@/lib/use-appearance-draft';
 import { useThemeChoice } from '@/lib/use-theme-choice';
 import type { Theme } from '@/server/settings';
@@ -187,6 +188,7 @@ export function AppearanceSection() {
           onReset={() => change({ ...draft, iconStroke: null }, true)}
         />
       </SettingsRow>
+      <ColourRows />
     </SettingsSection>
   );
 }

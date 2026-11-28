@@ -1,10 +1,21 @@
-import type { ReactNode } from 'react';
+import { type ReactNode, createContext, useContext } from 'react';
 import { InfoTip } from '@/components/info-tip';
 import { Label } from '@/components/ui/label';
 import { cn } from '@/lib/utils';
 
 // The grouped sections and rows of the Settings and Profile pages: from md, a title and
 // description on the left with the settings beside them; iOS Settings' inset groups on phones.
+
+/**
+ * Shows one section of a page as the whole page: the other sections render nothing, and the one
+ * left takes the page's heading. The site settings use it so each section has an address of its
+ * own while the form's state stays in one place.
+ */
+const SectionFilter = createContext<string | null>(null);
+
+export function SettingsSectionFilter({ only, children }: { only: string; children: ReactNode }) {
+  return <SectionFilter value={only}>{children}</SectionFilter>;
+}
 
 export function SettingsSection({
   id,
@@ -26,6 +37,41 @@ export function SettingsSection({
   divided?: boolean;
   children: ReactNode;
 }) {
+  const only = useContext(SectionFilter);
+  if (only !== null && only !== id) return null;
+  const group = (
+    <div
+      data-slot="settings-group"
+      data-framed={framed || undefined}
+      className={cn(
+        'min-w-0 max-md:divide-y max-md:divide-(--ios-separator) max-md:overflow-hidden max-md:rounded-[10px] max-md:bg-(--ios-cell)',
+        framed
+          ? cn(
+              'md:bg-muted/50 md:overflow-hidden md:rounded-lg',
+              divided && 'md:divide-border/60 md:divide-y'
+            )
+          : 'md:space-y-6'
+      )}
+    >
+      {children}
+    </div>
+  );
+  if (only !== null) {
+    // On a page of its own the section is the page: a title and what it is for, then the settings.
+    return (
+      <section id={id} className="space-y-6 max-md:space-y-4">
+        <div className="space-y-1 max-md:px-4">
+          <h1 data-slot="page-title" className="text-xl font-semibold tracking-tight">
+            {title}
+          </h1>
+          {description && (
+            <p className="text-muted-foreground text-sm text-pretty">{description}</p>
+          )}
+        </div>
+        {group}
+      </section>
+    );
+  }
   return (
     // From md, the title and what the section is for sit in a column on the left and the
     // settings on the right, with a rule between sections. Phones keep iOS Settings' groups.
@@ -44,21 +90,7 @@ export function SettingsSection({
           </p>
         )}
       </div>
-      <div
-        data-slot="settings-group"
-        data-framed={framed || undefined}
-        className={cn(
-          'min-w-0 max-md:divide-y max-md:divide-(--ios-separator) max-md:overflow-hidden max-md:rounded-[10px] max-md:bg-(--ios-cell)',
-          framed
-            ? cn(
-                'md:bg-muted/50 md:overflow-hidden md:rounded-lg',
-                divided && 'md:divide-border/60 md:divide-y'
-              )
-            : 'md:space-y-6'
-        )}
-      >
-        {children}
-      </div>
+      {group}
     </section>
   );
 }

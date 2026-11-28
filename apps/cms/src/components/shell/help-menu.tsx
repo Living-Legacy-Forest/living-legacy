@@ -13,7 +13,6 @@ import { footerLinks } from '@/lib/nav';
 import { whatsNew } from '@/lib/whats-new';
 import { useThemeChoice } from '@/lib/use-theme-choice';
 import { cn } from '@/lib/utils';
-import { AppearancePicker } from './appearance-row';
 import { ShortcutsDialog } from './shortcuts-dialog';
 import { CurrentThemeIcon, useShowingTheme } from './theme-icon';
 import { SidebarRow } from './sidebar-row';
@@ -79,16 +78,10 @@ export function HelpMenu() {
               <CurrentThemeIcon />
               {next === 'dark' ? 'Switch to dark' : 'Switch to light'}
             </button>
-            {/* Its own popover, so the colour and grain controls open beside this menu. */}
-            <Popover>
-              <PopoverTrigger className={item}>
-                <PaletteIcon aria-hidden />
-                Appearance
-              </PopoverTrigger>
-              <PopoverContent side="right" align="end" sideOffset={10} className="w-64 gap-3 p-3">
-                <AppearancePicker />
-              </PopoverContent>
-            </Popover>
+            <Link to="/profile/appearance" className={item} onClick={() => setOpen(false)}>
+              <PaletteIcon aria-hidden />
+              Appearance
+            </Link>
             {site && (
               <a href={site.href} target="_blank" rel="noreferrer" className={item}>
                 <ExternalLink aria-hidden />

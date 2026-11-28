@@ -46,9 +46,12 @@ import { Route as AppPostsIndexRouteImport } from './routes/_app/posts/index'
 import { Route as AppPostsPostIdRouteImport } from './routes/_app/posts/$postId'
 import { Route as AppPostsNewRouteImport } from './routes/_app/posts/new'
 import { Route as AppProfileIndexRouteImport } from './routes/_app/profile/index'
+import { Route as AppProfileAppearanceRouteImport } from './routes/_app/profile/appearance'
+import { Route as AppProfileSecurityRouteImport } from './routes/_app/profile/security'
 import { Route as AppRedirectsIndexRouteImport } from './routes/_app/redirects/index'
 import { Route as AppSearchReplaceIndexRouteImport } from './routes/_app/search-replace/index'
 import { Route as AppSettingsIndexRouteImport } from './routes/_app/settings/index'
+import { Route as AppSettingsSectionRouteImport } from './routes/_app/settings/$section'
 import { Route as AppSystemIndexRouteImport } from './routes/_app/system/index'
 import { Route as AppTeamIndexRouteImport } from './routes/_app/team/index'
 import { Route as AppTestimonialsIndexRouteImport } from './routes/_app/testimonials/index'
@@ -261,6 +264,16 @@ const AppProfileIndexRoute = AppProfileIndexRouteImport.update({
   path: '/profile/',
   getParentRoute: () => AppRoute,
 } as any)
+const AppProfileAppearanceRoute = AppProfileAppearanceRouteImport.update({
+  id: '/profile/appearance',
+  path: '/profile/appearance',
+  getParentRoute: () => AppRoute,
+} as any)
+const AppProfileSecurityRoute = AppProfileSecurityRouteImport.update({
+  id: '/profile/security',
+  path: '/profile/security',
+  getParentRoute: () => AppRoute,
+} as any)
 const AppRedirectsIndexRoute = AppRedirectsIndexRouteImport.update({
   id: '/redirects/',
   path: '/redirects/',
@@ -274,6 +287,11 @@ const AppSearchReplaceIndexRoute = AppSearchReplaceIndexRouteImport.update({
 const AppSettingsIndexRoute = AppSettingsIndexRouteImport.update({
   id: '/settings/',
   path: '/settings/',
+  getParentRoute: () => AppRoute,
+} as any)
+const AppSettingsSectionRoute = AppSettingsSectionRouteImport.update({
+  id: '/settings/$section',
+  path: '/settings/$section',
   getParentRoute: () => AppRoute,
 } as any)
 const AppSystemIndexRoute = AppSystemIndexRouteImport.update({
@@ -434,6 +452,9 @@ export interface FileRoutesByFullPath {
   '/media/$mediaId': typeof AppMediaMediaIdRoute
   '/posts/$postId': typeof AppPostsPostIdRoute
   '/posts/new': typeof AppPostsNewRoute
+  '/profile/appearance': typeof AppProfileAppearanceRoute
+  '/profile/security': typeof AppProfileSecurityRoute
+  '/settings/$section': typeof AppSettingsSectionRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
   '/api/avatar/$key': typeof ApiAvatarKeyRoute
   '/api/avatars/$id': typeof ApiAvatarsIdRoute
@@ -501,6 +522,9 @@ export interface FileRoutesByTo {
   '/media/$mediaId': typeof AppMediaMediaIdRoute
   '/posts/$postId': typeof AppPostsPostIdRoute
   '/posts/new': typeof AppPostsNewRoute
+  '/profile/appearance': typeof AppProfileAppearanceRoute
+  '/profile/security': typeof AppProfileSecurityRoute
+  '/settings/$section': typeof AppSettingsSectionRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
   '/api/avatar/$key': typeof ApiAvatarKeyRoute
   '/api/avatars/$id': typeof ApiAvatarsIdRoute
@@ -571,6 +595,9 @@ export interface FileRoutesById {
   '/_app/media/$mediaId': typeof AppMediaMediaIdRoute
   '/_app/posts/$postId': typeof AppPostsPostIdRoute
   '/_app/posts/new': typeof AppPostsNewRoute
+  '/_app/profile/appearance': typeof AppProfileAppearanceRoute
+  '/_app/profile/security': typeof AppProfileSecurityRoute
+  '/_app/settings/$section': typeof AppSettingsSectionRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
   '/api/avatar/$key': typeof ApiAvatarKeyRoute
   '/api/avatars/$id': typeof ApiAvatarsIdRoute
@@ -641,6 +668,9 @@ export interface FileRouteTypes {
     | '/media/$mediaId'
     | '/posts/$postId'
     | '/posts/new'
+    | '/profile/appearance'
+    | '/profile/security'
+    | '/settings/$section'
     | '/api/auth/$'
     | '/api/avatar/$key'
     | '/api/avatars/$id'
@@ -708,6 +738,9 @@ export interface FileRouteTypes {
     | '/media/$mediaId'
     | '/posts/$postId'
     | '/posts/new'
+    | '/profile/appearance'
+    | '/profile/security'
+    | '/settings/$section'
     | '/api/auth/$'
     | '/api/avatar/$key'
     | '/api/avatars/$id'
@@ -777,6 +810,9 @@ export interface FileRouteTypes {
     | '/_app/media/$mediaId'
     | '/_app/posts/$postId'
     | '/_app/posts/new'
+    | '/_app/profile/appearance'
+    | '/_app/profile/security'
+    | '/_app/settings/$section'
     | '/api/auth/$'
     | '/api/avatar/$key'
     | '/api/avatars/$id'
@@ -1111,6 +1147,20 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppProfileIndexRouteImport
       parentRoute: typeof AppRoute
     }
+    '/_app/profile/appearance': {
+      id: '/_app/profile/appearance'
+      path: '/profile/appearance'
+      fullPath: '/profile/appearance'
+      preLoaderRoute: typeof AppProfileAppearanceRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/_app/profile/security': {
+      id: '/_app/profile/security'
+      path: '/profile/security'
+      fullPath: '/profile/security'
+      preLoaderRoute: typeof AppProfileSecurityRouteImport
+      parentRoute: typeof AppRoute
+    }
     '/_app/redirects/': {
       id: '/_app/redirects/'
       path: '/redirects'
@@ -1130,6 +1180,13 @@ declare module '@tanstack/react-router' {
       path: '/settings'
       fullPath: '/settings/'
       preLoaderRoute: typeof AppSettingsIndexRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/_app/settings/$section': {
+      id: '/_app/settings/$section'
+      path: '/settings/$section'
+      fullPath: '/settings/$section'
+      preLoaderRoute: typeof AppSettingsSectionRouteImport
       parentRoute: typeof AppRoute
     }
     '/_app/system/': {
@@ -1358,6 +1415,9 @@ interface AppRouteChildren {
   AppMediaMediaIdRoute: typeof AppMediaMediaIdRoute
   AppPostsPostIdRoute: typeof AppPostsPostIdRoute
   AppPostsNewRoute: typeof AppPostsNewRoute
+  AppProfileAppearanceRoute: typeof AppProfileAppearanceRoute
+  AppProfileSecurityRoute: typeof AppProfileSecurityRoute
+  AppSettingsSectionRoute: typeof AppSettingsSectionRoute
   AppActivityIndexRoute: typeof AppActivityIndexRoute
   AppAnnouncementsIndexRoute: typeof AppAnnouncementsIndexRoute
   AppApiKeysIndexRoute: typeof AppApiKeysIndexRoute
@@ -1400,6 +1460,9 @@ const AppRouteChildren: AppRouteChildren = {
   AppMediaMediaIdRoute: AppMediaMediaIdRoute,
   AppPostsPostIdRoute: AppPostsPostIdRoute,
   AppPostsNewRoute: AppPostsNewRoute,
+  AppProfileAppearanceRoute: AppProfileAppearanceRoute,
+  AppProfileSecurityRoute: AppProfileSecurityRoute,
+  AppSettingsSectionRoute: AppSettingsSectionRoute,
   AppActivityIndexRoute: AppActivityIndexRoute,
   AppAnnouncementsIndexRoute: AppAnnouncementsIndexRoute,
   AppApiKeysIndexRoute: AppApiKeysIndexRoute,

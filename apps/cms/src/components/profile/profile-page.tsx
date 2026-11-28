@@ -1,7 +1,7 @@
 import { useRouter } from '@tanstack/react-router';
 import { AnimatePresence, motion, useReducedMotion } from 'motion/react';
-import { useEffect, useRef, useState } from 'react';
-import { CameraIcon, MailIcon } from '@/components/icons';
+import { useRef, useState } from 'react';
+import { CameraIcon } from '@/components/icons';
 import { useImageUpload } from '@/components/media/image-crop-dialog';
 import { PageActions } from '@/components/shell/page-actions';
 import { SettingsRow, SettingsSection } from '@/components/settings/settings-section';
@@ -29,10 +29,7 @@ import {
 import { clearMyPicture, setMyAvatar } from '@/server/profile';
 import { ActivityCalendar } from '@/components/activity/activity-calendar';
 import type { ActivityDay } from '@/server/activity-log';
-import { AppearanceSection } from './appearance-section';
 import { ProfileBanner } from './profile-banner';
-import { DevicesSection } from './devices-section';
-import { PasskeysSection } from './passkeys-section';
 import { useRevealOnce } from '@/lib/use-reveal-once';
 import { RevealWords } from '@/components/dashboard/reveal-words';
 
@@ -48,15 +45,10 @@ async function uploadAvatar(file: File) {
 export function ProfilePage({
   user,
   activity,
-  justConfirmedEmail,
-  passkeys,
 }: {
   user: SessionUser;
   /** Your changes per day over the past year. */
   activity: ActivityDay[];
-  justConfirmedEmail: boolean;
-  /** Passkeys are on here (the live CMS only). */
-  passkeys: boolean;
 }) {
   const router = useRouter();
   const [name, setName] = useState(user.name);
@@ -67,16 +59,6 @@ export function ProfilePage({
   const formRef = useRef<HTMLFormElement>(null);
   const { run, pending } = useAction();
   const reduce = useReducedMotion() ?? false;
-
-  useEffect(() => {
-    if (justConfirmedEmail) {
-      notify.success({
-        id: 'email-confirmed',
-        title: 'Email confirmed',
-        description: 'Sign in with the new address from now on.',
-      });
-    }
-  }, [justConfirmedEmail]);
 
   const initials = user.name
     .split(' ')
@@ -392,88 +374,7 @@ export function ProfilePage({
             <ActivityCalendar days={activity} label="Your changes over the past year" />
           </div>
         </SettingsSection>
-        <ChangeEmail currentEmail={user.email} />
-        <AppearanceSection />
-        <DevicesSection />
-        {passkeys && <PasskeysSection />}
       </div>
     </div>
-  );
-}
-
-function ChangeEmail({ currentEmail }: { currentEmail: string }) {
-  const [editing, setEditing] = useState(false);
-  const [newEmail, setNewEmail] = useState('');
-  const [sentTo, setSentTo] = useState<string | null>(null);
-  const [pending, setPending] = useState(false);
-
-  async function send(e: React.FormEvent) {
-    e.preventDefault();
-    if (!reportInvalid(e.currentTarget)) return;
-    if (newEmail.trim().toLowerCase() === currentEmail.toLowerCase()) {
-      notify.error('Nothing to change', "That's already your email.");
-      return;
-    }
-    setPending(true);
-    const { error } = await authClient.changeEmail({
-      newEmail: newEmail.trim(),
-      callbackURL: '/profile?emailConfirmed=yes',
-    });
-    setPending(false);
-    if (error) {
-      notify.error('Could not send the link', error.message ?? 'Please try again.');
-      return;
-    }
-    setSentTo(newEmail.trim());
-    setEditing(false);
-  }
-
-  return (
-    <SettingsSection
-      id="sign-in"
-      title="Sign-in"
-      description="There is no password: you sign in with a link sent to this address."
-    >
-      <SettingsRow id="profile-email" title="Email">
-        <div className="flex items-center gap-2 max-md:justify-end">
-          <span className="text-muted-foreground text-ui flex min-w-0 items-center gap-2">
-            <MailIcon aria-hidden className="size-3.5 shrink-0" />
-            <span className="truncate">{currentEmail}</span>
-          </span>
-          {!editing && (
-            <Button type="button" variant="outline" size="sm" onClick={() => setEditing(true)}>
-              Change
-            </Button>
-          )}
-        </div>
-      </SettingsRow>
-      {editing && (
-        <form noValidate onSubmit={send} className="flex flex-wrap gap-2 max-md:px-4 max-md:py-3">
-          <Input
-            id="profile-email"
-            type="email"
-            maxLength={254}
-            required
-            placeholder="new@address.com"
-            value={newEmail}
-            onChange={(e) => setNewEmail(e.target.value)}
-            className="w-full sm:w-72"
-          />
-          <Button type="submit" disabled={pending}>
-            {pending ? <Spinner /> : null}
-            Send link
-          </Button>
-          <Button type="button" variant="ghost" onClick={() => setEditing(false)}>
-            Cancel
-          </Button>
-        </form>
-      )}
-      {sentTo && (
-        <p className="text-muted-foreground text-xs max-md:px-4 max-md:py-3">
-          We sent a confirmation link to <span className="text-foreground">{sentTo}</span>. Your
-          sign-in email changes once you click it.
-        </p>
-      )}
-    </SettingsSection>
   );
 }

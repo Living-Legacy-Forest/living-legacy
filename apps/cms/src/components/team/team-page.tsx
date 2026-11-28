@@ -304,14 +304,10 @@ export function TeamPage({ data, canWrite }: { data: TeamListData; canWrite: boo
         {canWrite && <div className="flex gap-3 max-md:hidden">{addButtons}</div>}
         {canWrite && (
           <PageActions
-            edit={
-              grid
-                ? undefined
-                : {
-                    editing: selection.selecting,
-                    onToggle: selection.selecting ? selection.clear : selection.startEditing,
-                  }
-            }
+            edit={{
+              editing: selection.selecting,
+              onToggle: selection.selecting ? selection.clear : selection.startEditing,
+            }}
             add={{ label: 'Add member', onClick: () => view.open({ kind: 'new' }) }}
             more={[{ label: 'Bulk update', onClick: () => view.open({ kind: 'bulk' }) }]}
           />
@@ -364,6 +360,16 @@ export function TeamPage({ data, canWrite }: { data: TeamListData; canWrite: boo
                 {visible.map((member) => (
                   <ListCard
                     key={member.id}
+                    select={
+                      canWrite
+                        ? {
+                            label: `Select ${member.name}`,
+                            checked: selection.isChecked(member.id),
+                            selecting: selection.selecting,
+                            onToggle: () => selection.toggle(member.id),
+                          }
+                        : undefined
+                    }
                     title={member.name}
                     image={memberImage(member)}
                     icon={<span className="text-lg font-medium">{initialsOf(member.name)}</span>}

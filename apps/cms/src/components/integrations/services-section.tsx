@@ -120,7 +120,7 @@ export function ServicesSection({
       >
         Connected services
       </h2>
-      <div className={cn(groupBoxClass, 'max-md:divide-y max-md:divide-(--ios-separator)')}>
+      <div className={cn(groupBoxClass, '')}>
         {services.map((service) => {
           const connected = service.connected(status);
           return (

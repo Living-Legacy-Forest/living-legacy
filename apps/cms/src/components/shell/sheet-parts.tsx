@@ -3,9 +3,8 @@ import { DrawerTitle } from '@/components/ui/drawer';
 // Shared by the phone sheets the shell opens (More, Activity, Account), so
 // they read as one set: a title with Done, then grouped iOS-style lists.
 
-/** Rounded white group on the sheet's grey background. */
-export const sheetGroupClass =
-  'bg-(--ios-cell-raised) divide-(--ios-separator) divide-y overflow-hidden rounded-[10px]';
+/** Rounded white group on the sheet's grey background, with no lines between its rows. */
+export const sheetGroupClass = 'bg-(--ios-cell-raised) overflow-hidden rounded-[10px]';
 
 /** One tappable row in a group: at least 44pt, body-sized text, dims while pressed. */
 export const sheetRowClass =

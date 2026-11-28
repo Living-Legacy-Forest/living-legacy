@@ -282,11 +282,7 @@ export function ProfilePage({
         </div>
 
         <form ref={formRef} noValidate onSubmit={saveProfile}>
-          <SettingsSection
-            id="profile"
-            title="Profile"
-            description="Shown next to your work across the CMS."
-          >
+          <SettingsSection id="profile" title="Profile">
             <SettingsRow id="profile-name" title="Name">
               <Input
                 id="profile-name"
@@ -311,7 +307,7 @@ export function ProfilePage({
               <SettingsRow
                 id="profile-photo-alt"
                 title="Photo description"
-                description="Read out by screen readers in place of your photo."
+                info="Read out by screen readers in place of your photo."
               >
                 <Input
                   id="profile-photo-alt"
@@ -366,7 +362,7 @@ export function ProfilePage({
         <SettingsSection
           id="activity"
           title="Your activity"
-          description="What you have changed in the CMS over the past year, a square a day."
+          description="Your changes over the past year."
           framed
         >
           {/* The heatmap pins its weekday labels over the grid in the colour it sits on. */}

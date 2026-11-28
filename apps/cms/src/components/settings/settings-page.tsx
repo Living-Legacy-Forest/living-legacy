@@ -41,6 +41,7 @@ import {
   SettingsRow,
   SettingsSection,
   SettingsSectionFilter,
+  SettingsSubheading,
 } from '@/components/settings/settings-section';
 import { ThemeTiles } from '@/components/settings/theme-tiles';
 import { MediaPicker, useMediaItem } from '@/components/media/image-field';
@@ -405,14 +406,10 @@ export function SettingsPage({
             <SettingsSection
               id="general"
               title="General"
-              description="What the site is called and how people reach you. Changes reach the website within a minute."
+              description="Changes reach the website within a minute."
               loose
             >
-              <SettingsRow
-                id="settings-site-title"
-                title="Site title"
-                description="Used in page titles, the footer and when pages are shared."
-              >
+              <SettingsRow id="settings-site-title" title="Site title">
                 <Input
                   id="settings-site-title"
                   required
@@ -421,11 +418,7 @@ export function SettingsPage({
                   className={fieldWidth}
                 />
               </SettingsRow>
-              <SettingsRow
-                id="settings-tagline"
-                title="Tagline"
-                description="Shown under the logo in the website footer."
-              >
+              <SettingsRow id="settings-tagline" title="Tagline">
                 <Input
                   id="settings-tagline"
                   value={values.tagline}
@@ -441,11 +434,7 @@ export function SettingsPage({
                 darkMediaId={values.siteIconDarkMediaId || null}
                 onDarkChange={(id) => patch({ siteIconDarkMediaId: id ?? '' })}
               />
-              <SettingsRow
-                id="settings-email"
-                title="Contact email"
-                description="Offered when a website form cannot send."
-              >
+              <SettingsRow id="settings-email" title="Contact email">
                 <Input
                   id="settings-email"
                   type="email"
@@ -456,11 +445,7 @@ export function SettingsPage({
                   className={fieldWidth}
                 />
               </SettingsRow>
-              <SettingsRow
-                id="settings-week-start"
-                title="First day of the week"
-                description="Where weeks begin in the CMS's calendars and date pickers."
-              >
+              <SettingsRow id="settings-week-start" title="Week starts on">
                 <SettingsSelect
                   id="settings-week-start"
                   items={weekStartItems}
@@ -468,11 +453,7 @@ export function SettingsPage({
                   onChange={(value) => patch({ weekStartsOn: value === '0' ? 0 : 1 })}
                 />
               </SettingsRow>
-              <SettingsRow
-                id="settings-date-format"
-                title="Date format"
-                description="How the CMS writes dates. The website keeps its own."
-              >
+              <SettingsRow id="settings-date-format" title="Date format">
                 <SettingsSelect
                   id="settings-date-format"
                   items={dateFormatItems}
@@ -480,11 +461,7 @@ export function SettingsPage({
                   onChange={(dateFormat) => patch({ dateFormat })}
                 />
               </SettingsRow>
-              <SettingsRow
-                id="settings-time-format"
-                title="Time format"
-                description="How the CMS writes the time of day."
-              >
+              <SettingsRow id="settings-time-format" title="Time format">
                 <SettingsSelect
                   id="settings-time-format"
                   items={timeFormatItems}
@@ -494,9 +471,8 @@ export function SettingsPage({
               </SettingsRow>
               <SettingsRow
                 id="settings-home-page"
-                title="Default home page"
-                description="Where the CMS opens when someone signs in."
-                info="The first time in a browser session. Anyone who can't open that page sees the dashboard."
+                title="Home page"
+                info="Where the CMS opens on sign-in. Anyone who can't open that page sees the dashboard."
               >
                 <SettingsSelect
                   id="settings-home-page"
@@ -512,13 +488,9 @@ export function SettingsPage({
             <SettingsSection
               id="business"
               title="Contact & business"
-              description="For the website footer, contact page and search results."
+              description="Shown on the footer and contact page."
             >
-              <SettingsRow
-                id="settings-phone"
-                title="Phone"
-                description="Offered when a website form cannot send."
-              >
+              <SettingsRow id="settings-phone" title="Phone">
                 <Input
                   id="settings-phone"
                   type="tel"
@@ -529,11 +501,7 @@ export function SettingsPage({
                   className={fieldWidth}
                 />
               </SettingsRow>
-              <SettingsRow
-                id="settings-after-hours-phone"
-                title="After-hours phone"
-                description="For out of hours. Shown on the contact page."
-              >
+              <SettingsRow id="settings-after-hours-phone" title="After-hours phone">
                 <Input
                   id="settings-after-hours-phone"
                   type="tel"
@@ -544,11 +512,7 @@ export function SettingsPage({
                   className={fieldWidth}
                 />
               </SettingsRow>
-              <SettingsRow
-                id="settings-media-email"
-                title="Media email"
-                description="For journalists. Shown on the contact page."
-              >
+              <SettingsRow id="settings-media-email" title="Media email">
                 <Input
                   id="settings-media-email"
                   type="email"
@@ -562,7 +526,7 @@ export function SettingsPage({
               <SettingsRow
                 id="settings-bookings-email"
                 title="Bookings email"
-                description="Where replies to booking confirmations go."
+                info="Replies to booking confirmations go here."
               >
                 <Input
                   id="settings-bookings-email"
@@ -583,26 +547,16 @@ export function SettingsPage({
                   onChange={(e) => patch({ address: e.target.value })}
                 />
               </SettingsRow>
-              <SettingsRow
-                id="settings-postal-address"
-                title="Postal address"
-                description="Only if post goes somewhere other than the address above."
-                stacked
-              >
+              <SettingsRow id="settings-postal-address" title="Postal address" stacked>
                 <Textarea
                   id="settings-postal-address"
                   rows={2}
                   value={values.postalAddress}
-                  placeholder="PO Box, suburb, state and postcode"
+                  placeholder="If different: PO Box, suburb, state and postcode"
                   onChange={(e) => patch({ postalAddress: e.target.value })}
                 />
               </SettingsRow>
-              <SettingsRow
-                id="settings-hours"
-                title="Opening hours"
-                description="Written as visitors should read it."
-                stacked
-              >
+              <SettingsRow id="settings-hours" title="Opening hours" stacked>
                 <Textarea
                   id="settings-hours"
                   rows={2}
@@ -620,24 +574,16 @@ export function SettingsPage({
                   className={fieldWidth}
                 />
               </SettingsRow>
-              <SettingsRow
-                id="settings-trading-name"
-                title="Trading name"
-                description="Only if the business trades under a different name."
-              >
+              <SettingsRow id="settings-trading-name" title="Trading name">
                 <Input
                   id="settings-trading-name"
                   value={values.tradingName}
-                  placeholder="Living Legacy"
+                  placeholder="If different"
                   onChange={(e) => patch({ tradingName: e.target.value })}
                   className={fieldWidth}
                 />
               </SettingsRow>
-              <SettingsRow
-                id="settings-abn"
-                title="ABN"
-                description="Checked and spaced for you when saved."
-              >
+              <SettingsRow id="settings-abn" title="ABN">
                 <Input
                   id="settings-abn"
                   inputMode="numeric"
@@ -648,11 +594,7 @@ export function SettingsPage({
                   className={cn(fieldWidth, 'tabular-nums')}
                 />
               </SettingsRow>
-              <SettingsRow
-                id="settings-acn"
-                title="ACN"
-                description="Checked and spaced for you when saved."
-              >
+              <SettingsRow id="settings-acn" title="ACN">
                 <Input
                   id="settings-acn"
                   inputMode="numeric"
@@ -712,12 +654,7 @@ export function SettingsPage({
             <SettingsRow
               id="settings-hide-search"
               title="Hide from search engines"
-              description={
-                values.hideFromSearch
-                  ? 'On: search engines are asked to drop every page.'
-                  : 'Asks search engines to leave every page out.'
-              }
-              info="Visitors can still open the site. Handy before a launch."
+              info="Search engines are asked to leave every page out. Visitors can still open the site. Handy before a launch."
             >
               <Switch
                 id="settings-hide-search"
@@ -728,7 +665,7 @@ export function SettingsPage({
             <SettingsRow
               id="settings-title-pattern"
               title="Page title pattern"
-              description={`${TITLE_TOKENS.page} is the page's title, ${TITLE_TOKENS.site} the site title.`}
+              info={`${TITLE_TOKENS.page} is the page's title, ${TITLE_TOKENS.site} the site title.`}
             >
               <Input
                 id="settings-title-pattern"
@@ -776,68 +713,65 @@ export function SettingsPage({
                 onChange={(seoImageMediaId) => patch({ seoImageMediaId, seoImageUrl: '' })}
               />
             </SettingsRow>
-            <SettingsRow
-              id="settings-share-image-alt"
-              title="Share image description"
-              description="What the image shows, for people who can't see it."
-            >
+            <SettingsRow id="settings-share-image-alt" title="Share image alt text">
               <Input
                 id="settings-share-image-alt"
                 maxLength={200}
                 value={values.seoImageAlt}
+                placeholder="What the image shows"
                 onChange={(e) => patch({ seoImageAlt: e.target.value })}
                 className={fieldWidth}
               />
             </SettingsRow>
-            <h2 className="text-ui pt-2 font-medium max-md:px-4">Verification</h2>
+            <SettingsSubheading>Verification</SettingsSubheading>
             <SettingsRow
               id="settings-google"
-              title="Google verification"
-              description="From Search Console."
-              info="Paste the code or the whole meta tag."
+              title="Google"
+              info="From Search Console. Paste the code or the whole meta tag."
             >
               <Input
                 id="settings-google"
                 value={values.googleVerification}
+                placeholder="Not set"
                 onChange={(e) => patch({ googleVerification: e.target.value })}
                 className={cn(fieldWidth, 'font-mono')}
               />
             </SettingsRow>
             <SettingsRow
               id="settings-bing"
-              title="Bing verification"
-              description="From Bing Webmaster Tools."
-              info="Paste the code or the whole meta tag."
+              title="Bing"
+              info="From Bing Webmaster Tools. Paste the code or the whole meta tag."
             >
               <Input
                 id="settings-bing"
                 value={values.bingVerification}
+                placeholder="Not set"
                 onChange={(e) => patch({ bingVerification: e.target.value })}
                 className={cn(fieldWidth, 'font-mono')}
               />
             </SettingsRow>
             <SettingsRow
               id="settings-facebook-verification"
-              title="Facebook verification"
-              description="From Meta Business Suite."
-              info="Paste the code or the whole meta tag."
+              title="Facebook"
+              info="From Meta Business Suite. Paste the code or the whole meta tag."
             >
               <Input
                 id="settings-facebook-verification"
                 value={values.facebookVerification}
+                placeholder="Not set"
                 onChange={(e) => patch({ facebookVerification: e.target.value })}
                 className={cn(fieldWidth, 'font-mono')}
               />
             </SettingsRow>
             <SettingsRow
               id="settings-pinterest-verification"
-              title="Pinterest verification"
-              description="From your Pinterest settings."
-              info="Paste the code or the whole meta tag."
+              title="Pinterest"
+              info="From your Pinterest settings. Paste the code or the whole meta tag."
             >
               <Input
                 id="settings-pinterest-verification"
                 value={values.pinterestVerification}
+                placeholder="Not set"
                 onChange={(e) => patch({ pinterestVerification: e.target.value })}
                 className={cn(fieldWidth, 'font-mono')}
               />
@@ -850,13 +784,8 @@ export function SettingsPage({
             description="What the content score measures blog posts against."
             loose
           >
-            <h2 className="text-ui font-medium max-md:px-4">Structure</h2>
-            <SettingsRow
-              id="settings-target-words"
-              title="Words"
-              description="How long a post should be."
-              below
-            >
+            <SettingsSubheading>Structure</SettingsSubheading>
+            <SettingsRow id="settings-target-words" title="Words" below>
               <TargetRange
                 id="settings-target-words"
                 noun="words"
@@ -865,12 +794,7 @@ export function SettingsPage({
                 onChange={(min, max) => patch({ targetWordsMin: min, targetWordsMax: max })}
               />
             </SettingsRow>
-            <SettingsRow
-              id="settings-target-headings"
-              title="Headings"
-              description="How many headings break up a post."
-              below
-            >
+            <SettingsRow id="settings-target-headings" title="Headings" below>
               <TargetRange
                 id="settings-target-headings"
                 noun="headings"
@@ -879,11 +803,7 @@ export function SettingsPage({
                 onChange={(min, max) => patch({ targetHeadingsMin: min, targetHeadingsMax: max })}
               />
             </SettingsRow>
-            <SettingsRow
-              id="settings-target-paragraphs"
-              title="Paragraphs"
-              description="The fewest a post should have."
-            >
+            <SettingsRow id="settings-target-paragraphs" title="Paragraphs" description="At least">
               <TargetInput
                 id="settings-target-paragraphs"
                 label="Fewest paragraphs"
@@ -891,12 +811,7 @@ export function SettingsPage({
                 onChange={(targetParagraphsMin) => patch({ targetParagraphsMin })}
               />
             </SettingsRow>
-            <SettingsRow
-              id="settings-target-images"
-              title="Images"
-              description="How many images a post should have."
-              below
-            >
+            <SettingsRow id="settings-target-images" title="Images" below>
               <TargetRange
                 id="settings-target-images"
                 noun="images"
@@ -905,13 +820,8 @@ export function SettingsPage({
                 onChange={(min, max) => patch({ targetImagesMin: min, targetImagesMax: max })}
               />
             </SettingsRow>
-            <h2 className="text-ui pt-2 font-medium max-md:px-4">Search listing</h2>
-            <SettingsRow
-              id="settings-target-title"
-              title="Search title"
-              description="Characters, so results don't cut it off."
-              below
-            >
+            <SettingsSubheading>Search listing</SettingsSubheading>
+            <SettingsRow id="settings-target-title" title="Search title" below>
               <TargetRange
                 id="settings-target-title"
                 noun="characters"
@@ -920,12 +830,7 @@ export function SettingsPage({
                 onChange={(min, max) => patch({ targetTitleMin: min, targetTitleMax: max })}
               />
             </SettingsRow>
-            <SettingsRow
-              id="settings-target-description"
-              title="Search description"
-              description="Characters."
-              below
-            >
+            <SettingsRow id="settings-target-description" title="Search description" below>
               <TargetRange
                 id="settings-target-description"
                 noun="characters"
@@ -939,7 +844,7 @@ export function SettingsPage({
             <SettingsRow
               id="settings-target-slug"
               title="Permalink"
-              description="The most characters."
+              description="At most, in characters"
             >
               <TargetInput
                 id="settings-target-slug"
@@ -948,11 +853,11 @@ export function SettingsPage({
                 onChange={(targetSlugMax) => patch({ targetSlugMax })}
               />
             </SettingsRow>
-            <h2 className="text-ui pt-2 font-medium max-md:px-4">Readability</h2>
+            <SettingsSubheading>Readability</SettingsSubheading>
             <SettingsRow
               id="settings-target-sentence"
               title="Sentence length"
-              description="The most words a sentence averages."
+              description="At most, in words, on average"
             >
               <TargetInput
                 id="settings-target-sentence"
@@ -964,7 +869,7 @@ export function SettingsPage({
             <SettingsRow
               id="settings-target-long-paragraph"
               title="Longest paragraph"
-              description="The most words one paragraph has."
+              description="At most, in words"
             >
               <TargetInput
                 id="settings-target-long-paragraph"
@@ -973,11 +878,11 @@ export function SettingsPage({
                 onChange={(targetParagraphWordsMax) => patch({ targetParagraphWordsMax })}
               />
             </SettingsRow>
-            <h2 className="text-ui pt-2 font-medium max-md:px-4">Keywords</h2>
+            <SettingsSubheading>Keywords</SettingsSubheading>
             <SettingsRow
               id="settings-target-keyword"
               title="Focus keyword uses"
-              description="The fewest times the focus keyword should appear in the body."
+              description="At least, in the body"
             >
               <TargetInput
                 id="settings-target-keyword"
@@ -989,7 +894,7 @@ export function SettingsPage({
             <SettingsRow
               id="settings-target-terms"
               title="Related term uses"
-              description="The fewest times each related term should appear."
+              description="At least, for each term"
             >
               <TargetInput
                 id="settings-target-terms"
@@ -1006,12 +911,8 @@ export function SettingsPage({
             description="Words the content score flags, and what to write instead."
             loose
           >
-            <h2 className="text-ui font-medium max-md:px-4">What to check</h2>
-            <SettingsRow
-              id="settings-brand-dashes"
-              title="Dashes"
-              description="Em and en dashes in a post."
-            >
+            <SettingsSubheading>What to check</SettingsSubheading>
+            <SettingsRow id="settings-brand-dashes" title="Dashes">
               <SettingsSelect
                 id="settings-brand-dashes"
                 items={flagItems}
@@ -1019,11 +920,7 @@ export function SettingsPage({
                 onChange={(next) => patch({ brandFlagDashes: next === 'flag' })}
               />
             </SettingsRow>
-            <SettingsRow
-              id="settings-brand-exclamations"
-              title="Exclamation marks"
-              description="House style uses none in information copy."
-            >
+            <SettingsRow id="settings-brand-exclamations" title="Exclamation marks">
               <SettingsSelect
                 id="settings-brand-exclamations"
                 items={flagItems}
@@ -1031,11 +928,7 @@ export function SettingsPage({
                 onChange={(next) => patch({ brandFlagExclamations: next === 'flag' })}
               />
             </SettingsRow>
-            <SettingsRow
-              id="settings-brand-alts"
-              title="Image descriptions"
-              description="Look for the words below in alt text too."
-            >
+            <SettingsRow id="settings-brand-alts" title="Alt text">
               <SettingsSelect
                 id="settings-brand-alts"
                 items={checkItems}
@@ -1043,11 +936,7 @@ export function SettingsPage({
                 onChange={(next) => patch({ brandCheckImageAlts: next === 'check' })}
               />
             </SettingsRow>
-            <SettingsRow
-              id="settings-brand-listing"
-              title="Search title and description"
-              description="Look for the words below in them too."
-            >
+            <SettingsRow id="settings-brand-listing" title="Search title and description">
               <SettingsSelect
                 id="settings-brand-listing"
                 items={checkItems}
@@ -1055,14 +944,15 @@ export function SettingsPage({
                 onChange={(next) => patch({ brandCheckSearchListing: next === 'check' })}
               />
             </SettingsRow>
-            <div className="flex items-center gap-1.5 pt-2 max-md:px-4">
-              <h2 className="text-ui font-medium">Words</h2>
+            <SettingsSubheading>
+              Words
               <InfoTip label="About the word list">
                 <p>Never use counts as critical. Check is usually wrong but sometimes fine.</p>
                 <p>The AI wording check uses this list too.</p>
               </InfoTip>
-            </div>
-            <div className="md:bg-muted/50 max-md:divide-y max-md:divide-(--ios-separator) max-md:overflow-hidden max-md:rounded-[10px] max-md:bg-(--ios-cell) md:overflow-hidden md:rounded-lg">
+            </SettingsSubheading>
+            {/* Phones: already inside the section's group, so no second panel. */}
+            <div className="md:bg-muted/50 md:overflow-hidden md:rounded-lg">
               <BrandRulesEditor
                 rules={values.brandRules}
                 onChange={(brandRules) => patch({ brandRules })}
@@ -1074,14 +964,13 @@ export function SettingsPage({
             <SettingsSection
               id="writing-assistant"
               title="Writing assistant"
-              description="Suggest buttons for search text, summaries, tags, alt text and brand fixes. They only suggest: nothing is saved until a person saves it."
+              description="AI suggestions. Nothing is saved until someone saves it."
               loose
             >
               <SettingsRow
                 id="settings-ai-enabled"
                 title="Suggest buttons"
-                description="When off, the buttons are hidden for everyone."
-                info="Nothing is sent to the AI while they are off."
+                info="When off, they are hidden for everyone and nothing is sent to the AI."
               >
                 <Switch
                   id="settings-ai-enabled"
@@ -1092,8 +981,7 @@ export function SettingsPage({
               <SettingsRow
                 id="settings-ai-limit"
                 title="Suggestions a day"
-                description="Each person's limit. It starts again at midnight in the site's time zone."
-                info="Counted each time a Suggest button is pressed. For a monthly cap on the whole bill, use the spend limit in the Anthropic Console."
+                info="Each person's limit, reset at midnight. For a monthly cap on the whole bill, use the spend limit in the Anthropic Console."
               >
                 <NumberField
                   id="settings-ai-limit"
@@ -1109,15 +997,10 @@ export function SettingsPage({
                 <SettingsRow
                   id="settings-ai-key"
                   title="Connection"
-                  description={
-                    assistantKeySet
-                      ? 'Use and cost are on the System page.'
-                      : 'No key is set, so the buttons are hidden.'
-                  }
                   info={
                     assistantKeySet
-                      ? 'The key is set on the server.'
-                      : 'An admin adds it as the ANTHROPIC_API_KEY secret on the CMS Worker.'
+                      ? 'Use and cost are on the System page.'
+                      : 'No key is set, so the buttons are hidden. An admin adds it as the ANTHROPIC_API_KEY secret on the CMS Worker.'
                   }
                 >
                   <StatusPulse
@@ -1126,22 +1009,17 @@ export function SettingsPage({
                   />
                 </SettingsRow>
               )}
-              <h2 className="text-ui pt-2 font-medium max-md:px-4">What it can suggest</h2>
+              <SettingsSubheading>What it can suggest</SettingsSubheading>
               {(
                 [
-                  ['aiSearchText', 'Search text', 'Search title, description and focus keyword.'],
-                  ['aiSummaries', 'Summaries', 'The summary shown on blog cards.'],
-                  ['aiTags', 'Tags', 'Post tags and image tags.'],
-                  ['aiImageText', 'Image text', 'Alt text and captions.'],
-                  ['aiBrandFixes', 'Brand fixes', 'Rewrites for flagged words.'],
+                  ['aiSearchText', 'Search title, description and keyword'],
+                  ['aiSummaries', 'Summaries'],
+                  ['aiTags', 'Tags'],
+                  ['aiImageText', 'Alt text and captions'],
+                  ['aiBrandFixes', 'Brand fixes'],
                 ] as const
-              ).map(([key, title, description]) => (
-                <SettingsRow
-                  key={key}
-                  id={`settings-${key}`}
-                  title={title}
-                  description={description}
-                >
+              ).map(([key, title]) => (
+                <SettingsRow key={key} id={`settings-${key}`} title={title}>
                   <Switch
                     id={`settings-${key}`}
                     checked={values[key]}
@@ -1152,7 +1030,7 @@ export function SettingsPage({
               <SettingsRow
                 id="settings-ai-instructions"
                 title="Extra instructions"
-                description="Added to every suggestion. The brand guide still wins."
+                info="Added to every suggestion. The brand guide still wins."
                 suffix={<Counter value={values.aiInstructions} limit={AI_INSTRUCTIONS_MAX} />}
                 stacked
               >
@@ -1175,7 +1053,7 @@ export function SettingsPage({
             <SettingsSection
               id="cookies"
               title="Cookies & privacy"
-              description="The website asks visitors before it loads analytics or marketing tags. These words and this lifetime reach the website within a minute or two. The tags themselves are connected on the Integrations page."
+              description="What the cookie banner says."
             >
               <SettingsRow id="settings-cookie-title" title="Banner heading">
                 <Input
@@ -1189,7 +1067,7 @@ export function SettingsPage({
               <SettingsRow
                 id="settings-cookie-message"
                 title="Banner message"
-                description="A link to the privacy policy follows it."
+                info="A link to the privacy policy follows it."
                 suffix={<Counter value={values.cookieMessage} limit={600} />}
                 stacked
               >
@@ -1203,7 +1081,7 @@ export function SettingsPage({
               <SettingsRow
                 id="settings-cookie-analytics"
                 title="Analytics cookies"
-                description="What visitors read beside the Analytics choice. Name the tools that use them."
+                info="Shown beside the Analytics choice. Name the tools that use them."
                 suffix={<Counter value={values.cookieAnalyticsText} limit={300} />}
                 stacked
               >
@@ -1217,7 +1095,7 @@ export function SettingsPage({
               <SettingsRow
                 id="settings-cookie-marketing"
                 title="Marketing cookies"
-                description="What visitors read beside the Marketing choice. Name the tools that use them."
+                info="Shown beside the Marketing choice. Name the tools that use them."
                 suffix={<Counter value={values.cookieMarketingText} limit={300} />}
                 stacked
               >
@@ -1231,7 +1109,7 @@ export function SettingsPage({
               <SettingsRow
                 id="settings-consent-months"
                 title="Ask again after"
-                description="How long a visitor's choice is kept before the banner returns. Changing it applies to choices made from now on."
+                info="How long a visitor's choice is kept before the banner returns. A change applies to choices made from now on."
               >
                 <Select
                   items={consentMonthItems}
@@ -1257,12 +1135,13 @@ export function SettingsPage({
             <SettingsSection
               id="sign-in"
               title="Sign-in & security"
-              description="Who can be invited to the CMS and how people sign in."
+              description="Who can join the CMS and how they sign in."
             >
               <SettingsRow
                 id="settings-domains"
                 title="Allowed email domains"
-                description="Invites only go to these, separated by commas. Leave empty to allow any. People already here keep access."
+                description="Separate with commas. Leave empty to allow any."
+                info="Invites only go to these. People already here keep access."
                 stacked
               >
                 <Input
@@ -1276,7 +1155,7 @@ export function SettingsPage({
               <SettingsRow
                 id="settings-google-sign-in"
                 title="Sign in with Google"
-                description="When off, everyone signs in with an email link."
+                info="When off, everyone signs in with an email link."
               >
                 <Switch
                   id="settings-google-sign-in"
@@ -1284,11 +1163,7 @@ export function SettingsPage({
                   onCheckedChange={(checked) => patch({ googleSignIn: checked })}
                 />
               </SettingsRow>
-              <SettingsRow
-                id="settings-session"
-                title="Sign out when idle"
-                description="How long someone can be away from the CMS before signing in again."
-              >
+              <SettingsRow id="settings-session" title="Sign out when idle">
                 <Select
                   items={sessionItems}
                   value={String(values.sessionDays)}
@@ -1313,7 +1188,7 @@ export function SettingsPage({
             <SettingsSection
               id="appearance"
               title="Language & appearance"
-              description="The site's language, time zone, and the CMS theme, sidebar, colour and font."
+              description="Defaults for everyone."
             >
               <SettingsRow id="settings-locale" title="Language">
                 <Select
@@ -1336,7 +1211,7 @@ export function SettingsPage({
               <SettingsRow
                 id="settings-time-zone"
                 title="Time zone"
-                description="Used to interpret opening hours and to schedule posts and announcements."
+                info="For opening hours and scheduled posts and announcements."
               >
                 <Select
                   items={timeZoneItems()}
@@ -1364,15 +1239,9 @@ export function SettingsPage({
                   // setting would seem to do nothing for them.
                   personalTheme ? (
                     <>
-                      You use your own theme ({themeLabels[personalTheme].toLowerCase()}), so this
-                      changes the CMS for everyone else. To follow it yourself, choose Site setting
-                      in{' '}
-                      <Link
-                        to="/profile"
-                        hash="appearance"
-                        className="underline underline-offset-2"
-                      >
-                        your profile
+                      You use your own ({themeLabels[personalTheme].toLowerCase()}). Change it in{' '}
+                      <Link to="/profile/appearance" className="underline underline-offset-2">
+                        your appearance
                       </Link>
                       .
                     </>
@@ -1389,15 +1258,11 @@ export function SettingsPage({
               <SettingsRow
                 id="settings-sidebar"
                 title="Sidebar"
-                description="The default for everyone. People can choose their own."
                 info={
                   <>
                     <p>Two columns: sections down the left and their pages beside them.</p>
-                    <p>
-                      One column: every section under its own heading, with the tools in a menu at
-                      the bottom.
-                    </p>
-                    <p>Anyone can pick their own on their profile, which then wins over this.</p>
+                    <p>One column: every section under its own heading.</p>
+                    <p>Anyone can pick their own, which wins over this.</p>
                   </>
                 }
               >
@@ -1420,11 +1285,7 @@ export function SettingsPage({
                   </SelectContent>
                 </Select>
               </SettingsRow>
-              <SettingsRow
-                id="settings-colour"
-                title="Colour"
-                description="Tints buttons, highlights and the sidebar, in light and dark."
-              >
+              <SettingsRow id="settings-colour" title="Colour">
                 <Select
                   items={colourItems}
                   value={values.cmsColour}
@@ -1442,11 +1303,7 @@ export function SettingsPage({
                   </SelectContent>
                 </Select>
               </SettingsRow>
-              <SettingsRow
-                id="settings-font"
-                title="Font"
-                description="The typeface the CMS uses, for everyone. The website keeps its own."
-              >
+              <SettingsRow id="settings-font" title="Font">
                 <Select
                   items={fontItems}
                   value={values.cmsFont}
@@ -1598,7 +1455,6 @@ function Counter({ value, limit }: { value: string; limit: number }) {
   );
 }
 
-/** A small preview of the share image, at the 1.91:1 shape link previews use. */
 /**
  * The icon for browser tabs and home screens, one upload for light mode and one for dark mode,
  * each shown on a tab in its own colours, at the size people actually see it. Dark is optional:
@@ -1624,18 +1480,11 @@ function SiteIconRow({
     <SettingsRow
       id="settings-site-icon"
       title="Site icon"
-      description="Shown in browser tabs, bookmarks and on phone home screens."
       info={
         <>
-          <p>
-            For the website and the CMS. Add one for light mode and, if you like, a different one
-            for dark mode.
-          </p>
-          <p>Each should be a square image at least 512 by 512 pixels; PNG works best.</p>
-          <p>
-            Phone home screens always use the light mode icon, and so does a browser with scripts
-            turned off.
-          </p>
+          <p>Shown in browser tabs, bookmarks and on phone home screens, for the site and CMS.</p>
+          <p>A square PNG, at least 512 by 512 pixels. Dark mode is optional.</p>
+          <p>Phone home screens always use the light mode icon.</p>
         </>
       }
       stacked
@@ -1755,7 +1604,8 @@ function SiteIconPanel({
   const problem = item ? siteIconProblem(item, label) : null;
 
   return (
-    <div className="bg-muted/50 space-y-3 rounded-lg p-3">
+    // Phones: the row's cell is the panel already, so a second box inside it is dropped.
+    <div className="md:bg-muted/50 space-y-3 md:rounded-lg md:p-3">
       <p className="text-ui flex items-center gap-1.5 font-medium">
         <Icon aria-hidden className="text-muted-foreground size-4" />
         {mode === 'light' ? 'Light mode' : 'Dark mode'}
@@ -1866,7 +1716,7 @@ function ShareCardPreview({
   const [broken, setBroken] = useState(false);
   useEffect(() => setBroken(false), [src]);
   return (
-    <div className="bg-muted/50 overflow-hidden rounded-lg border">
+    <div className="bg-muted/50 overflow-hidden rounded-lg">
       <div className="bg-muted aspect-[1.91/1] w-full">
         {src && !broken ? (
           <img
@@ -1970,8 +1820,7 @@ function LegalPagesSection({ pages }: { pages: LegalPageSummary[] }) {
       id="legal"
       title="Legal"
       framed
-      divided={false}
-      description="Changes go live when an admin publishes them. Every published version is kept."
+      description="Changes go live when an admin publishes them."
     >
       {pages.map((page) => (
         <Link

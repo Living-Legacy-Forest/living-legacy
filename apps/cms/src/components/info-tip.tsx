@@ -34,7 +34,10 @@ export function InfoTip({
       >
         <CircleHelpIcon aria-hidden className="size-4" />
       </PopoverTrigger>
-      <PopoverContent side="top" className="w-64 gap-1.5 p-3 text-xs leading-relaxed">
+      <PopoverContent
+        side="top"
+        className="w-64 gap-1.5 p-3 text-xs leading-relaxed max-md:text-[0.9375rem]"
+      >
         {children}
       </PopoverContent>
     </Popover>

@@ -1,7 +1,11 @@
 import { useNavigate, useSearch } from '@tanstack/react-router';
-import { SortIcon } from '@/components/icons';
+import { useState } from 'react';
+import { CheckIcon, SortIcon } from '@/components/icons';
+import { sheetGroupClass, sheetRowClass } from '@/components/shell/sheet-parts';
+import { useIsMobile } from '@/hooks/use-mobile';
 import { markSorting } from '@/lib/sort-motion';
 import { Button } from '@/components/ui/button';
+import { Popover, PopoverContent, PopoverTitle, PopoverTrigger } from '@/components/ui/popover';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -77,7 +81,52 @@ type SortProps<T extends string> = {
 };
 
 function SortControl<T extends string>({ options, value, onChange, iconOnly }: SortProps<T>) {
+  const isPhone = useIsMobile();
+  const [open, setOpen] = useState(false);
   const current = options.find((o) => o.value === value) ?? options[0]!;
+  if (isPhone) {
+    // Phones: a bottom sheet (Popover becomes one), its rows in reach of a thumb.
+    return (
+      <Popover open={open} onOpenChange={setOpen}>
+        <PopoverTrigger
+          render={
+            <Button
+              variant="secondary"
+              size="sm"
+              aria-label={`Sort, by ${current.label}`}
+              className="text-ui shrink-0"
+            />
+          }
+        >
+          <SortIcon aria-hidden data-icon="inline-start" />
+          Sort
+        </PopoverTrigger>
+        <PopoverContent>
+          <PopoverTitle className="text-ui px-4 font-normal text-(--ios-secondary) uppercase">
+            Sort by
+          </PopoverTitle>
+          <div role="radiogroup" aria-label="Sort by" className={sheetGroupClass}>
+            {options.map((option) => (
+              <button
+                key={option.value}
+                type="button"
+                role="radio"
+                aria-checked={option.value === value}
+                onClick={() => {
+                  setOpen(false);
+                  if (option.value !== value) onChange(option.value);
+                }}
+                className={sheetRowClass}
+              >
+                <span className="min-w-0 flex-1 truncate">{option.label}</span>
+                {option.value === value && <CheckIcon aria-hidden className="text-tint" />}
+              </button>
+            ))}
+          </div>
+        </PopoverContent>
+      </Popover>
+    );
+  }
   return (
     <DropdownMenu>
       <DropdownMenuTrigger

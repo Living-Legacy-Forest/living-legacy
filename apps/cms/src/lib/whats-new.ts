@@ -54,6 +54,27 @@ export type WhatsNewEntry = {
 
 export const whatsNew: WhatsNewEntry[] = [
   {
+    id: '2026-11-28',
+    kind: 'improved',
+    title: 'Better on your phone',
+    items: [
+      {
+        title: 'Pickers open from the bottom',
+        body: 'On a phone, Filter, Sort, the date pickers and the small ? tips now open as a sheet along the bottom of the screen, in reach of your thumb.',
+        link: { label: 'Try it on Events', to: '/events' },
+      },
+      {
+        title: 'Tick cards in grid view',
+        body: 'Edit now works in grid view too. Tap Edit, tick the cards you want, then delete them together.',
+      },
+      {
+        title: 'Calmer lists and forms',
+        body: 'Lists, forms and Settings lose the lines between rows and a lot of the small print. The detail that was cut is behind the ? beside each setting. Long brand word lists show one line per word and open to edit.',
+        link: { label: 'Open Settings', to: '/settings' },
+      },
+    ],
+  },
+  {
     id: '2026-11-27-2',
     kind: 'new',
     title: 'Sharper filters on every list',

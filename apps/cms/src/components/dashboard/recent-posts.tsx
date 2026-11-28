@@ -84,7 +84,7 @@ function PostList({
           </EmptyHeader>
         </Empty>
       ) : (
-        <ItemGroup className="gap-0 max-md:divide-y max-md:divide-(--ios-separator)">
+        <ItemGroup className="gap-0">
           {posts.map((post) => (
             <Item
               key={post.id}

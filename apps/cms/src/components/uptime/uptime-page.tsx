@@ -133,7 +133,7 @@ function IncidentList({ incidents, timeZone }: { incidents: UptimeIncident[]; ti
   const shown = incidents.slice(from, from + pageSize);
   return (
     <>
-      <ul className="max-md:divide-y">
+      <ul className="">
         {shown.map((i) => (
           <li key={i.id} className="space-y-0.5 py-3">
             <div className="flex items-center justify-between gap-3">
@@ -302,7 +302,7 @@ export function UptimePage({ data }: { data: UptimeData }) {
           {monitors.length === 0 ? (
             <EmptyNote>No monitors to show.</EmptyNote>
           ) : (
-            <ul className="max-md:divide-y">
+            <ul className="">
               {monitors.map((m) => (
                 <MonitorRow key={m.id} monitor={m} anchor={fetchedAt} />
               ))}

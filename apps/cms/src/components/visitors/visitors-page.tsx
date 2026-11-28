@@ -193,7 +193,7 @@ function VisitorsBody({ data }: { data: VisitorsData }) {
       </div>
 
       {/* Phones: one card a visit, in iOS Settings' inset group. */}
-      <ul className="divide-y divide-(--ios-separator) overflow-hidden rounded-[10px] bg-(--ios-cell) md:hidden">
+      <ul className="overflow-hidden rounded-[10px] bg-(--ios-cell) md:hidden">
         {data.rows.map((visit) => (
           <li key={visit.id} className="space-y-1.5 px-4 py-3">
             <div className="flex items-start justify-between gap-3">

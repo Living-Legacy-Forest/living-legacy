@@ -134,7 +134,7 @@ function MoreSheet({
 
   // Everything the sidebar offers that is not already a tab, in the sidebar's
   // order. A section with its own pages (Posts) gets a group of its own.
-  const sections: { label: string; rows: Row[] }[] = [];
+  const found: { label: string; rows: Row[]; pages?: boolean }[] = [];
   for (const group of navGroups) {
     const rows: Row[] = [];
     for (const item of group.items.filter((i) => isNavItemAllowed(i, user) && !i.settings)) {
@@ -143,27 +143,45 @@ function MoreSheet({
           (c) => c.to && !tabs.includes(c.to) && isNavItemAllowed(c, user)
         );
         const rows = children.map((c) => ({ ...c, icon: c.icon ?? (c.to && childIcons[c.to]) }));
-        if (rows.length) sections.push({ label: item.title, rows });
+        if (rows.length) found.push({ label: item.title, rows, pages: true });
       } else if (item.to && !tabs.includes(item.to)) {
         rows.push(item);
       }
     }
-    if (rows.length) sections.push({ label: group.label, rows });
+    if (rows.length) found.push({ label: group.label, rows });
+  }
+  // A heading and a group for a single link is a lot of sheet for one row, so a run of them
+  // shares one group without a heading. A section's page takes its name ("Events overview").
+  const sections: { label: string; rows: Row[] }[] = [];
+  for (const section of found) {
+    const [only] = section.rows;
+    if (section.rows.length > 1 || !only) {
+      sections.push(section);
+      continue;
+    }
+    const row = section.pages
+      ? { ...only, title: `${section.label} ${only.title.toLowerCase()}` }
+      : only;
+    const last = sections.at(-1);
+    if (last && !last.label) last.rows.push(row);
+    else sections.push({ label: '', rows: [row] });
   }
   sections.push({ label: '', rows: footerLinks });
 
   return (
     <Drawer open={open} onOpenChange={onOpenChange}>
-      <DrawerContent className="bg-(--ios-grouped)">
+      <DrawerContent className="bg-(--ios-sheet)">
         <SheetHeader title="More" onDone={() => onOpenChange(false)} />
-        <DrawerBody className="flex flex-col gap-6 pb-[calc(env(safe-area-inset-bottom)+1.5rem)]">
+        {/* Groups clip their overflow, so in a flex column they would shrink to fit the sheet
+            and cut off their own rows (Sign out lost half its height). They keep their size. */}
+        <DrawerBody className="flex flex-col gap-6 pb-[calc(env(safe-area-inset-bottom)+1.5rem)] *:shrink-0">
           {/* The account first, as iOS Settings opens with the Apple Account. */}
           <Link
             to="/profile"
             onClick={() => onOpenChange(false)}
             className={cn(
               sheetGroupClass,
-              'flex min-h-19 items-center gap-3 divide-y-0 px-4 py-2.5 active:bg-(--ios-fill)'
+              'flex min-h-19 items-center gap-3 px-4 py-2.5 active:bg-(--ios-fill)'
             )}
           >
             <Avatar className="size-15">
@@ -180,8 +198,8 @@ function MoreSheet({
             </span>
             <ChevronRightIcon aria-hidden className="size-4 text-(--ios-secondary) opacity-60" />
           </Link>
-          {sections.map((section) => (
-            <section key={section.label || 'links'}>
+          {sections.map((section, i) => (
+            <section key={section.label || `links-${i}`}>
               {section.label && (
                 <h2 className="mb-1.5 px-4 text-[0.8125rem] text-(--ios-secondary) uppercase">
                   {section.label}
@@ -200,12 +218,7 @@ function MoreSheet({
               </ul>
             </section>
           ))}
-          <div
-            className={cn(
-              sheetGroupClass,
-              'flex min-h-11 items-center gap-3 divide-y-0 px-4 py-1.5'
-            )}
-          >
+          <div className={cn(sheetGroupClass, 'flex min-h-11 items-center gap-3 px-4 py-1.5')}>
             <span aria-hidden className="shrink-0 text-[1.0625rem]">
               Theme
             </span>

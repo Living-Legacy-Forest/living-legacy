@@ -142,7 +142,7 @@ function PagesTable({
       </div>
 
       {/* Phones and tablets: a row a page, its views on the right and the rest underneath. */}
-      <ul className="bg-muted/50 overflow-hidden rounded-lg max-md:divide-y max-md:divide-(--ios-separator) max-md:rounded-[10px] max-md:border-0 max-md:bg-(--ios-cell) lg:hidden">
+      <ul className="bg-muted/50 overflow-hidden rounded-lg max-md:rounded-[10px] max-md:border-0 max-md:bg-(--ios-cell) lg:hidden">
         {sorted.map((p) => (
           // The whole cell opens the page, as an iOS cell does, and greys while pressed.
           <li

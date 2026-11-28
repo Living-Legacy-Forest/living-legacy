@@ -229,7 +229,7 @@ function PassingList({ checks }: { checks: (typeof CHECKS)[number][] }) {
       >
         Passing
       </h2>
-      <ul className="bg-muted/50 overflow-hidden rounded-lg max-md:divide-y max-md:divide-(--ios-separator) max-md:overflow-hidden max-md:rounded-[10px] max-md:bg-(--ios-cell)">
+      <ul className="bg-muted/50 overflow-hidden rounded-lg max-md:overflow-hidden max-md:rounded-[10px] max-md:bg-(--ios-cell)">
         <GlideHighlight
           follow="hover"
           as="li"
@@ -293,7 +293,7 @@ function CheckRows({
 
   return (
     <>
-      <ul className="overflow-hidden rounded-b-lg max-md:divide-y max-md:divide-(--ios-separator) max-md:overflow-hidden max-md:rounded-[10px] max-md:bg-(--ios-cell)">
+      <ul className="overflow-hidden rounded-b-lg max-md:overflow-hidden max-md:rounded-[10px] max-md:bg-(--ios-cell)">
         <GlideHighlight
           follow="hover"
           as="li"

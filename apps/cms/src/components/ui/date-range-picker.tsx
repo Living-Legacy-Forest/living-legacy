@@ -30,6 +30,8 @@ import {
   ChevronRightIcon,
 } from '@/components/icons';
 import { Button } from '@/components/ui/button';
+import { Drawer, DrawerBody, DrawerContent, DrawerTitle } from '@/components/ui/drawer';
+import { useIsMobile } from '@/hooks/use-mobile';
 import { cn } from '@/lib/utils';
 import { sameDate } from '@/lib/format';
 import { useWeekStart } from '@/lib/use-week-start';
@@ -625,6 +627,8 @@ function DateRangePicker({
   const siteWeekStart = useWeekStart();
   const weekStartsOn = weekStartsOnProp ?? siteWeekStart;
   const reduced = useReducedFlag();
+  // Phones open the calendar as a bottom sheet instead of growing the field over the form.
+  const isPhone = useIsMobile();
   const today = useToday();
   const uid = useId();
   const [inner, setInner] = useState<DateRange | null>(defaultValue);
@@ -782,7 +786,7 @@ function DateRangePicker({
   // The CMS scrolls inside panes and dialogs, not the page, so bring the panel into view in
   // whatever scrolls it; after closing, the trigger comes back if that left it out of sight.
   useEffect(() => {
-    if (!open) return;
+    if (!open || isPhone) return;
     const frame = requestAnimationFrame(() =>
       panelRef.current?.scrollIntoView({
         block: 'nearest',
@@ -790,7 +794,7 @@ function DateRangePicker({
       })
     );
     return () => cancelAnimationFrame(frame);
-  }, [open, reduced]);
+  }, [open, isPhone, reduced]);
   // Only after it was open: on mount a field further down a long form is out of sight too, and
   // scrolling to it would open the form halfway down.
   const wasOpen = useRef(open);
@@ -807,11 +811,13 @@ function DateRangePicker({
 
   /* Two months when there is room, one compact month otherwise. */
   const measureLayout = useCallback(() => {
+    // The sheet is the screen's width: one month, the cells sized to fit.
+    if (isPhone) return { single: true, width: document.documentElement.clientWidth - 32 };
     const box = bounds();
     const available = Math.max(0, box.right - box.left - EDGE * 2);
     const single = months === 1 || (months === 'auto' && available < wideMin);
     return { single, width: Math.min(352, available) };
-  }, [bounds, months, wideMin]);
+  }, [bounds, isPhone, months, wideMin]);
 
   useEffect(() => {
     if (!open) return;
@@ -841,7 +847,8 @@ function DateRangePicker({
     setView(viewFor(committed, layout.single, today));
     setDirection(0);
     setFocusKey(keyOf(committed?.start ?? today));
-    pendingFocus.current = 'day';
+    // The sheet takes focus itself; a day with a focus ring would only show on a keyboard.
+    pendingFocus.current = isPhone ? null : 'day';
     setOpen(true);
   };
 
@@ -882,17 +889,17 @@ function DateRangePicker({
   }, [focusKey, open, view, compact]);
 
   useEffect(() => {
-    if (!open) return;
+    if (!open || isPhone) return;
     const down = (event: PointerEvent) => {
       if (!rootRef.current?.contains(event.target as Node)) close(false);
     };
     document.addEventListener('pointerdown', down);
     return () => document.removeEventListener('pointerdown', down);
-  }, [close, open]);
+  }, [close, isPhone, open]);
 
   const onRootKey = (event: ReactKeyboardEvent<HTMLDivElement>) => {
     // Stop here, so a dialog around the field stays open.
-    if (event.key === 'Escape' && open) {
+    if (event.key === 'Escape' && open && !isPhone) {
       event.preventDefault();
       event.stopPropagation();
       close(true);
@@ -900,7 +907,7 @@ function DateRangePicker({
   };
   const onRootBlur = (event: ReactFocusEvent<HTMLDivElement>) => {
     const next = event.relatedTarget as Node | null;
-    if (open && next && !event.currentTarget.contains(next)) close(false);
+    if (open && !isPhone && next && !event.currentTarget.contains(next)) close(false);
   };
 
   /* Months and picking */
@@ -1034,11 +1041,14 @@ function DateRangePicker({
       : shown
         ? `${shownText}, ${countText}`
         : '';
-  const layoutId = reduced ? undefined : `${uid}-value`;
+  const layoutId = reduced || isPhone ? undefined : `${uid}-value`;
 
+  // The sheet's calendar fills its width, as the other date pickers' sheets do.
   const cellSize =
     compact && panelWidth
-      ? Math.max(32, Math.min(42, Math.floor((panelWidth - 24) / 7)))
+      ? isPhone
+        ? Math.max(32, Math.min(56, Math.floor(panelWidth / 7)))
+        : Math.max(32, Math.min(42, Math.floor((panelWidth - 24) / 7)))
       : WIDE_CELL;
 
   const quiet = open
@@ -1049,6 +1059,213 @@ function DateRangePicker({
   const quietTransition = open
     ? { duration: duration.instant, ease: standardEase }
     : { duration: duration.standard, ease: enterEase, delay: reduced ? 0 : 0.1 };
+
+  const panelBody = (
+    <>
+      <motion.div
+        className="flex gap-2.5 group-data-compact/panel:flex-col group-data-compact/panel:gap-2"
+        variants={reduced ? faceFade : faceIn}
+        initial="hidden"
+        animate="shown"
+        exit="gone"
+      >
+        {hasRail && (
+          // eslint-disable-next-line jsx-a11y/no-noninteractive-element-interactions -- arrow keys move between presets
+          <div
+            ref={railRef}
+            role="group"
+            aria-label="Presets"
+            onKeyDown={onRailKey}
+            className="relative flex w-37 shrink-0 flex-col gap-0.5 pr-2.5 group-data-compact/panel:-mx-2 group-data-compact/panel:w-auto group-data-compact/panel:[scrollbar-width:none] group-data-compact/panel:flex-row group-data-compact/panel:overflow-x-auto group-data-compact/panel:overscroll-x-contain group-data-compact/panel:px-2 group-data-compact/panel:pb-2"
+          >
+            <motion.span
+              aria-hidden
+              className="bg-foreground/[0.065] pointer-events-none absolute top-0 left-0 rounded-lg"
+              style={{ x: gx, y: gy, width: gw, height: gh, opacity: go }}
+            />
+            {presets.map((preset, index) => (
+              <button
+                key={preset.label}
+                type="button"
+                data-preset={index}
+                aria-pressed={index === activePreset}
+                onClick={() => choosePreset(preset)}
+                className="text-muted-foreground hover:text-foreground focus-visible:bg-foreground/5 focus-visible:text-foreground aria-pressed:text-foreground relative flex h-8 shrink-0 cursor-pointer items-center rounded-lg px-3 text-left whitespace-nowrap outline-none aria-pressed:font-medium"
+              >
+                {preset.label}
+              </button>
+            ))}
+          </div>
+        )}
+
+        <div
+          className="relative px-0.5 group-data-compact/panel:self-center"
+          onPointerLeave={() => {
+            if (anchor) setHover(null);
+          }}
+        >
+          <Button
+            type="button"
+            variant="ghost"
+            size="icon-sm"
+            aria-label="Previous month"
+            className="absolute top-0 left-0.5 z-2 size-8 rounded-full"
+            onClick={() => goTo(addMonths(view, -1))}
+            disabled={Boolean(minDate && monthDiff(view, minDate) <= 0)}
+          >
+            <ChevronLeftIcon aria-hidden />
+          </Button>
+          <Button
+            type="button"
+            variant="ghost"
+            size="icon-sm"
+            aria-label="Next month"
+            className="absolute top-0 right-0.5 z-2 size-8 rounded-full"
+            onClick={() => goTo(addMonths(view, 1))}
+            disabled={Boolean(maxDate && monthDiff(addMonths(view, count - 1), maxDate) >= 0)}
+          >
+            <ChevronRightIcon aria-hidden />
+          </Button>
+          {/* A fixed six-week window stacks the leaving and arriving months in one cell,
+                      so the panel never resizes mid-slide. */}
+          <div className="relative grid h-[calc(60px+var(--cell)*6)] overflow-clip [overflow-clip-margin:2px]">
+            <AnimatePresence initial={false} custom={direction}>
+              <Months key={`${keyOf(view)}-${count}`} direction={direction} reduced={reduced}>
+                {visible.map((month) => (
+                  <Month
+                    key={keyOf(month)}
+                    month={month}
+                    range={shown}
+                    tabbable={tabbable}
+                    today={today}
+                    minDate={minDate}
+                    maxDate={maxDate}
+                    weekStartsOn={weekStartsOn}
+                    reduced={reduced}
+                    formatters={formatters}
+                    idBase={uid}
+                    onPick={pick}
+                    instant={keyed}
+                    onHover={(date) => {
+                      setKeyed(false);
+                      if (anchor) setHover(date);
+                    }}
+                    onKey={onDayKey}
+                    onFocusDay={(date) => setFocusKey(keyOf(date))}
+                  />
+                ))}
+              </Months>
+            </AnimatePresence>
+          </div>
+        </div>
+      </motion.div>
+
+      <div className="mt-2.5 flex w-0 min-w-full items-center justify-between gap-3 pt-2.5 pr-0.5 pl-3 group-data-compact/panel:mt-1.5 group-data-compact/panel:flex-wrap group-data-compact/panel:pl-2.5">
+        <div className="grid min-w-0 gap-px group-data-compact/panel:flex-[1_1_8rem]">
+          <motion.span
+            layoutId={layoutId}
+            layout={layoutId ? 'position' : undefined}
+            className="inline-flex w-max font-medium tabular-nums"
+            transition={GROW}
+            variants={layoutId ? undefined : faceFade}
+            initial={layoutId ? undefined : 'hidden'}
+            animate={layoutId ? undefined : 'shown'}
+            exit={layoutId ? undefined : 'gone'}
+          >
+            <Rolling text={shownText} direction={shownDirection} reduced={reduced} />
+          </motion.span>
+          <motion.span
+            className="text-muted-foreground inline-flex min-h-[1.4em] text-xs tabular-nums"
+            variants={reduced ? faceFade : faceIn}
+            initial="hidden"
+            animate="shown"
+            exit="gone"
+          >
+            {countLine && <Rolling text={countLine} direction={shownDirection} reduced={reduced} />}
+          </motion.span>
+        </div>
+        <motion.div
+          className="flex shrink-0 items-center gap-1.5 group-data-compact/panel:ml-auto"
+          variants={reduced ? faceFade : faceIn}
+          initial="hidden"
+          animate="shown"
+          exit="gone"
+        >
+          <Button type="button" variant="ghost" size="sm" onClick={() => close(true)}>
+            Cancel
+          </Button>
+          <Button type="button" size="sm" className="min-w-19" onClick={apply} disabled={!shown}>
+            Apply
+          </Button>
+        </motion.div>
+      </div>
+      <p className="sr-only" aria-live="polite">
+        {status}
+      </p>
+    </>
+  );
+
+  if (isPhone) {
+    return (
+      <div
+        ref={rootRef}
+        data-slot="date-range-picker"
+        data-open={open || undefined}
+        className={cn('relative block h-9 w-full text-base', className)}
+      >
+        <button
+          ref={triggerRef}
+          id={id}
+          type="button"
+          aria-haspopup="dialog"
+          aria-expanded={open}
+          aria-label={`${label}: ${committedText}`}
+          disabled={!today}
+          onClick={openPanel}
+          className="focus-visible:ring-ring/15 flex h-9 w-full items-center gap-2 rounded-lg bg-(--field-bg) px-2.5 text-left whitespace-nowrap outline-none [-webkit-tap-highlight-color:transparent] focus-visible:ring-1 disabled:cursor-default"
+        >
+          <CalendarClockIcon aria-hidden className="text-muted-foreground size-4 shrink-0" />
+          <span
+            className={cn(
+              'min-w-0 flex-1 truncate tabular-nums',
+              !committed && 'text-muted-foreground'
+            )}
+          >
+            {committedText}
+          </span>
+          <ChevronDownIcon aria-hidden className="text-muted-foreground size-4 shrink-0" />
+        </button>
+        <Drawer
+          open={open && Boolean(today)}
+          onOpenChange={(next) => {
+            if (!next) close(true);
+          }}
+        >
+          <DrawerContent className="bg-(--ios-sheet)">
+            <DrawerBody className="pb-[max(1.5rem,env(safe-area-inset-bottom))]">
+              <DrawerTitle className="mb-3 px-1 text-center text-[1.0625rem] font-semibold">
+                {label}
+              </DrawerTitle>
+              <div
+                ref={panelRef}
+                id={`${uid}-panel`}
+                data-compact
+                className="group/panel mx-auto w-full p-0"
+                style={
+                  {
+                    '--cell': `${cellSize}px`,
+                    width: panelWidth || undefined,
+                  } as CSSProperties
+                }
+              >
+                {panelBody}
+              </div>
+            </DrawerBody>
+          </DrawerContent>
+        </Drawer>
+      </div>
+    );
+  }
 
   return (
     // The root holds the trigger's place; the surface floats above it and grows into the panel,
@@ -1152,160 +1369,7 @@ function DateRangePicker({
               }
               exit={{ opacity: 1, transition: { duration: duration.fast } }}
             >
-              <motion.div
-                className="flex gap-2.5 group-data-compact/panel:flex-col group-data-compact/panel:gap-2"
-                variants={reduced ? faceFade : faceIn}
-                initial="hidden"
-                animate="shown"
-                exit="gone"
-              >
-                {hasRail && (
-                  // eslint-disable-next-line jsx-a11y/no-noninteractive-element-interactions -- arrow keys move between presets
-                  <div
-                    ref={railRef}
-                    role="group"
-                    aria-label="Presets"
-                    onKeyDown={onRailKey}
-                    className="relative flex w-37 shrink-0 flex-col gap-0.5 pr-2.5 group-data-compact/panel:-mx-2 group-data-compact/panel:w-auto group-data-compact/panel:[scrollbar-width:none] group-data-compact/panel:flex-row group-data-compact/panel:overflow-x-auto group-data-compact/panel:overscroll-x-contain group-data-compact/panel:px-2 group-data-compact/panel:pb-2"
-                  >
-                    <motion.span
-                      aria-hidden
-                      className="bg-foreground/[0.065] pointer-events-none absolute top-0 left-0 rounded-lg"
-                      style={{ x: gx, y: gy, width: gw, height: gh, opacity: go }}
-                    />
-                    {presets.map((preset, index) => (
-                      <button
-                        key={preset.label}
-                        type="button"
-                        data-preset={index}
-                        aria-pressed={index === activePreset}
-                        onClick={() => choosePreset(preset)}
-                        className="text-muted-foreground hover:text-foreground focus-visible:bg-foreground/5 focus-visible:text-foreground aria-pressed:text-foreground relative flex h-8 shrink-0 cursor-pointer items-center rounded-lg px-3 text-left whitespace-nowrap outline-none aria-pressed:font-medium"
-                      >
-                        {preset.label}
-                      </button>
-                    ))}
-                  </div>
-                )}
-
-                <div
-                  className="relative px-0.5 group-data-compact/panel:self-center"
-                  onPointerLeave={() => {
-                    if (anchor) setHover(null);
-                  }}
-                >
-                  <Button
-                    type="button"
-                    variant="ghost"
-                    size="icon-sm"
-                    aria-label="Previous month"
-                    className="absolute top-0 left-0.5 z-2 size-8 rounded-full"
-                    onClick={() => goTo(addMonths(view, -1))}
-                    disabled={Boolean(minDate && monthDiff(view, minDate) <= 0)}
-                  >
-                    <ChevronLeftIcon aria-hidden />
-                  </Button>
-                  <Button
-                    type="button"
-                    variant="ghost"
-                    size="icon-sm"
-                    aria-label="Next month"
-                    className="absolute top-0 right-0.5 z-2 size-8 rounded-full"
-                    onClick={() => goTo(addMonths(view, 1))}
-                    disabled={Boolean(
-                      maxDate && monthDiff(addMonths(view, count - 1), maxDate) >= 0
-                    )}
-                  >
-                    <ChevronRightIcon aria-hidden />
-                  </Button>
-                  {/* A fixed six-week window stacks the leaving and arriving months in one cell,
-                      so the panel never resizes mid-slide. */}
-                  <div className="relative grid h-[calc(60px+var(--cell)*6)] overflow-clip [overflow-clip-margin:2px]">
-                    <AnimatePresence initial={false} custom={direction}>
-                      <Months
-                        key={`${keyOf(view)}-${count}`}
-                        direction={direction}
-                        reduced={reduced}
-                      >
-                        {visible.map((month) => (
-                          <Month
-                            key={keyOf(month)}
-                            month={month}
-                            range={shown}
-                            tabbable={tabbable}
-                            today={today}
-                            minDate={minDate}
-                            maxDate={maxDate}
-                            weekStartsOn={weekStartsOn}
-                            reduced={reduced}
-                            formatters={formatters}
-                            idBase={uid}
-                            onPick={pick}
-                            instant={keyed}
-                            onHover={(date) => {
-                              setKeyed(false);
-                              if (anchor) setHover(date);
-                            }}
-                            onKey={onDayKey}
-                            onFocusDay={(date) => setFocusKey(keyOf(date))}
-                          />
-                        ))}
-                      </Months>
-                    </AnimatePresence>
-                  </div>
-                </div>
-              </motion.div>
-
-              <div className="mt-2.5 flex w-0 min-w-full items-center justify-between gap-3 pt-2.5 pr-0.5 pl-3 group-data-compact/panel:mt-1.5 group-data-compact/panel:flex-wrap group-data-compact/panel:pl-2.5">
-                <div className="grid min-w-0 gap-px group-data-compact/panel:flex-[1_1_8rem]">
-                  <motion.span
-                    layoutId={layoutId}
-                    layout={layoutId ? 'position' : undefined}
-                    className="inline-flex w-max font-medium tabular-nums"
-                    transition={GROW}
-                    variants={layoutId ? undefined : faceFade}
-                    initial={layoutId ? undefined : 'hidden'}
-                    animate={layoutId ? undefined : 'shown'}
-                    exit={layoutId ? undefined : 'gone'}
-                  >
-                    <Rolling text={shownText} direction={shownDirection} reduced={reduced} />
-                  </motion.span>
-                  <motion.span
-                    className="text-muted-foreground inline-flex min-h-[1.4em] text-xs tabular-nums"
-                    variants={reduced ? faceFade : faceIn}
-                    initial="hidden"
-                    animate="shown"
-                    exit="gone"
-                  >
-                    {countLine && (
-                      <Rolling text={countLine} direction={shownDirection} reduced={reduced} />
-                    )}
-                  </motion.span>
-                </div>
-                <motion.div
-                  className="flex shrink-0 items-center gap-1.5 group-data-compact/panel:ml-auto"
-                  variants={reduced ? faceFade : faceIn}
-                  initial="hidden"
-                  animate="shown"
-                  exit="gone"
-                >
-                  <Button type="button" variant="ghost" size="sm" onClick={() => close(true)}>
-                    Cancel
-                  </Button>
-                  <Button
-                    type="button"
-                    size="sm"
-                    className="min-w-19"
-                    onClick={apply}
-                    disabled={!shown}
-                  >
-                    Apply
-                  </Button>
-                </motion.div>
-              </div>
-              <p className="sr-only" aria-live="polite">
-                {status}
-              </p>
+              {panelBody}
             </motion.div>
           )}
         </AnimatePresence>

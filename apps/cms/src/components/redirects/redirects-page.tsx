@@ -471,14 +471,10 @@ export function RedirectsPage({
         )}
         <div className="flex gap-3 max-md:hidden">{addButtons}</div>
         <PageActions
-          edit={
-            grid
-              ? undefined
-              : {
-                  editing: selection.selecting,
-                  onToggle: selection.selecting ? selection.clear : selection.startEditing,
-                }
-          }
+          edit={{
+            editing: selection.selecting,
+            onToggle: selection.selecting ? selection.clear : selection.startEditing,
+          }}
           add={{ label: 'Add redirect', onClick: () => view.open({ kind: 'new' }) }}
           more={[{ label: 'Bulk update', onClick: () => view.open({ kind: 'bulk' }) }]}
         />
@@ -537,6 +533,12 @@ export function RedirectsPage({
                 {paged.shown.map((r) => (
                   <ListCard
                     key={r.id}
+                    select={{
+                      label: `Select ${r.fromPath}`,
+                      checked: selection.isChecked(r.id),
+                      selecting: selection.selecting,
+                      onToggle: () => selection.toggle(r.id),
+                    }}
                     title={r.fromPath}
                     current={pane?.kind === 'edit' && pane.id === r.id}
                     menu={rowMenu(r)}

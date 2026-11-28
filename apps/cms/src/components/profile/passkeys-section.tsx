@@ -119,7 +119,7 @@ export function PasskeysSection() {
       id="passkeys"
       title="Passkeys"
       framed
-      description="Sign in with Face ID, Touch ID or your device's lock instead of waiting for an email."
+      description="Sign in with Face ID, Touch ID or your device's lock."
     >
       {passkeys === null ? (
         <div className="flex items-center justify-center px-4 py-6">

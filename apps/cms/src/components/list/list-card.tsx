@@ -11,6 +11,7 @@ import {
 import { useSortLayout } from '@/lib/sort-motion';
 import { cn } from '@/lib/utils';
 import { type RowMenuItem, rowActions } from './list-row';
+import { RowCheckbox } from './list-tools';
 
 /** The grid a list page shows instead of its rows when it is in grid view. */
 export function ListCards({
@@ -27,7 +28,7 @@ export function ListCards({
     <ul
       data-slot="list-cards"
       className={cn(
-        'grid min-h-0 flex-1 auto-rows-max grid-cols-[repeat(auto-fill,minmax(16rem,21rem))] gap-4 overflow-y-auto p-4 max-md:p-0',
+        'grid min-h-0 flex-1 auto-rows-max grid-cols-[repeat(auto-fill,minmax(16rem,21rem))] gap-4 overflow-y-auto p-4 max-md:grid-cols-1 max-md:p-0',
         className
       )}
     >
@@ -53,6 +54,7 @@ export function ListCard({
   previews,
   menu = [],
   remove,
+  select,
   largeTitle = false,
   children,
 }: {
@@ -77,6 +79,11 @@ export function ListCard({
   menu?: RowMenuItem[];
   /** The delete action, last in the menu as the row's swipe is. */
   remove?: { label: string; onAction: () => void };
+  /**
+   * A tick box on the card's corner, as a row has: shown on hover with a mouse, and in Edit mode
+   * (`selecting`) or once ticked on touch, which has no hover.
+   */
+  select?: { label: string; checked: boolean; selecting: boolean; onToggle: () => void };
   /** For cards whose title is the main thing: larger, and wraps to two lines instead of cutting off. */
   largeTitle?: boolean;
   children?: React.ReactNode;
@@ -84,6 +91,7 @@ export function ListCard({
   const { actions, destructive } = rowActions({
     onOpen: menuOpen ?? onOpen,
     previews,
+    onSelect: select?.onToggle,
     items: menu,
     swipe: remove,
   });
@@ -99,11 +107,29 @@ export function ListCard({
       {...sortLayout}
       data-slot="list-card"
       className={cn(
-        'group/card bg-muted/50 has-[:focus-visible]:ring-ring/50 hover:bg-muted/80 has-[[data-popup-open]]:bg-muted/80 relative flex flex-col overflow-hidden rounded-xl transition-colors has-[:focus-visible]:ring-2 motion-reduce:transition-none',
+        'group/card group bg-muted/50 has-[:focus-visible]:ring-ring/50 hover:bg-muted/80 has-[[data-popup-open]]:bg-muted/80 relative flex flex-col overflow-hidden rounded-xl transition-colors has-[:focus-visible]:ring-2 motion-reduce:transition-none',
         current &&
-          'bg-foreground/10 hover:bg-foreground/10 has-[[data-popup-open]]:bg-foreground/10'
+          'bg-foreground/10 hover:bg-foreground/10 has-[[data-popup-open]]:bg-foreground/10',
+        select?.checked &&
+          'after:ring-ring/50 after:pointer-events-none after:absolute after:inset-0 after:z-10 after:rounded-xl after:ring-1 after:ring-inset'
       )}
     >
+      {select && (
+        // Over the cover. Unticked it is a faint box that reads on a photo or a plain cover; the
+        // box hides itself on touch until Edit mode, so the corner stays empty until then.
+        <span className="absolute top-3 left-3 z-10">
+          <RowCheckbox
+            label={select.label}
+            checked={select.checked}
+            selecting={select.selecting}
+            onToggle={select.onToggle}
+            className={cn(
+              'size-5 rounded-[5px] backdrop-blur-sm',
+              !select.checked && 'border-foreground/35 bg-background/50'
+            )}
+          />
+        </span>
+      )}
       {image !== undefined && (
         <div className="bg-muted relative aspect-[16/10] overflow-hidden">
           {image ? (
@@ -135,40 +161,42 @@ export function ListCard({
         )}
         {children}
       </div>
-      <DropdownMenu>
-        <DropdownMenuTrigger
-          render={
-            <Button
-              variant="secondary"
-              size="icon-sm"
-              aria-label={`Actions for ${title}`}
-              className="touch:opacity-100 absolute top-2 right-2 z-10 opacity-0 shadow-xs group-hover/card:opacity-100 focus-visible:opacity-100 data-popup-open:opacity-100"
-            />
-          }
-        >
-          <MoreHorizontalIcon aria-hidden />
-        </DropdownMenuTrigger>
-        <DropdownMenuContent align="end" className="w-48">
-          {actions.map((item) => (
-            <DropdownMenuItem key={item.label} disabled={item.disabled} onClick={item.onSelect}>
-              {item.icon}
-              {item.label}
-            </DropdownMenuItem>
-          ))}
-          {destructive.length > 0 && <DropdownMenuSeparator />}
-          {destructive.map((item) => (
-            <DropdownMenuItem
-              key={item.label}
-              variant="destructive"
-              disabled={item.disabled}
-              onClick={item.onSelect}
-            >
-              {item.icon}
-              {item.label}
-            </DropdownMenuItem>
-          ))}
-        </DropdownMenuContent>
-      </DropdownMenu>
+      {!select?.selecting && (
+        <DropdownMenu>
+          <DropdownMenuTrigger
+            render={
+              <Button
+                variant="secondary"
+                size="icon-sm"
+                aria-label={`Actions for ${title}`}
+                className="touch:opacity-100 absolute top-2 right-2 z-10 opacity-0 shadow-xs group-hover/card:opacity-100 focus-visible:opacity-100 data-popup-open:opacity-100"
+              />
+            }
+          >
+            <MoreHorizontalIcon aria-hidden />
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end" className="w-48">
+            {actions.map((item) => (
+              <DropdownMenuItem key={item.label} disabled={item.disabled} onClick={item.onSelect}>
+                {item.icon}
+                {item.label}
+              </DropdownMenuItem>
+            ))}
+            {destructive.length > 0 && <DropdownMenuSeparator />}
+            {destructive.map((item) => (
+              <DropdownMenuItem
+                key={item.label}
+                variant="destructive"
+                disabled={item.disabled}
+                onClick={item.onSelect}
+              >
+                {item.icon}
+                {item.label}
+              </DropdownMenuItem>
+            ))}
+          </DropdownMenuContent>
+        </DropdownMenu>
+      )}
     </motion.li>
   );
 }

@@ -140,11 +140,7 @@ export function AppearanceSection() {
   ];
 
   return (
-    <SettingsSection
-      id="appearance"
-      title="Appearance"
-      description="How the CMS looks for you. Others keep their own choice."
-    >
+    <SettingsSection id="appearance" title="Appearance" description="Just for you.">
       <SettingsRow id="profile-theme" title="Theme">
         <Select
           items={items}
@@ -167,15 +163,11 @@ export function AppearanceSection() {
       <SettingsRow
         id="profile-sidebar"
         title="Sidebar"
-        description="Kept in this browser."
         info={
           <>
             <p>Two columns: sections down the left and their pages beside them.</p>
-            <p>
-              One column: every section under its own heading, with the tools in a menu at the
-              bottom.
-            </p>
-            <p>Site setting follows what an admin chose in Settings, Language & appearance.</p>
+            <p>One column: every section under its own heading.</p>
+            <p>Site setting follows what an admin chose. Kept in this browser.</p>
           </>
         }
       >
@@ -202,7 +194,7 @@ export function AppearanceSection() {
       <SettingsRow
         id="profile-contrast"
         title="Contrast"
-        description="Stronger text, hints and lines. A device set to more contrast starts it partway up."
+        info="Stronger text, hints and lines. A device set to more contrast starts it partway up."
       >
         <AppearanceDial
           label="Contrast"
@@ -216,7 +208,6 @@ export function AppearanceSection() {
       <SettingsRow
         id="profile-icon-stroke"
         title="Icon stroke"
-        description="How thin or bold icons are drawn. Turn the dial to set it."
         suffix={
           <span aria-hidden className="text-muted-foreground flex items-center gap-2">
             <SearchIcon className="size-4" />
@@ -236,11 +227,7 @@ export function AppearanceSection() {
       </SettingsRow>
       <ColourRows />
 
-      <SettingsRow
-        id="profile-text-size"
-        title="Text size"
-        description="Adjust the size of text across the CMS. Kept in this browser."
-      >
+      <SettingsRow id="profile-text-size" title="Text size" info="Kept in this browser.">
         <ChoiceSelect
           id="profile-text-size"
           items={textSizeItems}
@@ -249,11 +236,7 @@ export function AppearanceSection() {
         />
       </SettingsRow>
 
-      <SettingsRow
-        id="profile-pointer-cursors"
-        title="Cursor"
-        description="What the pointer looks like over anything you can click."
-      >
+      <SettingsRow id="profile-pointer-cursors" title="Cursor">
         <ChoiceSelect
           id="profile-pointer-cursors"
           items={[
@@ -265,11 +248,7 @@ export function AppearanceSection() {
         />
       </SettingsRow>
 
-      <SettingsRow
-        id="profile-underline-links"
-        title="Links in text"
-        description="When links in text are underlined."
-      >
+      <SettingsRow id="profile-underline-links" title="Links in text">
         <ChoiceSelect
           id="profile-underline-links"
           items={[
@@ -284,7 +263,7 @@ export function AppearanceSection() {
       <SettingsRow
         id="profile-reduce-motion"
         title="Motion"
-        description="Reduced cuts animations and transitions down to nothing, whatever your device is set to."
+        info="Reduced turns animations off, whatever your device is set to."
       >
         <ChoiceSelect
           id="profile-reduce-motion"

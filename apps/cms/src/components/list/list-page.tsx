@@ -293,25 +293,20 @@ export function ListColumn({
 
 /**
  * The scrolling list of rows (ListRow), or wrap your own grouped sections.
- * On phones it is an iOS grouped list: one rounded group whose dividers start
- * at the text, or past the thumbnail when rows have one (`inset="media"`).
+ * On phones it is an iOS grouped list: one rounded group, with no lines between rows.
  */
 export function ListRows({
   children,
   className,
-  inset = 'text',
 }: {
   children: React.ReactNode;
   className?: string;
-  inset?: 'text' | 'media';
 }) {
   const registry = useContext(RowsContext);
   return (
     <ul
       ref={registry?.setRows}
       data-slot="list-rows"
-      // 16px of padding, then a 60px thumbnail and a 12px gap before the text.
-      style={{ '--row-inset': inset === 'media' ? '5.5rem' : '1rem' } as React.CSSProperties}
       className={cn(
         'no-scrollbar min-h-0 flex-1 space-y-px overflow-y-auto p-1.5',
         'max-md:flex-none max-md:space-y-0 max-md:overflow-hidden max-md:rounded-[10px] max-md:bg-(--ios-cell) max-md:p-0',
@@ -610,7 +605,7 @@ export function ListDialog({
             {/* An iOS sheet's bar: Cancel, the title, and the form's submit button. */}
             <div
               data-slot="sheet-header"
-              className="sticky -top-2 z-20 -mx-4 -mt-2 grid grid-cols-[minmax(4.5rem,1fr)_auto_minmax(4.5rem,1fr)] items-center gap-2 bg-(--ios-grouped)/85 px-4 pt-2 pb-1 backdrop-blur-xl"
+              className="sticky -top-2 z-20 -mx-4 -mt-2 grid grid-cols-[minmax(4.5rem,1fr)_auto_minmax(4.5rem,1fr)] items-center gap-2 bg-(--ios-sheet)/85 px-4 pt-2 pb-1 backdrop-blur-xl"
             >
               <DrawerClose
                 render={

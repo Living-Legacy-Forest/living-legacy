@@ -442,7 +442,7 @@ export function Notifications({ user }: { user: SessionUser }) {
           key={i}
           className={cn(
             'animate-pulse rounded',
-            isPhone ? 'bg-background h-14 rounded-xl' : 'bg-muted h-9'
+            isPhone ? 'h-14 rounded-[10px] bg-(--ios-cell-raised)' : 'bg-muted h-9'
           )}
         />
       ))}
@@ -633,7 +633,7 @@ export function Notifications({ user }: { user: SessionUser }) {
                   }
             }
           >
-            <Empty className={cn('py-10', isPhone && 'bg-background rounded-xl')}>
+            <Empty className={cn('py-10', isPhone && 'rounded-[10px] bg-(--ios-cell-raised)')}>
               <EmptyHeader>
                 <EmptyMedia variant="icon">
                   <BellIcon aria-hidden />
@@ -738,7 +738,7 @@ export function Notifications({ user }: { user: SessionUser }) {
           {bell}
         </Button>
         <Drawer open={open} onOpenChange={onOpenChange}>
-          <DrawerContent className="bg-(--ios-grouped)">
+          <DrawerContent className="bg-(--ios-sheet)">
             <SheetHeader title="Notifications" onDone={close} />
             {summaryLine}
             {toolbar}

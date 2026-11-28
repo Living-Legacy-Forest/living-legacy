@@ -36,12 +36,7 @@ export function ColourRows() {
 
   return (
     <>
-      <SettingsRow
-        id="profile-colour"
-        title="Colour"
-        description="Drag across for the hue and down for strength, or pick one below."
-        below
-      >
+      <SettingsRow id="profile-colour" title="Colour" below>
         <div className="w-full space-y-3 sm:w-96">
           <ColourField
             value={draft.colour}
@@ -67,7 +62,7 @@ export function ColourRows() {
       <SettingsRow
         id="profile-grain"
         title="Grain"
-        description="The sidebar's texture. Turn the dial to set it."
+        info="The sidebar's texture."
         suffix={<span className="text-muted-foreground text-xs tabular-nums">{grain}%</span>}
       >
         <DetentDial
@@ -81,7 +76,8 @@ export function ColourRows() {
         </span>
       </SettingsRow>
 
-      <div>
+      {/* The button's own padding is taken back, so its text lines up with the row titles. */}
+      <div className="max-md:px-1.5 md:-ml-2.5">
         <Button
           type="button"
           variant="ghost"

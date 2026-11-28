@@ -261,7 +261,7 @@ function AreaResults({
           {plural(area.count, 'match', 'matches')}
         </Badge>
       </div>
-      <ul className={checked ? 'divide-y' : 'divide-y opacity-50'}>
+      <ul className={checked ? 'md:divide-y' : 'opacity-50 md:divide-y'}>
         {area.items.map((item) => (
           <ItemResult key={item.key} item={item} replacement={replacement} />
         ))}

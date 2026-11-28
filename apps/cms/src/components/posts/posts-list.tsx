@@ -591,7 +591,7 @@ export function PostsList({
         )}
         <PageActions
           edit={
-            canPublish && !grid
+            canPublish
               ? {
                   editing: selection.selecting,
                   onToggle: selection.selecting ? selection.clear : selection.startEditing,
@@ -633,6 +633,16 @@ export function PostsList({
                   // A card's Open already goes to the editor.
                   menu={rowMenu(row).filter((item) => item.label !== 'Edit')}
                   remove={removeAction(row)}
+                  select={
+                    canPublish
+                      ? {
+                          label: `Select ${row.title || 'Untitled'}`,
+                          checked: selection.isChecked(row.id),
+                          selecting: selection.selecting,
+                          onToggle: () => selection.toggle(row.id),
+                        }
+                      : undefined
+                  }
                   views={views?.[row.slug]}
                 />
               ))}
@@ -799,12 +809,14 @@ function PostCard({
   inTrash,
   menu,
   remove,
+  select,
   views,
 }: {
   row: PostListRow;
   inTrash: boolean;
   menu: RowMenuItem[];
   remove?: { label: string; onAction: () => void };
+  select?: { label: string; checked: boolean; selecting: boolean; onToggle: () => void };
   views?: number[];
 }) {
   const timeZone = useTimeZone();
@@ -833,6 +845,7 @@ function PostCard({
       }
       menu={menu}
       remove={remove}
+      select={select}
     >
       <span className="text-muted-foreground flex min-w-0 items-center gap-1 text-xs">
         <PostStatusBadge

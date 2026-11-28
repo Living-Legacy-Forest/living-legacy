@@ -397,14 +397,10 @@ export function FaqsPage({
         )}
         {canWrite && (
           <PageActions
-            edit={
-              grid
-                ? undefined
-                : {
-                    editing: selection.selecting,
-                    onToggle: selection.selecting ? selection.clear : selection.startEditing,
-                  }
-            }
+            edit={{
+              editing: selection.selecting,
+              onToggle: selection.selecting ? selection.clear : selection.startEditing,
+            }}
             add={{
               label: 'Add',
               items: [
@@ -669,6 +665,16 @@ function FaqSection({
           {faqs.map((faq, index) => (
             <ListCard
               key={faq.id}
+              select={
+                canWrite
+                  ? {
+                      label: `Select ${faq.question}`,
+                      checked: selection.isChecked(faq.id),
+                      selecting: selection.selecting,
+                      onToggle: () => selection.toggle(faq.id),
+                    }
+                  : undefined
+              }
               title={faq.question}
               largeTitle
               current={faq.id === selectedId}

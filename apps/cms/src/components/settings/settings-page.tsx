@@ -11,7 +11,7 @@ import {
   AI_DAILY_LIMIT_MAX,
 } from '@ll/content';
 import { CONSENT_MONTHS_OPTIONS } from '@ll/content/consent';
-import { Link, getRouteApi, useBlocker, useRouter } from '@tanstack/react-router';
+import { Link, getRouteApi, useBlocker, useNavigate, useRouter } from '@tanstack/react-router';
 import { type ReactNode, useEffect, useRef, useState } from 'react';
 import {
   AlertDialog,
@@ -30,7 +30,11 @@ import { Input } from '@/components/ui/input';
 import { StatusPulse } from '@/components/system/status-pulse';
 import { NumberField } from '@/components/ui/number-field';
 import { BrandRulesEditor } from '@/components/settings/brand-rules-editor';
-import { SettingsRow, SettingsSection } from '@/components/settings/settings-section';
+import {
+  SettingsRow,
+  SettingsSection,
+  SettingsSectionFilter,
+} from '@/components/settings/settings-section';
 import { ThemeTiles } from '@/components/settings/theme-tiles';
 import { MediaPicker, useMediaItem } from '@/components/media/image-field';
 import {
@@ -66,25 +70,11 @@ import {
 } from '@/server/settings';
 import { forgetCachedAiEnabled } from '@/lib/ai-status';
 import { useRevealOnce } from '@/lib/use-reveal-once';
-import { RevealWords } from '@/components/dashboard/reveal-words';
+import type { SettingsSectionId } from '@/lib/settings-nav';
 
 const rootRoute = getRouteApi('__root__');
 
 const SITE_HOST = 'livinglegacy.com.au';
-
-const sections = [
-  { id: 'general', title: 'General' },
-  { id: 'business', title: 'Contact & business' },
-  { id: 'social', title: 'Social links' },
-  { id: 'search', title: 'Search & sharing' },
-  { id: 'content-targets', title: 'Content targets' },
-  { id: 'brand-language', title: 'Brand language' },
-  { id: 'writing-assistant', title: 'Writing assistant' },
-  { id: 'legal', title: 'Legal' },
-  { id: 'cookies', title: 'Cookies & privacy' },
-  { id: 'sign-in', title: 'Sign-in & security' },
-  { id: 'appearance', title: 'Language & appearance' },
-] as const;
 
 const localeItems: { value: Locale; label: string }[] = [
   { value: 'en-AU', label: 'English (Australia)' },
@@ -191,6 +181,17 @@ function timeZoneItems(): { value: TimeZone; label: string }[] {
   }));
 }
 
+/** Which page of the form a field is on, so a problem found on another page can take you there. */
+const FIELD_SECTIONS: [prefix: string, section: SettingsSectionId][] = [
+  ['settings-abn', 'business'],
+  ['settings-domains', 'sign-in'],
+  ['settings-title-pattern', 'search'],
+  ['settings-target', 'content-targets'],
+  ['brand-language', 'brand-language'],
+  ['settings-cookie', 'cookies'],
+  ['settings-ai', 'writing-assistant'],
+];
+
 /** Checks the browser cannot do with input types alone, mirrored on the server. */
 function problem(v: SiteSettings): { field: string; message: string } | null {
   if (v.abn && !isValidAbn(v.abn)) {
@@ -239,8 +240,11 @@ export function SettingsPage({
   seoOnly = false,
   assistantKeySet,
   legalPages,
+  section,
 }: {
   data: SiteSettings;
+  /** The page of the settings form that is open; the rest of the form stays put behind it. */
+  section: SettingsSectionId;
   /** For SEO people: only the Search & sharing section. */
   seoOnly?: boolean;
   /** Whether the writing assistant's key is set on the server, for admins; absent otherwise. */
@@ -252,6 +256,7 @@ export function SettingsPage({
   const [values, setValues] = useState(data);
   const { run, pending } = useAction();
   const router = useRouter();
+  const navigate = useNavigate();
   const dirty = JSON.stringify(values) !== JSON.stringify(saved);
 
   // Preview the theme as soon as it's picked, not only once Save succeeds.
@@ -272,9 +277,10 @@ export function SettingsPage({
   usePreviewAttribute('font', values.cmsFont, cmsFont);
   usePreviewAttribute('colour', values.cmsColour, cmsColour);
 
-  // Ask before leaving with unsaved changes, in the app and on tab close.
+  // Ask before leaving with unsaved changes, in the app and on tab close. Another page of the same
+  // form is not leaving: the changes stay, and one Save covers every page.
   const blocker = useBlocker({
-    shouldBlockFn: () => dirty,
+    shouldBlockFn: ({ next }) => dirty && !next.pathname.startsWith('/settings/'),
     enableBeforeUnload: () => dirty,
     withResolver: true,
   });
@@ -287,7 +293,14 @@ export function SettingsPage({
     const issue = problem(values);
     if (issue) {
       notify.error('Check the settings', issue.message);
-      document.getElementById(issue.field)?.focus();
+      const there = FIELD_SECTIONS.find(([prefix]) => issue.field.startsWith(prefix))?.[1];
+      if (there && there !== section) {
+        // The field is on another page: open it, then focus the field once it is on screen.
+        await navigate({ to: '/settings/$section', params: { section: there } });
+        requestAnimationFrame(() => document.getElementById(issue.field)?.focus());
+      } else {
+        document.getElementById(issue.field)?.focus();
+      }
       return;
     }
     const result = await run(() => saveSiteSettings({ data: values }), {
@@ -312,27 +325,8 @@ export function SettingsPage({
 
   return (
     <div data-slot="stack-page" data-revealing={revealing || undefined} className="w-full">
-      <div className="mx-auto mb-8 max-w-5xl space-y-1">
-        <h1 data-slot="page-title" className="text-xl font-semibold tracking-tight">
-          <RevealWords text="Settings" />
-        </h1>
-        <p className="text-muted-foreground text-sm">
-          Site-wide details used across the CMS and, once connected, the public website.
-        </p>
-      </div>
-
-      <div>
-        <SectionNav
-          ids={sections
-            .map((x) => x.id)
-            .filter((id) =>
-              id === 'legal'
-                ? legalPages !== undefined
-                : !seoOnly || id === 'search' || id === 'content-targets' || id === 'brand-language'
-            )}
-        />
-
-        <form noValidate onSubmit={submit} className="mx-auto max-w-5xl space-y-10">
+      <SettingsSectionFilter only={section}>
+        <form noValidate onSubmit={submit} className="mx-auto max-w-3xl space-y-10">
           {!seoOnly && (
             <SettingsSection
               id="general"
@@ -1059,7 +1053,7 @@ export function SettingsPage({
             </Button>
           </div>
         </form>
-      </div>
+      </SettingsSectionFilter>
 
       <AlertDialog open={blocker.status === 'blocked'}>
         <AlertDialogContent>
@@ -1080,114 +1074,6 @@ export function SettingsPage({
 }
 
 const fieldWidth = 'w-full sm:w-72';
-
-/**
- * Glides to a section. Done per click rather than with a global smooth scroll,
- * so page changes and scroll restoration stay instant. Respects reduced motion.
- *
- * The hash is written once the glide ends: TanStack Router wraps
- * history.replaceState and jumps straight to a #hash target, which would cut
- * the glide short. `scrollend` is missing in older Safari, hence the timer.
- */
-function scrollToSection(id: string, onDone: () => void) {
-  const reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-  let done = false;
-  const finish = () => {
-    if (done) return;
-    done = true;
-    window.removeEventListener('scrollend', finish);
-    history.replaceState(history.state, '', `#${id}`);
-    onDone();
-  };
-  window.addEventListener('scrollend', finish, { once: true });
-  window.setTimeout(finish, reduce ? 0 : 1000);
-  document.getElementById(id)?.scrollIntoView({ behavior: reduce ? 'auto' : 'smooth' });
-}
-
-/** Jump links to each section; the one in view is highlighted. Desktop only. */
-function SectionNav({ ids }: { ids: string[] }) {
-  const shown = sections.filter((section) => ids.includes(section.id));
-  const [active, setActive] = useState<string>(shown[0]?.id ?? '');
-  // While a clicked link's glide runs, the sections it passes must not take
-  // the highlight from the one that was clicked.
-  const gliding = useRef(false);
-
-  useEffect(() => {
-    // Current is the last section whose top has passed just under the header,
-    // or the last one at the bottom of the page, since the final sections are
-    // short and never reach the top.
-    let frame = 0;
-    const update = () => {
-      frame = 0;
-      if (gliding.current) return;
-      const atBottom =
-        window.innerHeight + window.scrollY >= document.documentElement.scrollHeight - 4;
-      const passed = shown.filter(
-        ({ id }) => (document.getElementById(id)?.getBoundingClientRect().top ?? Infinity) <= 140
-      );
-      const current = atBottom ? shown[shown.length - 1] : (passed.at(-1) ?? shown[0]);
-      if (current) setActive(current.id);
-    };
-    const onScroll = () => {
-      frame ||= requestAnimationFrame(update);
-    };
-    update();
-    window.addEventListener('scroll', onScroll, { passive: true });
-    return () => {
-      cancelAnimationFrame(frame);
-      window.removeEventListener('scroll', onScroll);
-    };
-  }, []);
-
-  // Keeps the current tab in view when the row is wider than the page.
-  const list = useRef<HTMLUListElement>(null);
-  useEffect(() => {
-    const ul = list.current;
-    const link = ul?.querySelector<HTMLElement>('[aria-current="true"]');
-    if (!ul || !link) return;
-    const left = link.offsetLeft - ul.offsetLeft;
-    if (left < ul.scrollLeft || left + link.offsetWidth > ul.scrollLeft + ul.clientWidth) {
-      ul.scrollTo({ left: left - 16, behavior: 'smooth' });
-    }
-  }, [active]);
-
-  return (
-    // A row of tabs under the header, as on a settings screen; it stays one page and one Save,
-    // so the tabs jump to sections and follow the one in view. From md; phones scroll.
-    <nav
-      aria-label="Settings sections"
-      // The fill spans the whole content area (the page's padding included) so it doesn't stop
-      // short of the header and cut off its shadow; the tabs stay in the page column. z-10 keeps
-      // the header's shadow drawing over it.
-      className="bg-background sticky top-16 z-10 -mx-6 mb-8 hidden px-6 py-2 md:block"
-    >
-      <ul ref={list} className="no-scrollbar mx-auto flex max-w-5xl gap-1 overflow-x-auto">
-        {shown.map((section) => (
-          <li key={section.id} className="shrink-0">
-            <a
-              href={`#${section.id}`}
-              aria-current={active === section.id ? 'true' : undefined}
-              onClick={(e) => {
-                e.preventDefault();
-                gliding.current = true;
-                setActive(section.id);
-                scrollToSection(section.id, () => {
-                  gliding.current = false;
-                });
-              }}
-              className={cn(
-                'text-muted-foreground hover:text-foreground hover:bg-foreground/[0.06] text-ui block rounded-md px-2.5 py-1 whitespace-nowrap transition-colors',
-                active === section.id && 'bg-foreground/10 text-foreground font-medium'
-              )}
-            >
-              {section.title}
-            </a>
-          </li>
-        ))}
-      </ul>
-    </nav>
-  );
-}
 
 function TargetInput({
   id,

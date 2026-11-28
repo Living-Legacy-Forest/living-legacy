@@ -6,6 +6,7 @@ import { useIsMobile } from '@/hooks/use-mobile';
 import { cn } from '@/lib/utils';
 import { editorBack, findNavItem, isEditorPath, isTabActive, phoneTabs } from '@/lib/nav';
 import type { SessionUser } from '@/lib/session';
+import { isSettingsPath, settingsPageTitle } from '@/lib/settings-nav';
 import { AppBreadcrumbs } from './app-breadcrumbs';
 import { Logo } from './logo';
 import { NavUser } from './nav-user';
@@ -14,8 +15,14 @@ import { SystemStatus } from './system-status';
 
 export function AppHeader({ user }: { user: SessionUser }) {
   const { pathname } = useLocation();
-  const item = findNavItem(pathname);
-  const current = item && item.to !== pathname ? 'Edit' : undefined;
+  // Inside Settings the breadcrumb is Settings, then the page you are on.
+  const inSettings = isSettingsPath(pathname);
+  const item = inSettings ? findNavItem('/settings') : findNavItem(pathname);
+  const current = inSettings
+    ? settingsPageTitle(pathname)
+    : item && item.to !== pathname
+      ? 'Edit'
+      : undefined;
   const { collapsed, scrolled, title } = useLargeTitle(pathname);
   // Only the one-column sidebar can be hidden outright, so this is how to get it back.
   const { open: sidebarOpen, toggleSidebar } = useSidebar();

@@ -137,7 +137,7 @@ function MoreSheet({
   const sections: { label: string; rows: Row[] }[] = [];
   for (const group of navGroups) {
     const rows: Row[] = [];
-    for (const item of group.items.filter((i) => isNavItemAllowed(i, user))) {
+    for (const item of group.items.filter((i) => isNavItemAllowed(i, user) && !i.settings)) {
       if (item.items) {
         const children = item.items.filter(
           (c) => c.to && !tabs.includes(c.to) && isNavItemAllowed(c, user)

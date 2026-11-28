@@ -1,8 +1,9 @@
-import { getRouteApi } from '@tanstack/react-router';
+import { getRouteApi, useLocation } from '@tanstack/react-router';
 import { type CSSProperties, type ReactNode, useRef, useState } from 'react';
 import { SidebarInset, SidebarProvider } from '@/components/ui/sidebar';
 import type { NavPrefs } from '@/lib/nav-prefs';
 import { rememberNavPrefs } from '@/lib/nav-prefs-cookie';
+import { isSettingsPath } from '@/lib/settings-nav';
 import type { SessionUser } from '@/lib/session';
 import {
   type ShownSidebarState,
@@ -38,7 +39,9 @@ export function AppShell({
   const shown: ShownSidebarState = { ...layout, columns: layout.columns ?? siteColumns };
   // The one-column sidebar can be hidden outright (⌘B); the two-column one only narrows.
   const [hidden, setHidden] = useState(false);
-  const oneColumn = shown.columns === 1;
+  // Settings has one column of its own, whichever the app's sidebar is set to.
+  const inSettings = isSettingsPath(useLocation().pathname);
+  const oneColumn = shown.columns === 1 || inSettings;
   const changeLayout = (patch: Partial<SidebarState>) => {
     const next = { ...layout, ...patch };
     setLayout(next);
@@ -66,7 +69,7 @@ export function AppShell({
           onOpenChange={(next) =>
             oneColumn ? setHidden(!next) : changeLayout({ pagesWide: !layout.pagesWide })
           }
-          style={sidebarWidths(shown)}
+          style={sidebarWidths(inSettings ? { ...shown, columns: 1 } : shown)}
         >
           <AppSidebar
             user={user}

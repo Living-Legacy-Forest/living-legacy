@@ -67,14 +67,8 @@ describe('Integrations', () => {
   const pagesFor = (access: Access) =>
     sidebarSections(access).flatMap((section) => section.pages.map((page) => page.to));
 
-  it('has API keys and Apps as separate pages for an admin', () => {
+  it('has API keys and Apps in Settings, not in the app sidebar', () => {
     const pages = pagesFor({ role: 'admin' });
-    expect(pages).toContain('/integrations');
-    expect(pages).toContain('/integrations/apps');
-  });
-
-  it('is left out for people without settings access', () => {
-    const pages = pagesFor({ role: 'viewer' });
     expect(pages).not.toContain('/integrations');
     expect(pages).not.toContain('/integrations/apps');
   });

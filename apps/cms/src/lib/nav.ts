@@ -49,6 +49,8 @@ export type NavItem = {
     | '/posts/categories'
     | '/posts/tags'
     | '/profile'
+    | '/profile/appearance'
+    | '/profile/security'
     | '/whats-new'
     | '/activity'
     | '/analytics'
@@ -78,6 +80,8 @@ export type NavItem = {
     | '/users';
   /** Shown when the person has any of these. */
   permission?: Permission | Permission[];
+  /** Lives in Settings (its own sidebar), so the app's sidebar leaves it out. */
+  settings?: boolean;
   items?: NavItem[];
 };
 
@@ -202,11 +206,12 @@ export const navGroups: NavGroup[] = [
         to: '/search-replace',
         permission: 'content:replace',
       },
-      { title: 'Users', icon: UserCog, to: '/users', permission: 'users:manage' },
+      { title: 'Users', icon: UserCog, to: '/users', permission: 'users:manage', settings: true },
       {
         title: 'Integrations',
         icon: IntegrationsIcon,
         permission: 'settings:write',
+        settings: true,
         items: [
           { title: 'API keys', icon: KeyIcon, to: '/integrations', permission: 'settings:write' },
           {
@@ -217,8 +222,20 @@ export const navGroups: NavGroup[] = [
           },
         ],
       },
-      { title: 'System', icon: SystemIcon, to: '/system', permission: 'settings:write' },
-      { title: 'Uptime', icon: UptimeIcon, to: '/uptime', permission: 'settings:write' },
+      {
+        title: 'System',
+        icon: SystemIcon,
+        to: '/system',
+        permission: 'settings:write',
+        settings: true,
+      },
+      {
+        title: 'Uptime',
+        icon: UptimeIcon,
+        to: '/uptime',
+        permission: 'settings:write',
+        settings: true,
+      },
       {
         title: 'Settings',
         icon: Settings,
@@ -317,18 +334,20 @@ export function sidebarSections(access: Access): SidebarSection[] {
     .map((group) => ({
       title: group.title,
       icon: group.icon,
-      pages: group.items.filter(allowed).flatMap((item): SidebarPage[] => {
-        const subs = item.items?.filter(allowed) ?? [];
-        const list = subs.length
-          ? subs.map((sub) => ({
-              ...sub,
-              // "Overview" alone could be any section's; "Events overview" says whose.
-              title: sub.title === 'Overview' ? `${item.title} overview` : sub.title,
-              icon: sub.icon ?? item.icon!,
-            }))
-          : [{ ...item, icon: item.icon! }];
-        return list.filter((page): page is SidebarPage => !!page.to && !!page.icon);
-      }),
+      pages: group.items
+        .filter((item) => allowed(item) && !item.settings)
+        .flatMap((item): SidebarPage[] => {
+          const subs = item.items?.filter(allowed) ?? [];
+          const list = subs.length
+            ? subs.map((sub) => ({
+                ...sub,
+                // "Overview" alone could be any section's; "Events overview" says whose.
+                title: sub.title === 'Overview' ? `${item.title} overview` : sub.title,
+                icon: sub.icon ?? item.icon!,
+              }))
+            : [{ ...item, icon: item.icon! }];
+          return list.filter((page): page is SidebarPage => !!page.to && !!page.icon);
+        }),
     }))
     .filter((section) => section.pages.length > 0);
 }

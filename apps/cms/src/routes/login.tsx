@@ -1,8 +1,10 @@
 import { createFileRoute, redirect } from '@tanstack/react-router';
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { z } from 'zod';
 import { SignIn } from '@/components/login/sign-in';
-import { getCurrentUser, getLoginOptions } from '@/lib/session';
+import { Button } from '@/components/ui/button';
+import { Spinner } from '@/components/ui/spinner';
+import { getCurrentUser, getDevLoginLink, getLoginOptions } from '@/lib/session';
 import { notify } from '@/lib/notify';
 
 const errorMessages: Record<string, string> = {
@@ -35,7 +37,33 @@ function LoginPage() {
 
   return (
     <main className="bg-background flex min-h-svh items-center justify-center px-6 py-16">
-      <SignIn google={google} passkeys={passkeys} errorMessages={errorMessages} />
+      <div className="flex flex-col items-center gap-4">
+        <SignIn google={google} passkeys={passkeys} errorMessages={errorMessages} />
+        {import.meta.env.DEV && <DevSignIn />}
+      </div>
     </main>
+  );
+}
+
+/** Local dev only (`vite dev`): skips the inbox. The server refuses it anywhere but localhost. */
+function DevSignIn() {
+  const [pending, setPending] = useState(false);
+
+  async function signIn() {
+    setPending(true);
+    try {
+      const { url } = await getDevLoginLink();
+      window.location.href = url;
+    } catch (error) {
+      notify.error('Dev sign-in failed', (error as Error).message);
+      setPending(false);
+    }
+  }
+
+  return (
+    <Button variant="outline" size="sm" onClick={signIn} disabled={pending}>
+      {pending && <Spinner />}
+      Dev sign-in (localhost only)
+    </Button>
   );
 }

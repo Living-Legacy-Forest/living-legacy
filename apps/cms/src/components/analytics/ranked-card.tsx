@@ -4,6 +4,7 @@ import { Card, CardAction, CardContent, CardHeader, CardTitle } from '@/componen
 import { formatPercent, percentOf } from '@/lib/analytics';
 import { formatInteger } from '@/lib/format';
 import { cn } from '@/lib/utils';
+import { EmptyNote } from '@/components/empty-note';
 
 export type RankedRow = {
   key: string;
@@ -38,7 +39,7 @@ export function RankedList({
   return (
     <>
       {shown.length === 0 ? (
-        <p className="text-muted-foreground py-6 text-center text-sm">{emptyLabel}</p>
+        <EmptyNote>{emptyLabel}</EmptyNote>
       ) : (
         // The rows share the card's height when a card beside it is taller, up to a limit, so a short
         // list does not leave a gap under it.

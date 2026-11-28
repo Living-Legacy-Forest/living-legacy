@@ -460,9 +460,9 @@ export function RedirectsPage({
           <Button
             variant="ghost"
             size="icon-sm"
-            aria-label={paneOpen ? 'Expand list' : 'Show editor'}
-            aria-pressed={!paneOpen}
-            title={paneOpen ? 'Expand list' : 'Show editor'}
+            aria-label={paneOpen ? 'Hide the editor' : 'Show the editor'}
+            aria-pressed={paneOpen}
+            title={paneOpen ? 'Hide the editor' : 'Show the editor'}
             className="max-lg:hidden"
             onClick={() => setPaneOpen(!paneOpen)}
           >

@@ -194,7 +194,7 @@ function Tile({
             change === null
               ? 'text-muted-foreground'
               : good
-                ? 'text-emerald-600 dark:text-emerald-400'
+                ? 'text-success-text'
                 : 'text-destructive'
           )}
         >

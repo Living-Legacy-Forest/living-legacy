@@ -203,7 +203,7 @@ export function LegalPageEditor({
           <h2 id="legal-search" className="font-medium">
             In search results
           </h2>
-          <div className="bg-muted/50 space-y-0.5 rounded-md p-3">
+          <div className="bg-muted/50 space-y-0.5 rounded-lg p-3">
             <p className="text-muted-foreground truncate text-xs">
               {SITE_HOST} › {data.slug}
             </p>

@@ -33,7 +33,7 @@ export function SeoFields({
 
   return (
     <div className="space-y-4">
-      <div className="bg-muted/50 space-y-0.5 rounded-md p-3">
+      <div className="bg-muted/50 space-y-0.5 rounded-lg p-3">
         <p className="text-muted-foreground truncate text-xs">
           {SITE_HOST} › blog › {values.slug || '…'}
         </p>
@@ -206,7 +206,7 @@ export function SocialFields({
 
   return (
     <div className="space-y-4">
-      <div className="bg-muted/50 overflow-hidden rounded-md">
+      <div className="bg-muted/50 overflow-hidden rounded-lg">
         <div className="bg-muted aspect-[1.91] w-full">
           {imageId && (
             <img

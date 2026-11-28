@@ -14,6 +14,7 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
+import { FIELD_LABEL } from '@/components/form-cells';
 import { Label } from '@/components/ui/label';
 import { Spinner } from '@/components/ui/spinner';
 import { authClient } from '@/lib/auth-client';
@@ -222,7 +223,9 @@ export function UserPhotoDialog({
               </div>
 
               <div className="space-y-1.5">
-                <Label htmlFor="user-photo-alt">Alt text</Label>
+                <Label htmlFor="user-photo-alt" className={FIELD_LABEL}>
+                  Alt text
+                </Label>
                 <Input
                   id="user-photo-alt"
                   maxLength={300}

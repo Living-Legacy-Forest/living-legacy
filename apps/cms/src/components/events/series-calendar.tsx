@@ -97,7 +97,7 @@ export function SeriesCalendar({
               setOpen(false);
             }}
           />
-          <div className="flex items-center justify-between gap-2 border-t px-3 py-2">
+          <div className="flex items-center justify-between gap-2 px-3 py-2">
             <p className="text-muted-foreground text-xs">
               {dates.length} dates in this event. Each has its own guest list.
             </p>

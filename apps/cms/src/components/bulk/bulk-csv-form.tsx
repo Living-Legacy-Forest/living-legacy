@@ -190,7 +190,7 @@ export function BulkCsvForm<T>({
       </section>
 
       {problems.length > 0 && (
-        <ul className="divide-border/60 bg-muted/50 divide-y rounded-lg text-xs">
+        <ul className="bg-muted/50 rounded-lg text-xs">
           {problems.map((p) => (
             <li key={`${p.row}-${p.reason}`} className="flex gap-3 px-3 py-2">
               <span className="text-muted-foreground shrink-0 tabular-nums">Row {p.row}</span>

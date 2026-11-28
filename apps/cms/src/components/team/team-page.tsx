@@ -506,12 +506,12 @@ function MemberSummary({ member }: { member: TeamMember }) {
           src={memberImage(member)!}
           alt=""
           loading="lazy"
-          className="size-8 shrink-0 rounded-full border object-cover"
+          className="size-8 shrink-0 rounded-full object-cover"
         />
       ) : (
         <span
           aria-hidden
-          className="bg-muted text-muted-foreground flex size-8 shrink-0 items-center justify-center rounded-full border text-xs font-medium"
+          className="bg-muted text-muted-foreground flex size-8 shrink-0 items-center justify-center rounded-full text-xs font-medium"
         >
           {initialsOf(member.name)}
         </span>
@@ -665,15 +665,11 @@ function MemberForm({
         >
           <div className="flex items-center gap-3">
             {avatarSeed ? (
-              <img
-                src={avatarUrl(avatarSeed)}
-                alt=""
-                className="size-10 shrink-0 rounded-full border"
-              />
+              <img src={avatarUrl(avatarSeed)} alt="" className="size-10 shrink-0 rounded-full" />
             ) : (
               <span
                 aria-hidden
-                className="bg-muted text-muted-foreground flex size-10 shrink-0 items-center justify-center rounded-full border text-xs font-medium"
+                className="bg-muted text-muted-foreground flex size-10 shrink-0 items-center justify-center rounded-full text-xs font-medium"
               >
                 {initialsOf(name || '?')}
               </span>

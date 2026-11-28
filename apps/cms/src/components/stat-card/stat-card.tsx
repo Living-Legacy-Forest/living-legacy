@@ -90,7 +90,7 @@ export function StatCard({ stat }: { stat: Stat }) {
             data-reveal="5"
             className={cn(
               'text-xs tabular-nums',
-              delta.diff > 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-destructive'
+              delta.diff > 0 ? 'text-success-text' : 'text-destructive'
             )}
           >
             <RollingNumber value={delta.diff} signed /> vs previous {span} {days ? 'days' : 'weeks'}

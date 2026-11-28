@@ -106,8 +106,7 @@ export function MetricCard({
           <small
             className={cn(
               'inline-flex shrink-0 rounded-full border px-2 py-0.5 text-xs tabular-nums',
-              trend === 'up' &&
-                'border-transparent bg-emerald-500/10 text-emerald-600 dark:text-emerald-400',
+              trend === 'up' && 'bg-success/10 text-success-text border-transparent',
               trend === 'down' && 'bg-destructive/10 text-destructive border-transparent',
               !trend && 'text-muted-foreground'
             )}

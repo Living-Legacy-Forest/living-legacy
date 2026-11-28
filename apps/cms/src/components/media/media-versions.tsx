@@ -50,7 +50,7 @@ export function MediaVersions({
       </h3>
       <ul className="grid gap-2 text-sm">
         {versions.map((v) => (
-          <li key={v.id} className="bg-muted/50 grid gap-2 rounded-md p-3">
+          <li key={v.id} className="bg-muted/50 grid gap-2 rounded-lg p-3">
             <div className="flex min-w-0 flex-wrap items-baseline gap-x-2">
               <span className="min-w-0 truncate font-medium">{v.filename}</span>
               <span className="text-muted-foreground text-xs">

@@ -2,9 +2,9 @@ import type { StatusTone } from '@/lib/system-status';
 import { cn } from '@/lib/utils';
 
 const DOT: Record<StatusTone, string> = {
-  green: 'bg-emerald-500',
-  yellow: 'bg-amber-500',
-  red: 'bg-red-500',
+  green: 'bg-success',
+  yellow: 'bg-warning',
+  red: 'bg-destructive',
 };
 
 /**

@@ -24,7 +24,7 @@ import {
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
 import { ArrowRight, ChevronDownIcon, MoonIcon, SunIcon } from '@/components/icons';
-import { Badge } from '@/components/ui/badge';
+import { StatusBadge } from '@/components/status-badge';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { StatusPulse } from '@/components/system/status-pulse';
@@ -542,7 +542,7 @@ export function SettingsPage({
             </SettingsRow>
             <div className="space-y-1.5 max-md:px-4 max-md:py-3.5">
               <p className="text-muted-foreground text-xs">Search result preview</p>
-              <div className="bg-muted/50 rounded-md px-4 py-3">
+              <div className="bg-muted/50 rounded-lg px-4 py-3">
                 <p className="text-muted-foreground truncate text-xs">{SITE_HOST} › our-story</p>
                 <p className="truncate text-base text-[#1a0dab] dark:text-[#8ab4f8]">
                   {exampleTitle}
@@ -1410,7 +1410,7 @@ function SiteIconPanel({
   const problem = item ? siteIconProblem(item, label) : null;
 
   return (
-    <div className="bg-muted/50 space-y-3 rounded-xl p-3">
+    <div className="bg-muted/50 space-y-3 rounded-lg p-3">
       <p className="text-ui flex items-center gap-1.5 font-medium">
         <Icon aria-hidden className="text-muted-foreground size-4" />
         {mode === 'light' ? 'Light mode' : 'Dark mode'}
@@ -1462,9 +1462,9 @@ function SharePreview({ url }: { url: string }) {
   if (!/^https?:\/\/\S+$/.test(url)) return null;
 
   return (
-    <div className="bg-muted aspect-[1.91/1] w-28 shrink-0 overflow-hidden rounded-md border">
+    <div className="bg-muted aspect-[1.91/1] w-28 shrink-0 overflow-hidden rounded-md">
       {broken ? (
-        <p className="text-muted-foreground flex h-full items-center justify-center p-1 text-center text-[11px]">
+        <p className="text-muted-foreground flex h-full items-center justify-center p-1 text-center text-[0.6875rem]">
           Image not found
         </p>
       ) : (
@@ -1500,13 +1500,17 @@ function LegalPagesSection({ pages }: { pages: LegalPageSummary[] }) {
                 : 'Not published'}
             </span>
           </span>
-          {page.reviewRequestedAt ? (
-            <Badge variant="secondary">Review requested</Badge>
-          ) : page.hasDraft ? (
-            <Badge variant="outline">Unpublished changes</Badge>
-          ) : (
-            <Badge variant="outline">Published</Badge>
-          )}
+          <StatusBadge
+            kind={
+              page.reviewRequestedAt
+                ? 'review'
+                : page.hasDraft
+                  ? 'changes'
+                  : page.lastPublishedAt
+                    ? 'published'
+                    : 'draft'
+            }
+          />
           <ArrowRight aria-hidden className="text-muted-foreground size-4" />
         </Link>
       ))}

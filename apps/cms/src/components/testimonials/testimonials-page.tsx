@@ -49,6 +49,7 @@ import { FormCell, FormSection, FormSwitchCell } from '@/components/form-cells';
 import { ImageField } from '@/components/media/image-field';
 import { PageActions } from '@/components/shell/page-actions';
 import { Badge } from '@/components/ui/badge';
+import { StatusBadge } from '@/components/status-badge';
 import { Button } from '@/components/ui/button';
 import {
   Empty,
@@ -616,12 +617,7 @@ function PreviewPane({
   return (
     <section aria-label="Preview" className="hidden min-h-0 flex-col lg:flex">
       <div className="flex h-10 shrink-0 items-center gap-1.5 px-3">
-        <Badge
-          variant={testimonial.status === 'published' ? 'secondary' : 'outline'}
-          className="capitalize"
-        >
-          {testimonial.status}
-        </Badge>
+        <StatusBadge kind={testimonial.status} />
         {testimonial.featured && <Badge variant="default">Featured</Badge>}
         <div className="ml-auto flex items-center gap-1.5">
           {canWrite && (

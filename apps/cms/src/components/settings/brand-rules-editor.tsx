@@ -14,6 +14,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
+import { EmptyNote } from '@/components/empty-note';
 
 const severityItems: { value: BrandSeverity; label: string }[] = [
   { value: 'critical', label: 'Never use' },
@@ -87,7 +88,7 @@ export function BrandRulesEditor({
         )}
         <Button
           type="button"
-          variant="secondary"
+          variant="outline"
           size="sm"
           disabled={rules.length >= BRAND_RULES_MAX}
           onClick={add}
@@ -104,9 +105,9 @@ export function BrandRulesEditor({
       </div>
 
       {shown.length === 0 ? (
-        <p className="text-muted-foreground px-4 py-6 text-center text-sm">
+        <EmptyNote>
           {rules.length ? 'No words match.' : 'No words yet. Add one, or use the guide’s list.'}
-        </p>
+        </EmptyNote>
       ) : (
         onPage.map(({ rule, index }) => (
           <div

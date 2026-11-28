@@ -1,4 +1,5 @@
 import { cn } from '@/lib/utils';
+import { SELECTED_RING } from '@/lib/ui-states';
 import type { Theme } from '@/server/settings';
 
 const order: Theme[] = ['light', 'dark', 'system'];
@@ -75,11 +76,9 @@ export function ThemeTiles({
           />
           <span
             className={cn(
-              'block rounded-[10px] border p-[3px] transition-[border-color,box-shadow]',
-              'peer-focus-visible:ring-ring/50 peer-focus-visible:ring-[3px]',
-              value === theme
-                ? 'border-foreground shadow-[0_0_0_1px_var(--foreground)]'
-                : 'group-hover:border-foreground/30'
+              'bg-muted/60 block rounded-[10px] p-[3px] transition-[background-color,box-shadow]',
+              'peer-focus-visible:ring-ring/50 peer-focus-visible:ring-2',
+              value === theme ? cn('bg-muted', SELECTED_RING) : 'group-hover:bg-muted'
             )}
           >
             <Preview theme={theme} />

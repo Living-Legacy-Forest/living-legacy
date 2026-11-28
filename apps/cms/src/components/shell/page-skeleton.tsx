@@ -268,7 +268,7 @@ function SettingsSkeleton() {
 function EditorSkeleton() {
   return (
     <div className="grid flex-1 gap-6 lg:grid-cols-[minmax(0,1fr)_17rem] lg:gap-0">
-      <div className="bg-muted/50 flex min-w-0 flex-col overflow-hidden rounded-lg lg:mr-6 lg:h-[calc(100svh-7.5rem)]">
+      <div className="bg-muted/50 flex min-w-0 flex-col overflow-hidden rounded-xl lg:mr-6 lg:h-[calc(100svh-7.5rem)]">
         <div className="flex h-12 shrink-0 items-center gap-3 px-3">
           <Skeleton className="h-4 w-20" />
           <Skeleton className="h-4 w-28" />
@@ -387,7 +387,7 @@ function LegalEditorSkeleton() {
           <Skeleton className="h-8 w-24" />
           <Skeleton className="h-8 w-20" />
         </div>
-        <div className="bg-muted/50 min-h-[32rem] overflow-clip rounded-lg">
+        <div className="bg-muted/50 min-h-[32rem] overflow-clip rounded-xl">
           <DocumentEditorSkeleton />
         </div>
       </div>

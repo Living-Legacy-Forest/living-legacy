@@ -41,6 +41,7 @@ import { Reveal } from '@/components/reveal';
 import { AddGuestDialog } from './add-guest-dialog';
 import { TicketScanner } from './ticket-scanner';
 import { GlideHighlight } from '@/components/ui/glide-highlight';
+import { EmptyNote } from '@/components/empty-note';
 
 const fullName = (g: Guest) => [g.firstName, g.lastName].filter(Boolean).join(' ');
 const places = (n: number) => (n === 1 ? '1 place' : `${n} places`);
@@ -234,9 +235,9 @@ export function EventGuests({ event }: { event: EventRow }) {
       </div>
 
       {confirmed.length === 0 ? (
-        <p className="text-muted-foreground bg-muted/50 rounded-lg px-4 py-8 text-center text-sm max-md:border-0 max-md:text-[0.9375rem]">
+        <EmptyNote boxed className="max-md:text-[0.9375rem]">
           No guests yet. Add phone bookings and walk-ins here.
-        </p>
+        </EmptyNote>
       ) : (
         <ul className={GUEST_LIST}>
           <GlideHighlight

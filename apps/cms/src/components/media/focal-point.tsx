@@ -1,6 +1,7 @@
 import { useRef } from 'react';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
+import { FOCUS_RING } from '@/lib/ui-states';
 
 export type Focal = { x: number; y: number };
 
@@ -39,7 +40,10 @@ export function FocalPicker({
       <button
         type="button"
         aria-label={`Focal point, ${pct(point.x)} across and ${pct(point.y)} down. Click the picture or use the arrow keys to move it.`}
-        className="focus-visible:ring-ring relative mx-auto block w-fit max-w-full cursor-crosshair overflow-hidden rounded-lg border outline-none focus-visible:ring-2"
+        className={cn(
+          'relative mx-auto block w-fit max-w-full cursor-crosshair overflow-hidden rounded-lg',
+          FOCUS_RING
+        )}
         onClick={(e) => {
           const rect = image.current?.getBoundingClientRect();
           if (!rect?.width || !rect.height) return;
@@ -89,7 +93,7 @@ export function FocalPicker({
                 style={{ objectPosition: position }}
                 // The crops pan to a new point rather than jump, which shows what the point does.
                 className={cn(
-                  'bg-muted rounded-md border object-cover transition-[object-position] duration-200 ease-out motion-reduce:transition-none',
+                  'bg-muted rounded-md object-cover transition-[object-position] duration-200 ease-out motion-reduce:transition-none',
                   shape.className
                 )}
               />

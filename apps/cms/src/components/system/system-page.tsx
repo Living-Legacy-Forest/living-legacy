@@ -138,7 +138,7 @@ export function SystemPage({
           <CardDescription>Checked just now, when this page opened.</CardDescription>
         </CardHeader>
         <CardContent>
-          <ItemGroup className="gap-0 divide-y">
+          <ItemGroup className="gap-0 max-md:divide-y">
             {health.map((check) => {
               const tone = checkTone[check.status];
               return (
@@ -181,7 +181,7 @@ export function SystemPage({
             <CardTitle>{schedule.title}</CardTitle>
           </CardHeader>
           <CardContent>
-            <ItemGroup className="gap-0 divide-y">
+            <ItemGroup className="gap-0 max-md:divide-y">
               {schedule.jobs.map((job) => {
                 const tone = jobTone[job.health];
                 return (

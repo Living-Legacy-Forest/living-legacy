@@ -79,7 +79,7 @@ export function EventToolbar({
       : []),
   ];
   return (
-    <header className="flex min-h-12 shrink-0 flex-wrap items-center gap-x-3 gap-y-2 border-b px-3 py-1.5">
+    <header className="flex min-h-12 shrink-0 flex-wrap items-center gap-x-3 gap-y-2 px-3 py-1.5">
       {/* Phones have ‹ Events in the app's own top bar. */}
       <Button
         variant="ghost"

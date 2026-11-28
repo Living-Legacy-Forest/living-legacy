@@ -83,9 +83,9 @@ export function NavUser({ user }: { user: SessionUser }) {
           <Avatar className="size-8">{avatar}</Avatar>
         </button>
         <Drawer open={sheetOpen} onOpenChange={setSheetOpen}>
-          <DrawerContent className="bg-(--ios-grouped)">
+          <DrawerContent className="bg-(--ios-sheet)">
             <SheetHeader title="Account" onDone={close} />
-            <DrawerBody className="flex flex-col gap-6 pb-[calc(env(safe-area-inset-bottom)+1.5rem)]">
+            <DrawerBody className="flex flex-col gap-6 pb-[calc(env(safe-area-inset-bottom)+1.5rem)] *:shrink-0">
               <div className="bg-background flex items-center gap-3 rounded-xl px-4 py-3">
                 <Avatar className="size-12">{avatar}</Avatar>
                 <div className="min-w-0 flex-1">

@@ -258,14 +258,10 @@ export function TermsPage({
         )}
         {canWrite && (
           <PageActions
-            edit={
-              grid
-                ? undefined
-                : {
-                    editing: selection.selecting,
-                    onToggle: selection.selecting ? selection.clear : selection.startEditing,
-                  }
-            }
+            edit={{
+              editing: selection.selecting,
+              onToggle: selection.selecting ? selection.clear : selection.startEditing,
+            }}
             add={{ label: `New ${noun[0]}`, onClick: () => view.open({ kind: 'new' }) }}
           />
         )}
@@ -318,6 +314,16 @@ export function TermsPage({
                 {visible.map((t) => (
                   <ListCard
                     key={t.id}
+                    select={
+                      canWrite
+                        ? {
+                            label: `Select ${t.name}`,
+                            checked: selection.isChecked(t.id),
+                            selecting: selection.selecting,
+                            onToggle: () => selection.toggle(t.id),
+                          }
+                        : undefined
+                    }
                     title={t.name}
                     largeTitle
                     current={pane?.kind === 'edit' && pane.id === t.id}

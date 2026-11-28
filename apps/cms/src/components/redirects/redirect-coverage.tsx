@@ -26,7 +26,7 @@ type Tab = 'missing' | 'redirected' | 'live';
 const PAGE_SIZES = [10, 25, 50, 100] as const;
 
 const listClass =
-  'overflow-hidden rounded-lg bg-muted/50 max-md:divide-y max-md:divide-(--ios-separator) max-md:overflow-hidden max-md:rounded-[10px] max-md:border-0 max-md:bg-(--ios-cell)';
+  'overflow-hidden rounded-lg bg-muted/50 max-md:overflow-hidden max-md:rounded-[10px] max-md:border-0 max-md:bg-(--ios-cell)';
 
 const noun = (n: number) => `${formatInteger(n)} ${n === 1 ? 'address' : 'addresses'}`;
 

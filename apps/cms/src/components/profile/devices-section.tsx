@@ -81,8 +81,7 @@ export function DevicesSection() {
       id="devices"
       title="Devices"
       framed
-      divided={false}
-      description="Where you are signed in. Sign out anything you do not recognise."
+      description="Sign out anything you don't recognise."
     >
       {devices === null ? (
         <div className="flex items-center justify-center px-4 py-6">

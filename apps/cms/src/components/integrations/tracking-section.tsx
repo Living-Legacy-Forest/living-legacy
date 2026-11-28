@@ -140,7 +140,7 @@ export function TrackingSection({ saved }: { saved: TrackingIds }) {
                 ))}
               </InfoTip>
             </div>
-            <div className={cn(groupBoxClass, 'max-md:divide-y max-md:divide-(--ios-separator)')}>
+            <div className={cn(groupBoxClass, '')}>
               {group.apps.map((app) => (
                 <AppRow
                   key={app.key}

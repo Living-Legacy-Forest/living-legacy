@@ -124,7 +124,7 @@ export function ScoreCard({ scores }: { scores: ScoreSummary }) {
               {scores.lowest.length === 0 ? (
                 <p className="text-muted-foreground text-sm">No posts scored yet.</p>
               ) : (
-                <ItemGroup className="gap-0 max-md:divide-y max-md:divide-(--ios-separator)">
+                <ItemGroup className="gap-0">
                   {scores.lowest.map((post) => (
                     <Item
                       key={post.id}

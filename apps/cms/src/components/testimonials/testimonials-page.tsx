@@ -356,14 +356,10 @@ export function TestimonialsPage({
         {canWrite && <div className="flex gap-3 max-md:hidden">{addButtons}</div>}
         {canWrite && (
           <PageActions
-            edit={
-              grid
-                ? undefined
-                : {
-                    editing: selection.selecting,
-                    onToggle: selection.selecting ? selection.clear : selection.startEditing,
-                  }
-            }
+            edit={{
+              editing: selection.selecting,
+              onToggle: selection.selecting ? selection.clear : selection.startEditing,
+            }}
             add={{ label: 'Add testimonial', onClick: () => view.open({ kind: 'new' }) }}
             more={[{ label: 'Bulk update', onClick: () => view.open({ kind: 'bulk' }) }]}
           />
@@ -415,6 +411,16 @@ export function TestimonialsPage({
                 {paged.shown.map((t) => (
                   <ListCard
                     key={t.id}
+                    select={
+                      canWrite
+                        ? {
+                            label: `Select the quote from ${t.name}`,
+                            checked: selection.isChecked(t.id),
+                            selecting: selection.selecting,
+                            onToggle: () => selection.toggle(t.id),
+                          }
+                        : undefined
+                    }
                     title={t.name}
                     image={t.photoMediaId ? `/api/media/${t.photoMediaId}?w=640` : null}
                     icon={<MessageSquareQuoteIcon aria-hidden />}

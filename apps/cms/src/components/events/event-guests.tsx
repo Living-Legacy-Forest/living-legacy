@@ -524,7 +524,7 @@ function Stat({ label, value }: { label: string; value: string }) {
 
 /** Bordered on wider screens; an iOS grouped list on phones. */
 const GUEST_LIST =
-  'divide-y divide-border/60 overflow-hidden rounded-lg bg-muted/50 max-md:divide-(--ios-separator) max-md:overflow-hidden max-md:rounded-[10px] max-md:border-0 max-md:bg-(--ios-cell-raised)';
+  'overflow-hidden rounded-lg bg-muted/50 md:divide-y md:divide-border/60 max-md:overflow-hidden max-md:rounded-[10px] max-md:border-0 max-md:bg-(--ios-cell-raised)';
 
 /**
  * A guest beside their buttons. On phones the name stays beside them and the rest

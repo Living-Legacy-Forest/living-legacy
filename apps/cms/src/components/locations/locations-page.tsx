@@ -343,14 +343,10 @@ export function LocationsPage({
         {canWrite && <div className="max-md:hidden">{addButton}</div>}
         {canWrite && (
           <PageActions
-            edit={
-              grid
-                ? undefined
-                : {
-                    editing: selection.selecting,
-                    onToggle: selection.selecting ? selection.clear : selection.startEditing,
-                  }
-            }
+            edit={{
+              editing: selection.selecting,
+              onToggle: selection.selecting ? selection.clear : selection.startEditing,
+            }}
             add={{ label: 'Add location', onClick: openNew }}
           />
         )}
@@ -406,6 +402,16 @@ export function LocationsPage({
                 {visible.map((l) => (
                   <ListCard
                     key={l.id}
+                    select={
+                      canWrite
+                        ? {
+                            label: `Select ${l.name}`,
+                            checked: selection.isChecked(l.id),
+                            selecting: selection.selecting,
+                            onToggle: () => selection.toggle(l.id),
+                          }
+                        : undefined
+                    }
                     title={l.name}
                     image={l.heroMediaId ? `/api/media/${l.heroMediaId}?w=640` : null}
                     icon={<MapPinIcon aria-hidden />}
@@ -432,7 +438,7 @@ export function LocationsPage({
                 ))}
               </ListCards>
             ) : (
-              <ListRows inset="media">
+              <ListRows>
                 {visible.map((l) => (
                   <ListRow
                     key={l.id}

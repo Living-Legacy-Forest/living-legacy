@@ -77,11 +77,7 @@ function ChangeEmail({ currentEmail }: { currentEmail: string }) {
   }
 
   return (
-    <SettingsSection
-      id="sign-in"
-      title="Sign-in"
-      description="There is no password: you sign in with a link sent to this address."
-    >
+    <SettingsSection id="sign-in" title="Sign-in" description="You sign in with a link sent here.">
       <SettingsRow id="profile-email" title="Email">
         <div className="flex items-center gap-2 max-md:justify-end">
           <span className="text-muted-foreground text-ui flex min-w-0 items-center gap-2">

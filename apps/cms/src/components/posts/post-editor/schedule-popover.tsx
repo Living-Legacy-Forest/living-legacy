@@ -241,7 +241,7 @@ export function SchedulePopover({
           <DialogContent showCloseButton={false}>
             <div
               data-slot="sheet-header"
-              className="sticky -top-2 z-20 -mx-4 -mt-2 grid grid-cols-[minmax(4.5rem,1fr)_auto_minmax(4.5rem,1fr)] items-center gap-2 bg-(--ios-grouped)/85 px-4 pt-2 pb-1 backdrop-blur-xl"
+              className="sticky -top-2 z-20 -mx-4 -mt-2 grid grid-cols-[minmax(4.5rem,1fr)_auto_minmax(4.5rem,1fr)] items-center gap-2 bg-(--ios-sheet)/85 px-4 pt-2 pb-1 backdrop-blur-xl"
             >
               <DrawerClose
                 render={

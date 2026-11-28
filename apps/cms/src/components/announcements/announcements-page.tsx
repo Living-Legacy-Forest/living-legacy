@@ -462,14 +462,10 @@ export function AnnouncementsPage({
         {canWrite && <div className="max-md:hidden">{newButton}</div>}
         {canWrite && (
           <PageActions
-            edit={
-              grid
-                ? undefined
-                : {
-                    editing: selection.selecting,
-                    onToggle: selection.selecting ? selection.clear : selection.startEditing,
-                  }
-            }
+            edit={{
+              editing: selection.selecting,
+              onToggle: selection.selecting ? selection.clear : selection.startEditing,
+            }}
             add={{ label: 'Add announcement', onClick: () => view.open({ kind: 'new' }) }}
           />
         )}
@@ -524,6 +520,16 @@ export function AnnouncementsPage({
                 {visible.map((a) => (
                   <ListCard
                     key={a.id}
+                    select={
+                      canWrite
+                        ? {
+                            label: `Select ${a.title}`,
+                            checked: selection.isChecked(a.id),
+                            selecting: selection.selecting,
+                            onToggle: () => selection.toggle(a.id),
+                          }
+                        : undefined
+                    }
                     title={a.title}
                     largeTitle
                     current={pane?.kind === 'edit' && pane.id === a.id}

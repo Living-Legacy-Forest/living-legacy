@@ -50,7 +50,7 @@ export function FailuresList({
 
   return (
     <>
-      <ItemGroup className="gap-0 max-md:divide-y">
+      <ItemGroup className="gap-0">
         {shown.map((failure) => (
           <Item key={failure.id} size="sm" className={rowClass}>
             <ItemContent className="min-w-0">

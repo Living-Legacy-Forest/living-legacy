@@ -68,7 +68,7 @@ export function MissingPagesPage({
           </EmptyHeader>
         </Empty>
       ) : (
-        <ul className="bg-muted/50 overflow-hidden rounded-lg max-md:divide-y max-md:divide-(--ios-separator) max-md:overflow-hidden max-md:rounded-[10px] max-md:border-0 max-md:bg-(--ios-cell)">
+        <ul className="bg-muted/50 overflow-hidden rounded-lg max-md:overflow-hidden max-md:rounded-[10px] max-md:border-0 max-md:bg-(--ios-cell)">
           <GlideHighlight
             follow="hover"
             as="li"

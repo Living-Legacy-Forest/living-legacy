@@ -155,7 +155,7 @@ export function NeedsAttention({ attention }: { attention: Attention }) {
             </EmptyHeader>
           </Empty>
         ) : (
-          <ItemGroup className="gap-0 max-md:divide-y max-md:divide-(--ios-separator)">
+          <ItemGroup className="gap-0">
             {tasks.map((task) => (
               <Item
                 key={task.key}

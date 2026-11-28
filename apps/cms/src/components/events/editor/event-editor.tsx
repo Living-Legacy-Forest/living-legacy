@@ -199,7 +199,7 @@ export function EventEditor({
                 >
                   {viewBar}
                 </EventToolbar>
-                <div className="min-h-[24rem] flex-1 overflow-y-auto p-6 max-md:px-0 lg:min-h-0">
+                <div className="min-h-[24rem] flex-1 overflow-y-auto p-6 max-md:px-2 lg:min-h-0">
                   <EventMain editor={editor} event={event} />
                 </div>
               </div>

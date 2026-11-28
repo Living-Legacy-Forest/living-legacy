@@ -404,7 +404,7 @@ export function MediaCoveragePage({
         </div>
         <PageActions
           edit={
-            canWrite && !grid
+            canWrite
               ? {
                   editing: selection.selecting,
                   onToggle: selection.selecting ? selection.clear : selection.startEditing,
@@ -475,6 +475,16 @@ export function MediaCoveragePage({
                 {paged.shown.map((m) => (
                   <ListCard
                     key={m.id}
+                    select={
+                      canWrite
+                        ? {
+                            label: `Select ${m.title}`,
+                            checked: selection.isChecked(m.id),
+                            selecting: selection.selecting,
+                            onToggle: () => selection.toggle(m.id),
+                          }
+                        : undefined
+                    }
                     title={m.title}
                     image={m.imageMediaId ? `/api/media/${m.imageMediaId}?w=640` : null}
                     icon={<NewspaperIcon aria-hidden />}

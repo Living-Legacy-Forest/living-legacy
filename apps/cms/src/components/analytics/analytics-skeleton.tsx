@@ -211,7 +211,7 @@ function TableSkeleton({
       </div>
       <ul
         className={cn(
-          'bg-muted/50 overflow-hidden rounded-lg max-md:divide-y max-md:divide-(--ios-separator) max-md:rounded-[10px] max-md:border-0 max-md:bg-(--ios-cell)',
+          'bg-muted/50 overflow-hidden rounded-lg max-md:rounded-[10px] max-md:border-0 max-md:bg-(--ios-cell)',
           tableFrom === 'lg' ? 'lg:hidden' : 'md:hidden'
         )}
       >

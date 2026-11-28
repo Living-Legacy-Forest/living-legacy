@@ -354,6 +354,12 @@ export function EventsPage({ data }: { data: EventsData }) {
                     onOpen={() => openEvent(row.lead.id)}
                     menu={menuFor(row)}
                     onDelete={() => setToDelete(idsOf([row]))}
+                    select={{
+                      label: `Select ${row.lead.title}`,
+                      checked: selection.isChecked(row.key),
+                      selecting: selection.selecting,
+                      onToggle: () => selection.toggle(row.key),
+                    }}
                   />
                 ))}
               </ListCards>
@@ -419,11 +425,13 @@ function EventCard({
   onOpen,
   menu,
   onDelete,
+  select,
 }: {
   row: ReturnType<typeof groupEventDates<EventRow>>[number];
   onOpen: () => void;
   menu: RowMenuItem[];
   onDelete: () => void;
+  select: { label: string; checked: boolean; selecting: boolean; onToggle: () => void };
 }) {
   const { lead, dates, upcoming } = row;
   const when =
@@ -440,6 +448,7 @@ function EventCard({
       onOpen={onOpen}
       menu={menu}
       remove={{ label: 'Delete', onAction: onDelete }}
+      select={select}
     >
       <span className="flex min-w-0 items-center gap-2 text-xs">
         <Badge variant="outline" className="shrink-0 tabular-nums">

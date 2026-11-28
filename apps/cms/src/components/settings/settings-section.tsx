@@ -22,7 +22,6 @@ export function SettingsSection({
   title,
   description,
   framed = false,
-  divided = true,
   loose = false,
   children,
 }: {
@@ -30,12 +29,10 @@ export function SettingsSection({
   title: string;
   description?: string;
   /**
-   * Draws a border round the group, for lists and tables (rules, pages, devices) that read as
-   * rows of one thing. Plain settings rows sit unframed.
+   * Sets the group on a tinted panel, for lists and tables (rules, pages, devices) that read as
+   * rows of one thing. Plain settings rows sit on the page. Neither draws lines between rows.
    */
   framed?: boolean;
-  /** Whether a framed group draws a line between its rows from md. Phones always do. */
-  divided?: boolean;
   /** More room between rows, for a page of a few well-spaced settings. */
   loose?: boolean;
   children: ReactNode;
@@ -47,12 +44,9 @@ export function SettingsSection({
       data-slot="settings-group"
       data-framed={framed || undefined}
       className={cn(
-        'min-w-0 max-md:divide-y max-md:divide-(--ios-separator) max-md:overflow-hidden max-md:rounded-[10px] max-md:bg-(--ios-cell)',
+        'min-w-0 max-md:overflow-hidden max-md:rounded-[10px] max-md:bg-(--ios-cell)',
         framed
-          ? cn(
-              'md:bg-muted/50 md:overflow-hidden md:rounded-lg',
-              divided && 'md:divide-border/60 md:divide-y'
-            )
+          ? 'md:bg-muted/50 md:overflow-hidden md:rounded-lg'
           : loose
             ? 'md:space-y-8'
             : 'md:space-y-6'
@@ -79,7 +73,7 @@ export function SettingsSection({
   }
   return (
     // From md, the title and what the section is for sit in a column on the left and the
-    // settings on the right, with a rule between sections. Phones keep iOS Settings' groups.
+    // settings on the right. Phones keep iOS Settings' groups.
     <section
       id={id}
       className="scroll-mt-32 max-md:space-y-1.5 md:grid md:grid-cols-[minmax(0,15rem)_minmax(0,1fr)] md:gap-x-10 md:pt-8 md:first:pt-0"
@@ -97,6 +91,18 @@ export function SettingsSection({
       </div>
       {group}
     </section>
+  );
+}
+
+/**
+ * A heading over a few rows inside one section. Phones draw it as iOS's small grey caps, with
+ * room above it so it doesn't sit on the group's edge.
+ */
+export function SettingsSubheading({ children }: { children: ReactNode }) {
+  return (
+    <h2 className="text-ui flex items-center gap-1.5 font-medium max-md:px-4 max-md:pt-4 max-md:pb-1 max-md:text-[0.8125rem] max-md:font-normal max-md:text-(--ios-secondary) max-md:uppercase md:not-first:pt-2">
+      {children}
+    </h2>
   );
 }
 
@@ -125,13 +131,14 @@ export function SettingsRow({
   below?: boolean;
   children: ReactNode;
 }) {
+  // The slot gives a title with a "?" or a logo the same padding on phones as a bare label.
   const heading = info ? (
-    <div className="flex items-center gap-1.5">
+    <div data-slot="settings-row-heading" className="flex items-center gap-1.5">
       <Label htmlFor={id}>{title}</Label>
       <InfoTip label={`About ${title.toLowerCase()}`}>{info}</InfoTip>
     </div>
   ) : icon ? (
-    <div className="flex items-center gap-2.5">
+    <div data-slot="settings-row-heading" className="flex items-center gap-2.5">
       {icon}
       <Label htmlFor={id}>{title}</Label>
     </div>

@@ -36,6 +36,20 @@ Database changes: edit `packages/db/src/schema/`, then
 - **Comments** say why, not what. Match the density of the file you're in.
 - **User-facing copy** is plain, sentence case, in Australian English ("organise", "colour").
 
+## Project tracking (Linear)
+
+Work is tracked in Linear, team **Living Legacy (LL)**, with two projects: **Living Legacy CMS**
+and **Living Legacy Website**.
+
+- **One issue per merged PR** for shipped work. Mark it Done and link the GitHub PR. Put it under
+  the area issue it belongs to (CMS areas are LL-5 to LL-23).
+- **Statuses:** Backlog for held work, Todo for work waiting on approval, In Progress for active
+  work, In Review while a PR is open, Done once merged.
+- **Project health:** post a project update with a health rating (onTrack, atRisk or offTrack)
+  when a milestone ships, a risk appears, or the launch date moves.
+- Don't create duplicates: search the team's issues before adding one.
+- Labels, cycles and priorities are not used.
+
 ## Website (`apps/web`) and its content
 
 Two documents set the rules for anything a visitor reads or anything that shapes the site:

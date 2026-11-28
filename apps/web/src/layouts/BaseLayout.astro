@@ -8,7 +8,13 @@ import Footer from '@/components/layout/Footer.astro';
 import Reveal from '@/components/Reveal.astro';
 import { Toaster } from '@/components/ui/sonner';
 import { isIndexableHost } from '@/lib/seo';
-import { getSiteSettings, siteIconDarkUrl, siteIconUrl, socialLinks } from '@/lib/settings';
+import {
+  getSiteSettings,
+  shareImageUrl,
+  siteIconDarkUrl,
+  siteIconUrl,
+  socialLinks,
+} from '@/lib/settings';
 import {
   formatPageTitle,
   iconSchemeScript,
@@ -56,7 +62,7 @@ const {
   description = settings.seoDescription || settings.siteTitle,
   noindex,
   canonical = new URL(withTrailingSlash(Astro.url.pathname), Astro.site).toString(),
-  ogImage = settings.seoImageUrl || undefined,
+  ogImage = shareImageUrl(settings),
   socialTitle,
   socialDescription,
   robots,
@@ -66,6 +72,14 @@ const {
   jsonLd = [],
 } = Astro.props;
 const title = formatPageTitle(settings.titlePattern, pageTitle, settings.siteTitle);
+// The description belongs to the site's own share image, not to one a page brings.
+const imageAlt = ogImage === shareImageUrl(settings) ? settings.seoImageAlt : '';
+// "@handle" from the X link on the Social links page, for the card's "from" account.
+const xHandleMatch =
+  /^https?:\/\/(?:www\.)?(?:x|twitter)\.com\/@?([A-Za-z0-9_]{1,15})\/?(?:[?#].*)?$/.exec(
+    settings.xUrl
+  );
+const xHandle = xHandleMatch ? `@${xHandleMatch[1]}` : undefined;
 
 // Anything that is not the production domain is always blocked, so preview and
 // workers.dev URLs cannot be indexed. `noindex` can only add a block, never lift
@@ -100,6 +114,7 @@ const structuredData = [
     siteUrl,
     name: settings.siteTitle,
     legalName: settings.legalName,
+    alternateName: settings.tradingName,
     email: settings.contactEmail,
     telephone: settings.phone,
     address: settings.address,
@@ -157,8 +172,11 @@ const structuredData = [
     }
     <meta property="og:url" content={ogUrl} />
     {ogImage && <meta property="og:image" content={ogImage} />}
+    {ogImage && imageAlt && <meta property="og:image:alt" content={imageAlt} />}
     <meta name="twitter:card" content="summary_large_image" />
+    {xHandle && <meta name="twitter:site" content={xHandle} />}
     {ogImage && <meta name="twitter:image" content={ogImage} />}
+    {ogImage && imageAlt && <meta name="twitter:image:alt" content={imageAlt} />}
     {
       article && (
         <>
@@ -180,6 +198,16 @@ const structuredData = [
       )
     }
     {settings.bingVerification && <meta name="msvalidate.01" content={settings.bingVerification} />}
+    {
+      settings.facebookVerification && (
+        <meta name="facebook-domain-verification" content={settings.facebookVerification} />
+      )
+    }
+    {
+      settings.pinterestVerification && (
+        <meta name="p:domain_verify" content={settings.pinterestVerification} />
+      )
+    }
     {!noTracking && <PostHog />}
   </head>
   <body>

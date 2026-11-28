@@ -28,7 +28,7 @@ export function BrandFixButton({
   apply?: (rewrite: string) => void;
   label?: string;
 }) {
-  const allowed = useCanSuggest();
+  const allowed = useCanSuggest('brandFixes');
   const [open, setOpen] = useState(false);
   const [state, setState] = useState<
     { status: 'idle' } | { status: 'pending' } | { status: 'done'; text: string }

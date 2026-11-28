@@ -286,6 +286,7 @@ export function AltText({
               : 'Needed for screen readers and search.'}
         </p>
         <SuggestButton
+          group="imageText"
           value={alt}
           request={() => suggestAltText({ data: { mediaId: item.id } }).then((r) => r.text)}
           // Only fills the field: it is saved when the editor presses Enter or moves on, never

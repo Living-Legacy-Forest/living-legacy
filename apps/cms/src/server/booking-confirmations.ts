@@ -25,7 +25,9 @@ export type ConfirmDeps = {
 /** Read from env when called, never at import, so tests and tooling can load this file. */
 export function confirmDeps(): ConfirmDeps {
   return {
-    send: sendBookingConfirmationEmail,
+    // Replies go to the bookings email in Settings, when there is one.
+    send: async (to, c) =>
+      sendBookingConfirmationEmail(to, c, (await readSiteSettings()).bookingsEmail || undefined),
     secret: env.MANAGE_TOKEN_SECRET ?? '',
     websiteOrigin: new URL(env.WEBSITE_URL).origin,
     cmsOrigin: cmsOrigin(),

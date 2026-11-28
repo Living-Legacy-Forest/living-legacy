@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'vitest';
+import { afterEach, describe, expect, it } from 'vitest';
 import {
   displayTime,
   formatBytes,
@@ -11,6 +11,7 @@ import {
   sameDate,
   zoneOffset,
 } from './format';
+import { setRegional } from './regional';
 
 const MELBOURNE = 'Australia/Melbourne';
 
@@ -114,5 +115,35 @@ describe('typed times', () => {
     expect(displayTime('00:05')).toBe('12:05 am');
     expect(displayTime('12:00')).toBe('12:00 pm');
     expect(displayTime('21:30')).toBe('9:30 pm');
+  });
+});
+
+describe("the site's date and time format", () => {
+  // 18 Sept 2026, 1:05 pm in Melbourne.
+  const at = Date.UTC(2026, 8, 18, 3, 5);
+  afterEach(() => setRegional({ dateFormat: 'short', timeFormat: '12' }));
+
+  it('writes a date as the site chose', () => {
+    expect(formatDate(at, MELBOURNE)).toBe('18 Sept 2026');
+    setRegional({ dateFormat: 'numeric', timeFormat: '12' });
+    expect(formatDate(at, MELBOURNE)).toBe('18/09/2026');
+    setRegional({ dateFormat: 'iso', timeFormat: '12' });
+    expect(formatDate(at, MELBOURNE)).toBe('2026-09-18');
+  });
+
+  it('writes a time of day as 12 or 24 hours', () => {
+    expect(formatDateTime(at, MELBOURNE)).toBe('18 Sept 2026, 1:05 pm');
+    expect(displayTime('13:05')).toBe('1:05 pm');
+    setRegional({ dateFormat: 'short', timeFormat: '24' });
+    expect(formatDateTime(at, MELBOURNE)).toBe('18 Sept 2026, 13:05');
+    expect(displayTime('13:05')).toBe('13:05');
+    expect(displayTime('00:05')).toBe('00:05');
+  });
+
+  it('writes midnight as 12 am, or 00:00', () => {
+    const midnight = Date.UTC(2026, 8, 17, 14, 0); // 00:00 on the 18th in Melbourne
+    expect(formatDateTime(midnight, MELBOURNE)).toBe('18 Sept 2026, 12:00 am');
+    setRegional({ dateFormat: 'short', timeFormat: '24' });
+    expect(formatDateTime(midnight, MELBOURNE)).toBe('18 Sept 2026, 00:00');
   });
 });

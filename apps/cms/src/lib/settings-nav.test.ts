@@ -86,6 +86,33 @@ describe('where Settings is', () => {
     expect(isSettingsItemActive('/settings/general', '/legal/privacy')).toBe(false);
   });
 
+  it('lists the legal pages under Legal for people who can edit them', () => {
+    const legal = settingsNavFor({ role: 'admin' })
+      .flatMap((group) => group.items)
+      .find((item) => item.to === '/settings/legal');
+    expect(legal?.children?.map((c) => c.to)).toEqual([
+      '/legal/privacy',
+      '/legal/terms-and-conditions',
+    ]);
+  });
+
+  it('puts both appearance pages under one entry for admins, and one page for the rest', () => {
+    const appearance = (role: 'admin' | 'editor') =>
+      settingsNavFor({ role })
+        .flatMap((group) => group.items)
+        .find((item) => item.to === '/profile/appearance');
+    expect(appearance('admin')?.children?.map((c) => c.to)).toEqual([
+      '/profile/appearance',
+      '/settings/appearance',
+    ]);
+    expect(appearance('editor')?.children).toBeUndefined();
+    expect(pagesFor('admin')).not.toContain('/settings/appearance');
+  });
+
+  it('names the site appearance page after the entry it sits under', () => {
+    expect(settingsPageTitle('/settings/appearance')).toBe('Appearance');
+  });
+
   it('names the page for the breadcrumb', () => {
     expect(settingsPageTitle('/settings/brand-language')).toBe('Brand language');
     expect(settingsPageTitle('/users')).toBe('Users');

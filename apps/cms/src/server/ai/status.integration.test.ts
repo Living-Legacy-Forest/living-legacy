@@ -14,6 +14,8 @@ beforeEach(async () => {
   setKey(undefined);
 });
 
+const allOn = { searchText: true, summaries: true, tags: true, imageText: true, brandFixes: true };
+
 describe('assistantStatusFor', () => {
   it('is on for an editor when the key is set and Settings has not turned it off', async () => {
     setKey('test-key');
@@ -21,6 +23,19 @@ describe('assistantStatusFor', () => {
       enabled: true,
       keySet: true,
       switchedOn: true,
+      groups: allOn,
+    });
+  });
+
+  it('says which kinds of suggestion an admin has switched off', async () => {
+    setKey('test-key');
+    await testDb()
+      .insert(siteSettings)
+      .values({ id: 'site', data: { aiImageText: false, aiTags: false } });
+    expect((await assistantStatusFor(testDb(), { role: 'editor' })).groups).toEqual({
+      ...allOn,
+      imageText: false,
+      tags: false,
     });
   });
 
@@ -34,6 +49,7 @@ describe('assistantStatusFor', () => {
       enabled: false,
       keySet: false,
       switchedOn: true,
+      groups: allOn,
     });
   });
 
@@ -46,6 +62,7 @@ describe('assistantStatusFor', () => {
       enabled: false,
       keySet: true,
       switchedOn: false,
+      groups: allOn,
     });
   });
 });

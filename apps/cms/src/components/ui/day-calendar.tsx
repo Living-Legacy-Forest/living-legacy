@@ -23,6 +23,7 @@ import {
 } from 'react';
 import { ChevronLeftIcon, ChevronRightIcon } from '@/components/icons';
 import { Button } from '@/components/ui/button';
+import { useWeekStart } from '@/lib/use-week-start';
 import { cn } from '@/lib/utils';
 
 // A single-date calendar, ported from a shadcn-registry motion library. Months slide on a strip,
@@ -240,11 +241,14 @@ function DayCalendar({
   maxDate,
   disabledDates,
   dayClassName,
-  weekStartsOn = 1,
+  weekStartsOn: weekStartsOnProp,
   locale = 'en-AU',
   className,
 }: DayCalendarProps) {
   const titleId = useId();
+  // Without one given, weeks start on the day the site chose (Settings, General).
+  const siteWeekStart = useWeekStart();
+  const weekStartsOn = weekStartsOnProp ?? siteWeekStart;
   const today = useToday();
   // Reduced motion only counts after hydration, so server and client markup agree.
   const hydrated = useSyncExternalStore(

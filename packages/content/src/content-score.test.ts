@@ -44,6 +44,11 @@ const loose: ContentGuidelines = {
   words: { min: 1, max: null },
   headings: { min: 1, max: null },
   paragraphs: { min: 1, max: null },
+  titleLength: { min: 30, max: 60 },
+  descriptionLength: { min: 70, max: 160 },
+  sentenceWords: 20,
+  paragraphWords: 150,
+  permalinkLength: 60,
   images: { min: 1, max: null },
   terms: [
     { term: 'Legacy Infusion Ceremony', min: 2, kind: 'focus' },
@@ -395,5 +400,80 @@ describe('brand language from Settings', () => {
       brandRules: [{ match: 'cheap', instead: 'affordable', severity: 'critical' }],
     }).brand.map((f) => f.found);
     expect(edited).toEqual(['cheap']);
+  });
+});
+
+describe('search listing and readability targets', () => {
+  const base = {
+    title: 'A title',
+    seoTitle: 'Planting a tree',
+    seoDescription: '',
+    excerpt: '',
+    slug: 'planting-a-tree-for-the-family',
+    body: null,
+    featuredMediaId: null,
+    noindex: false,
+    focusKeyword: '',
+    relatedTerms: [],
+  };
+  const status = (id: string, targets: Parameters<typeof contentTargetsFrom>[0]) =>
+    analysePost(base, guidelinesFromSettings(contentTargetsFrom(targets), base)).checks.find(
+      (c) => c.id === id
+    );
+
+  it('judges the search title by the range in Settings', () => {
+    // "Planting a tree" is 15 characters: short of the default 30.
+    expect(status('title-length', SITE_SETTINGS_DEFAULTS)?.status).toBe('warning');
+    const short = { ...SITE_SETTINGS_DEFAULTS, targetTitleMin: 10, targetTitleMax: 20 };
+    expect(status('title-length', short)?.status).toBe('pass');
+    expect(status('title-length', short)?.message).toContain('aim for 10 to 20');
+  });
+
+  it('judges the permalink by the limit in Settings', () => {
+    expect(status('slug-length', SITE_SETTINGS_DEFAULTS)?.status).toBe('pass');
+    const strict = { ...SITE_SETTINGS_DEFAULTS, targetSlugMax: 20 };
+    expect(status('slug-length', strict)?.status).toBe('warning');
+    expect(status('slug-length', strict)?.message).toContain('20 or fewer');
+  });
+});
+
+describe('what the brand check looks at', () => {
+  const input = {
+    title: 'A quiet morning',
+    seoTitle: 'The deceased in the forest',
+    seoDescription: '',
+    excerpt: '',
+    slug: 'a-quiet-morning',
+    body: {
+      type: 'doc',
+      content: [
+        { type: 'paragraph', content: [{ type: 'text', text: 'Come along! It is calm.' }] },
+      ],
+    },
+    featuredMediaId: null,
+    noindex: false,
+    focusKeyword: '',
+    relatedTerms: [],
+  } as unknown as Parameters<typeof analysePost>[0];
+  const run = (overrides: Partial<typeof SITE_SETTINGS_DEFAULTS>) =>
+    analysePost(
+      input,
+      guidelinesFromSettings(contentTargetsFrom({ ...SITE_SETTINGS_DEFAULTS, ...overrides }), input)
+    ).checks;
+  const check = (checks: ReturnType<typeof run>, id: string) => checks.find((c) => c.id === id)!;
+
+  it('flags a never-use word in the search title unless that is skipped', () => {
+    expect(check(run({}), 'brand-never').status).toBe('critical');
+    expect(check(run({ brandCheckSearchListing: false }), 'brand-never').status).toBe('pass');
+  });
+
+  it('flags exclamation marks unless they are ignored', () => {
+    expect(check(run({}), 'punctuation').status).toBe('warning');
+    expect(check(run({ brandFlagExclamations: false }), 'punctuation').status).toBe('pass');
+  });
+
+  it('skips the punctuation check when both kinds are ignored', () => {
+    const checks = run({ brandFlagExclamations: false, brandFlagDashes: false });
+    expect(check(checks, 'punctuation').status).toBe('skipped');
   });
 });

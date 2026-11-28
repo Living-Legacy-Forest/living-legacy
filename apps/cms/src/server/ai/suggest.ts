@@ -8,19 +8,20 @@ import { z } from 'zod';
 import brandGuide from '../../../../../docs/brand-language.md?raw';
 import { listMediaTags } from '../media-list';
 import { loadContentTargets } from '../post-score';
+import { type SuggestField, groupOf } from './fields';
 import { loadAltImage } from './alt-image';
 import { canSuggest } from './client';
 import { guardProblems } from './guard';
 import { type AiClient, SuggestError, runSuggestion } from './run';
 import type { BrandFixInput, PostFieldInput } from './schemas';
-import { recordUsage, reserveSuggestion } from './usage';
+import { loadAssistantSettings, recordUsage, reserveSuggestion } from './usage';
 
 /** Who is asking: their access decides what they may do, and their id is what the daily limit counts. */
 export type Actor = { id: string; isSuperAdmin?: boolean } & Access;
 
 /** A super admin's use is not counted or recorded, so it has no limit and is not on the System page. */
-const reserve = (db: Db, actor: Actor) =>
-  reserveSuggestion(db, actor.id, { unrecorded: actor.isSuperAdmin });
+const reserve = (db: Db, actor: Actor, field: SuggestField) =>
+  reserveSuggestion(db, actor.id, { unrecorded: actor.isSuperAdmin, group: groupOf(field) });
 const record = (db: Db, actor: Actor) => (result: Parameters<typeof recordUsage>[2]) =>
   recordUsage(db, actor.id, result, { unrecorded: actor.isSuperAdmin });
 
@@ -40,6 +41,14 @@ const POST_CHARS = 12_000;
 
 const textReply = z.object({ text: z.string() });
 const tagsReply = z.object({ tags: z.array(z.string()) });
+
+/** The brand guide, with the admin's own note after it when there is one (Settings, Writing assistant). */
+async function guideFor(db: Db): Promise<string> {
+  const { instructions } = await loadAssistantSettings(db);
+  return instructions
+    ? `${brandGuide}\n\n---\n\nExtra instructions from the team. Follow them unless they conflict with the brand guide above, which always wins:\n${instructions}`
+    : brandGuide;
+}
 
 async function brandRules(db: Db): Promise<readonly BrandRule[]> {
   return (await loadContentTargets(db)).brandRules ?? BRAND_RULES;
@@ -72,7 +81,7 @@ export async function suggestPostFieldFor(
   if (input.field === 'tags') lines.push('', `Existing tags: ${input.tagNames.join(', ')}`);
   const content = [{ type: 'text' as const, text: lines.join('\n') }];
   const rules = await brandRules(db);
-  await reserve(db, actor);
+  await reserve(db, actor, input.field);
 
   if (input.field === 'tags') {
     // Tags are picked from the list, not written, so one bad pick is dropped rather than failing
@@ -80,7 +89,7 @@ export async function suggestPostFieldFor(
     const out = await runSuggestion(client, {
       onDone: record(db, actor),
       field: 'tags',
-      brandGuide,
+      brandGuide: await guideFor(db),
       rules,
       content,
       schema: tagsReply,
@@ -98,7 +107,7 @@ export async function suggestPostFieldFor(
   const out = await runSuggestion(client, {
     onDone: record(db, actor),
     field: input.field,
-    brandGuide,
+    brandGuide: await guideFor(db),
     rules,
     content,
     schema: textReply,
@@ -134,11 +143,11 @@ async function suggestImageText(
   input: MediaInput
 ): Promise<{ text: string }> {
   const image = await openImage(db, bucket, client, actor, input);
-  await reserve(db, actor);
+  await reserve(db, actor, field);
   const out = await runSuggestion(image.client, {
     onDone: record(db, actor),
     field,
-    brandGuide,
+    brandGuide: await guideFor(db),
     rules: await brandRules(db),
     content: [
       image.block,
@@ -185,14 +194,14 @@ export async function suggestMediaTagsFor(
   input: MediaInput
 ): Promise<{ tags: string[] }> {
   const image = await openImage(db, bucket, client, actor, input);
-  await reserve(db, actor);
+  await reserve(db, actor, 'mediaTags');
   const rules = await brandRules(db);
   const used = (await listMediaTags(db)).map((row) => row.tag);
 
   const out = await runSuggestion(image.client, {
     onDone: record(db, actor),
     field: 'mediaTags',
-    brandGuide,
+    brandGuide: await guideFor(db),
     rules,
     content: [
       image.block,
@@ -226,12 +235,12 @@ export async function suggestBrandFixFor(
 ): Promise<{ text: string }> {
   if (!canSuggest(actor)) throw new SuggestError(NOT_ALLOWED);
   if (!client) throw new SuggestError(NOT_SET_UP);
-  await reserve(db, actor);
+  await reserve(db, actor, 'brandFix');
 
   const out = await runSuggestion(client, {
     onDone: record(db, actor),
     field: 'brandFix',
-    brandGuide,
+    brandGuide: await guideFor(db),
     rules: await brandRules(db),
     content: [
       { type: 'text', text: `Flagged: "${input.found}"\n\nText to rewrite:\n${input.text}` },

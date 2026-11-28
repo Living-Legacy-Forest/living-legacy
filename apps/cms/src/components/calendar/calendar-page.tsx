@@ -42,7 +42,7 @@ import { EmptyNote } from '@/components/empty-note';
 
 type Filter = 'all' | 'post' | 'event';
 
-const WEEKDAYS = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+const WEEKDAYS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 /** How many entries a day cell shows before "N more". */
 const SHOWN = 3;
 
@@ -424,7 +424,9 @@ export function CalendarPage({ data, now }: { data: CalendarData; now: number })
   const touch = useTouch();
   const [filter, setFilter] = useState<Filter>('all');
   const month = parseMonthKey(data.month)!;
-  const weeks = monthGrid(month);
+  const weekStartsOn = data.weekStartsOn;
+  const weeks = monthGrid(month, weekStartsOn);
+  const weekdayNames = [...WEEKDAYS.slice(weekStartsOn), ...WEEKDAYS.slice(0, weekStartsOn)];
   const today = dayKey(toZoned(now, siteZone));
   const thisMonth = monthKey(toZoned(now, siteZone));
   const entries = data.entries.filter(
@@ -555,7 +557,7 @@ export function CalendarPage({ data, now }: { data: CalendarData; now: number })
               <TooltipProvider delay={400}>
                 <div role="grid" aria-label={monthName(month)} className="max-md:hidden">
                   <div role="row" className="text-muted-foreground grid grid-cols-7 gap-1 text-xs">
-                    {WEEKDAYS.map((name) => (
+                    {weekdayNames.map((name) => (
                       <div key={name} role="columnheader" className="px-2 pb-1.5">
                         {name}
                       </div>

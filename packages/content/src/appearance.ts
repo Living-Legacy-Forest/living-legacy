@@ -135,11 +135,16 @@ export function appearanceVars(appearance: Appearance): Record<string, string> {
 
 /** One-tap colours under the field. */
 export const appearancePresets: { name: string; colour: AppearanceColour }[] = [
+  { name: 'Lime', colour: { hue: 125, strength: 0.8 } },
   { name: 'Green', colour: { hue: 156, strength: 0.85 } },
   { name: 'Teal', colour: { hue: 195, strength: 0.7 } },
+  { name: 'Sky', colour: { hue: 228, strength: 0.8 } },
   { name: 'Blue', colour: { hue: 255, strength: 0.85 } },
+  { name: 'Indigo', colour: { hue: 280, strength: 0.75 } },
   { name: 'Purple', colour: { hue: 300, strength: 0.65 } },
+  { name: 'Magenta', colour: { hue: 328, strength: 0.7 } },
   { name: 'Pink', colour: { hue: 350, strength: 0.6 } },
+  { name: 'Rose', colour: { hue: 8, strength: 0.75 } },
   { name: 'Red', colour: { hue: 25, strength: 0.9 } },
   { name: 'Orange', colour: { hue: 50, strength: 0.9 } },
   { name: 'Amber', colour: { hue: 85, strength: 0.85 } },

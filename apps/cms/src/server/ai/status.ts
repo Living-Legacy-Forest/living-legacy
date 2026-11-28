@@ -10,7 +10,7 @@ import { loadAssistantSettings } from './usage';
  * are yes or no only, and the key itself never leaves the server.
  */
 export async function assistantStatusFor(db: Db, access: Access) {
-  const { enabled: switchedOn } = await loadAssistantSettings(db);
+  const { enabled: switchedOn, groups } = await loadAssistantSettings(db);
   const keySet = Boolean(env.ANTHROPIC_API_KEY);
-  return { enabled: keySet && switchedOn && canSuggest(access), keySet, switchedOn };
+  return { enabled: keySet && switchedOn && canSuggest(access), keySet, switchedOn, groups };
 }

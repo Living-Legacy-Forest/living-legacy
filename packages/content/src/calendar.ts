@@ -37,11 +37,11 @@ export function dayKey({ year, month, day }: CalendarDay): string {
   return `${year}-${pad(month + 1)}-${pad(day)}`;
 }
 
-/** The weeks that show the month, Monday first, each of seven days. */
-export function monthGrid({ year, month }: CalendarMonth): GridDay[][] {
+/** The weeks that show the month, each of seven days, starting on Monday unless told otherwise. */
+export function monthGrid({ year, month }: CalendarMonth, weekStartsOn: 0 | 1 = 1): GridDay[][] {
   // Date.UTC rolls days over month ends for us, so no calendar is hard-coded here.
   const first = Date.UTC(year, month, 1);
-  const mondayOffset = (new Date(first).getUTCDay() + 6) % 7;
+  const mondayOffset = (new Date(first).getUTCDay() - weekStartsOn + 7) % 7;
   const daysInMonth = new Date(Date.UTC(year, month + 1, 0)).getUTCDate();
   const weeks = Math.ceil((mondayOffset + daysInMonth) / 7);
   const start = first - mondayOffset * DAY_MS;
@@ -62,8 +62,11 @@ export function monthGrid({ year, month }: CalendarMonth): GridDay[][] {
  * The instants to fetch for a month: its grid, plus a day either side so an item that falls on
  * the grid's edge in its own time zone is never missed. Callers still place items by day.
  */
-export function monthWindow(month: CalendarMonth): { from: number; to: number } {
-  const weeks = monthGrid(month);
+export function monthWindow(
+  month: CalendarMonth,
+  weekStartsOn: 0 | 1 = 1
+): { from: number; to: number } {
+  const weeks = monthGrid(month, weekStartsOn);
   const first = weeks[0]![0]!;
   const last = weeks[weeks.length - 1]![6]!;
   return {

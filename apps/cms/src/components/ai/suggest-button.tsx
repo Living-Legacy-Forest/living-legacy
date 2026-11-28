@@ -1,5 +1,6 @@
 // The Suggest button: asks the writing assistant for one field and puts the answer in the field as
 // an ordinary unsaved edit, with Undo. It never saves anything itself.
+import type { AiGroup } from '@ll/content';
 import { useRef, useState } from 'react';
 import { SparklesIcon } from '@/components/icons';
 import { Button } from '@/components/ui/button';
@@ -77,16 +78,19 @@ function Trigger({
 /** For a text field. Reads "Rewrite" when the field already has text. */
 export function SuggestButton({
   value,
+  group,
   request,
   onApply,
   label,
 }: {
   value: string;
+  /** The kind of suggestion, which an admin can switch off in Settings. */
+  group: AiGroup;
   request: () => Promise<string>;
   onApply: (next: string) => void;
   label?: string;
 }) {
-  const allowed = useCanSuggest();
+  const allowed = useCanSuggest(group);
   const { run, pending } = useSuggestion(value, onApply);
   if (!allowed) return null;
   return (
@@ -110,7 +114,7 @@ export function SuggestTagsButton({
   request: () => Promise<string[]>;
   onApply: (next: string[]) => void;
 }) {
-  const allowed = useCanSuggest();
+  const allowed = useCanSuggest('tags');
   const { run, pending } = useSuggestion(tags, onApply, sameTags);
   if (!allowed) return null;
   return (

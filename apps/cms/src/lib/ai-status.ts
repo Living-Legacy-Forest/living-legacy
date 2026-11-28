@@ -1,19 +1,23 @@
+import type { AiGroup } from '@ll/content';
 import { getAiStatus } from '@/server/ai';
 
-/**
- * Whether the Suggest buttons show, as last seen by the browser, so changing pages does not wait
- * on a request. Keyed by user, so signing in as someone else asks again.
- */
-let seen: { userId: string; enabled: boolean } | undefined;
+export type AiAccess = { enabled: boolean; groups: Record<AiGroup, boolean> };
 
-export async function getCachedAiEnabled(userId: string): Promise<boolean> {
-  if (seen?.userId === userId) return seen.enabled;
-  const { enabled } = await getAiStatus();
-  if (typeof window !== 'undefined') seen = { userId, enabled };
-  return enabled;
+/**
+ * Whether the Suggest buttons show, and which kinds, as last seen by the browser, so changing
+ * pages does not wait on a request. Keyed by user, so signing in as someone else asks again.
+ */
+let seen: { userId: string; access: AiAccess } | undefined;
+
+export async function getCachedAiAccess(userId: string): Promise<AiAccess> {
+  if (seen?.userId === userId) return seen.access;
+  const { enabled, groups } = await getAiStatus();
+  const access = { enabled, groups };
+  if (typeof window !== 'undefined') seen = { userId, access };
+  return access;
 }
 
-/** Asks again on the next page change: after an admin turns the assistant on or off in Settings. */
+/** Asks again on the next page change: after an admin changes the assistant in Settings. */
 export function forgetCachedAiEnabled() {
   seen = undefined;
 }

@@ -131,6 +131,7 @@ export function PropertiesPanel({
                 Summary
               </Label>
               <SuggestButton
+                group="summaries"
                 value={values.excerpt}
                 request={() => suggestPostText('excerpt', values)}
                 onApply={(excerpt) => update({ excerpt })}

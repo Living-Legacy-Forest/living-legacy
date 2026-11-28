@@ -154,10 +154,48 @@ const description =
               )
             }
             {
+              settings.mediaEmail && (
+                <div class="flex items-baseline justify-between gap-4 py-3.5">
+                  <dt class="text-ink-soft">Media</dt>
+                  <dd class="min-w-0">
+                    <a
+                      href={`mailto:${settings.mediaEmail}`}
+                      class="text-ink hover:text-moss-deep font-medium break-all transition-colors duration-200"
+                    >
+                      {settings.mediaEmail}
+                    </a>
+                  </dd>
+                </div>
+              )
+            }
+            {
+              settings.afterHoursPhone && (
+                <div class="flex items-baseline justify-between gap-4 py-3.5">
+                  <dt class="text-ink-soft">After hours</dt>
+                  <dd>
+                    <a
+                      href={telHref(settings.afterHoursPhone)}
+                      class="text-ink hover:text-moss-deep font-medium transition-colors duration-200"
+                    >
+                      {settings.afterHoursPhone}
+                    </a>
+                  </dd>
+                </div>
+              )
+            }
+            {
               settings.openingHours && (
                 <div class="flex items-baseline justify-between gap-4 py-3.5">
                   <dt class="text-ink-soft">Hours</dt>
                   <dd class="text-ink text-right whitespace-pre-line">{settings.openingHours}</dd>
+                </div>
+              )
+            }
+            {
+              settings.postalAddress && (
+                <div class="flex items-baseline justify-between gap-4 py-3.5">
+                  <dt class="text-ink-soft">Post</dt>
+                  <dd class="text-ink text-right whitespace-pre-line">{settings.postalAddress}</dd>
                 </div>
               )
             }

@@ -13,6 +13,8 @@ import {
 } from '@/components/ui/empty';
 import { Toaster } from '@/components/ui/sonner';
 import { TooltipProvider } from '@/components/ui/tooltip';
+import { displayAttributes, readDisplayPrefs } from '@/lib/display-prefs';
+import { setRegional } from '@/lib/regional';
 import { wakeAudioOnGesture } from '@/lib/sound';
 import { useThemeSync } from '@/lib/use-theme-sync';
 import { type Theme, getRootSettings } from '@/server/settings';
@@ -88,8 +90,18 @@ export const Route = createRootRoute({
 });
 
 function RootDocument({ children }: { children: ReactNode }) {
-  const { theme, cmsFont, cmsColour, appearance, siteIconMediaId, siteIconDarkMediaId } =
-    Route.useLoaderData();
+  const {
+    theme,
+    cmsFont,
+    cmsColour,
+    appearance,
+    dateFormat,
+    timeFormat,
+    siteIconMediaId,
+    siteIconDarkMediaId,
+  } = Route.useLoaderData();
+  // Before anything below draws a date: the server and the browser write the same text.
+  setRegional({ dateFormat, timeFormat });
   const lightIcon = siteIconMediaId ? iconHref(siteIconMediaId) : '/icon-192.png';
   useThemeSync(theme);
   useEffect(() => wakeAudioOnGesture(), []);
@@ -108,6 +120,7 @@ function RootDocument({ children }: { children: ReactNode }) {
       data-font={cmsFont}
       // A person's own colour sets the --tint-* values inline, which the palette rules read.
       data-colour={appearance.colour ? 'custom' : cmsColour}
+      {...displayAttributes(readDisplayPrefs())}
       style={appearanceVars(appearance) as CSSProperties}
       className={theme === 'dark' ? 'dark' : undefined}
       suppressHydrationWarning

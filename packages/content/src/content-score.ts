@@ -17,9 +17,26 @@ export interface ContentGuidelines {
   headings: Range;
   paragraphs: Range;
   images: Range;
+  /** Characters in the search title. */
+  titleLength: Range;
+  /** Characters in the search description. */
+  descriptionLength: Range;
+  /** The most words a sentence may average. */
+  sentenceWords: number;
+  /** The most words one paragraph may have. */
+  paragraphWords: number;
+  /** The most characters a permalink may have. */
+  permalinkLength: number;
   terms: TermTarget[];
   /** The words to flag; the built-in list when left out. */
   brandRules?: readonly BrandRule[];
+  /** What the brand check looks at, and which punctuation it flags. All on when left out. */
+  brandChecks?: {
+    dashes: boolean;
+    exclamations: boolean;
+    imageAlts: boolean;
+    searchListing: boolean;
+  };
 }
 
 export type ScoreInput = Pick<
@@ -158,7 +175,18 @@ export function guidelinesFromSettings(
     headings: { min: targets.targetHeadingsMin, max: targets.targetHeadingsMax },
     paragraphs: { min: targets.targetParagraphsMin, max: null },
     images: { min: targets.targetImagesMin, max: targets.targetImagesMax },
+    titleLength: { min: targets.targetTitleMin, max: targets.targetTitleMax },
+    descriptionLength: { min: targets.targetDescriptionMin, max: targets.targetDescriptionMax },
+    sentenceWords: targets.targetSentenceWords,
+    paragraphWords: targets.targetParagraphWordsMax,
+    permalinkLength: targets.targetSlugMax,
     brandRules: targets.brandRules,
+    brandChecks: {
+      dashes: targets.brandFlagDashes,
+      exclamations: targets.brandFlagExclamations,
+      imageAlts: targets.brandCheckImageAlts,
+      searchListing: targets.brandCheckSearchListing,
+    },
     terms: [
       ...(focus
         ? [{ term: focus, min: targets.targetFocusKeywordUses, kind: 'focus' as const }]
@@ -245,18 +273,20 @@ export function analysePost(input: ScoreInput, guidelines: ContentGuidelines): C
   add(
     'basic',
     'title-length',
-    title ? passIf(title.length >= 30 && title.length <= 60) : 'critical',
+    title ? passIf(rangeState(title.length, guidelines.titleLength) === 'within') : 'critical',
     title
-      ? `The search title is ${plural(title.length, 'character')} (aim for 30 to 60).`
+      ? `The search title is ${plural(title.length, 'character')} (aim for ${formatRange(guidelines.titleLength)}).`
       : 'No title yet.',
     'Search results cut off long titles, and short ones waste the space.'
   );
   add(
     'basic',
     'description',
-    description ? passIf(description.length >= 70 && description.length <= 160) : 'critical',
     description
-      ? `The search description is ${plural(description.length, 'character')} (aim for 70 to 160).`
+      ? passIf(rangeState(description.length, guidelines.descriptionLength) === 'within')
+      : 'critical',
+    description
+      ? `The search description is ${plural(description.length, 'character')} (aim for ${formatRange(guidelines.descriptionLength)}).`
       : 'No search description or summary.',
     'Without one, search engines pick a snippet from the page, which is often a poor fit.'
   );
@@ -404,8 +434,8 @@ export function analysePost(input: ScoreInput, guidelines: ContentGuidelines): C
   add(
     'content',
     'sentence-length',
-    sentenceWords.length ? passIf(average <= 20) : 'skipped',
-    `Sentences average ${plural(Math.round(average), 'word')} (aim for 20 or fewer).`,
+    sentenceWords.length ? passIf(average <= guidelines.sentenceWords) : 'skipped',
+    `Sentences average ${plural(Math.round(average), 'word')} (aim for ${n(guidelines.sentenceWords)} or fewer).`,
     'Shorter sentences are easier to follow, especially for readers going through a hard time.'
   );
   add(
@@ -415,14 +445,16 @@ export function analysePost(input: ScoreInput, guidelines: ContentGuidelines): C
     `${Math.round(longShare * 100)}% of sentences are over 25 words (aim for 25% or fewer).`,
     'Long sentences are where readers lose the thread.'
   );
-  const longParagraphs = outline.paragraphs.filter((para) => splitWords(para).length > 150).length;
+  const longParagraphs = outline.paragraphs.filter(
+    (para) => splitWords(para).length > guidelines.paragraphWords
+  ).length;
   add(
     'content',
     'long-paragraphs',
     outline.paragraphs.length ? passIf(longParagraphs === 0) : 'skipped',
     longParagraphs
-      ? `${plural(longParagraphs, 'paragraph')} over 150 words.`
-      : 'No paragraph is over 150 words.',
+      ? `${plural(longParagraphs, 'paragraph')} over ${n(guidelines.paragraphWords)} words.`
+      : `No paragraph is over ${n(guidelines.paragraphWords)} words.`,
     'Long blocks of text are hard to read on a phone.'
   );
 
@@ -451,9 +483,9 @@ export function analysePost(input: ScoreInput, guidelines: ContentGuidelines): C
   add(
     'technical',
     'slug-length',
-    input.slug ? passIf(input.slug.length <= 60) : 'warning',
+    input.slug ? passIf(input.slug.length <= guidelines.permalinkLength) : 'warning',
     input.slug
-      ? `The permalink is ${plural(input.slug.length, 'character')} (aim for 60 or fewer).`
+      ? `The permalink is ${plural(input.slug.length, 'character')} (aim for ${n(guidelines.permalinkLength)} or fewer).`
       : 'No permalink yet.',
     'Short addresses are easier to share and to read in results.'
   );
@@ -513,12 +545,21 @@ export function analysePost(input: ScoreInput, guidelines: ContentGuidelines): C
   // Brand language
   // Each distinct piece once: a search title that repeats the title would
   // otherwise double every count.
+  const brandChecks = guidelines.brandChecks ?? {
+    dashes: true,
+    exclamations: true,
+    imageAlts: true,
+    searchListing: true,
+  };
   const brandText = [
     ...new Set(
-      [input.title, input.seoTitle, input.seoDescription, input.excerpt].map((text) => text.trim())
+      [
+        input.title,
+        ...(brandChecks.searchListing ? [input.seoTitle, input.seoDescription, input.excerpt] : []),
+      ].map((text) => text.trim())
     ),
     outline.text,
-    ...outline.imageAlts,
+    ...(brandChecks.imageAlts ? outline.imageAlts : []),
   ].join('\n');
   const brand = findBrandProblems(brandText, guidelines.brandRules);
   // With no text yet there is nothing to judge, so these are skipped, not passed.
@@ -552,15 +593,25 @@ export function analysePost(input: ScoreInput, guidelines: ContentGuidelines): C
       : 'EarthSApHE is written correctly wherever it appears.',
     'The name is a trade mark and is always written exactly EarthSApHE.'
   );
-  const dashes = brandText.match(/[–—]/g)?.length ?? 0;
-  const bangs = brandText.match(/!/g)?.length ?? 0;
+  const dashes = brandChecks.dashes ? (brandText.match(/[–—]/g)?.length ?? 0) : 0;
+  const bangs = brandChecks.exclamations ? (brandText.match(/!/g)?.length ?? 0) : 0;
+  const punctuationOn = brandChecks.dashes || brandChecks.exclamations;
+  const flagged = [
+    ...(brandChecks.dashes ? ['em or en dashes'] : []),
+    ...(brandChecks.exclamations ? ['exclamation marks'] : []),
+  ].join(' and ');
   add(
     'brand',
     'punctuation',
-    brandStatus(!dashes && !bangs),
-    dashes || bangs
-      ? `${plural(dashes, 'dash', 'dashes')} and ${plural(bangs, 'exclamation mark')}.`
-      : 'No em or en dashes and no exclamation marks.',
+    punctuationOn ? brandStatus(!dashes && !bangs) : 'skipped',
+    !punctuationOn
+      ? 'Punctuation is not checked.'
+      : dashes || bangs
+        ? [
+            ...(brandChecks.dashes ? [plural(dashes, 'dash', 'dashes')] : []),
+            ...(brandChecks.exclamations ? [plural(bangs, 'exclamation mark')] : []),
+          ].join(' and ') + '.'
+        : `No ${flagged}.`,
     'House style uses neither in information copy.'
   );
 

@@ -20,7 +20,7 @@ import {
   ChartTooltip,
   ChartTooltipContent,
 } from '@/components/ui/chart';
-import { formatInteger, sameDate } from '@/lib/format';
+import { formatClock, formatInteger, sameDate } from '@/lib/format';
 import type { EventDashboard } from '@/server/event-stats';
 
 // Loaded on its own, so the chart library doesn't hold up the figures above.
@@ -329,11 +329,7 @@ function ArrivalsChart({ data }: { data: EventDashboard }) {
   const { arrivals, date } = data;
   const label = (minutes: number) =>
     date
-      ? new Date(date.startsAt + minutes * 60_000).toLocaleTimeString('en-AU', {
-          timeZone: date.timeZone,
-          hour: 'numeric',
-          minute: '2-digit',
-        })
+      ? formatClock(date.startsAt + minutes * 60_000, date.timeZone)
       : minutes === 0
         ? 'Start'
         : `${minutes > 0 ? '+' : '−'}${Math.abs(minutes)} min`;

@@ -1,10 +1,11 @@
-import { parseSiteSettings, toZoned } from '@ll/content';
+import { type AiGroup, parseSiteSettings, toZoned } from '@ll/content';
 import type { Db } from '@ll/db';
 import { aiUsage, siteSettings } from '@ll/db/schema';
 import { and, eq, lt, sql } from 'drizzle-orm';
 import { type Outcome, SuggestError, type Usage } from './run';
 
 const OFF = 'The writing assistant is switched off. An admin can turn it on in Settings.';
+const GROUP_OFF = 'That kind of suggestion is switched off. An admin can turn it on in Settings.';
 
 /** Days of counts kept. Only today's matters; a few more make a problem easy to look back on. */
 const KEEP_DAYS = 7;
@@ -24,6 +25,16 @@ export async function loadAssistantSettings(db: Db) {
     enabled: settings.aiEnabled,
     dailyLimit: settings.aiDailyLimit,
     timeZone: settings.timeZone,
+    /** Which kinds of suggestion are on. */
+    groups: {
+      searchText: settings.aiSearchText,
+      summaries: settings.aiSummaries,
+      tags: settings.aiTags,
+      imageText: settings.aiImageText,
+      brandFixes: settings.aiBrandFixes,
+    } satisfies Record<AiGroup, boolean>,
+    /** The admin's note added to the instructions, or ''. */
+    instructions: settings.aiInstructions.trim(),
   };
 }
 
@@ -42,10 +53,19 @@ export async function reserveSuggestion(
     now = new Date(),
     timeZone,
     unrecorded = false,
-  }: { limit?: number; now?: Date; timeZone?: string; unrecorded?: boolean } = {}
+    group,
+  }: {
+    limit?: number;
+    now?: Date;
+    timeZone?: string;
+    unrecorded?: boolean;
+    /** The kind of suggestion; refused when an admin has switched that kind off. */
+    group?: AiGroup;
+  } = {}
 ): Promise<void> {
   const settings = await loadAssistantSettings(db);
   if (!settings.enabled) throw new SuggestError(OFF);
+  if (group && !settings.groups[group]) throw new SuggestError(GROUP_OFF);
   if (unrecorded) return;
   const max = limit ?? settings.dailyLimit;
   const zone = timeZone ?? settings.timeZone;

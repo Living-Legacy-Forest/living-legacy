@@ -1,10 +1,16 @@
-import { createFileRoute } from '@tanstack/react-router';
+import { createFileRoute, redirect } from '@tanstack/react-router';
 import { Dashboard } from '@/components/dashboard/dashboard';
 import { DashboardSkeleton } from '@/components/dashboard/dashboard-skeleton';
 import { RevealWords } from '@/components/dashboard/reveal-words';
+import { launchRedirect } from '@/lib/home-page';
 import { getDashboardData } from '@/server/dashboard';
 
 export const Route = createFileRoute('/_app/')({
+  // Opening the CMS lands on the page the site chose as its home, once a browser session.
+  beforeLoad: async ({ context }) => {
+    const to = await launchRedirect(context.user);
+    if (to) throw redirect({ to });
+  },
   head: () => ({ meta: [{ title: 'Dashboard | Living Legacy CMS' }] }),
   loader: () => getDashboardData(),
   pendingComponent: DashboardSkeleton,

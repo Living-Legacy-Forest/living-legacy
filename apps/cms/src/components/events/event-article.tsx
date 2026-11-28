@@ -5,7 +5,13 @@ import { ClientOnly } from '@tanstack/react-router';
 import { Suspense, lazy } from 'react';
 import { CalendarClockIcon, ImageIcon, MapPinIcon } from '@/components/icons';
 import { Button } from '@/components/ui/button';
-import { formatDateTime, formatLongDate, formatTimeRange, zoneName } from '@/lib/format';
+import {
+  formatClock,
+  formatDateTime,
+  formatLongDate,
+  formatTimeRange,
+  zoneName,
+} from '@/lib/format';
 import { cn } from '@/lib/utils';
 import type { EventPreviewExtras } from '@/server/events';
 import type { EventPreviewDraft } from './event-preview-store';
@@ -42,8 +48,7 @@ function placesLine(left: number | null) {
   return left === 0 ? 'Fully booked' : 'Places available';
 }
 
-const clock = (ms: number, zone: string) =>
-  new Date(ms).toLocaleTimeString('en-AU', { timeZone: zone, hour: 'numeric', minute: '2-digit' });
+const clock = formatClock;
 
 /** "Sun 21 Mar": the locale's own format puts a comma after the day name. */
 const chipDay = (ms: number, zone: string) =>

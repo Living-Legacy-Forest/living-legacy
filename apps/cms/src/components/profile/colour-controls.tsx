@@ -42,7 +42,7 @@ export function ColourRows() {
         description="Drag across for the hue and down for strength, or pick one below."
         below
       >
-        <div className="w-full space-y-3 sm:max-w-sm">
+        <div className="w-full space-y-3 sm:w-96">
           <ColourField
             value={draft.colour}
             onChange={(colour, commit) => change({ ...draft, colour }, commit)}

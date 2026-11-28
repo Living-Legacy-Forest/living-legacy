@@ -44,6 +44,7 @@ export async function getSiteSettings(): Promise<SiteSettings> {
 const SOCIAL_LABELS = {
   facebookUrl: 'Facebook',
   instagramUrl: 'Instagram',
+  xUrl: 'X',
   youtubeUrl: 'YouTube',
   linkedinUrl: 'LinkedIn',
   tiktokUrl: 'TikTok',
@@ -69,6 +70,14 @@ export function siteIconUrl(settings: SiteSettings): string | null {
 /** The icon for browsers in dark mode (Settings, Site icon), or null to use the site icon. */
 export function siteIconDarkUrl(settings: SiteSettings): string | null {
   return mediaIconUrl(settings.siteIconDarkMediaId);
+}
+
+/** The default share image: the one chosen from the media library, else a link typed in. */
+export function shareImageUrl(settings: SiteSettings): string | undefined {
+  if (settings.seoImageMediaId) {
+    return `${CMS_URL.replace(/\/+$/, '')}/api/media/${settings.seoImageMediaId}?w=1200`;
+  }
+  return settings.seoImageUrl || undefined;
 }
 
 function mediaIconUrl(mediaId: string): string | null {

@@ -53,6 +53,7 @@ export function SeoFields({
         onChange={(seoTitle) => onChange({ seoTitle })}
         action={
           <SuggestButton
+            group="searchText"
             value={values.seoTitle}
             request={() => suggestPostText('seoTitle', values)}
             onApply={(seoTitle) => onChange({ seoTitle })}
@@ -69,6 +70,7 @@ export function SeoFields({
         onChange={(seoDescription) => onChange({ seoDescription })}
         action={
           <SuggestButton
+            group="searchText"
             value={values.seoDescription}
             request={() => suggestPostText('seoDescription', values)}
             onApply={(seoDescription) => onChange({ seoDescription })}
@@ -85,6 +87,7 @@ export function SeoFields({
           onChange={(focusKeyword) => onChange({ focusKeyword })}
           action={
             <SuggestButton
+              group="searchText"
               value={values.focusKeyword}
               request={() => suggestPostText('focusKeyword', values)}
               onApply={(focusKeyword) => onChange({ focusKeyword })}

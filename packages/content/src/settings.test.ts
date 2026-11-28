@@ -118,8 +118,19 @@ describe('content targets', () => {
       targetParagraphsMin: 5,
       targetImagesMin: 1,
       targetImagesMax: 8,
+      targetTitleMin: 30,
+      targetTitleMax: 60,
+      targetDescriptionMin: 70,
+      targetDescriptionMax: 160,
+      targetSentenceWords: 20,
+      targetParagraphWordsMax: 150,
+      targetSlugMax: 60,
       targetFocusKeywordUses: 2,
       targetRelatedTermUses: 1,
+      brandFlagDashes: true,
+      brandFlagExclamations: true,
+      brandCheckImageAlts: true,
+      brandCheckSearchListing: true,
       brandRules: [...BRAND_RULES],
     });
   });
@@ -229,5 +240,43 @@ describe('cookie settings', () => {
     expect(s.cookieTitle).toBe('Your cookie choices');
     expect(s.cookieMessage).toMatch(/Essential cookies are always on/);
     expect(s.consentMonths).toBe(12);
+  });
+});
+
+describe('regional settings', () => {
+  it('start as Monday, short dates, 12 hours and the dashboard', () => {
+    const settings = parseSiteSettings({});
+    expect(settings.weekStartsOn).toBe(1);
+    expect(settings.dateFormat).toBe('short');
+    expect(settings.timeFormat).toBe('12');
+    expect(settings.homePage).toBe('dashboard');
+  });
+
+  it('keep what was saved', () => {
+    const settings = parseSiteSettings({
+      weekStartsOn: 0,
+      dateFormat: 'iso',
+      timeFormat: '24',
+      homePage: 'calendar',
+    });
+    expect([settings.weekStartsOn, settings.dateFormat, settings.timeFormat]).toEqual([
+      0,
+      'iso',
+      '24',
+    ]);
+    expect(settings.homePage).toBe('calendar');
+  });
+
+  it('fall back for values this version does not know', () => {
+    const settings = parseSiteSettings({
+      weekStartsOn: 3,
+      dateFormat: 'long',
+      timeFormat: '36',
+      homePage: 'nowhere',
+    });
+    expect(settings.weekStartsOn).toBe(1);
+    expect(settings.dateFormat).toBe('short');
+    expect(settings.timeFormat).toBe('12');
+    expect(settings.homePage).toBe('dashboard');
   });
 });

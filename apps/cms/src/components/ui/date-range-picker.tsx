@@ -32,6 +32,7 @@ import {
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 import { sameDate } from '@/lib/format';
+import { useWeekStart } from '@/lib/use-week-start';
 
 // A range picker whose trigger grows into the panel it opens, ported from a shadcn-registry
 // motion library onto our tokens and Button. Two months sit side by side when the surrounding
@@ -616,11 +617,13 @@ function DateRangePicker({
   presets = [],
   minDate,
   maxDate,
-  weekStartsOn = 1,
+  weekStartsOn: weekStartsOnProp,
   months = 'auto',
   boundary,
   className,
 }: DateRangePickerProps) {
+  const siteWeekStart = useWeekStart();
+  const weekStartsOn = weekStartsOnProp ?? siteWeekStart;
   const reduced = useReducedFlag();
   const today = useToday();
   const uid = useId();

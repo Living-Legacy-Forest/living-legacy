@@ -39,9 +39,9 @@ type Db = ReturnType<typeof getDb>;
 export async function loadCalendar(
   db: Db,
   month: CalendarMonth,
-  { includeEvents }: { includeEvents: boolean }
+  { includeEvents, weekStartsOn = 1 }: { includeEvents: boolean; weekStartsOn?: 0 | 1 }
 ): Promise<CalendarEntry[]> {
-  const { from, to } = monthWindow(month);
+  const { from, to } = monthWindow(month, weekStartsOn);
   const start = new Date(from);
   const end = new Date(to);
   const live = isNull(posts.deletedAt);
@@ -164,7 +164,7 @@ export const getCalendar = createServerFn({ method: 'GET' })
   .middleware([authMiddleware])
   .validator(calendarSearch)
   .handler(async ({ data, context }) => {
-    const { timeZone } = await readSiteSettings();
+    const { timeZone, weekStartsOn } = await readSiteSettings();
     // "This month" is the site's, which at a month's edge differs from the server's.
     const now = toZoned(Date.now(), timeZone);
     const month = parseMonthKey(data.month) ?? { year: now.year, month: now.month };
@@ -172,7 +172,8 @@ export const getCalendar = createServerFn({ method: 'GET' })
     return {
       month: monthKey(month),
       includeEvents,
-      entries: await loadCalendar(getDb(), month, { includeEvents }),
+      weekStartsOn,
+      entries: await loadCalendar(getDb(), month, { includeEvents, weekStartsOn }),
     };
   });
 

@@ -38,6 +38,29 @@ export const timeZones = [
 ] as const;
 export type TimeZone = (typeof timeZones)[number];
 
+/** The day weeks start on in the CMS's calendars and date pickers: 1 Monday, 0 Sunday. */
+export const weekStarts = [1, 0] as const;
+export type WeekStart = (typeof weekStarts)[number];
+
+/** How the CMS writes a date: "28 Nov 2026", "28/11/2026" or "2026-11-28". */
+export const dateFormats = ['short', 'numeric', 'iso'] as const;
+export type DateFormat = (typeof dateFormats)[number];
+
+/** How the CMS writes a time of day: "1:05 pm" or "13:05". */
+export const timeFormats = ['12', '24'] as const;
+export type TimeFormat = (typeof timeFormats)[number];
+
+/** Where the CMS opens when someone signs in. Anyone who cannot open the page gets the dashboard. */
+export const homePages = [
+  'dashboard',
+  'posts',
+  'calendar',
+  'events',
+  'media',
+  'analytics',
+] as const;
+export type HomePage = (typeof homePages)[number];
+
 /** How many idle days sign a CMS user out. */
 export const sessionDayOptions = [1, 7, 30] as const;
 
@@ -46,6 +69,13 @@ export const TITLE_TOKENS = { page: '{page}', site: '{site}' } as const;
 
 /** The most suggestions one person may be allowed a day (Settings, Writing assistant). */
 export const AI_DAILY_LIMIT_MAX = 1000;
+
+/** The kinds of suggestion an admin can switch on or off (Settings, Writing assistant). */
+export const AI_GROUPS = ['searchText', 'summaries', 'tags', 'imageText', 'brandFixes'] as const;
+export type AiGroup = (typeof AI_GROUPS)[number];
+
+/** The longest note an admin may add to the assistant's instructions. */
+export const AI_INSTRUCTIONS_MAX = 500;
 
 export const SITE_SETTINGS_DEFAULTS = {
   siteTitle: 'Living Legacy',
@@ -56,22 +86,41 @@ export const SITE_SETTINGS_DEFAULTS = {
   address: '',
   openingHours: '',
   legalName: '',
+  /** The name the business trades under, when it is not the legal one. */
+  tradingName: '',
   abn: '',
+  acn: '',
+  /** Where post goes, when that is not the street address. */
+  postalAddress: '',
+  /** A number for out of hours, shown on the contact page. */
+  afterHoursPhone: '',
+  /** For journalists, shown on the contact page. */
+  mediaEmail: '',
+  /** Where a guest's reply to a booking confirmation goes. */
+  bookingsEmail: '',
   facebookUrl: '',
   instagramUrl: '',
+  xUrl: '',
   youtubeUrl: '',
   linkedinUrl: '',
   tiktokUrl: '',
   googleBusinessUrl: '',
   titlePattern: `${TITLE_TOKENS.page} | ${TITLE_TOKENS.site}`,
   seoDescription: '',
+  /** Media library image for shares and search results; wins over `seoImageUrl`. */
+  seoImageMediaId: '',
+  /** A link typed in before the library could be used; still shown until replaced. */
   seoImageUrl: '',
+  /** What the share image shows, for people who cannot see it. */
+  seoImageAlt: '',
   /** Media library image for browser tabs and home screens; '' uses the built-in icons. */
   siteIconMediaId: '',
   /** Shown instead of the site icon when the browser is in dark mode; '' uses the site icon. */
   siteIconDarkMediaId: '',
   googleVerification: '',
   bingVerification: '',
+  facebookVerification: '',
+  pinterestVerification: '',
   /** Ask search engines to leave the whole website out of their results. */
   hideFromSearch: false,
   // What the content score measures blog posts against (Settings, Content targets).
@@ -82,14 +131,38 @@ export const SITE_SETTINGS_DEFAULTS = {
   targetParagraphsMin: 5,
   targetImagesMin: 1,
   targetImagesMax: 8,
+  // The search listing and readability checks. Characters for the first four, words for the rest.
+  targetTitleMin: 30,
+  targetTitleMax: 60,
+  targetDescriptionMin: 70,
+  targetDescriptionMax: 160,
+  /** The most words a sentence may average. */
+  targetSentenceWords: 20,
+  /** The most words one paragraph may have. */
+  targetParagraphWordsMax: 150,
+  /** The most characters a permalink may have. */
+  targetSlugMax: 60,
   targetFocusKeywordUses: 2,
   targetRelatedTermUses: 1,
+  // What the brand language check looks at (Settings, Brand language).
+  brandFlagDashes: true,
+  brandFlagExclamations: true,
+  brandCheckImageAlts: true,
+  brandCheckSearchListing: true,
   /** The words the content score flags (Settings, Brand language). Starts as the guide's list. */
   brandRules: [...BRAND_RULES] as BrandRule[],
   // The writing assistant (Settings, Writing assistant): the Suggest buttons, and how many each
   // person may ask for in a day.
   aiEnabled: true,
   aiDailyLimit: 100,
+  /** Which kinds of suggestion are on. */
+  aiSearchText: true,
+  aiSummaries: true,
+  aiTags: true,
+  aiImageText: true,
+  aiBrandFixes: true,
+  /** A note added to every suggestion's instructions. The brand guide still wins. */
+  aiInstructions: '',
   /** Email guests a confirmation, with a link to cancel, when they book on the website. */
   sendBookingConfirmations: true,
   // Cookies & privacy: which tags the website loads, and the banner that asks first. A tag id left
@@ -115,6 +188,11 @@ export const SITE_SETTINGS_DEFAULTS = {
   cmsFont: 'inter' as CmsFont,
   cmsColour: 'neutral' as CmsColour,
   timeZone: 'Australia/Melbourne' as TimeZone,
+  // Regional (Settings, General): how the CMS writes dates and times, and where it opens.
+  weekStartsOn: 1 as WeekStart,
+  dateFormat: 'short' as DateFormat,
+  timeFormat: '12' as TimeFormat,
+  homePage: 'dashboard' as HomePage,
 };
 
 export type SiteSettings = typeof SITE_SETTINGS_DEFAULTS;
@@ -165,6 +243,18 @@ export function parseSiteSettings(data: unknown): SiteSettings {
   if (settings.sidebarColumns !== 1 && settings.sidebarColumns !== 2) {
     settings.sidebarColumns = SITE_SETTINGS_DEFAULTS.sidebarColumns;
   }
+  if (!(weekStarts as readonly number[]).includes(settings.weekStartsOn)) {
+    settings.weekStartsOn = SITE_SETTINGS_DEFAULTS.weekStartsOn;
+  }
+  if (!(dateFormats as readonly string[]).includes(settings.dateFormat)) {
+    settings.dateFormat = SITE_SETTINGS_DEFAULTS.dateFormat;
+  }
+  if (!(timeFormats as readonly string[]).includes(settings.timeFormat)) {
+    settings.timeFormat = SITE_SETTINGS_DEFAULTS.timeFormat;
+  }
+  if (!(homePages as readonly string[]).includes(settings.homePage)) {
+    settings.homePage = SITE_SETTINGS_DEFAULTS.homePage;
+  }
   if (!(cmsFonts as readonly string[]).includes(settings.cmsFont)) {
     settings.cmsFont = SITE_SETTINGS_DEFAULTS.cmsFont;
   }
@@ -197,8 +287,19 @@ export const CONTENT_TARGET_KEYS = [
   'targetParagraphsMin',
   'targetImagesMin',
   'targetImagesMax',
+  'targetTitleMin',
+  'targetTitleMax',
+  'targetDescriptionMin',
+  'targetDescriptionMax',
+  'targetSentenceWords',
+  'targetParagraphWordsMax',
+  'targetSlugMax',
   'targetFocusKeywordUses',
   'targetRelatedTermUses',
+  'brandFlagDashes',
+  'brandFlagExclamations',
+  'brandCheckImageAlts',
+  'brandCheckSearchListing',
   'brandRules',
 ] as const satisfies readonly (keyof SiteSettings)[];
 
@@ -214,6 +315,8 @@ const TARGET_RANGES = [
   ['targetWordsMin', 'targetWordsMax', 'Words'],
   ['targetHeadingsMin', 'targetHeadingsMax', 'Headings'],
   ['targetImagesMin', 'targetImagesMax', 'Images'],
+  ['targetTitleMin', 'targetTitleMax', 'Search title'],
+  ['targetDescriptionMin', 'targetDescriptionMax', 'Search description'],
 ] as const;
 
 /** A sentence naming the first range whose minimum is above its maximum. */

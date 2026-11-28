@@ -5,6 +5,7 @@ import {
   GoogleIcon,
   InstagramIcon,
   Linkedin01Icon,
+  NewTwitterIcon,
   TiktokIcon,
   YoutubeIcon,
 } from '@hugeicons/core-free-icons';
@@ -36,6 +37,7 @@ const settings = await getSiteSettings();
 const socialIcons = {
   facebookUrl: Facebook01Icon,
   instagramUrl: InstagramIcon,
+  xUrl: NewTwitterIcon,
   youtubeUrl: YoutubeIcon,
   linkedinUrl: Linkedin01Icon,
   tiktokUrl: TiktokIcon,
@@ -43,7 +45,12 @@ const socialIcons = {
 } satisfies Record<SocialKey, unknown>;
 const socials = socialLinks(settings);
 
-const business = [settings.legalName, settings.abn && `ABN ${settings.abn}`]
+const business = [
+  settings.legalName,
+  settings.tradingName && `trading as ${settings.tradingName}`,
+  settings.abn && `ABN ${settings.abn}`,
+  settings.acn && `ACN ${settings.acn}`,
+]
   .filter(Boolean)
   .join(', ');
 

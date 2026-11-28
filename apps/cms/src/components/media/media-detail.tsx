@@ -546,6 +546,7 @@ export function MediaDetail({ detail, canDelete }: { detail: Detail; canDelete: 
                     Alt text
                   </Label>
                   <SuggestButton
+                    group="imageText"
                     value={alt}
                     request={() =>
                       suggestAltText({ data: { mediaId: item.id } }).then((r) => r.text)
@@ -574,6 +575,7 @@ export function MediaDetail({ detail, canDelete }: { detail: Detail; canDelete: 
                 </Label>
                 {!isDocument && (
                   <SuggestButton
+                    group="imageText"
                     value={caption}
                     request={() =>
                       suggestMediaCaption({ data: { mediaId: item.id } }).then((r) => r.text)

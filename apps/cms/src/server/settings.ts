@@ -15,11 +15,17 @@ import {
   cmsColours,
   cmsFonts,
   AI_DAILY_LIMIT_MAX,
+  AI_INSTRUCTIONS_MAX,
+  dateFormats,
+  homePages,
+  timeFormats,
   brandRulesSchema,
   contentTargetProblem,
   formatAbn,
+  formatAcn,
   isEmailDomain,
   isValidAbn,
+  isValidAcn,
   locales,
   optionalEmailSchema,
   optionalPhoneSchema,
@@ -65,6 +71,10 @@ export const getRootSettings = createServerFn({ method: 'GET' }).handler(async (
       cmsFont,
       cmsColour,
       timeZone,
+      weekStartsOn,
+      dateFormat,
+      timeFormat,
+      homePage,
       siteIconMediaId,
       siteIconDarkMediaId,
     },
@@ -79,6 +89,10 @@ export const getRootSettings = createServerFn({ method: 'GET' }).handler(async (
     cmsFont,
     cmsColour,
     timeZone,
+    weekStartsOn,
+    dateFormat,
+    timeFormat,
+    homePage,
     siteIconMediaId,
     siteIconDarkMediaId,
   };
@@ -117,11 +131,20 @@ const settingsSchema = z
     address: text(300),
     openingHours: text(300),
     legalName: text(120),
+    tradingName: text(120),
+    postalAddress: text(300),
+    afterHoursPhone: optionalPhoneSchema(),
+    mediaEmail: optionalEmailSchema(120),
+    bookingsEmail: optionalEmailSchema(120),
+    acn: text(20)
+      .refine((v) => !v || isValidAcn(v), 'That ACN is not valid. Check the 9 digits.')
+      .transform(formatAcn),
     abn: text(20)
       .refine((v) => !v || isValidAbn(v), 'That ABN is not valid. Check the 11 digits.')
       .transform(formatAbn),
     facebookUrl: link,
     instagramUrl: link,
+    xUrl: link,
     youtubeUrl: link,
     linkedinUrl: link,
     tiktokUrl: link,
@@ -132,10 +155,14 @@ const settingsSchema = z
     ),
     seoDescription: text(SEO_DESCRIPTION_LIMIT),
     seoImageUrl: link,
+    seoImageMediaId: z.string().max(64),
     siteIconMediaId: z.string().max(64),
     siteIconDarkMediaId: z.string().max(64),
     googleVerification: verification,
     bingVerification: verification,
+    facebookVerification: verification,
+    pinterestVerification: verification,
+    seoImageAlt: text(200),
     hideFromSearch: z.boolean(),
     targetWordsMin: target,
     targetWordsMax: target,
@@ -144,6 +171,17 @@ const settingsSchema = z
     targetParagraphsMin: target,
     targetImagesMin: target,
     targetImagesMax: target,
+    targetTitleMin: target,
+    targetTitleMax: target,
+    targetDescriptionMin: target,
+    targetDescriptionMax: target,
+    targetSentenceWords: target,
+    targetParagraphWordsMax: target,
+    targetSlugMax: target,
+    brandFlagDashes: z.boolean(),
+    brandFlagExclamations: z.boolean(),
+    brandCheckImageAlts: z.boolean(),
+    brandCheckSearchListing: z.boolean(),
     targetFocusKeywordUses: target,
     targetRelatedTermUses: target,
     brandRules: brandRulesSchema,
@@ -159,6 +197,12 @@ const settingsSchema = z
       .int(`Enter a whole number from 1 to ${AI_DAILY_LIMIT_MAX}.`)
       .min(1, `Enter a whole number from 1 to ${AI_DAILY_LIMIT_MAX}.`)
       .max(AI_DAILY_LIMIT_MAX, `Enter a whole number from 1 to ${AI_DAILY_LIMIT_MAX}.`),
+    aiSearchText: z.boolean(),
+    aiSummaries: z.boolean(),
+    aiTags: z.boolean(),
+    aiImageText: z.boolean(),
+    aiBrandFixes: z.boolean(),
+    aiInstructions: text(AI_INSTRUCTIONS_MAX),
     sendBookingConfirmations: z.boolean(),
     consentMonths: z
       .number()
@@ -180,6 +224,10 @@ const settingsSchema = z
     cmsFont: z.enum(cmsFonts),
     cmsColour: z.enum(cmsColours),
     timeZone: z.enum(timeZones),
+    weekStartsOn: z.union([z.literal(1), z.literal(0)]),
+    dateFormat: z.enum(dateFormats),
+    timeFormat: z.enum(timeFormats),
+    homePage: z.enum(homePages),
   })
   .superRefine((value, ctx) => {
     const problem = contentTargetProblem(value);
@@ -191,8 +239,12 @@ const SEO_KEYS = [
   'titlePattern',
   'seoDescription',
   'seoImageUrl',
+  'seoImageMediaId',
   'googleVerification',
   'bingVerification',
+  'facebookVerification',
+  'pinterestVerification',
+  'seoImageAlt',
   'hideFromSearch',
   ...CONTENT_TARGET_KEYS,
 ] as const satisfies readonly (keyof SiteSettings)[];
@@ -221,6 +273,15 @@ export const saveSiteSettings = createServerFn({ method: 'POST' })
       if (!icon) throw new Error(`That ${label} is no longer in the media library.`);
       const problem = siteIconProblem(icon, label);
       if (problem) throw new Error(problem);
+    }
+    if (value.seoImageMediaId) {
+      const image = await db.query.media.findFirst({
+        where: eq(media.id, value.seoImageMediaId),
+      });
+      if (!image || image.deletedAt) {
+        throw new Error('That share image is no longer in the media library.');
+      }
+      if (!image.mime.startsWith('image/')) throw new Error('The share image must be a picture.');
     }
     await writeSiteSettings(db, value, context.user.id);
     await logActivity(db, {

@@ -2127,3 +2127,41 @@
   color-scheme: dark;
   --interactive-filter: brightness(120%);
 }
+
+/* A person's own display choices (Profile, Appearance), set on <html> from lib/display-prefs.ts.
+   Rem-based sizes all follow the root, so one change scales the text and what is built around it. */
+html[data-text-size='small'] {
+  font-size: 93.75%;
+}
+html[data-text-size='large'] {
+  font-size: 112.5%;
+}
+html[data-pointer-cursors]
+  :is(
+    button,
+    summary,
+    select,
+    label[for],
+    [role='button'],
+    [role='tab'],
+    [role='menuitem'],
+    [role='option'],
+    [role='switch'],
+    [role='checkbox'],
+    [role='radio'],
+    a[href]
+  ):not(:disabled, [aria-disabled='true']) {
+  cursor: pointer;
+}
+html[data-underline-links] :is(p, dd, td, [contenteditable]) a[href] {
+  text-decoration: underline;
+  text-underline-offset: 0.2em;
+}
+html[data-reduce-motion] *,
+html[data-reduce-motion] *::before,
+html[data-reduce-motion] *::after {
+  animation-duration: 0.01ms !important;
+  animation-iteration-count: 1 !important;
+  transition-duration: 0.01ms !important;
+  scroll-behavior: auto !important;
+}

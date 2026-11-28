@@ -219,6 +219,38 @@ describe('suggestPostFieldFor', () => {
     return { client: { messages: { create } } as unknown as AiClient, create };
   };
 
+  it('refuses a kind of suggestion an admin has switched off, without calling the model', async () => {
+    await testDb()
+      .insert(siteSettings)
+      .values({ id: 'site', data: { aiSummaries: false } });
+    const { client, create } = fakeClient('A summary.');
+    await expect(
+      suggestPostFieldFor(testDb(), client, actor('editor'), { ...post, field: 'excerpt' })
+    ).rejects.toThrow('That kind of suggestion is switched off');
+    expect(create).not.toHaveBeenCalled();
+    expect(await usedToday()).toBe(0);
+    // The other kinds still work.
+    create.mockResolvedValueOnce(answer({ text: 'A description.' }));
+    await expect(
+      suggestPostFieldFor(testDb(), client, actor('editor'), { ...post, field: 'seoDescription' })
+    ).resolves.toEqual({ text: 'A description.' });
+  });
+
+  it("adds the admin's note after the brand guide in the instructions", async () => {
+    await testDb()
+      .insert(siteSettings)
+      .values({ id: 'site', data: { aiInstructions: 'Keep it warm and gentle.' } });
+    const { client, create } = fakeClient('A description.');
+    create.mockResolvedValueOnce(answer({ text: 'A description.' }));
+    await suggestPostFieldFor(testDb(), client, actor('editor'), {
+      ...post,
+      field: 'seoDescription',
+    });
+    const system = JSON.stringify(create.mock.calls[0]![0].system);
+    expect(system).toContain('Keep it warm and gentle.');
+    expect(system).toContain('which always wins');
+  });
+
   it('returns tags only from the existing list, in the list spelling', async () => {
     const { client } = tagsFrom(['events', 'Forests']);
     const out = await suggestPostFieldFor(testDb(), client, actor('editor'), {

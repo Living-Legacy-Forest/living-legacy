@@ -1,4 +1,5 @@
 import { parseClock } from '@ll/content';
+import { getRegional } from './regional';
 
 const LOCALE = 'en-AU';
 
@@ -70,8 +71,24 @@ export function sameDate(text: string) {
   return text.replace(/\bSep\b/g, 'Sept').replace(/^(Mon|Tue|Wed|Thu|Fri|Sat|Sun), /, '$1 ');
 }
 
-/** `zone` is the site's configured time zone (Settings → Language & appearance). */
+/**
+ * The date as the site writes it: "18 Sept 2026", "18/09/2026" or "2026-09-18". `zone` is the
+ * site's configured time zone (Settings → Language & appearance).
+ */
 export function formatDate(timestamp: number, zone: string) {
+  const { dateFormat } = getRegional();
+  if (dateFormat === 'iso') {
+    // en-CA writes year-month-day.
+    return new Date(timestamp).toLocaleDateString('en-CA', { timeZone: zone });
+  }
+  if (dateFormat === 'numeric') {
+    return new Date(timestamp).toLocaleDateString(LOCALE, {
+      timeZone: zone,
+      day: '2-digit',
+      month: '2-digit',
+      year: 'numeric',
+    });
+  }
   return sameDate(
     new Date(timestamp).toLocaleDateString(LOCALE, {
       timeZone: zone,
@@ -82,14 +99,33 @@ export function formatDate(timestamp: number, zone: string) {
   );
 }
 
-/** "18 Sept 2026, 1:05 pm". Put together here: Safari joins the two with "at". */
-export function formatDateTime(timestamp: number, zone: string) {
-  const time = new Date(timestamp).toLocaleTimeString(LOCALE, {
+/**
+ * A time of day in `zone` as the site writes it: "1:05 pm" or "13:05". Put together here, not by
+ * `toLocaleTimeString`, because engines disagree on the am/pm wording ("pm" or "PM", and the
+ * space before it).
+ */
+export function formatClock(timestamp: number, zone: string) {
+  const parts = new Intl.DateTimeFormat('en-GB', {
     timeZone: zone,
     hour: 'numeric',
     minute: '2-digit',
-  });
-  return `${formatDate(timestamp, zone)}, ${time}`;
+    hourCycle: 'h23',
+  }).formatToParts(new Date(timestamp));
+  const hour = Number(parts.find((p) => p.type === 'hour')?.value ?? 0) % 24;
+  const minute = parts.find((p) => p.type === 'minute')?.value ?? '00';
+  return clockText(hour, Number(minute));
+}
+
+/** "1:05 pm" or "13:05", for an hour (0–23) and minute. */
+export function clockText(hour: number, minute: number) {
+  const mm = String(minute).padStart(2, '0');
+  if (getRegional().timeFormat === '24') return `${String(hour).padStart(2, '0')}:${mm}`;
+  return `${hour % 12 || 12}:${mm} ${hour < 12 ? 'am' : 'pm'}`;
+}
+
+/** "18 Sept 2026, 1:05 pm". Put together here: Safari joins the two with "at". */
+export function formatDateTime(timestamp: number, zone: string) {
+  return `${formatDate(timestamp, zone)}, ${formatClock(timestamp, zone)}`;
 }
 
 /** "Saturday 14 March 2027" in `zone`. */
@@ -105,8 +141,7 @@ export function formatLongDate(timestamp: number, zone: string) {
 
 /** "10:00 am – 12:00 pm", naming the end's day when it is not the start's. */
 export function formatTimeRange(start: number, end: number, zone: string) {
-  const time = (ms: number) =>
-    new Date(ms).toLocaleTimeString(LOCALE, { timeZone: zone, hour: 'numeric', minute: '2-digit' });
+  const time = (ms: number) => formatClock(ms, zone);
   const day = (ms: number) =>
     sameDate(
       new Date(ms).toLocaleDateString(LOCALE, {
@@ -159,5 +194,5 @@ export function parseTime(text: string): string | null {
 
 export function displayTime(time: string) {
   const [hour = 0, minute = 0] = time.split(':').map(Number);
-  return `${hour % 12 || 12}:${pad2(minute)} ${hour < 12 ? 'am' : 'pm'}`;
+  return clockText(hour, minute);
 }

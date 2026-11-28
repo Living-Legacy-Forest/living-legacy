@@ -17,6 +17,8 @@ export function organizationJsonLd(org: {
   siteUrl: string;
   name: string;
   legalName?: string;
+  /** The name it trades under, when that differs from `name`. */
+  alternateName?: string;
   email?: string;
   telephone?: string;
   address?: string;
@@ -29,6 +31,7 @@ export function organizationJsonLd(org: {
     name: org.name,
     url: new URL('/', org.siteUrl).toString(),
     ...(org.legalName ? { legalName: org.legalName } : {}),
+    ...(org.alternateName ? { alternateName: org.alternateName } : {}),
     ...(org.email ? { email: org.email } : {}),
     ...(org.telephone ? { telephone: org.telephone } : {}),
     ...(org.address ? { address: org.address } : {}),

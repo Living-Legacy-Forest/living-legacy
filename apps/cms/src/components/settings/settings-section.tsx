@@ -23,6 +23,7 @@ export function SettingsSection({
   description,
   framed = false,
   divided = true,
+  loose = false,
   children,
 }: {
   id: string;
@@ -35,6 +36,8 @@ export function SettingsSection({
   framed?: boolean;
   /** Whether a framed group draws a line between its rows from md. Phones always do. */
   divided?: boolean;
+  /** More room between rows, for a page of a few well-spaced settings. */
+  loose?: boolean;
   children: ReactNode;
 }) {
   const only = useContext(SectionFilter);
@@ -50,7 +53,9 @@ export function SettingsSection({
               'md:bg-muted/50 md:overflow-hidden md:rounded-lg',
               divided && 'md:divide-border/60 md:divide-y'
             )
-          : 'md:space-y-6'
+          : loose
+            ? 'md:space-y-8'
+            : 'md:space-y-6'
       )}
     >
       {children}
@@ -100,6 +105,7 @@ export function SettingsRow({
   title,
   description,
   info,
+  icon,
   suffix,
   stacked = false,
   below = false,
@@ -111,6 +117,8 @@ export function SettingsRow({
   description?: ReactNode;
   /** The detail that would make the description too long, in a "?" beside the title. */
   info?: ReactNode;
+  /** A small mark before the title, such as a network's logo. */
+  icon?: ReactNode;
   suffix?: ReactNode;
   stacked?: boolean;
   /** Phones: the control takes its own line under the title, for one too wide to sit beside it. */
@@ -122,10 +130,14 @@ export function SettingsRow({
       <Label htmlFor={id}>{title}</Label>
       <InfoTip label={`About ${title.toLowerCase()}`}>{info}</InfoTip>
     </div>
+  ) : icon ? (
+    <div className="flex items-center gap-2.5">
+      {icon}
+      <Label htmlFor={id}>{title}</Label>
+    </div>
   ) : (
     <Label htmlFor={id}>{title}</Label>
   );
-
   if (stacked) {
     return (
       <div

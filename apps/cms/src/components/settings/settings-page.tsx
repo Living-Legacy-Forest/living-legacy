@@ -1,14 +1,19 @@
 import {
+  type DateFormat,
+  type HomePage,
+  type TimeFormat,
   SEO_DESCRIPTION_LIMIT,
   brandRulesProblem,
   contentTargetProblem,
   contentTargetsFrom,
   isEmailDomain,
   isValidAbn,
+  isValidAcn,
   parseEmailDomains,
   sessionDayOptions,
   siteIconProblem,
   AI_DAILY_LIMIT_MAX,
+  AI_INSTRUCTIONS_MAX,
 } from '@ll/content';
 import { CONSENT_MONTHS_OPTIONS } from '@ll/content/consent';
 import { Link, getRouteApi, useBlocker, useNavigate, useRouter } from '@tanstack/react-router';
@@ -24,6 +29,8 @@ import {
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
 import { ArrowRight, ChevronDownIcon, MoonIcon, SunIcon } from '@/components/icons';
+import { type BrandName, BrandLogo } from '@/components/brand-logos';
+import { InfoTip } from '@/components/info-tip';
 import { StatusBadge } from '@/components/status-badge';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -75,6 +82,69 @@ import type { SettingsSectionId } from '@/lib/settings-nav';
 const rootRoute = getRouteApi('__root__');
 
 const SITE_HOST = 'livinglegacy.com.au';
+
+const weekStartItems = [
+  { value: '1', label: 'Monday' },
+  { value: '0', label: 'Sunday' },
+];
+
+const dateFormatItems: { value: DateFormat; label: string }[] = [
+  { value: 'short', label: '28 Nov 2026' },
+  { value: 'numeric', label: '28/11/2026' },
+  { value: 'iso', label: '2026-11-28' },
+];
+
+const flagItems: { value: 'flag' | 'ignore'; label: string }[] = [
+  { value: 'flag', label: 'Flag' },
+  { value: 'ignore', label: 'Ignore' },
+];
+
+const checkItems: { value: 'check' | 'skip'; label: string }[] = [
+  { value: 'check', label: 'Check' },
+  { value: 'skip', label: 'Skip' },
+];
+
+const timeFormatItems: { value: TimeFormat; label: string }[] = [
+  { value: '12', label: '12-hour (1:05 pm)' },
+  { value: '24', label: '24-hour (13:05)' },
+];
+
+const homePageItems: { value: HomePage; label: string }[] = [
+  { value: 'dashboard', label: 'Dashboard' },
+  { value: 'posts', label: 'Posts' },
+  { value: 'calendar', label: 'Content calendar' },
+  { value: 'events', label: 'Events' },
+  { value: 'media', label: 'Media' },
+  { value: 'analytics', label: 'Analytics' },
+];
+
+/** A dropdown for one of the settings that is a pick from a short list. */
+function SettingsSelect<T extends string>({
+  id,
+  items,
+  value,
+  onChange,
+}: {
+  id: string;
+  items: { value: T; label: string }[];
+  value: T;
+  onChange: (value: T) => void;
+}) {
+  return (
+    <Select items={items} value={value} onValueChange={(next) => next && onChange(next as T)}>
+      <SelectTrigger id={id} className={fieldWidth}>
+        <SelectValue />
+      </SelectTrigger>
+      <SelectContent>
+        {items.map((item) => (
+          <SelectItem key={item.value} value={item.value}>
+            {item.label}
+          </SelectItem>
+        ))}
+      </SelectContent>
+    </Select>
+  );
+}
 
 const localeItems: { value: Locale; label: string }[] = [
   { value: 'en-AU', label: 'English (Australia)' },
@@ -184,6 +254,7 @@ function timeZoneItems(): { value: TimeZone; label: string }[] {
 /** Which page of the form a field is on, so a problem found on another page can take you there. */
 const FIELD_SECTIONS: [prefix: string, section: SettingsSectionId][] = [
   ['settings-abn', 'business'],
+  ['settings-acn', 'business'],
   ['settings-domains', 'sign-in'],
   ['settings-title-pattern', 'search'],
   ['settings-target', 'content-targets'],
@@ -196,6 +267,9 @@ const FIELD_SECTIONS: [prefix: string, section: SettingsSectionId][] = [
 function problem(v: SiteSettings): { field: string; message: string } | null {
   if (v.abn && !isValidAbn(v.abn)) {
     return { field: 'settings-abn', message: 'That ABN is not valid. Check the 11 digits.' };
+  }
+  if (v.acn && !isValidAcn(v.acn)) {
+    return { field: 'settings-acn', message: 'That ACN is not valid. Check the 9 digits.' };
   }
   if (!parseEmailDomains(v.allowedEmailDomains).every(isEmailDomain)) {
     return {
@@ -332,6 +406,7 @@ export function SettingsPage({
               id="general"
               title="General"
               description="What the site is called and how people reach you. Changes reach the website within a minute."
+              loose
             >
               <SettingsRow
                 id="settings-site-title"
@@ -381,6 +456,55 @@ export function SettingsPage({
                   className={fieldWidth}
                 />
               </SettingsRow>
+              <SettingsRow
+                id="settings-week-start"
+                title="First day of the week"
+                description="Where weeks begin in the CMS's calendars and date pickers."
+              >
+                <SettingsSelect
+                  id="settings-week-start"
+                  items={weekStartItems}
+                  value={String(values.weekStartsOn)}
+                  onChange={(value) => patch({ weekStartsOn: value === '0' ? 0 : 1 })}
+                />
+              </SettingsRow>
+              <SettingsRow
+                id="settings-date-format"
+                title="Date format"
+                description="How the CMS writes dates. The website keeps its own."
+              >
+                <SettingsSelect
+                  id="settings-date-format"
+                  items={dateFormatItems}
+                  value={values.dateFormat}
+                  onChange={(dateFormat) => patch({ dateFormat })}
+                />
+              </SettingsRow>
+              <SettingsRow
+                id="settings-time-format"
+                title="Time format"
+                description="How the CMS writes the time of day."
+              >
+                <SettingsSelect
+                  id="settings-time-format"
+                  items={timeFormatItems}
+                  value={values.timeFormat}
+                  onChange={(timeFormat) => patch({ timeFormat })}
+                />
+              </SettingsRow>
+              <SettingsRow
+                id="settings-home-page"
+                title="Default home page"
+                description="Where the CMS opens when someone signs in."
+                info="The first time in a browser session. Anyone who can't open that page sees the dashboard."
+              >
+                <SettingsSelect
+                  id="settings-home-page"
+                  items={homePageItems}
+                  value={values.homePage}
+                  onChange={(homePage) => patch({ homePage })}
+                />
+              </SettingsRow>
             </SettingsSection>
           )}
 
@@ -405,6 +529,51 @@ export function SettingsPage({
                   className={fieldWidth}
                 />
               </SettingsRow>
+              <SettingsRow
+                id="settings-after-hours-phone"
+                title="After-hours phone"
+                description="For out of hours. Shown on the contact page."
+              >
+                <Input
+                  id="settings-after-hours-phone"
+                  type="tel"
+                  maxLength={40}
+                  value={values.afterHoursPhone}
+                  placeholder="0400 000 000"
+                  onChange={(e) => patch({ afterHoursPhone: e.target.value })}
+                  className={fieldWidth}
+                />
+              </SettingsRow>
+              <SettingsRow
+                id="settings-media-email"
+                title="Media email"
+                description="For journalists. Shown on the contact page."
+              >
+                <Input
+                  id="settings-media-email"
+                  type="email"
+                  maxLength={120}
+                  value={values.mediaEmail}
+                  placeholder="media@example.com"
+                  onChange={(e) => patch({ mediaEmail: e.target.value })}
+                  className={fieldWidth}
+                />
+              </SettingsRow>
+              <SettingsRow
+                id="settings-bookings-email"
+                title="Bookings email"
+                description="Where replies to booking confirmations go."
+              >
+                <Input
+                  id="settings-bookings-email"
+                  type="email"
+                  maxLength={120}
+                  value={values.bookingsEmail}
+                  placeholder="events@example.com"
+                  onChange={(e) => patch({ bookingsEmail: e.target.value })}
+                  className={fieldWidth}
+                />
+              </SettingsRow>
               <SettingsRow id="settings-address" title="Address" stacked>
                 <Textarea
                   id="settings-address"
@@ -412,6 +581,20 @@ export function SettingsPage({
                   value={values.address}
                   placeholder="Street, suburb, state and postcode"
                   onChange={(e) => patch({ address: e.target.value })}
+                />
+              </SettingsRow>
+              <SettingsRow
+                id="settings-postal-address"
+                title="Postal address"
+                description="Only if post goes somewhere other than the address above."
+                stacked
+              >
+                <Textarea
+                  id="settings-postal-address"
+                  rows={2}
+                  value={values.postalAddress}
+                  placeholder="PO Box, suburb, state and postcode"
+                  onChange={(e) => patch({ postalAddress: e.target.value })}
                 />
               </SettingsRow>
               <SettingsRow
@@ -438,6 +621,19 @@ export function SettingsPage({
                 />
               </SettingsRow>
               <SettingsRow
+                id="settings-trading-name"
+                title="Trading name"
+                description="Only if the business trades under a different name."
+              >
+                <Input
+                  id="settings-trading-name"
+                  value={values.tradingName}
+                  placeholder="Living Legacy"
+                  onChange={(e) => patch({ tradingName: e.target.value })}
+                  className={fieldWidth}
+                />
+              </SettingsRow>
+              <SettingsRow
                 id="settings-abn"
                 title="ABN"
                 description="Checked and spaced for you when saved."
@@ -452,6 +648,21 @@ export function SettingsPage({
                   className={cn(fieldWidth, 'tabular-nums')}
                 />
               </SettingsRow>
+              <SettingsRow
+                id="settings-acn"
+                title="ACN"
+                description="Checked and spaced for you when saved."
+              >
+                <Input
+                  id="settings-acn"
+                  inputMode="numeric"
+                  value={values.acn}
+                  placeholder="000 000 000"
+                  onChange={(e) => patch({ acn: e.target.value })}
+                  aria-invalid={values.acn !== '' && !isValidAcn(values.acn)}
+                  className={cn(fieldWidth, 'tabular-nums')}
+                />
+              </SettingsRow>
             </SettingsSection>
           )}
 
@@ -463,15 +674,21 @@ export function SettingsPage({
             >
               {(
                 [
-                  ['facebookUrl', 'Facebook', 'https://www.facebook.com/…'],
-                  ['instagramUrl', 'Instagram', 'https://www.instagram.com/…'],
-                  ['youtubeUrl', 'YouTube', 'https://www.youtube.com/…'],
-                  ['linkedinUrl', 'LinkedIn', 'https://www.linkedin.com/company/…'],
-                  ['tiktokUrl', 'TikTok', 'https://www.tiktok.com/@…'],
-                  ['googleBusinessUrl', 'Google reviews', 'https://g.page/…'],
+                  ['facebookUrl', 'Facebook', 'https://www.facebook.com/…', 'facebook'],
+                  ['instagramUrl', 'Instagram', 'https://www.instagram.com/…', 'instagram'],
+                  ['xUrl', 'X', 'https://x.com/…', 'x'],
+                  ['youtubeUrl', 'YouTube', 'https://www.youtube.com/…', 'youtube'],
+                  ['linkedinUrl', 'LinkedIn', 'https://www.linkedin.com/company/…', 'linkedin'],
+                  ['tiktokUrl', 'TikTok', 'https://www.tiktok.com/@…', 'tiktok'],
+                  ['googleBusinessUrl', 'Google reviews', 'https://g.page/…', 'google'],
                 ] as const
-              ).map(([key, title, placeholder]) => (
-                <SettingsRow key={key} id={`settings-${key}`} title={title}>
+              ).map(([key, title, placeholder, brand]) => (
+                <SettingsRow
+                  key={key}
+                  id={`settings-${key}`}
+                  title={title}
+                  icon={<BrandLogo brand={brand satisfies BrandName} className="size-8" />}
+                >
                   <Input
                     id={`settings-${key}`}
                     type="url"
@@ -489,16 +706,18 @@ export function SettingsPage({
           <SettingsSection
             id="search"
             title="Search & sharing"
-            description="How pages appear in search results and when shared, unless a page sets its own."
+            description="How pages appear in search results and when shared."
+            loose
           >
             <SettingsRow
               id="settings-hide-search"
               title="Hide from search engines"
               description={
                 values.hideFromSearch
-                  ? 'On: search engines are asked to drop every page. Visitors can still open the site.'
-                  : 'Asks search engines to leave every page out of their results, such as before a launch.'
+                  ? 'On: search engines are asked to drop every page.'
+                  : 'Asks search engines to leave every page out.'
               }
+              info="Visitors can still open the site. Handy before a launch."
             >
               <Switch
                 id="settings-hide-search"
@@ -536,33 +755,46 @@ export function SettingsPage({
             </SettingsRow>
             <div className="space-y-1.5 max-md:px-4 max-md:py-3.5">
               <p className="text-muted-foreground text-xs">Search result preview</p>
-              <div className="bg-muted/50 rounded-lg px-4 py-3">
-                <p className="text-muted-foreground truncate text-xs">{SITE_HOST} › our-story</p>
-                <p className="truncate text-base text-[#1a0dab] dark:text-[#8ab4f8]">
-                  {exampleTitle}
-                </p>
-                <p className="text-muted-foreground line-clamp-2 text-sm">
-                  {values.seoDescription || 'Your default description shows here.'}
-                </p>
-              </div>
+              <SearchResultPreview
+                title={exampleTitle}
+                description={values.seoDescription}
+                mediaId={values.seoImageMediaId}
+                legacyUrl={values.seoImageUrl}
+              />
             </div>
-            <SettingsRow id="settings-share-image" title="Default share image" stacked>
-              <div className="flex items-start gap-3">
-                <Input
-                  id="settings-share-image"
-                  type="url"
-                  maxLength={300}
-                  value={values.seoImageUrl}
-                  placeholder="https://…/share-image.jpg"
-                  onChange={(e) => patch({ seoImageUrl: e.target.value })}
-                />
-                <SharePreview url={values.seoImageUrl} />
-              </div>
+            <SettingsRow
+              id="settings-share-image"
+              title="Default share image"
+              info="Used when a page has no image of its own."
+              stacked
+            >
+              <ShareImageField
+                title={exampleTitle}
+                description={values.seoDescription}
+                mediaId={values.seoImageMediaId}
+                legacyUrl={values.seoImageUrl}
+                onChange={(seoImageMediaId) => patch({ seoImageMediaId, seoImageUrl: '' })}
+              />
             </SettingsRow>
+            <SettingsRow
+              id="settings-share-image-alt"
+              title="Share image description"
+              description="What the image shows, for people who can't see it."
+            >
+              <Input
+                id="settings-share-image-alt"
+                maxLength={200}
+                value={values.seoImageAlt}
+                onChange={(e) => patch({ seoImageAlt: e.target.value })}
+                className={fieldWidth}
+              />
+            </SettingsRow>
+            <h2 className="text-ui pt-2 font-medium max-md:px-4">Verification</h2>
             <SettingsRow
               id="settings-google"
               title="Google verification"
-              description="From Search Console. Paste the code or the whole meta tag."
+              description="From Search Console."
+              info="Paste the code or the whole meta tag."
             >
               <Input
                 id="settings-google"
@@ -574,12 +806,39 @@ export function SettingsPage({
             <SettingsRow
               id="settings-bing"
               title="Bing verification"
-              description="From Bing Webmaster Tools. Code or meta tag."
+              description="From Bing Webmaster Tools."
+              info="Paste the code or the whole meta tag."
             >
               <Input
                 id="settings-bing"
                 value={values.bingVerification}
                 onChange={(e) => patch({ bingVerification: e.target.value })}
+                className={cn(fieldWidth, 'font-mono')}
+              />
+            </SettingsRow>
+            <SettingsRow
+              id="settings-facebook-verification"
+              title="Facebook verification"
+              description="From Meta Business Suite."
+              info="Paste the code or the whole meta tag."
+            >
+              <Input
+                id="settings-facebook-verification"
+                value={values.facebookVerification}
+                onChange={(e) => patch({ facebookVerification: e.target.value })}
+                className={cn(fieldWidth, 'font-mono')}
+              />
+            </SettingsRow>
+            <SettingsRow
+              id="settings-pinterest-verification"
+              title="Pinterest verification"
+              description="From your Pinterest settings."
+              info="Paste the code or the whole meta tag."
+            >
+              <Input
+                id="settings-pinterest-verification"
+                value={values.pinterestVerification}
+                onChange={(e) => patch({ pinterestVerification: e.target.value })}
                 className={cn(fieldWidth, 'font-mono')}
               />
             </SettingsRow>
@@ -589,8 +848,15 @@ export function SettingsPage({
             id="content-targets"
             title="Content targets"
             description="What the content score measures blog posts against."
+            loose
           >
-            <SettingsRow id="settings-target-words" title="Words" below>
+            <h2 className="text-ui font-medium max-md:px-4">Structure</h2>
+            <SettingsRow
+              id="settings-target-words"
+              title="Words"
+              description="How long a post should be."
+              below
+            >
               <TargetRange
                 id="settings-target-words"
                 noun="words"
@@ -599,7 +865,12 @@ export function SettingsPage({
                 onChange={(min, max) => patch({ targetWordsMin: min, targetWordsMax: max })}
               />
             </SettingsRow>
-            <SettingsRow id="settings-target-headings" title="Headings" below>
+            <SettingsRow
+              id="settings-target-headings"
+              title="Headings"
+              description="How many headings break up a post."
+              below
+            >
               <TargetRange
                 id="settings-target-headings"
                 noun="headings"
@@ -620,7 +891,12 @@ export function SettingsPage({
                 onChange={(targetParagraphsMin) => patch({ targetParagraphsMin })}
               />
             </SettingsRow>
-            <SettingsRow id="settings-target-images" title="Images" below>
+            <SettingsRow
+              id="settings-target-images"
+              title="Images"
+              description="How many images a post should have."
+              below
+            >
               <TargetRange
                 id="settings-target-images"
                 noun="images"
@@ -629,6 +905,75 @@ export function SettingsPage({
                 onChange={(min, max) => patch({ targetImagesMin: min, targetImagesMax: max })}
               />
             </SettingsRow>
+            <h2 className="text-ui pt-2 font-medium max-md:px-4">Search listing</h2>
+            <SettingsRow
+              id="settings-target-title"
+              title="Search title"
+              description="Characters, so results don't cut it off."
+              below
+            >
+              <TargetRange
+                id="settings-target-title"
+                noun="characters"
+                min={values.targetTitleMin}
+                max={values.targetTitleMax}
+                onChange={(min, max) => patch({ targetTitleMin: min, targetTitleMax: max })}
+              />
+            </SettingsRow>
+            <SettingsRow
+              id="settings-target-description"
+              title="Search description"
+              description="Characters."
+              below
+            >
+              <TargetRange
+                id="settings-target-description"
+                noun="characters"
+                min={values.targetDescriptionMin}
+                max={values.targetDescriptionMax}
+                onChange={(min, max) =>
+                  patch({ targetDescriptionMin: min, targetDescriptionMax: max })
+                }
+              />
+            </SettingsRow>
+            <SettingsRow
+              id="settings-target-slug"
+              title="Permalink"
+              description="The most characters."
+            >
+              <TargetInput
+                id="settings-target-slug"
+                label="Most permalink characters"
+                value={values.targetSlugMax}
+                onChange={(targetSlugMax) => patch({ targetSlugMax })}
+              />
+            </SettingsRow>
+            <h2 className="text-ui pt-2 font-medium max-md:px-4">Readability</h2>
+            <SettingsRow
+              id="settings-target-sentence"
+              title="Sentence length"
+              description="The most words a sentence averages."
+            >
+              <TargetInput
+                id="settings-target-sentence"
+                label="Most average sentence words"
+                value={values.targetSentenceWords}
+                onChange={(targetSentenceWords) => patch({ targetSentenceWords })}
+              />
+            </SettingsRow>
+            <SettingsRow
+              id="settings-target-long-paragraph"
+              title="Longest paragraph"
+              description="The most words one paragraph has."
+            >
+              <TargetInput
+                id="settings-target-long-paragraph"
+                label="Most paragraph words"
+                value={values.targetParagraphWordsMax}
+                onChange={(targetParagraphWordsMax) => patch({ targetParagraphWordsMax })}
+              />
+            </SettingsRow>
+            <h2 className="text-ui pt-2 font-medium max-md:px-4">Keywords</h2>
             <SettingsRow
               id="settings-target-keyword"
               title="Focus keyword uses"
@@ -658,26 +1003,85 @@ export function SettingsPage({
           <SettingsSection
             id="brand-language"
             title="Brand language"
-            framed
-            divided={false}
-            description="Words the content score flags in posts, and what to write instead. Never use counts as critical; Check is usually wrong but sometimes fine. The AI wording check uses this list too."
+            description="Words the content score flags, and what to write instead."
+            loose
           >
-            <BrandRulesEditor
-              rules={values.brandRules}
-              onChange={(brandRules) => patch({ brandRules })}
-            />
+            <h2 className="text-ui font-medium max-md:px-4">What to check</h2>
+            <SettingsRow
+              id="settings-brand-dashes"
+              title="Dashes"
+              description="Em and en dashes in a post."
+            >
+              <SettingsSelect
+                id="settings-brand-dashes"
+                items={flagItems}
+                value={values.brandFlagDashes ? 'flag' : 'ignore'}
+                onChange={(next) => patch({ brandFlagDashes: next === 'flag' })}
+              />
+            </SettingsRow>
+            <SettingsRow
+              id="settings-brand-exclamations"
+              title="Exclamation marks"
+              description="House style uses none in information copy."
+            >
+              <SettingsSelect
+                id="settings-brand-exclamations"
+                items={flagItems}
+                value={values.brandFlagExclamations ? 'flag' : 'ignore'}
+                onChange={(next) => patch({ brandFlagExclamations: next === 'flag' })}
+              />
+            </SettingsRow>
+            <SettingsRow
+              id="settings-brand-alts"
+              title="Image descriptions"
+              description="Look for the words below in alt text too."
+            >
+              <SettingsSelect
+                id="settings-brand-alts"
+                items={checkItems}
+                value={values.brandCheckImageAlts ? 'check' : 'skip'}
+                onChange={(next) => patch({ brandCheckImageAlts: next === 'check' })}
+              />
+            </SettingsRow>
+            <SettingsRow
+              id="settings-brand-listing"
+              title="Search title and description"
+              description="Look for the words below in them too."
+            >
+              <SettingsSelect
+                id="settings-brand-listing"
+                items={checkItems}
+                value={values.brandCheckSearchListing ? 'check' : 'skip'}
+                onChange={(next) => patch({ brandCheckSearchListing: next === 'check' })}
+              />
+            </SettingsRow>
+            <div className="flex items-center gap-1.5 pt-2 max-md:px-4">
+              <h2 className="text-ui font-medium">Words</h2>
+              <InfoTip label="About the word list">
+                <p>Never use counts as critical. Check is usually wrong but sometimes fine.</p>
+                <p>The AI wording check uses this list too.</p>
+              </InfoTip>
+            </div>
+            <div className="md:bg-muted/50 max-md:divide-y max-md:divide-(--ios-separator) max-md:overflow-hidden max-md:rounded-[10px] max-md:bg-(--ios-cell) md:overflow-hidden md:rounded-lg">
+              <BrandRulesEditor
+                rules={values.brandRules}
+                onChange={(brandRules) => patch({ brandRules })}
+              />
+            </div>
           </SettingsSection>
 
           {!seoOnly && (
             <SettingsSection
               id="writing-assistant"
               title="Writing assistant"
-              description="The Suggest buttons that write search text, summaries, tags, alt text, captions and brand fixes. They only suggest: nothing is saved until a person saves it."
+              description="Suggest buttons for search text, summaries, tags, alt text and brand fixes. They only suggest: nothing is saved until a person saves it."
+              loose
             >
               <SettingsRow
                 id="settings-ai-enabled"
                 title="Suggest buttons"
-                description="When off, the buttons are hidden for everyone and nothing is sent to the AI."
+                description="When off, the buttons are hidden for everyone."
+                info="Nothing is sent to the AI while they are off."
               >
                 <Switch
                   id="settings-ai-enabled"
@@ -687,8 +1091,9 @@ export function SettingsPage({
               </SettingsRow>
               <SettingsRow
                 id="settings-ai-limit"
-                title="Suggestions each person can ask for a day"
-                description="Counted each time a Suggest button is pressed, and starting again at midnight in the site's time zone. For a monthly cap on the whole bill, use the spend limit in the Anthropic Console."
+                title="Suggestions a day"
+                description="Each person's limit. It starts again at midnight in the site's time zone."
+                info="Counted each time a Suggest button is pressed. For a monthly cap on the whole bill, use the spend limit in the Anthropic Console."
               >
                 <NumberField
                   id="settings-ai-limit"
@@ -706,8 +1111,13 @@ export function SettingsPage({
                   title="Connection"
                   description={
                     assistantKeySet
-                      ? 'The key is set on the server. Use and cost are on the System page.'
-                      : 'No key is set on the server, so the buttons are hidden. An admin adds it as the ANTHROPIC_API_KEY secret on the CMS Worker.'
+                      ? 'Use and cost are on the System page.'
+                      : 'No key is set, so the buttons are hidden.'
+                  }
+                  info={
+                    assistantKeySet
+                      ? 'The key is set on the server.'
+                      : 'An admin adds it as the ANTHROPIC_API_KEY secret on the CMS Worker.'
                   }
                 >
                   <StatusPulse
@@ -716,10 +1126,50 @@ export function SettingsPage({
                   />
                 </SettingsRow>
               )}
+              <h2 className="text-ui pt-2 font-medium max-md:px-4">What it can suggest</h2>
+              {(
+                [
+                  ['aiSearchText', 'Search text', 'Search title, description and focus keyword.'],
+                  ['aiSummaries', 'Summaries', 'The summary shown on blog cards.'],
+                  ['aiTags', 'Tags', 'Post tags and image tags.'],
+                  ['aiImageText', 'Image text', 'Alt text and captions.'],
+                  ['aiBrandFixes', 'Brand fixes', 'Rewrites for flagged words.'],
+                ] as const
+              ).map(([key, title, description]) => (
+                <SettingsRow
+                  key={key}
+                  id={`settings-${key}`}
+                  title={title}
+                  description={description}
+                >
+                  <Switch
+                    id={`settings-${key}`}
+                    checked={values[key]}
+                    onCheckedChange={(checked) => patch({ [key]: checked })}
+                  />
+                </SettingsRow>
+              ))}
+              <SettingsRow
+                id="settings-ai-instructions"
+                title="Extra instructions"
+                description="Added to every suggestion. The brand guide still wins."
+                suffix={<Counter value={values.aiInstructions} limit={AI_INSTRUCTIONS_MAX} />}
+                stacked
+              >
+                <Textarea
+                  id="settings-ai-instructions"
+                  rows={3}
+                  maxLength={AI_INSTRUCTIONS_MAX}
+                  value={values.aiInstructions}
+                  placeholder="For example: keep it warm and gentle, and write for families."
+                  onChange={(e) => patch({ aiInstructions: e.target.value })}
+                />
+              </SettingsRow>
             </SettingsSection>
           )}
 
-          {legalPages && <LegalPagesSection pages={legalPages} />}
+          {/* Only while Legal is the open page: its redirect must not fire from the others. */}
+          {legalPages && section === 'legal' && <LegalPagesSection pages={legalPages} />}
 
           {!seoOnly && (
             <SettingsSection
@@ -1174,7 +1624,20 @@ function SiteIconRow({
     <SettingsRow
       id="settings-site-icon"
       title="Site icon"
-      description="Shown in browser tabs, bookmarks and on phone home screens, for the website and the CMS. Add one for light mode and, if you like, a different one for dark mode. Each should be a square image at least 512 by 512 pixels; PNG works best."
+      description="Shown in browser tabs, bookmarks and on phone home screens."
+      info={
+        <>
+          <p>
+            For the website and the CMS. Add one for light mode and, if you like, a different one
+            for dark mode.
+          </p>
+          <p>Each should be a square image at least 512 by 512 pixels; PNG works best.</p>
+          <p>
+            Phone home screens always use the light mode icon, and so does a browser with scripts
+            turned off.
+          </p>
+        </>
+      }
       stacked
     >
       <div className="grid max-w-2xl gap-3 sm:grid-cols-2">
@@ -1198,10 +1661,6 @@ function SiteIconRow({
           onChange={onDarkChange}
         />
       </div>
-      <p className="text-muted-foreground max-w-2xl text-xs">
-        Phone home screens always use the light mode icon, and a browser with scripts turned off
-        shows it too.
-      </p>
     </SettingsRow>
   );
 }
@@ -1342,27 +1801,170 @@ function SiteIconPanel({
   );
 }
 
-function SharePreview({ url }: { url: string }) {
-  const [broken, setBroken] = useState(false);
-  useEffect(() => setBroken(false), [url]);
-  if (!/^https?:\/\/\S+$/.test(url)) return null;
+/** The share image's address for a preview: the library image, else a link typed in earlier. */
+function useShareImage(mediaId: string, legacyUrl: string) {
+  const { item, update } = useMediaItem(mediaId || null);
+  const src = mediaId
+    ? item
+      ? `${item.url}?w=640`
+      : null
+    : /^https?:\/\/\S+$/.test(legacyUrl)
+      ? legacyUrl
+      : null;
+  return { src, update };
+}
 
+/** How a page looks in a search result, with the share image beside it as the results show it. */
+function SearchResultPreview({
+  title,
+  description,
+  mediaId,
+  legacyUrl,
+}: {
+  title: string;
+  description: string;
+  mediaId: string;
+  legacyUrl: string;
+}) {
+  const { src } = useShareImage(mediaId, legacyUrl);
+  const [broken, setBroken] = useState(false);
+  useEffect(() => setBroken(false), [src]);
   return (
-    <div className="bg-muted aspect-[1.91/1] w-28 shrink-0 overflow-hidden rounded-md">
-      {broken ? (
-        <p className="text-muted-foreground flex h-full items-center justify-center p-1 text-center text-[0.6875rem]">
-          Image not found
+    <div className="bg-muted/50 flex items-start gap-4 rounded-lg px-4 py-3">
+      <div className="min-w-0 flex-1">
+        <p className="text-muted-foreground truncate text-xs">{SITE_HOST} › our-story</p>
+        <p className="truncate text-base text-[#1a0dab] dark:text-[#8ab4f8]">{title}</p>
+        <p className="text-muted-foreground line-clamp-2 text-sm">
+          {description || 'Your default description shows here.'}
         </p>
-      ) : (
-        <img src={url} alt="" className="size-full object-cover" onError={() => setBroken(true)} />
+      </div>
+      {src && !broken && (
+        <img
+          src={src}
+          alt=""
+          className="bg-muted aspect-[1.91/1] w-28 shrink-0 rounded-md object-cover max-sm:hidden"
+          onError={() => setBroken(true)}
+        />
       )}
     </div>
   );
 }
 
-/** The privacy and terms pages, each opening its editor. */
+/** The card a link makes when pasted into Facebook, X, WhatsApp or LinkedIn: the image on top. */
+function ShareCardPreview({
+  title,
+  description,
+  mediaId,
+  legacyUrl,
+}: {
+  title: string;
+  description: string;
+  mediaId: string;
+  legacyUrl: string;
+}) {
+  const { src } = useShareImage(mediaId, legacyUrl);
+  const [broken, setBroken] = useState(false);
+  useEffect(() => setBroken(false), [src]);
+  return (
+    <div className="bg-muted/50 overflow-hidden rounded-lg border">
+      <div className="bg-muted aspect-[1.91/1] w-full">
+        {src && !broken ? (
+          <img
+            src={src}
+            alt=""
+            className="size-full object-cover"
+            onError={() => setBroken(true)}
+          />
+        ) : (
+          <p className="text-muted-foreground flex h-full items-center justify-center p-3 text-center text-xs">
+            {broken ? 'Image not found' : 'No image chosen'}
+          </p>
+        )}
+      </div>
+      <div className="space-y-0.5 px-3 py-2.5">
+        <p className="text-muted-foreground truncate text-xs uppercase">{SITE_HOST}</p>
+        <p className="truncate text-sm font-medium">{title}</p>
+        <p className="text-muted-foreground line-clamp-2 text-xs">
+          {description || 'Your default description shows here.'}
+        </p>
+      </div>
+    </div>
+  );
+}
+
+/**
+ * The default share image, chosen from the media library. A link typed in before that was
+ * possible still shows, until the image is changed or removed.
+ */
+function ShareImageField({
+  title,
+  description,
+  mediaId,
+  legacyUrl,
+  onChange,
+}: {
+  title: string;
+  description: string;
+  mediaId: string;
+  legacyUrl: string;
+  onChange: (mediaId: string) => void;
+}) {
+  const { update } = useShareImage(mediaId, legacyUrl);
+  const [picking, setPicking] = useState(false);
+  const chosen = Boolean(mediaId || legacyUrl);
+
+  return (
+    <div className="max-w-sm space-y-3">
+      {/* The image is shown as a pasted link's card shows it, so what is chosen reads as it will. */}
+      <ShareCardPreview
+        title={title}
+        description={description}
+        mediaId={mediaId}
+        legacyUrl={legacyUrl}
+      />
+      <div className="flex flex-wrap items-center gap-2">
+        <Button type="button" variant="outline" size="sm" onClick={() => setPicking(true)}>
+          {chosen ? 'Change image' : 'Choose image'}
+        </Button>
+        {chosen && (
+          <Button
+            type="button"
+            variant="ghost"
+            size="sm"
+            className="text-destructive hover:text-destructive"
+            onClick={() => onChange('')}
+          >
+            Remove
+          </Button>
+        )}
+      </div>
+      <MediaPicker
+        open={picking}
+        onOpenChange={setPicking}
+        selectedId={mediaId || null}
+        aspect={1.91}
+        onSelect={(picked) => {
+          update(picked);
+          onChange(picked.id);
+          setPicking(false);
+        }}
+      />
+    </div>
+  );
+}
+
+/**
+ * The privacy and terms pages, each opening its editor. From md the sidebar lists them under
+ * Legal, so this opens the first straight away; phones have no sidebar, so this is their list.
+ */
 function LegalPagesSection({ pages }: { pages: LegalPageSummary[] }) {
   const timeZone = useTimeZone();
+  const navigate = useNavigate();
+  const first = pages[0]?.slug;
+  useEffect(() => {
+    if (!first || !window.matchMedia('(min-width: 48rem)').matches) return;
+    void navigate({ to: '/legal/$slug', params: { slug: first }, replace: true });
+  }, [first, navigate]);
   return (
     <SettingsSection
       id="legal"

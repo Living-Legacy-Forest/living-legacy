@@ -95,6 +95,29 @@ describe('email delivery', () => {
     await expect(result).rejects.not.toThrow(/a@example\.test/);
   });
 
+  it('sends a booking confirmation with a reply-to only when one is given', async () => {
+    mutableEnv.BOOKING_EMAIL_FROM = 'Living Legacy <events@notify.example.test>';
+    const confirmation: BookingConfirmation = {
+      firstName: 'Sam',
+      reference: 'LL-ABC123',
+      partySize: 1,
+      title: 'Open day',
+      startsAt: Date.UTC(2027, 0, 20, 2),
+      endsAt: Date.UTC(2027, 0, 20, 4),
+      timeZone: 'Australia/Perth',
+      venue: '',
+      manageUrl: 'https://example.test/events/manage/?ref=LL-ABC123&token=t',
+      calendarUrl: 'https://example.test/events/open-day.ics',
+      qrUrl: 'https://example.test/qr.png',
+    };
+
+    await sendBookingConfirmationEmail('sam@example.test', confirmation);
+    await sendBookingConfirmationEmail('sam@example.test', confirmation, 'events@example.test');
+
+    expect(sent[0]).not.toHaveProperty('replyTo');
+    expect(sent[1]).toEqual(expect.objectContaining({ replyTo: 'events@example.test' }));
+  });
+
   it('fails closed when there is no binding, rather than logging the link', async () => {
     mutableEnv.EMAIL = undefined;
 

@@ -1,4 +1,5 @@
 import {
+  type AiGroup,
   FOCUS_KEYWORD_LIMIT,
   RELATED_TERM_LIMIT,
   SEO_DESCRIPTION_LIMIT,
@@ -19,6 +20,26 @@ export type SuggestField =
   | 'caption'
   | 'mediaTags'
   | 'brandFix';
+
+/** The kind of suggestion a field belongs to, which an admin can switch on or off. */
+export function groupOf(field: SuggestField): AiGroup {
+  switch (field) {
+    case 'seoTitle':
+    case 'seoDescription':
+    case 'focusKeyword':
+      return 'searchText';
+    case 'excerpt':
+      return 'summaries';
+    case 'tags':
+    case 'mediaTags':
+      return 'tags';
+    case 'alt':
+    case 'caption':
+      return 'imageText';
+    case 'brandFix':
+      return 'brandFixes';
+  }
+}
 
 /** What each field is for and its length limit. The limit is the one the field is saved against. */
 export const FIELD_SPECS: Record<SuggestField, { limit: number; brief: string }> = {

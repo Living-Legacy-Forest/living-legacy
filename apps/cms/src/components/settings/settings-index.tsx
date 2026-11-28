@@ -1,10 +1,29 @@
 import { Link, useNavigate } from '@tanstack/react-router';
 import { useEffect } from 'react';
 import { ChevronRightIcon } from '@/components/icons';
-import { settingsNavFor } from '@/lib/settings-nav';
+import { type SettingsNavItem, settingsNavFor } from '@/lib/settings-nav';
 import type { SessionUser } from '@/lib/session';
 import { cn } from '@/lib/utils';
 import { sheetGroupClass } from '@/components/shell/sheet-parts';
+
+/**
+ * Phones list every page. An item whose first page is itself (Appearance) also gets a row for
+ * each page after it; one that opens a list of its own (Legal) stays a single row.
+ */
+function phoneRows(items: SettingsNavItem[]) {
+  return items.flatMap((item) =>
+    item.children && item.children[0]?.to === item.to
+      ? [
+          item,
+          ...item.children.slice(1).map((c) => ({
+            ...item,
+            to: c.to,
+            title: `${item.title}, ${c.title.toLowerCase()}`,
+          })),
+        ]
+      : [item]
+  );
+}
 
 /**
  * Where /settings lands. From md the sidebar already lists every page, so this opens the first
@@ -33,7 +52,7 @@ export function SettingsIndex({ user }: { user: SessionUser }) {
             {group.label}
           </h2>
           <ul className={cn(sheetGroupClass, 'md:hidden')}>
-            {group.items.map((item) => (
+            {phoneRows(group.items).map((item) => (
               <li key={item.to}>
                 <Link
                   to={item.to}

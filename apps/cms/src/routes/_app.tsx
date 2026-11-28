@@ -2,7 +2,7 @@ import * as Sentry from '@sentry/tanstackstart-react';
 import { Outlet, createFileRoute, redirect } from '@tanstack/react-router';
 import { useEffect } from 'react';
 import { AppShell } from '@/components/shell/app-shell';
-import { getCachedAiEnabled } from '@/lib/ai-status';
+import { getCachedAiAccess } from '@/lib/ai-status';
 import { getCachedUser } from '@/lib/session';
 import { readListViews } from '@/lib/list-view';
 import { readNavPrefs } from '@/lib/nav-prefs-cookie';
@@ -12,10 +12,11 @@ export const Route = createFileRoute('/_app')({
   beforeLoad: async () => {
     const user = await getCachedUser();
     if (!user) throw redirect({ to: '/login' });
-    const ai = await getCachedAiEnabled(user.id);
+    const { enabled: ai, groups: aiGroups } = await getCachedAiAccess(user.id);
     return {
       user,
       ai,
+      aiGroups,
       sidebar: readSidebarState(),
       navPrefs: readNavPrefs(),
       listViews: readListViews(),

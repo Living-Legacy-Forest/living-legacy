@@ -38,6 +38,24 @@ describe('month keys', () => {
   });
 });
 
+describe('monthGrid on a Sunday start', () => {
+  it('starts on a Sunday, so a month that starts on one has no lead-in', () => {
+    // November 2026 starts on a Sunday.
+    const weeks = monthGrid({ year: 2026, month: 10 }, 0);
+    expect(dayKey(weeks[0]![0]!)).toBe('2026-11-01');
+    expect(weeks[0]![0]!.inMonth).toBe(true);
+    expect(weeks).toHaveLength(5);
+  });
+
+  it('adds a week to a Monday-start February, and the fetch window follows', () => {
+    // February 2027 starts on a Monday: four weeks from Monday, five from Sunday.
+    expect(monthGrid({ year: 2027, month: 1 }, 0)).toHaveLength(5);
+    const { to } = monthWindow({ year: 2027, month: 1 }, 0);
+    const last = monthGrid({ year: 2027, month: 1 }, 0).at(-1)!.at(-1)!;
+    expect(to).toBeGreaterThan(Date.UTC(last.year, last.month, last.day) + 86_400_000);
+  });
+});
+
 describe('monthGrid', () => {
   it('starts on a Monday and fills whole weeks', () => {
     // November 2026 starts on a Sunday, so its first week begins on Monday 26 October.

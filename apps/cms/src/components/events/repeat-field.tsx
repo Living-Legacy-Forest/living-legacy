@@ -28,6 +28,7 @@ import { Reveal } from '@/components/reveal';
 import { cn } from '@/lib/utils';
 import { type EventTimes, dayLabel } from './event-dates-field';
 import { sameDate } from '@/lib/format';
+import { useWeekStart } from '@/lib/use-week-start';
 
 export type RepeatValue = {
   repeat: RepeatKind;
@@ -92,6 +93,7 @@ export function RepeatField({
   value: RepeatValue;
   onChange: (value: RepeatValue) => void;
 }) {
+  const weekStartsOn = useWeekStart();
   const [untilOpen, setUntilOpen] = useState(false);
   const patch = (next: Partial<RepeatValue>) => onChange({ ...value, ...next });
 
@@ -259,7 +261,7 @@ export function RepeatField({
           <div className="bg-muted/50 rounded-lg">
             <Calendar
               mode="multiple"
-              weekStartsOn={1}
+              weekStartsOn={weekStartsOn}
               className="w-full px-3"
               // A gap between days, so chosen dates sit apart rather than as one block.
               classNames={{

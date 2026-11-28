@@ -7,6 +7,8 @@ type Email = {
   /** Defaults to EMAIL_FROM, the sender for CMS mail; guest mail names its own. */
   from?: string;
   to: string;
+  /** Where a reply goes, when that is not the sender. */
+  replyTo?: string;
   subject: string;
   html: string;
   text: string;
@@ -350,7 +352,13 @@ export function bookingConfirmationEmail(c: BookingConfirmation) {
 /** Sends from the guest-facing sender, not the CMS one. */
 export async function sendBookingConfirmationEmail(
   to: string,
-  c: BookingConfirmation
+  c: BookingConfirmation,
+  replyTo?: string
 ): Promise<void> {
-  await send({ from: env.BOOKING_EMAIL_FROM, to, ...bookingConfirmationEmail(c) });
+  await send({
+    from: env.BOOKING_EMAIL_FROM,
+    to,
+    ...(replyTo ? { replyTo } : {}),
+    ...bookingConfirmationEmail(c),
+  });
 }
